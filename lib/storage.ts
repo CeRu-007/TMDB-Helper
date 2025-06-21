@@ -52,6 +52,9 @@ export interface TMDBItem {
   backdropUrl?: string
   backdropPath?: string
   logoUrl?: string // TMDB标志URL
+  networkId?: number // 播出网络ID
+  networkName?: string // 播出网络名称
+  networkLogoUrl?: string // 播出网络logo URL
   overview?: string // TMDB简介
   voteAverage?: number // TMDB评分
   weekday: number // 0-6 (Sunday-Saturday)

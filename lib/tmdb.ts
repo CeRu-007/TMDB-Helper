@@ -65,7 +65,9 @@ interface TMDBTVResponse {
     poster_path: string | null
   }>
   networks: Array<{
+    id: number
     name: string
+    logo_path: string | null
     homepage: string | null
   }>
   genres: Array<{
@@ -123,6 +125,9 @@ export interface TMDBItemData {
   backdropPath?: string | null
   logoUrl?: string  // 添加标志URL字段
   logoPath?: string | null  // 添加标志路径字段
+  networkId?: number        // 添加网络ID
+  networkName?: string      // 添加网络名称
+  networkLogoUrl?: string   // 添加网络Logo URL
   totalEpisodes?: number
   platformUrl?: string
   weekday?: number
@@ -141,8 +146,10 @@ export class TMDBService {
   private static readonly BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
   private static readonly BACKDROP_ORIGINAL_URL = "https://image.tmdb.org/t/p/original"
   private static readonly LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300"  // 添加标志基础URL
+  private static readonly NETWORK_LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300" // 网络Logo基础URL
   private static readonly CACHE_PREFIX = "tmdb_backdrop_"
   private static readonly LOGO_CACHE_PREFIX = "tmdb_logo_"  // 标志缓存前缀
+  private static readonly NETWORK_LOGO_CACHE_PREFIX = "tmdb_network_logo_"  // 网络标志缓存前缀
   private static readonly CACHE_EXPIRY = 24 * 60 * 60 * 1000 // 24小时
 
   private static getApiKey(): string {
@@ -189,6 +196,45 @@ export class TMDBService {
       return path
     } catch (error) {
       console.warn("获取缓存标志失败:", error)
+      return null
+    }
+  }
+
+  // 缓存网络logo路径
+  private static cacheNetworkLogoPath(networkId: number, logoPath: string): void {
+    try {
+      const cacheKey = `${this.NETWORK_LOGO_CACHE_PREFIX}${networkId}`
+      const cacheData = {
+        path: logoPath,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData))
+    } catch (error) {
+      console.warn("缓存网络logo失败:", error)
+    }
+  }
+
+  // 获取缓存的网络logo路径
+  private static getCachedNetworkLogoPath(networkId: number): string | null {
+    try {
+      const cacheKey = `${this.NETWORK_LOGO_CACHE_PREFIX}${networkId}`
+      const cachedData = localStorage.getItem(cacheKey)
+      
+      if (!cachedData) {
+        return null
+      }
+      
+      const { path, timestamp } = JSON.parse(cachedData)
+      
+      // 检查缓存是否过期
+      if (Date.now() - timestamp > this.CACHE_EXPIRY) {
+        localStorage.removeItem(cacheKey)
+        return null
+      }
+      
+      return path
+    } catch (error) {
+      console.warn("获取缓存网络logo失败:", error)
       return null
     }
   }
@@ -344,6 +390,18 @@ export class TMDBService {
           totalEpisodes = seasons.reduce((total, season) => total + season.totalEpisodes, 0)
         }
 
+        // 提取网络信息
+        const primaryNetwork = tvData.networks && tvData.networks.length > 0 ? tvData.networks[0] : null
+        const networkId = primaryNetwork?.id
+        const networkName = primaryNetwork?.name
+        const networkLogoPath = primaryNetwork?.logo_path
+        const networkLogoUrl = networkLogoPath ? `${this.NETWORK_LOGO_BASE_URL}${networkLogoPath}` : undefined
+
+        // 如果有网络logo，缓存它
+        if (networkId && networkLogoPath) {
+          this.cacheNetworkLogoPath(networkId, networkLogoPath)
+        }
+
         // 计算首播日期的星期几
         let weekday = undefined
         const airDate = tvData.first_air_date
@@ -407,7 +465,10 @@ export class TMDBService {
           posterUrl: tvData.poster_path ? `${this.IMAGE_BASE_URL}${tvData.poster_path}` : undefined,
           backdropUrl: tvData.backdrop_path ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}` : undefined,
           backdropPath: tvData.backdrop_path,
-          logoUrl: logoUrl || undefined,  // 添加标志URL
+          logoUrl: logoUrl || undefined,
+          networkId: networkId,
+          networkName: networkName,
+          networkLogoUrl: networkLogoUrl,
           totalEpisodes,
           seasons,
           platformUrl,
@@ -519,5 +580,39 @@ export class TMDBService {
     }
     
     return baseUrl;
+  }
+
+  // 获取网络logo
+  static async getNetworkLogo(networkId: number, forceRefresh: boolean = false): Promise<string | null> {
+    try {
+      // 如果不是强制刷新，先尝试从缓存获取
+      if (!forceRefresh) {
+        const cachedLogoPath = this.getCachedNetworkLogoPath(networkId)
+        if (cachedLogoPath) {
+          return `${this.NETWORK_LOGO_BASE_URL}${cachedLogoPath}`
+        }
+      }
+
+      const apiKey = this.getApiKey()
+      const response = await fetch(`${this.BASE_URL}/network/${networkId}?api_key=${apiKey}`)
+
+      if (!response.ok) {
+        throw new Error("获取TMDB网络数据失败")
+      }
+
+      const data = await response.json()
+      const logoPath = data.logo_path
+
+      if (logoPath) {
+        // 缓存logo路径
+        this.cacheNetworkLogoPath(networkId, logoPath)
+        return `${this.NETWORK_LOGO_BASE_URL}${logoPath}`
+      }
+      
+      return null
+    } catch (error) {
+      console.error("获取网络logo失败:", error)
+      return null
+    }
   }
 }

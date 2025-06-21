@@ -57,4 +57,119 @@ export function formatDate(date: Date) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+/**
+ * 从URL识别平台并返回平台信息
+ * @param url 平台URL
+ * @returns 平台信息对象，包含名称、图标和颜色
+ */
+export function getPlatformInfo(url?: string) {
+  if (!url) return null;
+  
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    
+    // 匹配平台
+    if (hostname.includes('netflix.com')) {
+      return { 
+        name: 'Netflix', 
+        icon: 'netflix',
+        color: '#E50914',
+        url
+      };
+    } else if (hostname.includes('primevideo.com') || hostname.includes('amazon.com')) {
+      return { 
+        name: 'Prime Video', 
+        icon: 'primevideo',
+        color: '#00A8E1',
+        url
+      };
+    } else if (hostname.includes('disneyplus.com')) {
+      return { 
+        name: 'Disney+', 
+        icon: 'disneyplus',
+        color: '#0063E5',
+        url
+      };
+    } else if (hostname.includes('hbomax.com') || hostname.includes('max.com')) {
+      return { 
+        name: 'HBO Max', 
+        icon: 'hbomax',
+        color: '#5822B4',
+        url
+      };
+    } else if (hostname.includes('bilibili.com')) {
+      return { 
+        name: 'Bilibili', 
+        icon: 'bilibili',
+        color: '#FB7299',
+        url
+      };
+    } else if (hostname.includes('iqiyi.com')) {
+      return { 
+        name: '爱奇艺', 
+        icon: 'iqiyi',
+        color: '#00be06',
+        url
+      };
+    } else if (hostname.includes('youku.com')) {
+      return { 
+        name: '优酷', 
+        icon: 'youku',
+        color: '#00A8FF',
+        url
+      };
+    } else if (hostname.includes('qq.com') || hostname.includes('v.qq.com')) {
+      return { 
+        name: '腾讯视频', 
+        icon: 'tencent',
+        color: '#FF9C00',
+        url
+      };
+    } else if (hostname.includes('apple.com') || hostname.includes('tv.apple.com')) {
+      return { 
+        name: 'Apple TV+', 
+        icon: 'appletv',
+        color: '#000000',
+        url
+      };
+    } else if (hostname.includes('hulu.com')) {
+      return { 
+        name: 'Hulu', 
+        icon: 'hulu',
+        color: '#1CE783',
+        url
+      };
+    } else if (hostname.includes('peacocktv.com')) {
+      return { 
+        name: 'Peacock', 
+        icon: 'peacock',
+        color: '#000000',
+        url
+      };
+    } else {
+      // 提取域名作为名称
+      const domainParts = hostname.split('.');
+      const name = domainParts.length >= 2 ? 
+        domainParts[domainParts.length - 2].charAt(0).toUpperCase() + 
+        domainParts[domainParts.length - 2].slice(1) : 
+        hostname;
+      
+      return { 
+        name, 
+        icon: 'generic',
+        color: '#666666',
+        url
+      };
+    }
+  } catch (error) {
+    console.error("URL解析错误:", error);
+    return { 
+      name: '未知平台', 
+      icon: 'generic',
+      color: '#666666',
+      url
+    };
+  }
 } 
