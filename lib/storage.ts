@@ -51,6 +51,9 @@ export interface TMDBItem {
   posterPath?: string
   backdropUrl?: string
   backdropPath?: string
+  logoUrl?: string // TMDB标志URL
+  overview?: string // TMDB简介
+  voteAverage?: number // TMDB评分
   weekday: number // 0-6 (Sunday-Saturday)
   secondWeekday?: number // 第二播出日（用于一周两更的动漫）
   airTime?: string // 播出时间，格式如 "19:00"
@@ -66,6 +69,8 @@ export interface TMDBItem {
   notes?: string
   category?: "anime" | "tv" | "kids" | "variety" | "short" | "movie" // 添加分类字段
   scheduledTasks?: ScheduledTask[] // 添加定时任务
+  blurIntensity?: 'light' | 'medium' | 'heavy' // 背景图模糊强度
+  rating?: number // 用户评分
   createdAt: string
   updatedAt: string
 }

@@ -1876,7 +1876,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         >
           <div className="p-4 h-full overflow-y-auto space-y-4">
             {/* TMDB导入命令区域 */}
-                <Card>
+                <Card variant="frosted">
               <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center">
                   <Terminal className="h-4 w-4 mr-2" />
@@ -2021,7 +2021,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* 步骤进度 */}
-              <Card>
+              <Card variant="frosted">
                 <CardHeader>
                   <CardTitle className="text-base">处理步骤</CardTitle>
                 </CardHeader>
@@ -2108,7 +2108,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               </Card>
 
               {/* 步骤进度和终端输出区域 */}
-              <Card>
+              <Card variant="frosted">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center justify-between">
                     <div className="flex items-center">
@@ -3664,14 +3664,14 @@ logging_level = INFO
       ) : (
         <Dialog open={open} onOpenChange={onOpenChange}>
           <DialogContent 
-            className={`${isFullscreen ? 'max-w-full w-full h-full max-h-full inset-0 rounded-none' : 'max-w-[90vw] max-h-[90vh]'} overflow-y-auto p-0`}
+            className={`${isFullscreen ? 'max-w-full w-full h-full max-h-full inset-0 rounded-none' : 'max-w-[90vw] max-h-[90vh]'} overflow-y-auto p-0 bg-background/50 backdrop-blur-md border-none`}
             style={{
               transform: isFullscreen ? 'none' : undefined,
               top: isFullscreen ? '0' : undefined,
               left: isFullscreen ? '0' : undefined,
             }}
           >
-            <DialogHeader className="p-6 pb-2 flex flex-row items-center justify-between">
+            <DialogHeader className="p-6 pb-2 flex flex-row items-center justify-between bg-background/40 backdrop-blur-md border-b">
               <DialogTitle className="flex items-center space-x-2">
                 <Terminal className="h-5 w-5" />
                 <span>TMDB-Import 本地集成</span>

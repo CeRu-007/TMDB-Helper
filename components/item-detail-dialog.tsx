@@ -71,13 +71,27 @@ import {
   ArrowRightCircle,
   Bug,
   Calendar,
-  Image as ImageIcon,
+  ImageIcon,
+  Layers,
+  BarChart,
+  Languages,
+  CalendarDays,
+  Hash,
+  PlusCircle,
+  AlertCircle,
+  Star,
+  Heart,
+  Share2,
+  StickyNote,
+  BookMarked,
+  ListTodo,
+  Activity,
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/storage"
 import { useMobile } from "@/hooks/use-mobile"
 import TMDBImportIntegrationDialog from "@/components/tmdb-import-integration-dialog"
 import ScheduledTaskDialog from "@/components/scheduled-task-dialog"
-import { TMDBService, TMDBSeasonData } from "@/lib/tmdb"
+import { TMDBService, TMDBSeasonData, BackdropSize } from "@/lib/tmdb"
 import FixTMDBImportBugDialog from "@/components/fix-tmdb-import-bug-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { StorageManager } from "@/lib/storage"
@@ -136,6 +150,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [backdropError, setBackdropError] = useState(false)
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
+  const [backgroundRefreshKey, setBackgroundRefreshKey] = useState<number>(Date.now())
 
   useEffect(() => {
     // 确保所有属性都被正确初始化，包括isDailyUpdate和blurIntensity
@@ -803,8 +818,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 构建TMDB URL
       const tmdbUrl = `https://www.themoviedb.org/${editData.mediaType}/${editData.tmdbId}`;
       
-      // 使用TMDBService获取最新数据
-      const tmdbData = await TMDBService.getItemFromUrl(tmdbUrl);
+      // 使用TMDBService获取最新数据，强制刷新标志
+      const tmdbData = await TMDBService.getItemFromUrl(tmdbUrl, true);
       
       if (!tmdbData) {
         throw new Error("未能从TMDB获取到有效数据");
@@ -819,6 +834,32 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           ...updatedData,
           backdropUrl: tmdbData.backdropUrl,
           backdropPath: tmdbData.backdropPath || undefined
+        };
+        
+        // 预加载背景图，提高加载速度
+        preloadBackdrop(tmdbData.backdropPath);
+      }
+      
+      // 更新TMDB评分和简介
+      if (tmdbData.voteAverage !== undefined) {
+        updatedData = {
+          ...updatedData,
+          voteAverage: tmdbData.voteAverage === null ? undefined : tmdbData.voteAverage
+        };
+      }
+      
+      if (tmdbData.overview !== undefined) {
+        updatedData = {
+          ...updatedData,
+          overview: tmdbData.overview === null ? undefined : tmdbData.overview
+        };
+      }
+      
+      // 更新TMDB标志
+      if (tmdbData.logoUrl) {
+        updatedData = {
+          ...updatedData,
+          logoUrl: tmdbData.logoUrl
         };
       }
       
@@ -887,32 +928,55 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 更新状态
       setEditData(updatedData);
       
-      // 将更新的数据应用到localItem，使背景图立即生效
-      if (tmdbData.backdropUrl && tmdbData.backdropUrl !== localItem.backdropUrl) {
-        const newLocalItem = {
-          ...localItem,
-          backdropUrl: tmdbData.backdropUrl,
-          backdropPath: tmdbData.backdropPath || undefined
-        };
-        setLocalItem(newLocalItem);
-        
-        // 通知父组件更新
-        onUpdate(newLocalItem);
-        
-        // 重置背景图状态，使其重新加载
-        setBackdropLoaded(false);
-        setBackdropError(false);
+      // 将更新的数据应用到localItem，使背景图和其他数据立即生效
+      const newLocalItem = {
+        ...localItem,
+        backdropUrl: tmdbData.backdropUrl || localItem.backdropUrl,
+        backdropPath: tmdbData.backdropPath || localItem.backdropPath
+      };
+      
+      // 更新评分和简介
+      if (tmdbData.voteAverage !== undefined) {
+        newLocalItem.voteAverage = tmdbData.voteAverage === null ? undefined : tmdbData.voteAverage;
       }
       
-      // 如果背景图被更新，显示相应的成功信息
+      if (tmdbData.overview !== undefined) {
+        newLocalItem.overview = tmdbData.overview === null ? undefined : tmdbData.overview;
+      }
+      
+      // 更新标志
+      if (tmdbData.logoUrl) {
+        newLocalItem.logoUrl = tmdbData.logoUrl;
+      }
+      
+      // 如果是电视剧且有季数据更新，也更新这部分
+      if (editData.mediaType === "tv" && updatedData.seasons) {
+        newLocalItem.seasons = updatedData.seasons;
+        newLocalItem.episodes = updatedData.episodes;
+        newLocalItem.totalEpisodes = updatedData.totalEpisodes;
+      }
+      
+      setLocalItem(newLocalItem);
+      
+      // 通知父组件更新
+      onUpdate(newLocalItem);
+      
+      // 更新背景图刷新键，强制重新渲染背景图
+      setBackgroundRefreshKey(Date.now());
+      
+      // 重置背景图状态，使其重新加载
+      setBackdropLoaded(false);
+      setBackdropError(false);
+      
+      // 显示成功信息
       if (updatedData.backdropUrl !== editData.backdropUrl) {
         if (editData.mediaType === "tv") {
-          setCopyFeedback("TMDB数据和背景图已成功刷新");
+          setCopyFeedback("TMDB数据、背景图、标志、评分和简介已成功刷新");
         } else {
-          setCopyFeedback("TMDB背景图已成功刷新");
+          setCopyFeedback("TMDB数据、背景图、标志、评分和简介已成功刷新");
         }
       } else {
-        setCopyFeedback(editData.mediaType === "tv" ? "TMDB季数据已成功刷新" : "TMDB数据已成功刷新");
+        setCopyFeedback("TMDB数据、标志、评分和简介已成功刷新");
       }
       
       setTimeout(() => setCopyFeedback(null), 2000);
@@ -951,7 +1015,18 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
   // 判断是否每日更新
   const isDailyUpdate = localItem.isDailyUpdate === true || 
-    (localItem.isDailyUpdate === undefined && (localItem.category === "tv" || localItem.category === "short"))
+    (localItem.isDailyUpdate === undefined && (localItem.category === "tv" || localItem.category === "short"));
+
+  // 添加预加载背景图的函数
+  const preloadBackdrop = (backdropPath: string | null | undefined) => {
+    if (!backdropPath) return;
+    
+    // 预加载不同尺寸的背景图
+    const sizes: BackdropSize[] = ['w780', 'w1280', 'original'];
+    sizes.forEach(size => {
+      TMDBService.preloadBackdrop(backdropPath, size);
+    });
+  };
 
   return (
     <>
@@ -966,6 +1041,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             blur={true}
             blurIntensity={localItem.blurIntensity || 'medium'}
             overlayClassName="bg-gradient-to-b from-background/30 via-background/25 to-background/35"
+            refreshKey={backgroundRefreshKey}
           />
           
           {/* 内容层 - 添加相对定位和z-index确保内容在背景图上方 */}
@@ -978,7 +1054,27 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 ) : (
                   <Tv className="mr-2 h-5 w-5" />
                 )}
-                {localItem.title}
+                {/* 使用TMDB标志替代文字标题 */}
+                {localItem.logoUrl ? (
+                  <div className="h-10 max-w-[200px] flex items-center">
+                    <img 
+                      src={localItem.logoUrl} 
+                      alt={localItem.title} 
+                      className="max-h-full object-contain"
+                      onError={(e) => {
+                        // 如果标志加载失败，显示文字标题
+                        e.currentTarget.style.display = 'none';
+                        const titleElement = e.currentTarget.parentElement?.nextElementSibling;
+                        if (titleElement) {
+                          titleElement.classList.remove('hidden');
+                        }
+                      }}
+                    />
+                  </div>
+                ) : null}
+                <span className={localItem.logoUrl ? "hidden ml-1" : ""}>
+                  {localItem.title}
+                </span>
                 {localItem.category && (
                   <Badge variant="outline" className="ml-2">
                     {CATEGORIES.find((cat) => cat.id === localItem.category)?.name || localItem.category}
@@ -1071,6 +1167,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* 左侧：海报区域 */}
             <div className="md:col-span-1">
+              {/* 海报区域 */}
               <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full">
                 {localItem.posterUrl ? (
                   <img 
@@ -1086,265 +1183,216 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 )}
               </div>
               
-              {/* 基本信息 - 移动到海报下方并对齐海报宽度 */}
+              {/* 用媒体评分与笔记功能区替换基本信息区域 */}
               <div className="mt-2 w-full rounded-md backdrop-blur-md bg-background/30 p-3">
-                <div className="pb-1 mb-2">
-                  <h3 className="text-sm font-medium flex items-center">
-                    <Info className="h-3.5 w-3.5 mr-1.5" />
-                    基本信息
-                  </h3>
-                </div>
-                <div className="space-y-1.5 text-sm">
-                  {editing ? (
-                    // 编辑模式下的表单
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <Label htmlFor="edit-title">标题</Label>
-                        <Input 
-                          id="edit-title" 
-                          value={editData.title} 
-                          onChange={(e) => setEditData({...editData, title: e.target.value})}
-                        />
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <Label htmlFor="edit-category">分类</Label>
-                        <Select 
-                          value={editData.category || ""} 
-                          onValueChange={(value) => setEditData({...editData, category: value as CategoryType})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择分类" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {CATEGORIES.map(cat => (
-                              <SelectItem key={cat.id} value={cat.id}>
-                                <div className="flex items-center">
-                                  {cat.icon}
-                                  {cat.name}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <Label htmlFor="edit-weekday">更新时间</Label>
-                        <div className="flex gap-2">
-                          <Select 
-                            value={(editData.weekday === 0 ? 6 : editData.weekday - 1).toString()} 
-                            onValueChange={(value) => setEditData({...editData, weekday: getOriginalWeekday(parseInt(value))})}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="选择星期" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {WEEKDAYS.map((day, index) => (
-                                <SelectItem key={index} value={index.toString()}>
-                                  {day}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          
-                          <Input 
-                            id="edit-airtime"
-                            placeholder="时间 (如 20:00)"
-                            value={editData.airTime || ""}
-                            onChange={(e) => setEditData({...editData, airTime: e.target.value})}
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* 添加第二播出日设置 */}
-                      <div className="space-y-1">
-                        <Label htmlFor="edit-second-weekday" className="flex items-center">
-                          <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                          第二播出日 (可选)
-                        </Label>
-                        <div className="flex gap-2">
-                          <Select 
-                            value={editData.secondWeekday !== undefined ? 
-                              (editData.secondWeekday === 0 ? 6 : editData.secondWeekday - 1).toString() : 
-                              "none"}
-                            onValueChange={(value) => 
-                              setEditData({
-                                ...editData, 
-                                secondWeekday: value === "none" ? undefined : getOriginalWeekday(parseInt(value))
-                              })
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="选择星期" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">无</SelectItem>
-                              {WEEKDAYS.map((day, index) => (
-                                <SelectItem key={index} value={index.toString()}>
-                                  {day}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      
-                      {/* 添加播出平台地址字段 */}
-                      <div className="space-y-1">
-                        <Label htmlFor="edit-platform-url" className="flex items-center">
-                          <Link className="h-3.5 w-3.5 mr-1.5" />
-                          播出平台地址
-                        </Label>
-                        <Input 
-                          id="edit-platform-url"
-                          placeholder="https://example.com/show-page"
-                          value={editData.platformUrl || ""}
-                          onChange={(e) => setEditData({...editData, platformUrl: e.target.value})}
-                          className="w-full font-mono text-xs"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          用于TMDB导入工具抓取元数据
-                        </p>
-                      </div>
-                      
-                      {/* 添加每日更新选项 - 移除分类限制，允许所有分类设置 */}
-                      <div className="space-y-1 mt-2">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="edit-daily-update"
-                            checked={editData.isDailyUpdate === true}
-                            onCheckedChange={(checked) => 
-                              setEditData({...editData, isDailyUpdate: checked === true})
-                            }
-                          />
-                          <Label 
-                            htmlFor="edit-daily-update"
-                            className="text-sm flex items-center cursor-pointer"
-                          >
-                            <Zap className="h-3 w-3 mr-1 animate-pulse" />
-                            设为每日更新
-                          </Label>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          选中后，卡片上将显示"每日更新"而不是星期几
-                        </p>
-                      </div>
-                      
-                        {/* 添加背景图URL编辑字段 */}
-                        <div className="space-y-1">
-                          <Label htmlFor="edit-backdrop" className="flex items-center">
-                            <ImageIcon className="h-3.5 w-3.5 mr-1.5" />
-                            背景图URL
-                          </Label>
-                          <Input 
-                            id="edit-backdrop" 
-                            value={editData.backdropUrl || ""} 
-                            onChange={(e) => setEditData({...editData, backdropUrl: e.target.value})}
-                            placeholder="https://..."
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            可以手动输入背景图URL或从TMDB自动获取
-                          </p>
-                        </div>
-                        
-                        {/* 添加毛玻璃效果强度设置 */}
-                        <div className="space-y-1">
-                          <Label htmlFor="edit-blur-intensity" className="flex items-center">
-                            <Settings className="h-3.5 w-3.5 mr-1.5" />
-                            毛玻璃效果强度
-                          </Label>
-                          <Select 
-                            value={editData.blurIntensity || "medium"} 
-                            onValueChange={(value) => setEditData({...editData, blurIntensity: value as 'light' | 'medium' | 'heavy'})}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="选择强度" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="light">轻度模糊</SelectItem>
-                              <SelectItem value="medium">中度模糊（默认）</SelectItem>
-                              <SelectItem value="heavy">重度模糊</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-muted-foreground">
-                            设置背景图模糊效果的强度
-                          </p>
-                        </div>
+                {editing ? (
+                  // 编辑模式下保留原有编辑表单（仅显示部分关键字段）
+                  <div className="space-y-3">
+                    <div className="pb-1 mb-2">
+                      <h3 className="text-sm font-medium flex items-center">
+                        <Edit className="h-3.5 w-3.5 mr-1.5" />
+                        快速编辑
+                      </h3>
                     </div>
-                  ) : (
-                      // 查看模式下的信息展示
-                    <>
-                        <div className="flex justify-between py-0.5">
-                          <span className="text-muted-foreground">标题:</span>
-                          <span>{localItem.title}</span>
+                    
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-title">标题</Label>
+                      <Input 
+                        id="edit-title" 
+                        value={editData.title} 
+                        onChange={(e) => setEditData({...editData, title: e.target.value})}
+                      />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-category">分类</Label>
+                      <Select 
+                        value={editData.category || ""} 
+                        onValueChange={(value) => setEditData({...editData, category: value as CategoryType})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="选择分类" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map(cat => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              <div className="flex items-center">
+                                {cat.icon}
+                                {cat.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="edit-daily-update" className="flex items-center cursor-pointer">
+                          <Zap className="h-3.5 w-3.5 mr-1.5" />
+                          每日更新
+                        </Label>
+                        <Checkbox 
+                          id="edit-daily-update"
+                          checked={editData.isDailyUpdate === true}
+                          onCheckedChange={(checked) => 
+                            setEditData({...editData, isDailyUpdate: checked === true})
+                          }
+                        />
                       </div>
-                        {localItem.originalTitle && (
-                          <div className="flex justify-between py-0.5">
-                            <span className="text-muted-foreground">原标题:</span>
-                            <span>{localItem.originalTitle}</span>
-                        </div>
-                      )}
-                        {localItem.mediaType && (
-                          <div className="flex justify-between py-0.5">
-                            <span className="text-muted-foreground">类型:</span>
-                            <span>{localItem.mediaType === "movie" ? "电影" : "电视剧"}</span>
-                        </div>
-                      )}
-                      {localItem.platformUrl && (
-                        <div className="flex justify-between py-0.5 text-xs">
-                          <span className="text-muted-foreground">播出平台:</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-5 px-2 py-0 text-xs text-blue-500"
-                            title="访问播出平台"
-                            onClick={() => window.open(localItem.platformUrl, '_blank')}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-status">状态</Label>
+                      <Select 
+                        value={editData.status || "ongoing"} 
+                        onValueChange={(value) => setEditData({...editData, status: value as "ongoing" | "completed"})}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="选择状态" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ongoing">连载中</SelectItem>
+                          <SelectItem value="completed">已完结</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ) : (
+                  // 查看模式下显示新的功能区
+                  <div className="space-y-3">
+                    {/* TMDB评分区域 */}
+                    <div className="pb-1 mb-2">
+                      <h3 className="text-sm font-medium flex items-center">
+                        <Star className="h-3.5 w-3.5 mr-1.5" />
+                        TMDB评分
+                      </h3>
+                    </div>
+                    <div className="flex items-center justify-between mb-3">
+                      {/* 环形进度条评分 */}
+                      <div className="relative w-16 h-16">
+                        <svg className="w-full h-full" viewBox="0 0 36 36">
+                          {/* 背景圆环 */}
+                          <circle 
+                            cx="18" 
+                            cy="18" 
+                            r="15.9" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="1.5" 
+                            className="text-muted-foreground/20"
+                          />
+                          
+                          {/* 进度圆环 - 使用strokeDasharray和strokeDashoffset实现部分填充效果 */}
+                          {localItem.voteAverage ? (
+                            <circle 
+                              cx="18" 
+                              cy="18" 
+                              r="15.9" 
+                              fill="none" 
+                              stroke={`url(#rating-gradient-${localItem.id})`} 
+                              strokeWidth="2.5" 
+                              strokeLinecap="round"
+                              strokeDasharray="100"
+                              strokeDashoffset={100 - ((localItem.voteAverage / 10) * 100)}
+                              transform="rotate(-90 18 18)"
+                              className="drop-shadow-md transition-all duration-1000 ease-in-out"
+                            />
+                          ) : (
+                            <circle 
+                              cx="18" 
+                              cy="18" 
+                              r="15.9" 
+                              fill="none" 
+                              stroke="currentColor"
+                              strokeWidth="2.5" 
+                              strokeLinecap="round"
+                              strokeDasharray="100"
+                              strokeDashoffset="100"
+                              transform="rotate(-90 18 18)"
+                              className="text-muted-foreground/30"
+                            />
+                          )}
+                          
+                          {/* 评分渐变色定义 */}
+                          <defs>
+                            <linearGradient id={`rating-gradient-${localItem.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#f97316" /> {/* 橙色起始 */}
+                              <stop offset="50%" stopColor="#facc15" /> {/* 黄色中间 */}
+                              <stop offset="100%" stopColor="#22c55e" /> {/* 绿色结束 */}
+                            </linearGradient>
+                          </defs>
+                          
+                          {/* 中心评分文本 */}
+                          <text 
+                            x="18" 
+                            y="18" 
+                            dominantBaseline="middle" 
+                            textAnchor="middle" 
+                            className="fill-current text-lg font-bold"
                           >
-                            <ExternalLink className="h-2.5 w-2.5 mr-1 flex-shrink-0" />
-                            访问
-                          </Button>
+                            {localItem.voteAverage ? localItem.voteAverage.toFixed(1) : "-"}
+                          </text>
+                          <text 
+                            x="18" 
+                            y="24" 
+                            dominantBaseline="middle" 
+                            textAnchor="middle" 
+                            className="fill-current text-[10px] font-medium text-muted-foreground"
+                          >
+                            / 10
+                          </text>
+                        </svg>
+                      </div>
+                      
+                      {/* 评分说明 */}
+                      <div className="ml-4 flex-1">
+                        <div className="text-sm">
+                          {localItem.voteAverage ? (
+                            <>
+                              <p className="font-medium flex items-center">
+                                <span 
+                                  className={`inline-block w-2 h-2 rounded-full mr-1.5 ${
+                                    localItem.voteAverage >= 8 ? "bg-green-500" : 
+                                    localItem.voteAverage >= 6 ? "bg-yellow-500" : 
+                                    localItem.voteAverage >= 4 ? "bg-orange-500" : "bg-red-500"
+                                  }`}
+                                />
+                                {localItem.voteAverage >= 8 ? "优秀" : 
+                                 localItem.voteAverage >= 6 ? "良好" : 
+                                 localItem.voteAverage >= 4 ? "一般" : "较差"}
+                              </p>
+                              <div className="flex items-center mt-1.5 text-xs text-muted-foreground">
+                                <Activity className="h-3 w-3 mr-1" />
+                                <span>基于TMDB用户评分</span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col h-full justify-center">
+                              <span className="text-muted-foreground text-xs italic">暂无评分数据</span>
+                              <span className="text-xs text-muted-foreground/70 mt-1">刷新TMDB数据可获取评分和标志</span>
+                            </div>
+                          )}
                         </div>
+                      </div>
+                    </div>
+                    
+                    {/* TMDB简介区域 */}
+                    <div className="pb-1 mb-2">
+                      <h3 className="text-sm font-medium flex items-center">
+                        <Info className="h-3.5 w-3.5 mr-1.5" />
+                        简介
+                      </h3>
+                    </div>
+                    <div className="bg-background/20 rounded p-2 max-h-[120px] overflow-y-auto text-sm">
+                      {localItem.overview ? (
+                        <p className="text-sm">{localItem.overview}</p>
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">暂无简介信息</span>
                       )}
-                      {localItem.tmdbId && (
-                        <div className="flex justify-between py-0.5 text-xs">
-                          <span className="text-muted-foreground">TMDB ID:</span>
-                          <span>{localItem.tmdbId}</span>
-                        </div>
-                      )}
-                        
-                        {/* 添加毛玻璃效果信息 */}
-                        {localItem.blurIntensity && (
-                          <div className="flex justify-between py-0.5 text-xs">
-                            <span className="text-muted-foreground">背景模糊强度:</span>
-                            <span>
-                              {localItem.blurIntensity === 'light' && '轻度模糊'}
-                              {localItem.blurIntensity === 'medium' && '中度模糊'}
-                              {localItem.blurIntensity === 'heavy' && '重度模糊'}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {/* 添加背景图信息 */}
-                        {localItem.backdropUrl && (
-                        <div className="flex justify-between py-0.5 text-xs">
-                            <span className="text-muted-foreground">背景图:</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 px-2 py-0 text-xs text-blue-500"
-                              title="查看背景图"
-                              onClick={() => window.open(localItem.backdropUrl, '_blank')}
-                            >
-                              <ImageIcon className="h-2.5 w-2.5 mr-1 flex-shrink-0" />
-                              查看
-                            </Button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -1425,7 +1473,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                   size="sm"
                                   onClick={refreshSeasonFromTMDB}
                                   disabled={isRefreshingTMDBData || !editData.tmdbId}
-                                  title="刷新TMDB数据和背景图"
+                                  title="刷新TMDB数据、背景图、标志、评分和简介"
                                   className="w-full"
                                 >
                                   {isRefreshingTMDBData ? (
@@ -1433,7 +1481,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                   ) : (
                                     <RefreshCw className="h-4 w-4 mr-2" />
                                   )}
-                                  刷新TMDB数据和背景图
+                                  刷新TMDB数据、标志、评分和简介
                                 </Button>
                               </div>
                             </CardContent>
@@ -1523,14 +1571,15 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     size="sm"
                                     onClick={refreshSeasonFromTMDB}
                                     disabled={isRefreshingTMDBData || !editData.tmdbId}
-                                    title="刷新TMDB数据和背景图"
+                                    title="刷新TMDB数据、背景图、标志、评分和简介"
+                                    className="w-full"
                                   >
                                     {isRefreshingTMDBData ? (
                                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                     ) : (
                                       <RefreshCw className="h-4 w-4 mr-2" />
                                     )}
-                                    刷新TMDB
+                                    刷新TMDB数据、标志、评分和简介
                                   </Button>
                                 </div>
                               </CardContent>

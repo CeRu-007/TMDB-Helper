@@ -6,9 +6,44 @@ interface TMDBMovieResponse {
   homepage: string | null
   runtime: number | null
   release_date: string | null
+  vote_average: number | null
+  overview: string | null
   genres: Array<{
     id: number
     name: string
+  }>
+}
+
+// 添加获取电影图片的响应接口
+interface TMDBMovieImagesResponse {
+  id: number
+  backdrops: Array<{
+    aspect_ratio: number
+    height: number
+    iso_639_1: string | null
+    file_path: string
+    vote_average: number
+    vote_count: number
+    width: number
+  }>
+  logos: Array<{
+    aspect_ratio: number
+    height: number
+    iso_639_1: string | null
+    file_path: string
+    file_type: string
+    vote_average: number
+    vote_count: number
+    width: number
+  }>
+  posters: Array<{
+    aspect_ratio: number
+    height: number
+    iso_639_1: string | null
+    file_path: string
+    vote_average: number
+    vote_count: number
+    width: number
   }>
 }
 
@@ -21,6 +56,8 @@ interface TMDBTVResponse {
   number_of_episodes: number | null
   number_of_seasons: number | null
   first_air_date: string | null
+  vote_average: number | null
+  overview: string | null
   seasons: Array<{
     season_number: number
     name: string
@@ -37,6 +74,39 @@ interface TMDBTVResponse {
   }>
 }
 
+// 添加获取电视剧图片的响应接口
+interface TMDBTVImagesResponse {
+  id: number
+  backdrops: Array<{
+    aspect_ratio: number
+    height: number
+    iso_639_1: string | null
+    file_path: string
+    vote_average: number
+    vote_count: number
+    width: number
+  }>
+  logos: Array<{
+    aspect_ratio: number
+    height: number
+    iso_639_1: string | null
+    file_path: string
+    file_type: string
+    vote_average: number
+    vote_count: number
+    width: number
+  }>
+  posters: Array<{
+    aspect_ratio: number
+    height: number
+    iso_639_1: string | null
+    file_path: string
+    vote_average: number
+    vote_count: number
+    width: number
+  }>
+}
+
 export interface TMDBSeasonData {
   seasonNumber: number
   name: string
@@ -50,22 +120,29 @@ export interface TMDBItemData {
   mediaType: "movie" | "tv"
   posterUrl?: string
   backdropUrl?: string
-  backdropPath?: string | null  // 添加原始路径，方便后续处理
+  backdropPath?: string | null
+  logoUrl?: string  // 添加标志URL字段
+  logoPath?: string | null  // 添加标志路径字段
   totalEpisodes?: number
   platformUrl?: string
   weekday?: number
   seasons?: TMDBSeasonData[]
   recommendedCategory?: "anime" | "tv" | "kids" | "variety" | "short" | "movie"
+  voteAverage?: number | null
+  overview?: string | null
 }
 
 export type BackdropSize = 'w300' | 'w780' | 'w1280' | 'original';
+export type LogoSize = 'w45' | 'w92' | 'w154' | 'w185' | 'w300' | 'w500' | 'original';
 
 export class TMDBService {
   private static readonly BASE_URL = "https://api.themoviedb.org/3"
   private static readonly IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
   private static readonly BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
   private static readonly BACKDROP_ORIGINAL_URL = "https://image.tmdb.org/t/p/original"
+  private static readonly LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300"  // 添加标志基础URL
   private static readonly CACHE_PREFIX = "tmdb_backdrop_"
+  private static readonly LOGO_CACHE_PREFIX = "tmdb_logo_"  // 标志缓存前缀
   private static readonly CACHE_EXPIRY = 24 * 60 * 60 * 1000 // 24小时
 
   private static getApiKey(): string {
@@ -76,7 +153,91 @@ export class TMDBService {
     return apiKey
   }
 
-  static async getItemFromUrl(url: string): Promise<TMDBItemData | null> {
+  // 缓存标志路径
+  private static cacheLogoPath(mediaType: "movie" | "tv", id: string, logoPath: string): void {
+    try {
+      const cacheKey = `${this.LOGO_CACHE_PREFIX}${mediaType}_${id}`
+      const cacheData = {
+        path: logoPath,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData))
+    } catch (error) {
+      console.warn("缓存标志失败:", error)
+      // 缓存失败不影响主要功能，只是记录警告
+    }
+  }
+
+  // 获取缓存的标志路径
+  private static getCachedLogoPath(mediaType: "movie" | "tv", id: string): string | null {
+    try {
+      const cacheKey = `${this.LOGO_CACHE_PREFIX}${mediaType}_${id}`
+      const cachedData = localStorage.getItem(cacheKey)
+      
+      if (!cachedData) {
+        return null
+      }
+      
+      const { path, timestamp } = JSON.parse(cachedData)
+      
+      // 检查缓存是否过期
+      if (Date.now() - timestamp > this.CACHE_EXPIRY) {
+        localStorage.removeItem(cacheKey)
+        return null
+      }
+      
+      return path
+    } catch (error) {
+      console.warn("获取缓存标志失败:", error)
+      return null
+    }
+  }
+
+  // 添加获取标志的方法，增加forceRefresh参数
+  static async getItemLogoFromId(mediaType: "movie" | "tv", id: string, forceRefresh: boolean = false): Promise<string | null> {
+    try {
+      // 如果不是强制刷新，先尝试从缓存获取
+      if (!forceRefresh) {
+        const cachedLogoPath = this.getCachedLogoPath(mediaType, id)
+        if (cachedLogoPath) {
+          return `${this.LOGO_BASE_URL}${cachedLogoPath}`
+        }
+      }
+
+      const apiKey = this.getApiKey()
+      const endpoint = mediaType === "movie" ? "movie" : "tv"
+      const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}/images?api_key=${apiKey}`)
+
+      if (!response.ok) {
+        throw new Error("获取TMDB图片数据失败")
+      }
+
+      const data = mediaType === "movie" 
+        ? (await response.json() as TMDBMovieImagesResponse)
+        : (await response.json() as TMDBTVImagesResponse)
+
+      // 优先获取中文标志，其次是英文标志，最后才是其他语言的标志
+      const chineseLogo = data.logos.find(logo => logo.iso_639_1 === "zh" || logo.iso_639_1 === "zh-CN")
+      const englishLogo = data.logos.find(logo => logo.iso_639_1 === "en")
+      const nullLangLogo = data.logos.find(logo => logo.iso_639_1 === null) // 无语言标记的标志通常是通用的
+      const firstLogo = data.logos[0]
+      
+      const logoPath = chineseLogo?.file_path || englishLogo?.file_path || nullLangLogo?.file_path || firstLogo?.file_path || null
+      
+      if (logoPath) {
+        // 缓存标志路径
+        this.cacheLogoPath(mediaType, id, logoPath)
+        return `${this.LOGO_BASE_URL}${logoPath}`
+      }
+      
+      return null
+    } catch (error) {
+      console.error("获取TMDB标志失败:", error)
+      return null
+    }
+  }
+
+  static async getItemFromUrl(url: string, forceRefresh: boolean = false): Promise<TMDBItemData | null> {
     try {
       const { mediaType, id } = this.parseUrl(url)
       if (!mediaType || !id) {
@@ -97,6 +258,9 @@ export class TMDBService {
       let totalEpisodes = undefined
       let seasons: TMDBSeasonData[] = []
       let recommendedCategory: "anime" | "tv" | "kids" | "variety" | "short" | "movie" | undefined = undefined
+
+      // 获取标志，传入forceRefresh参数
+      const logoUrl = await this.getItemLogoFromId(mediaType, id, forceRefresh)
 
       if (mediaType === "movie") {
         const movieData = data as TMDBMovieResponse
@@ -152,9 +316,12 @@ export class TMDBService {
           posterUrl: movieData.poster_path ? `${this.IMAGE_BASE_URL}${movieData.poster_path}` : undefined,
           backdropUrl: movieData.backdrop_path ? `${this.BACKDROP_BASE_URL}${movieData.backdrop_path}` : undefined,
           backdropPath: movieData.backdrop_path,
+          logoUrl: logoUrl || undefined,  // 添加标志URL
           platformUrl,
           weekday,
-          recommendedCategory
+          recommendedCategory,
+          voteAverage: movieData.vote_average === null ? undefined : movieData.vote_average,
+          overview: movieData.overview === null ? undefined : movieData.overview
         }
       } else {
         const tvData = data as TMDBTVResponse
@@ -196,31 +363,33 @@ export class TMDBService {
           // 检查是否是动画
           isAnime = tvData.genres.some(genre => 
             genre.name.toLowerCase().includes('animation') || 
-            genre.name.toLowerCase().includes('动画') ||
-            genre.name.toLowerCase().includes('anime'));
+            genre.name.toLowerCase().includes('anime') || 
+            genre.name.toLowerCase().includes('动画'));
           
           // 检查是否是儿童节目
           isKids = tvData.genres.some(genre => 
             genre.name.toLowerCase().includes('family') || 
             genre.name.toLowerCase().includes('children') || 
+            genre.name.toLowerCase().includes('kids') || 
             genre.name.toLowerCase().includes('儿童') ||
             genre.name.toLowerCase().includes('家庭'));
           
-          // 检查是否是综艺/真人秀
+          // 检查是否是综艺节目
           isVariety = tvData.genres.some(genre => 
             genre.name.toLowerCase().includes('reality') || 
             genre.name.toLowerCase().includes('talk') || 
-            genre.name.toLowerCase().includes('真人秀') ||
-            genre.name.toLowerCase().includes('综艺'));
+            genre.name.toLowerCase().includes('variety') || 
+            genre.name.toLowerCase().includes('综艺') ||
+            genre.name.toLowerCase().includes('脱口秀'));
         }
         
         // 按照优先级确定分类
         if (isAnime) {
           recommendedCategory = "anime";
-        } else if (isVariety) {
-          recommendedCategory = "variety";
         } else if (isKids) {
           recommendedCategory = "kids";
+        } else if (isVariety) {
+          recommendedCategory = "variety";
         } else {
           // 默认为普通电视剧
           recommendedCategory = "tv";
@@ -238,16 +407,19 @@ export class TMDBService {
           posterUrl: tvData.poster_path ? `${this.IMAGE_BASE_URL}${tvData.poster_path}` : undefined,
           backdropUrl: tvData.backdrop_path ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}` : undefined,
           backdropPath: tvData.backdrop_path,
+          logoUrl: logoUrl || undefined,  // 添加标志URL
           totalEpisodes,
+          seasons,
           platformUrl,
           weekday,
-          seasons: seasons.length > 0 ? seasons : undefined,
-          recommendedCategory
+          recommendedCategory,
+          voteAverage: tvData.vote_average === null ? undefined : tvData.vote_average,
+          overview: tvData.overview === null ? undefined : tvData.overview
         }
       }
     } catch (error) {
-      console.error("TMDB API error:", error)
-      throw error
+      console.error("获取TMDB数据失败:", error)
+      return null
     }
   }
 
@@ -319,7 +491,7 @@ export class TMDBService {
   }
 
   // 获取不同尺寸的背景图URL
-  static getBackdropUrl(backdropPath: string | null | undefined, size: BackdropSize | 'small' | 'large' | 'original' = 'large'): string | undefined {
+  static getBackdropUrl(backdropPath: string | null | undefined, size: BackdropSize | 'small' | 'large' | 'original' = 'large', forceRefresh: boolean = false): string | undefined {
     if (!backdropPath) return undefined;
     
     // 处理旧的size枚举
@@ -338,6 +510,14 @@ export class TMDBService {
         sizeValue = size as BackdropSize;
     }
     
-    return `https://image.tmdb.org/t/p/${sizeValue}${backdropPath}`;
+    const baseUrl = `https://image.tmdb.org/t/p/${sizeValue}${backdropPath}`;
+    
+    // 如果强制刷新，添加时间戳参数
+    if (forceRefresh) {
+      const timestamp = Date.now();
+      return `${baseUrl}?t=${timestamp}`;
+    }
+    
+    return baseUrl;
   }
 }

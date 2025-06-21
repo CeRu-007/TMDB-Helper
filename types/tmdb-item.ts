@@ -32,6 +32,7 @@ export interface TMDBItem {
   notes?: string
   isDailyUpdate?: boolean
   blurIntensity?: 'light' | 'medium' | 'heavy'
+  rating?: number
 }
 
 export interface Episode {

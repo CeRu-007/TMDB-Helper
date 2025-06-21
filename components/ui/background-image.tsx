@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
+import { Loader2 } from "lucide-react"
 
 interface BackgroundImageProps {
   src: string | undefined
@@ -13,6 +14,8 @@ interface BackgroundImageProps {
   blur?: boolean
   blurIntensity?: 'light' | 'medium' | 'heavy'
   children?: React.ReactNode
+  forceRefresh?: boolean
+  refreshKey?: string | number
 }
 
 /**
@@ -27,14 +30,20 @@ export function BackgroundImage({
   objectPosition = "center 20%",
   blur = true,
   blurIntensity = 'medium',
-  children
+  children,
+  forceRefresh = false,
+  refreshKey
 }: BackgroundImageProps) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const [imageSrc, setImageSrc] = useState<string | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(true)
 
   // 根据设备屏幕宽度选择合适的图片尺寸
   useEffect(() => {
+    setIsLoading(true)
+    setLoaded(false)
+    
     if (!src) {
       setImageSrc(fallbackSrc)
       return
@@ -43,7 +52,15 @@ export function BackgroundImage({
     // 检查是否是TMDB图片URL
     if (src.includes('image.tmdb.org')) {
       const baseUrl = src.split('/w1280').shift() || 'https://image.tmdb.org/t/p'
-      const path = src.split('/w1280').pop()
+      let path = src.split('/w1280').pop() || ''
+      
+      // 如果强制刷新，添加时间戳参数
+      if (forceRefresh && !path.includes('?t=')) {
+        path = `${path}?t=${Date.now()}`
+      } else if (refreshKey && !path.includes('?t=')) {
+        // 使用refreshKey作为时间戳参数
+        path = `${path}?t=${refreshKey}`
+      }
       
       // 根据屏幕宽度选择合适的尺寸
       const width = window.innerWidth
@@ -59,15 +76,16 @@ export function BackgroundImage({
       
       setImageSrc(`${baseUrl}/${size}${path}`)
     } else {
-      setImageSrc(src)
+      // 如果强制刷新非TMDB图片，添加时间戳参数
+      if (forceRefresh && !src.includes('?t=')) {
+        setImageSrc(`${src}?t=${Date.now()}`)
+      } else if (refreshKey && !src.includes('?t=')) {
+        setImageSrc(`${src}?t=${refreshKey}`)
+      } else {
+        setImageSrc(src)
+      }
     }
-  }, [src, fallbackSrc])
-
-  // 重置状态
-  useEffect(() => {
-    setLoaded(false)
-    setError(false)
-  }, [imageSrc])
+  }, [src, fallbackSrc, forceRefresh, refreshKey])
 
   // 预加载低质量图片
   useEffect(() => {
@@ -78,6 +96,11 @@ export function BackgroundImage({
       const lowQualitySrc = imageSrc.replace(/w780|w1280|original/, 'w300')
       const lowQualityImg = new Image()
       lowQualityImg.src = lowQualitySrc
+      
+      // 低质量图片加载完成后，显示加载中状态
+      lowQualityImg.onload = () => {
+        setIsLoading(true)
+      }
     }
   }, [imageSrc])
 
@@ -106,9 +129,20 @@ export function BackgroundImage({
               loaded ? "opacity-100" : "opacity-0"
             )}
             style={{ objectPosition }}
-            onLoad={() => setLoaded(true)}
-            onError={() => setError(true)}
+            onLoad={() => {
+              setLoaded(true)
+              setIsLoading(false)
+            }}
+            onError={() => {
+              setError(true)
+              setIsLoading(false)
+            }}
           />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/30">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          )}
           <div 
             className={cn(
               "absolute inset-0",
