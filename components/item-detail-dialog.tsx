@@ -71,6 +71,7 @@ import {
   ArrowRightCircle,
   Bug,
   Calendar,
+  Image as ImageIcon,
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/storage"
 import { useMobile } from "@/hooks/use-mobile"
@@ -80,6 +81,7 @@ import { TMDBService, TMDBSeasonData } from "@/lib/tmdb"
 import FixTMDBImportBugDialog from "@/components/fix-tmdb-import-bug-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { StorageManager } from "@/lib/storage"
+import { BackgroundImage } from "@/components/ui/background-image"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -130,12 +132,17 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [tmdbCommands, setTmdbCommands] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState("episodes")
   const [detailTab, setDetailTab] = useState("details")
+  const [backdropLoaded, setBackdropLoaded] = useState(false)
+  const [backdropError, setBackdropError] = useState(false)
+  const [scrollPosition, setScrollPosition] = useState(0)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // 确保所有属性都被正确初始化，包括isDailyUpdate
+    // 确保所有属性都被正确初始化，包括isDailyUpdate和blurIntensity
     const initialEditData = {
       ...item,
-      isDailyUpdate: item.isDailyUpdate || false
+      isDailyUpdate: item.isDailyUpdate || false,
+      blurIntensity: item.blurIntensity || 'medium'
     }
     setEditData(initialEditData)
     setLocalItem(item)
@@ -187,6 +194,32 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       window.removeEventListener("keyup", handleKeyUp)
     }
   }, [])
+
+  // 重置背景图状态
+  useEffect(() => {
+    if (open) {
+      setBackdropLoaded(false)
+      setBackdropError(false)
+    }
+  }, [open, item.backdropUrl])
+
+  // 监听滚动事件，实现视差效果
+  useEffect(() => {
+    if (!open || !contentRef.current) return
+
+    const handleScroll = () => {
+      if (contentRef.current) {
+        setScrollPosition(contentRef.current.scrollTop)
+      }
+    }
+
+    const contentElement = contentRef.current
+    contentElement?.addEventListener('scroll', handleScroll)
+    
+    return () => {
+      contentElement?.removeEventListener('scroll', handleScroll)
+    }
+  }, [open, contentRef.current])
 
   const handleEpisodeToggle = (episodeNumber: number, completed: boolean, seasonNumber: number) => {
     // 添加视觉反馈
@@ -505,8 +538,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       updatedAt: new Date().toISOString(),
       // 设置手动集数标记
       manuallySetEpisodes: editData.mediaType === "tv" && editData.totalEpisodes !== item.totalEpisodes,
-      // 确保每日更新设置被保存
-      isDailyUpdate: editData.isDailyUpdate
+      // 确保每日更新设置和毛玻璃效果强度被保存
+      isDailyUpdate: editData.isDailyUpdate,
+      blurIntensity: editData.blurIntensity || 'medium'
     }
     onUpdate(updatedItem)
     setEditing(false)
@@ -757,8 +791,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
   // 添加从TMDB刷新季数据的函数
   const refreshSeasonFromTMDB = async () => {
-    if (!editData.tmdbId || editData.mediaType !== "tv") {
-      setRefreshError("只有电视剧类型的词条可以刷新TMDB数据");
+    if (!editData.tmdbId) {
+      setRefreshError("该词条没有关联TMDB ID");
       return;
     }
     
@@ -767,74 +801,120 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     
     try {
       // 构建TMDB URL
-      const tmdbUrl = `https://www.themoviedb.org/tv/${editData.tmdbId}`;
+      const tmdbUrl = `https://www.themoviedb.org/${editData.mediaType}/${editData.tmdbId}`;
       
       // 使用TMDBService获取最新数据
       const tmdbData = await TMDBService.getItemFromUrl(tmdbUrl);
       
-      if (!tmdbData || !tmdbData.seasons) {
-        throw new Error("未能从TMDB获取到有效的季数据");
+      if (!tmdbData) {
+        throw new Error("未能从TMDB获取到有效数据");
       }
       
-      // 将TMDB的季数数据与现有数据合并
-      const updatedSeasons = tmdbData.seasons.map((newSeason: TMDBSeasonData) => {
-        // 查找是否有匹配的现有季数据
-        const existingSeason = editData.seasons?.find(
-          s => s.seasonNumber === newSeason.seasonNumber
+      // 更新背景图
+      let updatedData = { ...editData };
+      
+      // 如果有背景图数据，更新背景图URL
+      if (tmdbData.backdropUrl) {
+        updatedData = {
+          ...updatedData,
+          backdropUrl: tmdbData.backdropUrl,
+          backdropPath: tmdbData.backdropPath || undefined
+        };
+      }
+      
+      // 对于电视剧，更新季数据
+      if (editData.mediaType === "tv" && tmdbData.seasons) {
+        // 将TMDB的季数数据与现有数据合并
+        const updatedSeasons = tmdbData.seasons.map((newSeason: TMDBSeasonData) => {
+          // 查找是否有匹配的现有季数据
+          const existingSeason = editData.seasons?.find(
+            s => s.seasonNumber === newSeason.seasonNumber
+          );
+          
+          if (existingSeason) {
+            // 如果存在，保留完成状态，更新总集数
+            return {
+              ...existingSeason,
+              totalEpisodes: newSeason.totalEpisodes,
+              // 确保episodes数组长度匹配新的totalEpisodes
+              episodes: Array.from({ length: newSeason.totalEpisodes }, (_, i) => {
+                const episodeNumber = i + 1;
+                // 查找现有的集数据
+                const existingEpisode = existingSeason.episodes.find(ep => ep.number === episodeNumber);
+                // 如果存在返回现有数据，否则创建新的
+                return existingEpisode || {
+                  number: episodeNumber,
+                  completed: false,
+                  seasonNumber: newSeason.seasonNumber
+                };
+              })
+            };
+          } else {
+            // 如果是新季，创建新的季数据
+            return {
+              seasonNumber: newSeason.seasonNumber,
+              name: newSeason.name,
+              totalEpisodes: newSeason.totalEpisodes,
+              episodes: Array.from({ length: newSeason.totalEpisodes }, (_, i) => ({
+                number: i + 1,
+                completed: false,
+                seasonNumber: newSeason.seasonNumber
+              }))
+            };
+          }
+        });
+        
+        // 更新扁平化的episodes数组
+        const allEpisodes = updatedSeasons.flatMap((season: Season) => 
+          season.episodes.map((ep: Episode) => ({
+            ...ep,
+            seasonNumber: season.seasonNumber
+          }))
         );
         
-        if (existingSeason) {
-          // 如果存在，保留完成状态，更新总集数
-          return {
-            ...existingSeason,
-            totalEpisodes: newSeason.totalEpisodes,
-            // 确保episodes数组长度匹配新的totalEpisodes
-            episodes: Array.from({ length: newSeason.totalEpisodes }, (_, i) => {
-              const episodeNumber = i + 1;
-              // 查找现有的集数据
-              const existingEpisode = existingSeason.episodes.find(ep => ep.number === episodeNumber);
-              // 如果存在返回现有数据，否则创建新的
-              return existingEpisode || {
-                number: episodeNumber,
-                completed: false
-              };
-            })
-          };
+        // 更新总集数
+        const newTotalEpisodes = allEpisodes.length;
+        
+        // 更新editData状态
+        updatedData = {
+          ...updatedData,
+          seasons: updatedSeasons,
+          episodes: allEpisodes,
+          totalEpisodes: newTotalEpisodes
+        };
+      }
+      
+      // 更新状态
+      setEditData(updatedData);
+      
+      // 将更新的数据应用到localItem，使背景图立即生效
+      if (tmdbData.backdropUrl && tmdbData.backdropUrl !== localItem.backdropUrl) {
+        const newLocalItem = {
+          ...localItem,
+          backdropUrl: tmdbData.backdropUrl,
+          backdropPath: tmdbData.backdropPath || undefined
+        };
+        setLocalItem(newLocalItem);
+        
+        // 通知父组件更新
+        onUpdate(newLocalItem);
+        
+        // 重置背景图状态，使其重新加载
+        setBackdropLoaded(false);
+        setBackdropError(false);
+      }
+      
+      // 如果背景图被更新，显示相应的成功信息
+      if (updatedData.backdropUrl !== editData.backdropUrl) {
+        if (editData.mediaType === "tv") {
+          setCopyFeedback("TMDB数据和背景图已成功刷新");
         } else {
-          // 如果是新季，创建新的季数据
-          return {
-            seasonNumber: newSeason.seasonNumber,
-            name: newSeason.name,
-            totalEpisodes: newSeason.totalEpisodes,
-            episodes: Array.from({ length: newSeason.totalEpisodes }, (_, i) => ({
-              number: i + 1,
-              completed: false
-            }))
-          };
+          setCopyFeedback("TMDB背景图已成功刷新");
         }
-      });
+      } else {
+        setCopyFeedback(editData.mediaType === "tv" ? "TMDB季数据已成功刷新" : "TMDB数据已成功刷新");
+      }
       
-      // 更新扁平化的episodes数组
-      const allEpisodes = updatedSeasons.flatMap((season: Season) => 
-        season.episodes.map((ep: Episode) => ({
-          ...ep,
-          seasonNumber: season.seasonNumber
-        }))
-      );
-      
-      // 更新总集数
-      const newTotalEpisodes = allEpisodes.length;
-      
-      // 更新editData状态
-      setEditData(prev => ({
-        ...prev,
-        seasons: updatedSeasons,
-        episodes: allEpisodes,
-        totalEpisodes: newTotalEpisodes
-      }));
-      
-      // 设置成功提示
-      setCopyFeedback("TMDB季数据已成功刷新");
       setTimeout(() => setCopyFeedback(null), 2000);
       
     } catch (error) {
@@ -876,7 +956,20 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none" ref={contentRef}>
+          {/* 使用新的BackgroundImage组件替换原来的背景图实现 */}
+          <BackgroundImage 
+            src={item.backdropUrl} 
+            alt={item.title + " 背景图"}
+            className="absolute inset-0 z-0"
+            objectPosition={`center ${20 + scrollPosition * 0.05}%`} // 添加视差滚动效果
+            blur={true}
+            blurIntensity={localItem.blurIntensity || 'medium'}
+            overlayClassName="bg-gradient-to-b from-background/30 via-background/25 to-background/35"
+          />
+          
+          {/* 内容层 - 添加相对定位和z-index确保内容在背景图上方 */}
+          <div className="relative z-10 h-full overflow-auto">
           <DialogHeader className="p-6 pb-2 flex flex-row items-start justify-between">
             <div className="flex-1 pr-4">
               <DialogTitle className="text-xl flex items-center">
@@ -978,7 +1071,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* 左侧：海报区域 */}
             <div className="md:col-span-1">
-              <div className="border rounded-md overflow-hidden aspect-[2/3] bg-muted flex items-center justify-center w-full">
+              <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full">
                 {localItem.posterUrl ? (
                   <img 
                     src={localItem.posterUrl} 
@@ -994,8 +1087,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               </div>
               
               {/* 基本信息 - 移动到海报下方并对齐海报宽度 */}
-              <div className="mt-2 w-full">
-                <div className="border-b pb-1 mb-2">
+              <div className="mt-2 w-full rounded-md backdrop-blur-md bg-background/30 p-3">
+                <div className="pb-1 mb-2">
                   <h3 className="text-sm font-medium flex items-center">
                     <Info className="h-3.5 w-3.5 mr-1.5" />
                     基本信息
@@ -1139,70 +1232,64 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         </p>
                       </div>
                       
-                      {editData.mediaType === "tv" && (
+                        {/* 添加背景图URL编辑字段 */}
                         <div className="space-y-1">
-                          <Label htmlFor="edit-tmdbid">TMDB ID</Label>
+                          <Label htmlFor="edit-backdrop" className="flex items-center">
+                            <ImageIcon className="h-3.5 w-3.5 mr-1.5" />
+                            背景图URL
+                          </Label>
                           <Input 
-                            id="edit-tmdbid"
-                            value={editData.tmdbId}
-                            onChange={(e) => setEditData({...editData, tmdbId: e.target.value})}
+                            id="edit-backdrop" 
+                            value={editData.backdropUrl || ""} 
+                            onChange={(e) => setEditData({...editData, backdropUrl: e.target.value})}
+                            placeholder="https://..."
                           />
+                          <p className="text-xs text-muted-foreground">
+                            可以手动输入背景图URL或从TMDB自动获取
+                          </p>
                         </div>
-                      )}
-                      
-                      <div className="space-y-1">
-                        <Label htmlFor="edit-status">状态</Label>
-                        <Select 
-                          value={editData.status} 
-                          onValueChange={(value: "ongoing" | "completed") => 
-                            setEditData({
-                              ...editData, 
-                              status: value,
-                              completed: value === "completed"
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择状态" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="ongoing">连载中</SelectItem>
-                            <SelectItem value="completed">已完结</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {/* 笔记编辑功能已移除 */}
+                        
+                        {/* 添加毛玻璃效果强度设置 */}
+                        <div className="space-y-1">
+                          <Label htmlFor="edit-blur-intensity" className="flex items-center">
+                            <Settings className="h-3.5 w-3.5 mr-1.5" />
+                            毛玻璃效果强度
+                          </Label>
+                          <Select 
+                            value={editData.blurIntensity || "medium"} 
+                            onValueChange={(value) => setEditData({...editData, blurIntensity: value as 'light' | 'medium' | 'heavy'})}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="选择强度" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="light">轻度模糊</SelectItem>
+                              <SelectItem value="medium">中度模糊（默认）</SelectItem>
+                              <SelectItem value="heavy">重度模糊</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            设置背景图模糊效果的强度
+                          </p>
+                        </div>
                     </div>
                   ) : (
-                    // 查看模式下的信息显示
+                      // 查看模式下的信息展示
                     <>
-                      <div className="flex justify-between py-0.5 text-xs">
-                        <span className="text-muted-foreground">类型:</span>
-                        <span>{localItem.mediaType === "movie" ? "电影" : "剧集"}</span>
+                        <div className="flex justify-between py-0.5">
+                          <span className="text-muted-foreground">标题:</span>
+                          <span>{localItem.title}</span>
                       </div>
-                      <div className="flex justify-between py-0.5 text-xs">
-                        <span className="text-muted-foreground">分类:</span>
-                        <span>{CATEGORIES.find((cat) => cat.id === localItem.category)?.name || localItem.category || "未分类"}</span>
-                      </div>
-                      <div className="flex justify-between py-0.5 text-xs">
-                        <span className="text-muted-foreground">更新时间:</span>
-                        <span>{getAirTime(localItem.weekday)}</span>
-                      </div>
-                      {/* 添加第二播出日显示 */}
-                      {typeof localItem.secondWeekday === 'number' && localItem.secondWeekday >= 0 && (
-                        <div className="flex justify-between py-0.5 text-xs">
-                          <span className="text-muted-foreground">第二播出日:</span>
-                          <span>{getAirTime(localItem.secondWeekday)}</span>
+                        {localItem.originalTitle && (
+                          <div className="flex justify-between py-0.5">
+                            <span className="text-muted-foreground">原标题:</span>
+                            <span>{localItem.originalTitle}</span>
                         </div>
                       )}
-                      {isDailyUpdate && (
-                        <div className="flex justify-between py-0.5 text-xs">
-                          <span className="text-muted-foreground">更新频率:</span>
-                          <span className="flex items-center text-blue-500 font-medium">
-                            <Zap className="h-2.5 w-2.5 mr-0.5 animate-pulse" />
-                            每日更新
-                          </span>
+                        {localItem.mediaType && (
+                          <div className="flex justify-between py-0.5">
+                            <span className="text-muted-foreground">类型:</span>
+                            <span>{localItem.mediaType === "movie" ? "电影" : "电视剧"}</span>
                         </div>
                       )}
                       {localItem.platformUrl && (
@@ -1226,32 +1313,33 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           <span>{localItem.tmdbId}</span>
                         </div>
                       )}
-                      {localItem.mediaType === "tv" && (
-                        <div className="flex justify-between py-0.5 text-xs">
-                          <span className="text-muted-foreground">总集数:</span>
-                          <span className="flex items-center">
-                            {localItem.totalEpisodes || "未知"}
-                            {localItem.manuallySetEpisodes && (
-                              <Badge variant="outline" className="ml-1 px-1 h-4 bg-yellow-50 text-yellow-800 border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800">
-                                <Pencil className="h-2 w-2 mr-0.5" />
-                                手动
-                              </Badge>
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {localItem.mediaType === "tv" && progress.total > 0 && (
-                        <div className="space-y-1 mt-1">
+                        
+                        {/* 添加毛玻璃效果信息 */}
+                        {localItem.blurIntensity && (
                           <div className="flex justify-between py-0.5 text-xs">
-                            <span className="text-muted-foreground">观看进度:</span>
-                            <span>{progress.completed}/{progress.total} ({progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0}%)</span>
+                            <span className="text-muted-foreground">背景模糊强度:</span>
+                            <span>
+                              {localItem.blurIntensity === 'light' && '轻度模糊'}
+                              {localItem.blurIntensity === 'medium' && '中度模糊'}
+                              {localItem.blurIntensity === 'heavy' && '重度模糊'}
+                            </span>
                           </div>
-                          <div className="relative w-full h-1.5 bg-blue-100 rounded-full overflow-hidden">
-                            <div 
-                              className="absolute top-0 left-0 h-full bg-blue-500 rounded-full" 
-                              style={{ width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%` }}
-                            ></div>
-                          </div>
+                        )}
+                        
+                        {/* 添加背景图信息 */}
+                        {localItem.backdropUrl && (
+                        <div className="flex justify-between py-0.5 text-xs">
+                            <span className="text-muted-foreground">背景图:</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-2 py-0 text-xs text-blue-500"
+                              title="查看背景图"
+                              onClick={() => window.open(localItem.backdropUrl, '_blank')}
+                            >
+                              <ImageIcon className="h-2.5 w-2.5 mr-1 flex-shrink-0" />
+                              查看
+                            </Button>
                         </div>
                       )}
                     </>
@@ -1293,38 +1381,69 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                     <div className="space-y-6 pr-2">
                       {/* 剧集内容 */}
                       {localItem.mediaType === "movie" ? (
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-base flex items-center">
-                              <Clapperboard className="h-4 w-4 mr-2" />
-                              观看状态
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <Button
-                              variant={localItem.completed ? "default" : "outline"}
-                              className="w-full"
-                              onClick={() => handleMovieToggle(!localItem.completed)}
-                            >
-                              {localItem.completed ? (
-                                <>
-                                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                                  已观看
-                                </>
-                              ) : (
-                                <>
-                                  <PlayCircle className="mr-2 h-4 w-4" />
-                                  标记为已观看
-                                </>
-                              )}
-                            </Button>
-                          </CardContent>
-                        </Card>
+                        <>
+                          <Card variant="frosted">
+                            <CardHeader>
+                              <CardTitle className="text-base flex items-center">
+                                <Clapperboard className="h-4 w-4 mr-2" />
+                                观看状态
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <Button
+                                variant={localItem.completed ? "default" : "outline"}
+                                className="w-full"
+                                onClick={() => handleMovieToggle(!localItem.completed)}
+                              >
+                                {localItem.completed ? (
+                                  <>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    已观看
+                                  </>
+                                ) : (
+                                  <>
+                                    <PlayCircle className="mr-2 h-4 w-4" />
+                                    标记为已观看
+                                  </>
+                                )}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                          
+                          {/* 为电影添加TMDB刷新按钮 */}
+                          <Card variant="frosted">
+                            <CardHeader>
+                              <CardTitle className="text-base flex items-center">
+                                <Settings className="h-4 w-4 mr-2" />
+                                TMDB数据
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Button 
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={refreshSeasonFromTMDB}
+                                  disabled={isRefreshingTMDBData || !editData.tmdbId}
+                                  title="刷新TMDB数据和背景图"
+                                  className="w-full"
+                                >
+                                  {isRefreshingTMDBData ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                  )}
+                                  刷新TMDB数据和背景图
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </>
                       ) : (
                         <>
                           {/* 季数选择器 */}
                           {localItem.seasons && localItem.seasons.length > 0 && (
-                            <Card>
+                            <Card variant="frosted">
                               <CardHeader className="pb-2">
                                 <CardTitle className="text-base flex items-center">
                                   <Tv className="h-4 w-4 mr-2" />
@@ -1355,7 +1474,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           
                           {/* 季数操作 */}
                           {selectedSeason !== undefined && (
-                            <Card>
+                            <Card variant="frosted">
                               <CardHeader className="pb-2">
                                 <CardTitle className="text-base flex items-center">
                                   <Settings className="h-4 w-4 mr-2" />
@@ -1403,8 +1522,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     variant="outline"
                                     size="sm"
                                     onClick={refreshSeasonFromTMDB}
-                                    disabled={isRefreshingTMDBData}
-                                    title="刷新TMDB数据"
+                                    disabled={isRefreshingTMDBData || !editData.tmdbId}
+                                    title="刷新TMDB数据和背景图"
                                   >
                                     {isRefreshingTMDBData ? (
                                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1420,13 +1539,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           
                           {/* 显示刷新错误 */}
                           {refreshError && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 p-2 rounded-md mb-4 flex items-center">
+                            <div className="bg-red-500/20 backdrop-blur-md text-red-200 p-3 rounded-md mb-4 flex items-center border-none shadow-sm">
                               <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
                               <span className="text-sm">{refreshError}</span>
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
-                                className="ml-auto h-6 px-2"
+                                className="ml-auto h-6 px-2 text-red-200 hover:text-red-100 hover:bg-red-500/30"
                                 onClick={() => setRefreshError(null)}
                               >
                                 <X className="h-3 w-3" />
@@ -1436,7 +1555,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
                           {/* 剧集列表 */}
                           {getCurrentSeason() && (
-                            <Card>
+                            <Card variant="frosted">
                               <CardHeader className="pb-2">
                                 <CardTitle className="text-base flex items-center">
                                   <PlayCircle className="h-4 w-4 mr-2" />
@@ -1534,12 +1653,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                   </ScrollArea>
                 </TabsContent>
               </Tabs>
+              </div>
             </div>
           </div>
 
           {/* 复制反馈 */}
           {copyFeedback && (
-            <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg text-sm z-50">
+            <div className="fixed bottom-4 right-4 backdrop-blur-md bg-primary/70 text-primary-foreground px-4 py-2 rounded-md shadow-lg text-sm z-50 border-none">
               {copyFeedback}
             </div>
           )}

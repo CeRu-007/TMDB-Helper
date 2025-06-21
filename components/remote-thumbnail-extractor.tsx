@@ -267,42 +267,42 @@ export default function RemoteThumbnailExtractor() {
           <h3 className="text-lg font-medium mb-1">上传视频文件</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">支持 MP4、AVI、MKV 等格式</p>
           
-          <input
-            type="file"
-            ref={fileInputRef}
+      <input
+        type="file"
+        ref={fileInputRef}
             accept="video/*"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-          
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+      
           <Button
             onClick={handleFileSelect}
             disabled={isUploading}
             className="mb-2"
           >
-            {isUploading ? (
+      {isUploading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 上传中...
               </>
-            ) : (
+      ) : (
               <>
-                <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" />
                 选择视频
               </>
             )}
-          </Button>
+            </Button>
           
           {isUploading && (
             <div className="w-full mt-4">
               <div className="flex justify-between text-xs mb-1">
                 <span>上传进度</span>
                 <span>{uploadProgress}%</span>
-              </div>
+          </div>
               <Progress value={uploadProgress} className="h-2" />
-            </div>
-          )}
         </div>
+      )}
+    </div>
       </CardContent>
     </Card>
   );
@@ -313,10 +313,10 @@ export default function RemoteThumbnailExtractor() {
       <CardHeader className="pb-3 flex flex-row justify-between items-center cursor-pointer"
         onClick={() => setShowSettings(!showSettings)}
       >
-        <CardTitle className="text-lg flex items-center">
-          <Settings className="h-5 w-5 mr-2" />
-          提取设置
-        </CardTitle>
+          <CardTitle className="text-lg flex items-center">
+            <Settings className="h-5 w-5 mr-2" />
+            提取设置
+          </CardTitle>
         <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -332,7 +332,7 @@ export default function RemoteThumbnailExtractor() {
           >
             <path d="m6 9 6 6 6-6"/>
           </svg>
-        </Button>
+          </Button>
       </CardHeader>
       
       {showSettings && (
@@ -360,29 +360,29 @@ export default function RemoteThumbnailExtractor() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="startTime">开始时间(秒)</Label>
-                <Input
-                  id="startTime"
-                  type="number"
-                  min={0}
+              <Input
+                id="startTime"
+                type="number"
+                min={0}
                   value={settings.startTime}
                   onChange={(e) => setSettings({...settings, startTime: Number(e.target.value)})}
-                />
-              </div>
-              
+              />
+            </div>
+            
               <div>
                 <Label htmlFor="format">输出格式</Label>
-                <Select 
-                  value={settings.outputFormat || "jpg"}
+              <Select
+                value={settings.outputFormat || "jpg"}
                   onValueChange={(value: "jpg" | "png") => setSettings({...settings, outputFormat: value})}
-                >
+              >
                   <SelectTrigger id="format">
-                    <SelectValue placeholder="选择格式" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <SelectValue placeholder="选择格式" />
+                </SelectTrigger>
+                <SelectContent>
                     <SelectItem value="jpg">JPG (较小)</SelectItem>
                     <SelectItem value="png">PNG (高质量)</SelectItem>
-                  </SelectContent>
-                </Select>
+                </SelectContent>
+              </Select>
               </div>
             </div>
           </div>
@@ -481,47 +481,47 @@ export default function RemoteThumbnailExtractor() {
                         {task.thumbnails.length}
                       </Badge>
                     </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => downloadThumbnail(task)}
-                      disabled={task.thumbnails.length === 0}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => downloadThumbnail(task)}
+                        disabled={task.thumbnails.length === 0}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
                       下载选中帧
-                    </Button>
+                      </Button>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-4">
-                    {task.thumbnails.map((thumbnail, index) => (
-                      <div 
-                        key={thumbnail.id}
-                        className={`relative aspect-video rounded-md overflow-hidden cursor-pointer border-2 transition-all ${
-                          (task.selectedThumbnail === index || (task.selectedThumbnail === undefined && index === 0))
+                      {task.thumbnails.map((thumbnail, index) => (
+                        <div 
+                          key={thumbnail.id}
+                          className={`relative aspect-video rounded-md overflow-hidden cursor-pointer border-2 transition-all ${
+                            (task.selectedThumbnail === index || (task.selectedThumbnail === undefined && index === 0))
                             ? 'border-blue-500 shadow-md scale-105 z-10'
-                            : 'border-transparent hover:border-gray-300 dark:hover:border-gray-700'
-                        }`}
-                        onClick={() => selectThumbnail(task.taskId, index)}
-                      >
-                        <img 
-                          src={thumbnail.url} 
-                          alt={`缩略图 ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        
-                        {/* 时间戳 */}
-                        <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-                          {formatTime(thumbnail.timestamp)}
-                        </div>
-                        
-                        {/* 字幕标记 */}
-                        {thumbnail.hasSubtitles && (
-                          <div className="absolute bottom-1 left-1 bg-yellow-500/90 text-white text-xs px-1.5 py-0.5 rounded flex items-center">
-                            <Info className="h-3 w-3 mr-1" />
-                            字幕
+                              : 'border-transparent hover:border-gray-300 dark:hover:border-gray-700'
+                          }`}
+                          onClick={() => selectThumbnail(task.taskId, index)}
+                        >
+                          <img 
+                            src={thumbnail.url} 
+                            alt={`缩略图 ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          
+                          {/* 时间戳 */}
+                          <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                            {formatTime(thumbnail.timestamp)}
                           </div>
-                        )}
+                          
+                          {/* 字幕标记 */}
+                          {thumbnail.hasSubtitles && (
+                            <div className="absolute bottom-1 left-1 bg-yellow-500/90 text-white text-xs px-1.5 py-0.5 rounded flex items-center">
+                              <Info className="h-3 w-3 mr-1" />
+                              字幕
+                            </div>
+                          )}
                         
                         {/* 选中指示器 */}
                         {(task.selectedThumbnail === index || (task.selectedThumbnail === undefined && index === 0)) && (
@@ -531,9 +531,9 @@ export default function RemoteThumbnailExtractor() {
                             </div>
                           </div>
                         )}
-                      </div>
-                    ))}
-                  </div>
+                        </div>
+                      ))}
+                    </div>
                   
                   {/* 选中帧预览 */}
                   {task.thumbnails.length > 0 && (
@@ -554,19 +554,19 @@ export default function RemoteThumbnailExtractor() {
                             url: task.thumbnails[task.selectedThumbnail || 0]?.url,
                             timestamp: task.thumbnails[task.selectedThumbnail || 0]?.timestamp
                           })}
-                        />
-                      </div>
-                      
+                            />
+                          </div>
+                          
                       <div className="flex justify-end mt-3">
-                        <Button 
+                          <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => downloadThumbnail(task)}
-                        >
+                          >
                           <Download className="h-4 w-4 mr-2" />
                           下载此帧
-                        </Button>
-                      </div>
+                          </Button>
+                        </div>
                     </div>
                   )}
                 </div>

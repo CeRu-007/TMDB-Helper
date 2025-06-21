@@ -236,11 +236,11 @@ class TaskScheduler {
           if (tvMatches.length === 1) {
             item = tvMatches[0];
             console.log(`[TaskScheduler] 通过名称和媒体类型找到唯一匹配项: ${item.title} (ID: ${item.id})`);
-            
-            // 更新任务的项目ID
-            const updatedTask = { ...task, itemId: item.id };
-            await StorageManager.updateScheduledTask(updatedTask);
-            console.log(`[TaskScheduler] 已更新任务的项目ID: ${task.id} -> ${item.id}`);
+          
+          // 更新任务的项目ID
+          const updatedTask = { ...task, itemId: item.id };
+          await StorageManager.updateScheduledTask(updatedTask);
+          console.log(`[TaskScheduler] 已更新任务的项目ID: ${task.id} -> ${item.id}`);
           } else if (tvMatches.length > 1) {
             // 4. 如果还有多个电视剧匹配，尝试通过更新时间排序，选择最近更新的
             tvMatches.sort((a, b) => 

@@ -9,6 +9,7 @@ export interface TMDBItem {
   posterUrl?: string
   posterPath?: string
   backdropPath?: string
+  backdropUrl?: string
   overview?: string
   platformUrl?: string
   genres?: string[]
@@ -24,11 +25,13 @@ export interface TMDBItem {
   createdAt: string
   updatedAt: string
   weekday: number
+  secondWeekday?: number
   airTime?: string
   category?: string
   tmdbUrl?: string
   notes?: string
   isDailyUpdate?: boolean
+  blurIntensity?: 'light' | 'medium' | 'heavy'
 }
 
 export interface Episode {

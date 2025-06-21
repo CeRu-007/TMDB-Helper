@@ -43,10 +43,14 @@ export interface ScheduledTask {
 export interface TMDBItem {
   id: string
   title: string
+  originalTitle?: string
   mediaType: "movie" | "tv"
   tmdbId: string
   tmdbUrl?: string
   posterUrl?: string
+  posterPath?: string
+  backdropUrl?: string
+  backdropPath?: string
   weekday: number // 0-6 (Sunday-Saturday)
   secondWeekday?: number // 第二播出日（用于一周两更的动漫）
   airTime?: string // 播出时间，格式如 "19:00"

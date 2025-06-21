@@ -2,6 +2,7 @@ interface TMDBMovieResponse {
   id: number
   title: string
   poster_path: string | null
+  backdrop_path: string | null
   homepage: string | null
   runtime: number | null
   release_date: string | null
@@ -15,6 +16,7 @@ interface TMDBTVResponse {
   id: number
   name: string
   poster_path: string | null
+  backdrop_path: string | null
   homepage: string | null
   number_of_episodes: number | null
   number_of_seasons: number | null
@@ -47,6 +49,8 @@ export interface TMDBItemData {
   title: string
   mediaType: "movie" | "tv"
   posterUrl?: string
+  backdropUrl?: string
+  backdropPath?: string | null  // 添加原始路径，方便后续处理
   totalEpisodes?: number
   platformUrl?: string
   weekday?: number
@@ -54,9 +58,15 @@ export interface TMDBItemData {
   recommendedCategory?: "anime" | "tv" | "kids" | "variety" | "short" | "movie"
 }
 
+export type BackdropSize = 'w300' | 'w780' | 'w1280' | 'original';
+
 export class TMDBService {
   private static readonly BASE_URL = "https://api.themoviedb.org/3"
   private static readonly IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
+  private static readonly BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
+  private static readonly BACKDROP_ORIGINAL_URL = "https://image.tmdb.org/t/p/original"
+  private static readonly CACHE_PREFIX = "tmdb_backdrop_"
+  private static readonly CACHE_EXPIRY = 24 * 60 * 60 * 1000 // 24小时
 
   private static getApiKey(): string {
     const apiKey = localStorage.getItem("tmdb_api_key")
@@ -130,11 +140,18 @@ export class TMDBService {
           recommendedCategory = "movie";
         }
 
+        // 如果有背景图，缓存它
+        if (movieData.backdrop_path) {
+          this.cacheBackdropPath(id, movieData.backdrop_path);
+        }
+
         return {
           tmdbId: id,
           title: movieData.title,
           mediaType,
           posterUrl: movieData.poster_path ? `${this.IMAGE_BASE_URL}${movieData.poster_path}` : undefined,
+          backdropUrl: movieData.backdrop_path ? `${this.BACKDROP_BASE_URL}${movieData.backdrop_path}` : undefined,
+          backdropPath: movieData.backdrop_path,
           platformUrl,
           weekday,
           recommendedCategory
@@ -209,11 +226,18 @@ export class TMDBService {
           recommendedCategory = "tv";
         }
 
+        // 如果有背景图，缓存它
+        if (tvData.backdrop_path) {
+          this.cacheBackdropPath(id, tvData.backdrop_path);
+        }
+
         return {
           tmdbId: id,
           title: tvData.name,
           mediaType,
           posterUrl: tvData.poster_path ? `${this.IMAGE_BASE_URL}${tvData.poster_path}` : undefined,
+          backdropUrl: tvData.backdrop_path ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}` : undefined,
+          backdropPath: tvData.backdrop_path,
           totalEpisodes,
           platformUrl,
           weekday,
@@ -244,5 +268,76 @@ export class TMDBService {
       console.error("URL parsing error:", error)
       return { mediaType: null, id: null }
     }
+  }
+
+  // 缓存背景图路径
+  private static cacheBackdropPath(id: string, backdropPath: string): void {
+    try {
+      const cacheKey = `${this.CACHE_PREFIX}${id}`;
+      const cacheData = {
+        path: backdropPath,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    } catch (error) {
+      console.error("缓存背景图路径失败:", error);
+    }
+  }
+
+  // 从缓存获取背景图路径
+  static getCachedBackdropPath(id: string): string | null {
+    try {
+      const cacheKey = `${this.CACHE_PREFIX}${id}`;
+      const cacheData = localStorage.getItem(cacheKey);
+      
+      if (!cacheData) return null;
+      
+      const { path, timestamp } = JSON.parse(cacheData);
+      
+      // 检查缓存是否过期
+      if (Date.now() - timestamp > this.CACHE_EXPIRY) {
+        localStorage.removeItem(cacheKey);
+        return null;
+      }
+      
+      return path;
+    } catch (error) {
+      console.error("获取缓存背景图路径失败:", error);
+      return null;
+    }
+  }
+
+  // 预加载背景图
+  static preloadBackdrop(backdropPath: string | null | undefined, size: BackdropSize = 'w1280'): void {
+    if (!backdropPath) return;
+    
+    const url = this.getBackdropUrl(backdropPath, size);
+    if (url) {
+      const img = new Image();
+      img.src = url;
+    }
+  }
+
+  // 获取不同尺寸的背景图URL
+  static getBackdropUrl(backdropPath: string | null | undefined, size: BackdropSize | 'small' | 'large' | 'original' = 'large'): string | undefined {
+    if (!backdropPath) return undefined;
+    
+    // 处理旧的size枚举
+    let sizeValue: BackdropSize;
+    switch (size) {
+      case 'small':
+        sizeValue = 'w780';
+        break;
+      case 'large':
+        sizeValue = 'w1280';
+        break;
+      case 'original':
+        sizeValue = 'original';
+        break;
+      default:
+        sizeValue = size as BackdropSize;
+    }
+    
+    return `https://image.tmdb.org/t/p/${sizeValue}${backdropPath}`;
   }
 }

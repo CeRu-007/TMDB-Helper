@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge, badgeVariants } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { BackgroundImage } from "@/components/ui/background-image"
 import { 
   Tv, 
   Search, 
@@ -24,7 +25,9 @@ import {
   Popcorn,
   Ticket,
   LayoutGrid,
-  Zap
+  Zap,
+  FileCode,
+  Image as ImageIcon
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/storage"
 import { TMDBService } from "@/lib/tmdb"
@@ -51,6 +54,7 @@ interface TMDBSearchResult {
   name?: string
   media_type: "movie" | "tv"
   poster_path?: string
+  backdrop_path?: string
   first_air_date?: string
   release_date?: string
   overview?: string
@@ -71,6 +75,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
   const [loading, setLoading] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [tmdbSeasons, setTmdbSeasons] = useState<any[]>([])
+  const [backdropUrl, setBackdropUrl] = useState<string | undefined>(undefined)
+  const [backdropPath, setBackdropPath] = useState<string | undefined>(undefined)
+  const [customBackdropUrl, setCustomBackdropUrl] = useState<string>("")
+  const [showBackdropPreview, setShowBackdropPreview] = useState(false)
   const [formData, setFormData] = useState({
     weekday: 1,
     secondWeekday: -1, // -1 表示未设置
@@ -84,14 +92,17 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
   const searchTimeoutRef = useRef<any>();
   
   // 获取显示标题
-  const getDisplayTitle = (result: TMDBSearchResult) => {
-    return result.media_type === "movie" ? result.title : result.name || result.title
+  const getDisplayTitle = (result: TMDBSearchResult): string => {
+    return result.media_type === "movie" ? result.title : (result.name || result.title)
   }
   
   // 选择搜索结果 - 使用useCallback包装以避免依赖循环
   const handleSelectResult = useCallback(async (result: TMDBSearchResult) => {
     setSelectedResult(result)
     setDetailLoading(true)
+    setBackdropUrl(undefined) // 重置背景图URL
+    setBackdropPath(undefined) // 重置背景图路径
+    setCustomBackdropUrl("") // 重置自定义背景图URL
 
     try {
       // 构建TMDB URL
@@ -153,13 +164,24 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         if (tmdbData.seasons) {
           setTmdbSeasons(tmdbData.seasons)
         }
+        
+        // 设置背景图URL和路径
+        if (tmdbData.backdropUrl) {
+          setBackdropUrl(tmdbData.backdropUrl)
+          setBackdropPath(tmdbData.backdropPath || "")
+          setShowBackdropPreview(true)
+        } else if (result.backdrop_path) {
+          setBackdropUrl(`https://image.tmdb.org/t/p/w1280${result.backdrop_path}`)
+          setBackdropPath(result.backdrop_path)
+          setShowBackdropPreview(true)
+        }
       }
     } catch (error) {
       console.error("获取详细信息失败:", error)
     } finally {
       setDetailLoading(false)
     }
-  }, [setSelectedResult, setDetailLoading, setFormData, setTmdbSeasons])
+  }, [setSelectedResult, setDetailLoading, setFormData, setTmdbSeasons, setBackdropUrl, setBackdropPath])
   
   // 处理预填充数据
   useEffect(() => {
@@ -239,6 +261,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       setSearchResults([]);
       setSelectedResult(null);
       setTmdbSeasons([]);
+      setBackdropUrl(undefined);
+      setBackdropPath(undefined);
+      setCustomBackdropUrl("");
+      setShowBackdropPreview(false);
       setFormData({
         weekday: 1,
         secondWeekday: -1,
@@ -305,7 +331,32 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     }, 500) as unknown as number
   }
 
-  // 重置表单
+  // 处理自定义背景图URL变更
+  const handleCustomBackdropChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomBackdropUrl(e.target.value)
+  }
+
+  // 预览自定义背景图
+  const handlePreviewBackdrop = () => {
+    if (customBackdropUrl) {
+      setBackdropUrl(customBackdropUrl)
+      setBackdropPath(undefined) // 清除TMDB背景图路径，因为使用自定义URL
+      setShowBackdropPreview(true)
+    }
+  }
+
+  // 重置背景图
+  const handleResetBackdrop = () => {
+    if (selectedResult?.backdrop_path) {
+      setBackdropUrl(`https://image.tmdb.org/t/p/w1280${selectedResult.backdrop_path}`)
+      setBackdropPath(selectedResult.backdrop_path)
+    } else {
+      setBackdropUrl(undefined)
+      setBackdropPath(undefined)
+    }
+    setCustomBackdropUrl("")
+  }
+
   const resetForm = () => {
     setSearchQuery("")
     setSearchResults([])
@@ -320,6 +371,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       isDailyUpdate: false
     })
     setTmdbSeasons([])
+    setBackdropUrl(undefined)
+    setBackdropPath(undefined)
+    setCustomBackdropUrl("")
+    setShowBackdropPreview(false)
   }
 
   // 提交表单
@@ -385,14 +440,17 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       const newItem: TMDBItem = {
         id: Date.now().toString(),
         title: tmdbData.title,
+        originalTitle: tmdbData.title !== tmdbData.name ? tmdbData.title : undefined,
         mediaType: tmdbData.mediaType,
         tmdbId: tmdbData.tmdbId,
-        tmdbUrl: tmdbUrl,
+        tmdbUrl,
         posterUrl: tmdbData.posterUrl || "",
+        posterPath: tmdbData.poster_path,
+        backdropUrl: backdropUrl || tmdbData.backdropUrl,
+        backdropPath: backdropPath || tmdbData.backdropPath,
         weekday: formData.weekday,
+        secondWeekday: formData.secondWeekday >= 0 ? formData.secondWeekday : undefined,
         airTime: formData.airTime,
-        // 只有当第二播出日设置了有效值时才添加
-        ...(formData.secondWeekday >= 0 && { secondWeekday: formData.secondWeekday }),
         totalEpisodes: selectedResult.media_type === "movie" ? 1 : totalEpisodes,
         // 添加手动设置集数标记
         ...(isManuallySetEpisodes && { manuallySetEpisodes: true }),
@@ -426,377 +484,348 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+        {/* 背景图预览 */}
+        {showBackdropPreview && backdropUrl && (
+          <div className="absolute inset-0 -z-10">
+            <BackgroundImage 
+              src={backdropUrl} 
+              alt="背景图预览"
+              blur={true}
+              overlayClassName="bg-gradient-to-b from-background/95 via-background/80 to-background/95 backdrop-blur-[2px]"
+            />
+          </div>
+        )}
+        
         <DialogHeader>
-          <DialogTitle>添加新词条</DialogTitle>
+          <DialogTitle>添加新项目</DialogTitle>
           <DialogDescription>
-            搜索并添加新的电影或电视剧到您的收藏中
+            搜索TMDB并添加电影或剧集到您的列表
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 搜索区域 */}
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="search">搜索TMDB词条</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          {/* 搜索栏 */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
                 <Input
-                  id="search"
+                placeholder="搜索电影或剧集..."
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder="输入电影或电视剧名称进行搜索..."
-                  className="pl-10"
+                className="pr-10"
                 />
                 {loading && (
-                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">输入关键词搜索TMDB数据库中的电影和电视剧</p>
+            <Button type="button" onClick={() => searchTMDB(searchQuery)}>
+              <Search className="h-4 w-4 mr-2" />
+              搜索
+            </Button>
             </div>
 
             {/* 搜索结果 */}
-            {loading && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">搜索中...</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="p-3 rounded-lg border animate-pulse">
-                        <div className="flex items-start space-x-3">
-                          <div className="w-10 h-15 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                          <div className="flex-1">
-                            <div className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                            <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                            <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
             {searchResults.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">搜索结果</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-64">
-                    <div className="space-y-2">
+            <ScrollArea className="h-[200px] border rounded-md">
+              <div className="p-4 space-y-2">
                       {searchResults.map((result) => (
                         <div
-                          key={result.id}
+                    key={`${result.media_type}-${result.id}`}
+                    className={cn(
+                      "flex items-start p-2 rounded-md cursor-pointer hover:bg-accent",
+                      selectedResult?.id === result.id && "bg-accent"
+                    )}
                           onClick={() => handleSelectResult(result)}
-                          className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                            selectedResult?.id === result.id
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
-                              : "border-gray-200 hover:border-gray-300 dark:border-gray-700"
-                          }`}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <img
-                              src={
-                                result.poster_path
-                                  ? `https://image.tmdb.org/t/p/w92${result.poster_path}`
-                                  : "/placeholder.svg?height=60&width=40"
-                              }
+                  >
+                    <div className="flex-shrink-0 w-12 h-18 bg-muted rounded overflow-hidden mr-3">
+                      {result.poster_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w92${result.poster_path}`}
                               alt={getDisplayTitle(result)}
-                              className="w-10 h-15 object-cover rounded"
+                          className="w-full h-full object-cover"
                             />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <h3 className="font-medium text-sm truncate">{getDisplayTitle(result)}</h3>
-                                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold border-transparent bg-primary text-primary-foreground">
-                                  {result.media_type === "movie" ? "电影" : "电视"}
-                                </div>
-                                {result.vote_average && result.vote_average > 0 && (
-                                  <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold text-foreground">
-                                    <Star className="h-3 w-3 mr-1" />
-                                    {result.vote_average.toFixed(1)}
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Tv className="h-6 w-6 text-muted-foreground" />
                                   </div>
                                 )}
                               </div>
-                              <div className="flex items-center space-x-4 text-xs text-gray-500 mb-1">
-                                <span>ID: {result.id}</span>
-                                <span>{formatDate(result.first_air_date || result.release_date)}</span>
-                                {result.original_language && <span>{result.original_language.toUpperCase()}</span>}
+                    <div className="flex-1">
+                      <div className="font-medium">{getDisplayTitle(result)}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {result.media_type === "movie" ? "电影" : "剧集"} •{" "}
+                        {formatDate(result.release_date || result.first_air_date)}
+                      </div>
+                      {result.vote_average && (
+                        <div className="flex items-center mt-1">
+                          <Star className="h-3 w-3 text-yellow-500 mr-1" />
+                          <span className="text-xs">{result.vote_average.toFixed(1)}</span>
                               </div>
-                              {result.overview && (
-                                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                                  {result.overview}
-                                </p>
                               )}
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                window.open(`https://www.themoviedb.org/${result.media_type}/${result.id}`, "_blank")
-                              }}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
+                    {result.backdrop_path && (
+                      <div className="flex-shrink-0 text-xs text-blue-500">
+                        <ImageIcon className="h-3 w-3" />
                           </div>
+                    )}
                         </div>
                       ))}
                     </div>
                   </ScrollArea>
-                </CardContent>
-              </Card>
             )}
-          </div>
 
-          {/* 选中词条的详细信息 */}
+          {/* 表单 */}
           {selectedResult && (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 左侧：基本信息 */}
             <div className="space-y-4">
-              {detailLoading && (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span>正在获取详细信息...</span>
-                </div>
-              )}
-
-              {/* 季数预览 */}
-              {tmdbSeasons.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center text-base">
-                      <Tv className="h-4 w-4 mr-2" />
-                      检测到多季内容
+                      <CardTitle className="text-base flex items-center">
+                        <Info className="h-4 w-4 mr-2" />
+                        基本信息
                     </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        {tmdbSeasons.map((season) => (
-                          <Badge
-                            key={season.seasonNumber}
-                            variant="secondary"
-                            className="px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                          >
-                            <div className="flex flex-col items-center space-y-1">
-                              <span className="text-sm font-medium">{season.name}</span>
-                              <span className="text-xs">{season.totalEpisodes} 集</span>
-                            </div>
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        总计 {tmdbSeasons.length} 季，共 {tmdbSeasons.reduce((total, s) => total + s.totalEpisodes, 0)}{" "}
-                        集
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* 基本设置 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">基本设置</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="weekday">播出日期</Label>
-                      <Select
-                        value={formData.weekday.toString()}
-                        onValueChange={(value) => setFormData((prev) => ({ ...prev, weekday: Number.parseInt(value) }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WEEKDAYS.map((day, index) => {
-                            // 将我们的索引（0=周一，6=周日）转换回JS的日期（0=周日，1=周一）
-                            const jsWeekday = index === 6 ? 0 : index + 1;
-                            return (
-                              <SelectItem key={index} value={jsWeekday.toString()}>
-                              {day}
-                            </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="airTime">播出时间</Label>
-                      <div className="flex items-center space-x-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="title">标题</Label>
                         <Input 
-                          id="airTime"
-                          placeholder="时间 (如 20:00)"
-                          value={formData.airTime}
-                          onChange={(e) => setFormData({...formData, airTime: e.target.value})}
-                          className="w-full"
+                          id="title"
+                          value={getDisplayTitle(selectedResult)}
+                          disabled
                         />
-                      </div>
-                    </div>
                   </div>
 
-                  {/* 添加每日更新设置选项 - 移除分类限制，允许所有分类设置 */}
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="daily-update"
-                        checked={formData.isDailyUpdate}
-                        onCheckedChange={(checked) => setFormData({...formData, isDailyUpdate: checked === true})}
-                      />
-                      <Label htmlFor="daily-update" className="flex items-center cursor-pointer">
-                        <Zap className="h-3 w-3 mr-1 animate-pulse" />
-                        设为每日更新
-                      </Label>
-                    </div>
-                  </div>
-
-                  {/* 分类选择 */}
-                  <div>
+                      <div className="space-y-2">
                     <Label htmlFor="category">分类</Label>
                     <Select
-                      value={formData.category || "none"}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value === "none" ? "" as CategoryType : value as CategoryType }))}
+                          value={formData.category}
+                          onValueChange={(value) => setFormData({ ...formData, category: value as CategoryType })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="选择分类" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">选择分类</SelectItem>
                         {CATEGORIES.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
                             <div className="flex items-center">
                               {category.icon}
-                              <span>{category.name}</span>
+                                  <span className="ml-2">{category.name}</span>
                             </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {selectedResult && formData.category && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formData.category === "anime" && "已自动检测为动漫，根据TMDB类型标签"}
-                        {formData.category === "kids" && "已自动检测为少儿节目，根据TMDB类型标签"}
-                        {formData.category === "variety" && "已自动检测为综艺节目，根据TMDB类型标签"}
-                        {formData.category === "movie" && "已自动检测为电影"}
-                        {formData.category === "tv" && "已自动检测为电视剧"}
-                        {formData.category === "short" && "已设置为短剧"}
-                      </p>
-                    )}
                   </div>
 
-                  {/* 第二播出日选择器 - 仅在动漫分类下显示 */}
-                  {formData.category === "anime" && (
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <Label htmlFor="secondWeekday">第二播出日（可选）</Label>
-                        {formData.secondWeekday >= 0 && (
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 px-2 text-xs text-red-500"
-                            onClick={() => setFormData((prev) => ({ ...prev, secondWeekday: -1 }))}
+                      <div className="space-y-2">
+                        <Label htmlFor="weekday">更新时间</Label>
+                        <div className="flex gap-2">
+                          <Select
+                            value={formData.weekday.toString()}
+                            onValueChange={(value) =>
+                              setFormData({ ...formData, weekday: parseInt(value) })
+                            }
                           >
-                            清除
-                          </Button>
-                        )}
+                            <SelectTrigger>
+                              <SelectValue placeholder="选择星期" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {WEEKDAYS.map((day, index) => (
+                                <SelectItem key={index} value={(index + 1).toString()}>
+                                  {day}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="0">周日</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            id="airTime"
+                            placeholder="时间 (如 20:00)"
+                            value={formData.airTime}
+                            onChange={(e) =>
+                              setFormData({ ...formData, airTime: e.target.value })
+                            }
+                          />
+                        </div>
                       </div>
+
+                      {/* 第二播出日 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="secondWeekday">第二播出日 (可选)</Label>
                       <Select
-                        value={formData.secondWeekday >= 0 ? formData.secondWeekday.toString() : "-1"}
-                        onValueChange={(value) => setFormData((prev) => ({ ...prev, secondWeekday: Number.parseInt(value) }))}
+                          value={formData.secondWeekday.toString()}
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, secondWeekday: parseInt(value) })
+                          }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="无第二播出日" />
+                            <SelectValue placeholder="选择星期" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="-1">不设置</SelectItem>
-                          {WEEKDAYS.map((day, index) => {
-                            // 将我们的索引（0=周一，6=周日）转换回JS的日期（0=周日，1=周一）
-                            const jsWeekday = index === 6 ? 0 : index + 1;
-                            // 禁用主播出日，避免重复
-                            const disabled = jsWeekday === formData.weekday;
-                            return (
-                              <SelectItem 
-                                key={index} 
-                                value={jsWeekday.toString()}
-                                disabled={disabled}
-                              >
-                                {day} {disabled ? '(已选为主播出日)' : ''}
+                            <SelectItem value="-1">无</SelectItem>
+                            {WEEKDAYS.map((day, index) => (
+                              <SelectItem key={index} value={(index + 1).toString()}>
+                                {day}
                               </SelectItem>
-                            );
-                          })}
+                            ))}
+                            <SelectItem value="0">周日</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        适用于一周两更的动漫，将在卡片上显示两个播出日期
-                      </p>
                     </div>
-                  )}
+                      
+                      {/* 每日更新选项 */}
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="isDailyUpdate"
+                          checked={formData.isDailyUpdate}
+                          onCheckedChange={(checked) =>
+                            setFormData({
+                              ...formData,
+                              isDailyUpdate: checked === true,
+                            })
+                          }
+                        />
+                        <Label
+                          htmlFor="isDailyUpdate"
+                          className="text-sm flex items-center cursor-pointer"
+                        >
+                          <Zap className="h-3 w-3 mr-1 animate-pulse" />
+                          设为每日更新
+                        </Label>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-                  {/* 总集数输入 - 显示条件优化 */}
+                {/* 右侧：详细设置 */}
+                <div className="space-y-4">
+                  {/* 集数设置 */}
                   {selectedResult.media_type === "tv" && (
-                    <div>
-                      <Label htmlFor="totalEpisodes" className="flex items-center">
-                        总集数
-                        {tmdbSeasons.length > 0 && (
-                          <div className="ml-2 flex items-center text-xs text-blue-600 dark:text-blue-400">
-                            <Info className="h-3 w-3 mr-1" />
-                            已从TMDB自动获取
-                          </div>
-                        )}
-                      </Label>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center">
+                          <LayoutGrid className="h-4 w-4 mr-2" />
+                          集数设置
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="totalEpisodes">总集数</Label>
                       <Input
                         id="totalEpisodes"
                         type="number"
                         min="1"
                         value={formData.totalEpisodes}
                         onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, totalEpisodes: Number.parseInt(e.target.value) || 1 }))
-                        }
-                        className={tmdbSeasons.length > 0 ? "border-blue-300 dark:border-blue-700" : ""}
-                      />
-                      {tmdbSeasons.length > 0 ? (
-                        <p className="text-xs text-gray-500 mt-1">
-                          已自动获取总集数，您也可以手动修改
-                        </p>
-                      ) : (
-                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                          <Info className="h-3 w-3 inline mr-1" />
-                          未能从TMDB获取集数，请手动设置
-                        </p>
-                      )}
+                              setFormData({
+                                ...formData,
+                                totalEpisodes: parseInt(e.target.value) || 1,
+                              })
+                            }
+                          />
                     </div>
+                      </CardContent>
+                    </Card>
                   )}
 
-                  <div>
-                    <Label htmlFor="platformUrl">播出平台地址</Label>
+                  {/* 平台信息 */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        平台信息
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="platformUrl">播出平台URL</Label>
                     <Input
                       id="platformUrl"
+                          placeholder="https://example.com/show-page"
                       value={formData.platformUrl}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, platformUrl: e.target.value }))}
-                      placeholder="https://..."
+                          onChange={(e) =>
+                            setFormData({ ...formData, platformUrl: e.target.value })
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          用于TMDB导入工具抓取元数据
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* 背景图设置 */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center">
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        背景图设置
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="backdropUrl">背景图URL</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="backdropUrl"
+                            placeholder="https://example.com/backdrop.jpg"
+                            value={customBackdropUrl}
+                            onChange={handleCustomBackdropChange}
                     />
-                    <p className="text-xs text-gray-500 mt-1">手动输入的地址将优先使用，留空则使用TMDB自动获取的地址</p>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={handlePreviewBackdrop}
+                            disabled={!customBackdropUrl}
+                          >
+                            预览
+                          </Button>
+                        </div>
+                        <div className="flex justify-between mt-2">
+                          <p className="text-xs text-muted-foreground">
+                            {backdropUrl ? "已设置背景图" : "未设置背景图"}
+                          </p>
+                          {backdropUrl && (
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-5 px-2 py-0 text-xs"
+                              onClick={handleResetBackdrop}
+                            >
+                              重置
+                            </Button>
+                          )}
+                        </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          )}
+              </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               取消
             </Button>
-            <Button type="submit" disabled={loading || !selectedResult}>
-              {loading ? "添加中..." : "添加"}
+                <Button type="submit" disabled={detailLoading}>
+                  {detailLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      加载中
+                    </>
+                  ) : (
+                    "添加"
+                  )}
             </Button>
           </div>
         </form>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )

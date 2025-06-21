@@ -2227,7 +2227,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         {/* 编辑标签内容 */}
         <TabsContent 
           value="edit" 
-          className="h-[calc(100%-48px)] overflow-hidden"
+          className="h-[calc(100%-48px)] overflow-hidden bg-background/30 backdrop-blur-sm"
           key={`edit-tab-${editTabRenderCount}`}
         >
           <div className="h-full">
@@ -2257,7 +2257,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               <div className="h-full flex flex-col">
                 {/* 编辑器使用提示 */}
                 <div className="flex flex-col">
-                  <div className="bg-background border-b px-4 py-3">
+                  <div className="bg-background/50 backdrop-blur-md border-b px-4 py-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-3">
                         <div className="bg-muted rounded-md p-0.5 flex items-center">
@@ -2316,7 +2316,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 <div className="flex-1 overflow-hidden relative">
                   {/* 添加加载状态覆盖层 */}
                   {(!tableReady || !csvData) && (
-                    <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center z-10">
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-md flex flex-col items-center justify-center z-10">
                       <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
                       <p className="text-sm text-muted-foreground">正在准备编辑器...</p>
                       <Button 
@@ -2360,7 +2360,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                         value={csvContent}
                         onChange={(e) => setCsvContent(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="flex-1 p-4 font-mono text-xs resize-none focus:outline-none bg-white dark:bg-black csv-text-editor"
+                        className="flex-1 p-4 font-mono text-xs resize-none focus:outline-none bg-white/80 dark:bg-black/80 backdrop-blur-sm csv-text-editor"
                         placeholder="CSV内容..."
                         style={{ minHeight: "70vh", lineHeight: 1.6 }}
                       ></textarea>
@@ -2608,14 +2608,14 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 渲染inTab模式内容
   const renderInTabContent = () => (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background/50 backdrop-blur-sm">
       <Tabs 
         value={activeTab} 
         onValueChange={handleTabChange} 
         className="w-full h-full flex flex-col"
         defaultValue="process"
       >
-        <div className="border-b">
+        <div className="border-b bg-background/40 backdrop-blur-md">
           <div className="flex items-center justify-between px-4 py-2">
             <TabsList>
               <TabsTrigger value="process" className="flex items-center">
@@ -2647,7 +2647,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         >
           <div className="p-4 h-full overflow-y-auto space-y-4">
             {/* TMDB导入命令区域 */}
-              <Card>
+              <Card variant="frosted">
               <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center">
                   <Terminal className="h-4 w-4 mr-2" />
@@ -2656,7 +2656,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 </CardHeader>
               <CardContent>
                 {/* 命令显示区域 */}
-                <div className="bg-gray-900 text-green-400 p-3 rounded-md font-mono text-xs overflow-x-auto whitespace-pre">
+                <div className="bg-gray-900/90 text-green-400 p-3 rounded-md font-mono text-xs overflow-x-auto whitespace-pre">
                   <div className="flex items-center justify-between">
                     <div>{generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}</div>
                     <Button 
@@ -2763,7 +2763,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             </Card>
 
             {/* 终端输出 */}
-            <Card>
+            <Card variant="frosted">
               <CardHeader className="py-2">
                 <CardTitle className="text-sm flex items-center justify-between">
                   <div className="flex items-center">
@@ -2811,7 +2811,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               <CardContent className="p-0">
                 <div
                   ref={terminalRef}
-                  className="bg-gray-900 text-green-400 p-3 rounded-lg font-mono text-xs h-[250px] max-h-[250px] overflow-y-auto whitespace-pre-wrap"
+                  className="bg-gray-900/90 backdrop-blur-md text-green-400 p-3 rounded-lg font-mono text-xs h-[250px] max-h-[250px] overflow-y-auto whitespace-pre-wrap"
                 >
                   {terminalOutput ? (
                     <div dangerouslySetInnerHTML={{ __html: terminalOutput }} />
@@ -2913,7 +2913,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         >
             <div className="h-full flex flex-col">
             {/* 编辑工具栏 */}
-            <div className="border-b px-4 py-2 bg-gray-50 dark:bg-gray-800/50">
+            <div className="border-b px-4 py-2 bg-gray-50/70 dark:bg-gray-800/50 backdrop-blur-md">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="bg-muted rounded-md p-0.5 flex items-center">
@@ -2977,7 +2977,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     value={csvContent}
                     onChange={(e) => setCsvContent(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 p-4 font-mono text-xs resize-none focus:outline-none bg-white dark:bg-black csv-text-editor"
+                    className="flex-1 p-4 font-mono text-xs resize-none focus:outline-none bg-white/80 dark:bg-black/80 backdrop-blur-sm csv-text-editor"
                     placeholder="CSV内容..."
                     style={{ minHeight: "70vh", lineHeight: 1.6 }}
                   ></textarea>

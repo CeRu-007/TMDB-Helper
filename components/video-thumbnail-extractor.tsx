@@ -2244,44 +2244,44 @@ export default function VideoThumbnailExtractor() {
                       <div className="flex flex-wrap items-center gap-3">
                         {/* 移除视图模式切换按钮 */}
                         
-                        <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2">
                           <Filter className="h-4 w-4 text-gray-500" />
-                          <Select value={filterBy} onValueChange={(value: any) => setFilterBy(value)}>
+                    <Select value={filterBy} onValueChange={(value: any) => setFilterBy(value)}>
                             <SelectTrigger className="h-8 w-32 text-sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">全部</SelectItem>
-                              <SelectItem value="completed">已完成</SelectItem>
-                              <SelectItem value="processing">处理中</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">全部</SelectItem>
+                        <SelectItem value="completed">已完成</SelectItem>
+                        <SelectItem value="processing">处理中</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                        <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2">
                           <ArrowUpDown className="h-4 w-4 text-gray-500" />
-                          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                    <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
                             <SelectTrigger className="h-8 w-32 text-sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                               <SelectItem value="name">按名称</SelectItem>
                               <SelectItem value="date">按日期</SelectItem>
                               <SelectItem value="size">按大小</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-                      <Button
-                        onClick={downloadAllThumbnails}
-                        disabled={!videos.some((v) => v.status === "completed")}
+                  <Button
+                    onClick={downloadAllThumbnails}
+                    disabled={!videos.some((v) => v.status === "completed")}
                         className="bg-blue-600 hover:bg-blue-700 text-white h-9"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        批量下载
-                      </Button>
-                    </div>
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    批量下载
+                  </Button>
+              </div>
 
                     {/* 缩略图展示区域 */}
                     {getFilteredAndSortedVideos().filter(video => video.status === "completed").length === 0 ? (
@@ -2309,141 +2309,141 @@ export default function VideoThumbnailExtractor() {
                     ) : (
                       <ScrollArea className="h-[calc(100vh-280px)] min-h-[400px] pr-4 -mr-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                          {getFilteredAndSortedVideos()
-                            .filter((video) => video.status === "completed")
-                            .map((video) => (
+                  {getFilteredAndSortedVideos()
+                    .filter((video) => video.status === "completed")
+                    .map((video) => (
                               <Card key={video.id} className="overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
                                 {/* 移除根据viewMode条件渲染的内容，只保留网格视图 */}
-                                <div className="relative">
-                                  <div className="aspect-video bg-gray-100 dark:bg-gray-900 overflow-hidden">
-                                    <img
-                                      src={video.thumbnails[video.selectedThumbnail]?.url || "/placeholder.svg"}
-                                      alt={video.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="absolute bottom-2 right-2">
-                                    <Badge className="border-0 text-white text-xs px-2 py-0.5 rounded-sm shadow-md"
-                                      style={{background: "linear-gradient(90deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.55) 100%)"}}>
-                                      <Clock className="h-3 w-3 mr-1 inline-block align-middle" />
-                                      {formatDuration(video.thumbnails[video.selectedThumbnail]?.timestamp || 0)}
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <CardContent className="p-4">
-                                  <div className="flex items-center justify-between mb-3">
-                                    <h3 className="font-medium truncate text-sm" title={video.name}>{video.name}</h3>
-                                    <Badge variant="outline" className="text-xs whitespace-nowrap ml-2">
-                                      {video.thumbnails.length}张
-                                    </Badge>
-                                  </div>
+                        <div className="relative">
+                                      <div className="aspect-video bg-gray-100 dark:bg-gray-900 overflow-hidden">
+                          <img
+                            src={video.thumbnails[video.selectedThumbnail]?.url || "/placeholder.svg"}
+                            alt={video.name}
+                                          className="w-full h-full object-cover"
+                          />
+                          </div>
+                                      <div className="absolute bottom-2 right-2">
+                                        <Badge className="border-0 text-white text-xs px-2 py-0.5 rounded-sm shadow-md"
+                                          style={{background: "linear-gradient(90deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.55) 100%)"}}>
+                                          <Clock className="h-3 w-3 mr-1 inline-block align-middle" />
+                                          {formatDuration(video.thumbnails[video.selectedThumbnail]?.timestamp || 0)}
+                                        </Badge>
+                                      </div>
+                        </div>
+                        <CardContent className="p-4">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h3 className="font-medium truncate text-sm" title={video.name}>{video.name}</h3>
+                                        <Badge variant="outline" className="text-xs whitespace-nowrap ml-2">
+                              {video.thumbnails.length}张
+                            </Badge>
+                          </div>
 
                                   {/* 候选缩略图滚动条 - 修改为显示3x3布局 */}
-                                  <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                      <h4 className="text-xs font-medium text-gray-500">候选帧</h4>
-                                      <div className="text-xs text-gray-500">
-                                        {video.thumbnails.length > 0 && (
-                                          <span>
+                                      <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                          <h4 className="text-xs font-medium text-gray-500">候选帧</h4>
+                                          <div className="text-xs text-gray-500">
+                                            {video.thumbnails.length > 0 && (
+                                              <span>
                                             {(video.thumbnailPagination?.currentPage || 0) * 9 + 1}-{Math.min(((video.thumbnailPagination?.currentPage || 0) * 9 + 9), video.thumbnails.length)}/{video.thumbnails.length}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    <div className="border border-gray-200 dark:border-gray-700 rounded-md p-2 bg-gray-50 dark:bg-gray-900">
-                                      {video.thumbnails.length === 0 ? (
-                                        <div className="text-center text-gray-500 text-xs py-4">
-                                          暂无缩略图
-                                        </div>
-                                      ) : (
-                                        <>
-                                          <div className="grid grid-cols-3 gap-3 mb-2">
-                                            {getCurrentPageThumbnails(video.thumbnails, {
-                                              currentPage: video.thumbnailPagination?.currentPage || 0,
-                                              itemsPerPage: 9 // 修改为显示9个缩略图
-                                            }).map((thumbnail, index) => {
-                                              // 计算实际索引
-                                              const actualIndex = (video.thumbnailPagination?.currentPage || 0) * 9 + index; // 修改为9个每页
-                                              
-                                              return (
-                                                <button
-                                                  key={thumbnail.id}
-                                                  onClick={() => selectThumbnail(video.id, actualIndex)}
-                                                  className={`relative flex-shrink-0 border rounded overflow-hidden ${
-                                                    actualIndex === video.selectedThumbnail
-                                                      ? "border-blue-500 border-2"
-                                                      : "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
-                                                  }`}
-                                                >
-                                                  <div className="relative w-full aspect-video group">
-                                                    <img
-                                                      src={thumbnail.url || "/placeholder.svg"}
-                                                      alt={`缩略图 ${actualIndex + 1}`}
-                                                      className="w-full h-full object-cover"
-                                                    />
-                                                    {actualIndex === video.selectedThumbnail && (
-                                                      <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center pointer-events-none">
-                                                        <Check className="h-5 w-5 text-blue-600" />
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                </button>
-                                              );
-                                            })}
+                                              </span>
+                                            )}
                                           </div>
-                                          
+                                        </div>
+                            
+                                        <div className="border border-gray-200 dark:border-gray-700 rounded-md p-2 bg-gray-50 dark:bg-gray-900">
+                                          {video.thumbnails.length === 0 ? (
+                                            <div className="text-center text-gray-500 text-xs py-4">
+                                              暂无缩略图
+                                            </div>
+                                          ) : (
+                                            <>
+                                              <div className="grid grid-cols-3 gap-3 mb-2">
+                                                {getCurrentPageThumbnails(video.thumbnails, {
+                                                  currentPage: video.thumbnailPagination?.currentPage || 0,
+                                              itemsPerPage: 9 // 修改为显示9个缩略图
+                                                }).map((thumbnail, index) => {
+                                                  // 计算实际索引
+                                              const actualIndex = (video.thumbnailPagination?.currentPage || 0) * 9 + index; // 修改为9个每页
+                                                  
+                                                  return (
+                                                    <button
+                                                      key={thumbnail.id}
+                                                      onClick={() => selectThumbnail(video.id, actualIndex)}
+                                                      className={`relative flex-shrink-0 border rounded overflow-hidden ${
+                                                        actualIndex === video.selectedThumbnail
+                                                          ? "border-blue-500 border-2"
+                                                          : "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+                                                      }`}
+                                                    >
+                                                      <div className="relative w-full aspect-video group">
+                                                        <img
+                                                          src={thumbnail.url || "/placeholder.svg"}
+                                                          alt={`缩略图 ${actualIndex + 1}`}
+                                                          className="w-full h-full object-cover"
+                                                        />
+                                                        {actualIndex === video.selectedThumbnail && (
+                                                          <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center pointer-events-none">
+                                                            <Check className="h-5 w-5 text-blue-600" />
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                              
                                           {/* 分页控制 - 修改为9个每页 */}
                                           {video.thumbnails.length > 9 && (
-                                            <div className="flex justify-center items-center gap-2 pt-2">
-                                              <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => changePage(video.id, (video.thumbnailPagination?.currentPage || 0) - 1)}
-                                                disabled={(video.thumbnailPagination?.currentPage || 0) === 0}
-                                                className="h-7 w-7 p-0"
-                                              >
-                                                <ChevronLeft className="h-4 w-4" />
-                                              </Button>
-                                              
-                                              <span className="text-xs text-gray-500">
+                                                <div className="flex justify-center items-center gap-2 pt-2">
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => changePage(video.id, (video.thumbnailPagination?.currentPage || 0) - 1)}
+                                                    disabled={(video.thumbnailPagination?.currentPage || 0) === 0}
+                                                    className="h-7 w-7 p-0"
+                                                  >
+                                                    <ChevronLeft className="h-4 w-4" />
+                                                  </Button>
+                                                  
+                                                  <span className="text-xs text-gray-500">
                                                 {(video.thumbnailPagination?.currentPage || 0) + 1}/{Math.ceil(video.thumbnails.length / 9)}
-                                              </span>
-                                              
-                                              <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => changePage(video.id, (video.thumbnailPagination?.currentPage || 0) + 1)}
+                                                  </span>
+                                                  
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => changePage(video.id, (video.thumbnailPagination?.currentPage || 0) + 1)}
                                                 disabled={(video.thumbnailPagination?.currentPage || 0) >= Math.ceil(video.thumbnails.length / 9) - 1}
-                                                className="h-7 w-7 p-0"
-                                              >
-                                                <ChevronRight className="h-4 w-4" />
-                                              </Button>
-                                            </div>
+                                                    className="h-7 w-7 p-0"
+                                                  >
+                                                    <ChevronRight className="h-4 w-4" />
+                                                  </Button>
+                                                </div>
+                                              )}
+                                            </>
                                           )}
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
+                                        </div>
+                                      </div>
 
-                                  <div className="flex justify-between items-center">
-                                    <div className="flex space-x-1">
-                                      {/* 移除所有类型标记显示 */}
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      onClick={() => downloadThumbnail(video)}
-                                      className="bg-green-600 hover:bg-green-700 text-white"
-                                    >
-                                      <Download className="h-3 w-3 mr-1" />
-                                      下载
-                                    </Button>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                        </div>
-                      </ScrollArea>
+                                      <div className="flex justify-between items-center">
+                                        <div className="flex space-x-1">
+                                          {/* 移除所有类型标记显示 */}
+                                        </div>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => downloadThumbnail(video)}
+                                          className="bg-green-600 hover:bg-green-700 text-white"
+                                        >
+                                          <Download className="h-3 w-3 mr-1" />
+                                          下载
+                                        </Button>
+                                      </div>
+                                    </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              </ScrollArea>
                     )}
                   </div>
                 </CardContent>

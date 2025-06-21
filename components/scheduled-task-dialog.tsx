@@ -80,8 +80,8 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       } else {
         // 否则从存储中加载任务
         console.log("从存储中加载任务...");
-        loadTasks()
-      }
+      loadTasks()
+    }
     }
   }, [open, item.id, existingTask])
 
@@ -222,7 +222,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         } else if (onUpdate) {
           // 否则使用旧的onUpdate回调
           console.log("[ScheduledTaskDialog] 调用onUpdate回调");
-          // 重新加载任务列表
+        // 重新加载任务列表
           await loadTasks();
           onUpdate(item);
         } else {
@@ -499,7 +499,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         
         // 重新加载任务列表
         await loadTasks()
-      } else {
+    } else {
         console.error(`[ScheduledTaskDialog] 自动保存失败: ID=${updatedTask.id}`)
         toast({
           title: "自动保存失败",
@@ -711,44 +711,44 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>执行频率</Label>
+          <Select
+            value={currentTask.schedule.type}
+            onValueChange={(value) => updateTaskField('schedule.type', value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="选择执行频率" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">每天</SelectItem>
+              <SelectItem value="weekly">每周</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {currentTask.schedule.type === "weekly" && (
           <div className="space-y-2">
-            <Label>执行频率</Label>
+            <Label>执行日期</Label>
             <Select
-              value={currentTask.schedule.type}
-              onValueChange={(value) => updateTaskField('schedule.type', value)}
+              value={currentTask.schedule.dayOfWeek?.toString() || "0"}
+              onValueChange={(value) => updateTaskField('schedule.dayOfWeek', parseInt(value, 10))}
             >
               <SelectTrigger>
-                <SelectValue placeholder="选择执行频率" />
+                <SelectValue placeholder="选择星期几" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily">每天</SelectItem>
-                <SelectItem value="weekly">每周</SelectItem>
+                <SelectItem value="0">周一</SelectItem>
+                <SelectItem value="1">周二</SelectItem>
+                <SelectItem value="2">周三</SelectItem>
+                <SelectItem value="3">周四</SelectItem>
+                <SelectItem value="4">周五</SelectItem>
+                <SelectItem value="5">周六</SelectItem>
+                <SelectItem value="6">周日</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          
-          {currentTask.schedule.type === "weekly" && (
-            <div className="space-y-2">
-              <Label>执行日期</Label>
-              <Select
-                value={currentTask.schedule.dayOfWeek?.toString() || "0"}
-                onValueChange={(value) => updateTaskField('schedule.dayOfWeek', parseInt(value, 10))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择星期几" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">周一</SelectItem>
-                  <SelectItem value="1">周二</SelectItem>
-                  <SelectItem value="2">周三</SelectItem>
-                  <SelectItem value="3">周四</SelectItem>
-                  <SelectItem value="4">周五</SelectItem>
-                  <SelectItem value="5">周六</SelectItem>
-                  <SelectItem value="6">周日</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+        )}
         </div>
         
         <div className="space-y-2">
@@ -801,67 +801,67 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         
         <div className="border p-4 rounded-md space-y-3">
           <h3 className="text-sm font-medium">基本选项</h3>
-          
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="auto-upload" className="flex-1">
-              自动上传至TMDB
-            </Label>
-            <Switch
-              id="auto-upload"
-              checked={currentTask.action.autoUpload}
-              onCheckedChange={(checked) => updateTaskField('action.autoUpload', checked)}
-            />
-          </div>
-          
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="auto-remove-marked" className="flex-1">
-              自动过滤已标记完成的集数
-            </Label>
-            <Switch
-              id="auto-remove-marked"
-              checked={currentTask.action.autoRemoveMarked}
-              onCheckedChange={(checked) => updateTaskField('action.autoRemoveMarked', checked)}
-            />
+        
+        <div className="flex items-center justify-between space-x-2">
+          <Label htmlFor="auto-upload" className="flex-1">
+            自动上传至TMDB
+          </Label>
+          <Switch
+            id="auto-upload"
+            checked={currentTask.action.autoUpload}
+            onCheckedChange={(checked) => updateTaskField('action.autoUpload', checked)}
+          />
+        </div>
+        
+        <div className="flex items-center justify-between space-x-2">
+          <Label htmlFor="auto-remove-marked" className="flex-1">
+            自动过滤已标记完成的集数
+          </Label>
+          <Switch
+            id="auto-remove-marked"
+            checked={currentTask.action.autoRemoveMarked}
+            onCheckedChange={(checked) => updateTaskField('action.autoRemoveMarked', checked)}
+          />
           </div>
         </div>
         
         <div className="border p-4 rounded-md space-y-3">
           <h3 className="text-sm font-medium">高级选项</h3>
-          
+        
+        <div className="flex items-center justify-between space-x-2">
+          <Label htmlFor="auto-confirm" className="flex-1">
+            自动确认上传（输入y）
+          </Label>
+          <Switch
+            id="auto-confirm"
+            checked={currentTask.action.autoConfirm !== false}
+            onCheckedChange={(checked) => updateTaskField('action.autoConfirm', checked)}
+          />
+        </div>
+        
+        <div className="flex items-center justify-between space-x-2">
+          <Label htmlFor="auto-mark-uploaded" className="flex-1">
+            自动标记已上传的集数
+          </Label>
+          <Switch
+            id="auto-mark-uploaded"
+            checked={currentTask.action.autoMarkUploaded !== false}
+            onCheckedChange={(checked) => updateTaskField('action.autoMarkUploaded', checked)}
+          />
+        </div>
+        
+        {item.platformUrl?.includes('iqiyi.com') && (
           <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="auto-confirm" className="flex-1">
-              自动确认上传（输入y）
+            <Label htmlFor="remove-iqiyi-air-date" className="flex-1">
+              删除爱奇艺平台的air_date列
             </Label>
             <Switch
-              id="auto-confirm"
-              checked={currentTask.action.autoConfirm !== false}
-              onCheckedChange={(checked) => updateTaskField('action.autoConfirm', checked)}
+              id="remove-iqiyi-air-date"
+              checked={currentTask.action.removeIqiyiAirDate !== false}
+              onCheckedChange={(checked) => updateTaskField('action.removeIqiyiAirDate', checked)}
             />
           </div>
-          
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="auto-mark-uploaded" className="flex-1">
-              自动标记已上传的集数
-            </Label>
-            <Switch
-              id="auto-mark-uploaded"
-              checked={currentTask.action.autoMarkUploaded !== false}
-              onCheckedChange={(checked) => updateTaskField('action.autoMarkUploaded', checked)}
-            />
-          </div>
-          
-          {item.platformUrl?.includes('iqiyi.com') && (
-            <div className="flex items-center justify-between space-x-2">
-              <Label htmlFor="remove-iqiyi-air-date" className="flex-1">
-                删除爱奇艺平台的air_date列
-              </Label>
-              <Switch
-                id="remove-iqiyi-air-date"
-                checked={currentTask.action.removeIqiyiAirDate !== false}
-                onCheckedChange={(checked) => updateTaskField('action.removeIqiyiAirDate', checked)}
-              />
-            </div>
-          )}
+        )}
         </div>
         
         <div className="flex items-center justify-between space-x-2">
