@@ -1,0 +1,314 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .tmdb-grid-cell {
+    @apply truncate whitespace-nowrap overflow-hidden text-ellipsis;
+  }
+}
+
+@layer components {
+  /* VS Code风格的CSV编辑器 */
+  .vscode-csv-editor {
+    border: 1px solid hsl(var(--border));
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .vscode-csv-editor .toolbar {
+    background-color: hsl(var(--muted)/0.8);
+    border-bottom: 1px solid hsl(var(--border));
+    padding: 2px 4px;
+  }
+
+  .vscode-csv-editor .toolbar button {
+    font-size: 12px;
+    height: 28px;
+    padding: 0 8px;
+  }
+
+  /* 新增CSV表格样式 */
+  .new-tmdb-table table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  
+  .new-tmdb-table.grid-lines table {
+    border: 1px solid hsl(var(--border));
+  }
+
+  .new-tmdb-table.grid-lines th,
+  .new-tmdb-table.grid-lines td {
+    border: 1px solid hsl(var(--border));
+  }
+
+  /* 增强网格线显示 - 类似VS Code的CSV编辑器 */
+  .new-tmdb-table.grid-lines .tmdb-grid-cell {
+    border: none;
+    position: relative;
+    padding: 4px 8px;
+  }
+  
+  /* 表头样式 */
+  .new-tmdb-table th {
+    background-color: hsl(var(--muted));
+    font-weight: 600;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    color: hsl(var(--foreground));
+    padding: 8px;
+    height: 40px;
+  }
+  
+  /* 行号列样式 */
+  .new-tmdb-table td:first-child,
+  .new-tmdb-table th:first-child {
+    background-color: hsl(var(--muted));
+    font-weight: 500;
+    text-align: center;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    max-width: 60px;
+    min-width: 48px;
+    width: 48px;
+  }
+  
+  /* 行号列与表头交叉处样式 */
+  .new-tmdb-table th:first-child {
+    z-index: 15;
+  }
+  
+  /* 交替行颜色样式 */
+  .new-tmdb-table.alternate-rows tr:nth-child(even) td {
+    background-color: hsl(var(--background));
+  }
+  
+  .new-tmdb-table.alternate-rows tr:nth-child(odd) td {
+    background-color: hsl(var(--muted)/0.3);
+  }
+  
+  /* 行号列背景始终保持不变 */
+  .new-tmdb-table.alternate-rows tr:nth-child(odd) td:first-child,
+  .new-tmdb-table.alternate-rows tr:nth-child(even) td:first-child {
+    background-color: hsl(var(--muted));
+  }
+  
+  /* 单元格悬停样式替代行悬停 */
+  .new-tmdb-table td:not(:first-child):hover {
+    background-color: hsl(var(--accent)/0.7);
+  }
+
+  /* 选择单元格样式 */
+  .tmdb-grid-cell.selected {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tmdb-grid-cell.selected::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid rgb(59, 130, 246);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* 拖拽框选模式样式 */
+  .tmdb-table .cursor-crosshair {
+    cursor: crosshair !important;
+  }
+
+  /* 批量选择区域样式 */
+  .tmdb-selection-area {
+    position: absolute;
+    background-color: rgba(59, 130, 246, 0.15);
+    border: 2px solid rgb(59, 130, 246);
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+    transition: all 0.1s ease;
+  }
+  
+  /* 选择区域信息提示 */
+  .tmdb-selection-info {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 200;
+    animation: fadeIn 0.2s ease;
+  }
+  
+  /* 增强选中单元格样式 */
+  .tmdb-table td.bg-primary\/20 {
+    background-color: rgba(var(--primary-rgb), 0.15) !important;
+    position: relative;
+    z-index: 1;
+    transition: background-color 0.1s ease;
+  }
+  
+  .tmdb-table td.bg-primary\/20::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1.5px solid rgba(var(--primary-rgb), 0.5);
+    pointer-events: none;
+    z-index: 2;
+  }
+  
+  /* 动画效果 */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .new-tmdb-table.fixed-row-height td {
+    height: 40px;
+    max-height: 40px;
+    overflow: hidden;
+  }
+
+  .new-tmdb-table.fixed-row-height .tmdb-grid-cell {
+    height: 40px;
+    max-height: 40px;
+    line-height: 40px;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* 列拖拽样式 */
+  .new-tmdb-table th[data-dragging="true"] {
+    opacity: 0.5;
+    cursor: grabbing;
+  }
+  
+  .new-tmdb-table th[data-drag-over="true"] {
+    border-left: 2px solid hsl(var(--primary));
+  }
+  
+  /* 确保表格单元格内容不会溢出 */
+  .new-tmdb-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0;
+  }
+  
+  /* 防止表格文本选择，优化拖拽框选体验 */
+  .tmdb-table {
+    user-select: none;
+  }
+  
+  /* 只有在编辑模式下允许选择文本 */
+  .tmdb-table input {
+    user-select: text;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --primary-rgb: 0, 0%, 9%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --primary-rgb: 0, 0%, 98%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

@@ -1,0 +1,172 @@
+/* 单行CSV编辑器样式 */
+
+/* 表格容器样式 */
+.single-line-csv-editor-container {
+  width: 100%;
+  position: relative;
+  font-size: 12px;
+}
+
+/* 滚动容器 */
+.single-line-csv-editor-container .scroll-container {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #888 #f1f1f1 !important;
+  display: block !important;
+  width: 100% !important;
+  position: relative !important;
+  z-index: 5 !important;
+  max-width: 100% !important;
+}
+
+/* 表格包装器 */
+.single-line-csv-editor-container .table-wrapper {
+  width: max-content !important;
+  min-width: 100% !important;
+  position: relative !important;
+}
+
+/* 单行表格样式 */
+.single-line-table {
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  width: max-content !important;
+  min-width: 100% !important;
+}
+
+/* 表头样式 */
+.single-line-table th {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  height: 36px !important;
+  position: relative !important;
+  background-color: #f9fafb !important;
+  z-index: 5 !important;
+  padding: 0 8px !important;
+  font-weight: 600 !important;
+}
+
+/* 单元格样式 */
+.single-line-table td {
+  height: 36px !important;
+  max-height: 36px !important;
+  min-height: 36px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: relative !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  cursor: cell !important;
+  word-break: keep-all !important;
+  word-wrap: normal !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-right: 1px solid #e5e7eb !important;
+}
+
+/* 单元格内容包装器 */
+.single-line-table .cell-content-wrapper {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+/* 编辑中的单元格样式 */
+.single-line-table td.editing {
+  padding: 0 !important;
+  background-color: #f9fafb !important;
+}
+
+/* 编辑输入框样式 */
+.single-line-table td.editing input {
+  height: 36px !important;
+  line-height: 36px !important;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 不同类型列的样式 */
+.single-line-table td.overview-cell {
+  min-width: 300px !important;
+}
+
+.single-line-table td.backdrop-url-cell,
+.single-line-table td.poster-url-cell,
+.single-line-table td.url-cell {
+  min-width: 200px !important;
+}
+
+/* 滚动条样式 */
+.single-line-csv-editor-container .scroll-container::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+  background-color: #f1f1f1 !important;
+}
+
+.single-line-csv-editor-container .scroll-container::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 4px !important;
+}
+
+.single-line-csv-editor-container .scroll-container::-webkit-scrollbar-thumb {
+  background: #888 !important;
+  border-radius: 4px !important;
+  border: 1px solid #f1f1f1 !important;
+}
+
+.single-line-csv-editor-container .scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #555 !important;
+}
+
+/* 暗色模式适配 */
+.dark .single-line-table th {
+  background-color: #1f2937 !important;
+}
+
+.dark .single-line-table td.editing {
+  background-color: #374151 !important;
+}
+
+.dark .single-line-table td {
+  border-bottom: 1px solid #374151 !important;
+  border-right: 1px solid #374151 !important;
+}
+
+/* 单元格悬停效果（替代行悬停） */
+.single-line-table td:hover {
+  background-color: rgba(243, 244, 246, 0.5) !important;
+}
+
+.dark .single-line-table td:hover {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+}
+
+/* 确保tooltip正确显示 */
+.tooltip-content {
+  max-width: 300px !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  padding: 8px !important;
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .tooltip-content {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+} 

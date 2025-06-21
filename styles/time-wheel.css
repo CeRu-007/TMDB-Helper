@@ -1,0 +1,52 @@
+/* 增强时间滚轮选择器的视觉和交互体验 */
+
+.time-wheel-container {
+  touch-action: pan-y; /* 允许垂直平移，优化触摸设备体验 */
+  user-select: none;
+}
+
+.time-wheel {
+  cursor: ns-resize; /* 指示可垂直滚动的光标 */
+  transition: transform 0.1s ease-out;
+}
+
+.time-wheel:active {
+  cursor: grabbing;
+}
+
+/* 增强滚动反馈 */
+.time-wheel-item {
+  transition: all 0.15s ease-out;
+}
+
+.time-wheel-item-selected {
+  font-weight: 600;
+  color: var(--primary);
+  transform: scale(1.05);
+}
+
+/* 增强触摸区域 */
+.time-wheel-arrow {
+  min-height: 32px; /* 更大的点击区域 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 高亮效果 */
+.time-wheel-highlight {
+  background: rgba(var(--primary-rgb), 0.08);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.1);
+}
+
+/* 触摸设备优化 */
+@media (hover: none) {
+  .time-wheel-arrow {
+    min-height: 40px; /* 触摸设备上更大的点击区域 */
+  }
+  
+  .time-wheel {
+    padding: 4px; /* 增加内边距，提高触摸精度 */
+  }
+} 
