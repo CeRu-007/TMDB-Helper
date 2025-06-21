@@ -92,6 +92,16 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
     }
   }
 
+  // 获取完结日期（取updatedAt）
+  const getCompletionDate = () => {
+    try {
+      const date = new Date(item.updatedAt)
+      return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    } catch {
+      return null
+    }
+  }
+
   const handleImageError = () => {
     setImageError(true)
   }
@@ -108,39 +118,48 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
       {/* 播出时间标签 - 电视剧和短剧只显示每日更新标签，其他分类显示日期时间 */}
       {showAirTime && (
         <div className="mb-2 flex flex-wrap gap-1">
-          {/* 电视剧和短剧显示每日更新标签和播出时间标签 */}
-          {isDailyUpdate ? (
-            <>
-            <Badge className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
-              <Zap className="h-3 w-3 mr-1 animate-pulse" />
-              每日更新
+          {/* 已完结条目显示完结日期标签 */}
+          {item.status === "completed" ? (
+            <Badge className="bg-gray-600 text-white text-xs px-2 py-1 rounded-full">
+              {getCompletionDate() ? `${getCompletionDate()} 完结` : "已完结"}
             </Badge>
-              <Badge className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
-                {getTimeOnly()}
-              </Badge>
-            </>
           ) : (
             <>
-              {/* 主要播出日标签 */}
-              <Badge
-                className={`text-white text-xs px-2 py-1 rounded-full ${
-                  // 如果是今天的播出日，使用特殊颜色
-                  item.weekday === new Date().getDay() ? "bg-red-500 animate-pulse" : "bg-green-500"
-                }`}
-              >
-                {getAirTime(item.weekday)}
-              </Badge>
-
-              {/* 第二播出日标签（如果有） */}
-              {hasSecondWeekday && (
-                <Badge
-                  className={`text-white text-xs px-2 py-1 rounded-full ${
-                    // 如果是今天的播出日，使用特殊颜色
-                    item.secondWeekday === new Date().getDay() ? "bg-red-500 animate-pulse" : "bg-blue-500"
-                  }`}
-                >
-                  {getAirTime(item.secondWeekday as number)}
+              {/* 电视剧和短剧显示每日更新标签和播出时间标签 */}
+              {isDailyUpdate ? (
+                <>
+                <Badge className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                  <Zap className="h-3 w-3 mr-1 animate-pulse" />
+                  每日更新
                 </Badge>
+                  <Badge className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                    {getTimeOnly()}
+                  </Badge>
+                </>
+              ) : (
+                <>
+                  {/* 主要播出日标签 */}
+                  <Badge
+                    className={`text-white text-xs px-2 py-1 rounded-full ${
+                      // 如果是今天的播出日，使用特殊颜色
+                      item.weekday === new Date().getDay() ? "bg-red-500 animate-pulse" : "bg-green-500"
+                    }`}
+                  >
+                    {getAirTime(item.weekday)}
+                  </Badge>
+
+                  {/* 第二播出日标签（如果有） */}
+                  {hasSecondWeekday && (
+                    <Badge
+                      className={`text-white text-xs px-2 py-1 rounded-full ${
+                        // 如果是今天的播出日，使用特殊颜色
+                        item.secondWeekday === new Date().getDay() ? "bg-red-500 animate-pulse" : "bg-blue-500"
+                      }`}
+                    >
+                      {getAirTime(item.secondWeekday as number)}
+                    </Badge>
+                  )}
+                </>
               )}
             </>
           )}
