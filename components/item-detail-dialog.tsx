@@ -86,6 +86,8 @@ import {
   BookMarked,
   ListTodo,
   Activity,
+  Link2,
+  FrameIcon,
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/storage"
 import { useMobile } from "@/hooks/use-mobile"
@@ -96,6 +98,8 @@ import FixTMDBImportBugDialog from "@/components/fix-tmdb-import-bug-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { StorageManager } from "@/lib/storage"
 import { BackgroundImage } from "@/components/ui/background-image"
+import { getPlatformInfo } from "@/lib/utils"
+import { PlatformLogo } from "@/components/ui/platform-icon"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -877,6 +881,25 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         };
       }
       
+      // 更新网络相关信息 - 第一处添加
+      if (editData.mediaType === "tv") {
+        // 检查是否有网络信息
+        if (tmdbData.networkId || tmdbData.networkName || tmdbData.networkLogoUrl) {
+          console.log("从TMDB获取到网络信息:", {
+            networkId: tmdbData.networkId,
+            networkName: tmdbData.networkName,
+            networkLogoUrl: tmdbData.networkLogoUrl,
+          });
+          
+          updatedData = {
+            ...updatedData,
+            networkId: tmdbData.networkId,
+            networkName: tmdbData.networkName,
+            networkLogoUrl: tmdbData.networkLogoUrl,
+          };
+        }
+      }
+      
       // 对于电视剧，更新季数据
       if (editData.mediaType === "tv" && tmdbData.seasons) {
         // 将TMDB的季数据与现有数据合并
@@ -961,6 +984,22 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 更新标志
       if (tmdbData.logoUrl) {
         newLocalItem.logoUrl = tmdbData.logoUrl;
+      }
+      
+      // 更新网络相关信息 - 第二处添加
+      if (editData.mediaType === "tv") {
+        if (tmdbData.networkId !== undefined) {
+          newLocalItem.networkId = tmdbData.networkId;
+        }
+        
+        if (tmdbData.networkName) {
+          newLocalItem.networkName = tmdbData.networkName;
+        }
+        
+        if (tmdbData.networkLogoUrl) {
+          newLocalItem.networkLogoUrl = tmdbData.networkLogoUrl;
+          console.log("已更新网络logo URL:", tmdbData.networkLogoUrl);
+        }
       }
       
       // 如果是电视剧且有季数据更新，也更新这部分
@@ -1179,9 +1218,12 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           {/* 新的网格布局 */}
           <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* 左侧：海报区域 */}
-            <div className="md:col-span-1">
-              {/* 海报区域 */}
-              <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full">
+            <div className="md:col-span-1 md:max-w-full overflow-hidden">
+              {/* 使用固定高度div替代ScrollArea，确保内容不需滚动 */}
+              <div className="h-[calc(95vh-300px)] flex flex-col">
+                <div className="pr-2 flex-1 flex flex-col">
+                  {/* 海报区域 */}
+                  <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full">
                 {localItem.posterUrl ? (
                   <img 
                     src={localItem.posterUrl} 
@@ -1270,142 +1312,136 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    {/* 添加播出平台URL输入字段 */}
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-platform-url" className="flex items-center">
+                        <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                        播出平台URL
+                      </Label>
+                      <div className="flex items-center space-x-2">
+                        <Input 
+                          id="edit-platform-url" 
+                          value={editData.platformUrl || ""} 
+                          onChange={(e) => setEditData({...editData, platformUrl: e.target.value})}
+                          placeholder="https://www.example.com/watch/..."
+                          className="flex-1"
+                        />
+                        {editData.platformUrl && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(editData.platformUrl, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {editData.platformUrl && (
+                        <div className="text-xs text-muted-foreground mt-1 flex items-center">
+                          <div className="w-4 h-4 mr-1 flex-shrink-0">
+                            {(() => {
+                              const platformInfo = getPlatformInfo(editData.platformUrl);
+                              return platformInfo ? 
+                                <PlatformLogo platform={platformInfo.name} size={16} /> : 
+                                <FrameIcon className="w-4 h-4" />;
+                            })()}
+                          </div>
+                          {(() => {
+                            const platformInfo = getPlatformInfo(editData.platformUrl);
+                            return platformInfo?.name || '识别为外部链接';
+                          })()}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   // 查看模式下显示新的功能区
-                  <div className="space-y-3">
-                    {/* TMDB评分区域 */}
-                    <div className="pb-1 mb-2">
+                  <div className="space-y-1 flex-1 flex flex-col">
+                    {/* 播出平台区域 - 优先使用TMDB网络logo */}
+                    <div className="pb-0.5 mb-0.5">
                       <h3 className="text-sm font-medium flex items-center">
-                        <Star className="h-3.5 w-3.5 mr-1.5" />
-                        TMDB评分
+                        <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                        播出平台
                       </h3>
                     </div>
-                    <div className="flex items-center justify-between mb-3">
-                      {/* 环形进度条评分 */}
-                      <div className="relative w-16 h-16">
-                        <svg className="w-full h-full" viewBox="0 0 36 36">
-                          {/* 背景圆环 */}
-                          <circle 
-                            cx="18" 
-                            cy="18" 
-                            r="15.9" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            strokeWidth="1.5" 
-                            className="text-muted-foreground/20"
-                          />
-                          
-                          {/* 进度圆环 - 使用strokeDasharray和strokeDashoffset实现部分填充效果 */}
-                          {localItem.voteAverage ? (
-                            <circle 
-                              cx="18" 
-                              cy="18" 
-                              r="15.9" 
-                              fill="none" 
-                              stroke={`url(#rating-gradient-${localItem.id})`} 
-                              strokeWidth="2.5" 
-                              strokeLinecap="round"
-                              strokeDasharray="100"
-                              strokeDashoffset={100 - ((localItem.voteAverage / 10) * 100)}
-                              transform="rotate(-90 18 18)"
-                              className="drop-shadow-md transition-all duration-1000 ease-in-out"
-                            />
-                          ) : (
-                            <circle 
-                              cx="18" 
-                              cy="18" 
-                              r="15.9" 
-                              fill="none" 
-                              stroke="currentColor"
-                              strokeWidth="2.5" 
-                              strokeLinecap="round"
-                              strokeDasharray="100"
-                              strokeDashoffset="100"
-                              transform="rotate(-90 18 18)"
-                              className="text-muted-foreground/30"
-                            />
-                          )}
-                          
-                          {/* 评分渐变色定义 */}
-                          <defs>
-                            <linearGradient id={`rating-gradient-${localItem.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                              <stop offset="0%" stopColor="#f97316" /> {/* 橙色起始 */}
-                              <stop offset="50%" stopColor="#facc15" /> {/* 黄色中间 */}
-                              <stop offset="100%" stopColor="#22c55e" /> {/* 绿色结束 */}
-                            </linearGradient>
-                          </defs>
-                          
-                          {/* 中心评分文本 */}
-                          <text 
-                            x="18" 
-                            y="18" 
-                            dominantBaseline="middle" 
-                            textAnchor="middle" 
-                            className="fill-current text-lg font-bold"
+                    <div className="flex items-center justify-center mb-1">
+                      {/* 平台Logo区域 - 优先使用TMDB网络logo */}
+                      <div className="flex items-center justify-center w-full">
+                        {localItem.networkLogoUrl ? (
+                          // 显示TMDB官方网络logo
+                          <div 
+                            className="w-full h-12 flex items-center justify-center cursor-pointer"
+                            onClick={() => localItem.platformUrl && window.open(localItem.platformUrl, '_blank')}
+                            title={localItem.networkName || '播出网络'}
                           >
-                            {localItem.voteAverage ? localItem.voteAverage.toFixed(1) : "-"}
-                          </text>
-                          <text 
-                            x="18" 
-                            y="24" 
-                            dominantBaseline="middle" 
-                            textAnchor="middle" 
-                            className="fill-current text-[10px] font-medium text-muted-foreground"
-                          >
-                            / 10
-                          </text>
-                        </svg>
-                      </div>
-                      
-                      {/* 评分说明 */}
-                      <div className="ml-4 flex-1">
-                        <div className="text-sm">
-                          {localItem.voteAverage ? (
-                            <>
-                              <p className="font-medium flex items-center">
-                                <span 
-                                  className={`inline-block w-2 h-2 rounded-full mr-1.5 ${
-                                    localItem.voteAverage >= 8 ? "bg-green-500" : 
-                                    localItem.voteAverage >= 6 ? "bg-yellow-500" : 
-                                    localItem.voteAverage >= 4 ? "bg-orange-500" : "bg-red-500"
-                                  }`}
-                                />
-                                {localItem.voteAverage >= 8 ? "优秀" : 
-                                 localItem.voteAverage >= 6 ? "良好" : 
-                                 localItem.voteAverage >= 4 ? "一般" : "较差"}
-                              </p>
-                              <div className="flex items-center mt-1.5 text-xs text-muted-foreground">
-                                <Activity className="h-3 w-3 mr-1" />
-                                <span>基于TMDB用户评分</span>
+                            <img 
+                              src={localItem.networkLogoUrl} 
+                              alt={localItem.networkName || '播出网络'} 
+                              className="max-w-full max-h-full object-contain hover:scale-110 transition-transform"
+                              onError={(e) => {
+                                // 如果官方logo加载失败，隐藏图片元素
+                                e.currentTarget.style.display = 'none';
+                                // 显示备用元素
+                                const container = e.currentTarget.parentElement;
+                                if (container) {
+                                  const networkIcon = document.createElement('div');
+                                  networkIcon.innerHTML = `<div class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" class="text-foreground/70"><path d="M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0z"></path><path d="M3.6 8.25h16.8M3.6 15.75h16.8M12 3.6v16.8"></path></svg></div>`;
+                                  container.appendChild(networkIcon);
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : localItem.platformUrl ? (
+                          // 回退到基于URL的平台识别
+                          (() => {
+                            const platformInfo = getPlatformInfo(localItem.platformUrl);
+                            return (
+                              <div 
+                                className="w-full h-12 flex items-center justify-center cursor-pointer"
+                                onClick={() => platformInfo && window.open(platformInfo.url, '_blank')}
+                                title={platformInfo?.name || '播出平台'}
+                              >
+                                {platformInfo ? (
+                                  <PlatformLogo 
+                                    platform={platformInfo.name} 
+                                    size={32}
+                                    className="hover:scale-110 transition-transform"
+                                  />
+                                ) : (
+                                  <ExternalLink className="h-9 w-9 text-foreground/70" />
+                                )}
                               </div>
-                            </>
-                          ) : (
-                            <div className="flex flex-col h-full justify-center">
-                              <span className="text-muted-foreground text-xs italic">暂无评分数据</span>
-                              <span className="text-xs text-muted-foreground/70 mt-1">刷新TMDB数据可获取评分和标志</span>
-                            </div>
-                          )}
-                        </div>
+                            )
+                          })()
+                        ) : (
+                          // 未设置平台URL时的显示
+                          <div className="w-full h-12 flex items-center justify-center">
+                            <FrameIcon className="h-8 w-8 text-muted-foreground/50" />
+                          </div>
+                        )}
                       </div>
                     </div>
                     
                     {/* TMDB简介区域 */}
-                    <div className="pb-1 mb-2">
+                    <div className="pb-0.5 mb-0.5">
                       <h3 className="text-sm font-medium flex items-center">
                         <Info className="h-3.5 w-3.5 mr-1.5" />
                         简介
                       </h3>
                     </div>
-                    <div className="bg-background/20 rounded p-2 max-h-[120px] overflow-y-auto text-sm">
+                    <div className="bg-background/20 rounded p-2 flex-1 overflow-y-auto text-sm overflow-x-hidden">
                       {localItem.overview ? (
-                        <p className="text-sm">{localItem.overview}</p>
+                        <p className="text-sm break-words">{localItem.overview}</p>
                       ) : (
                         <span className="text-muted-foreground text-xs italic">暂无简介信息</span>
                       )}
                     </div>
                   </div>
                 )}
+              </div>
+                </div>
               </div>
             </div>
             
