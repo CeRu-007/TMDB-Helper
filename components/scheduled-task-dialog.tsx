@@ -50,10 +50,12 @@ interface ScheduledTaskDialogProps {
   item: TMDBItem
   open: boolean
   onOpenChange: (open: boolean) => void
-  onUpdate: (item: TMDBItem) => void
+  onUpdate?: (item: TMDBItem) => void
+  existingTask?: ScheduledTask
+  onTaskSaved?: (task: ScheduledTask) => void
 }
 
-export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate }: ScheduledTaskDialogProps) {
+export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate, existingTask, onTaskSaved }: ScheduledTaskDialogProps) {
   const [tasks, setTasks] = useState<ScheduledTask[]>([])
   const [loading, setLoading] = useState(true)
   const [isAddingTask, setIsAddingTask] = useState(false)
@@ -63,20 +65,35 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
   const [isRunningTask, setIsRunningTask] = useState(false)
   const [runningTaskId, setRunningTaskId] = useState<string | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isAutoSaving, setIsAutoSaving] = useState(false)
 
-  // 加载任务列表
+  // 加载任务或使用传入的existingTask
   useEffect(() => {
     if (open) {
-      loadTasks()
+      console.log("ScheduledTaskDialog 打开，item.id:", item.id);
+      if (existingTask) {
+        // 如果传入了existingTask，直接使用它
+        console.log("使用传入的 existingTask:", existingTask);
+        setTasks([existingTask])
+        setLoading(false)
+      } else {
+        // 否则从存储中加载任务
+        console.log("从存储中加载任务...");
+        loadTasks()
+      }
     }
-  }, [open, item.id])
+  }, [open, item.id, existingTask])
 
   // 加载任务
   const loadTasks = async () => {
     setLoading(true)
     try {
+      console.log("开始加载定时任务...");
       const allTasks = await StorageManager.getScheduledTasks()
+      console.log("所有定时任务:", allTasks.length);
       const itemTasks = allTasks.filter(task => task.itemId === item.id)
+      console.log(`项目 ${item.id} 的定时任务:`, itemTasks.length);
       setTasks(itemTasks)
     } catch (error) {
       console.error("加载定时任务失败:", error)
@@ -92,6 +109,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
 
   // 创建新任务
   const handleAddTask = () => {
+    console.log("创建新任务，关联项目:", item);
     const newTask: ScheduledTask = {
       id: uuidv4(),
       itemId: item.id,
@@ -118,14 +136,19 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       updatedAt: new Date().toISOString()
     }
     
+    console.log("新建任务数据:", newTask);
     setCurrentTask(newTask)
     setIsAddingTask(true)
+    setHasUnsavedChanges(false)
+    setIsAutoSaving(false)
   }
 
   // 编辑任务
   const handleEditTask = (task: ScheduledTask) => {
     setCurrentTask({...task})
     setIsEditingTask(true)
+    setHasUnsavedChanges(false)
+    setIsAutoSaving(false)
   }
 
   // 保存任务
@@ -139,27 +162,72 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         updatedAt: new Date().toISOString()
       }
       
+      // 确保任务的必要字段都已设置
+      if (!updatedTask.itemId) {
+        updatedTask.itemId = item.id;
+      }
+      
+      if (!updatedTask.name || updatedTask.name.trim() === '') {
+        updatedTask.name = `${item.title} 定时任务`;
+      }
+      
+      console.log(`[ScheduledTaskDialog] 正在保存定时任务: ID=${updatedTask.id}, 项目ID=${updatedTask.itemId}, 名称=${updatedTask.name}`);
+      console.log(`[ScheduledTaskDialog] 任务详情:`, JSON.stringify(updatedTask, null, 2));
+      
       if (isAddingTask) {
         success = await StorageManager.addScheduledTask(updatedTask)
         if (success) {
+          console.log(`[ScheduledTaskDialog] 创建任务成功: ID=${updatedTask.id}`);
           toast({
             title: "创建成功",
             description: "定时任务已创建",
           })
+        } else {
+          console.error(`[ScheduledTaskDialog] 创建任务失败: ID=${updatedTask.id}`);
+          throw new Error("创建定时任务失败");
         }
       } else {
         success = await StorageManager.updateScheduledTask(updatedTask)
         if (success) {
+          console.log(`[ScheduledTaskDialog] 更新任务成功: ID=${updatedTask.id}`);
           toast({
             title: "更新成功",
             description: "定时任务已更新",
           })
+        } else {
+          console.error(`[ScheduledTaskDialog] 更新任务失败: ID=${updatedTask.id}`);
+          throw new Error("更新定时任务失败");
         }
       }
       
       if (success) {
-        // 重新加载任务列表
-        await loadTasks()
+        // 验证任务是否已成功保存
+        const savedTasks = await StorageManager.forceRefreshScheduledTasks();
+        const taskSaved = savedTasks.some(t => t.id === updatedTask.id);
+        
+        if (!taskSaved) {
+          console.error(`[ScheduledTaskDialog] 验证失败: 任务 ID=${updatedTask.id} 未在存储中找到`);
+          throw new Error("任务保存验证失败，请尝试重新保存");
+        }
+        
+        console.log(`[ScheduledTaskDialog] 验证成功: 任务 ID=${updatedTask.id} 已成功保存到存储`);
+        
+        // 清除未保存更改状态
+        setHasUnsavedChanges(false)
+        
+        // 如果提供了onTaskSaved回调，调用它
+        if (onTaskSaved) {
+          console.log("[ScheduledTaskDialog] 调用onTaskSaved回调");
+          onTaskSaved(updatedTask);
+        } else if (onUpdate) {
+          // 否则使用旧的onUpdate回调
+          console.log("[ScheduledTaskDialog] 调用onUpdate回调");
+          // 重新加载任务列表
+          await loadTasks();
+          onUpdate(item);
+        } else {
+          console.warn("[ScheduledTaskDialog] 未提供onTaskSaved或onUpdate回调，任务已保存但UI可能不会更新");
+        }
         
         // 如果任务已启用，重新调度
         if (updatedTask.enabled) {
@@ -170,10 +238,10 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         cancelEditTask()
       }
     } catch (error) {
-      console.error("保存定时任务失败:", error)
+      console.error("[ScheduledTaskDialog] 保存定时任务失败:", error)
       toast({
         title: "保存失败",
-        description: "无法保存定时任务",
+        description: error instanceof Error ? error.message : "无法保存定时任务，请检查项目关联是否正确",
         variant: "destructive"
       })
     }
@@ -184,6 +252,8 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     setCurrentTask(null)
     setIsAddingTask(false)
     setIsEditingTask(false)
+    setHasUnsavedChanges(false)
+    setIsAutoSaving(false)
   }
 
   // 确认删除任务
@@ -363,33 +433,89 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   const updateTaskField = (field: string, value: any) => {
     if (!currentTask) return
     
+    const updatedTask = { ...currentTask }
+    
+    // 处理嵌套字段更新
     if (field.includes('.')) {
       const [parent, child] = field.split('.')
-      const parentKey = parent as keyof ScheduledTask
-      
-      // 特殊处理schedule和action字段
-      if (parentKey === 'schedule') {
-        setCurrentTask({
-          ...currentTask,
-          schedule: {
-            ...currentTask.schedule,
-            [child]: value
-          }
-        })
-      } else if (parentKey === 'action') {
-        setCurrentTask({
-          ...currentTask,
-          action: {
-            ...currentTask.action,
-            [child]: value
-          }
-        })
+      if (parent === 'schedule') {
+        updatedTask.schedule = { ...updatedTask.schedule, [child]: value }
+      } else if (parent === 'action') {
+        updatedTask.action = { ...updatedTask.action, [child]: value }
       }
     } else {
-      setCurrentTask({
-        ...currentTask,
-        [field]: value
+      (updatedTask as any)[field] = value
+    }
+    
+    setCurrentTask(updatedTask)
+    setHasUnsavedChanges(true)
+    
+    // 如果是启用状态更改，自动保存
+    if (field === 'enabled') {
+      handleAutoSave(updatedTask)
+    }
+  }
+
+  // 自动保存功能
+  const handleAutoSave = async (taskToSave: ScheduledTask) => {
+    if (!taskToSave) return
+    
+    setIsAutoSaving(true)
+    console.log(`[ScheduledTaskDialog] 自动保存任务: ID=${taskToSave.id}, enabled=${taskToSave.enabled}`)
+    
+    try {
+      const updatedTask = {
+        ...taskToSave,
+        updatedAt: new Date().toISOString()
+      }
+      
+      let success: boolean
+      
+      if (isAddingTask) {
+        success = await StorageManager.addScheduledTask(updatedTask)
+      } else {
+        success = await StorageManager.updateScheduledTask(updatedTask)
+      }
+      
+      if (success) {
+        console.log(`[ScheduledTaskDialog] 自动保存成功: ID=${updatedTask.id}`)
+        setHasUnsavedChanges(false)
+        
+        // 如果任务已启用，重新调度
+        if (updatedTask.enabled) {
+          await taskScheduler.scheduleTask(updatedTask)
+        }
+        
+        // 显示成功提示
+        toast({
+          title: "自动保存成功",
+          description: `任务已${updatedTask.enabled ? '启用' : '禁用'}`,
+        })
+        
+        // 如果提供了onTaskSaved回调，调用它
+        if (onTaskSaved) {
+          onTaskSaved(updatedTask)
+        }
+        
+        // 重新加载任务列表
+        await loadTasks()
+      } else {
+        console.error(`[ScheduledTaskDialog] 自动保存失败: ID=${updatedTask.id}`)
+        toast({
+          title: "自动保存失败",
+          description: "无法保存任务状态，请手动保存",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("[ScheduledTaskDialog] 自动保存失败:", error)
+      toast({
+        title: "自动保存失败",
+        description: "保存任务时出错，请手动保存",
+        variant: "destructive"
       })
+    } finally {
+      setIsAutoSaving(false)
     }
   }
 
@@ -580,47 +706,50 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             value={currentTask.name}
             onChange={(e) => updateTaskField('name', e.target.value)}
             placeholder="输入任务名称"
+            autoFocus
           />
         </div>
         
-        <div className="space-y-2">
-          <Label>执行频率</Label>
-          <Select
-            value={currentTask.schedule.type}
-            onValueChange={(value) => updateTaskField('schedule.type', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="选择执行频率" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">每天</SelectItem>
-              <SelectItem value="weekly">每周</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        {currentTask.schedule.type === "weekly" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>执行日期</Label>
+            <Label>执行频率</Label>
             <Select
-              value={currentTask.schedule.dayOfWeek?.toString() || "0"}
-              onValueChange={(value) => updateTaskField('schedule.dayOfWeek', parseInt(value, 10))}
+              value={currentTask.schedule.type}
+              onValueChange={(value) => updateTaskField('schedule.type', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="选择星期几" />
+                <SelectValue placeholder="选择执行频率" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">周一</SelectItem>
-                <SelectItem value="1">周二</SelectItem>
-                <SelectItem value="2">周三</SelectItem>
-                <SelectItem value="3">周四</SelectItem>
-                <SelectItem value="4">周五</SelectItem>
-                <SelectItem value="5">周六</SelectItem>
-                <SelectItem value="6">周日</SelectItem>
+                <SelectItem value="daily">每天</SelectItem>
+                <SelectItem value="weekly">每周</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        )}
+          
+          {currentTask.schedule.type === "weekly" && (
+            <div className="space-y-2">
+              <Label>执行日期</Label>
+              <Select
+                value={currentTask.schedule.dayOfWeek?.toString() || "0"}
+                onValueChange={(value) => updateTaskField('schedule.dayOfWeek', parseInt(value, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择星期几" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">周一</SelectItem>
+                  <SelectItem value="1">周二</SelectItem>
+                  <SelectItem value="2">周三</SelectItem>
+                  <SelectItem value="3">周四</SelectItem>
+                  <SelectItem value="4">周五</SelectItem>
+                  <SelectItem value="5">周六</SelectItem>
+                  <SelectItem value="6">周日</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
         
         <div className="space-y-2">
           <Label>执行时间</Label>
@@ -670,80 +799,109 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           </Select>
         </div>
         
-        <div className="flex items-center justify-between space-x-2">
-          <Label htmlFor="auto-upload" className="flex-1">
-            自动上传至TMDB
-          </Label>
-          <Switch
-            id="auto-upload"
-            checked={currentTask.action.autoUpload}
-            onCheckedChange={(checked) => updateTaskField('action.autoUpload', checked)}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between space-x-2">
-          <Label htmlFor="auto-remove-marked" className="flex-1">
-            自动过滤已标记完成的集数
-          </Label>
-          <Switch
-            id="auto-remove-marked"
-            checked={currentTask.action.autoRemoveMarked}
-            onCheckedChange={(checked) => updateTaskField('action.autoRemoveMarked', checked)}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between space-x-2">
-          <Label htmlFor="auto-confirm" className="flex-1">
-            自动确认上传（输入y）
-          </Label>
-          <Switch
-            id="auto-confirm"
-            checked={currentTask.action.autoConfirm !== false}
-            onCheckedChange={(checked) => updateTaskField('action.autoConfirm', checked)}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between space-x-2">
-          <Label htmlFor="auto-mark-uploaded" className="flex-1">
-            自动标记已上传的集数
-          </Label>
-          <Switch
-            id="auto-mark-uploaded"
-            checked={currentTask.action.autoMarkUploaded !== false}
-            onCheckedChange={(checked) => updateTaskField('action.autoMarkUploaded', checked)}
-          />
-        </div>
-        
-        {item.platformUrl?.includes('iqiyi.com') && (
+        <div className="border p-4 rounded-md space-y-3">
+          <h3 className="text-sm font-medium">基本选项</h3>
+          
           <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="remove-iqiyi-air-date" className="flex-1">
-              删除爱奇艺平台的air_date列
+            <Label htmlFor="auto-upload" className="flex-1">
+              自动上传至TMDB
             </Label>
             <Switch
-              id="remove-iqiyi-air-date"
-              checked={currentTask.action.removeIqiyiAirDate !== false}
-              onCheckedChange={(checked) => updateTaskField('action.removeIqiyiAirDate', checked)}
+              id="auto-upload"
+              checked={currentTask.action.autoUpload}
+              onCheckedChange={(checked) => updateTaskField('action.autoUpload', checked)}
             />
           </div>
-        )}
+          
+          <div className="flex items-center justify-between space-x-2">
+            <Label htmlFor="auto-remove-marked" className="flex-1">
+              自动过滤已标记完成的集数
+            </Label>
+            <Switch
+              id="auto-remove-marked"
+              checked={currentTask.action.autoRemoveMarked}
+              onCheckedChange={(checked) => updateTaskField('action.autoRemoveMarked', checked)}
+            />
+          </div>
+        </div>
+        
+        <div className="border p-4 rounded-md space-y-3">
+          <h3 className="text-sm font-medium">高级选项</h3>
+          
+          <div className="flex items-center justify-between space-x-2">
+            <Label htmlFor="auto-confirm" className="flex-1">
+              自动确认上传（输入y）
+            </Label>
+            <Switch
+              id="auto-confirm"
+              checked={currentTask.action.autoConfirm !== false}
+              onCheckedChange={(checked) => updateTaskField('action.autoConfirm', checked)}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between space-x-2">
+            <Label htmlFor="auto-mark-uploaded" className="flex-1">
+              自动标记已上传的集数
+            </Label>
+            <Switch
+              id="auto-mark-uploaded"
+              checked={currentTask.action.autoMarkUploaded !== false}
+              onCheckedChange={(checked) => updateTaskField('action.autoMarkUploaded', checked)}
+            />
+          </div>
+          
+          {item.platformUrl?.includes('iqiyi.com') && (
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="remove-iqiyi-air-date" className="flex-1">
+                删除爱奇艺平台的air_date列
+              </Label>
+              <Switch
+                id="remove-iqiyi-air-date"
+                checked={currentTask.action.removeIqiyiAirDate !== false}
+                onCheckedChange={(checked) => updateTaskField('action.removeIqiyiAirDate', checked)}
+              />
+            </div>
+          )}
+        </div>
         
         <div className="flex items-center justify-between space-x-2">
           <Label htmlFor="task-enabled" className="flex-1">
             启用此任务
+            {isAutoSaving && (
+              <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                <Loader2 className="h-3 w-3 inline animate-spin mr-1" />
+                保存中...
+              </span>
+            )}
           </Label>
           <Switch
             id="task-enabled"
             checked={currentTask.enabled}
             onCheckedChange={(checked) => updateTaskField('enabled', checked)}
+            disabled={isAutoSaving}
           />
         </div>
         
+        {hasUnsavedChanges && !isAutoSaving && (
+          <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 p-2 rounded-md flex items-center">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            有未保存的更改
+          </div>
+        )}
+        
         <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={cancelEditTask}>
+          <Button variant="outline" onClick={cancelEditTask} disabled={isAutoSaving}>
             取消
           </Button>
-          <Button onClick={handleSaveTask}>
-            保存
+          <Button onClick={handleSaveTask} disabled={isAutoSaving || !hasUnsavedChanges}>
+            {isAutoSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                保存中...
+              </>
+            ) : (
+              '保存'
+            )}
           </Button>
         </div>
       </div>

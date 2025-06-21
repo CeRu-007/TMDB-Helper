@@ -400,35 +400,98 @@ export async function GET(request: NextRequest) {
       const tmdbId = searchParams.get('tmdbId');
       const title = searchParams.get('title');
       
+      // 创建匹配项集合，用于记录每个匹配项的匹配方式和分数
+      const matchCandidates: Array<{item: TMDBItem, score: number, matchType: string}> = [];
+      
+      // 1. 尝试通过TMDB ID查找（最精确的匹配）
       if (tmdbId) {
-        // 尝试通过TMDB ID查找
         const matchByTmdbId = items.find(i => i.tmdbId === tmdbId);
         if (matchByTmdbId) {
-          item = matchByTmdbId;
-          console.log(`[API] 通过TMDB ID找到匹配项: ${item.title} (ID: ${item.id})`);
+          matchCandidates.push({
+            item: matchByTmdbId, 
+            score: 100, // 最高优先级
+            matchType: 'TMDB ID'
+          });
+          console.log(`[API] 通过TMDB ID找到匹配项: ${matchByTmdbId.title} (ID: ${matchByTmdbId.id})`);
         }
       }
       
-      if (!item && title) {
-        // 尝试通过标题模糊匹配
-        const possibleMatches = items.filter(i => 
+      // 2. 尝试通过平台URL查找（次高精确度）
+      if (platformUrl && platformUrl.length > 10) {
+        const matchByUrl = items.find(i => i.platformUrl === platformUrl);
+        if (matchByUrl) {
+          matchCandidates.push({
+            item: matchByUrl, 
+            score: 90, 
+            matchType: '平台URL'
+          });
+          console.log(`[API] 通过平台URL找到匹配项: ${matchByUrl.title} (ID: ${matchByUrl.id})`);
+        }
+      }
+      
+      // 3. 尝试通过标题精确匹配
+      if (title) {
+        const exactTitleMatch = items.find(i => i.title === title);
+        if (exactTitleMatch) {
+          matchCandidates.push({
+            item: exactTitleMatch, 
+            score: 80, 
+            matchType: '标题精确匹配'
+          });
+          console.log(`[API] 通过标题精确匹配找到项目: ${exactTitleMatch.title} (ID: ${exactTitleMatch.id})`);
+        }
+      }
+      
+      // 4. 尝试通过标题模糊匹配
+      if (title) {
+        const fuzzyMatches = items.filter(i => 
           i.title.includes(title) || 
           title.includes(i.title)
         );
         
-        if (possibleMatches.length === 1) {
-          item = possibleMatches[0];
-          console.log(`[API] 通过标题找到匹配项: ${item.title} (ID: ${item.id})`);
-        } else if (possibleMatches.length > 1) {
-          // 找到多个匹配项，尝试通过媒体类型进一步筛选
-          const tvMatches = possibleMatches.filter(i => i.mediaType === 'tv');
-          if (tvMatches.length === 1) {
-            item = tvMatches[0];
-            console.log(`[API] 通过标题和媒体类型找到匹配项: ${item.title} (ID: ${item.id})`);
-          } else {
-            console.warn(`[API] 找到多个可能的匹配项 (${possibleMatches.length}个)，无法确定使用哪一个`);
+        // 为每个模糊匹配项计算匹配分数
+        fuzzyMatches.forEach(match => {
+          // 避免重复添加已经通过精确匹配找到的项目
+          if (!matchCandidates.some(c => c.item.id === match.id)) {
+            // 计算相似度分数 (简单实现，可以使用更复杂的算法)
+            const similarity = Math.min(
+              match.title.length, 
+              title.length
+            ) / Math.max(match.title.length, title.length);
+            
+            // 转换为0-70的分数范围（低于精确匹配）
+            const score = Math.round(similarity * 70);
+            
+            matchCandidates.push({
+              item: match,
+              score,
+              matchType: '标题模糊匹配'
+            });
           }
+        });
+        
+        if (fuzzyMatches.length > 0) {
+          console.log(`[API] 通过标题模糊匹配找到 ${fuzzyMatches.length} 个可能的项目`);
         }
+      }
+      
+      // 如果找到了候选项，按分数排序并选择最佳匹配
+      if (matchCandidates.length > 0) {
+        // 对电视剧类型加分
+        matchCandidates.forEach(candidate => {
+          if (candidate.item.mediaType === 'tv') {
+            candidate.score += 5;
+          }
+        });
+        
+        // 按分数降序排序
+        matchCandidates.sort((a, b) => b.score - a.score);
+        
+        // 选择得分最高的候选项
+        const bestMatch = matchCandidates[0];
+        item = bestMatch.item;
+        
+        console.log(`[API] 选择最佳匹配项: ${item.title} (ID: ${item.id}), 匹配方式: ${bestMatch.matchType}, 分数: ${bestMatch.score}`);
       }
       
       // 如果仍然找不到项目，返回404错误
@@ -436,7 +499,15 @@ export async function GET(request: NextRequest) {
         console.error(`[API] 找不到ID为 ${itemId} 的项目，也无法通过其他方式找到匹配项`);
         return NextResponse.json({ 
           error: `找不到ID为 ${itemId} 的项目，请检查项目是否存在或已被删除`,
-          suggestion: "可能需要重新创建定时任务并关联到正确的项目"
+          suggestion: "可能需要重新创建定时任务并关联到正确的项目",
+          details: {
+            searchedBy: {
+              itemId,
+              tmdbId: tmdbId || '未提供',
+              title: title || '未提供',
+              platformUrl: platformUrl || '未提供'
+            }
+          }
         }, { status: 404 });
       }
     }
@@ -446,12 +517,28 @@ export async function GET(request: NextRequest) {
     // 检查项目是否有TMDB ID和平台URL
     if (!item.tmdbId || item.mediaType !== 'tv') {
       console.error(`[API] 项目类型错误或缺少TMDB ID: mediaType=${item.mediaType}, tmdbId=${item.tmdbId}`);
-      return NextResponse.json({ error: '项目必须是电视剧类型并且有TMDB ID' }, { status: 400 });
+      return NextResponse.json({ 
+        error: '项目必须是电视剧类型并且有TMDB ID',
+        suggestion: "请编辑项目，确保它是电视剧类型并添加TMDB ID",
+        details: {
+          itemId: item.id,
+          title: item.title,
+          mediaType: item.mediaType,
+          tmdbId: item.tmdbId || '未设置'
+        }
+      }, { status: 400 });
     }
     
     if (!item.platformUrl) {
       console.error('[API] 项目缺少平台URL');
-      return NextResponse.json({ error: '项目必须有平台URL才能执行TMDB-Import' }, { status: 400 });
+      return NextResponse.json({ 
+        error: '项目必须有平台URL才能执行TMDB-Import',
+        suggestion: "请编辑项目，添加正确的流媒体平台URL",
+        details: {
+          itemId: item.id,
+          title: item.title
+        }
+      }, { status: 400 });
     }
     
     console.log(`[API] 项目信息验证通过: tmdbId=${item.tmdbId}, platformUrl=${item.platformUrl}`);

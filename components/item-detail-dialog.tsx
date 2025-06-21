@@ -78,6 +78,8 @@ import TMDBImportIntegrationDialog from "@/components/tmdb-import-integration-di
 import ScheduledTaskDialog from "@/components/scheduled-task-dialog"
 import { TMDBService, TMDBSeasonData } from "@/lib/tmdb"
 import FixTMDBImportBugDialog from "@/components/fix-tmdb-import-bug-dialog"
+import { toast } from "@/components/ui/use-toast"
+import { StorageManager } from "@/lib/storage"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -1613,6 +1615,75 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             onUpdate={(updatedItem) => {
               setLocalItem(updatedItem)
               onUpdate(updatedItem)
+            }}
+            onTaskSaved={(task) => {
+              // 当任务保存成功后，确保更新本地状态
+              console.log("[ItemDetailDialog] 定时任务保存成功:", task);
+              
+              try {
+                // 重新加载最新的项目数据，确保包含最新的定时任务信息
+                const updatedItem = {...localItem};
+                
+                // 如果项目中没有 scheduledTasks 数组，创建一个
+                if (!updatedItem.scheduledTasks) {
+                  updatedItem.scheduledTasks = [];
+                }
+                
+                // 检查任务是否已存在，如果存在则更新，否则添加
+                const taskIndex = updatedItem.scheduledTasks.findIndex(t => t.id === task.id);
+                if (taskIndex >= 0) {
+                  updatedItem.scheduledTasks[taskIndex] = task;
+                } else {
+                  updatedItem.scheduledTasks.push(task);
+                }
+                
+                // 验证任务是否已添加到项目中
+                const taskAdded = updatedItem.scheduledTasks.some(t => t.id === task.id);
+                if (!taskAdded) {
+                  console.error("[ItemDetailDialog] 任务未成功添加到项目中:", task.id);
+                  throw new Error("任务未成功添加到项目中");
+                }
+                
+                console.log("[ItemDetailDialog] 更新后的项目:", updatedItem);
+                
+                // 更新本地状态和父组件状态
+                setLocalItem(updatedItem);
+                onUpdate(updatedItem);
+                
+                // 显示成功提示
+                toast({
+                  title: "定时任务已保存",
+                  description: `任务 "${task.name}" 已成功保存，请在全局定时任务管理中查看`,
+                });
+                
+                // 验证任务是否已成功保存到 localStorage
+                setTimeout(async () => {
+                  try {
+                    const savedTasks = await StorageManager.forceRefreshScheduledTasks();
+                    const taskSaved = savedTasks.some(t => t.id === task.id);
+                    
+                    if (taskSaved) {
+                      console.log("[ItemDetailDialog] 验证成功: 任务已成功保存到 localStorage");
+                    } else {
+                      console.error("[ItemDetailDialog] 验证失败: 任务未在 localStorage 中找到");
+                      toast({
+                        title: "警告",
+                        description: "任务可能未正确保存，请在全局定时任务管理中检查",
+                        variant: "destructive"
+                      });
+                    }
+                  } catch (error) {
+                    console.error("[ItemDetailDialog] 验证任务保存状态时出错:", error);
+                  }
+                }, 1000);
+              } catch (error) {
+                console.error("[ItemDetailDialog] 更新项目状态失败:", error);
+                toast({
+                  title: "更新失败",
+                  description: "无法更新项目状态，但任务可能已保存",
+                  variant: "destructive"
+                });
+              }
             }}
           />
 

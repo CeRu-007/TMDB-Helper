@@ -164,7 +164,7 @@ class TaskScheduler {
           // 更新任务状态，标记为失败
           const failedTask = { 
             ...updatedTask, 
-            lastRunStatus: 'failed',
+            lastRunStatus: 'failed' as const,
             lastRunError: importError instanceof Error ? importError.message : String(importError)
           };
           await StorageManager.updateScheduledTask(failedTask);
@@ -177,7 +177,11 @@ class TaskScheduler {
       }
       
       // 更新任务状态，标记为成功
-      const successTask = { ...updatedTask, lastRunStatus: 'success', lastRunError: null };
+      const successTask = { 
+        ...updatedTask, 
+        lastRunStatus: 'success' as const, 
+        lastRunError: null 
+      };
       await StorageManager.updateScheduledTask(successTask);
       
       // 重新调度任务
@@ -202,45 +206,72 @@ class TaskScheduler {
       
       // 如果找不到项目，尝试通过其他方式查找
       if (!item) {
-        console.warn(`[TaskScheduler] 找不到ID为 ${task.itemId} 的项目，尝试通过任务名称查找匹配项...`);
+        console.warn(`[TaskScheduler] 找不到ID为 ${task.itemId} 的项目，尝试通过多种方式查找匹配项...`);
         
         // 尝试从任务名称中提取项目标题
         const taskNameWithoutSuffix = task.name.replace(/\s+定时任务$/, '');
         
-        // 尝试通过名称模糊匹配
-        const possibleMatches = items.filter(i => 
+        // 1. 尝试通过名称模糊匹配
+        let possibleMatches = items.filter(i => 
           i.title.includes(taskNameWithoutSuffix) || 
           taskNameWithoutSuffix.includes(i.title)
         );
         
-        if (possibleMatches.length === 1) {
-          // 只找到一个匹配项，使用它
-          item = possibleMatches[0];
-          console.log(`[TaskScheduler] 通过名称找到匹配项: ${item.title} (ID: ${item.id})`);
-          
-          // 更新任务的项目ID
-          const updatedTask = { ...task, itemId: item.id };
-          await StorageManager.updateScheduledTask(updatedTask);
-          console.log(`[TaskScheduler] 已更新任务的项目ID: ${task.id} -> ${item.id}`);
-        } else if (possibleMatches.length > 1) {
-          // 找到多个匹配项，尝试通过媒体类型和季数进一步筛选
-          const betterMatches = possibleMatches.filter(i => i.mediaType === 'tv');
-          if (betterMatches.length === 1) {
-            item = betterMatches[0];
-            console.log(`[TaskScheduler] 通过名称和媒体类型找到匹配项: ${item.title} (ID: ${item.id})`);
+        // 2. 如果没有匹配项，尝试通过任务名称的部分匹配
+        if (possibleMatches.length === 0) {
+          const words = taskNameWithoutSuffix.split(/\s+/).filter(w => w.length > 1);
+          if (words.length > 0) {
+            possibleMatches = items.filter(i => 
+              words.some(word => i.title.toLowerCase().includes(word.toLowerCase()))
+            );
+            if (possibleMatches.length > 0) {
+              console.log(`[TaskScheduler] 通过关键词匹配找到 ${possibleMatches.length} 个可能的项目`);
+            }
+          }
+        }
+        
+        // 3. 如果有多个匹配项，优先选择电视剧类型
+        if (possibleMatches.length > 1) {
+          const tvMatches = possibleMatches.filter(i => i.mediaType === 'tv');
+          if (tvMatches.length === 1) {
+            item = tvMatches[0];
+            console.log(`[TaskScheduler] 通过名称和媒体类型找到唯一匹配项: ${item.title} (ID: ${item.id})`);
             
             // 更新任务的项目ID
             const updatedTask = { ...task, itemId: item.id };
             await StorageManager.updateScheduledTask(updatedTask);
             console.log(`[TaskScheduler] 已更新任务的项目ID: ${task.id} -> ${item.id}`);
-          } else {
-            console.error(`[TaskScheduler] 找到多个可能的匹配项 (${possibleMatches.length}个)，无法确定使用哪一个`);
-            throw new Error(`找不到唯一匹配的项目，请手动更新任务关联的项目`);
+          } else if (tvMatches.length > 1) {
+            // 4. 如果还有多个电视剧匹配，尝试通过更新时间排序，选择最近更新的
+            tvMatches.sort((a, b) => 
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            );
+            item = tvMatches[0];
+            console.log(`[TaskScheduler] 通过最近更新时间选择匹配项: ${item.title} (ID: ${item.id})`);
+            
+            // 更新任务的项目ID
+            const updatedTask = { ...task, itemId: item.id };
+            await StorageManager.updateScheduledTask(updatedTask);
+            console.log(`[TaskScheduler] 已更新任务的项目ID: ${task.id} -> ${item.id}`);
           }
+        } else if (possibleMatches.length === 1) {
+          // 只找到一个匹配项，使用它
+          item = possibleMatches[0];
+          console.log(`[TaskScheduler] 通过名称找到唯一匹配项: ${item.title} (ID: ${item.id})`);
+          
+          // 更新任务的项目ID
+          const updatedTask = { ...task, itemId: item.id };
+          await StorageManager.updateScheduledTask(updatedTask);
+          console.log(`[TaskScheduler] 已更新任务的项目ID: ${task.id} -> ${item.id}`);
         } else {
           console.error(`[TaskScheduler] 无法找到任何匹配的项目`);
-          throw new Error(`找不到ID为 ${task.itemId} 的项目，也无法通过名称匹配到现有项目`);
+          throw new Error(`找不到ID为 ${task.itemId} 的项目，请检查项目是否存在或已被删除。建议重新创建定时任务并关联到正确的项目。`);
         }
+      }
+      
+      // 确保item已定义
+      if (!item) {
+        throw new Error(`无法找到与任务关联的项目，请检查项目是否存在`);
       }
       
       // 检查项目是否有必要的信息
@@ -261,8 +292,22 @@ class TaskScheduler {
         autoRemoveMarked: task.action.autoRemoveMarked.toString(),
         // 添加额外的参数，用于在找不到项目时进行备用查找
         tmdbId: item.tmdbId,
-        title: item.title
+        title: item.title,
+        platformUrl: item.platformUrl || ''
       });
+      
+      // 添加可选参数
+      if (task.action.autoConfirm !== undefined) {
+        params.append('autoConfirm', task.action.autoConfirm.toString());
+      }
+      
+      if (task.action.autoMarkUploaded !== undefined) {
+        params.append('autoMarkUploaded', task.action.autoMarkUploaded.toString());
+      }
+      
+      if (task.action.removeIqiyiAirDate !== undefined) {
+        params.append('removeIqiyiAirDate', task.action.removeIqiyiAirDate.toString());
+      }
       
       // 构建完整URL
       const apiUrl = `/api/execute-scheduled-task?${params.toString()}`;
@@ -272,8 +317,11 @@ class TaskScheduler {
       const response = await fetch(apiUrl);
       
       if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        throw new Error(`API请求失败: ${response.status} - ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorText = errorData.error || response.statusText;
+        const suggestion = errorData.suggestion || '';
+        
+        throw new Error(`API请求失败: ${response.status} - ${errorText}${suggestion ? ` - ${suggestion}` : ''}`);
       }
       
       const result = await response.json();

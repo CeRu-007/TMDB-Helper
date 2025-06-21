@@ -372,26 +372,25 @@ export default function HomePage() {
 
       // 计算到指定weekday的天数差（考虑循环）
       const getDayDifference = (targetWeekday: number) => {
-        // 确保目标日期是有效的（0-6）
-        const safeTargetWeekday = targetWeekday === 7 ? 0 : targetWeekday;
-        
-        // 直接使用JS的星期几表示（0=周日，1=周一，...，6=周六）
-        // 这样可以保持与aIsToday和bIsToday判断逻辑一致
-        
-        // 计算差值
-        let diff = safeTargetWeekday - jsWeekday;
-        
-        // 如果差值为负数，表示是未来的下一周，加上7天
-        if (diff <= 0) {
-          diff += 7;
-        }
-        
-        // 特殊情况：如果目标日期就是今天，则差值应该是0
-        if (safeTargetWeekday === jsWeekday) {
-          diff = 0;
-        }
-        
+        const safeTarget = targetWeekday % 7;
+        let diff = safeTarget - jsWeekday;
+        if (diff < 0) diff += 7;
         return diff;
+      };
+
+      // 获取条目距离今天最近的播出weekday
+      const getNearestWeekday = (it: TMDBItem) => {
+        const primaryDiff = getDayDifference(it.weekday);
+        if (typeof it.secondWeekday === 'number') {
+          const secondDiff = getDayDifference(it.secondWeekday);
+          return secondDiff < primaryDiff ? it.secondWeekday : it.weekday;
+        }
+        return it.weekday;
+      };
+
+      // 获取条目距离今天最近的播出weekday
+      const isToday = (it: TMDBItem) => {
+        return it.weekday === jsWeekday || it.secondWeekday === jsWeekday;
       };
 
       return items.sort((a, b) => {
@@ -400,8 +399,8 @@ export default function HomePage() {
         const timeB = new Date(b.updatedAt).getTime();
         
         // 判断是否为今天的播出日（周几）
-        const aIsToday = a.weekday === jsWeekday;
-        const bIsToday = b.weekday === jsWeekday;
+        const aIsToday = isToday(a);
+        const bIsToday = isToday(b);
         
         // 判断是否为每日更新内容，优先使用isDailyUpdate属性
         const aIsDailyUpdate = a.isDailyUpdate === true || (
@@ -447,44 +446,44 @@ export default function HomePage() {
           }
           
           // 第三优先级：按照未来最近的日期排序（今天是周一，则按周二、周三、周四...的顺序）
-          const aDayDiff = getDayDifference(a.weekday);
-          const bDayDiff = getDayDifference(b.weekday);
+          const aDayDiff = getDayDifference(getNearestWeekday(a));
+          const bDayDiff = getDayDifference(getNearestWeekday(b));
           
           // 确保差值不同时进行排序
           if (aDayDiff !== bDayDiff) {
             return aDayDiff - bDayDiff; // 天数差小的排在前面
           }
-                  } else {
-            // 其他分类使用相同的排序逻辑
-            // 第一优先级：是否是今天的播出日（周几）
-            // 注意：电视剧和短剧也可能有周几信息，这里不区分内容类型，确保当天的所有内容都排在前面
-            if (aIsToday !== bIsToday) {
-              return aIsToday ? -1 : 1; // 今天的播出日排在前面
-            }
-            
-            // 如果都是当前日期的词条，则按内容类型和更新时间排序
-            if (aIsToday && bIsToday) {
-              // 同为今天的内容，优先显示非每日更新内容（避免每日更新标签覆盖当天标签）
-              if (aIsDailyUpdate !== bIsDailyUpdate) {
-                return aIsDailyUpdate ? 1 : -1; // 非每日更新内容排在前面
-              }
-              return timeB - timeA; // 最后按更新时间排序
-            }
-            
-            // 第二优先级：是否是每日更新的电视剧或短剧
-            if (aIsDailyUpdate !== bIsDailyUpdate) {
-              return aIsDailyUpdate ? -1 : 1; // 每日更新内容排在前面
-            }
-            
-            // 第三优先级：按照未来最近的日期排序（今天是周一，则按周二、周三、周四...的顺序）
-            const aDayDiff = getDayDifference(a.weekday);
-            const bDayDiff = getDayDifference(b.weekday);
-            
-            // 确保差值不同时进行排序
-            if (aDayDiff !== bDayDiff) {
-              return aDayDiff - bDayDiff; // 天数差小的排在前面
-            }
+        } else {
+          // 其他分类使用相同的排序逻辑
+          // 第一优先级：是否是今天的播出日（周几）
+          // 注意：电视剧和短剧也可能有周几信息，这里不区分内容类型，确保当天的所有内容都排在前面
+          if (aIsToday !== bIsToday) {
+            return aIsToday ? -1 : 1; // 今天的播出日排在前面
           }
+          
+          // 如果都是当前日期的词条，则按内容类型和更新时间排序
+          if (aIsToday && bIsToday) {
+            // 同为今天的内容，优先显示非每日更新内容（避免每日更新标签覆盖当天标签）
+            if (aIsDailyUpdate !== bIsDailyUpdate) {
+              return aIsDailyUpdate ? 1 : -1; // 非每日更新内容排在前面
+            }
+            return timeB - timeA; // 最后按更新时间排序
+          }
+          
+          // 第二优先级：是否是每日更新的电视剧或短剧
+          if (aIsDailyUpdate !== bIsDailyUpdate) {
+            return aIsDailyUpdate ? -1 : 1; // 每日更新内容排在前面
+          }
+          
+          // 第三优先级：按照未来最近的日期排序（今天是周一，则按周二、周三、周四...的顺序）
+          const aDayDiff = getDayDifference(getNearestWeekday(a));
+          const bDayDiff = getDayDifference(getNearestWeekday(b));
+          
+          // 确保差值不同时进行排序
+          if (aDayDiff !== bDayDiff) {
+            return aDayDiff - bDayDiff; // 天数差小的排在前面
+          }
+        }
 
         // 最后优先级：更新时间的细微差异
         return timeB - timeA;

@@ -416,6 +416,7 @@ export class StorageManager {
     
     try {
       const data = localStorage.getItem(this.SCHEDULED_TASKS_KEY);
+      console.log(`[StorageManager] 读取定时任务: 找到 ${data ? JSON.parse(data).length : 0} 个任务`);
       return data ? JSON.parse(data) : [];
     } catch (error) {
       console.error("Failed to load scheduled tasks from storage:", error);
@@ -433,12 +434,48 @@ export class StorageManager {
     }
     
     try {
+      // 验证任务的必要字段
+      if (!task.id || !task.itemId) {
+        console.error("添加定时任务失败: 缺少必要字段 id 或 itemId");
+        return false;
+      }
+      
+      console.log(`[StorageManager] 添加定时任务: ID=${task.id}, 项目ID=${task.itemId}, 名称=${task.name}`);
+      
+      // 验证关联的项目是否存在
+      const items = await this.getItemsWithRetry();
+      const itemExists = items.some(item => item.id === task.itemId);
+      
+      if (!itemExists) {
+        console.warn(`[StorageManager] 添加定时任务警告: ID为 ${task.itemId} 的项目不存在，但仍将保存任务`);
+        // 我们仍然保存任务，因为项目可能稍后会被添加，或者这是一个导入操作
+      }
+      
       const tasks = await this.getScheduledTasks();
+      
+      // 检查是否已存在相同ID的任务
+      const taskExists = tasks.some(t => t.id === task.id);
+      if (taskExists) {
+        console.warn(`[StorageManager] 添加定时任务警告: ID为 ${task.id} 的任务已存在，将更新现有任务`);
+        return this.updateScheduledTask(task);
+      }
+      
       tasks.push(task);
       localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(tasks));
-      return true;
+      
+      // 验证任务是否已成功保存
+      const savedTasks = await this.getScheduledTasks();
+      const taskSaved = savedTasks.some(t => t.id === task.id);
+      
+      if (taskSaved) {
+        console.log(`[StorageManager] 定时任务保存成功: ID=${task.id}`);
+        return true;
+      } else {
+        console.error(`[StorageManager] 定时任务保存失败: ID=${task.id}, 任务未在存储中找到`);
+        return false;
+      }
     } catch (error) {
-      console.error("Failed to add scheduled task:", error);
+      console.error("[StorageManager] Failed to add scheduled task:", error);
       return false;
     }
   }
@@ -453,14 +490,52 @@ export class StorageManager {
     }
     
     try {
+      // 验证任务的必要字段
+      if (!updatedTask.id || !updatedTask.itemId) {
+        console.error("更新定时任务失败: 缺少必要字段 id 或 itemId");
+        return false;
+      }
+      
+      console.log(`[StorageManager] 更新定时任务: ID=${updatedTask.id}, 项目ID=${updatedTask.itemId}, 名称=${updatedTask.name}`);
+      
+      // 验证关联的项目是否存在
+      const items = await this.getItemsWithRetry();
+      const itemExists = items.some(item => item.id === updatedTask.itemId);
+      
+      if (!itemExists) {
+        console.warn(`[StorageManager] 更新定时任务警告: ID为 ${updatedTask.itemId} 的项目不存在，但仍将更新任务`);
+        // 我们仍然更新任务，因为项目可能稍后会被添加，或者这是一个导入操作
+      }
+      
       const tasks = await this.getScheduledTasks();
+      
+      // 检查任务是否存在
+      const taskExists = tasks.some(t => t.id === updatedTask.id);
+      if (!taskExists) {
+        console.warn(`[StorageManager] 更新定时任务警告: ID为 ${updatedTask.id} 的任务不存在，将添加新任务`);
+        return this.addScheduledTask(updatedTask);
+      }
+      
       const updatedTasks = tasks.map(task => 
         task.id === updatedTask.id ? updatedTask : task
       );
       localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(updatedTasks));
-      return true;
+      
+      // 验证任务是否已成功更新
+      const savedTasks = await this.getScheduledTasks();
+      const taskUpdated = savedTasks.some(t => 
+        t.id === updatedTask.id && t.updatedAt === updatedTask.updatedAt
+      );
+      
+      if (taskUpdated) {
+        console.log(`[StorageManager] 定时任务更新成功: ID=${updatedTask.id}`);
+        return true;
+      } else {
+        console.error(`[StorageManager] 定时任务更新失败: ID=${updatedTask.id}, 任务未在存储中更新`);
+        return false;
+      }
     } catch (error) {
-      console.error("Failed to update scheduled task:", error);
+      console.error("[StorageManager] Failed to update scheduled task:", error);
       return false;
     }
   }
@@ -470,18 +545,55 @@ export class StorageManager {
    */
   static async deleteScheduledTask(id: string): Promise<boolean> {
     if (!this.isClient() || !this.isStorageAvailable()) {
-      console.error("Cannot delete scheduled task: localStorage is not available");
+      console.error("[StorageManager] Cannot delete scheduled task: localStorage is not available");
       return false;
     }
     
     try {
+      console.log(`[StorageManager] 删除定时任务: ID=${id}`);
       const tasks = await this.getScheduledTasks();
       const filteredTasks = tasks.filter(task => task.id !== id);
       localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(filteredTasks));
-      return true;
+      
+      // 验证任务是否已成功删除
+      const savedTasks = await this.getScheduledTasks();
+      const taskDeleted = !savedTasks.some(t => t.id === id);
+      
+      if (taskDeleted) {
+        console.log(`[StorageManager] 定时任务删除成功: ID=${id}`);
+        return true;
+      } else {
+        console.error(`[StorageManager] 定时任务删除失败: ID=${id}, 任务仍在存储中`);
+        return false;
+      }
     } catch (error) {
-      console.error("Failed to delete scheduled task:", error);
+      console.error("[StorageManager] Failed to delete scheduled task:", error);
       return false;
+    }
+  }
+
+  /**
+   * 强制刷新定时任务列表
+   */
+  static async forceRefreshScheduledTasks(): Promise<ScheduledTask[]> {
+    if (!this.isClient() || !this.isStorageAvailable()) {
+      console.warn("[StorageManager] Not in client environment or storage not available");
+      return [];
+    }
+    
+    try {
+      // 清除可能的缓存
+      const data = localStorage.getItem(this.SCHEDULED_TASKS_KEY);
+      console.log(`[StorageManager] 强制刷新定时任务: 找到 ${data ? JSON.parse(data).length : 0} 个任务`);
+      
+      const raw = data ? JSON.parse(data) : [];
+      // 自动迁移并返回修复后的任务
+      const migrated = await this.migrateScheduledTasks();
+      // 如果迁移没有改变任何内容，返回 raw，否则返回 migrated
+      return migrated.length ? migrated : raw;
+    } catch (error) {
+      console.error("[StorageManager] Failed to force refresh scheduled tasks:", error);
+      return [];
     }
   }
 
@@ -491,5 +603,58 @@ export class StorageManager {
   static async getItemScheduledTasks(itemId: string): Promise<ScheduledTask[]> {
     const allTasks = await this.getScheduledTasks();
     return allTasks.filter(task => task.itemId === itemId);
+  }
+
+  /**
+   * 迁移并修复无效 itemId 的定时任务
+   * 如果任务的 itemId 在当前 items 列表中不存在，将尝试通过标题 / tmdbId / 平台URL 自动匹配
+   * 修复成功的任务会立即写回 localStorage，返回修复后的任务数组
+   */
+  static async migrateScheduledTasks(): Promise<ScheduledTask[]> {
+    const tasks = await this.getScheduledTasks();
+    const items = await this.getItemsWithRetry();
+    let changed = false;
+
+    const fixedTasks = tasks.map(task => {
+      const exists = items.some(it => it.id === task.itemId);
+      if (exists) return task;
+
+      // 尝试自动匹配
+      const candidates: Array<{item: TMDBItem, score: number}> = [];
+      // 按 TMDB ID
+      if (task.itemId && task.itemId.length <= 13) {
+        // 若 itemId 看似时间戳数字，可忽略
+      }
+      // 尝试通过任务名(去除 " 定时任务" 后缀)
+      const title = task.name.replace(/\s*定时任务$/, '');
+      items.forEach(it => {
+        let score = 0;
+        if (it.title === title) score = 100;
+        else if (it.title.includes(title) || title.includes(it.title)) {
+          const similarity = Math.min(it.title.length, title.length) / Math.max(it.title.length, title.length);
+          score = Math.round(similarity * 90);
+        }
+        if (it.tmdbId && task.action && (task as any).tmdbId && it.tmdbId === (task as any).tmdbId) score += 30;
+        if (score > 60) candidates.push({item: it, score});
+      });
+      if (candidates.length > 0) {
+        candidates.sort((a,b)=>b.score-a.score);
+        const best = candidates[0].item;
+        const newTask = {...task, itemId: best.id, updatedAt: new Date().toISOString()};
+        changed = true;
+        return newTask;
+      }
+      return task;
+    });
+
+    if (changed) {
+      try {
+        localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(fixedTasks));
+        console.log('[StorageManager] migrateScheduledTasks 已修复无效 itemId 的任务');
+      } catch (e) {
+        console.error('[StorageManager] 写入修复后任务时出错', e);
+      }
+    }
+    return fixedTasks;
   }
 }
