@@ -150,7 +150,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [backdropError, setBackdropError] = useState(false)
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
-  const [backgroundRefreshKey, setBackgroundRefreshKey] = useState<number>(Date.now())
+  const [backgroundRefreshKey, setBackgroundRefreshKey] = useState<string | number>(item.tmdbId || item.id || '0')
 
   useEffect(() => {
     // 确保所有属性都被正确初始化，包括isDailyUpdate和blurIntensity
@@ -161,6 +161,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
     setEditData(initialEditData)
     setLocalItem(item)
+    
+    // 使用稳定标识符更新背景刷新键，避免不必要的重新加载
+    setBackgroundRefreshKey(item.tmdbId || item.id || '0')
     
     // 每次item变化时强制选择季数，确保始终有默认选中的季节
     if (item.seasons && item.seasons.length > 0) {
@@ -179,6 +182,12 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 如果是电视剧但没有seasons属性（单季剧），默认设置为1
       setSelectedSeason(1)
       setCustomSeasonNumber(1)
+    }
+
+    // 预加载背景图，确保打开对话框时立即显示
+    if (item.backdropUrl) {
+      const img = new Image();
+      img.src = item.backdropUrl;
     }
   }, [item])
 
@@ -210,13 +219,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
   }, [])
 
-  // 重置背景图状态
+  // 不再重置背景图状态，保持背景图的持续显示
   useEffect(() => {
-    if (open) {
-      setBackdropLoaded(false)
-      setBackdropError(false)
+    if (open && item.backdropUrl) {
+      // 使用稳定的唯一标识符作为刷新键
+      // 仅在id或tmdbId变化时才更新key
+      setBackgroundRefreshKey(item.tmdbId || item.id || '0')
     }
-  }, [open, item.backdropUrl])
+  }, [open, item.backdropUrl, item.id, item.tmdbId])
 
   // 监听滚动事件，实现视差效果
   useEffect(() => {
@@ -827,9 +837,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       
       // 更新背景图
       let updatedData = { ...editData };
+      let hasNewBackdrop = false;
       
       // 如果有背景图数据，更新背景图URL
-      if (tmdbData.backdropUrl) {
+      if (tmdbData.backdropUrl && tmdbData.backdropUrl !== updatedData.backdropUrl) {
+        hasNewBackdrop = true;
         updatedData = {
           ...updatedData,
           backdropUrl: tmdbData.backdropUrl,
@@ -856,7 +868,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       }
       
       // 更新TMDB标志
-      if (tmdbData.logoUrl) {
+      let hasNewLogo = false;
+      if (tmdbData.logoUrl && tmdbData.logoUrl !== updatedData.logoUrl) {
+        hasNewLogo = true;
         updatedData = {
           ...updatedData,
           logoUrl: tmdbData.logoUrl
@@ -865,7 +879,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       
       // 对于电视剧，更新季数据
       if (editData.mediaType === "tv" && tmdbData.seasons) {
-        // 将TMDB的季数数据与现有数据合并
+        // 将TMDB的季数据与现有数据合并
         const updatedSeasons = tmdbData.seasons.map((newSeason: TMDBSeasonData) => {
           // 查找是否有匹配的现有季数据
           const existingSeason = editData.seasons?.find(
@@ -961,15 +975,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 通知父组件更新
       onUpdate(newLocalItem);
       
-      // 更新背景图刷新键，强制重新渲染背景图
-      setBackgroundRefreshKey(Date.now());
-      
-      // 重置背景图状态，使其重新加载
-      setBackdropLoaded(false);
-      setBackdropError(false);
+      // 只有在背景图或标志发生变化时才强制刷新背景图（使用带时间戳的刷新键）
+      if (hasNewBackdrop || hasNewLogo) {
+        setBackgroundRefreshKey(`${item.tmdbId || item.id}_${Date.now()}`);
+      }
       
       // 显示成功信息
-      if (updatedData.backdropUrl !== editData.backdropUrl) {
+      if (hasNewBackdrop) {
         if (editData.mediaType === "tv") {
           setCopyFeedback("TMDB数据、背景图、标志、评分和简介已成功刷新");
         } else {
@@ -1032,16 +1044,17 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none" ref={contentRef}>
-          {/* 使用新的BackgroundImage组件替换原来的背景图实现 */}
+          {/* 使用优化后的BackgroundImage组件 */}
           <BackgroundImage 
-            src={item.backdropUrl} 
-            alt={item.title + " 背景图"}
+            src={localItem.backdropUrl} 
+            alt={localItem.title + " 背景图"}
             className="absolute inset-0 z-0"
             objectPosition={`center ${20 + scrollPosition * 0.05}%`} // 添加视差滚动效果
             blur={true}
             blurIntensity={localItem.blurIntensity || 'medium'}
             overlayClassName="bg-gradient-to-b from-background/30 via-background/25 to-background/35"
             refreshKey={backgroundRefreshKey}
+            fallbackSrc={localItem.posterUrl || "/placeholder.jpg"} // 使用海报作为备用
           />
           
           {/* 内容层 - 添加相对定位和z-index确保内容在背景图上方 */}

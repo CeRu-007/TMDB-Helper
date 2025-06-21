@@ -2608,14 +2608,14 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 渲染inTab模式内容
   const renderInTabContent = () => (
-    <div className="h-full flex flex-col bg-background/50 backdrop-blur-sm">
+    <div className="h-full flex flex-col bg-transparent backdrop-blur-md">
       <Tabs 
         value={activeTab} 
         onValueChange={handleTabChange} 
         className="w-full h-full flex flex-col"
         defaultValue="process"
       >
-        <div className="border-b bg-background/40 backdrop-blur-md">
+        <div className="border-b bg-background/30 backdrop-blur-md">
           <div className="flex items-center justify-between px-4 py-2">
             <TabsList>
               <TabsTrigger value="process" className="flex items-center">
@@ -2642,7 +2642,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         {/* 处理标签内容 */}
         <TabsContent 
           value="process" 
-          className="h-full overflow-hidden p-0 m-0"
+          className="h-full overflow-hidden p-0 m-0 bg-transparent"
           key={`process-tab-${processTabRenderCount}`}
         >
           <div className="p-4 h-full overflow-y-auto space-y-4">
@@ -2908,12 +2908,12 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         {/* 编辑标签内容 */}
         <TabsContent 
           value="edit" 
-          className="h-full p-0 m-0"
+          className="h-full p-0 m-0 bg-transparent"
           key={`edit-tab-${editTabRenderCount}`}
         >
             <div className="h-full flex flex-col">
             {/* 编辑工具栏 */}
-            <div className="border-b px-4 py-2 bg-gray-50/70 dark:bg-gray-800/50 backdrop-blur-md">
+            <div className="border-b px-4 py-2 bg-background/30 backdrop-blur-md">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="bg-muted rounded-md p-0.5 flex items-center">
@@ -2977,7 +2977,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     value={csvContent}
                     onChange={(e) => setCsvContent(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 p-4 font-mono text-xs resize-none focus:outline-none bg-white/80 dark:bg-black/80 backdrop-blur-sm csv-text-editor"
+                    className="flex-1 p-4 font-mono text-xs resize-none focus:outline-none bg-background/40 backdrop-blur-md csv-text-editor"
                     placeholder="CSV内容..."
                     style={{ minHeight: "70vh", lineHeight: 1.6 }}
                   ></textarea>
@@ -3664,14 +3664,14 @@ logging_level = INFO
       ) : (
         <Dialog open={open} onOpenChange={onOpenChange}>
           <DialogContent 
-            className={`${isFullscreen ? 'max-w-full w-full h-full max-h-full inset-0 rounded-none' : 'max-w-[90vw] max-h-[90vh]'} overflow-y-auto p-0 bg-background/50 backdrop-blur-md border-none`}
+            className={`${isFullscreen ? 'max-w-full w-full h-full max-h-full inset-0 rounded-none' : 'max-w-[90vw] max-h-[90vh]'} overflow-y-auto p-0 bg-transparent border-none`}
             style={{
               transform: isFullscreen ? 'none' : undefined,
               top: isFullscreen ? '0' : undefined,
               left: isFullscreen ? '0' : undefined,
             }}
           >
-            <DialogHeader className="p-6 pb-2 flex flex-row items-center justify-between bg-background/40 backdrop-blur-md border-b">
+            <DialogHeader className="p-6 pb-2 flex flex-row items-center justify-between bg-background/30 backdrop-blur-md border-b">
               <DialogTitle className="flex items-center space-x-2">
                 <Terminal className="h-5 w-5" />
                 <span>TMDB-Import 本地集成</span>
