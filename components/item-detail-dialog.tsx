@@ -88,6 +88,10 @@ import {
   Activity,
   Link2,
   FrameIcon,
+  Code,
+  CalendarPlus,
+  CalendarClock,
+  Network,
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/storage"
 import { useMobile } from "@/hooks/use-mobile"
@@ -1219,234 +1223,484 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* 左侧：海报区域 */}
             <div className="md:col-span-1 md:max-w-full overflow-hidden">
-              {/* 使用固定高度div替代ScrollArea，确保内容不需滚动 */}
-              <div className="h-[calc(95vh-300px)] flex flex-col">
-                <div className="pr-2 flex-1 flex flex-col">
-                  {/* 海报区域 */}
-                  <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0">
-                {localItem.posterUrl ? (
-                  <img 
-                    src={localItem.posterUrl} 
-                    alt={localItem.title} 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="text-center p-4">
-                    <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">海报</p>
-                  </div>
-                )}
-              </div>
-              
-              {/* 用媒体评分与笔记功能区替换基本信息区域 */}
-              <div className="mt-2 w-full rounded-md backdrop-blur-md bg-background/30 p-3">
-                {editing ? (
-                  // 编辑模式下保留原有编辑表单（仅显示部分关键字段）
-                  <div className="space-y-3">
-                    <div className="pb-1 mb-2">
-                      <h3 className="text-sm font-medium flex items-center">
-                        <Edit className="h-3.5 w-3.5 mr-1.5" />
-                        快速编辑
-                      </h3>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <Label htmlFor="edit-title">标题</Label>
-                      <Input 
-                        id="edit-title" 
-                        value={editData.title} 
-                        onChange={(e) => setEditData({...editData, title: e.target.value})}
+              {editing ? (
+                // 编辑模式下使用固定高度容器，添加圆角
+                <div className="h-[665px] flex flex-col pr-2">
+                  {/* 海报区域 - 使用固定高度比例 */}
+                  <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2">
+                    {localItem.posterUrl ? (
+                      <img 
+                        src={localItem.posterUrl} 
+                        alt={localItem.title} 
+                        className="w-full h-full object-cover"
                       />
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <Label htmlFor="edit-category">分类</Label>
-                      <Select 
-                        value={editData.category || ""} 
-                        onValueChange={(value) => setEditData({...editData, category: value as CategoryType})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="选择分类" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES.map(cat => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              <div className="flex items-center">
-                                {cat.icon}
-                                {cat.name}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="edit-daily-update" className="flex items-center cursor-pointer">
-                          <Zap className="h-3.5 w-3.5 mr-1.5" />
-                          每日更新
-                        </Label>
-                        <Checkbox 
-                          id="edit-daily-update"
-                          checked={editData.isDailyUpdate === true}
-                          onCheckedChange={(checked) => 
-                            setEditData({...editData, isDailyUpdate: checked === true})
-                          }
-                        />
+                    ) : (
+                      <div className="text-center p-4">
+                        <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">海报</p>
                       </div>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <Label htmlFor="edit-status">状态</Label>
-                      <Select 
-                        value={editData.status || "ongoing"} 
-                        onValueChange={(value) => setEditData({...editData, status: value as "ongoing" | "completed"})}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="选择状态" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ongoing">连载中</SelectItem>
-                          <SelectItem value="completed">已完结</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* 添加播出平台URL输入字段 */}
-                    <div className="space-y-1">
-                      <Label htmlFor="edit-platform-url" className="flex items-center">
-                        <Link2 className="h-3.5 w-3.5 mr-1.5" />
-                        播出平台URL
-                      </Label>
-                      <div className="flex items-center space-x-2">
-                        <Input 
-                          id="edit-platform-url" 
-                          value={editData.platformUrl || ""} 
-                          onChange={(e) => setEditData({...editData, platformUrl: e.target.value})}
-                          placeholder="https://www.example.com/watch/..."
-                          className="flex-1"
-                        />
-                        {editData.platformUrl && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => window.open(editData.platformUrl, '_blank')}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      {editData.platformUrl && (
-                        <div className="text-xs text-muted-foreground mt-1 flex items-center">
-                          <div className="w-4 h-4 mr-1 flex-shrink-0">
-                            {(() => {
-                              const platformInfo = getPlatformInfo(editData.platformUrl);
-                              return platformInfo ? 
-                                <PlatformLogo platform={platformInfo.name} size={16} /> : 
-                                <FrameIcon className="w-4 h-4" />;
-                            })()}
+                    )}
+                  </div>
+                  
+                  {/* 编辑模式下的表单区域 - 添加圆角和固定容器 */}
+                  <div className="w-full rounded-lg backdrop-blur-md bg-background/30 p-2 flex-1 overflow-hidden">
+                    <ScrollArea className="h-full">
+                      <div className="space-y-1.5 pr-2">
+                        <div className="pb-0.5 mb-0.5 flex items-center justify-between border-b border-border/20">
+                          <h3 className="text-sm font-medium flex items-center">
+                            <Edit className="h-3.5 w-3.5 mr-1" />
+                            词条编辑
+                          </h3>
+                        </div>
+                        
+                        <div className="space-y-0.5">
+                          <Label htmlFor="edit-title" className="text-xs text-muted-foreground">标题</Label>
+                          <Input 
+                            id="edit-title" 
+                            value={editData.title} 
+                            onChange={(e) => setEditData({...editData, title: e.target.value})}
+                            className="h-8"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="edit-category" className="text-xs text-muted-foreground">分类</Label>
+                            <Select 
+                              value={editData.category || "none"} 
+                              onValueChange={(value) => setEditData({...editData, category: value === "none" ? undefined : value as CategoryType})}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="选择分类" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">未分类</SelectItem>
+                                {CATEGORIES.map(cat => (
+                                  <SelectItem key={cat.id} value={cat.id}>
+                                    <div className="flex items-center">
+                                      {cat.icon}
+                                      {cat.name}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                          {(() => {
-                            const platformInfo = getPlatformInfo(editData.platformUrl);
-                            return platformInfo?.name || '识别为外部链接';
-                          })()}
+                          
+                          <div className="space-y-0.5">
+                            <Label htmlFor="edit-status" className="text-xs text-muted-foreground">状态</Label>
+                            <Select 
+                              value={editData.status || "ongoing"} 
+                              onValueChange={(value) => setEditData({...editData, status: value as "ongoing" | "completed"})}
+                            >
+                              <SelectTrigger className="w-full h-8">
+                                <SelectValue placeholder="选择状态" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ongoing">连载中</SelectItem>
+                                <SelectItem value="completed">已完结</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-0.5 mt-0.5">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="edit-daily-update" className="flex items-center cursor-pointer text-xs text-muted-foreground">
+                              <Zap className="h-3.5 w-3.5 mr-1" />
+                              每日更新
+                            </Label>
+                            <Checkbox 
+                              id="edit-daily-update"
+                              checked={editData.isDailyUpdate === true}
+                              onCheckedChange={(checked) => 
+                                setEditData({...editData, isDailyUpdate: checked === true})
+                              }
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* 添加播出平台URL输入字段 */}
+                        <div className="space-y-0.5 mt-1">
+                          <Label htmlFor="edit-platform-url" className="flex items-center text-xs text-muted-foreground">
+                            <Link2 className="h-3.5 w-3.5 mr-1" />
+                            播出平台URL
+                          </Label>
+                          <div className="flex items-center space-x-2">
+                            <Input 
+                              id="edit-platform-url" 
+                              value={editData.platformUrl || ""} 
+                              onChange={(e) => setEditData({...editData, platformUrl: e.target.value})}
+                              placeholder="https://www.example.com/watch/..."
+                              className="flex-1 h-8"
+                            />
+                            {editData.platformUrl && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => window.open(editData.platformUrl, '_blank')}
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                          {editData.platformUrl && (
+                            <div className="text-xs text-muted-foreground mt-0.5 flex items-center">
+                              <div className="w-4 h-4 mr-1 flex-shrink-0">
+                                {(() => {
+                                  const platformInfo = getPlatformInfo(editData.platformUrl);
+                                  return platformInfo ? 
+                                    <PlatformLogo platform={platformInfo.name} size={16} /> : 
+                                    <FrameIcon className="w-4 h-4" />;
+                                })()}
+                              </div>
+                              {(() => {
+                                const platformInfo = getPlatformInfo(editData.platformUrl);
+                                return platformInfo?.name || '识别为外部链接';
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* 添加简介编辑区域 */}
+                        <div className="space-y-0.5 flex-grow mt-1">
+                          <Label htmlFor="edit-overview" className="flex items-center text-xs text-muted-foreground">
+                            <Info className="h-3.5 w-3.5 mr-1" />
+                            简介
+                          </Label>
+                          <div className="bg-background/20 rounded-lg overflow-hidden flex-grow h-full min-h-[120px] shadow-sm">
+                            <ScrollArea className="h-full">
+                              <div className="p-1">
+                                <textarea
+                                  id="edit-overview"
+                                  value={editData.overview || ""}
+                                  onChange={(e) => setEditData({...editData, overview: e.target.value})}
+                                  placeholder="输入简介内容..."
+                                  className="w-full h-full min-h-[110px] resize-none bg-transparent border-0 text-sm focus:ring-0 focus:outline-none p-1.5"
+                                />
+                              </div>
+                            </ScrollArea>
+                          </div>
+                        </div>
+                        
+                        {/* 添加剧集设置区域 */}
+                        <div className="space-y-1 mt-4 pt-1 border-t border-border/30">
+                          <h3 className="text-xs font-medium flex items-center pb-1 text-muted-foreground">
+                            <Tv className="h-3.5 w-3.5 mr-1" />
+                            剧集设置
+                          </h3>
+                          
+                          {/* 播出时间设置 */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="edit-weekday" className="flex items-center text-xs text-muted-foreground">
+                                <Calendar className="h-3.5 w-3.5 mr-1" />
+                                播出日
+                              </Label>
+                              <Select 
+                                  value={editData.weekday?.toString() || "1"} 
+                                  onValueChange={(value) => setEditData({...editData, weekday: parseInt(value)})}
+                                >
+                                  <SelectTrigger className="w-full h-7 text-xs">
+                                    <SelectValue placeholder="选择播出日" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="0">周日</SelectItem>
+                                    <SelectItem value="1">周一</SelectItem>
+                                    <SelectItem value="2">周二</SelectItem>
+                                    <SelectItem value="3">周三</SelectItem>
+                                    <SelectItem value="4">周四</SelectItem>
+                                    <SelectItem value="5">周五</SelectItem>
+                                    <SelectItem value="6">周六</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                            </div>
+                            
+                            <div className="space-y-0.5">
+                              <Label htmlFor="edit-air-time" className="flex items-center text-xs text-muted-foreground">
+                                <Clock className="h-3.5 w-3.5 mr-1" />
+                                播出时间
+                              </Label>
+                              <Input 
+                                id="edit-air-time" 
+                                value={editData.airTime || ""} 
+                                onChange={(e) => setEditData({...editData, airTime: e.target.value})}
+                                placeholder="例如: 23:00"
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* 高级设置区域 */}
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <div className="space-y-1">
+                              <Label htmlFor="edit-blur-intensity" className="flex items-center text-xs text-muted-foreground">
+                                <Layers className="h-3.5 w-3.5 mr-1" />
+                                模糊效果
+                              </Label>
+                              <Select 
+                                value={editData.blurIntensity || "none"} 
+                                onValueChange={(value) => setEditData({...editData, blurIntensity: value === "none" ? undefined : value as "light" | "medium" | "heavy"})}
+                              >
+                                <SelectTrigger className="w-full h-7 text-xs">
+                                  <SelectValue placeholder="选择效果" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">无效果</SelectItem>
+                                  <SelectItem value="light">弱效果</SelectItem>
+                                  <SelectItem value="medium">中等效果</SelectItem>
+                                  <SelectItem value="heavy">强效果</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <Label htmlFor="edit-rating" className="flex items-center text-xs text-muted-foreground">
+                                <Star className="h-3.5 w-3.5 mr-1" />
+                                评分
+                              </Label>
+                              <Input 
+                                id="edit-rating" 
+                                type="number"
+                                min="0"
+                                max="10"
+                                step="0.1"
+                                value={editData.rating?.toString() || ""} 
+                                onChange={(e) => setEditData({...editData, rating: e.target.value ? parseFloat(e.target.value) : undefined})}
+                                placeholder="0-10"
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* TMDB ID设置 */}
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <div className="space-y-1">
+                              <Label htmlFor="edit-tmdb-id" className="flex items-center text-xs text-muted-foreground">
+                                <Hash className="h-3.5 w-3.5 mr-1" />
+                                TMDB ID
+                              </Label>
+                              <Input 
+                                id="edit-tmdb-id" 
+                                value={editData.tmdbId || ""} 
+                                onChange={(e) => setEditData({...editData, tmdbId: e.target.value})}
+                                placeholder="例如: 12345"
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <Label htmlFor="edit-tmdb-url" className="flex items-center text-xs text-muted-foreground">
+                                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                                TMDB URL
+                              </Label>
+                              <Input 
+                                id="edit-tmdb-url" 
+                                value={editData.tmdbUrl || ""} 
+                                onChange={(e) => setEditData({...editData, tmdbUrl: e.target.value})}
+                                placeholder="TMDB链接"
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* 刷新TMDB数据按钮 */}
+                          {editData.tmdbId && (
+                            <div className="mt-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full h-7 text-xs"
+                                onClick={refreshSeasonFromTMDB}
+                                disabled={isRefreshingTMDBData || !editData.tmdbId}
+                              >
+                                {isRefreshingTMDBData ? (
+                                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                                )}
+                                刷新TMDB数据
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* 添加其他设置区域 */}
+                        <div className="space-y-1 mt-4 pt-1 border-t border-border/30">
+                          <h3 className="text-xs font-medium flex items-center pb-1 text-muted-foreground">
+                            <FileText className="h-3.5 w-3.5 mr-1" />
+                            其他信息
+                          </h3>
+                          
+                          {/* 备注设置 */}
+                          <div className="space-y-1">
+                            <Label htmlFor="edit-notes" className="flex items-center text-xs text-muted-foreground">
+                              <BookMarked className="h-3.5 w-3.5 mr-1" />
+                              备注
+                            </Label>
+                            <Input 
+                              id="edit-notes" 
+                              value={editData.notes || ""} 
+                              onChange={(e) => setEditData({...editData, notes: e.target.value})}
+                              placeholder="添加备注信息..."
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          
+                          {/* 维护代码 */}
+                          <div className="space-y-1 mt-1">
+                            <Label htmlFor="edit-maintenance-code" className="flex items-center text-xs text-muted-foreground">
+                              <Code className="h-3.5 w-3.5 mr-1.5" />
+                              维护代码
+                            </Label>
+                            <Input 
+                              id="edit-maintenance-code" 
+                              value={editData.maintenanceCode || ""} 
+                              onChange={(e) => setEditData({...editData, maintenanceCode: e.target.value})}
+                              placeholder="维护代码"
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          
+                          {/* 创建和更新时间 */}
+                          <div className="grid grid-cols-2 gap-2 mt-1">
+                            <div className="space-y-1">
+                              <Label className="flex items-center text-xs text-muted-foreground">
+                                <CalendarPlus className="h-3.5 w-3.5 mr-1.5" />
+                                创建时间
+                              </Label>
+                              <div className="h-8 text-xs flex items-center px-3 bg-background/20 rounded-md">
+                                {new Date(editData.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <Label className="flex items-center text-xs text-muted-foreground">
+                                <CalendarClock className="h-3.5 w-3.5 mr-1.5" />
+                                更新时间
+                              </Label>
+                              <div className="h-8 text-xs flex items-center px-3 bg-background/20 rounded-md">
+                                {new Date(editData.updatedAt).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
+              ) : (
+                // 查看模式下不使用固定高度，保持内容自然布局
+                <div className="flex flex-col">
+                  <div className="pr-2 flex-1 flex flex-col">
+                    {/* 海报区域 */}
+                    <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0">
+                      {localItem.posterUrl ? (
+                        <img 
+                          src={localItem.posterUrl} 
+                          alt={localItem.title} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-center p-4">
+                          <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground">海报</p>
                         </div>
                       )}
                     </div>
-                  </div>
-                ) : (
-                  // 查看模式下显示新的功能区
-                  <div className="space-y-1 flex-1 flex flex-col">
-                    {/* 播出平台区域 - 优先使用TMDB网络logo */}
-                    <div className="pb-0.5 mb-0.5">
-                      <h3 className="text-sm font-medium flex items-center">
-                        <Link2 className="h-3.5 w-3.5 mr-1.5" />
-                        播出平台
-                      </h3>
-                    </div>
-                    <div className="flex items-center justify-start mb-1">
-                      {/* 平台Logo区域 - 优先使用TMDB网络logo */}
-                      <div className="flex items-center justify-start w-full">
-                        {localItem.networkLogoUrl ? (
-                          // 显示TMDB官方网络logo
-                          <div 
-                            className="w-full h-12 flex items-center justify-start cursor-pointer"
-                            onClick={() => localItem.platformUrl && window.open(localItem.platformUrl, '_blank')}
-                            title={localItem.networkName || '播出网络'}
-                          >
-                            <img 
-                              src={localItem.networkLogoUrl} 
-                              alt={localItem.networkName || '播出网络'} 
-                              className="max-w-full max-h-full object-contain hover:scale-110 transition-transform"
-                              onError={(e) => {
-                                // 如果官方logo加载失败，隐藏图片元素
-                                e.currentTarget.style.display = 'none';
-                                // 显示备用元素
-                                const container = e.currentTarget.parentElement;
-                                if (container) {
-                                  const networkIcon = document.createElement('div');
-                                  networkIcon.innerHTML = `<div class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" class="text-foreground/70"><path d="M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0z"></path><path d="M3.6 8.25h16.8M3.6 15.75h16.8M12 3.6v16.8"></path></svg></div>`;
-                                  container.appendChild(networkIcon);
-                                }
-                              }}
-                            />
-                          </div>
-                        ) : localItem.platformUrl ? (
-                          // 回退到基于URL的平台识别
-                          (() => {
-                            const platformInfo = getPlatformInfo(localItem.platformUrl);
-                            return (
+                    
+                    {/* 查看模式下的功能区 */}
+                    <div className="mt-2 w-full rounded-md backdrop-blur-md bg-background/30 p-3">
+                      <div className="space-y-1 flex-1 flex flex-col">
+                        {/* 播出平台区域 - 优先使用TMDB网络logo */}
+                        <div className="pb-0.5 mb-0.5">
+                          <h3 className="text-sm font-medium flex items-center">
+                            <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                            播出平台
+                          </h3>
+                        </div>
+                        <div className="flex items-center justify-start mb-1">
+                          {/* 平台Logo区域 - 优先使用TMDB网络logo */}
+                          <div className="flex items-center justify-start w-full">
+                            {localItem.networkLogoUrl ? (
+                              // 显示TMDB官方网络logo
                               <div 
                                 className="w-full h-12 flex items-center justify-start cursor-pointer"
-                                onClick={() => platformInfo && window.open(platformInfo.url, '_blank')}
-                                title={platformInfo?.name || '播出平台'}
+                                onClick={() => localItem.platformUrl && window.open(localItem.platformUrl, '_blank')}
+                                title={localItem.networkName || '播出网络'}
                               >
-                                {platformInfo ? (
-                                  <PlatformLogo 
-                                    platform={platformInfo.name} 
-                                    size={32}
-                                    className="hover:scale-110 transition-transform"
-                                  />
-                                ) : (
-                                  <ExternalLink className="h-9 w-9 text-foreground/70" />
-                                )}
+                                <img 
+                                  src={localItem.networkLogoUrl} 
+                                  alt={localItem.networkName || '播出网络'} 
+                                  className="max-w-full max-h-full object-contain hover:scale-110 transition-transform"
+                                  onError={(e) => {
+                                    // 如果官方logo加载失败，隐藏图片元素
+                                    e.currentTarget.style.display = 'none';
+                                    // 显示备用元素
+                                    const container = e.currentTarget.parentElement;
+                                    if (container) {
+                                      const networkIcon = document.createElement('div');
+                                      networkIcon.innerHTML = `<div class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" class="text-foreground/70"><path d="M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0z"></path><path d="M3.6 8.25h16.8M3.6 15.75h16.8M12 3.6v16.8"></path></svg></div>`;
+                                      container.appendChild(networkIcon);
+                                    }
+                                  }}
+                                />
                               </div>
-                            )
-                          })()
-                        ) : (
-                          // 未设置平台URL时的显示
-                          <div className="w-full h-12 flex items-center justify-start">
-                            <FrameIcon className="h-8 w-8 text-muted-foreground/50" />
+                            ) : localItem.platformUrl ? (
+                              // 回退到基于URL的平台识别
+                              (() => {
+                                const platformInfo = getPlatformInfo(localItem.platformUrl);
+                                return (
+                                  <div 
+                                    className="w-full h-12 flex items-center justify-start cursor-pointer"
+                                    onClick={() => platformInfo && window.open(platformInfo.url, '_blank')}
+                                    title={platformInfo?.name || '播出平台'}
+                                  >
+                                    {platformInfo ? (
+                                      <PlatformLogo 
+                                        platform={platformInfo.name} 
+                                        size={32}
+                                        className="hover:scale-110 transition-transform"
+                                      />
+                                    ) : (
+                                      <ExternalLink className="h-9 w-9 text-foreground/70" />
+                                    )}
+                                  </div>
+                                )
+                              })()
+                            ) : (
+                              // 未设置平台URL时的显示
+                              <div className="w-full h-12 flex items-center justify-start">
+                                <FrameIcon className="h-8 w-8 text-muted-foreground/50" />
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
+                        
+                        {/* TMDB简介区域 */}
+                        <div className="pb-0.5 mb-1 mt-3">
+                          <h3 className="text-sm font-medium flex items-center">
+                            <Info className="h-3.5 w-3.5 mr-1.5" />
+                            简介
+                          </h3>
+                        </div>
+                        <div className="bg-background/20 rounded-lg overflow-hidden h-[110px] mb-2 shadow-sm">
+                          <ScrollArea className="h-full">
+                            <div className="p-3 text-sm">
+                              {localItem.overview ? (
+                                <p className="text-sm break-words">{localItem.overview}</p>
+                              ) : (
+                                <span className="text-muted-foreground text-xs italic">暂无简介信息</span>
+                              )}
+                            </div>
+                          </ScrollArea>
+                        </div>
                       </div>
                     </div>
-                    
-                    {/* TMDB简介区域 */}
-                    <div className="pb-0.5 mb-1 mt-3">
-                      <h3 className="text-sm font-medium flex items-center">
-                        <Info className="h-3.5 w-3.5 mr-1.5" />
-                        简介
-                      </h3>
-                    </div>
-                    <div className="bg-background/20 rounded-lg overflow-hidden h-[110px] mb-2 shadow-sm">
-                      <ScrollArea className="h-full">
-                        <div className="p-3 text-sm">
-                          {localItem.overview ? (
-                            <p className="text-sm break-words">{localItem.overview}</p>
-                          ) : (
-                            <span className="text-muted-foreground text-xs italic">暂无简介信息</span>
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </div>
                   </div>
-                )}
-              </div>
                 </div>
-              </div>
+              )}
             </div>
             
             {/* 右侧：内容区域 */}

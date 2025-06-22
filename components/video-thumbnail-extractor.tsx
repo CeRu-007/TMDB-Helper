@@ -41,7 +41,7 @@ import { useMobile } from "@/hooks/use-mobile"
 import {
   Checkbox,
 } from "@/components/ui/checkbox"
-import ImageProcessor from "@/utils/image-processor"
+import ImageProcessor from "@/utils/image-processor-class"
 
 interface VideoFile {
   id: string
@@ -85,10 +85,7 @@ interface ExtractionSettings {
 // 可用的AI模型配置
 const availableModels = {
   subtitleDetection: [
-    { id: "basic", name: "基础检测", description: "使用基本图像处理算法检测字幕区域" },
-    { id: "ocr-lite", name: "OCR-Lite", description: "轻量级OCR模型，速度快但准确率一般" },
-    { id: "tesseract", name: "Tesseract OCR", description: "开源OCR引擎，准确率高但速度较慢" },
-    { id: "subtitle-net", name: "SubtitleNet", description: "专门针对视频字幕的深度学习模型" },
+    { id: "enhanced", name: "增强检测", description: "使用增强型图像处理算法检测字幕区域，综合了多种检测技术" },
   ],
   peopleDetection: [
     { id: "basic", name: "基础检测", description: "使用基本图像处理算法检测人物轮廓" },
@@ -103,6 +100,7 @@ export default function VideoThumbnailExtractor() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [sortBy, setSortBy] = useState<"name" | "date" | "size">("name")
   const [filterBy, setFilterBy] = useState<"all" | "completed" | "processing">("all")
+  const [thumbnailSortBy, setThumbnailSortBy] = useState<"quality" | "timestamp">("timestamp")
   const [settings, setSettings] = useState<ExtractionSettings>({
     startTime: 0,
     threadCount: 6,
@@ -112,13 +110,13 @@ export default function VideoThumbnailExtractor() {
     avoidSubtitles: true,
     preferPeople: true,
     preferFaces: true,
-    subtitleDetectionStrength: 0.8,
+    subtitleDetectionStrength: 0.9,
     staticFrameThreshold: 0.8,
   })
   // 默认每页显示的缩略图数量修改为9（3x3布局）
   const [defaultItemsPerPage, setDefaultItemsPerPage] = useState<number>(9)
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
-  const [selectedSubtitleModel, setSelectedSubtitleModel] = useState("basic")
+  const [selectedSubtitleModel, setSelectedSubtitleModel] = useState("enhanced")
   const [showSubtitleMarkers, setShowSubtitleMarkers] = useState(true)
   const [subtitleModelLoading, setSubtitleModelLoading] = useState(false)
   const [subtitleLanguage, setSubtitleLanguage] = useState<"auto" | "chinese" | "english" | "japanese">("auto")
@@ -127,6 +125,8 @@ export default function VideoThumbnailExtractor() {
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
   const [processorReady, setProcessorReady] = useState<boolean>(false)
   const imageProcessorRef = useRef<ImageProcessor | null>(null)
+
+
 
   // 初始化图像处理器
   useEffect(() => {
@@ -265,12 +265,13 @@ export default function VideoThumbnailExtractor() {
       video.muted = true
       video.playsInline = true
       video.crossOrigin = "anonymous" // 允许跨域处理
-
+      // 设置视频渲染质量为高
+      video.style.imageRendering = 'high-quality'
       // 设置视频属性
-      video.preload = "metadata"
+      video.preload = "auto" // 改为 auto 以确保预加载完整视频
       
       // 设置最大尝试次数
-      const MAX_RETRIES = 2;
+      const MAX_RETRIES = 3; // 增加到3次
       let retryCount = 0;
       
       // 添加重试逻辑
@@ -280,6 +281,14 @@ export default function VideoThumbnailExtractor() {
           await new Promise<void>((resolve, reject) => {
             const loadHandler = () => {
               video.removeEventListener('loadeddata', loadHandler);
+              
+              // 检查视频是否有效
+              if (video.videoWidth <= 0 || video.videoHeight <= 0 || video.duration <= 0) {
+                reject(new Error("视频元数据无效"));
+                return;
+              }
+              
+              console.log(`视频 ${videoFile.name} 已加载，尺寸: ${video.videoWidth}x${video.videoHeight}, 时长: ${video.duration}s`);
               resolve();
             };
             
@@ -299,11 +308,28 @@ export default function VideoThumbnailExtractor() {
             video.addEventListener('error', errorHandler);
             
             // 如果视频已经加载完成，直接解析
-            if (video.readyState >= 2) {
+            if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
               clearTimeout(timeout);
+              console.log(`视频 ${videoFile.name} 已预加载，尺寸: ${video.videoWidth}x${video.videoHeight}, 时长: ${video.duration}s`);
               resolve();
             }
           });
+          
+          // 尝试短暂播放视频以激活解码器
+          try {
+            console.log(`尝试短暂播放视频 ${videoFile.name} 以确保解码器激活`);
+            video.currentTime = settings.startTime;
+            await video.play();
+            
+            // 短暂播放后暂停
+            await new Promise(resolve => setTimeout(() => {
+              video.pause();
+              resolve(null);
+            }, 100));
+          } catch (playError) {
+            console.warn(`无法自动播放视频 ${videoFile.name}:`, playError);
+            // 继续执行，大多数浏览器会阻止自动播放
+          }
           
           // 视频加载成功，继续处理
           break;
@@ -346,7 +372,7 @@ export default function VideoThumbnailExtractor() {
             try {
               frames = await imageProcessorRef.current.extractFramesFromVideo(video, {
                 startTime: settings.startTime,
-                frameCount: settings.thumbnailCount * 2, // 提取双倍帧数以便更好地选择
+                frameCount: settings.thumbnailCount * 3, // 提取更多帧以确保有足够的候选帧
                 interval: 'uniform'
               });
               
@@ -388,7 +414,7 @@ export default function VideoThumbnailExtractor() {
           // 分析帧并找出最佳的几帧
           const { frames: bestFrames } = await imageProcessorRef.current.findOptimalFrames(
             frames, 
-            settings.thumbnailCount * 2, // 提取更多候选帧以便筛选
+            Math.min(frames.length, settings.thumbnailCount * 3), // 确保不超过实际帧数
             {
               prioritizeStatic: true,       // 优先静态帧
               avoidSubtitles: true,         // 必须避免字幕
@@ -412,7 +438,7 @@ export default function VideoThumbnailExtractor() {
           updateProgress(80);
           
           // 筛选符合条件的帧：无字幕、有人物、优先有正脸
-          const filteredFrames = bestFrames.filter(({ scores }) => {
+          const filteredFrames = bestFrames.filter(({ scores }: { scores: { subtitleScore: number; peopleScore: number } }) => {
             // 必须无字幕
             const hasNoSubtitles = scores.subtitleScore < 0.25;
             // 必须有人物
@@ -421,18 +447,33 @@ export default function VideoThumbnailExtractor() {
             return hasNoSubtitles && hasPeople;
           });
           
-          // 如果筛选后没有符合条件的帧，使用原始的最佳帧
-          const framesToUse = filteredFrames.length > 0 ? filteredFrames : bestFrames;
+          // 如果筛选后的帧数量不足，放宽条件
+          let framesToUse = filteredFrames;
+          if (framesToUse.length < settings.thumbnailCount) {
+            console.log(`筛选后只有 ${filteredFrames.length} 帧，放宽条件重新筛选`);
+            
+            // 放宽条件：只避免字幕，不要求必须有人物
+            framesToUse = bestFrames.filter(({ scores }: { scores: { subtitleScore: number } }) => {
+              return scores.subtitleScore < 0.4; // 放宽字幕阈值
+            });
+            
+            // 如果仍然不足，则使用所有最佳帧
+            if (framesToUse.length < settings.thumbnailCount) {
+              console.log(`放宽条件后只有 ${framesToUse.length} 帧，使用所有最佳帧`);
+              framesToUse = bestFrames;
+            }
+          }
           
-          // 限制数量到设置的缩略图数量
-          const finalFrames = framesToUse.slice(0, settings.thumbnailCount);
+          // 限制数量到设置的缩略图数量，但要确保至少提取一张
+          const targetCount = Math.max(1, Math.min(settings.thumbnailCount, framesToUse.length));
+          const finalFrames = framesToUse.slice(0, targetCount);
           
           // 转换为缩略图
           const thumbnails: Thumbnail[] = [];
           
           // 并行处理生成缩略图
           await Promise.all(
-            finalFrames.map(async ({ index, scores }, i) => {
+            finalFrames.map(async ({ index, scores }: { index: number; scores: { subtitleScore: number; peopleScore: number; staticScore: number } }, i) => {
               try {
                 // 确保索引有效
                 if (index >= 0 && index < frames.length) {
@@ -503,11 +544,40 @@ export default function VideoThumbnailExtractor() {
   
   // 保留原始提取逻辑作为备用
   const extractThumbnailsLegacy = async (video: HTMLVideoElement, videoFile: VideoFile) => {
+    // 确保视频已加载
+    if (video.readyState < 2) {
+      console.log(`等待传统方法中的视频 ${videoFile.name} 加载完成...`);
+      await new Promise<void>((resolve) => {
+        const loadHandler = () => {
+          video.removeEventListener('loadeddata', loadHandler);
+          resolve();
+        };
+        video.addEventListener('loadeddata', loadHandler);
+        
+        // 如果已经加载，直接解析
+        if (video.readyState >= 2) {
+          resolve();
+        }
+      });
+    }
+    
+    // 尝试短暂播放以确保解码器激活
+    try {
+      video.currentTime = settings.startTime;
+      await video.play();
+      await new Promise(resolve => setTimeout(() => {
+        video.pause();
+        resolve(null);
+      }, 100));
+    } catch (playError) {
+      console.warn(`传统方法：无法自动播放视频 ${videoFile.name}:`, playError);
+    }
+    
     // 原始的提取逻辑，从这里开始复制
     return new Promise<Thumbnail[]>((resolve) => {
       video.onloadeddata = () => {
         const canvas = document.createElement("canvas")
-        const ctx = canvas.getContext("2d")!
+        const ctx = canvas.getContext("2d", { willReadFrequently: true })!
         canvas.width = video.videoWidth
         canvas.height = video.videoHeight
 
@@ -525,6 +595,7 @@ export default function VideoThumbnailExtractor() {
           peopleScore: number
           dataUrl: string
           quality: number
+          isBlack: boolean // 添加黑屏标记
         }> = []
 
         const extractFrame = () => {
@@ -538,39 +609,89 @@ export default function VideoThumbnailExtractor() {
           video.currentTime = timestamp
 
           video.onseeked = () => {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+            // 增加小延迟以确保帧渲染完成
+            setTimeout(() => {
+              // 绘制视频帧到canvas
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+              
+              // 检测是否为黑屏
+              let isBlack = true;
+              // 采样检查（每10个像素采样一次）
+              for (let y = 0; y < canvas.height && isBlack; y += 10) {
+                for (let x = 0; x < canvas.width && isBlack; x += 10) {
+                  const pixelIndex = (y * canvas.width + x) * 4;
+                  // 如果任何像素不是黑色（允许一些噪点）
+                  if (imageData.data[pixelIndex] > 5 || 
+                      imageData.data[pixelIndex + 1] > 5 || 
+                      imageData.data[pixelIndex + 2] > 5) {
+                    isBlack = false;
+                    break;
+                  }
+                }
+              }
 
-            // 计算静态分数（基于像素变化和边缘检测）
-            const staticScore = calculateStaticScore(imageData)
+              // 计算静态分数（基于像素变化和边缘检测）
+              const staticScore = calculateStaticScore(imageData)
 
-            // 计算字幕分数（检测底部区域的文字特征）
-            const subtitleScore = calculateSubtitleScore(imageData, canvas.width, canvas.height)
+              // 计算字幕分数（检测底部区域的文字特征）
+              const subtitleScore = calculateSubtitleScore(imageData, canvas.width, canvas.height)
 
-            // 计算人物分数（基于肤色检测和面部特征）
-            const peopleScore = calculatePeopleScore(imageData)
+              // 计算人物分数（基于肤色检测和面部特征）
+              const peopleScore = calculatePeopleScore(imageData)
+              
+              // 如果是黑屏，降低质量评分
+              const qualityMultiplier = isBlack ? 0.1 : 1.0;
+              const quality = (staticScore * 0.5 + (1 - subtitleScore) * 0.3 + peopleScore * 0.2) * 100 * qualityMultiplier;
+              
+              // 为黑屏图像创建带文本的替代图像
+              let dataUrl;
+              if (isBlack) {
+                // 创建替代图像
+                ctx.fillStyle = '#333333';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`无法提取帧 (${Math.round(timestamp)}秒)`, canvas.width / 2, canvas.height / 2);
+                dataUrl = canvas.toDataURL(`image/${settings.outputFormat}`, 0.9);
+                // 重绘回原始图像以不影响imageData
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              } else {
+                // 使用正常图像
+                dataUrl = canvas.toDataURL(`image/${settings.outputFormat}`, 0.9);
+              }
 
-            candidateFrames.push({
-              timestamp,
-              imageData,
-              staticScore,
-              subtitleScore,
-              peopleScore,
-              dataUrl: canvas.toDataURL(`image/${settings.outputFormat}`, 0.9),
-              quality: (staticScore * 0.5 + (1 - subtitleScore) * 0.3 + peopleScore * 0.2) * 100
-            })
+              candidateFrames.push({
+                timestamp,
+                imageData,
+                staticScore,
+                subtitleScore,
+                peopleScore,
+                dataUrl,
+                quality,
+                isBlack
+              })
 
-            currentFrame++
-            const progress = (currentFrame / (totalFrames * 2)) * 50 // 前50%进度用于帧提取
-            setVideos((prev) => prev.map((v) => (v.id === videoFile.id ? { ...v, extractionProgress: progress } : v)))
+              currentFrame++
+              const progress = (currentFrame / (totalFrames * 2)) * 50 // 前50%进度用于帧提取
+              setVideos((prev) => prev.map((v) => (v.id === videoFile.id ? { ...v, extractionProgress: progress } : v)))
 
-            setTimeout(extractFrame, 100) // 减少延迟提高处理速度
+              setTimeout(extractFrame, 100) // 减少延迟提高处理速度
+            }, 50); // 添加50ms延迟确保帧渲染完成
           }
         }
 
         const processCandidateFrames = () => {
+          // 首先过滤掉黑屏图像，除非全部都是黑屏
+          const nonBlackFrames = candidateFrames.filter(frame => !frame.isBlack);
+          const framesToProcess = nonBlackFrames.length > 0 ? nonBlackFrames : candidateFrames;
+          
           // 对候选帧进行排序和筛选
-          candidateFrames.sort((a, b) => {
+          framesToProcess.sort((a, b) => {
+            // 如果一个是黑屏，一个不是，优先非黑屏
+            if (a.isBlack !== b.isBlack) return a.isBlack ? 1 : -1;
+            
             // 优先无字幕、有人物的帧
             const aScore = a.subtitleScore < 0.25 && a.peopleScore > 0.4 ? 1 : 0;
             const bScore = b.subtitleScore < 0.25 && b.peopleScore > 0.4 ? 1 : 0;
@@ -581,11 +702,30 @@ export default function VideoThumbnailExtractor() {
             return b.quality - a.quality;
           });
           
-          // 选择最佳的N帧
-          const bestFrames = candidateFrames.slice(0, settings.thumbnailCount);
+          // 如果过滤条件太严格导致缩略图不足，放宽条件
+          let bestFrames = framesToProcess.filter(frame => 
+            frame.subtitleScore < 0.25 && frame.peopleScore > 0.4
+          );
+          
+          // 如果筛选后的帧数量不足，放宽条件
+          if (bestFrames.length < settings.thumbnailCount) {
+            console.log(`传统方法：筛选后只有 ${bestFrames.length} 帧，放宽条件`);
+            
+            // 放宽条件：只避免字幕
+            bestFrames = framesToProcess.filter(frame => frame.subtitleScore < 0.4);
+            
+            // 如果仍然不足，使用所有帧
+            if (bestFrames.length < settings.thumbnailCount) {
+              console.log(`传统方法：放宽条件后只有 ${bestFrames.length} 帧，使用所有候选帧`);
+              bestFrames = framesToProcess;
+            }
+          }
+          
+          // 选择最佳的N帧，确保至少有一帧
+          const finalFrames = bestFrames.slice(0, Math.min(settings.thumbnailCount, bestFrames.length));
           
           // 转换为缩略图
-          const thumbnails = bestFrames.map((frame, i) => ({
+          const resultThumbnails = finalFrames.map((frame, i) => ({
             id: `thumb_${i}`,
             url: frame.dataUrl,
             timestamp: frame.timestamp,
@@ -596,13 +736,13 @@ export default function VideoThumbnailExtractor() {
           setVideos((prev) =>
             prev.map((v) =>
               v.id === videoFile.id
-                ? { ...v, thumbnails, status: "completed", extractionProgress: 100 }
+                ? { ...v, thumbnails: resultThumbnails, status: "completed", extractionProgress: 100 }
                 : v
             )
           );
           
           // 完成提取并解析Promise
-          resolve(thumbnails);
+          resolve(resultThumbnails);
         };
 
         extractFrame()
@@ -642,17 +782,18 @@ export default function VideoThumbnailExtractor() {
     return Math.max(0, 1 - (edgeCount / totalPixels) * 10)
   }
 
-  // 计算字幕分数的辅助函数 - 完全重写的增强版
+  // 计算字幕分数的辅助函数 - 超级增强版
   const calculateSubtitleScore = (imageData: ImageData, width: number, height: number): number => {
     const data = imageData.data;
     
     // 定义多个检测区域，更精细地划分视频帧
     const regions = [
-      { startY: Math.floor(height * 0.80), endY: height, weight: 0.50 },      // 底部区域（最高权重）
-      { startY: Math.floor(height * 0.70), endY: Math.floor(height * 0.80), weight: 0.20 }, // 底部上方区域
+      { startY: Math.floor(height * 0.80), endY: height, weight: 0.55 },      // 底部区域（最高权重）
+      { startY: Math.floor(height * 0.70), endY: Math.floor(height * 0.80), weight: 0.25 }, // 底部上方区域
       { startY: Math.floor(height * 0.05), endY: Math.floor(height * 0.15), weight: 0.15 }, // 顶部区域
       { startY: Math.floor(height * 0.15), endY: Math.floor(height * 0.25), weight: 0.10 }, // 顶部下方区域
-      { startY: Math.floor(height * 0.40), endY: Math.floor(height * 0.60), weight: 0.05 }  // 中间区域（最低权重）
+      { startY: Math.floor(height * 0.40), endY: Math.floor(height * 0.60), weight: 0.05 }, // 中间区域（最低权重）
+      { startY: Math.floor(height * 0.25), endY: Math.floor(height * 0.40), weight: 0.05 }  // 中上区域（新增）
     ];
     
     // 用于存储各种字幕特征的检测结果
@@ -1139,10 +1280,10 @@ export default function VideoThumbnailExtractor() {
     // 根据字幕检测强度调整分数
     const strength = Math.min(1, Math.max(0, subtitleDetectionStrength)); // 确保在0-1范围内
     
-    // 字幕检测阈值 - 根据检测强度动态调整
-    // 更精细的阈值调整，使用非线性映射
-    const lowThreshold = 0.10 - (0.05 * Math.pow(strength, 1.5));  // 0.05-0.10，更敏感的低阈值
-    const highThreshold = 0.18 + (0.17 * Math.pow(strength, 0.8)); // 0.18-0.35，更合理的高阈值范围
+    // 字幕检测阈值 - 根据检测强度动态调整，增强版
+    // 更精细的阈值调整，使用非线性映射，提高检测灵敏度
+    const lowThreshold = 0.08 - (0.05 * Math.pow(strength, 1.5));  // 0.03-0.08，更敏感的低阈值
+    const highThreshold = 0.15 + (0.20 * Math.pow(strength, 0.8)); // 0.15-0.35，更合理的高阈值范围
     
     // 字幕惩罚系数 - 根据检测强度动态调整
     const penaltyFactor = 0.60 + (0.40 * strength);  // 0.60-1.0，更合理的惩罚范围
@@ -1435,9 +1576,15 @@ export default function VideoThumbnailExtractor() {
   
   // 获取当前页的缩略图
   const getCurrentPageThumbnails = useCallback((thumbnails: Thumbnail[], pagination: { currentPage: number, itemsPerPage: number }) => {
+    // 先按时间戳升序排序
+    const sortedThumbnails = [...thumbnails].sort((a, b) => {
+      // 首先按时间戳升序排序
+      return a.timestamp - b.timestamp;
+    });
+    
     const { currentPage, itemsPerPage } = pagination;
     const startIndex = currentPage * itemsPerPage;
-    return thumbnails.slice(startIndex, startIndex + itemsPerPage);
+    return sortedThumbnails.slice(startIndex, startIndex + itemsPerPage);
   }, []);
   
   // 切换页码
@@ -1568,9 +1715,8 @@ export default function VideoThumbnailExtractor() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-1 py-0.5 flex justify-between items-center">
+                <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-1 py-0.5 flex justify-center items-center">
                   <span>{formatDuration(thumb.timestamp)}</span>
-                  <span className="text-xs">{thumb.quality.toFixed(0)}</span>
                 </div>
               </div>
             );
@@ -2212,7 +2358,7 @@ export default function VideoThumbnailExtractor() {
                           setSettings(defaultSettings);
                           
                           // 重置模型相关设置
-                          setSelectedSubtitleModel("basic");
+                          setSelectedSubtitleModel("enhanced");
                           setSubtitleLanguage("auto");
                           setShowSubtitleMarkers(true);
                           
@@ -2341,7 +2487,9 @@ export default function VideoThumbnailExtractor() {
                                   {/* 候选缩略图滚动条 - 修改为显示3x3布局 */}
                                       <div className="space-y-3">
                                         <div className="flex justify-between items-center">
-                                          <h4 className="text-xs font-medium text-gray-500">候选帧</h4>
+                                          <div className="flex items-center space-x-2">
+                                            <h4 className="text-xs font-medium text-gray-500">候选帧</h4>
+                                          </div>
                                           <div className="text-xs text-gray-500">
                                             {video.thumbnails.length > 0 && (
                                               <span>
@@ -2382,6 +2530,7 @@ export default function VideoThumbnailExtractor() {
                                                           alt={`缩略图 ${actualIndex + 1}`}
                                                           className="w-full h-full object-cover"
                                                         />
+
                                                         {actualIndex === video.selectedThumbnail && (
                                                           <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center pointer-events-none">
                                                             <Check className="h-5 w-5 text-blue-600" />
