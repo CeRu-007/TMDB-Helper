@@ -273,10 +273,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setIsBackdropLoaded(false);
       setIsContentReady(false);
       
-      // 模拟内容准备时间
-      const timer = setTimeout(() => {
-        setIsContentReady(true);
-      }, 300);
+      // 立即设置内容准备好，避免闪烁
+      setIsContentReady(true);
       
       // 如果有背景图，预加载它
       if (item.backdropUrl) {
@@ -295,8 +293,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         setIsBackdropLoaded(true);
         setIsLoading(false);
       }
-      
-      return () => clearTimeout(timer);
     }
   }, [open, item.backdropUrl]);
 
@@ -1135,13 +1131,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         <DialogContent 
           className={cn(
             "max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none",
-            "transition-all duration-500 ease-in-out",
-            isContentReady ? "opacity-100 scale-100" : "opacity-0 scale-95"
+            "transition-opacity duration-300 ease-in-out",
+            isContentReady ? "opacity-100" : "opacity-0"
           )} 
           ref={contentRef}
         >
-          {/* 加载状态指示器 */}
-          {isLoading && (
+          {/* 加载状态指示器 - 只在真正需要加载时显示 */}
+          {isLoading && !isBackdropLoaded && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
               <div className="flex flex-col items-center space-y-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -1156,8 +1152,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             alt={localItem.title + " 背景图"}
             className={cn(
               "absolute inset-0 z-0",
-              "transition-opacity duration-1000 ease-in-out",
-              isBackdropLoaded ? "opacity-100" : "opacity-0"
+              "transition-opacity duration-500 ease-in-out",
+              isBackdropLoaded || !localItem.backdropUrl ? "opacity-100" : "opacity-0"
             )}
             objectPosition={`center ${20 + scrollPosition * 0.05}%`} // 添加视差滚动效果
             blur={true}
@@ -1183,9 +1179,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                     <img 
                       src={localItem.logoUrl} 
                       alt={localItem.title} 
-                      className="max-h-full object-contain transition-opacity duration-300"
-                      onLoad={(e) => e.currentTarget.style.opacity = "1"}
-                      style={{ opacity: 0 }}
+                      className="max-h-full object-contain"
+                      loading="eager"
                       onError={(e) => {
                         // 如果标志加载失败，显示文字标题
                         e.currentTarget.style.display = 'none';
@@ -1301,9 +1296,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                       <img 
                         src={localItem.posterUrl} 
                         alt={localItem.title} 
-                        className="w-full h-full object-cover transition-opacity duration-300"
-                        onLoad={(e) => e.currentTarget.style.opacity = "1"}
-                        style={{ opacity: 0 }}
+                        className="w-full h-full object-cover"
+                        loading="eager"
                       />
                     ) : (
                       <div className="text-center p-4">
@@ -1668,9 +1662,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         <img 
                           src={localItem.posterUrl} 
                           alt={localItem.title} 
-                          className="w-full h-full object-cover transition-opacity duration-300"
-                          onLoad={(e) => e.currentTarget.style.opacity = "1"}
-                          style={{ opacity: 0 }}
+                          className="w-full h-full object-cover"
+                          loading="eager"
                         />
                       ) : (
                         <div className="text-center p-4">
@@ -1704,8 +1697,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                   src={localItem.networkLogoUrl} 
                                   alt={localItem.networkName || '播出网络'} 
                                   className="max-w-full max-h-full object-contain hover:scale-110 transition-all duration-300"
-                                  onLoad={(e) => e.currentTarget.style.opacity = "1"}
-                                  style={{ opacity: 0 }}
+                                  loading="eager"
                                   onError={(e) => {
                                     // 如果官方logo加载失败，隐藏图片元素
                                     e.currentTarget.style.display = 'none';
