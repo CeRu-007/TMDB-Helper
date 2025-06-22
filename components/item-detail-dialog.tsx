@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -92,6 +92,12 @@ import {
   CalendarPlus,
   CalendarClock,
   Network,
+  ChevronDown,
+  ChevronUp,
+  CircleCheck,
+  CircleX,
+  PackageCheck,
+  Play,
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/storage"
 import { useMobile } from "@/hooks/use-mobile"
@@ -104,6 +110,8 @@ import { StorageManager } from "@/lib/storage"
 import { BackgroundImage } from "@/components/ui/background-image"
 import { getPlatformInfo } from "@/lib/utils"
 import { PlatformLogo } from "@/components/ui/platform-icon"
+import { Skeleton } from "./ui/skeleton"
+import { cn } from "@/lib/utils"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -159,6 +167,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
   const [backgroundRefreshKey, setBackgroundRefreshKey] = useState<string | number>(item.tmdbId || item.id || '0')
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBackdropLoaded, setIsBackdropLoaded] = useState(false);
+  const [isContentReady, setIsContentReady] = useState(false);
 
   useEffect(() => {
     // 确保所有属性都被正确初始化，包括isDailyUpdate和blurIntensity
@@ -206,13 +217,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
   // 监听键盘事件
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Shift") {
         setIsShiftPressed(true)
       }
     }
-
-    const handleKeyUp = (e: KeyboardEvent) => {
+    
+    const handleKeyUp = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Shift") {
         setIsShiftPressed(false)
       }
@@ -220,7 +231,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     window.addEventListener("keydown", handleKeyDown)
     window.addEventListener("keyup", handleKeyUp)
-
+    
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
       window.removeEventListener("keyup", handleKeyUp)
@@ -253,6 +264,41 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       contentElement?.removeEventListener('scroll', handleScroll)
     }
   }, [open, contentRef.current])
+
+  // 添加新状态用于控制加载和动画
+  useEffect(() => {
+    if (open) {
+      // 重置加载状态
+      setIsLoading(true);
+      setIsBackdropLoaded(false);
+      setIsContentReady(false);
+      
+      // 模拟内容准备时间
+      const timer = setTimeout(() => {
+        setIsContentReady(true);
+      }, 300);
+      
+      // 如果有背景图，预加载它
+      if (item.backdropUrl) {
+        const img = new Image();
+        img.onload = () => {
+          setIsBackdropLoaded(true);
+          setIsLoading(false);
+        };
+        img.onerror = () => {
+          setIsBackdropLoaded(false);
+          setIsLoading(false);
+        };
+        img.src = item.backdropUrl;
+      } else {
+        // 如果没有背景图，直接标记为加载完成
+        setIsBackdropLoaded(true);
+        setIsLoading(false);
+      }
+      
+      return () => clearTimeout(timer);
+    }
+  }, [open, item.backdropUrl]);
 
   const handleEpisodeToggle = (episodeNumber: number, completed: boolean, seasonNumber: number) => {
     // 添加视觉反馈
@@ -1086,12 +1132,33 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none" ref={contentRef}>
+        <DialogContent 
+          className={cn(
+            "max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none",
+            "transition-all duration-500 ease-in-out",
+            isContentReady ? "opacity-100 scale-100" : "opacity-0 scale-95"
+          )} 
+          ref={contentRef}
+        >
+          {/* 加载状态指示器 */}
+          {isLoading && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+              <div className="flex flex-col items-center space-y-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">正在加载词条信息...</p>
+              </div>
+            </div>
+          )}
+          
           {/* 使用优化后的BackgroundImage组件 */}
           <BackgroundImage 
             src={localItem.backdropUrl} 
             alt={localItem.title + " 背景图"}
-            className="absolute inset-0 z-0"
+            className={cn(
+              "absolute inset-0 z-0",
+              "transition-opacity duration-1000 ease-in-out",
+              isBackdropLoaded ? "opacity-100" : "opacity-0"
+            )}
             objectPosition={`center ${20 + scrollPosition * 0.05}%`} // 添加视差滚动效果
             blur={true}
             blurIntensity={localItem.blurIntensity || 'medium'}
@@ -1116,7 +1183,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                     <img 
                       src={localItem.logoUrl} 
                       alt={localItem.title} 
-                      className="max-h-full object-contain"
+                      className="max-h-full object-contain transition-opacity duration-300"
+                      onLoad={(e) => e.currentTarget.style.opacity = "1"}
+                      style={{ opacity: 0 }}
                       onError={(e) => {
                         // 如果标志加载失败，显示文字标题
                         e.currentTarget.style.display = 'none';
@@ -1179,7 +1248,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 transition-transform hover:scale-110"
                   title="在TMDB中查看"
                   onClick={() => window.open(localItem.tmdbUrl, "_blank")}
                 >
@@ -1190,7 +1259,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 transition-transform hover:scale-110"
                   title="编辑"
                   onClick={() => setEditing(true)}
                 >
@@ -1200,7 +1269,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 transition-transform hover:scale-110"
                   title="保存"
                   onClick={handleSaveEdit}
                 >
@@ -1210,7 +1279,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               <Button
                 variant="outline"
                 size="icon"
-                className="h-8 w-8 text-destructive hover:text-destructive"
+                className="h-8 w-8 text-destructive hover:text-destructive transition-transform hover:scale-110"
                 title="删除"
                 onClick={() => setShowDeleteDialog(true)}
               >
@@ -1227,12 +1296,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 // 编辑模式下使用固定高度容器，添加圆角
                 <div className="h-[670px] flex flex-col pr-2">
                   {/* 海报区域 - 使用固定高度比例 */}
-                  <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2">
+                  <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
                     {localItem.posterUrl ? (
                       <img 
                         src={localItem.posterUrl} 
                         alt={localItem.title} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-opacity duration-300"
+                        onLoad={(e) => e.currentTarget.style.opacity = "1"}
+                        style={{ opacity: 0 }}
                       />
                     ) : (
                       <div className="text-center p-4">
@@ -1243,7 +1314,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                   </div>
                   
                   {/* 编辑模式下的表单区域 - 添加圆角和固定容器 */}
-                  <div className="w-full rounded-lg backdrop-blur-md bg-background/30 p-2 flex-1 overflow-hidden">
+                  <div className="w-full rounded-lg backdrop-blur-md bg-background/30 p-2 flex-1 overflow-hidden transition-all duration-300 hover:shadow-lg">
                     <ScrollArea className="h-full">
                       <div className="space-y-1.5 pr-2">
                         <div className="pb-0.5 mb-0.5 flex items-center justify-between border-b border-border/20">
@@ -1592,12 +1663,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 <div className="flex flex-col">
                   <div className="pr-2 flex-1 flex flex-col">
                     {/* 海报区域 */}
-                    <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0">
+                    <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 transition-all duration-300 hover:shadow-lg">
                       {localItem.posterUrl ? (
                         <img 
                           src={localItem.posterUrl} 
                           alt={localItem.title} 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-opacity duration-300"
+                          onLoad={(e) => e.currentTarget.style.opacity = "1"}
+                          style={{ opacity: 0 }}
                         />
                       ) : (
                         <div className="text-center p-4">
@@ -1608,7 +1681,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                     </div>
                     
                     {/* 查看模式下的功能区 */}
-                    <div className="mt-2 w-full rounded-md backdrop-blur-md bg-background/30 p-3">
+                    <div className="mt-2 w-full rounded-md backdrop-blur-md bg-background/30 p-3 transition-all duration-300 hover:shadow-lg">
                       <div className="space-y-1 flex-1 flex flex-col">
                         {/* 播出平台区域 - 优先使用TMDB网络logo */}
                         <div className="pb-0.5 mb-0.5">
@@ -1630,7 +1703,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                 <img 
                                   src={localItem.networkLogoUrl} 
                                   alt={localItem.networkName || '播出网络'} 
-                                  className="max-w-full max-h-full object-contain hover:scale-110 transition-transform"
+                                  className="max-w-full max-h-full object-contain hover:scale-110 transition-all duration-300"
+                                  onLoad={(e) => e.currentTarget.style.opacity = "1"}
+                                  style={{ opacity: 0 }}
                                   onError={(e) => {
                                     // 如果官方logo加载失败，隐藏图片元素
                                     e.currentTarget.style.display = 'none';
@@ -1658,7 +1733,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                       <PlatformLogo 
                                         platform={platformInfo.name} 
                                         size={32}
-                                        className="hover:scale-110 transition-transform"
+                                        className="hover:scale-110 transition-transform duration-300"
                                       />
                                     ) : (
                                       <ExternalLink className="h-9 w-9 text-foreground/70" />
@@ -1682,7 +1757,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             简介
                           </h3>
                         </div>
-                        <div className="bg-background/20 rounded-lg overflow-hidden h-[110px] mb-2 shadow-sm">
+                        <div className="bg-background/20 rounded-lg overflow-hidden h-[110px] mb-2 shadow-sm transition-all duration-300 hover:shadow-md">
                           <ScrollArea className="h-full">
                             <div className="p-3 text-sm">
                               {localItem.overview ? (
@@ -1706,7 +1781,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               <div className="flex flex-wrap gap-2 mb-4 items-center min-h-[40px]">
                 <Button
                   variant="outline"
-                  className="flex items-center"
+                  className="flex items-center transition-all duration-300 hover:scale-105"
                   onClick={() => setScheduledTaskDialogOpen(true)}
                 >
                   <AlarmClock className="h-4 w-4 mr-2" />
@@ -1717,18 +1792,18 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               {/* 标签页切换 */}
               <Tabs value={detailTab} onValueChange={setDetailTab}>
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="details" className="flex items-center">
+                  <TabsTrigger value="details" className="flex items-center transition-all duration-300">
                     <Info className="h-4 w-4 mr-2" />
                     详情
                   </TabsTrigger>
-                  <TabsTrigger value="integration" className="flex items-center">
+                  <TabsTrigger value="integration" className="flex items-center transition-all duration-300">
                     <Terminal className="h-4 w-4 mr-2" />
                     集成工具
                   </TabsTrigger>
                 </TabsList>
                 
                 {/* 详情标签内容 */}
-                <TabsContent value="details">
+                <TabsContent value="details" className="transition-opacity duration-300 ease-in-out">
                   <ScrollArea className="h-[calc(95vh-300px)]">
                     <div className="space-y-6 pr-2">
                       {/* 剧集内容 */}
@@ -1989,7 +2064,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 </TabsContent>
                 
                 {/* 集成工具标签内容 */}
-                <TabsContent value="integration">
+                <TabsContent value="integration" className="transition-opacity duration-300 ease-in-out">
                   <ScrollArea className="h-[calc(95vh-300px)]">
                     <div className="pr-2">
                       <TMDBImportIntegrationDialog
@@ -2012,7 +2087,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
           {/* 复制反馈 */}
           {copyFeedback && (
-            <div className="fixed bottom-4 right-4 backdrop-blur-md bg-primary/70 text-primary-foreground px-4 py-2 rounded-md shadow-lg text-sm z-50 border-none">
+            <div className="fixed bottom-4 right-4 backdrop-blur-md bg-primary/70 text-primary-foreground px-4 py-2 rounded-md shadow-lg text-sm z-50 border-none animate-in slide-in-from-bottom-5 duration-300">
               {copyFeedback}
             </div>
           )}
