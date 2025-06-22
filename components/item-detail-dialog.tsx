@@ -1223,7 +1223,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               <div className="h-[calc(95vh-300px)] flex flex-col">
                 <div className="pr-2 flex-1 flex flex-col">
                   {/* 海报区域 */}
-                  <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full">
+                  <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0">
                 {localItem.posterUrl ? (
                   <img 
                     src={localItem.posterUrl} 
@@ -1431,12 +1431,16 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         简介
                       </h3>
                     </div>
-                    <div className="bg-background/20 rounded p-2 flex-1 overflow-y-auto text-sm overflow-x-hidden">
-                      {localItem.overview ? (
-                        <p className="text-sm break-words">{localItem.overview}</p>
-                      ) : (
-                        <span className="text-muted-foreground text-xs italic">暂无简介信息</span>
-                      )}
+                    <div className="bg-background/20 rounded-lg overflow-hidden h-[100px] mb-2 shadow-sm">
+                      <ScrollArea className="h-full">
+                        <div className="p-3 text-sm">
+                          {localItem.overview ? (
+                            <p className="text-sm break-words">{localItem.overview}</p>
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">暂无简介信息</span>
+                          )}
+                        </div>
+                      </ScrollArea>
                     </div>
                   </div>
                 )}
