@@ -278,16 +278,26 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       
       // 如果有背景图，预加载它
       if (item.backdropUrl) {
-        const img = new Image();
-        img.onload = () => {
+        // 检查图片是否已经在浏览器缓存中
+        const cachedImage = new Image();
+        
+        // 如果图片已在缓存中，complete属性会立即为true
+        if (cachedImage.complete) {
           setIsBackdropLoaded(true);
           setIsLoading(false);
-        };
-        img.onerror = () => {
-          setIsBackdropLoaded(false);
-          setIsLoading(false);
-        };
-        img.src = item.backdropUrl;
+        } else {
+          cachedImage.onload = () => {
+            setIsBackdropLoaded(true);
+            setIsLoading(false);
+          };
+          cachedImage.onerror = () => {
+            setIsBackdropLoaded(false);
+            setIsLoading(false);
+          };
+        }
+        
+        // 设置src必须放在最后，因为它可能会立即触发onload事件
+        cachedImage.src = item.backdropUrl;
       } else {
         // 如果没有背景图，直接标记为加载完成
         setIsBackdropLoaded(true);
@@ -617,6 +627,12 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       isDailyUpdate: editData.isDailyUpdate,
       blurIntensity: editData.blurIntensity || 'medium'
     }
+    
+    // 只有在背景图或标志发生变化时才强制刷新背景图（使用带时间戳的刷新键）
+    if (localItem.backdropUrl !== editData.backdropUrl || localItem.logoUrl !== editData.logoUrl) {
+      setBackgroundRefreshKey(`${updatedItem.tmdbId || updatedItem.id}_${Date.now()}`);
+    }
+    
     onUpdate(updatedItem)
     setEditing(false)
   }

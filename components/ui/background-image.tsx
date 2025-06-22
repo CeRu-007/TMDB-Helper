@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 
 interface BackgroundImageProps {
@@ -16,6 +16,9 @@ interface BackgroundImageProps {
   forceRefresh?: boolean
   refreshKey?: string | number
 }
+
+// 图片缓存管理
+const imageCache = new Map<string, boolean>();
 
 /**
  * 背景图组件，支持懒加载、渐变效果和错误处理
@@ -39,6 +42,16 @@ export function BackgroundImage({
   // 添加低质量图像源状态
   const [lowQualityImageSrc, setLowQualityImageSrc] = useState<string | undefined>(undefined)
   const [lowQualityLoaded, setLowQualityLoaded] = useState(false)
+  
+  // 使用ref跟踪组件挂载状态，避免内存泄漏
+  const isMounted = useRef(true);
+  
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // 根据设备屏幕宽度选择合适的图片尺寸
   useEffect(() => {
@@ -49,6 +62,13 @@ export function BackgroundImage({
 
     // 检查refreshKey是否包含时间戳信息（用于判断是否需要强制刷新）
     const shouldForceRefresh = forceRefresh || (refreshKey && String(refreshKey).includes('_') && String(refreshKey).split('_')[1]?.length > 8)
+    
+    // 如果图片已经在缓存中且不需要强制刷新，直接使用缓存的图片
+    if (imageCache.has(src) && !shouldForceRefresh) {
+      setImageSrc(src);
+      setLoaded(true);
+      return;
+    }
 
     // 检查是否是TMDB图片URL
     if (src.includes('image.tmdb.org')) {
@@ -72,19 +92,20 @@ export function BackgroundImage({
         size = 'original'
       }
       
-      setImageSrc(`${baseUrl}/${size}${path}`)
+      const fullSrc = `${baseUrl}/${size}${path}`;
+      setImageSrc(fullSrc);
       
       // 同时设置低质量图像源，用于快速加载预览
-      setLowQualityImageSrc(`${baseUrl}/w300${path}`)
+      setLowQualityImageSrc(`${baseUrl}/w300${path}`);
     } else {
       // 如果强制刷新非TMDB图片，添加时间戳参数
+      let finalSrc = src;
       if (shouldForceRefresh && !src.includes('?t=')) {
-        setImageSrc(`${src}?t=${Date.now()}`)
-      } else {
-        setImageSrc(src)
+        finalSrc = `${src}?t=${Date.now()}`;
       }
+      setImageSrc(finalSrc);
       // 对于非TMDB图片，低质量图像与原图相同
-      setLowQualityImageSrc(src)
+      setLowQualityImageSrc(finalSrc);
     }
   }, [src, fallbackSrc, forceRefresh, refreshKey])
 
@@ -92,19 +113,59 @@ export function BackgroundImage({
   useEffect(() => {
     if (!lowQualityImageSrc) return
     
-    const lowQualityImg = new Image()
-    lowQualityImg.src = lowQualityImageSrc
+    // 检查图片是否已在缓存中
+    const img = new Image();
     
-    // 低质量图片加载完成后，显示低质量图片作为预览
-    lowQualityImg.onload = () => {
-      setLowQualityLoaded(true)
-      setError(false)
+    // 如果图片已在缓存中，complete属性会立即为true
+    if (img.complete) {
+      setLowQualityLoaded(true);
+      setError(false);
+    } else {
+      img.onload = () => {
+        if (isMounted.current) {
+          setLowQualityLoaded(true);
+          setError(false);
+        }
+      };
+      
+      img.onerror = () => {
+        if (isMounted.current) {
+          setError(true);
+        }
+      };
     }
     
-    lowQualityImg.onerror = () => {
-      setError(true)
-    }
+    img.src = lowQualityImageSrc;
   }, [lowQualityImageSrc])
+
+  // 预加载高质量图片
+  useEffect(() => {
+    if (!imageSrc) return;
+    
+    // 检查图片是否已在缓存中
+    const img = new Image();
+    
+    // 如果图片已在缓存中，complete属性会立即为true
+    if (img.complete) {
+      setLoaded(true);
+      imageCache.set(imageSrc, true);
+    } else {
+      img.onload = () => {
+        if (isMounted.current) {
+          setLoaded(true);
+          imageCache.set(imageSrc, true);
+        }
+      };
+      
+      img.onerror = () => {
+        if (isMounted.current) {
+          setError(true);
+        }
+      };
+    }
+    
+    img.src = imageSrc;
+  }, [imageSrc]);
 
   // 根据模糊强度设置不同的模糊值和透明度
   const getBlurSettings = () => {
@@ -124,12 +185,12 @@ export function BackgroundImage({
       {imageSrc && !error ? (
         <>
           {/* 低质量图片作为预加载 */}
-          {lowQualityLoaded && (
+          {lowQualityLoaded && !loaded && (
             <img 
               src={lowQualityImageSrc} 
               alt={`${alt} 预览`}
               className={cn(
-                "w-full h-full object-cover absolute inset-0 transition-all duration-500",
+                "w-full h-full object-cover absolute inset-0 transition-all duration-300",
                 loaded ? "opacity-0 scale-105" : "opacity-100 scale-100"
               )}
               style={{ objectPosition, filter: 'blur(10px)' }}
@@ -141,15 +202,18 @@ export function BackgroundImage({
             src={imageSrc} 
             alt={alt} 
             className={cn(
-              "w-full h-full object-cover transition-all duration-500",
+              "w-full h-full object-cover transition-all duration-300",
               loaded ? "opacity-100 scale-100" : "opacity-0 scale-105"
             )}
             style={{ objectPosition }}
+            loading="eager"
+            fetchPriority="high"
             onLoad={() => {
-              setLoaded(true)
+              setLoaded(true);
+              imageCache.set(imageSrc, true);
             }}
             onError={() => {
-              setError(true)
+              setError(true);
             }}
           />
           
