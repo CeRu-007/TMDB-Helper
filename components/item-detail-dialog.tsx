@@ -1558,45 +1558,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           )}
                         </div>
                         
-                        {/* 添加其他设置区域 */}
-                        <div className="space-y-1 mt-4 pt-1 border-t border-border/30">
-                          <h3 className="text-xs font-medium flex items-center pb-1 text-muted-foreground">
-                            <FileText className="h-3.5 w-3.5 mr-1" />
-                            其他信息
-                          </h3>
-                          
-                          {/* 备注设置 */}
-                          <div className="space-y-1">
-                            <Label htmlFor="edit-notes" className="flex items-center text-xs text-muted-foreground">
-                              <BookMarked className="h-3.5 w-3.5 mr-1" />
-                              备注
-                            </Label>
-                            <Input 
-                              id="edit-notes" 
-                              value={editData.notes || ""} 
-                              onChange={(e) => setEditData({...editData, notes: e.target.value})}
-                              placeholder="添加备注信息..."
-                              className="h-7 text-xs"
-                            />
-                          </div>
-                          
-                          {/* 维护代码 */}
-                          <div className="space-y-1 mt-1">
-                            <Label htmlFor="edit-maintenance-code" className="flex items-center text-xs text-muted-foreground">
-                              <Code className="h-3.5 w-3.5 mr-1.5" />
-                              维护代码
-                            </Label>
-                            <Input 
-                              id="edit-maintenance-code" 
-                              value={editData.maintenanceCode || ""} 
-                              onChange={(e) => setEditData({...editData, maintenanceCode: e.target.value})}
-                              placeholder="维护代码"
-                              className="h-8 text-xs"
-                            />
-                          </div>
-                          
+                        {/* 仅显示创建和更新时间信息 */}
+                        <div className="mt-3 pt-1 border-t border-border/30">
                           {/* 创建和更新时间 */}
-                          <div className="grid grid-cols-2 gap-2 mt-1">
+                          <div className="grid grid-cols-2 gap-2 mt-2">
                             <div className="space-y-1">
                               <Label className="flex items-center text-xs text-muted-foreground">
                                 <CalendarPlus className="h-3.5 w-3.5 mr-1.5" />
