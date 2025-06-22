@@ -1225,7 +1225,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             <div className="md:col-span-1 md:max-w-full overflow-hidden">
               {editing ? (
                 // 编辑模式下使用固定高度容器，添加圆角
-                <div className="h-[675px] flex flex-col pr-2">
+                <div className="h-[670px] flex flex-col pr-2">
                   {/* 海报区域 - 使用固定高度比例 */}
                   <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2">
                     {localItem.posterUrl ? (
