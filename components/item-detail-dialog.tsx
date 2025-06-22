@@ -1366,13 +1366,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         播出平台
                       </h3>
                     </div>
-                    <div className="flex items-center justify-center mb-1">
+                    <div className="flex items-center justify-start mb-1">
                       {/* 平台Logo区域 - 优先使用TMDB网络logo */}
-                      <div className="flex items-center justify-center w-full">
+                      <div className="flex items-center justify-start w-full">
                         {localItem.networkLogoUrl ? (
                           // 显示TMDB官方网络logo
                           <div 
-                            className="w-full h-12 flex items-center justify-center cursor-pointer"
+                            className="w-full h-12 flex items-center justify-start cursor-pointer"
                             onClick={() => localItem.platformUrl && window.open(localItem.platformUrl, '_blank')}
                             title={localItem.networkName || '播出网络'}
                           >
@@ -1399,7 +1399,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             const platformInfo = getPlatformInfo(localItem.platformUrl);
                             return (
                               <div 
-                                className="w-full h-12 flex items-center justify-center cursor-pointer"
+                                className="w-full h-12 flex items-center justify-start cursor-pointer"
                                 onClick={() => platformInfo && window.open(platformInfo.url, '_blank')}
                                 title={platformInfo?.name || '播出平台'}
                               >
@@ -1417,7 +1417,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           })()
                         ) : (
                           // 未设置平台URL时的显示
-                          <div className="w-full h-12 flex items-center justify-center">
+                          <div className="w-full h-12 flex items-center justify-start">
                             <FrameIcon className="h-8 w-8 text-muted-foreground/50" />
                           </div>
                         )}
@@ -1425,13 +1425,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                     </div>
                     
                     {/* TMDB简介区域 */}
-                    <div className="pb-0.5 mb-0.5">
+                    <div className="pb-0.5 mb-1 mt-3">
                       <h3 className="text-sm font-medium flex items-center">
                         <Info className="h-3.5 w-3.5 mr-1.5" />
                         简介
                       </h3>
                     </div>
-                    <div className="bg-background/20 rounded-lg overflow-hidden h-[100px] mb-2 shadow-sm">
+                    <div className="bg-background/20 rounded-lg overflow-hidden h-[110px] mb-2 shadow-sm">
                       <ScrollArea className="h-full">
                         <div className="p-3 text-sm">
                           {localItem.overview ? (
