@@ -1432,6 +1432,38 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             </div>
                           </div>
                           
+                          {/* 第二播出日设置 */}
+                          <div className="space-y-0.5 mt-2">
+                            <Label htmlFor="edit-second-weekday" className="flex items-center text-xs text-muted-foreground">
+                              <CalendarDays className="h-3.5 w-3.5 mr-1" />
+                              第二播出日 <span className="text-xs text-muted-foreground ml-1">(可选)</span>
+                            </Label>
+                            <Select 
+                              value={editData.secondWeekday !== undefined ? 
+                                editData.secondWeekday.toString() : 
+                                "none"
+                              } 
+                              onValueChange={(value) => setEditData({
+                                ...editData, 
+                                secondWeekday: value === "none" ? undefined : parseInt(value)
+                              })}
+                            >
+                              <SelectTrigger className="w-full h-7 text-xs">
+                                <SelectValue placeholder="选择第二播出日" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">无第二播出日</SelectItem>
+                                <SelectItem value="0">周日</SelectItem>
+                                <SelectItem value="1">周一</SelectItem>
+                                <SelectItem value="2">周二</SelectItem>
+                                <SelectItem value="3">周三</SelectItem>
+                                <SelectItem value="4">周四</SelectItem>
+                                <SelectItem value="5">周五</SelectItem>
+                                <SelectItem value="6">周六</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
                           {/* 高级设置区域 */}
                           <div className="grid grid-cols-2 gap-2 mt-2">
                             <div className="space-y-1">
