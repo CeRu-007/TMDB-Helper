@@ -51,6 +51,7 @@ import {
   Check,
   Lightbulb,
   Plus,
+  RefreshCcw,
 } from "lucide-react"
 import { StorageManager, TMDBItem, ScheduledTask } from "@/lib/storage"
 import { taskScheduler } from "@/lib/scheduler"
@@ -346,12 +347,49 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     setRunningTaskId(task.id)
     
     try {
+      console.log(`开始执行任务: ${task.name}, ID: ${task.id}, 关联项目ID: ${task.itemId}`);
+      
       // 获取关联的项目
       const relatedItem = getTaskItem(task.itemId)
+      
+      // 打印项目列表长度，帮助调试
+      console.log(`当前项目列表共有 ${items.length} 个项目`);
       
       // 先验证项目是否存在，如果不存在，直接提示用户重新关联项目
       if (!relatedItem) {
         console.warn(`找不到ID为 ${task.itemId} 的项目，需要重新关联项目`);
+        
+        // 检查项目ID是否无效（太长或格式错误）
+        const isInvalidId = task.itemId.length > 20 || !/^[0-9]+$/.test(task.itemId);
+        if (isInvalidId) {
+          console.warn(`项目ID ${task.itemId} 格式可能无效，尝试自动修复`);
+          
+          // 尝试通过任务名称修复项目ID
+          const possibleItem = items.find(item => 
+            item.title === task.name.replace(/\s+定时任务$/, '')
+          );
+          
+          if (possibleItem) {
+            console.log(`找到可能匹配的项目: ${possibleItem.title}, ID: ${possibleItem.id}`);
+            
+            // 自动更新任务的itemId
+            const fixedTask = {
+              ...task,
+              itemId: possibleItem.id,
+              updatedAt: new Date().toISOString()
+            };
+            
+            await StorageManager.updateScheduledTask(fixedTask);
+            toast({
+              title: "自动修复成功",
+              description: `已将任务关联到项目"${possibleItem.title}"`,
+            });
+            
+            // 递归调用自身，使用修复后的任务
+            setTasks(prev => prev.map(t => t.id === task.id ? fixedTask : t));
+            return runTaskNow(fixedTask);
+          }
+        }
         
         // 使用增强的匹配算法查找可能的匹配项
         const possibleMatches = findPossibleMatches(task);
@@ -1581,6 +1619,94 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     );
   };
 
+  // 清理无效的任务
+  const handleCleanInvalidTasks = async () => {
+    if (loading) return;
+    
+    setLoading(true);
+    try {
+      // 识别无效的任务
+      let invalidTasks: ScheduledTask[] = [];
+      let fixedCount = 0;
+      
+      for (const task of tasks) {
+        const relatedItem = getTaskItem(task.itemId);
+        if (!relatedItem) {
+          // 尝试自动修复
+          const matchingItem = items.find(item => 
+            item.title === task.name.replace(/\s+定时任务$/, '')
+          );
+          
+          if (matchingItem) {
+            // 可以修复
+            const fixedTask = {
+              ...task,
+              itemId: matchingItem.id,
+              updatedAt: new Date().toISOString()
+            };
+            
+            await StorageManager.updateScheduledTask(fixedTask);
+            fixedCount++;
+          } else {
+            // 无法修复
+            invalidTasks.push(task);
+          }
+        }
+      }
+      
+      // 如果有无法修复的任务，显示确认对话框
+      if (invalidTasks.length > 0) {
+        if (window.confirm(`发现 ${invalidTasks.length} 个无法自动修复的无效任务，是否删除？已自动修复 ${fixedCount} 个任务。`)) {
+          let deleteCount = 0;
+          for (const task of invalidTasks) {
+            const success = await StorageManager.deleteScheduledTask(task.id);
+            if (success) deleteCount++;
+          }
+          
+          toast({
+            title: "清理完成",
+            description: `成功删除 ${deleteCount} 个无效任务，自动修复 ${fixedCount} 个任务`,
+          });
+          
+          // 重新加载任务列表
+          await loadTasksAndItems();
+        } else {
+          toast({
+            title: "操作取消",
+            description: `已取消删除操作，但已自动修复 ${fixedCount} 个任务`,
+          });
+          
+          if (fixedCount > 0) {
+            // 如果有任务被修复，重新加载任务列表
+            await loadTasksAndItems();
+          }
+        }
+      } else if (fixedCount > 0) {
+        toast({
+          title: "清理完成",
+          description: `已自动修复 ${fixedCount} 个任务，没有发现无法修复的任务`,
+        });
+        
+        // 重新加载任务列表
+        await loadTasksAndItems();
+      } else {
+        toast({
+          title: "检查完成",
+          description: "所有任务都是有效的，无需清理",
+        });
+      }
+    } catch (error) {
+      console.error("清理无效任务失败:", error);
+      toast({
+        title: "清理失败",
+        description: "无法完成清理操作",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1622,19 +1748,31 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
             
             <div className="flex items-center gap-2">
                 <Button
-                variant="outline" 
-                size="sm"
-                onClick={handleManualRefresh}
-                disabled={loading}
-                title="刷新任务列表"
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RotateCw className="h-4 w-4 mr-2" />
-                )}
-                刷新
-              </Button>
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleCleanInvalidTasks}
+                  disabled={loading || isRunningTask}
+                  title="清理无效任务"
+                  className="mr-2"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  清理无效
+                </Button>
+                
+                <Button
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleManualRefresh}
+                  disabled={loading}
+                  title="刷新任务列表"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RotateCw className="h-4 w-4 mr-2" />
+                  )}
+                  刷新
+                </Button>
               
               {selectedItem && (
                 <Button

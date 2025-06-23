@@ -627,46 +627,143 @@ export class StorageManager {
     const items = await this.getItemsWithRetry();
     let changed = false;
 
+    console.log(`[StorageManager] 开始迁移定时任务, 共 ${tasks.length} 个任务, ${items.length} 个项目`);
+
     const fixedTasks = tasks.map(task => {
+      // 检查项目ID是否有效
       const exists = items.some(it => it.id === task.itemId);
-      if (exists) return task;
+      if (exists) {
+        console.log(`[StorageManager] 任务 ${task.name} (ID: ${task.id}) 关联的项目ID ${task.itemId} 有效`);
+        return task;
+      }
+
+      console.warn(`[StorageManager] 任务 ${task.name} (ID: ${task.id}) 关联的项目ID ${task.itemId} 无效，尝试自动修复`);
+
+      // 检查项目ID是否格式不正确（太长或非数字）
+      const isInvalidIdFormat = task.itemId.length > 20 || !/^[0-9]+$/.test(task.itemId);
+      if (isInvalidIdFormat) {
+        console.warn(`[StorageManager] 项目ID ${task.itemId} 格式可能无效`);
+      }
 
       // 尝试自动匹配
-      const candidates: Array<{item: TMDBItem, score: number}> = [];
-      // 按 TMDB ID
-      if (task.itemId && task.itemId.length <= 13) {
-        // 若 itemId 看似时间戳数字，可忽略
-      }
-      // 尝试通过任务名(去除 " 定时任务" 后缀)
-      const title = task.name.replace(/\s*定时任务$/, '');
-      items.forEach(it => {
+      const candidates: Array<{item: TMDBItem, score: number, matchReason: string}> = [];
+      
+      // 1. 从任务名称中提取可能的项目标题
+      const taskTitle = task.name.replace(/\s*定时任务$/, '');
+      
+      // 2. 遍历所有项目，寻找最佳匹配
+      items.forEach(item => {
         let score = 0;
-        if (it.title === title) score = 100;
-        else if (it.title.includes(title) || title.includes(it.title)) {
-          const similarity = Math.min(it.title.length, title.length) / Math.max(it.title.length, title.length);
-          score = Math.round(similarity * 90);
+        let matchReasons: string[] = [];
+
+        // 2.1 标题精确匹配 (最高分)
+        if (item.title === taskTitle) {
+          score += 100;
+          matchReasons.push("标题完全匹配");
+        } 
+        // 2.2 标题包含关系
+        else if (item.title.includes(taskTitle) || taskTitle.includes(item.title)) {
+          // 计算相似度分数
+          const similarity = Math.min(
+            item.title.length, 
+            taskTitle.length
+          ) / Math.max(item.title.length, taskTitle.length);
+          
+          // 转换为0-80的分数范围
+          const similarityScore = Math.round(similarity * 80);
+          score += similarityScore;
+          matchReasons.push(`标题部分匹配 (相似度: ${Math.round(similarity * 100)}%)`);
         }
-        if (it.tmdbId && task.action && (task as any).tmdbId && it.tmdbId === (task as any).tmdbId) score += 30;
-        if (score > 60) candidates.push({item: it, score});
+        
+        // 2.3 检查TMDB ID匹配
+        if (item.tmdbId && (task as any).tmdbId && item.tmdbId === (task as any).tmdbId) {
+          score += 50;
+          matchReasons.push("TMDB ID匹配");
+        }
+        
+        // 2.4 检查创建时间接近度
+        try {
+          const taskCreatedAt = new Date(task.createdAt).getTime();
+          const itemCreatedAt = new Date(item.createdAt).getTime();
+          const timeDiff = Math.abs(taskCreatedAt - itemCreatedAt);
+          const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
+          
+          // 如果创建时间在3天内，加分
+          if (daysDiff < 3) {
+            const timeScore = Math.round(20 * (1 - daysDiff / 3));
+            score += timeScore;
+            matchReasons.push(`创建时间接近 (${Math.round(daysDiff * 24)}小时内)`);
+          }
+        } catch (e) {
+          // 忽略日期解析错误
+        }
+        
+        // 2.5 检查平台URL相似度
+        if (item.platformUrl && task.action.removeIqiyiAirDate) {
+          // 如果任务有爱奇艺特殊处理，且项目是爱奇艺平台
+          if (item.platformUrl.includes('iqiyi.com')) {
+            score += 30;
+            matchReasons.push("平台匹配 (爱奇艺)");
+          }
+        }
+        
+        // 2.6 检查季数匹配
+        if (item.seasons) {
+          const hasSeason = item.seasons.some(s => s.seasonNumber === task.action.seasonNumber);
+          if (hasSeason) {
+            score += 25;
+            matchReasons.push(`包含匹配的季数 (第${task.action.seasonNumber}季)`);
+          }
+        }
+
+        // 2.7 媒体类型匹配 (如果任务应用于电视剧，则项目应该是电视剧)
+        if (item.mediaType === "tv") {
+          score += 15;
+          matchReasons.push("媒体类型匹配 (电视剧)");
+        }
+        
+        // 只添加分数大于30的匹配项
+        if (score > 30) {
+          candidates.push({
+            item, 
+            score,
+            matchReason: matchReasons.join(", ")
+          });
+        }
       });
+
+      // 3. 如果找到候选项，选择分数最高的
       if (candidates.length > 0) {
-        candidates.sort((a,b)=>b.score-a.score);
-        const best = candidates[0].item;
-        const newTask = {...task, itemId: best.id, updatedAt: new Date().toISOString()};
+        // 按分数降序排序
+        candidates.sort((a, b) => b.score - a.score);
+        const bestMatch = candidates[0];
+        console.log(`[StorageManager] 为任务 ${task.name} 找到最佳匹配: ${bestMatch.item.title} (ID: ${bestMatch.item.id}), 匹配分数: ${bestMatch.score}, 匹配原因: ${bestMatch.matchReason}`);
+        
+        // 更新任务的itemId
+        const newTask = {
+          ...task, 
+          itemId: bestMatch.item.id,
+          updatedAt: new Date().toISOString()
+        };
         changed = true;
         return newTask;
       }
+
+      console.warn(`[StorageManager] 无法为任务 ${task.name} (ID: ${task.id}) 找到匹配项`);
       return task;
     });
 
     if (changed) {
       try {
         localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(fixedTasks));
-        console.log('[StorageManager] migrateScheduledTasks 已修复无效 itemId 的任务');
+        console.log(`[StorageManager] migrateScheduledTasks 已修复无效 itemId 的任务，共有 ${fixedTasks.length} 个任务`);
       } catch (e) {
         console.error('[StorageManager] 写入修复后任务时出错', e);
       }
+    } else {
+      console.log('[StorageManager] migrateScheduledTasks 没有需要修复的任务');
     }
+    
     return fixedTasks;
   }
 }

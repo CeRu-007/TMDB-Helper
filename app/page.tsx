@@ -53,15 +53,29 @@ import MediaCard from "@/components/media-card"
 import { useIsClient } from "@/hooks/use-is-client"
 import { useData } from "@/components/client-data-provider"
 import { StatCard } from "@/components/ui/stat-card"
+import { StorageManager } from "@/lib/storage"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
+// 判断当前环境是否为客户端
+const isClientEnv = typeof window !== 'undefined'
+
 export default function HomePage() {
+  const { toast } = useToast()
+  const router = useRouter()
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showTasksDialog, setShowTasksDialog] = useState(false)
   const [selectedItem, setSelectedItem] = useState<TMDBItem | null>(null)
-  const [currentDay, setCurrentDay] = useState(new Date().getDay())
+  const [currentDay, setCurrentDay] = useState(() => {
+    if (isClientEnv) {
+      const jsDay = new Date().getDay() // 0-6，0是周日
+      return jsDay === 0 ? 6 : jsDay - 1 // 转换为0=周一，6=周日
+    }
+    return 0 // 默认周一
+  })
   const [activeTab, setActiveTab] = useState("ongoing")
   const [selectedDayFilter, setSelectedDayFilter] = useState<"recent" | number>("recent")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
@@ -259,17 +273,30 @@ export default function HomePage() {
     return () => clearInterval(intervalId);
   }, []);
 
-  // 定义分类列表
-  const categories = [
-    { id: "all", name: "全部", icon: <LayoutGrid className="h-4 w-4 mr-2" /> },
-    { id: "anime", name: "动漫", icon: <Sparkles className="h-4 w-4 mr-2" /> },
-    { id: "tv", name: "电视剧", icon: <Tv className="h-4 w-4 mr-2" /> },
-    { id: "kids", name: "少儿", icon: <Baby className="h-4 w-4 mr-2" /> },
-    { id: "variety", name: "综艺", icon: <Popcorn className="h-4 w-4 mr-2" /> },
-    { id: "short", name: "短剧", icon: <Ticket className="h-4 w-4 mr-2" /> },
-    { id: "movie", name: "电影", icon: <Clapperboard className="h-4 w-4 mr-2" /> },
-  ]
+  // 添加自动修复定时任务的功能
+  useEffect(() => {
+    if (!isClientEnv) return;
+    
+    const autoFixScheduledTasks = async () => {
+      try {
+        console.log("正在检查并自动修复定时任务...");
+        // 强制刷新将执行migrateScheduledTasks
+        const fixedTasks = await StorageManager.forceRefreshScheduledTasks();
+        console.log(`定时任务检查完成，共处理 ${fixedTasks.length} 个任务`);
+      } catch (error) {
+        console.error("自动修复定时任务时发生错误:", error);
+      }
+    };
+    
+    // 延迟3秒执行，确保其他组件已加载完成
+    const timer = setTimeout(() => {
+      autoFixScheduledTasks();
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
+  // 更新当前日期
   useEffect(() => {
     const dayTimer = setInterval(() => {
       // 将JS的日期（0=周日，1=周一）转换为我们的数组索引（0=周一，6=周日）
@@ -283,6 +310,17 @@ export default function HomePage() {
     }
   }, [])
 
+  // 定义分类列表
+  const categories = [
+    { id: "all", name: "全部", icon: <LayoutGrid className="h-4 w-4 mr-2" /> },
+    { id: "anime", name: "动漫", icon: <Sparkles className="h-4 w-4 mr-2" /> },
+    { id: "tv", name: "电视剧", icon: <Tv className="h-4 w-4 mr-2" /> },
+    { id: "kids", name: "少儿", icon: <Baby className="h-4 w-4 mr-2" /> },
+    { id: "variety", name: "综艺", icon: <Popcorn className="h-4 w-4 mr-2" /> },
+    { id: "short", name: "短剧", icon: <Ticket className="h-4 w-4 mr-2" /> },
+    { id: "movie", name: "电影", icon: <Clapperboard className="h-4 w-4 mr-2" /> },
+  ]
+
   // 初始化时也需要设置正确的当前日期
   useEffect(() => {
     const jsDay = new Date().getDay()
@@ -292,7 +330,7 @@ export default function HomePage() {
 
   // 导入数据处理
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isClient) return;
+    if (!isClientEnv) return;
     
     const file = event.target.files?.[0]
     if (file) {
