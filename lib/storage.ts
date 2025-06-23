@@ -465,6 +465,9 @@ export class StorageManager {
    * 标准化任务对象，确保所有必要字段都存在
    */
   private static normalizeTask(task: any): ScheduledTask {
+    // 确定是否是新任务（没有lastRun且没有nextRun）
+    const isNewTask = !task.lastRun && !task.nextRun && !task.createdAt;
+    
     // 确保基本字段存在
     const normalized: ScheduledTask = {
       id: task.id || uuidv4(),
@@ -486,7 +489,8 @@ export class StorageManager {
         autoMarkUploaded: task.action?.autoMarkUploaded !== false,
         removeIqiyiAirDate: Boolean(task.action?.removeIqiyiAirDate)
       },
-      enabled: task.enabled === true ? true : false,
+      // 新任务强制设置为禁用状态，已有任务保持原有状态
+      enabled: isNewTask ? false : (task.enabled === true),
       lastRun: task.lastRun || null,
       nextRun: task.nextRun || null,
       lastRunStatus: task.lastRunStatus || null,

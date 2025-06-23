@@ -133,7 +133,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         removeIqiyiAirDate: item.platformUrl?.includes('iqiyi.com') || false, // 爱奇艺平台自动启用
         autoMarkUploaded: true // 默认自动标记已上传的集数
       },
-      enabled: false,
+      enabled: false, // 强制设置为禁用状态
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
@@ -161,6 +161,8 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       let success: boolean
       const updatedTask = {
         ...currentTask,
+        // 如果是新建任务，强制设置为禁用状态
+        enabled: isAddingTask ? false : currentTask.enabled,
         updatedAt: new Date().toISOString()
       }
       
@@ -173,7 +175,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         updatedTask.name = `${item.title} 定时任务`;
       }
       
-      console.log(`[ScheduledTaskDialog] 正在保存定时任务: ID=${updatedTask.id}, 项目ID=${updatedTask.itemId}, 名称=${updatedTask.name}`);
+      console.log(`[ScheduledTaskDialog] 正在保存定时任务: ID=${updatedTask.id}, 项目ID=${updatedTask.itemId}, 名称=${updatedTask.name}, 启用状态=${updatedTask.enabled}`);
       console.log(`[ScheduledTaskDialog] 任务详情:`, JSON.stringify(updatedTask, null, 2));
       
       if (isAddingTask) {
@@ -476,6 +478,8 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     try {
       const updatedTask = {
         ...taskToSave,
+        // 如果是新建任务，强制设置为禁用状态
+        enabled: isAddingTask ? false : taskToSave.enabled,
         updatedAt: new Date().toISOString()
       }
       
@@ -509,7 +513,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         
         // 重新加载任务列表
         await loadTasks()
-    } else {
+      } else {
         console.error(`[ScheduledTaskDialog] 自动保存失败: ID=${updatedTask.id}`)
         toast({
           title: "自动保存失败",
@@ -886,7 +890,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
               )}
             </Label>
             <p className="text-xs text-muted-foreground mt-1">
-              {isAddingTask ? "任务默认为禁用状态，请配置好后再启用" : "启用后任务将按照设定的时间自动执行"}
+              {isAddingTask ? "任务默认为禁用状态，请先保存任务后再启用" : "启用后任务将按照设定的时间自动执行"}
             </p>
             {!currentTask.enabled && (
               <p className="text-xs text-amber-600 mt-1 flex items-center">
@@ -899,7 +903,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             id="task-enabled"
             checked={currentTask.enabled}
             onCheckedChange={(checked) => updateTaskField('enabled', checked)}
-            disabled={isAutoSaving}
+            disabled={isAutoSaving || (isAddingTask && !hasUnsavedChanges)} // 新建任务时禁用开关
           />
         </div>
         
@@ -921,7 +925,9 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                 保存中...
               </>
             ) : (
-              '保存'
+              <>
+                {isAddingTask ? '保存 (将保持禁用状态)' : '保存'}
+              </>
             )}
           </Button>
         </div>
