@@ -161,8 +161,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       let success: boolean
       const updatedTask = {
         ...currentTask,
-        // 如果是新建任务，强制设置为禁用状态
-        enabled: isAddingTask ? false : currentTask.enabled,
+        // 不再强制设置为禁用状态，尊重用户通过按钮的选择
         updatedAt: new Date().toISOString()
       }
       
@@ -478,8 +477,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     try {
       const updatedTask = {
         ...taskToSave,
-        // 如果是新建任务，强制设置为禁用状态
-        enabled: isAddingTask ? false : taskToSave.enabled,
+        // 不再强制设置为禁用状态，尊重用户通过按钮的选择
         updatedAt: new Date().toISOString()
       }
       
@@ -878,62 +876,62 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         )}
         </div>
         
-        <div className="flex items-center justify-between space-x-2">
-          <div>
-            <Label htmlFor="task-enabled" className="flex-1">
-              启用此任务
-              {isAutoSaving && (
-                <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
-                  <Loader2 className="h-3 w-3 inline animate-spin mr-1" />
-                  保存中...
-                </span>
-              )}
-            </Label>
-            <p className="text-xs text-muted-foreground mt-1">
-              {isAddingTask ? "任务默认为禁用状态，请先保存任务后再启用" : "启用后任务将按照设定的时间自动执行"}
-            </p>
-            {!currentTask.enabled && (
-              <p className="text-xs text-amber-600 mt-1 flex items-center">
-                <Info className="h-3 w-3 mr-1" />
-                禁用状态下任务不会自动执行
-              </p>
-            )}
-          </div>
-          <Switch
-            id="task-enabled"
-            checked={currentTask.enabled}
-            onCheckedChange={(checked) => updateTaskField('enabled', checked)}
-            disabled={isAutoSaving || (isAddingTask && !hasUnsavedChanges)} // 新建任务时禁用开关
-          />
-        </div>
-        
-        {hasUnsavedChanges && !isAutoSaving && (
-          <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 p-2 rounded-md flex items-center">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            有未保存的更改
-          </div>
-        )}
-        
         <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline" onClick={cancelEditTask} disabled={isAutoSaving}>
             取消
           </Button>
-          <Button onClick={handleSaveTask} disabled={isAutoSaving || !hasUnsavedChanges}>
-            {isAutoSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                保存中...
-              </>
-            ) : (
-              <>
-                {isAddingTask ? '保存 (将保持禁用状态)' : '保存'}
-              </>
-            )}
-          </Button>
+          
+          {isAutoSaving ? (
+            <Button disabled>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              保存中...
+            </Button>
+          ) : (
+            <>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  // 设置为禁用状态并保存
+                  if (currentTask) {
+                    const taskWithDisabled = {...currentTask, enabled: false};
+                    setCurrentTask(taskWithDisabled);
+                    setTimeout(() => handleSaveTask(), 0);
+                  }
+                }} 
+                disabled={!hasUnsavedChanges}
+              >
+                <PauseCircle className="h-4 w-4 mr-2" />
+                保存并禁用
+              </Button>
+              
+              <Button 
+                onClick={() => {
+                  // 设置为启用状态并保存
+                  if (currentTask) {
+                    const taskWithEnabled = {...currentTask, enabled: true};
+                    setCurrentTask(taskWithEnabled);
+                    setTimeout(() => handleSaveTask(), 0);
+                  }
+                }} 
+                disabled={!hasUnsavedChanges}
+              >
+                <PlayCircle className="h-4 w-4 mr-2" />
+                保存并启用
+              </Button>
+            </>
+          )}
         </div>
       </div>
     )
   }
+
+  // 添加未保存更改提示
+  {hasUnsavedChanges && !isAutoSaving && (
+    <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 p-2 rounded-md flex items-center mb-4">
+      <AlertTriangle className="h-4 w-4 mr-2" />
+      有未保存的更改
+    </div>
+  )}
 
   return (
     <>
