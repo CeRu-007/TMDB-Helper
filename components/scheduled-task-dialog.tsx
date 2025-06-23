@@ -113,6 +113,8 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     const newTask: ScheduledTask = {
       id: uuidv4(),
       itemId: item.id,
+      itemTitle: item.title,
+      itemTmdbId: item.tmdbId,
       name: `${item.title} 定时任务`,
       type: "tmdb-import",
       schedule: {
@@ -131,7 +133,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         removeIqiyiAirDate: item.platformUrl?.includes('iqiyi.com') || false, // 爱奇艺平台自动启用
         autoMarkUploaded: true // 默认自动标记已上传的集数
       },
-      enabled: true,
+      enabled: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
@@ -236,6 +238,14 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         
         // 关闭编辑框
         cancelEditTask()
+
+        if (success) {
+          console.log(`[ScheduledTaskDialog] ${isAddingTask ? '创建' : '更新'}任务成功: ID=${updatedTask.id}`);
+          toast({
+            title: `${isAddingTask ? '创建' : '更新'}成功`,
+            description: `定时任务已${isAddingTask ? '创建' : '更新'}${updatedTask.enabled ? '，并已启用' : '，处于禁用状态'}`,
+          })
+        }
       }
     } catch (error) {
       console.error("[ScheduledTaskDialog] 保存定时任务失败:", error)
@@ -489,7 +499,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         // 显示成功提示
         toast({
           title: "自动保存成功",
-          description: `任务已${updatedTask.enabled ? '启用' : '禁用'}`,
+          description: `任务已${updatedTask.enabled ? '启用，将按计划自动执行' : '禁用，不会自动执行'}`,
         })
         
         // 如果提供了onTaskSaved回调，调用它
@@ -865,15 +875,26 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         </div>
         
         <div className="flex items-center justify-between space-x-2">
-          <Label htmlFor="task-enabled" className="flex-1">
-            启用此任务
-            {isAutoSaving && (
-              <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
-                <Loader2 className="h-3 w-3 inline animate-spin mr-1" />
-                保存中...
-              </span>
+          <div>
+            <Label htmlFor="task-enabled" className="flex-1">
+              启用此任务
+              {isAutoSaving && (
+                <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                  <Loader2 className="h-3 w-3 inline animate-spin mr-1" />
+                  保存中...
+                </span>
+              )}
+            </Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isAddingTask ? "任务默认为禁用状态，请配置好后再启用" : "启用后任务将按照设定的时间自动执行"}
+            </p>
+            {!currentTask.enabled && (
+              <p className="text-xs text-amber-600 mt-1 flex items-center">
+                <Info className="h-3 w-3 mr-1" />
+                禁用状态下任务不会自动执行
+              </p>
             )}
-          </Label>
+          </div>
           <Switch
             id="task-enabled"
             checked={currentTask.enabled}

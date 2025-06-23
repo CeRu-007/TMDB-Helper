@@ -437,22 +437,22 @@ export class ImageProcessor {
     }
   ): Promise<ImageData[]> {
     return new Promise<ImageData[]>((resolve, reject) => {
-      try {
+    try {
         console.log('开始提取视频帧，视频尺寸:', video.videoWidth, 'x', video.videoHeight);
         
         // 获取视频时长和设置
         const duration = video.duration;
-        const startTime = options.startTime || 0;
+      const startTime = options.startTime || 0;
         const frameCount = Math.min(options.frameCount || 10, 50); // 允许提取更多帧(30->50)以确保有足够的多样性
-        const interval = options.interval || 'uniform';
+      const interval = options.interval || 'uniform';
         const keepOriginalResolution = options.keepOriginalResolution || false;
         const enhancedFrameDiversity = options.enhancedFrameDiversity !== undefined ? 
           options.enhancedFrameDiversity : true; // 默认启用增强多样性
-        
+      
         console.log(`视频长度: ${duration}秒, 开始时间: ${startTime}秒, 提取帧数: ${frameCount}, 间隔模式: ${interval}, 保持原始分辨率: ${keepOriginalResolution}, 增强多样性: ${enhancedFrameDiversity}`);
         
         // 创建一个隐藏的canvas用于绘制帧
-        const canvas = document.createElement('canvas');
+      const canvas = document.createElement('canvas');
         
         // 设置canvas尺寸
         let scale = 1;
@@ -487,7 +487,7 @@ export class ImageProcessor {
         }
         
         // 确保视频可以播放
-        if (video.readyState < 2) {
+      if (video.readyState < 2) {
           // 如果视频没准备好，监听loadeddata事件
           const loadHandler = () => {
             video.removeEventListener('loadeddata', loadHandler);
@@ -684,9 +684,9 @@ export class ImageProcessor {
         const extractSingleFrame = (time: number): Promise<ImageData | null> => {
           return new Promise((resolveFrame, rejectFrame) => {
             // 设置超时处理
-            const timeoutId = setTimeout(() => {
+              const timeoutId = setTimeout(() => {
               video.removeEventListener('seeked', seekedHandler);
-              video.removeEventListener('error', errorHandler);
+                video.removeEventListener('error', errorHandler);
               console.warn(`提取时间点 ${time} 的帧超时`);
               resolveFrame(null); // 返回null而不是拒绝，允许继续处理其他帧
             }, 10000); // 10秒超时
@@ -696,7 +696,7 @@ export class ImageProcessor {
             
             // 等待视频跳转完成
             const seekedHandler = () => {
-              clearTimeout(timeoutId);
+                clearTimeout(timeoutId);
               video.removeEventListener('seeked', seekedHandler);
               video.removeEventListener('error', errorHandler);
               
@@ -752,10 +752,10 @@ export class ImageProcessor {
           reject(error);
         });
         
-      } catch (error) {
-        console.error('提取视频帧失败:', error);
+    } catch (error) {
+      console.error('提取视频帧失败:', error);
         reject(error);
-      }
+    }
     });
   }
 
@@ -846,20 +846,20 @@ export class ImageProcessor {
               const effectiveSampleRate = Math.min(options.sampleRate || 2, 3);
               
               // 批量分析图像，使用简化的参数
-              const results = await this.batchAnalyzeImage(frame, {
+          const results = await this.batchAnalyzeImage(frame, {
                 sampleRate: effectiveSampleRate,
-                subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
+            subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
                 staticFrameThreshold: options.staticFrameThreshold || 0.8,
                 simplifiedAnalysis: true // 添加简化分析标志
-              });
-              
-              return {
+          });
+          
+          return {
                 index: frames.indexOf(frame), // 获取原始帧数组中的索引
                 originalIndex: originalIndex, // 保存在筛选后数组中的索引
-                scores: {
-                  staticScore: results.staticScore || 0.5,
-                  subtitleScore: results.subtitleScore || 0.5,
-                  peopleScore: results.peopleScore || 0.5,
+            scores: {
+              staticScore: results.staticScore || 0.5,
+              subtitleScore: results.subtitleScore || 0.5,
+              peopleScore: results.peopleScore || 0.5,
                   emptyFrameScore: results.emptyFrameScore || 0.5,
                   diversityScore: results.diversityScore || 0.5
                 }

@@ -486,7 +486,7 @@ export class StorageManager {
         autoMarkUploaded: task.action?.autoMarkUploaded !== false,
         removeIqiyiAirDate: Boolean(task.action?.removeIqiyiAirDate)
       },
-      enabled: Boolean(task.enabled),
+      enabled: task.enabled === true ? true : false,
       lastRun: task.lastRun || null,
       nextRun: task.nextRun || null,
       lastRunStatus: task.lastRunStatus || null,
