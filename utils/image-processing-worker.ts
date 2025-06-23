@@ -1,18 +1,23 @@
 // 图像处理Web Worker
 // 用于在后台线程中进行计算密集型的图像分析
 
+// 告诉TypeScript这是一个Worker上下文
+declare const self: Worker;
+
 // 定义消息类型接口
 interface WorkerMessage {
-  type: 'staticScore' | 'subtitleScore' | 'peopleScore' | 'batchAnalysis';
-  imageData: ImageData;
-  width: number;
-  height: number;
+  type: 'staticScore' | 'subtitleScore' | 'peopleScore' | 'batchAnalysis' | 'test';
+  imageData?: ImageData;
+  width?: number;
+  height?: number;
   taskId?: string;
   options?: {
     sampleRate?: number;
     subtitleDetectionStrength?: number;
     staticFrameThreshold?: number;
+    simplifiedAnalysis?: boolean;
   };
+  data?: any;
 }
 
 // 定义分析选项接口
@@ -20,13 +25,29 @@ interface AnalysisOptions {
   sampleRate?: number;
   subtitleDetectionStrength?: number;
   staticFrameThreshold?: number;
+  simplifiedAnalysis?: boolean;
 }
+
+// 发送自检消息，确认Worker已加载
+self.postMessage({ type: 'workerLoaded', status: 'ready' });
 
 // 接收主线程消息
 self.onmessage = (e: MessageEvent<WorkerMessage>) => {
   try {
-    const { type, imageData, width, height, options, taskId } = e.data;
+    const { type, imageData, width, height, options, taskId, data } = e.data;
     
+    // 处理测试消息，用于初始化检查
+    if (type === 'test') {
+      console.log('图像处理工作线程收到测试消息');
+      self.postMessage({ 
+        type, 
+        result: 'ok', 
+        taskId 
+      });
+      return;
+    }
+    
+    // 检查图像数据是否有效
     if (!imageData || !width || !height) {
       self.postMessage({ 
         error: '无效的图像数据', 
@@ -125,27 +146,32 @@ function batchAnalyzeImage(
   height: number, 
   options?: AnalysisOptions
 ) {
+  // 获取选项，设置合理的默认值
   const sampleRate = options?.sampleRate || 2;
   const subtitleDetectionStrength = options?.subtitleDetectionStrength || 0.8;
+  const simplifiedAnalysis = options?.simplifiedAnalysis || false; // 是否使用简化分析
+  
+  // 如果开启了简化分析，增加采样率以减少计算量
+  const effectiveSampleRate = simplifiedAnalysis ? Math.max(sampleRate, 4) : sampleRate;
   
   try {
-    // 计算各项分数
-    const staticScore = calculateStaticScore(imageData, sampleRate);
-    const subtitleScore = calculateSubtitleScore(imageData, width, height, subtitleDetectionStrength);
-    const peopleScore = calculatePeopleScore(imageData, sampleRate);
-    const emptyFrameScore = detectEmptyFrame(imageData, sampleRate);
-    
     // 创建分析结果对象
-    const results = {
-      staticScore,
-      subtitleScore,
-      peopleScore,
-      emptyFrameScore,
-      // 额外分析
-      edgeMap: generateEdgeMap(imageData, width, height, sampleRate),
-      colorProfile: analyzeColorProfile(imageData, sampleRate)
-    };
+    let results: any = {};
     
+    // 计算基本分数
+    results.staticScore = calculateStaticScore(imageData, effectiveSampleRate);
+    results.subtitleScore = calculateSubtitleScore(imageData, width, height, subtitleDetectionStrength);
+    results.peopleScore = calculatePeopleScore(imageData, effectiveSampleRate);
+    results.emptyFrameScore = detectEmptyFrame(imageData, effectiveSampleRate);
+    results.diversityScore = calculateDiversityScore(imageData, effectiveSampleRate);
+    
+    // 如果不是简化分析，添加更详细的分析结果
+    if (!simplifiedAnalysis) {
+      results.edgeMap = generateEdgeMap(imageData, width, height, effectiveSampleRate);
+      results.colorProfile = analyzeColorProfile(imageData, effectiveSampleRate);
+    }
+    
+    console.log(`已完成图像分析 (${simplifiedAnalysis ? '简化模式' : '完整模式'}), 尺寸: ${width}x${height}`);
     return results;
   } catch (error) {
     console.error('批量分析图像失败:', error);
@@ -154,9 +180,108 @@ function batchAnalyzeImage(
       staticScore: 0.5,
       subtitleScore: 0.5,
       peopleScore: 0.5,
-      emptyFrameScore: 0.5
+      emptyFrameScore: 0.5,
+      diversityScore: 0.5
     };
   }
+}
+
+// 新增：计算图像多样性分数 - 优化版本
+function calculateDiversityScore(imageData: ImageData, sampleRate: number = 2): number {
+  const data = imageData.data;
+  const width = imageData.width;
+  const height = imageData.height;
+  
+  // 增加采样率以提高性能
+  const effectiveSampleRate = Math.max(sampleRate, 4); 
+  
+  // 计算颜色多样性 - 使用颜色量化减少计算量
+  const colorBuckets = new Map<number, number>();
+  const totalSamples = Math.floor((width * height) / (effectiveSampleRate * effectiveSampleRate));
+  
+  // 更高效的采样方法
+  for (let y = 0; y < height; y += effectiveSampleRate) {
+    for (let x = 0; x < width; x += effectiveSampleRate) {
+      const idx = (y * width + x) * 4;
+      if (idx >= data.length - 3) continue;
+      
+      // 更粗粒度的颜色量化，从16个级别减少到8个级别
+      const r = Math.floor(data[idx] / 32) * 32;
+      const g = Math.floor(data[idx + 1] / 32) * 32;
+      const b = Math.floor(data[idx + 2] / 32) * 32;
+      
+      // 将RGB合并为单个整数键值，减少Map开销
+      const colorKey = (r << 16) | (g << 8) | b;
+      colorBuckets.set(colorKey, (colorBuckets.get(colorKey) || 0) + 1);
+    }
+  }
+  
+  // 简化熵计算
+  let entropy = 0;
+  for (const count of colorBuckets.values()) {
+    const probability = count / totalSamples;
+    // 使用近似计算减少计算量
+    entropy -= probability * Math.log(probability);
+  }
+  
+  // 归一化熵 (使用自然对数代替log2，减少计算)
+  const maxPossibleEntropy = Math.log(Math.min(colorBuckets.size, 512));
+  const normalizedEntropy = maxPossibleEntropy > 0 ? 
+    Math.min(1, entropy / maxPossibleEntropy) : 0;
+  
+  // 使用更简单的亮度变化计算替代复杂的边缘计算
+  const brightnessVariation = calculateSimplifiedBrightnessVariation(imageData, effectiveSampleRate);
+  
+  // 综合评分 (简化公式)
+  const diversityScore = (
+    normalizedEntropy * 0.7 + 
+    brightnessVariation * 0.3
+  );
+  
+  return Math.max(0, Math.min(1, diversityScore));
+}
+
+// 简化的亮度变化计算，性能更好
+function calculateSimplifiedBrightnessVariation(imageData: ImageData, sampleRate: number = 4): number {
+  const data = imageData.data;
+  const width = imageData.width;
+  const height = imageData.height;
+  
+  // 采样亮度值
+  const brightnessValues: number[] = [];
+  
+  for (let y = 0; y < height; y += sampleRate) {
+    for (let x = 0; x < width; x += sampleRate) {
+      const idx = (y * width + x) * 4;
+      if (idx >= data.length - 3) continue;
+      
+      // 快速亮度计算
+      const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3 / 255;
+      brightnessValues.push(brightness);
+    }
+  }
+  
+  // 如果没有足够的样本，返回默认值
+  if (brightnessValues.length < 10) return 0.5;
+  
+  // 计算简单的标准差
+  const avg = brightnessValues.reduce((sum, val) => sum + val, 0) / brightnessValues.length;
+  
+  // 简化方差计算，仅使用部分样本
+  let variance = 0;
+  const sampleStep = Math.max(1, Math.floor(brightnessValues.length / 100));
+  let sampleCount = 0;
+  
+  for (let i = 0; i < brightnessValues.length; i += sampleStep) {
+    const diff = brightnessValues[i] - avg;
+    variance += diff * diff;
+    sampleCount++;
+  }
+  
+  variance /= sampleCount;
+  
+  // 将标准差转换为0-1范围的分数
+  return Math.min(1, Math.sqrt(variance) * 4);
 }
 
 // 优化版的静态帧评分函数 - 支持采样率参数
@@ -326,364 +451,278 @@ function calculateStaticScore(imageData: ImageData, sampleRate: number = 1): num
   return Math.min(1, Math.max(0, staticScore));
 }
 
-// 优化版的字幕评分函数 - 只保留核心计算
+// 计算字幕分数
 function calculateSubtitleScore(
   imageData: ImageData, 
   width: number, 
   height: number,
   detectionStrength: number = 0.8
 ): number {
+  try {
   const data = imageData.data;
   
-  // ===== 增强版字幕检测算法 v2.0 =====
-  // 1. 多区域检测 - 不仅检测底部区域，同时检查顶部和中间
-  const regions = [
-    { name: "bottom", startY: Math.floor(height * 0.75), endY: height, weight: 0.5 },           // 底部区域(最高权重)
-    { name: "top", startY: 0, endY: Math.floor(height * 0.2), weight: 0.3 },                    // 顶部区域(次高权重)
-    { name: "middle", startY: Math.floor(height * 0.35), endY: Math.floor(height * 0.65), weight: 0.2 } // 中间区域
-  ];
+    // 增强字幕检测 - 使用多种特征
+    
+    // 1. 水平线检测 - 字幕通常是水平线
+    const horizontalLineScore = detectHorizontalLines(data, width, height);
+    
+    // 2. 底部区域检测 - 字幕通常在底部
+    const bottomAreaScore = analyzeBottomArea(data, width, height);
+    
+    // 3. 文本区域检测 - 字幕通常有特定的文本特征
+    const textRegionScore = detectTextRegions(data, width, height);
+    
+    // 4. 对比度检测 - 字幕通常与背景有高对比度
+    const contrastScore = detectHighContrast(data, width, height);
+    
+    // 综合评分 - 根据检测强度调整权重
+    const subtitleScore = (
+      horizontalLineScore * 0.3 + 
+      bottomAreaScore * 0.3 + 
+      textRegionScore * 0.25 + 
+      contrastScore * 0.15
+    ) * detectionStrength;
+    
+    // 返回0-1之间的分数
+    return Math.min(1, Math.max(0, subtitleScore));
+  } catch (error) {
+    console.error('计算字幕分数失败:', error);
+    return 0.5; // 返回中间值
+  }
+}
+
+// 检测水平线 - 字幕通常是水平排列的
+function detectHorizontalLines(data: Uint8ClampedArray, width: number, height: number): number {
+  // 检查图像下半部分的水平线
+  const startY = Math.floor(height * 0.6); // 从60%的高度开始检查
+  const sampleRows = 20; // 采样行数
+  const step = Math.max(1, Math.floor((height - startY) / sampleRows));
   
-  // 2. 特征提取器配置
-  const featureExtractors = {
-    // 横向边缘分析(文字边缘)
-    horizontalEdges: { weight: 0.25 },
-    
-    // 规则模式分析(文本行特征)
-    textPatterns: { weight: 0.25 },
-    
-    // 亮度对比分析
-    contrastAnalysis: { weight: 0.2 },
-    
-    // 文本行对齐分析
-    textAlignment: { weight: 0.15 },
-    
-    // 颜色聚类分析(字幕通常有固定配色)
-    colorClustering: { weight: 0.15 }
-  };
+  let horizontalLineCount = 0;
+  let totalChecks = 0;
   
-  // 3. 全局评分聚合器
-  const globalScores = {
-    horizontalEdgeScore: 0,
-    textPatternScore: 0,
-    contrastScore: 0,
-    alignmentScore: 0,
-    colorClusterScore: 0,
-    regionScores: new Map<string, number>()
-  };
-  
-  // 4. 字幕文字/背景的颜色特征库
-  const subtitleColorFeatures = {
-    backgrounds: [
-      { r: 0, g: 0, b: 0, alpha: 1.0, name: "纯黑", threshold: 30 },       // 纯黑背景
-      { r: 0, g: 0, b: 0, alpha: 0.5, name: "半透明黑", threshold: 40 },   // 半透明黑背景
-      { r: 255, g: 255, b: 255, alpha: 1.0, name: "纯白", threshold: 30 }, // 纯白背景
-      { r: 0, g: 0, b: 128, alpha: 0.7, name: "深蓝", threshold: 50 },     // 深蓝背景
-    ],
-    text: [
-      { r: 255, g: 255, b: 255, name: "白色", threshold: 30 },  // 白色文字
-      { r: 255, g: 255, b: 0, name: "黄色", threshold: 40 },    // 黄色文字
-      { r: 0, g: 255, b: 255, name: "青色", threshold: 40 }     // 青色文字
-    ]
-  };
-  
-  // 中文字幕特征定义 - 比英文更密集、笔画更复杂
-  const chineseSubtitleFeatures = {
-    // 中文字符通常更密集，行间距趋于一致
-    lineSpacing: { min: 1.0, max: 1.5, ideal: 1.2, weight: 0.3 },
-    // 中文字符通常宽度接近一致(方块字特征)
-    charWidthVariance: { threshold: 0.2, weight: 0.3 },
-    // 中文字符通常笔画密度更高
-    strokeDensity: { threshold: 0.05, weight: 0.4 }
-  };
-  
-  // 5. 为每个区域分别计算特征
-  for (const region of regions) {
-    // 该区域的特征分数
-    const regionFeatures = {
-      horizontalEdges: 0,
-      textPatterns: 0,
-      contrastPixels: 0,
-      alignmentScore: 0,
-      colorEvidence: 0,
-      
-      // 行特征存储
-      lineFeatures: [] as Array<{
-        edgeCount: number,
-        brightPixels: number,
-        darkPixels: number,
-        edgePositions: number[],
-        colorCounts: Map<string, number>,
-        complexity: number,
-        chineseTextEvidence: number
-      }>,
-      
-      // 统计数据
-      totalLines: 0,
-      validTextLines: 0,
-      totalPixels: 0
-    };
+  // 对每一采样行
+  for (let y = startY; y < height; y += step) {
+    // 计算该行的水平变化
+    let horizontalChanges = 0;
+    let prevLuma = -1;
     
-    // 记录相邻行特征相似度，用于检测字幕的规则排列
-    let lastLineFeature = null;
-    let consecutiveSimilarLines = 0;
-    
-    // 颜色聚类分析变量
-    const colorClusters = new Map<string, number>();
-    
-    // 扫描该区域的每一行
-    for (let y = region.startY; y < region.endY; y++) {
-    let horizontalEdgeCount = 0;
-    let brightPixels = 0;
-    let darkPixels = 0;
-      let mediumPixels = 0;
-      let lastPixelBrightness = -1;
-      const edgePositions: number[] = [];
-      const rowColorCounts = new Map<string, number>();
+    // 采样该行的点
+    for (let x = 0; x < width; x += 4) {
+      const idx = (y * width + x) * 4;
       
-      // 扫描该行的每个像素
-      for (let x = 0; x < width; x++) {
-        const pixelOffset = (y * width + x) * 4;
-      if (pixelOffset >= data.length - 4) continue;
+      // 计算亮度
+      const luma = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
       
-      const r = data[pixelOffset];
-      const g = data[pixelOffset + 1];
-      const b = data[pixelOffset + 2];
-        const a = data[pixelOffset + 3];
-      
-        // 计算亮度 - 使用感知亮度公式
-      const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-      
-        // 亮度分类
-        if (brightness > 180) brightPixels++;
-        else if (brightness < 60) darkPixels++;
-        else mediumPixels++;
-        
-        // 颜色量化和聚类 (简化为64种颜色)
-        const colorKey = `${Math.floor(r/32)},${Math.floor(g/32)},${Math.floor(b/32)},${Math.floor(a/128)}`;
-        rowColorCounts.set(colorKey, (rowColorCounts.get(colorKey) || 0) + 1);
-        colorClusters.set(colorKey, (colorClusters.get(colorKey) || 0) + 1);
-        
-        // 检测水平边缘(字幕文本的关键特征)
-        if (lastPixelBrightness >= 0) {
-          const edgeMagnitude = Math.abs(brightness - lastPixelBrightness);
-          // 自适应阈值：根据区域平均亮度调整
-          const edgeThreshold = 35;
-          if (edgeMagnitude > edgeThreshold) {
-            horizontalEdgeCount++;
-            edgePositions.push(x);
-          }
-        }
-        
-        // 检测特定颜色属于字幕文字或背景的可能性
-        // 检查是否匹配已知的字幕颜色特征
-        for (const textColor of subtitleColorFeatures.text) {
-          if (
-            Math.abs(r - textColor.r) <= textColor.threshold &&
-            Math.abs(g - textColor.r) <= textColor.threshold &&
-            Math.abs(b - textColor.r) <= textColor.threshold
-          ) {
-            regionFeatures.colorEvidence += 0.1;
-            break;
-          }
-        }
-        
-        lastPixelBrightness = brightness;
-        regionFeatures.totalPixels++;
-      }
-      
-      // 分析该行的特征
-      const lineComplexity = horizontalEdgeCount / width; // 边缘密度作为复杂度指标
-      const hasValidBrightnessDistribution = brightPixels > 0 && darkPixels > 0;
-      
-      // 中文字幕特征分析 - 检测方块字特征
-      // 分析边缘的间距规律性 - 中文汉字通常有较高的笔画密度和规律的间距
-      let chineseTextEvidence = 0;
-      if (edgePositions.length > 5) {
-        // 1. 计算相邻边缘之间的间距
-        const edgeSpacings = [];
-        for (let i = 1; i < edgePositions.length; i++) {
-          edgeSpacings.push(edgePositions[i] - edgePositions[i-1]);
-        }
-        
-        // 2. 分析间距的规律性
-        if (edgeSpacings.length > 0) {
-          // 计算方差和平均值
-          const avgSpacing = edgeSpacings.reduce((sum, s) => sum + s, 0) / edgeSpacings.length;
-          const variance = edgeSpacings.reduce((sum, s) => sum + Math.pow(s - avgSpacing, 2), 0) / edgeSpacings.length;
-          const stdDev = Math.sqrt(variance);
-          
-          // 计算变异系数 (标准差/平均值) - 越小越规律
-          const variationCoef = stdDev / avgSpacing;
-          
-          // 中文字符笔画特征：变异系数通常较小(规律)，且边缘密度较高
-          if (variationCoef < chineseSubtitleFeatures.charWidthVariance.threshold && 
-              lineComplexity > chineseSubtitleFeatures.strokeDensity.threshold) {
-            chineseTextEvidence = 1 - variationCoef; // 越规律分数越高
-            regionFeatures.colorEvidence += 0.1; // 加分
-          }
+      // 检测亮度变化
+      if (prevLuma >= 0) {
+        const diff = Math.abs(luma - prevLuma);
+        if (diff > 30) { // 亮度变化阈值
+          horizontalChanges++;
         }
       }
       
-      // 记录该行的特征
-      const currentLineFeature = {
-        edgeCount: horizontalEdgeCount,
-        brightPixels,
-        darkPixels,
-        edgePositions,
-        colorCounts: rowColorCounts,
-        complexity: lineComplexity,
-        chineseTextEvidence
-      };
-      regionFeatures.lineFeatures.push(currentLineFeature);
+      prevLuma = luma;
+      totalChecks++;
+    }
+    
+    // 如果水平变化在合理范围内（不太少也不太多），可能是字幕
+    if (horizontalChanges > 5 && horizontalChanges < width / 10) {
+      horizontalLineCount++;
+    }
+  }
+  
+  // 计算得分
+  return Math.min(1, horizontalLineCount / (sampleRows * 0.6));
+}
+
+// 分析底部区域 - 字幕通常在底部
+function analyzeBottomArea(data: Uint8ClampedArray, width: number, height: number): number {
+  // 定义底部区域
+  const bottomStart = Math.floor(height * 0.7);
+  const bottomHeight = height - bottomStart;
+  
+  // 计算底部区域的特征
+  let textLikeRegions = 0;
+  let samplesCount = 0;
+  
+  // 网格采样
+  const gridSize = 8;
+  const xStep = Math.max(1, Math.floor(width / gridSize));
+  const yStep = Math.max(1, Math.floor(bottomHeight / 4));
+  
+  for (let y = bottomStart; y < height; y += yStep) {
+    let hasTextFeature = false;
+    let prevColor = -1;
+    let colorChanges = 0;
+    
+    for (let x = 0; x < width; x += xStep) {
+      const idx = (y * width + x) * 4;
       
-      // 分析是否为可能的文本行
-      const isTextLine = horizontalEdgeCount >= 3 && // 最低边缘数
-                         hasValidBrightnessDistribution && // 具有明暗对比
-                         lineComplexity > 0.01 && lineComplexity < 0.2; // 合理的复杂度范围
+      // 简化的颜色表示
+      const color = Math.floor(data[idx] / 32) * 32 + 
+                   Math.floor(data[idx + 1] / 32) * 32 + 
+                   Math.floor(data[idx + 2] / 32) * 32;
       
-      if (isTextLine) {
-        regionFeatures.horizontalEdges++;
-        regionFeatures.validTextLines++;
-        
-        // 分析相邻行的相似性(文本行通常有相似的特征)
-        if (lastLineFeature !== null) {
-          const complexityDiff = Math.abs(currentLineFeature.complexity - lastLineFeature.complexity);
-          const edgeCountDiff = Math.abs(currentLineFeature.edgeCount - lastLineFeature.edgeCount) / Math.max(1, lastLineFeature.edgeCount);
-          const isSimilar = complexityDiff < 0.05 && edgeCountDiff < 0.3;
+      // 检测颜色变化
+      if (prevColor >= 0 && prevColor !== color) {
+        colorChanges++;
+      }
+      
+      prevColor = color;
+    }
+    
+    // 如果一行中有适量的颜色变化，可能是文本
+    if (colorChanges >= 3 && colorChanges <= gridSize * 0.8) {
+      hasTextFeature = true;
+    }
+    
+    if (hasTextFeature) {
+      textLikeRegions++;
+    }
+    
+    samplesCount++;
+  }
+  
+  // 如果底部区域有足够的文本特征，返回较高的分数
+  return Math.min(1, textLikeRegions / (samplesCount * 0.5));
+}
+
+// 检测文本区域 - 基于文本的特征
+function detectTextRegions(data: Uint8ClampedArray, width: number, height: number): number {
+  // 文本通常有规律的边缘和特定的纹理
+  
+  // 计算图像的边缘密度图
+  const edgeDensity = new Float32Array(width * height);
+  let maxEdgeDensity = 0;
+  
+  // 简化的Sobel边缘检测
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = (y * width + x) * 4;
+      
+      // 获取周围像素
+      const topIdx = ((y - 1) * width + x) * 4;
+      const bottomIdx = ((y + 1) * width + x) * 4;
+      const leftIdx = (y * width + (x - 1)) * 4;
+      const rightIdx = (y * width + (x + 1)) * 4;
+      
+      // 计算亮度
+      const centerLuma = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+      const topLuma = 0.299 * data[topIdx] + 0.587 * data[topIdx + 1] + 0.114 * data[topIdx + 2];
+      const bottomLuma = 0.299 * data[bottomIdx] + 0.587 * data[bottomIdx + 1] + 0.114 * data[bottomIdx + 2];
+      const leftLuma = 0.299 * data[leftIdx] + 0.587 * data[leftIdx + 1] + 0.114 * data[leftIdx + 2];
+      const rightLuma = 0.299 * data[rightIdx] + 0.587 * data[rightIdx + 1] + 0.114 * data[rightIdx + 2];
+      
+      // 计算梯度
+      const dx = rightLuma - leftLuma;
+      const dy = bottomLuma - topLuma;
+      const gradient = Math.sqrt(dx * dx + dy * dy);
+      
+      // 存储边缘强度
+      edgeDensity[y * width + x] = gradient;
+      maxEdgeDensity = Math.max(maxEdgeDensity, gradient);
+    }
+  }
+  
+  // 如果没有显著边缘，返回低分数
+  if (maxEdgeDensity < 10) {
+    return 0.1;
+  }
+  
+  // 归一化边缘密度
+  for (let i = 0; i < edgeDensity.length; i++) {
+    edgeDensity[i] /= maxEdgeDensity;
+  }
+  
+  // 检测文本区域特征
+  const blockSize = 16;
+  const xBlocks = Math.floor(width / blockSize);
+  const yBlocks = Math.floor(height / blockSize);
+  let textRegionCount = 0;
+  
+  // 分析图像块
+  for (let by = 0; by < yBlocks; by++) {
+    for (let bx = 0; bx < xBlocks; bx++) {
+      let edgeCount = 0;
+      let edgeSum = 0;
+      
+      // 分析块内的边缘
+      for (let y = by * blockSize; y < (by + 1) * blockSize && y < height; y++) {
+        for (let x = bx * blockSize; x < (bx + 1) * blockSize && x < width; x++) {
+          const edge = edgeDensity[y * width + x];
+          if (edge > 0.2) { // 边缘阈值
+            edgeCount++;
+          }
+          edgeSum += edge;
+        }
+      }
+      
+      // 计算平均边缘密度
+      const avgEdgeDensity = edgeSum / (blockSize * blockSize);
+      
+      // 文本区域通常有适中的边缘密度和数量
+      if (avgEdgeDensity > 0.15 && avgEdgeDensity < 0.5 && 
+          edgeCount > blockSize * blockSize * 0.1 && 
+          edgeCount < blockSize * blockSize * 0.5) {
+        textRegionCount++;
+      }
+    }
+  }
+  
+  // 计算得分
+  return Math.min(1, textRegionCount / (xBlocks * yBlocks * 0.3));
+}
+
+// 检测高对比度区域 - 字幕通常与背景有高对比度
+function detectHighContrast(data: Uint8ClampedArray, width: number, height: number): number {
+  // 检查图像底部的高对比度区域
+  const bottomStart = Math.floor(height * 0.7);
+  let highContrastCount = 0;
+  let totalSamples = 0;
+  
+  // 采样步长
+  const xStep = Math.max(1, Math.floor(width / 40));
+  const yStep = Math.max(1, Math.floor((height - bottomStart) / 10));
+  
+  for (let y = bottomStart; y < height; y += yStep) {
+    for (let x = 0; x < width; x += xStep) {
+      const idx = (y * width + x) * 4;
+      
+      // 计算局部对比度
+      let minLuma = 255;
+      let maxLuma = 0;
+      
+      // 检查3x3邻域
+      for (let ny = -1; ny <= 1; ny++) {
+        for (let nx = -1; nx <= 1; nx++) {
+          const newY = y + ny;
+          const newX = x + nx;
           
-          // 检查中文字幕的行间距特征
-          if (isSimilar && currentLineFeature.chineseTextEvidence > 0 && lastLineFeature.chineseTextEvidence > 0) {
-            // 中文字幕证据加分
-            regionFeatures.colorEvidence += 0.05;
+          if (newY >= 0 && newY < height && newX >= 0 && newX < width) {
+            const neighborIdx = (newY * width + newX) * 4;
+            const luma = 0.299 * data[neighborIdx] + 0.587 * data[neighborIdx + 1] + 0.114 * data[neighborIdx + 2];
             
-            // 分析行间距 - 中文字幕通常行间距较为固定
-            // 这里简化处理，仅检测连续行的相似性
-            consecutiveSimilarLines += 0.5; // 额外加分
-          }
-          
-          if (isSimilar) {
-            consecutiveSimilarLines++;
-            // 分析边缘对齐程度(字幕文字通常在多行间对齐)
-            let alignedEdges = 0;
-            for (const pos of currentLineFeature.edgePositions) {
-              for (const lastPos of lastLineFeature.edgePositions) {
-                if (Math.abs(pos - lastPos) <= 2) { // 允许2像素的误差
-                  alignedEdges++;
-                  break;
-                }
-              }
-            }
-            
-            const alignmentRatio = alignedEdges / Math.max(1, currentLineFeature.edgePositions.length);
-            if (alignmentRatio > 0.2) {
-              regionFeatures.alignmentScore += alignmentRatio;
-            }
-          } else {
-            consecutiveSimilarLines = 0;
-          }
-        }
-        
-        // 分析对比度(字幕通常有高对比度)
-    if (brightPixels > 0 && darkPixels > 0) {
-      const minCount = Math.min(brightPixels, darkPixels);
-      const maxCount = Math.max(brightPixels, darkPixels);
-          // 检查明暗像素的比例是否合理
-          if (minCount / maxCount > 0.05) {
-            regionFeatures.contrastPixels += (brightPixels + darkPixels);
+            minLuma = Math.min(minLuma, luma);
+            maxLuma = Math.max(maxLuma, luma);
           }
         }
       }
       
-      // 更新文本模式特征
-      if (consecutiveSimilarLines >= 2) {
-        regionFeatures.textPatterns += Math.min(1, consecutiveSimilarLines / 5);
+      // 计算对比度
+      const contrast = maxLuma - minLuma;
+      
+      // 如果对比度高，可能是字幕
+      if (contrast > 100) {
+        highContrastCount++;
       }
       
-      lastLineFeature = currentLineFeature;
-      regionFeatures.totalLines++;
-    }
-    
-    // 分析颜色聚类结果(字幕通常有2-3种主要颜色)
-    const sortedClusters = Array.from(colorClusters.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5); // 取前5种颜色
-      
-    // 计算前两种颜色占比
-    if (sortedClusters.length >= 2) {
-      const total = sortedClusters.reduce((sum, [_, count]) => sum + count, 0);
-      const topTwoRatio = (sortedClusters[0][1] + sortedClusters[1][1]) / total;
-      // 字幕通常有明显的前景色和背景色，占比较高
-      if (topTwoRatio > 0.7) {
-        regionFeatures.colorEvidence += topTwoRatio - 0.7;
-      }
-    }
-    
-    // 标准化区域特征值
-    const normalizedEdges = regionFeatures.totalLines > 0 ? 
-      regionFeatures.horizontalEdges / regionFeatures.totalLines : 0;
-    
-    const normalizedPatterns = regionFeatures.totalLines > 0 ? 
-      regionFeatures.textPatterns / (regionFeatures.totalLines / 2) : 0;
-    
-    const normalizedContrast = regionFeatures.totalPixels > 0 ? 
-      regionFeatures.contrastPixels / regionFeatures.totalPixels : 0;
-    
-    const normalizedAlignment = regionFeatures.validTextLines > 0 ? 
-      regionFeatures.alignmentScore / regionFeatures.validTextLines : 0;
-    
-    const normalizedColor = regionFeatures.colorEvidence / 5; // 根据收集的证据标准化
-    
-    // 计算该区域的综合分数
-    const regionScore = 
-      normalizedEdges * featureExtractors.horizontalEdges.weight +
-      normalizedPatterns * featureExtractors.textPatterns.weight +
-      normalizedContrast * featureExtractors.contrastAnalysis.weight +
-      normalizedAlignment * featureExtractors.textAlignment.weight +
-      normalizedColor * featureExtractors.colorClustering.weight;
-    
-    // 记录该区域的分数
-    globalScores.regionScores.set(region.name, regionScore);
-    
-    // 累加到全局特征 (加权)
-    globalScores.horizontalEdgeScore += normalizedEdges * region.weight;
-    globalScores.textPatternScore += normalizedPatterns * region.weight;
-    globalScores.contrastScore += normalizedContrast * region.weight;
-    globalScores.alignmentScore += normalizedAlignment * region.weight;
-    globalScores.colorClusterScore += normalizedColor * region.weight;
-  }
-  
-  // 分析每个区域分数，找出最可能包含字幕的区域
-  let maxRegionScore = 0;
-  let bestRegion = "";
-  for (const [regionName, score] of globalScores.regionScores.entries()) {
-    if (score > maxRegionScore) {
-      maxRegionScore = score;
-      bestRegion = regionName;
+      totalSamples++;
     }
   }
   
-  // 单一区域的高分比分散在多个区域更可能是字幕
-  const regionBoost = maxRegionScore > 0.6 ? 0.2 : 0;
-  
-  // 6. 计算最终字幕分数 (整合所有特征)
-  let finalScore = 
-    globalScores.horizontalEdgeScore * featureExtractors.horizontalEdges.weight +
-    globalScores.textPatternScore * featureExtractors.textPatterns.weight +
-    globalScores.contrastScore * featureExtractors.contrastAnalysis.weight +
-    globalScores.alignmentScore * featureExtractors.textAlignment.weight +
-    globalScores.colorClusterScore * featureExtractors.colorClustering.weight +
-    regionBoost; // 区域奖励分
-  
-  // 应用检测强度参数
-  finalScore *= detectionStrength;
-  
-  // 非线性变换，增强高可信度区域的分数
-  if (finalScore > 0.6) {
-    finalScore = 0.6 + (finalScore - 0.6) * 1.5;
-  }
-  
-  // 确保分数在[0,1]范围内
-  return Math.min(1, Math.max(0, finalScore));
+  // 计算得分
+  return Math.min(1, highContrastCount / (totalSamples * 0.2));
 }
 
 // 优化版的人物检测评分函数

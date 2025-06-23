@@ -690,16 +690,27 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
 
     // TMDB抓取命令
-    if (item.tmdbId && item.mediaType === "tv") {
+    if (item.tmdbId) {
       const language = "zh-CN"
-      const tmdbCommand = `python -m tmdb-import "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${language}"`
-      commands.push({
-        type: "tmdb",
-        title: `上传至TMDB第${customSeasonNumber}季`,
-        command: tmdbCommand,
-        description: `上传数据至TMDB第${customSeasonNumber}季`,
-        icon: <Terminal className="h-4 w-4" />,
-      })
+      if (item.mediaType === "tv") {
+        const tmdbCommand = `python -m tmdb-import "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${language}"`
+        commands.push({
+          type: "tmdb",
+          title: `上传至TMDB第${customSeasonNumber}季`,
+          command: tmdbCommand,
+          description: `上传数据至TMDB第${customSeasonNumber}季`,
+          icon: <Terminal className="h-4 w-4" />,
+        })
+      } else if (item.mediaType === "movie") {
+        const tmdbCommand = `python -m tmdb-import "https://www.themoviedb.org/movie/${item.tmdbId}?language=${language}"`
+        commands.push({
+          type: "tmdb",
+          title: `上传至TMDB电影`,
+          command: tmdbCommand,
+          description: `上传数据至TMDB电影页面`,
+          icon: <Terminal className="h-4 w-4" />,
+        })
+      }
     }
 
     return commands
