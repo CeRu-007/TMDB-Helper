@@ -503,7 +503,14 @@ class TaskScheduler {
     const requestData = {
       taskId: task.id,
       itemId: item.id,
-      action: task.action
+      action: task.action,
+      // 添加额外元数据，帮助API端识别和恢复
+      metadata: {
+        tmdbId: item.tmdbId,
+        title: item.title,
+        platformUrl: item.platformUrl,
+        attemptTime: new Date().toISOString()
+      }
     };
     
     try {
@@ -566,6 +573,12 @@ class TaskScheduler {
         }
         
         console.error(`[TaskScheduler] TMDB导入请求失败:`, enhancedError);
+        
+        // 处理特定错误情况
+        if (errorText.includes("系统中没有可用项目") || errorText.includes("无法找到有效项目")) {
+          throw new Error(`系统错误: ${enhancedError}`);
+        }
+        
         throw new Error(enhancedError);
       }
       
@@ -585,19 +598,59 @@ class TaskScheduler {
     } catch (error) {
       console.error(`[TaskScheduler] 执行TMDB-Import任务失败:`, error);
       
-      // 如果与特定ID相关，尝试更多修复
-      if (error instanceof Error && error.message.includes('找不到项目ID') && task.itemId === '1749566411729') {
-        console.warn(`[TaskScheduler] 检测到问题ID 1749566411729相关错误，尝试进行紧急修复`);
+      // 如果发生系统错误，尝试进行更强大的修复
+      if (error instanceof Error && 
+          (error.message.includes('系统中没有可用项目') || 
+           error.message.includes('无法找到有效项目') ||
+           error.message.includes('找不到项目ID'))) {
+        console.warn(`[TaskScheduler] 检测到项目ID相关错误，尝试进行紧急修复`);
         
         try {
-          // 获取所有项目并尝试替换ID
+          // 获取所有项目
           const items = await StorageManager.getItemsWithRetry();
-          if (items.length > 0) {
+          
+          if (items.length === 0) {
+            console.error(`[TaskScheduler] 系统中确实没有可用项目，无法继续执行`);
+            throw new Error("系统中没有可用项目，请先添加至少一个项目，然后再尝试执行任务");
+          }
+          
+          // 尝试根据TMDB ID匹配
+          let newItem: TMDBItem | null = null;
+          
+          if (item.tmdbId) {
+            const matchByTmdbId = items.find(i => i.tmdbId === item.tmdbId);
+            if (matchByTmdbId) {
+              console.log(`[TaskScheduler] 通过TMDB ID ${item.tmdbId} 找到了匹配项目: ${matchByTmdbId.title}`);
+              newItem = matchByTmdbId;
+            }
+          }
+          
+          // 如果TMDB ID匹配失败，尝试通过标题匹配
+          if (!newItem && item.title) {
+            const matchByTitle = items.find(i => 
+              i.title === item.title ||
+              (i.title.includes(item.title) && i.title.length - item.title.length < 10) ||
+              (item.title.includes(i.title) && item.title.length - i.title.length < 10)
+            );
+            
+            if (matchByTitle) {
+              console.log(`[TaskScheduler] 通过标题 "${item.title}" 找到了匹配项目: ${matchByTitle.title}`);
+              newItem = matchByTitle;
+            }
+          }
+          
+          // 如果所有匹配策略都失败，使用最近创建的项目
+          if (!newItem) {
             // 选择最近创建的项目
-            const newItem = [...items].sort((a, b) => 
+            const fallbackItem = [...items].sort((a, b) => 
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             )[0];
             
+            console.log(`[TaskScheduler] 所有匹配策略失败，使用最近创建的项目: ${fallbackItem.title}`);
+            newItem = fallbackItem;
+          }
+          
+          if (newItem) {
             console.log(`[TaskScheduler] 尝试使用项目 ${newItem.title} (ID: ${newItem.id}) 重新执行任务`);
             
             // 更新任务
@@ -611,15 +664,21 @@ class TaskScheduler {
             
             // 保存更新后的任务
             await StorageManager.updateScheduledTask(updatedTask);
+            console.log(`[TaskScheduler] 已更新任务 ${task.id} 的项目ID为 ${newItem.id}`);
             
             // 重新执行
             return this.executeTMDBImportTask(updatedTask, newItem);
           }
         } catch (retryError) {
           console.error(`[TaskScheduler] 紧急修复失败:`, retryError);
+          
+          // 如果重试过程中发生错误，抛出更详细的错误信息
+          const errorDetail = retryError instanceof Error ? retryError.message : String(retryError);
+          throw new Error(`尝试修复项目ID失败: ${errorDetail}`);
         }
       }
       
+      // 针对其他类型的错误，保持原始错误信息
       throw error;
     }
   }

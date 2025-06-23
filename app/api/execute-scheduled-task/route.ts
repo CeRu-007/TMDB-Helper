@@ -19,6 +19,10 @@ interface ExecuteTaskRequest {
     removeIqiyiAirDate?: boolean;
     autoMarkUploaded?: boolean;
   };
+  metadata?: {
+    tmdbId?: string;
+    title?: string;
+  };
 }
 
 /**
@@ -197,13 +201,13 @@ function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][]
   if (item.seasons && item.seasons.length > 0) {
     item.seasons.forEach((season: Season) => {
       if (season.episodes) {
-        season.episodes.forEach((episode: Episode) => {
-          if (episode.completed) {
-            // 标准化集数格式，以便匹配
-            const normalizedNumber = normalizeEpisodeNumber(episode.number.toString());
-            completedEpisodesMap.set(normalizedNumber, true);
-          }
-        });
+      season.episodes.forEach((episode: Episode) => {
+        if (episode.completed) {
+          // 标准化集数格式，以便匹配
+          const normalizedNumber = normalizeEpisodeNumber(episode.number.toString());
+          completedEpisodesMap.set(normalizedNumber, true);
+        }
+      });
       }
     });
   } else if (item.episodes) {
@@ -386,128 +390,100 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const requestData: ExecuteTaskRequest = await request.json();
     
     // 验证请求参数
-    if (!requestData || !requestData.taskId || !requestData.itemId || !requestData.action) {
+    if (!requestData || !requestData.taskId || !requestData.action) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
     
     console.log(`[API] 执行定时任务: taskId=${requestData.taskId}, itemId=${requestData.itemId}, 季=${requestData.action.seasonNumber}`);
     
-    // 检查是否是问题ID
-    if (requestData.itemId === "1749566411729") {
-      console.log('[API] 检测到问题ID 1749566411729，尝试自动修复...');
+    // 记录额外元数据（如果存在）
+    if (requestData.metadata) {
+      console.log(`[API] 附加元数据: tmdbId=${requestData.metadata.tmdbId || '未提供'}, title="${requestData.metadata.title || '未提供'}"`);
+    }
+    
+    // 获取所有项目，用于后续各种情况
+    const items = await StorageManager.getItemsWithRetry();
+    console.log(`[API] 系统中共有 ${items.length} 个项目`);;
+    
+    // 添加零项目保护 - 如果系统中没有任何项目，直接返回错误
+    if (items.length === 0) {
+      console.error('[API] 系统中没有可用项目，无法继续执行');
+      return NextResponse.json({ 
+        error: "系统中没有可用项目", 
+        suggestion: "请先添加至少一个项目，然后再尝试执行任务"
+      }, { status: 500 });
+    }
+    
+    let foundValidItem = false;
+    let item = null;
+    
+    // 首先尝试通过ID直接查找
+    if (requestData.itemId) {
+      item = items.find(i => i.id === requestData.itemId);
       
-      // 获取所有项目
-      const items = await StorageManager.getItemsWithRetry();
-      
-      if (items.length === 0) {
-        return NextResponse.json({ 
-          error: "无法修复问题ID，系统中没有可用项目", 
-          suggestion: "请尝试手动为此任务关联正确的项目"
-        }, { status: 500 });
+      // 如果直接通过ID找到了项目，标记为有效
+      if (item) {
+        console.log(`[API] 通过ID直接找到项目: ${item.title} (ID: ${item.id})`);
+        foundValidItem = true;
+      } else {
+        console.warn(`[API] 通过ID ${requestData.itemId} 未找到项目，尝试其他方法`);
       }
+    } else {
+      console.warn(`[API] 请求中无有效itemId，将尝试从其他信息中查找项目`);
+    }
+    
+    // 如果没有通过ID找到项目，尝试通过元数据查找
+    if (!foundValidItem && requestData.metadata) {
+      console.log(`[API] 尝试通过元数据查找项目`);
+      
+      // 通过TMDB ID查找
+      if (requestData.metadata.tmdbId) {
+        const matchByTmdbId = items.find(i => i.tmdbId === requestData.metadata?.tmdbId);
+        if (matchByTmdbId) {
+          console.log(`[API] 通过TMDB ID ${requestData.metadata.tmdbId} 找到项目: ${matchByTmdbId.title} (ID: ${matchByTmdbId.id})`);
+          item = matchByTmdbId;
+          requestData.itemId = matchByTmdbId.id;
+          foundValidItem = true;
+        }
+      }
+      
+      // 如果TMDB ID没找到，尝试通过标题查找
+      if (!foundValidItem && requestData.metadata.title) {
+        const title = requestData.metadata.title;
+        const matchByTitle = items.find(i => 
+          i.title === title ||
+          (i.title.includes(title) && i.title.length - title.length < 10) ||
+          (title.includes(i.title) && title.length - i.title.length < 10)
+        );
+        
+        if (matchByTitle) {
+          console.log(`[API] 通过标题 "${title}" 找到项目: ${matchByTitle.title} (ID: ${matchByTitle.id})`);
+          item = matchByTitle;
+          requestData.itemId = matchByTitle.id;
+          foundValidItem = true;
+        }
+      }
+    }
+    
+    // 检查是否是问题ID
+    if (!foundValidItem && requestData.itemId && (requestData.itemId === "1749566411729" || requestData.itemId.length > 20)) {
+      console.log('[API] 检测到问题ID格式，尝试修复...');
       
       // 选择最近创建的项目
       const sortedItems = [...items].sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       
-      const newItemId = sortedItems[0].id;
-      console.log(`[API] 将使用项目 ${sortedItems[0].title} (ID: ${newItemId}) 替代问题ID`);
-      
-      // 修改请求数据
-      requestData.itemId = newItemId;
-      
-      // 更新任务记录
-      const tasks = await StorageManager.getScheduledTasks();
-      const taskToUpdate = tasks.find(t => t.id === requestData.taskId);
-      
-      if (taskToUpdate) {
-        const updatedTask = { 
-          ...taskToUpdate, 
-          itemId: newItemId,
-          itemTitle: sortedItems[0].title,
-          itemTmdbId: sortedItems[0].tmdbId,
-          updatedAt: new Date().toISOString()
-        };
-        
-        await StorageManager.updateScheduledTask(updatedTask);
-        console.log(`[API] 已更新任务 ${requestData.taskId} 的项目ID`);
-      }
-    } else if (!requestData.itemId || requestData.itemId.length > 20) {
-      // 检查其他可能的问题ID格式
-      console.log('[API] 检测到可能的问题ID格式，尝试替代方案...');
-      
-      // 获取所有项目
-      const items = await StorageManager.getItemsWithRetry();
-      
-      // 优先尝试通过任务ID在现有任务中找到对应的任务
-      if (requestData.taskId && requestData.taskId !== 'legacy-get-request') {
-        const tasks = await StorageManager.getScheduledTasks();
-        const task = tasks.find(t => t.id === requestData.taskId);
-        
-        if (task) {
-          console.log(`[API] 找到了任务 ${task.id} (${task.name})，尝试使用其关联信息`);
-          
-          // 优先使用任务中的TMDB ID匹配
-          if (task.itemTmdbId) {
-            const matchedItem = items.find(item => item.tmdbId === task.itemTmdbId);
-            if (matchedItem) {
-              console.log(`[API] 通过TMDB ID匹配到项目: ${matchedItem.title} (ID: ${matchedItem.id})`);
-              requestData.itemId = matchedItem.id;
-              
-              // 更新任务
-              const updatedTask = { 
-                ...task, 
-                itemId: matchedItem.id, 
-                itemTitle: matchedItem.title,
-                updatedAt: new Date().toISOString()
-              };
-              await StorageManager.updateScheduledTask(updatedTask);
-              console.log(`[API] 已更新任务 ${task.id} 的项目ID`);
-            }
-          }
-          
-          // 如果通过TMDB ID未匹配成功，尝试通过任务名称或标题匹配
-          if (!items.some(item => item.id === requestData.itemId)) {
-            const possibleTitle = task.itemTitle || task.name.replace(/\s*定时任务$/, '');
-            
-            const matchedItems = items.filter(item => 
-              item.title === possibleTitle ||
-              (item.title.includes(possibleTitle) && item.title.length - possibleTitle.length < 10) ||
-              (possibleTitle.includes(item.title) && possibleTitle.length - item.title.length < 10)
-            );
-            
-            if (matchedItems.length > 0) {
-              const bestMatch = matchedItems[0];
-              console.log(`[API] 通过标题匹配到项目: ${bestMatch.title} (ID: ${bestMatch.id})`);
-              requestData.itemId = bestMatch.id;
-              
-              // 更新任务
-              const updatedTask = {
-                ...task,
-                itemId: bestMatch.id,
-                itemTitle: bestMatch.title,
-                itemTmdbId: bestMatch.tmdbId,
-                updatedAt: new Date().toISOString()
-              };
-              await StorageManager.updateScheduledTask(updatedTask);
-              console.log(`[API] 已更新任务 ${task.id} 的项目ID`);
-            }
-          }
-        }
-      }
-      
-      // 如果通过任务ID无法找到有效项目，尝试使用最近的项目
-      if (!items.some(item => item.id === requestData.itemId) && items.length > 0) {
-        const sortedItems = [...items].sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        
+      if (sortedItems.length > 0) {
         const newItemId = sortedItems[0].id;
-        console.log(`[API] 将使用最近创建的项目 ${sortedItems[0].title} (ID: ${newItemId}) 作为备用`);
-        requestData.itemId = newItemId;
+        console.log(`[API] 将使用最近创建的项目 ${sortedItems[0].title} (ID: ${newItemId}) 替代问题ID`);
         
-        // 如果有任务ID，也更新任务
+        // 修改请求数据
+        requestData.itemId = newItemId;
+        item = sortedItems[0];
+        foundValidItem = true;
+        
+        // 更新任务记录
         if (requestData.taskId && requestData.taskId !== 'legacy-get-request') {
           const tasks = await StorageManager.getScheduledTasks();
           const taskToUpdate = tasks.find(t => t.id === requestData.taskId);
@@ -528,14 +504,119 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
     
-    // 获取项目信息
-    const items = await StorageManager.getItemsWithRetry();
-    const item = items.find(i => i.id === requestData.itemId);
+    // 如果通过问题ID处理没找到，尝试通过任务ID寻找关联信息
+    if (!foundValidItem && requestData.taskId && requestData.taskId !== 'legacy-get-request') {
+      console.log(`[API] 尝试通过任务ID ${requestData.taskId} 找到关联项目`);
+      const tasks = await StorageManager.getScheduledTasks();
+      const task = tasks.find(t => t.id === requestData.taskId);
+      
+      if (task) {
+        console.log(`[API] 找到了任务 ${task.id} (${task.name})`);
+        
+        // 尝试通过任务中的TMDB ID匹配
+        if (task.itemTmdbId) {
+          const matchedItem = items.find(item => item.tmdbId === task.itemTmdbId);
+          if (matchedItem) {
+            console.log(`[API] 通过TMDB ID匹配到项目: ${matchedItem.title} (ID: ${matchedItem.id})`);
+            requestData.itemId = matchedItem.id;
+            item = matchedItem;
+            foundValidItem = true;
+            
+            // 更新任务
+            const updatedTask = { 
+              ...task, 
+              itemId: matchedItem.id, 
+              itemTitle: matchedItem.title,
+              updatedAt: new Date().toISOString()
+            };
+            await StorageManager.updateScheduledTask(updatedTask);
+            console.log(`[API] 已更新任务 ${task.id} 的项目ID`);
+          }
+        }
+        
+        // 如果通过TMDB ID未匹配成功，尝试通过任务名称或标题匹配
+        if (!foundValidItem) {
+          const possibleTitle = task.itemTitle || task.name.replace(/\s*定时任务$/, '');
+          console.log(`[API] 尝试通过标题匹配: "${possibleTitle}"`);
+          
+          const matchedItems = items.filter(item => 
+            item.title === possibleTitle ||
+            (item.title.includes(possibleTitle) && item.title.length - possibleTitle.length < 10) ||
+            (possibleTitle.includes(item.title) && possibleTitle.length - item.title.length < 10)
+          );
+          
+          if (matchedItems.length > 0) {
+            const bestMatch = matchedItems[0];
+            console.log(`[API] 通过标题匹配到项目: ${bestMatch.title} (ID: ${bestMatch.id})`);
+            requestData.itemId = bestMatch.id;
+            item = bestMatch;
+            foundValidItem = true;
+            
+            // 更新任务
+            const updatedTask = {
+              ...task,
+              itemId: bestMatch.id,
+              itemTitle: bestMatch.title,
+              itemTmdbId: bestMatch.tmdbId,
+              updatedAt: new Date().toISOString()
+            };
+            await StorageManager.updateScheduledTask(updatedTask);
+            console.log(`[API] 已更新任务 ${task.id} 的项目ID`);
+          }
+        }
+      }
+    }
     
-    if (!item) {
+    // 如果所有方法都失败，使用最近创建的项目作为最后手段
+    if (!foundValidItem) {
+      console.warn(`[API] 所有匹配方法均失败，使用最近创建的项目作为备用`);
+      
+      // 按创建时间排序
+      const sortedItems = [...items].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      if (sortedItems.length > 0) {
+        const fallbackItem = sortedItems[0];
+        console.log(`[API] 使用最近创建的项目: ${fallbackItem.title} (ID: ${fallbackItem.id})`);
+        requestData.itemId = fallbackItem.id;
+        item = fallbackItem;
+        foundValidItem = true;
+        
+        // 如果有任务ID，更新任务
+        if (requestData.taskId && requestData.taskId !== 'legacy-get-request') {
+          const tasks = await StorageManager.getScheduledTasks();
+          const taskToUpdate = tasks.find(t => t.id === requestData.taskId);
+          
+          if (taskToUpdate) {
+            const updatedTask = { 
+              ...taskToUpdate, 
+              itemId: fallbackItem.id,
+              itemTitle: fallbackItem.title,
+              itemTmdbId: fallbackItem.tmdbId,
+              updatedAt: new Date().toISOString()
+            };
+            
+            await StorageManager.updateScheduledTask(updatedTask);
+            console.log(`[API] 已更新任务 ${requestData.taskId} 的项目ID`);
+          }
+        }
+      } else {
+        // 这种情况理论上不应该发生，因为我们前面已经检查了items.length > 0
+        // 但为了健壮性，仍然保留此检查
+        return NextResponse.json({ 
+          error: "系统中没有可用项目", 
+          suggestion: "请先添加至少一个项目，然后再尝试执行任务"
+        }, { status: 500 });
+      }
+    }
+    
+    // 最终检查是否找到有效项目
+    if (!item || !foundValidItem) {
+      console.error(`[API] 无法为请求找到有效项目，itemId=${requestData.itemId}`);
       return NextResponse.json({ 
-        error: `找不到ID为 ${requestData.itemId} 的项目`, 
-        suggestion: '请检查项目是否存在或已被删除'
+        error: `无法找到有效项目`, 
+        suggestion: '请检查项目是否存在或重新创建任务'
       }, { status: 404 });
     }
     
@@ -687,8 +768,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     } else {
       // 如果不需要自动上传，只返回CSV路径
-      return NextResponse.json({ 
-        success: true, 
+    return NextResponse.json({
+      success: true,
         message: '成功执行TMDB导出任务',
         csvPath: csvPath
       });
