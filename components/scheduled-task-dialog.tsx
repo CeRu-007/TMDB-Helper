@@ -141,7 +141,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     console.log("新建任务数据:", newTask);
     setCurrentTask(newTask)
     setIsAddingTask(true)
-    setHasUnsavedChanges(false)
+    setHasUnsavedChanges(true)
     setIsAutoSaving(false)
   }
 
@@ -944,7 +944,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                     setTimeout(() => handleSaveTask(), 0);
                   }
                 }} 
-                disabled={!hasUnsavedChanges}
+                disabled={isAutoSaving}
                 size="sm"
               >
                 <PauseCircle className="h-3 w-3 mr-2" />
@@ -960,7 +960,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                     setTimeout(() => handleSaveTask(), 0);
                   }
                 }} 
-                disabled={!hasUnsavedChanges}
+                disabled={isAutoSaving}
                 size="sm"
               >
                 <PlayCircle className="h-3 w-3 mr-2" />
