@@ -65,7 +65,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
   const [isRunningTask, setIsRunningTask] = useState(false)
   const [runningTaskId, setRunningTaskId] = useState<string | null>(null)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
 
   // 加载任务或使用传入的existingTask
@@ -149,7 +149,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   const handleEditTask = (task: ScheduledTask) => {
     setCurrentTask({...task})
     setIsEditingTask(true)
-    setHasUnsavedChanges(false)
+    setHasUnsavedChanges(true)
     setIsAutoSaving(false)
   }
 

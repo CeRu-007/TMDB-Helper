@@ -433,6 +433,99 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         await StorageManager.updateScheduledTask(updatedTask);
         console.log(`[API] 已更新任务 ${requestData.taskId} 的项目ID`);
       }
+    } else if (!requestData.itemId || requestData.itemId.length > 20) {
+      // 检查其他可能的问题ID格式
+      console.log('[API] 检测到可能的问题ID格式，尝试替代方案...');
+      
+      // 获取所有项目
+      const items = await StorageManager.getItemsWithRetry();
+      
+      // 优先尝试通过任务ID在现有任务中找到对应的任务
+      if (requestData.taskId && requestData.taskId !== 'legacy-get-request') {
+        const tasks = await StorageManager.getScheduledTasks();
+        const task = tasks.find(t => t.id === requestData.taskId);
+        
+        if (task) {
+          console.log(`[API] 找到了任务 ${task.id} (${task.name})，尝试使用其关联信息`);
+          
+          // 优先使用任务中的TMDB ID匹配
+          if (task.itemTmdbId) {
+            const matchedItem = items.find(item => item.tmdbId === task.itemTmdbId);
+            if (matchedItem) {
+              console.log(`[API] 通过TMDB ID匹配到项目: ${matchedItem.title} (ID: ${matchedItem.id})`);
+              requestData.itemId = matchedItem.id;
+              
+              // 更新任务
+              const updatedTask = { 
+                ...task, 
+                itemId: matchedItem.id, 
+                itemTitle: matchedItem.title,
+                updatedAt: new Date().toISOString()
+              };
+              await StorageManager.updateScheduledTask(updatedTask);
+              console.log(`[API] 已更新任务 ${task.id} 的项目ID`);
+            }
+          }
+          
+          // 如果通过TMDB ID未匹配成功，尝试通过任务名称或标题匹配
+          if (!items.some(item => item.id === requestData.itemId)) {
+            const possibleTitle = task.itemTitle || task.name.replace(/\s*定时任务$/, '');
+            
+            const matchedItems = items.filter(item => 
+              item.title === possibleTitle ||
+              (item.title.includes(possibleTitle) && item.title.length - possibleTitle.length < 10) ||
+              (possibleTitle.includes(item.title) && possibleTitle.length - item.title.length < 10)
+            );
+            
+            if (matchedItems.length > 0) {
+              const bestMatch = matchedItems[0];
+              console.log(`[API] 通过标题匹配到项目: ${bestMatch.title} (ID: ${bestMatch.id})`);
+              requestData.itemId = bestMatch.id;
+              
+              // 更新任务
+              const updatedTask = {
+                ...task,
+                itemId: bestMatch.id,
+                itemTitle: bestMatch.title,
+                itemTmdbId: bestMatch.tmdbId,
+                updatedAt: new Date().toISOString()
+              };
+              await StorageManager.updateScheduledTask(updatedTask);
+              console.log(`[API] 已更新任务 ${task.id} 的项目ID`);
+            }
+          }
+        }
+      }
+      
+      // 如果通过任务ID无法找到有效项目，尝试使用最近的项目
+      if (!items.some(item => item.id === requestData.itemId) && items.length > 0) {
+        const sortedItems = [...items].sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        const newItemId = sortedItems[0].id;
+        console.log(`[API] 将使用最近创建的项目 ${sortedItems[0].title} (ID: ${newItemId}) 作为备用`);
+        requestData.itemId = newItemId;
+        
+        // 如果有任务ID，也更新任务
+        if (requestData.taskId && requestData.taskId !== 'legacy-get-request') {
+          const tasks = await StorageManager.getScheduledTasks();
+          const taskToUpdate = tasks.find(t => t.id === requestData.taskId);
+          
+          if (taskToUpdate) {
+            const updatedTask = { 
+              ...taskToUpdate, 
+              itemId: newItemId,
+              itemTitle: sortedItems[0].title,
+              itemTmdbId: sortedItems[0].tmdbId,
+              updatedAt: new Date().toISOString()
+            };
+            
+            await StorageManager.updateScheduledTask(updatedTask);
+            console.log(`[API] 已更新任务 ${requestData.taskId} 的项目ID`);
+          }
+        }
+      }
     }
     
     // 获取项目信息

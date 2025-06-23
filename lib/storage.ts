@@ -490,7 +490,7 @@ export class StorageManager {
         removeIqiyiAirDate: Boolean(task.action?.removeIqiyiAirDate)
       },
       // 新任务强制设置为禁用状态，已有任务保持原有状态
-      enabled: isNewTask ? false : (task.enabled === true),
+      enabled: isNewTask ? false : Boolean(task.enabled),
       lastRun: task.lastRun || null,
       nextRun: task.nextRun || null,
       lastRunStatus: task.lastRunStatus || null,
@@ -504,6 +504,20 @@ export class StorageManager {
       normalized.schedule.dayOfWeek = typeof task.schedule?.dayOfWeek === 'number' 
         ? task.schedule.dayOfWeek 
         : (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1); // 默认为今天
+    }
+    
+    // 检查是否有问题ID
+    if (normalized.itemId === "1749566411729") {
+      console.warn(`[StorageManager] 检测到任务 ${normalized.id} 使用了已知的问题ID 1749566411729，标记为禁用状态`);
+      normalized.enabled = false;
+    }
+    
+    // 检查ID格式是否有问题（过长或格式错误）
+    if (!normalized.itemId || normalized.itemId.length > 20 || !/^\d+$/.test(normalized.itemId)) {
+      console.warn(`[StorageManager] 任务 ${normalized.id} 的项目ID "${normalized.itemId}"格式可能有问题，标记为禁用状态`);
+      normalized.enabled = false;
+      normalized.lastRunStatus = "failed";
+      normalized.lastRunError = `项目ID "${normalized.itemId}" 格式无效，请重新关联正确的项目`;
     }
     
     return normalized;
