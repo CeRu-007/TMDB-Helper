@@ -561,45 +561,41 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     return days[day] || "未知"
   }
 
-  // 渲染任务列表
+  // 修改任务列表渲染函数
   const renderTaskList = () => {
     if (loading) {
       return (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">加载中...</span>
+        <div className="flex justify-center items-center p-4">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="ml-2">加载中...</span>
         </div>
       )
     }
     
     if (tasks.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <AlarmClock className="h-12 w-12 text-muted-foreground mb-2" />
-          <h3 className="text-lg font-medium">没有定时任务</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            创建定时任务可以自动执行TMDB-Import操作
-          </p>
+        <div className="text-center p-4">
+          <div className="mb-2 text-muted-foreground">此项目暂无定时任务</div>
           <Button onClick={handleAddTask}>
             <Plus className="h-4 w-4 mr-2" />
-            创建定时任务
+            添加定时任务
           </Button>
         </div>
       )
     }
     
     return (
-      <div className="space-y-4">
+      <div className="space-y-2">
         {tasks.map(task => (
           <Card key={task.id} className={task.enabled ? "" : "opacity-70"}>
-            <CardHeader className="pb-2">
+            <CardHeader className="py-3 px-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-base flex items-center">
-                    <AlarmClock className="h-4 w-4 mr-2" />
+                  <CardTitle className="text-sm flex items-center">
+                    <AlarmClock className="h-3 w-3 mr-1" />
                     {task.name}
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-xs">
                     {task.schedule.type === "weekly" ? (
                       <>每周{getDayOfWeekName(task.schedule.dayOfWeek || 0)} {task.schedule.hour}:
                       {task.schedule.minute.toString().padStart(2, '0')}</>
@@ -608,17 +604,17 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                     )}
                   </CardDescription>
                 </div>
-                <Badge variant={task.enabled ? "default" : "outline"}>
+                <Badge variant={task.enabled ? "default" : "outline"} className="text-xs">
                   {task.enabled ? "已启用" : "已禁用"}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="pb-2">
-              <div className="text-sm space-y-1">
+            <CardContent className="py-1 px-4">
+              <div className="text-xs space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">操作:</span>
                   <span>
-                    TMDB-Import 第{task.action.seasonNumber}季
+                    第{task.action.seasonNumber}季
                     {task.action.autoUpload && " + 自动上传"}
                     {task.action.autoRemoveMarked && " + 自动过滤"}
                   </span>
@@ -629,63 +625,79 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">上次执行:</span>
-                  <span>{formatLastRunTime(task)}</span>
+                  <span>
+                    {task.lastRunStatus === "success" ? (
+                      <span className="text-green-600 dark:text-green-400 flex items-center">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        {formatLastRunTime(task)}
+                      </span>
+                    ) : task.lastRunStatus === "failed" ? (
+                      <span className="text-red-600 dark:text-red-400 flex items-center">
+                        <XCircle className="h-3 w-3 mr-1" />
+                        {formatLastRunTime(task)}
+                      </span>
+                    ) : (
+                      formatLastRunTime(task)
+                    )}
+                  </span>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="pt-2 flex justify-between">
-              <div>
+            <CardFooter className="py-2 px-4 flex justify-between">
+              <div className="flex gap-1">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mr-2"
+                  className="h-7"
                   onClick={() => handleEditTask(task)}
                 >
-                  <Settings className="h-4 w-4 mr-1" />
+                  <Settings className="h-3 w-3 mr-1" />
                   编辑
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-7"
                   onClick={() => toggleTaskEnabled(task)}
                 >
                   {task.enabled ? (
                     <>
-                      <PauseCircle className="h-4 w-4 mr-1" />
+                      <PauseCircle className="h-3 w-3 mr-1" />
                       禁用
                     </>
                   ) : (
                     <>
-                      <PlayCircle className="h-4 w-4 mr-1" />
+                      <PlayCircle className="h-3 w-3 mr-1" />
                       启用
                     </>
                   )}
                 </Button>
               </div>
-              <div>
+              <div className="flex gap-1">
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="mr-2"
+                  className="h-7"
                   onClick={() => confirmDeleteTask(task.id)}
                 >
-                  <Trash2 className="h-4 w-4 mr-1" />
+                  <Trash2 className="h-3 w-3 mr-1" />
                   删除
                 </Button>
                 <Button
                   variant="default"
                   size="sm"
+                  className="h-7"
                   onClick={() => runTaskNow(task)}
                   disabled={isRunningTask}
                 >
                   {isRunningTask && runningTaskId === task.id ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       执行中
                     </>
                   ) : (
                     <>
-                      <Play className="h-4 w-4 mr-1" />
+                      <Play className="h-3 w-3 mr-1" />
                       立即执行
                     </>
                   )}
@@ -695,9 +707,9 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           </Card>
         ))}
         
-        <div className="flex justify-center pt-2">
-          <Button onClick={handleAddTask}>
-            <Plus className="h-4 w-4 mr-2" />
+        <div className="flex justify-center">
+          <Button size="sm" onClick={handleAddTask}>
+            <Plus className="h-3 w-3 mr-1" />
             添加定时任务
           </Button>
         </div>
@@ -705,13 +717,13 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     )
   }
 
-  // 渲染任务编辑表单
+  // 修改任务表单函数，使布局更加紧凑
   const renderTaskForm = () => {
     if (!currentTask) return null
     
     return (
-      <div className="space-y-4">
-        <div className="space-y-2">
+      <div className="space-y-3">
+        <div className="space-y-1">
           <Label htmlFor="task-name">任务名称</Label>
           <Input
             id="task-name"
@@ -722,168 +734,202 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>执行频率</Label>
-          <Select
-            value={currentTask.schedule.type}
-            onValueChange={(value) => updateTaskField('schedule.type', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="选择执行频率" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">每天</SelectItem>
-              <SelectItem value="weekly">每周</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        {currentTask.schedule.type === "weekly" && (
-          <div className="space-y-2">
-            <Label>执行日期</Label>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label>执行频率</Label>
             <Select
-              value={currentTask.schedule.dayOfWeek?.toString() || "0"}
-              onValueChange={(value) => updateTaskField('schedule.dayOfWeek', parseInt(value, 10))}
+              value={currentTask.schedule.type}
+              onValueChange={(value) => updateTaskField('schedule.type', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="选择星期几" />
+                <SelectValue placeholder="选择执行频率" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">周一</SelectItem>
-                <SelectItem value="1">周二</SelectItem>
-                <SelectItem value="2">周三</SelectItem>
-                <SelectItem value="3">周四</SelectItem>
-                <SelectItem value="4">周五</SelectItem>
-                <SelectItem value="5">周六</SelectItem>
-                <SelectItem value="6">周日</SelectItem>
+                <SelectItem value="daily">每天</SelectItem>
+                <SelectItem value="weekly">每周</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        )}
+          
+          {currentTask.schedule.type === "weekly" ? (
+            <div className="space-y-1">
+              <Label>执行日期</Label>
+              <Select
+                value={currentTask.schedule.dayOfWeek?.toString() || "0"}
+                onValueChange={(value) => updateTaskField('schedule.dayOfWeek', parseInt(value, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择星期几" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">周一</SelectItem>
+                  <SelectItem value="1">周二</SelectItem>
+                  <SelectItem value="2">周三</SelectItem>
+                  <SelectItem value="3">周四</SelectItem>
+                  <SelectItem value="4">周五</SelectItem>
+                  <SelectItem value="5">周六</SelectItem>
+                  <SelectItem value="6">周日</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <Label>季数</Label>
+              <Select
+                value={currentTask.action.seasonNumber.toString()}
+                onValueChange={(value) => updateTaskField('action.seasonNumber', parseInt(value, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择季数" />
+                </SelectTrigger>
+                <SelectContent>
+                  {item.seasons ? (
+                    item.seasons.map(season => (
+                      <SelectItem key={season.seasonNumber} value={season.seasonNumber.toString()}>
+                        第{season.seasonNumber}季 - {season.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="1">第1季</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
-        
-        <div className="space-y-2">
-          <Label>执行时间</Label>
+
+        <div className="space-y-1">
+          <div className="flex justify-between items-center">
+            <Label>执行时间</Label>
+            <div className="text-xs text-muted-foreground">
+              {currentTask.schedule.type === "weekly" 
+                ? `每周${getDayOfWeekName(currentTask.schedule.dayOfWeek || 0)} ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`
+                : `每天 ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`
+              }
+            </div>
+          </div>
           <div className="flex justify-center">
             <ModernTimePicker 
               hour={currentTask.schedule.hour} 
               minute={currentTask.schedule.minute}
-              minuteStep={1} // 允许每分钟调整
+              minuteStep={1}
               onTimeChange={(hour, minute) => {
-                console.log(`时间已更改: ${hour}:${minute}`);
                 updateTaskField('schedule.hour', hour);
                 updateTaskField('schedule.minute', minute);
               }}
               className="w-full"
             />
           </div>
-          
-          <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 p-2 rounded-md flex items-center">
-            <Info className="h-4 w-4 mr-2" />
-            {currentTask.schedule.type === "weekly" 
-              ? `每周${getDayOfWeekName(currentTask.schedule.dayOfWeek || 0)} ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')} 执行`
-              : `每天 ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')} 执行`
-            }
-          </div>
         </div>
-        
-        <div className="space-y-2">
-          <Label>季数</Label>
-          <Select
-            value={currentTask.action.seasonNumber.toString()}
-            onValueChange={(value) => updateTaskField('action.seasonNumber', parseInt(value, 10))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="选择季数" />
-            </SelectTrigger>
-            <SelectContent>
-              {item.seasons ? (
-                item.seasons.map(season => (
-                  <SelectItem key={season.seasonNumber} value={season.seasonNumber.toString()}>
-                    第{season.seasonNumber}季 - {season.name}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="1">第1季</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="border p-4 rounded-md space-y-3">
-          <h3 className="text-sm font-medium">基本选项</h3>
-        
-        <div className="flex items-center justify-between space-x-2">
-          <Label htmlFor="auto-upload" className="flex-1">
-            自动上传至TMDB
-          </Label>
-          <Switch
-            id="auto-upload"
-            checked={currentTask.action.autoUpload}
-            onCheckedChange={(checked) => updateTaskField('action.autoUpload', checked)}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between space-x-2">
-          <Label htmlFor="auto-remove-marked" className="flex-1">
-            自动过滤已标记完成的集数
-          </Label>
-          <Switch
-            id="auto-remove-marked"
-            checked={currentTask.action.autoRemoveMarked}
-            onCheckedChange={(checked) => updateTaskField('action.autoRemoveMarked', checked)}
-          />
-          </div>
-        </div>
-        
-        <div className="border p-4 rounded-md space-y-3">
-          <h3 className="text-sm font-medium">高级选项</h3>
-        
-        <div className="flex items-center justify-between space-x-2">
-          <Label htmlFor="auto-confirm" className="flex-1">
-            自动确认上传（输入y）
-          </Label>
-          <Switch
-            id="auto-confirm"
-            checked={currentTask.action.autoConfirm !== false}
-            onCheckedChange={(checked) => updateTaskField('action.autoConfirm', checked)}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between space-x-2">
-          <Label htmlFor="auto-mark-uploaded" className="flex-1">
-            自动标记已上传的集数
-          </Label>
-          <Switch
-            id="auto-mark-uploaded"
-            checked={currentTask.action.autoMarkUploaded !== false}
-            onCheckedChange={(checked) => updateTaskField('action.autoMarkUploaded', checked)}
-          />
-        </div>
-        
-        {item.platformUrl?.includes('iqiyi.com') && (
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="remove-iqiyi-air-date" className="flex-1">
-              删除爱奇艺平台的air_date列
-            </Label>
-            <Switch
-              id="remove-iqiyi-air-date"
-              checked={currentTask.action.removeIqiyiAirDate !== false}
-              onCheckedChange={(checked) => updateTaskField('action.removeIqiyiAirDate', checked)}
-            />
+
+        {currentTask.schedule.type === "weekly" && (
+          <div className="space-y-1">
+            <Label>季数</Label>
+            <Select
+              value={currentTask.action.seasonNumber.toString()}
+              onValueChange={(value) => updateTaskField('action.seasonNumber', parseInt(value, 10))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="选择季数" />
+              </SelectTrigger>
+              <SelectContent>
+                {item.seasons ? (
+                  item.seasons.map(season => (
+                    <SelectItem key={season.seasonNumber} value={season.seasonNumber.toString()}>
+                      第{season.seasonNumber}季 - {season.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="1">第1季</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
           </div>
         )}
+        
+        <div className="border p-3 rounded-md space-y-2">
+          <h3 className="text-sm font-medium mb-2">基本选项</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="auto-upload" className="text-sm">
+                自动上传至TMDB
+              </Label>
+              <Switch
+                id="auto-upload"
+                checked={currentTask.action.autoUpload}
+                onCheckedChange={(checked) => updateTaskField('action.autoUpload', checked)}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="auto-remove-marked" className="text-sm">
+                自动过滤已完成集数
+              </Label>
+              <Switch
+                id="auto-remove-marked"
+                checked={currentTask.action.autoRemoveMarked}
+                onCheckedChange={(checked) => updateTaskField('action.autoRemoveMarked', checked)}
+              />
+            </div>
+          </div>
         </div>
         
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={cancelEditTask} disabled={isAutoSaving}>
+        <div className="border p-3 rounded-md space-y-2">
+          <h3 className="text-sm font-medium mb-2">高级选项</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="auto-confirm" className="text-sm">
+                自动确认上传
+              </Label>
+              <Switch
+                id="auto-confirm"
+                checked={currentTask.action.autoConfirm !== false}
+                onCheckedChange={(checked) => updateTaskField('action.autoConfirm', checked)}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="auto-mark-uploaded" className="text-sm">
+                自动标记已上传集数
+              </Label>
+              <Switch
+                id="auto-mark-uploaded"
+                checked={currentTask.action.autoMarkUploaded !== false}
+                onCheckedChange={(checked) => updateTaskField('action.autoMarkUploaded', checked)}
+              />
+            </div>
+            
+            {item.platformUrl?.includes('iqiyi.com') && (
+              <div className="flex items-center justify-between space-x-2">
+                <Label htmlFor="remove-iqiyi-air-date" className="text-sm">
+                  删除爱奇艺air_date列
+                </Label>
+                <Switch
+                  id="remove-iqiyi-air-date"
+                  checked={currentTask.action.removeIqiyiAirDate !== false}
+                  onCheckedChange={(checked) => updateTaskField('action.removeIqiyiAirDate', checked)}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* 未保存更改提示 */}
+        {hasUnsavedChanges && !isAutoSaving && (
+          <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 p-2 rounded-md flex items-center">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            有未保存的更改
+          </div>
+        )}
+        
+        <div className="flex justify-end space-x-2 pt-3">
+          <Button variant="outline" onClick={cancelEditTask} disabled={isAutoSaving} size="sm">
             取消
           </Button>
           
           {isAutoSaving ? (
-            <Button disabled>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Button disabled size="sm">
+              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
               保存中...
             </Button>
           ) : (
@@ -899,8 +945,9 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                   }
                 }} 
                 disabled={!hasUnsavedChanges}
+                size="sm"
               >
-                <PauseCircle className="h-4 w-4 mr-2" />
+                <PauseCircle className="h-3 w-3 mr-2" />
                 保存并禁用
               </Button>
               
@@ -914,8 +961,9 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                   }
                 }} 
                 disabled={!hasUnsavedChanges}
+                size="sm"
               >
-                <PlayCircle className="h-4 w-4 mr-2" />
+                <PlayCircle className="h-3 w-3 mr-2" />
                 保存并启用
               </Button>
             </>
@@ -925,19 +973,11 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     )
   }
 
-  // 添加未保存更改提示
-  {hasUnsavedChanges && !isAutoSaving && (
-    <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 p-2 rounded-md flex items-center mb-4">
-      <AlertTriangle className="h-4 w-4 mr-2" />
-      有未保存的更改
-    </div>
-  )}
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-2">
             <DialogTitle className="flex items-center">
               <AlarmClock className="h-5 w-5 mr-2" />
               {item.title} - 定时任务管理
@@ -947,9 +987,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 pr-4">
-            {isAddingTask || isEditingTask ? renderTaskForm() : renderTaskList()}
-          </ScrollArea>
+          {isAddingTask || isEditingTask ? renderTaskForm() : renderTaskList()}
         </DialogContent>
       </Dialog>
       
