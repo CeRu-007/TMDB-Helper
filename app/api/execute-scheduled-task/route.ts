@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { StorageManager, TMDBItem, Season, Episode } from '@/lib/storage';
+import { StorageManager, TMDBItem, Season, Episode, ScheduledTask } from '@/lib/storage';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 
 const execAsync = promisify(exec);
+
+// 接口定义
+interface ExecuteTaskRequest {
+  taskId: string;
+  itemId: string;
+  action: {
+    seasonNumber: number;
+    autoUpload: boolean;
+    autoRemoveMarked: boolean;
+    autoConfirm?: boolean;
+    removeIqiyiAirDate?: boolean;
+    autoMarkUploaded?: boolean;
+  };
+}
 
 /**
  * 执行TMDB-Import命令
@@ -27,21 +41,11 @@ async function executeTMDBImportCommand(command: string, workingDirectory: strin
       throw new Error('Python不可用，请确保已安装Python并添加到PATH中');
     }
     
-    // 检查TMDB-Import模块是否可用
-    try {
-      const moduleCheckResult = await execAsync('python -c "import sys; print(\'tmdb-import\' in sys.path)"', { cwd: workingDirectory });
-      if (moduleCheckResult.stdout.trim() !== 'True') {
-        console.warn('[API] 警告: tmdb-import模块可能不在Python路径中');
-      }
-    } catch (moduleError) {
-      console.warn('[API] 检查tmdb-import模块时出错:', moduleError);
-    }
-    
     // 执行命令
     console.log(`[API] 开始执行命令: ${command}`);
     const { stdout, stderr } = await execAsync(command, { 
       cwd: workingDirectory,
-      timeout: 60000 // 设置60秒超时
+      timeout: 180000 // 设置3分钟超时
     });
     
     if (stderr) {
@@ -58,7 +62,7 @@ async function executeTMDBImportCommand(command: string, workingDirectory: strin
     if (error.code === 'ENOENT') {
       errorMessage = `找不到可执行文件: ${error.path}`;
     } else if (error.code === 'ETIMEDOUT') {
-      errorMessage = '命令执行超时';
+      errorMessage = '命令执行超时 (3分钟)';
     }
     
     return { stdout: '', stderr: `${errorMessage}\n${error.stack || ''}` };
@@ -79,6 +83,9 @@ function parseCSVPathFromOutput(output: string): string | null {
  */
 async function readCSVFile(filePath: string): Promise<string> {
   try {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`CSV文件不存在: ${filePath}`);
+    }
     return await fs.promises.readFile(filePath, 'utf-8');
   } catch (error) {
     console.error('读取CSV文件失败:', error);
@@ -169,7 +176,7 @@ function formatCSVField(value: string): string {
  */
 function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][] }, item: TMDBItem): { headers: string[], rows: string[][] } {
   // 如果没有集数数据或CSV数据为空，直接返回
-  if (!item.episodes || item.episodes.length === 0 || csvData.rows.length === 0) {
+  if (!item.episodes && (!item.seasons || item.seasons.length === 0) || csvData.rows.length === 0) {
     return csvData;
   }
   
@@ -187,15 +194,17 @@ function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][]
   const completedEpisodesMap = new Map();
   
   // 处理多季情况
-  if (item.seasons) {
+  if (item.seasons && item.seasons.length > 0) {
     item.seasons.forEach((season: Season) => {
-      season.episodes.forEach((episode: Episode) => {
-        if (episode.completed) {
-          // 标准化集数格式，以便匹配
-          const normalizedNumber = normalizeEpisodeNumber(episode.number.toString());
-          completedEpisodesMap.set(normalizedNumber, true);
-        }
-      });
+      if (season.episodes) {
+        season.episodes.forEach((episode: Episode) => {
+          if (episode.completed) {
+            // 标准化集数格式，以便匹配
+            const normalizedNumber = normalizeEpisodeNumber(episode.number.toString());
+            completedEpisodesMap.set(normalizedNumber, true);
+          }
+        });
+      }
     });
   } else if (item.episodes) {
     // 处理单季情况
@@ -252,7 +261,7 @@ function normalizeEpisodeNumber(episodeNumber: string): string {
 }
 
 /**
- * 将处理后的CSV写回文件
+ * 写入CSV文件
  */
 async function writeCSVFile(filePath: string, content: string): Promise<void> {
   try {
@@ -266,527 +275,346 @@ async function writeCSVFile(filePath: string, content: string): Promise<void> {
 /**
  * 执行TMDB上传命令
  */
-async function executeTMDBUpload(csvFilePath: string, workingDirectory: string): Promise<{stdout: string, stderr: string}> {
-  const uploadCommand = `python -m tmdb-import "${csvFilePath}" --upload`;
-  return await executeTMDBImportCommand(uploadCommand, workingDirectory);
+async function executeTMDBUpload(csvFilePath: string, workingDirectory: string, autoConfirm: boolean = false): Promise<{stdout: string, stderr: string}> {
+  // 构建上传命令
+  let uploadCommand = `python -m tmdb-import.importor -f "${csvFilePath}"`;
+  
+  // 如果需要自动确认，使用echo y | 前缀
+  if (autoConfirm) {
+    uploadCommand = `echo y | ${uploadCommand}`;
+  }
+  
+  return executeTMDBImportCommand(uploadCommand, workingDirectory);
 }
 
 /**
- * 从上传结果中提取上传成功的集数
+ * 从输出中提取已上传的集数
  */
 function extractUploadedEpisodes(output: string): number[] {
-  const episodes: number[] = [];
+  const uploadedEpisodes: number[] = [];
+  const lines = output.split('\n');
   
-  // 匹配上传成功的集数信息
-  // 示例: "Successfully uploaded episode 1" 或 "成功上传第1集"
-  const pattern1 = /Successfully uploaded episode (\d+)/gi;
-  const pattern2 = /成功上传第(\d+)集/g;
-  
-  let match;
-  
-  // 匹配英文格式
-  while ((match = pattern1.exec(output)) !== null) {
-    const episodeNumber = parseInt(match[1], 10);
-    if (!isNaN(episodeNumber) && !episodes.includes(episodeNumber)) {
-      episodes.push(episodeNumber);
+  // 寻找上传成功的集数
+  for (const line of lines) {
+    // 匹配形如 "上传成功：第X集" 或 "Upload successful: Episode X" 的行
+    const zhMatch = line.match(/上传成功：(?:第)?(\d+)(?:集)?/);
+    const enMatch = line.match(/Upload successful: (?:Episode )?(\d+)/i);
+    
+    if (zhMatch && zhMatch[1]) {
+      uploadedEpisodes.push(parseInt(zhMatch[1], 10));
+    } else if (enMatch && enMatch[1]) {
+      uploadedEpisodes.push(parseInt(enMatch[1], 10));
     }
   }
   
-  // 匹配中文格式
-  while ((match = pattern2.exec(output)) !== null) {
-    const episodeNumber = parseInt(match[1], 10);
-    if (!isNaN(episodeNumber) && !episodes.includes(episodeNumber)) {
-      episodes.push(episodeNumber);
-    }
-  }
-  
-  return episodes;
+  return uploadedEpisodes;
 }
 
 /**
- * 标记集数为已完成
+ * 将成功上传的集数标记为已完成
  */
 async function markEpisodesAsCompleted(item: TMDBItem, seasonNumber: number, episodeNumbers: number[]): Promise<TMDBItem | null> {
   if (episodeNumbers.length === 0) {
-    return null;
+    return null; // 没有需要标记的集数
   }
   
-  const updatedItem = { ...item };
+  console.log(`[API] 将集数标记为已完成: 季=${seasonNumber}, 集数=${episodeNumbers.join(', ')}`);
+  
+  // 创建副本以避免直接修改原对象
+  const updatedItem = JSON.parse(JSON.stringify(item)) as TMDBItem;
+  let changed = false;
   
   // 处理多季情况
-  if (updatedItem.seasons) {
-    const seasonIndex = updatedItem.seasons.findIndex(s => s.seasonNumber === seasonNumber);
-    if (seasonIndex !== -1) {
-      const season = { ...updatedItem.seasons[seasonIndex] };
-      
-      // 更新集数状态
-      for (const episodeNumber of episodeNumbers) {
-        const episodeIndex = season.episodes.findIndex(e => e.number === episodeNumber);
-        if (episodeIndex !== -1) {
-          // 更新已存在的集数
-          season.episodes[episodeIndex] = {
-            ...season.episodes[episodeIndex],
-            completed: true
-          };
-        } else {
-          // 添加新的集数
-          season.episodes.push({
-            number: episodeNumber,
-            completed: true,
-            seasonNumber: seasonNumber
-          });
+  if (updatedItem.seasons && updatedItem.seasons.length > 0) {
+    // 找到目标季
+    const targetSeason = updatedItem.seasons.find(s => s.seasonNumber === seasonNumber);
+    
+    if (targetSeason && targetSeason.episodes) {
+      // 标记目标集数为已完成
+      episodeNumbers.forEach(episodeNum => {
+        const episode = targetSeason.episodes.find(e => e.number === episodeNum);
+        if (episode && !episode.completed) {
+          episode.completed = true;
+          changed = true;
         }
-      }
-      
-      // 更新季
-      updatedItem.seasons[seasonIndex] = season;
+      });
     }
-  } else if (updatedItem.episodes) {
-    // 处理单季情况
-    for (const episodeNumber of episodeNumbers) {
-      const episodeIndex = updatedItem.episodes.findIndex(e => e.number === episodeNumber);
-      if (episodeIndex !== -1) {
-        // 更新已存在的集数
-        updatedItem.episodes[episodeIndex] = {
-          ...updatedItem.episodes[episodeIndex],
-          completed: true
-        };
-      } else {
-        // 添加新的集数
-        updatedItem.episodes.push({
-          number: episodeNumber,
-          completed: true
-        });
+  }
+  // 处理单季情况（旧数据格式）
+  else if (updatedItem.episodes) {
+    // 标记目标集数为已完成
+    episodeNumbers.forEach(episodeNum => {
+      const episode = updatedItem.episodes!.find(e => e.number === episodeNum);
+      if (episode && !episode.completed) {
+        episode.completed = true;
+        changed = true;
       }
+    });
+  }
+  
+  // 如果有更改，保存更新后的项目
+  if (changed) {
+    // 更新updatedAt字段
+    updatedItem.updatedAt = new Date().toISOString();
+    
+    try {
+      const success = await StorageManager.updateItem(updatedItem);
+      if (success) {
+        console.log(`[API] 成功更新项目: ${updatedItem.title}`);
+        return updatedItem;
+      } else {
+        console.error(`[API] 更新项目失败: ${updatedItem.title}`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`[API] 更新项目时出错:`, error);
+      return null;
     }
   }
   
-  return updatedItem;
+  return null; // 没有更改
 }
 
-export async function GET(request: NextRequest) {
+/**
+ * POST 处理程序
+ */
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  console.log('[API] 收到执行定时任务请求');
+  
   try {
-    console.log('[API] 开始处理execute-scheduled-task请求');
+    // 解析请求体
+    const requestData: ExecuteTaskRequest = await request.json();
     
-    // 获取请求参数
-    const searchParams = request.nextUrl.searchParams;
-    const itemId = searchParams.get('itemId');
-    const seasonNumber = parseInt(searchParams.get('seasonNumber') || '1', 10);
-    const autoUpload = searchParams.get('autoUpload') === 'true';
-    const autoRemoveMarked = searchParams.get('autoRemoveMarked') === 'true';
-    // 获取新增的参数
-    const autoConfirm = searchParams.get('autoConfirm') === 'true';
-    const autoMarkUploaded = searchParams.get('autoMarkUploaded') === 'true';
-    const removeIqiyiAirDate = searchParams.get('removeIqiyiAirDate') === 'true';
-    const platformUrl = searchParams.get('platformUrl') || '';
-    
-    console.log(`[API] 请求参数: itemId=${itemId}, seasonNumber=${seasonNumber}, autoUpload=${autoUpload}, autoRemoveMarked=${autoRemoveMarked}, autoConfirm=${autoConfirm}, autoMarkUploaded=${autoMarkUploaded}, removeIqiyiAirDate=${removeIqiyiAirDate}`);
-    
-    if (!itemId) {
-      console.error('[API] 缺少必要参数: itemId');
-      return NextResponse.json({ error: '缺少必要参数: itemId' }, { status: 400 });
+    // 验证请求参数
+    if (!requestData || !requestData.taskId || !requestData.itemId || !requestData.action) {
+      return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
+    
+    console.log(`[API] 执行定时任务: taskId=${requestData.taskId}, itemId=${requestData.itemId}, 季=${requestData.action.seasonNumber}`);
     
     // 获取项目信息
-    console.log('[API] 获取项目信息...');
     const items = await StorageManager.getItemsWithRetry();
-    let item = items.find(i => i.id === itemId);
+    const item = items.find(i => i.id === requestData.itemId);
     
-    // 如果找不到项目，尝试通过其他方式查找
     if (!item) {
-      console.warn(`[API] 找不到ID为 ${itemId} 的项目，尝试通过其他方式查找...`);
-      
-      // 尝试从URL参数中获取更多信息
-      const tmdbId = searchParams.get('tmdbId');
-      const title = searchParams.get('title');
-      
-      // 创建匹配项集合，用于记录每个匹配项的匹配方式和分数
-      const matchCandidates: Array<{item: TMDBItem, score: number, matchType: string}> = [];
-      
-      // 1. 尝试通过TMDB ID查找（最精确的匹配）
-      if (tmdbId) {
-        const matchByTmdbId = items.find(i => i.tmdbId === tmdbId);
-        if (matchByTmdbId) {
-          matchCandidates.push({
-            item: matchByTmdbId, 
-            score: 100, // 最高优先级
-            matchType: 'TMDB ID'
-          });
-          console.log(`[API] 通过TMDB ID找到匹配项: ${matchByTmdbId.title} (ID: ${matchByTmdbId.id})`);
-        }
-      }
-      
-      // 2. 尝试通过平台URL查找（次高精确度）
-      if (platformUrl && platformUrl.length > 10) {
-        const matchByUrl = items.find(i => i.platformUrl === platformUrl);
-        if (matchByUrl) {
-          matchCandidates.push({
-            item: matchByUrl, 
-            score: 90, 
-            matchType: '平台URL'
-          });
-          console.log(`[API] 通过平台URL找到匹配项: ${matchByUrl.title} (ID: ${matchByUrl.id})`);
-        }
-      }
-      
-      // 3. 尝试通过标题精确匹配
-      if (title) {
-        const exactTitleMatch = items.find(i => i.title === title);
-        if (exactTitleMatch) {
-          matchCandidates.push({
-            item: exactTitleMatch, 
-            score: 80, 
-            matchType: '标题精确匹配'
-          });
-          console.log(`[API] 通过标题精确匹配找到项目: ${exactTitleMatch.title} (ID: ${exactTitleMatch.id})`);
-        }
-      }
-      
-      // 4. 尝试通过标题模糊匹配
-      if (title) {
-        const fuzzyMatches = items.filter(i => 
-          i.title.includes(title) || 
-          title.includes(i.title)
-        );
-        
-        // 为每个模糊匹配项计算匹配分数
-        fuzzyMatches.forEach(match => {
-          // 避免重复添加已经通过精确匹配找到的项目
-          if (!matchCandidates.some(c => c.item.id === match.id)) {
-            // 计算相似度分数 (简单实现，可以使用更复杂的算法)
-            const similarity = Math.min(
-              match.title.length, 
-              title.length
-            ) / Math.max(match.title.length, title.length);
-            
-            // 转换为0-70的分数范围（低于精确匹配）
-            const score = Math.round(similarity * 70);
-            
-            matchCandidates.push({
-              item: match,
-              score,
-              matchType: '标题模糊匹配'
-            });
-          }
-        });
-        
-        if (fuzzyMatches.length > 0) {
-          console.log(`[API] 通过标题模糊匹配找到 ${fuzzyMatches.length} 个可能的项目`);
-        }
-      }
-      
-      // 如果找到了候选项，按分数排序并选择最佳匹配
-      if (matchCandidates.length > 0) {
-        // 对电视剧类型加分
-        matchCandidates.forEach(candidate => {
-          if (candidate.item.mediaType === 'tv') {
-            candidate.score += 5;
-          }
-        });
-        
-        // 按分数降序排序
-        matchCandidates.sort((a, b) => b.score - a.score);
-        
-        // 选择得分最高的候选项
-        const bestMatch = matchCandidates[0];
-        item = bestMatch.item;
-        
-        console.log(`[API] 选择最佳匹配项: ${item.title} (ID: ${item.id}), 匹配方式: ${bestMatch.matchType}, 分数: ${bestMatch.score}`);
-      }
-      
-      // 如果仍然找不到项目，返回404错误
-      if (!item) {
-        console.error(`[API] 找不到ID为 ${itemId} 的项目，也无法通过其他方式找到匹配项`);
-        return NextResponse.json({ 
-          error: `找不到ID为 ${itemId} 的项目，请检查项目是否存在或已被删除`,
-          suggestion: "可能需要重新创建定时任务并关联到正确的项目",
-          details: {
-            searchedBy: {
-              itemId,
-              tmdbId: tmdbId || '未提供',
-              title: title || '未提供',
-              platformUrl: platformUrl || '未提供'
-            }
-          }
-        }, { status: 404 });
-      }
+      return NextResponse.json({ 
+        error: `找不到ID为 ${requestData.itemId} 的项目`, 
+        suggestion: '请检查项目是否存在或已被删除'
+      }, { status: 404 });
     }
     
-    console.log(`[API] 找到项目: ${item.title} (ID: ${item.id})`);
-    
-    // 检查项目是否有TMDB ID和平台URL
-    if (!item.tmdbId || item.mediaType !== 'tv') {
-      console.error(`[API] 项目类型错误或缺少TMDB ID: mediaType=${item.mediaType}, tmdbId=${item.tmdbId}`);
-      return NextResponse.json({ 
-        error: '项目必须是电视剧类型并且有TMDB ID',
-        suggestion: "请编辑项目，确保它是电视剧类型并添加TMDB ID",
-        details: {
-          itemId: item.id,
-          title: item.title,
-          mediaType: item.mediaType,
-          tmdbId: item.tmdbId || '未设置'
-        }
-      }, { status: 400 });
+    // 验证项目信息
+    if (!item.tmdbId) {
+      return NextResponse.json({ error: `项目 ${item.title} 缺少TMDB ID` }, { status: 400 });
     }
     
     if (!item.platformUrl) {
-      console.error('[API] 项目缺少平台URL');
-      return NextResponse.json({ 
-        error: '项目必须有平台URL才能执行TMDB-Import',
-        suggestion: "请编辑项目，添加正确的流媒体平台URL",
-        details: {
-          itemId: item.id,
-          title: item.title
-        }
-      }, { status: 400 });
+      return NextResponse.json({ error: `项目 ${item.title} 缺少平台URL` }, { status: 400 });
     }
     
-    console.log(`[API] 项目信息验证通过: tmdbId=${item.tmdbId}, platformUrl=${item.platformUrl}`);
-    
-    // 设置TMDB-Import工作目录
-    const workingDirectory = path.join(process.cwd(), 'TMDB-Import-master');
-    
-    // 检查工作目录是否存在
-    if (!fs.existsSync(workingDirectory)) {
-      console.error(`[API] TMDB-Import工作目录不存在: ${workingDirectory}`);
-      return NextResponse.json({ error: 'TMDB-Import工作目录不存在' }, { status: 500 });
-    }
-    
-    console.log(`[API] TMDB-Import工作目录: ${workingDirectory}`);
-    
-    // 步骤1: 执行平台抓取命令
-    console.log(`[API] 执行平台抓取命令: ${item.platformUrl}`);
-    const platformCommand = `python -m tmdb-import "${item.platformUrl}"`;
-    const platformResult = await executeTMDBImportCommand(platformCommand, workingDirectory);
-    
-    if (platformResult.stderr) {
-      console.error('[API] 平台抓取错误:', platformResult.stderr);
-      return NextResponse.json({ error: '平台抓取失败', details: platformResult.stderr }, { status: 500 });
-    }
-    
-    console.log('[API] 平台抓取成功');
-    
-    // 解析生成的CSV文件路径
-    const csvFilePath = parseCSVPathFromOutput(platformResult.stdout);
-    if (!csvFilePath) {
-      console.error('[API] 无法从输出中解析CSV文件路径:', platformResult.stdout);
-      return NextResponse.json({ 
-        error: '无法从输出中解析CSV文件路径', 
-        stdout: platformResult.stdout 
-      }, { status: 500 });
-    }
-    
-    console.log(`[API] 解析到CSV文件路径: ${csvFilePath}`);
-    
-    // 检查CSV文件是否存在
-    const fullCsvPath = path.join(workingDirectory, csvFilePath);
-    if (!fs.existsSync(fullCsvPath)) {
-      console.error(`[API] CSV文件不存在: ${fullCsvPath}`);
-      return NextResponse.json({ error: `CSV文件不存在: ${csvFilePath}` }, { status: 500 });
-    }
-    
-    // 读取CSV文件
-    console.log(`[API] 读取CSV文件: ${fullCsvPath}`);
-    const csvContent = await readCSVFile(fullCsvPath);
-    let csvData = parseCSV(csvContent);
-    
-    console.log(`[API] CSV解析结果: ${csvData.rows.length}行数据`);
-    
-    // 获取已完成的集数列表，用于CSV处理和自动标记
-    const completedEpisodes: number[] = [];
-    if (autoRemoveMarked || autoMarkUploaded) {
-      // 处理多季情况
-      if (item.seasons) {
-        const season = item.seasons.find(s => s.seasonNumber === seasonNumber);
-        if (season) {
-          season.episodes.forEach(episode => {
-            if (episode.completed) {
-              completedEpisodes.push(episode.number);
-            }
-          });
-        }
-      } else if (item.episodes) {
-        // 处理单季情况
-        item.episodes.forEach(episode => {
-          if (episode.completed) {
-            completedEpisodes.push(episode.number);
-          }
-        });
+    // 检查项目是否有指定的季数
+    if (requestData.action.seasonNumber > 0 && item.mediaType === 'tv') {
+      if (!item.seasons || !item.seasons.some(s => s.seasonNumber === requestData.action.seasonNumber)) {
+        return NextResponse.json({ 
+          error: `项目 ${item.title} 没有第 ${requestData.action.seasonNumber} 季` 
+        }, { status: 400 });
       }
     }
     
-    // 处理CSV数据（爱奇艺平台特殊处理和自动删除已标记集数）
-    if (autoRemoveMarked || removeIqiyiAirDate) {
-      console.log('[API] 开始处理CSV数据');
-      
+    // 查找TMDB-Import目录
+    const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
+    if (!fs.existsSync(tmdbImportDir)) {
+      return NextResponse.json({ 
+        error: '找不到TMDB-Import目录', 
+        suggestion: '请确保TMDB-Import-master目录存在于项目根目录下'
+      }, { status: 500 });
+    }
+    
+    // 构建导出命令
+    let extractCommand = `python -m tmdb-import.extractor -u "${item.platformUrl}" -s ${requestData.action.seasonNumber}`;
+    
+    // 执行导出命令
+    const { stdout, stderr } = await executeTMDBImportCommand(extractCommand, tmdbImportDir);
+    
+    // 检查是否有错误
+    if (stderr && !stdout) {
+      return NextResponse.json({ 
+        error: '执行TMDB导出命令失败', 
+        details: stderr,
+        command: extractCommand
+      }, { status: 500 });
+    }
+    
+    // 从输出中解析CSV文件路径
+    const csvPath = parseCSVPathFromOutput(stdout);
+    if (!csvPath) {
+      return NextResponse.json({ 
+        error: '无法从输出中找到CSV文件路径', 
+        output: stdout.substring(0, 500) + (stdout.length > 500 ? '...' : '')
+      }, { status: 500 });
+    }
+    
+    // 构建CSV文件的绝对路径
+    const csvAbsolutePath = path.resolve(tmdbImportDir, csvPath);
+    console.log(`[API] CSV文件路径: ${csvAbsolutePath}`);
+    
+    // 如果需要自动过滤已标记完成的集数
+    if (requestData.action.autoRemoveMarked) {
       try {
-        // 调用process-csv API处理CSV文件
-        const processResponse = await fetch(new URL('/api/process-csv', request.url).toString(), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            csvFilePath: fullCsvPath,
-            removeIqiyiAirDate: removeIqiyiAirDate && platformUrl.includes('iqiyi.com'),
-            completedEpisodes: autoRemoveMarked ? completedEpisodes : []
-          }),
-        });
+        // 读取CSV文件
+        const csvContent = await readCSVFile(csvAbsolutePath);
         
-        if (!processResponse.ok) {
-          const errorData = await processResponse.json();
-          console.error('[API] 处理CSV数据失败:', errorData);
-          throw new Error(errorData.error || '处理CSV数据失败');
+        // 解析CSV内容
+        const csvData = parseCSV(csvContent);
+        
+        // 过滤掉已标记完成的集数
+        const filteredData = autoRemoveMarkedEpisodes(csvData, item);
+        
+        // 如果过滤后没有数据，返回提示
+        if (filteredData.rows.length === 0) {
+          return NextResponse.json({ 
+            success: true, 
+            message: '所有集数已标记为完成，无需上传',
+            csvPath: csvPath
+          });
         }
         
-        const processResult = await processResponse.json();
-        csvData = processResult.csvData;
-        console.log(`[API] CSV处理完成，剩余${csvData.rows.length}行数据`);
+        // 将过滤后的数据写回CSV文件
+        const filteredContent = csvDataToString(filteredData);
+        await writeCSVFile(csvAbsolutePath, filteredContent);
+        
+        console.log(`[API] 已过滤已完成集数: 原始=${csvData.rows.length}行, 过滤后=${filteredData.rows.length}行`);
       } catch (error) {
-        console.error('[API] 处理CSV数据时出错:', error);
+        console.error('[API] 过滤已完成集数时出错:', error);
         // 继续执行，不中断流程
       }
     }
     
-    let uploadResult = { stdout: '', stderr: '' };
-    let markedEpisodes: number[] = [];
-    
-    // 如果启用了自动上传，执行上传命令
-    if (autoUpload) {
-      // 构建TMDB URL
-      const language = 'zh-CN';
-      const tmdbUrl = `https://www.themoviedb.org/tv/${item.tmdbId}/season/${seasonNumber}?language=${language}`;
-      
-      console.log(`[API] 开始执行TMDB上传命令: ${tmdbUrl}`);
-      
-      // 检查config.ini中是否配置了TMDB用户名和密码
-      const configPath = path.join(workingDirectory, 'config.ini');
-      if (fs.existsSync(configPath)) {
-        const configContent = fs.readFileSync(configPath, 'utf-8');
-        if (!configContent.includes('tmdb_username = ') || !configContent.includes('tmdb_password = ')) {
-          console.warn('[API] 警告: config.ini中未配置TMDB用户名和密码，可能导致上传失败');
-        }
-      }
-      
-      // 根据是否自动确认选择执行方式
-      if (autoConfirm) {
-        console.log('[API] 使用自动确认模式执行上传');
+    // 如果需要删除爱奇艺平台的air_date列
+    if (requestData.action.removeIqiyiAirDate && item.platformUrl.includes('iqiyi.com')) {
+      try {
+        // 读取CSV文件
+        const csvContent = await readCSVFile(csvAbsolutePath);
         
-        // 创建一个临时脚本文件，自动输入"y"
-        const tempScriptPath = path.join(workingDirectory, 'auto_confirm.py');
-        const scriptContent = `
-import subprocess
-import sys
-import time
-
-def main():
-    # 构建命令
-    cmd = ['python', '-m', 'tmdb-import', '${tmdbUrl}', '--upload']
-    
-    # 启动进程
-    process = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        bufsize=1
-    )
-    
-    # 持续读取输出并检查是否需要输入
-    while True:
-        output = process.stdout.readline()
-        if output == '' and process.poll() is not None:
-            break
-        if output:
-            print(output.strip())
-            sys.stdout.flush()
-            
-            # 检测需要确认的提示
-            if "Do you want to continue" in output or "确认上传" in output or "[y/n]" in output or "[Y/n]" in output:
-                print("检测到确认提示，自动输入: y")
-                process.stdin.write("y\\n")
-                process.stdin.flush()
-                time.sleep(0.5)  # 等待一下，确保输入被处理
-    
-    # 获取错误输出
-    stderr = process.stderr.read()
-    if stderr:
-        print("错误输出:", stderr)
-    
-    return process.returncode
-
-if __name__ == "__main__":
-    sys.exit(main())
-`;
-
-        await fs.promises.writeFile(tempScriptPath, scriptContent);
-        console.log(`[API] 创建临时自动确认脚本: ${tempScriptPath}`);
+        // 解析CSV内容
+        const csvData = parseCSV(csvContent);
         
-        // 执行自动确认脚本
-        uploadResult = await executeTMDBImportCommand(`python ${tempScriptPath}`, workingDirectory);
+        // 查找air_date列的索引
+        const airDateIndex = csvData.headers.findIndex(h => h.toLowerCase() === 'air_date');
         
-        // 删除临时脚本
-        try {
-          await fs.promises.unlink(tempScriptPath);
-          console.log(`[API] 已删除临时脚本: ${tempScriptPath}`);
-        } catch (unlinkError) {
-          console.warn(`[API] 删除临时脚本失败: ${unlinkError}`);
-        }
-      } else {
-        // 常规执行上传命令
-        uploadResult = await executeTMDBImportCommand(`python -m tmdb-import "${tmdbUrl}" --upload`, workingDirectory);
-      }
-      
-      if (uploadResult.stderr) {
-        console.error('[API] TMDB上传错误:', uploadResult.stderr);
-        return NextResponse.json({ 
-          error: 'TMDB上传失败', 
-          details: uploadResult.stderr,
-          platformResult: platformResult.stdout,
-          csvData
-        }, { status: 500 });
-      }
-      
-      console.log('[API] TMDB上传成功');
-      
-      // 如果启用了自动标记上传的集数，解析上传结果并标记集数
-      if (autoMarkUploaded) {
-        console.log('[API] 开始自动标记已上传的集数');
-        
-        // 从上传结果中提取上传成功的集数
-        const uploadedEpisodes = extractUploadedEpisodes(uploadResult.stdout);
-        console.log(`[API] 检测到上传成功的集数: ${uploadedEpisodes.join(', ')}`);
-        
-        if (uploadedEpisodes.length > 0) {
-          // 更新项目中的集数状态
-          const updatedItem = await markEpisodesAsCompleted(item, seasonNumber, uploadedEpisodes);
+        if (airDateIndex !== -1) {
+          // 从所有行中删除air_date列
+          csvData.headers.splice(airDateIndex, 1);
+          csvData.rows.forEach(row => {
+            if (airDateIndex < row.length) {
+              row.splice(airDateIndex, 1);
+            }
+          });
           
-          if (updatedItem) {
-            // 保存更新后的项目
-            await StorageManager.updateItem(updatedItem);
-            console.log(`[API] 已标记 ${uploadedEpisodes.length} 个集数为已完成`);
-            markedEpisodes = uploadedEpisodes;
-          }
+          // 将修改后的数据写回CSV文件
+          const modifiedContent = csvDataToString(csvData);
+          await writeCSVFile(csvAbsolutePath, modifiedContent);
+          
+          console.log(`[API] 已删除爱奇艺平台的air_date列`);
         }
+      } catch (error) {
+        console.error('[API] 删除air_date列时出错:', error);
+        // 继续执行，不中断流程
       }
     }
     
-    console.log('[API] 定时任务执行成功');
-    return NextResponse.json({
-      success: true,
-      message: '定时任务执行成功',
-      platformResult: platformResult.stdout,
-      uploadResult: uploadResult.stdout,
-      csvData,
-      markedEpisodes // 添加已标记的集数信息
-    });
-    
+    // 如果需要自动上传
+    if (requestData.action.autoUpload) {
+      // 执行上传命令
+      const uploadResult = await executeTMDBUpload(
+        csvAbsolutePath, 
+        tmdbImportDir,
+        !!requestData.action.autoConfirm
+      );
+      
+      // 如果需要自动标记已上传的集数
+      if (requestData.action.autoMarkUploaded) {
+        // 从输出中提取成功上传的集数
+        const uploadedEpisodes = extractUploadedEpisodes(uploadResult.stdout);
+        
+        if (uploadedEpisodes.length > 0) {
+          // 将上传成功的集数标记为已完成
+          await markEpisodesAsCompleted(item, requestData.action.seasonNumber, uploadedEpisodes);
+        }
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: '成功执行TMDB导入任务',
+        csvPath: csvPath,
+        uploadOutput: uploadResult.stdout.substring(0, 1000) + (uploadResult.stdout.length > 1000 ? '...' : '')
+      });
+    } else {
+      // 如果不需要自动上传，只返回CSV路径
+      return NextResponse.json({ 
+        success: true, 
+        message: '成功执行TMDB导出任务',
+        csvPath: csvPath
+      });
+    }
   } catch (error: any) {
     console.error('[API] 执行定时任务失败:', error);
     return NextResponse.json({ 
-      error: error.message || '执行定时任务失败',
-      stack: error.stack
+      error: '执行定时任务失败', 
+      message: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
+  }
+}
+
+/**
+ * 为了兼容原有的GET请求方式，仍然保留GET处理程序
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  console.log('[API] 收到GET请求，建议改用POST方法');
+  
+  try {
+    // 从URL参数中获取信息
+    const url = new URL(request.url);
+    const itemId = url.searchParams.get('itemId');
+    const seasonNumber = parseInt(url.searchParams.get('seasonNumber') || '1', 10);
+    const autoUpload = url.searchParams.get('autoUpload') === 'true';
+    const autoRemoveMarked = url.searchParams.get('autoRemoveMarked') === 'true';
+    const autoConfirm = url.searchParams.get('autoConfirm') === 'true';
+    const removeIqiyiAirDate = url.searchParams.get('removeIqiyiAirDate') === 'true';
+    const autoMarkUploaded = url.searchParams.get('autoMarkUploaded') !== 'false'; // 默认为true
+    
+    // 验证必要参数
+    if (!itemId) {
+      return NextResponse.json({ error: '缺少必要参数: itemId' }, { status: 400 });
+    }
+    
+    // 模拟POST请求的请求体
+    const requestData: ExecuteTaskRequest = {
+      taskId: 'legacy-get-request',
+      itemId,
+      action: {
+        seasonNumber,
+        autoUpload,
+        autoRemoveMarked,
+        autoConfirm,
+        removeIqiyiAirDate,
+        autoMarkUploaded
+      }
+    };
+    
+    // 直接调用POST处理程序，传递JSON数据
+    return POST(new NextRequest(request.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    }));
+  } catch (error: any) {
+    console.error('[API] 处理GET请求失败:', error);
+    return NextResponse.json({ 
+      error: '处理请求失败', 
+      message: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
 } 

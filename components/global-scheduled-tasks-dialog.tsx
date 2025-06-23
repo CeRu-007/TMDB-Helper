@@ -343,230 +343,62 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
 
   // 立即执行任务
   const runTaskNow = async (task: ScheduledTask) => {
-    setIsRunningTask(true)
-    setRunningTaskId(task.id)
-    
     try {
-      console.log(`开始执行任务: ${task.name}, ID: ${task.id}, 关联项目ID: ${task.itemId}`);
-      
-      // 获取关联的项目
-      const relatedItem = getTaskItem(task.itemId)
-      
-      // 打印项目列表长度，帮助调试
-      console.log(`当前项目列表共有 ${items.length} 个项目`);
-      
-      // 先验证项目是否存在，如果不存在，直接提示用户重新关联项目
-      if (!relatedItem) {
-        console.warn(`找不到ID为 ${task.itemId} 的项目，需要重新关联项目`);
-        
-        // 检查项目ID是否无效（太长或格式错误）
-        const isInvalidId = task.itemId.length > 20 || !/^[0-9]+$/.test(task.itemId);
-        if (isInvalidId) {
-          console.warn(`项目ID ${task.itemId} 格式可能无效，尝试自动修复`);
-          
-          // 尝试通过任务名称修复项目ID
-          const possibleItem = items.find(item => 
-            item.title === task.name.replace(/\s+定时任务$/, '')
-          );
-          
-          if (possibleItem) {
-            console.log(`找到可能匹配的项目: ${possibleItem.title}, ID: ${possibleItem.id}`);
-            
-            // 自动更新任务的itemId
-            const fixedTask = {
-              ...task,
-              itemId: possibleItem.id,
-              updatedAt: new Date().toISOString()
-            };
-            
-            await StorageManager.updateScheduledTask(fixedTask);
-            toast({
-              title: "自动修复成功",
-              description: `已将任务关联到项目"${possibleItem.title}"`,
-            });
-            
-            // 递归调用自身，使用修复后的任务
-            setTasks(prev => prev.map(t => t.id === task.id ? fixedTask : t));
-            return runTaskNow(fixedTask);
-          }
-        }
-        
-        // 使用增强的匹配算法查找可能的匹配项
-        const possibleMatches = findPossibleMatches(task);
-        
-        if (possibleMatches.length > 0) {
-          // 找到可能的匹配项，提示用户选择
-          const bestMatch = possibleMatches[0];
-          const matchConfidence = bestMatch.score >= 90 ? "高" : bestMatch.score >= 70 ? "中" : "低";
-          
-          toast({
-            title: "项目不存在",
-            description: `找不到ID为 ${task.itemId} 的项目，但找到了 ${possibleMatches.length} 个可能的匹配项`,
-            variant: "destructive",
-            action: (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => openRelinkDialog(task, possibleMatches)}
-              >
-                重新关联
-              </Button>
-            ),
-          });
-          
-          // 可以选择自动打开重新关联对话框
-          setTimeout(() => {
-            openRelinkDialog(task, possibleMatches);
-          }, 500);
-          
-          return;
-        } else {
-          // 找不到任何可能的匹配项
-          toast({
-            title: "项目不存在",
-            description: `找不到ID为 ${task.itemId} 的项目，也无法找到可能的匹配项`,
-            variant: "destructive",
-            action: (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => openRelinkDialog(task)}
-              >
-                重新关联
-              </Button>
-            ),
-          });
-          
-          // 可以选择自动打开重新关联对话框
-          setTimeout(() => {
-            openRelinkDialog(task);
-          }, 500);
-          
-          return;
-        }
+      if (isRunningTask) {
+        toast({
+          title: "任务执行中",
+          description: "已有任务正在执行，请等待完成"
+        });
+        return;
       }
       
-      // 构建执行参数
-      const params = new URLSearchParams({
-        itemId: task.itemId,
-        seasonNumber: task.action.seasonNumber.toString(),
-        autoUpload: task.action.autoUpload.toString(),
-        autoRemoveMarked: task.action.autoRemoveMarked.toString(),
-        // 添加新的参数
-        autoConfirm: (task.action.autoConfirm !== false).toString(),
-        autoMarkUploaded: (task.action.autoMarkUploaded !== false).toString(),
-        removeIqiyiAirDate: (task.action.removeIqiyiAirDate === true).toString()
-      })
-      
-      // 添加额外的参数，用于在找不到项目时进行备用查找
-      if (relatedItem) {
-        // 如果找到关联项目，添加其tmdbId和title作为备用参数
-        params.append('tmdbId', relatedItem.tmdbId);
-        params.append('title', relatedItem.title);
-        params.append('platformUrl', relatedItem.platformUrl || '');
-      } else {
-        // 这部分代码不会执行，因为我们已经在前面处理了relatedItem不存在的情况
-        // 但为了代码的完整性，保留这部分逻辑
-        // ... existing code ...
-      }
-      
-      // 调用API执行任务
-      console.log(`执行任务: ${task.name}, 参数:`, Object.fromEntries(params.entries()));
-      const response = await fetch(`/api/execute-scheduled-task?${params.toString()}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '执行失败');
-      }
-      
-      const result = await response.json();
-      
-      // 更新任务的最后执行时间和状态
-      const updatedTask = {
-        ...task,
-        lastRun: new Date().toISOString(),
-        lastRunStatus: "success" as const,
-        lastRunError: null,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await StorageManager.updateScheduledTask(updatedTask);
-      
-      // 更新本地任务列表
-      setTasks(prev => 
-        prev.map(t => t.id === task.id ? updatedTask : t)
-      );
-      
-      // 如果自动标记了上传的集数，提示用户
-      let successMessage = `任务已成功执行，处理了 ${result.csvData?.rows?.length || 0} 条数据`;
-      if (result.markedEpisodes && result.markedEpisodes.length > 0) {
-        successMessage += `，已标记 ${result.markedEpisodes.length} 个集数为已完成`;
-      }
+      setIsRunningTask(true);
+      setRunningTaskId(task.id);
       
       toast({
-        title: "执行成功",
-        description: successMessage,
+        title: "开始执行任务",
+        description: `正在执行任务: ${task.name}`
       });
-    } catch (error: any) {
-      console.error("执行任务失败:", error);
       
-      // 检查是否是"找不到项目"错误
-      const isItemNotFoundError = error.message && (
-        error.message.includes('找不到ID为') || 
-        error.message.includes('项目不存在') ||
-        error.message.includes('找不到项目')
-      );
+      // 使用调度器的runTaskNow方法
+      const result = await taskScheduler.runTaskNow(task.id);
       
-      // 更新任务的失败状态
-      const failedTask = {
-        ...task,
-        lastRun: new Date().toISOString(),
-        lastRunStatus: "failed" as const,
-        lastRunError: error.message || "未知错误",
-        updatedAt: new Date().toISOString()
-      };
-      
-      await StorageManager.updateScheduledTask(failedTask);
-      
-      // 更新本地任务列表
-      setTasks(prev => 
-        prev.map(t => t.id === task.id ? failedTask : t)
-      );
-      
-      // 如果是找不到项目的错误，提供快速重新关联的选项
-      if (isItemNotFoundError) {
+      if (result.success) {
         toast({
-          title: "执行失败",
-          description: error.message || "无法执行任务",
-          variant: "destructive",
-          action: (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => openRelinkDialog(failedTask)}
-            >
-              重新关联
-            </Button>
-          ),
+          title: "任务执行成功",
+          description: result.message
         });
         
-        // 可以选择自动打开重新关联对话框
-        setTimeout(() => {
-          openRelinkDialog(failedTask);
-        }, 500);
+        // 重新加载任务列表以更新状态
+        await loadTasksAndItems();
       } else {
-        // 其他类型的错误，显示普通错误消息
+        toast({
+          title: "任务执行失败",
+          description: result.message,
+          variant: "destructive"
+        });
+        
+        // 如果错误消息中包含"找不到项目"，提示用户使用重新关联功能
+        if (result.message.includes("找不到") && result.message.includes("项目")) {
+          toast({
+            title: "项目关联问题",
+            description: "任务关联的项目可能已被删除，请使用重新关联功能",
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error("执行任务失败:", error);
       toast({
-        title: "执行失败",
-        description: error.message || "无法执行任务",
+        title: "执行任务失败",
+        description: error instanceof Error ? error.message : "未知错误",
         variant: "destructive"
       });
-      }
     } finally {
       setIsRunningTask(false);
       setRunningTaskId(null);
     }
-  }
+  };
 
   // 确认删除任务
   const confirmDeleteTask = (taskId: string) => {
@@ -1619,93 +1451,44 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     );
   };
 
-  // 清理无效的任务
+  // 清理无效任务
   const handleCleanInvalidTasks = async () => {
-    if (loading) return;
-    
-    setLoading(true);
     try {
-      // 识别无效的任务
-      let invalidTasks: ScheduledTask[] = [];
-      let fixedCount = 0;
+      setLoading(true);
       
-      for (const task of tasks) {
-        const relatedItem = getTaskItem(task.itemId);
-        if (!relatedItem) {
-          // 尝试自动修复
-          const matchingItem = items.find(item => 
-            item.title === task.name.replace(/\s+定时任务$/, '')
-          );
-          
-          if (matchingItem) {
-            // 可以修复
-            const fixedTask = {
-              ...task,
-              itemId: matchingItem.id,
-              updatedAt: new Date().toISOString()
-            };
-            
-            await StorageManager.updateScheduledTask(fixedTask);
-            fixedCount++;
-          } else {
-            // 无法修复
-            invalidTasks.push(task);
-          }
-        }
-      }
+      toast({
+        title: "正在清理无效任务",
+        description: "正在检查和清理无效任务..."
+      });
       
-      // 如果有无法修复的任务，显示确认对话框
-      if (invalidTasks.length > 0) {
-        if (window.confirm(`发现 ${invalidTasks.length} 个无法自动修复的无效任务，是否删除？已自动修复 ${fixedCount} 个任务。`)) {
-          let deleteCount = 0;
-          for (const task of invalidTasks) {
-            const success = await StorageManager.deleteScheduledTask(task.id);
-            if (success) deleteCount++;
-          }
-          
-          toast({
-            title: "清理完成",
-            description: `成功删除 ${deleteCount} 个无效任务，自动修复 ${fixedCount} 个任务`,
-          });
-          
-          // 重新加载任务列表
-          await loadTasksAndItems();
-        } else {
-          toast({
-            title: "操作取消",
-            description: `已取消删除操作，但已自动修复 ${fixedCount} 个任务`,
-          });
-          
-          if (fixedCount > 0) {
-            // 如果有任务被修复，重新加载任务列表
-            await loadTasksAndItems();
-          }
-        }
-      } else if (fixedCount > 0) {
+      const result = await taskScheduler.cleanInvalidTasks();
+      
+      if (result.success) {
         toast({
           title: "清理完成",
-          description: `已自动修复 ${fixedCount} 个任务，没有发现无法修复的任务`,
+          description: result.message
         });
         
         // 重新加载任务列表
         await loadTasksAndItems();
       } else {
         toast({
-          title: "检查完成",
-          description: "所有任务都是有效的，无需清理",
+          title: "清理失败",
+          description: result.message,
+          variant: "destructive"
         });
       }
     } catch (error) {
       console.error("清理无效任务失败:", error);
       toast({
         title: "清理失败",
-        description: "无法完成清理操作",
+        description: "操作过程中发生错误",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -1747,33 +1530,33 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
             </div>
             
             <div className="flex items-center gap-2">
-                <Button
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleCleanInvalidTasks}
-                  disabled={loading || isRunningTask}
-                  title="清理无效任务"
-                  className="mr-2"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  清理无效
-                </Button>
-                
-                <Button
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleManualRefresh}
-                  disabled={loading}
-                  title="刷新任务列表"
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <RotateCw className="h-4 w-4 mr-2" />
-                  )}
-                  刷新
-                </Button>
+              <Button
+                variant="outline" 
+                size="sm"
+                onClick={handleCleanInvalidTasks}
+                disabled={loading || isRunningTask}
+                title="清理无效任务"
+                className="mr-2"
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                清理无效
+              </Button>
               
+              <Button
+                variant="outline" 
+                size="sm"
+                onClick={handleManualRefresh}
+                disabled={loading}
+                title="刷新任务列表"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RotateCw className="h-4 w-4 mr-2" />
+                )}
+                刷新
+              </Button>
+
               {selectedItem && (
                 <Button
                   size="sm"
@@ -1781,9 +1564,9 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   添加任务
-            </Button>
+                </Button>
               )}
-          </div>
+            </div>
           </div>
           
           <ScrollArea className="flex-1 h-[500px] pr-4">
