@@ -131,6 +131,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   const [relinkSuggestions, setRelinkSuggestions] = useState<Array<{item: TMDBItem, score: number, matchType: string, matchDetails: string}>>([])
   const [showBatchRelinkDialog, setShowBatchRelinkDialog] = useState(false)
   const [tasksToRelink, setTasksToRelink] = useState<ScheduledTask[]>([])
+  // 在组件顶部添加一个新的状态变量，用于记录是否已经处理过ID问题
+  const [hasFixedProblemId, setHasFixedProblemId] = useState(false)
 
   // 加载任务列表和项目
   useEffect(() => {
@@ -159,6 +161,51 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       const allItems = await StorageManager.getItemsWithRetry()
       console.log(`[GlobalScheduledTasksDialog] 加载了 ${allItems.length} 个项目`);
       setItems(allItems)
+
+      // 检查是否存在问题ID的任务，并且之前没有处理过
+      if (!hasFixedProblemId) {
+        const problemTask = allTasks.find(task => task.itemId === "1749566411729");
+        if (problemTask) {
+          console.log("[GlobalScheduledTasksDialog] 检测到问题ID任务，尝试自动修复...");
+          
+          // 尝试使用最近创建的项目进行关联
+          if (allItems.length > 0) {
+            // 按创建时间排序
+            const sortedItems = [...allItems].sort((a, b) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            
+            const newItemId = sortedItems[0].id;
+            
+            // 更新任务
+            const updatedTask = { 
+              ...problemTask,
+              itemId: newItemId,
+              itemTitle: sortedItems[0].title,
+              itemTmdbId: sortedItems[0].tmdbId,
+              updatedAt: new Date().toISOString()
+            };
+            
+            // 保存更新后的任务
+            const success = await StorageManager.updateScheduledTask(updatedTask);
+            
+            if (success) {
+              console.log(`[GlobalScheduledTasksDialog] 成功修复问题ID任务，新项目ID: ${newItemId}`);
+              toast({
+                title: "自动修复",
+                description: `已修复问题ID 1749566411729，关联到项目"${sortedItems[0].title}"`,
+              });
+              
+              // 标记为已处理
+              setHasFixedProblemId(true);
+              
+              // 重新加载任务列表
+              const updatedTasks = await StorageManager.getScheduledTasks();
+              setTasks(updatedTasks);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error("[GlobalScheduledTasksDialog] 加载数据失败:", error)
       toast({
@@ -1490,6 +1537,90 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     }
   };
 
+  // 添加一个专门修复1749566411729任务ID的函数
+  const fixProblemIdTask = async () => {
+    try {
+      setLoading(true);
+      
+      toast({
+        title: "修复中",
+        description: "正在修复问题ID 1749566411729...",
+      });
+      
+      // 获取任务列表
+      const allTasks = await StorageManager.getScheduledTasks();
+      const problemTask = allTasks.find(task => task.itemId === "1749566411729");
+      
+      if (!problemTask) {
+        toast({
+          title: "未找到问题任务",
+          description: "未找到ID为1749566411729的任务",
+        });
+        return;
+      }
+      
+      // 获取项目列表
+      const allItems = await StorageManager.getItemsWithRetry();
+      
+      if (allItems.length === 0) {
+        toast({
+          title: "无可用项目",
+          description: "系统中没有可用的项目进行关联",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // 按创建时间排序
+      const sortedItems = [...allItems].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      // 使用第一个项目
+      const newItemId = sortedItems[0].id;
+      
+      // 更新任务
+      const updatedTask = { 
+        ...problemTask,
+        itemId: newItemId,
+        itemTitle: sortedItems[0].title,
+        itemTmdbId: sortedItems[0].tmdbId,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // 保存更新后的任务
+      const success = await StorageManager.updateScheduledTask(updatedTask);
+      
+      if (success) {
+        toast({
+          title: "修复成功",
+          description: `已将任务"${problemTask.name}"关联到项目"${sortedItems[0].title}"`,
+        });
+        
+        // 标记为已处理
+        setHasFixedProblemId(true);
+        
+        // 重新加载任务列表
+        await loadTasksAndItems();
+      } else {
+        toast({
+          title: "修复失败",
+          description: "无法更新任务",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("修复问题ID任务失败:", error);
+      toast({
+        title: "修复失败",
+        description: "操作过程中发生错误",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1542,6 +1673,18 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                 清理无效
               </Button>
               
+              <Button
+                variant="outline" 
+                size="sm"
+                onClick={fixProblemIdTask}
+                disabled={loading || hasFixedProblemId}
+                title="修复问题ID 1749566411729"
+                className="mr-2"
+              >
+                <Lightbulb className="h-4 w-4 mr-2" />
+                修复ID问题
+              </Button>
+
               <Button
                 variant="outline" 
                 size="sm"

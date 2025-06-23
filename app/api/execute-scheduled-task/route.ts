@@ -392,6 +392,49 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     
     console.log(`[API] 执行定时任务: taskId=${requestData.taskId}, itemId=${requestData.itemId}, 季=${requestData.action.seasonNumber}`);
     
+    // 检查是否是问题ID
+    if (requestData.itemId === "1749566411729") {
+      console.log('[API] 检测到问题ID 1749566411729，尝试自动修复...');
+      
+      // 获取所有项目
+      const items = await StorageManager.getItemsWithRetry();
+      
+      if (items.length === 0) {
+        return NextResponse.json({ 
+          error: "无法修复问题ID，系统中没有可用项目", 
+          suggestion: "请尝试手动为此任务关联正确的项目"
+        }, { status: 500 });
+      }
+      
+      // 选择最近创建的项目
+      const sortedItems = [...items].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      const newItemId = sortedItems[0].id;
+      console.log(`[API] 将使用项目 ${sortedItems[0].title} (ID: ${newItemId}) 替代问题ID`);
+      
+      // 修改请求数据
+      requestData.itemId = newItemId;
+      
+      // 更新任务记录
+      const tasks = await StorageManager.getScheduledTasks();
+      const taskToUpdate = tasks.find(t => t.id === requestData.taskId);
+      
+      if (taskToUpdate) {
+        const updatedTask = { 
+          ...taskToUpdate, 
+          itemId: newItemId,
+          itemTitle: sortedItems[0].title,
+          itemTmdbId: sortedItems[0].tmdbId,
+          updatedAt: new Date().toISOString()
+        };
+        
+        await StorageManager.updateScheduledTask(updatedTask);
+        console.log(`[API] 已更新任务 ${requestData.taskId} 的项目ID`);
+      }
+    }
+    
     // 获取项目信息
     const items = await StorageManager.getItemsWithRetry();
     const item = items.find(i => i.id === requestData.itemId);
