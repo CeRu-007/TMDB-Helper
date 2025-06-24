@@ -33,6 +33,8 @@ import {
   Wifi,
   Key,
   Server,
+  Filter,
+  XCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -992,10 +994,6 @@ export default function HomePage() {
                   <RefreshCw className={`h-4 w-4 mr-2 ${loadingUpcoming ? 'animate-spin' : ''}`} />
                   刷新数据
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowSettingsDialog(true)}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  配置API密钥
-                </Button>
               </div>
             </div>
             
@@ -1153,9 +1151,19 @@ export default function HomePage() {
                             <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
                               {item.title}
                             </h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {new Date(item.releaseDate).toLocaleDateString('zh-CN')}
-                            </p>
+                            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                              <span className="flex items-center">
+                                {item.mediaType === "movie" ? "电影" : "剧集"}
+                              </span>
+                              <span className="mx-1">·</span>
+                              <span className="flex items-center">
+                                {Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 0 
+                                  ? "今天上线" 
+                                  : (Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) > 0 
+                                    ? `${Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 天后上线`
+                                    : "已上线")}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>

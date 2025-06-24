@@ -180,10 +180,17 @@ export async function GET(request: Request) {
         genreIds: show.genre_ids
       }));
 
-      // 合并并按日期排序
-      const combinedResults = [...movies, ...tvShows].sort((a, b) => 
-        new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime()
-      );
+      // 合并并按日期排序，只保留未来日期的条目
+      const now = new Date().getTime();
+      const combinedResults = [...movies, ...tvShows]
+        .filter(item => {
+          const releaseTime = new Date(item.releaseDate).getTime();
+          // 只保留今天和未来的内容（今天的内容也包含在内）
+          return releaseTime >= new Date().setHours(0, 0, 0, 0);
+        })
+        .sort((a, b) => 
+          new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime()
+        );
 
       // 缓存这些结果到服务器内存（稍后可能需要实现）
       
