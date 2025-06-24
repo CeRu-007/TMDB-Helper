@@ -96,9 +96,11 @@ const fetchTMDBWithRetry = async (endpoint: string, params: Record<string, strin
 
 export async function GET(request: Request) {
   try {
-    // 从请求头中获取API密钥
+    // 从请求头中获取API密钥和区域参数
     const url = new URL(request.url);
     const apiKey = url.searchParams.get('api_key');
+    const region = url.searchParams.get('region') || 'CN';
+    const language = url.searchParams.get('language') || 'zh-CN';
     
     // 如果没有API密钥，返回错误
     if (!apiKey) {
@@ -121,20 +123,21 @@ export async function GET(request: Request) {
       // 并行请求电影和电视剧数据，添加超时处理
       const [moviesResponse, tvShowsResponse] = await Promise.all([
         fetchTMDBWithRetry('/discover/movie', {
-          language: 'zh-CN',
-          region: 'CN',
+          language: language,
+          region: region,
           sort_by: 'release_date.asc',
           'release_date.gte': fromDate,
           'release_date.lte': toDate,
-          with_original_language: 'zh',
+          ...(region === 'CN' || region === 'HK' || region === 'TW' ? { with_original_language: 'zh' } : {}),
           page: '1'
         }, apiKey, 3), // 最多重试3次
         fetchTMDBWithRetry('/discover/tv', {
-          language: 'zh-CN',
+          language: language,
           sort_by: 'first_air_date.asc',
           'first_air_date.gte': fromDate,
           'first_air_date.lte': toDate,
-          with_original_language: 'zh',
+          ...(region === 'CN' || region === 'HK' || region === 'TW' ? { with_original_language: 'zh' } : {}),
+          with_origin_country: region,
           page: '1'
         }, apiKey, 3) // 最多重试3次
       ]);
@@ -163,7 +166,8 @@ export async function GET(request: Request) {
         voteAverage: movie.vote_average,
         popularity: movie.popularity,
         originalLanguage: movie.original_language,
-        genreIds: movie.genre_ids
+        genreIds: movie.genre_ids,
+        region: region
       }));
 
       // 处理电视剧数据
@@ -177,7 +181,8 @@ export async function GET(request: Request) {
         voteAverage: show.vote_average,
         popularity: show.popularity,
         originalLanguage: show.original_language,
-        genreIds: show.genre_ids
+        genreIds: show.genre_ids,
+        region: region
       }));
 
       // 合并并按日期排序，只保留未来日期的条目
@@ -198,6 +203,8 @@ export async function GET(request: Request) {
       return NextResponse.json({
         success: true,
         results: combinedResults,
+        region: region,
+        language: language,
         timestamp: new Date().toISOString()
       });
     } catch (apiError: any) {

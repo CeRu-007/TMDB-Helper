@@ -61,6 +61,17 @@ import { useToast } from "@/components/ui/use-toast"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
+// 定义国家/区域常量
+const REGIONS = [
+  { id: "CN", name: "中国大陆", icon: "🇨🇳" },
+  { id: "HK", name: "香港", icon: "🇭🇰" },
+  { id: "TW", name: "台湾", icon: "🇹🇼" },
+  { id: "JP", name: "日本", icon: "🇯🇵" },
+  { id: "KR", name: "韩国", icon: "🇰🇷" },
+  { id: "US", name: "美国", icon: "🇺🇸" },
+  { id: "GB", name: "英国", icon: "🇬🇧" },
+]
+
 // 判断当前环境是否为客户端
 const isClientEnv = typeof window !== 'undefined'
 
@@ -89,6 +100,8 @@ export default function HomePage() {
   const isMobile = useMobile()
   const { theme, setTheme } = useTheme()
   const isClient = useIsClient()
+  const [selectedRegion, setSelectedRegion] = useState<string>("CN")
+  const [upcomingItemsByRegion, setUpcomingItemsByRegion] = useState<Record<string, any[]>>({})
   
   // 使用数据提供者获取数据和方法
   const { 
@@ -105,7 +118,7 @@ export default function HomePage() {
   } = useData()
 
   // 获取即将上线的内容
-  const fetchUpcomingItems = async (silent = false, retryCount = 0) => {
+  const fetchUpcomingItems = async (silent = false, retryCount = 0, region = selectedRegion) => {
     if (!silent) {
       setLoadingUpcoming(true);
     }
@@ -125,7 +138,7 @@ export default function HomePage() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
       
-      const response = await fetch(`/api/tmdb/upcoming?api_key=${encodeURIComponent(apiKey)}`, {
+      const response = await fetch(`/api/tmdb/upcoming?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
         signal: controller.signal,
         cache: 'no-store',
         headers: {
@@ -174,13 +187,21 @@ export default function HomePage() {
       
       const data = await response.json();
       if (data.success) {
-        // 保存数据到状态
-        setUpcomingItems(data.results);
+        // 保存数据到状态 - 区分不同区域的数据
+        const newUpcomingItemsByRegion = { ...upcomingItemsByRegion };
+        newUpcomingItemsByRegion[region] = data.results;
+        setUpcomingItemsByRegion(newUpcomingItemsByRegion);
+        
+        // 如果当前选中的是这个区域，也更新主要数据
+        if (region === selectedRegion) {
+          setUpcomingItems(data.results);
+        }
+        
         setUpcomingLastUpdated(new Date().toLocaleString('zh-CN'));
         
         // 同时保存到localStorage作为缓存，以防页面刷新后数据丢失
         try {
-          localStorage.setItem('upcomingItems', JSON.stringify(data.results));
+          localStorage.setItem(`upcomingItems_${region}`, JSON.stringify(data.results));
           localStorage.setItem('upcomingLastUpdated', new Date().toLocaleString('zh-CN'));
         } catch (e) {
           console.warn('无法保存即将上线数据到本地存储:', e);
@@ -217,7 +238,7 @@ export default function HomePage() {
         
         // 延迟重试，避免立即重试可能导致的同样错误
         setTimeout(() => {
-          fetchUpcomingItems(silent, retryCount + 1);
+          fetchUpcomingItems(silent, retryCount + 1, region);
         }, delay);
         
         return; // 不要继续执行后面的代码
@@ -226,11 +247,13 @@ export default function HomePage() {
       // 如果重试失败或其他错误，尝试从localStorage加载缓存数据
       if (retryCount >= 5) {
         try {
-          const cachedItems = localStorage.getItem('upcomingItems');
+          const cachedItems = localStorage.getItem(`upcomingItems_${region}`);
           const cachedLastUpdated = localStorage.getItem('upcomingLastUpdated');
           
           if (cachedItems) {
-            setUpcomingItems(JSON.parse(cachedItems));
+            const newUpcomingItemsByRegion: Record<string, any[]> = { ...upcomingItemsByRegion };
+            newUpcomingItemsByRegion[region] = JSON.parse(cachedItems);
+            setUpcomingItemsByRegion(newUpcomingItemsByRegion);
             if (cachedLastUpdated) {
               setUpcomingLastUpdated(cachedLastUpdated + ' (缓存)');
             }
@@ -251,11 +274,26 @@ export default function HomePage() {
   useEffect(() => {
     // 首先尝试从localStorage加载缓存数据
     try {
-      const cachedItems = localStorage.getItem('upcomingItems');
-      const cachedLastUpdated = localStorage.getItem('upcomingLastUpdated');
+      // 加载所有区域的缓存数据
+      const newUpcomingItemsByRegion: Record<string, any[]> = {};
+      let hasAnyData = false;
       
-      if (cachedItems) {
-        setUpcomingItems(JSON.parse(cachedItems));
+      REGIONS.forEach(region => {
+        const cachedItems = localStorage.getItem(`upcomingItems_${region.id}`);
+        if (cachedItems) {
+          newUpcomingItemsByRegion[region.id] = JSON.parse(cachedItems);
+          hasAnyData = true;
+        }
+      });
+      
+      if (hasAnyData) {
+        setUpcomingItemsByRegion(newUpcomingItemsByRegion);
+        // 设置当前选中区域的数据
+        if (newUpcomingItemsByRegion[selectedRegion]) {
+          setUpcomingItems(newUpcomingItemsByRegion[selectedRegion]);
+        }
+        
+        const cachedLastUpdated = localStorage.getItem('upcomingLastUpdated');
         if (cachedLastUpdated) {
           setUpcomingLastUpdated(cachedLastUpdated);
         }
@@ -264,16 +302,27 @@ export default function HomePage() {
       console.warn('无法从本地存储加载缓存数据:', e);
     }
     
-    // 然后获取最新数据
-    fetchUpcomingItems();
+    // 然后获取最新数据 - 默认只获取当前选中的区域
+    fetchUpcomingItems(false, 0, selectedRegion);
     
     // 每小时刷新一次
     const intervalId = setInterval(() => {
-      fetchUpcomingItems(true); // 静默刷新
+      fetchUpcomingItems(true, 0, selectedRegion); // 静默刷新
     }, 60 * 60 * 1000); // 1小时
     
     return () => clearInterval(intervalId);
   }, []);
+
+  // 当选中区域变化时加载对应区域的数据
+  useEffect(() => {
+    if (upcomingItemsByRegion[selectedRegion]) {
+      // 如果已经有数据，直接使用
+      setUpcomingItems(upcomingItemsByRegion[selectedRegion]);
+    } else {
+      // 否则请求新数据
+      fetchUpcomingItems(false, 0, selectedRegion);
+    }
+  }, [selectedRegion]);
 
   // 添加自动修复定时任务的功能
   useEffect(() => {
@@ -834,6 +883,49 @@ export default function HomePage() {
     </div>
   );
 
+  // 区域选择导航栏
+  const RegionNavigation = () => (
+    <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-30 mb-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex space-x-1 overflow-x-auto py-3">
+          {REGIONS.map((region) => {
+            const isSelected = selectedRegion === region.id;
+            const regionItems = upcomingItemsByRegion[region.id] || [];
+            const validItems = regionItems.filter(upcomingItem => 
+              !items.some(item => 
+                item.tmdbId === upcomingItem.id.toString() && 
+                item.mediaType === upcomingItem.mediaType
+              )
+            );
+
+            return (
+              <Button
+                key={region.id}
+                variant="ghost"
+                onClick={() => setSelectedRegion(region.id)}
+                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  isSelected
+                    ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>{region.icon}</span>
+                  <span>{region.name}</span>
+                  {validItems.length > 0 && (
+                    <span className="bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
+                      {validItems.length}
+                    </span>
+                  )}
+                </div>
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  )
+
   // 渲染内容
   const renderContent = () => {
     if (loading && !initialized) {
@@ -962,7 +1054,7 @@ export default function HomePage() {
 
           <TabsContent value="upcoming">
             {/* 全新设计的即将上线内容头部 */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-4">
               <div className="flex items-center">
                 <div className="relative mr-3">
                   <div className="absolute inset-0 bg-blue-500 blur-md opacity-20 rounded-full"></div>
@@ -990,12 +1082,15 @@ export default function HomePage() {
               
               {/* 功能按钮 */}
               <div className="flex flex-wrap gap-2 mt-4">
-                <Button variant="outline" size="sm" onClick={() => fetchUpcomingItems()}>
+                <Button variant="outline" size="sm" onClick={() => fetchUpcomingItems(false, 0, selectedRegion)}>
                   <RefreshCw className={`h-4 w-4 mr-2 ${loadingUpcoming ? 'animate-spin' : ''}`} />
                   刷新数据
                 </Button>
               </div>
             </div>
+            
+            {/* 区域选择导航 */}
+            <RegionNavigation />
             
             {/* 即将上线内容主体 */}
             <div>
