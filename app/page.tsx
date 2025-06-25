@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import type { MediaNewsType } from "../types/media-news"
 
 import { useState, useEffect } from "react"
 import {
@@ -72,6 +73,18 @@ const REGIONS = [
   { id: "GB", name: "英国", icon: "🇬🇧" },
 ]
 
+// 区域分组
+const REGION_GROUPS = [
+  {
+    name: "亚洲",
+    regions: ["CN", "HK", "TW", "JP", "KR"]
+  },
+  {
+    name: "欧美",
+    regions: ["US", "GB"]
+  }
+];
+
 // 判断当前环境是否为客户端
 const isClientEnv = typeof window !== 'undefined'
 
@@ -102,6 +115,14 @@ export default function HomePage() {
   const isClient = useIsClient()
   const [selectedRegion, setSelectedRegion] = useState<string>("CN")
   const [upcomingItemsByRegion, setUpcomingItemsByRegion] = useState<Record<string, any[]>>({})
+  // 影视资讯子类型
+  const [mediaNewsType, setMediaNewsType] = useState<string>('upcoming');
+  // 近期开播内容
+  const [recentItems, setRecentItems] = useState<any[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(false);
+  const [recentError, setRecentError] = useState<string | null>(null);
+  const [recentLastUpdated, setRecentLastUpdated] = useState<string | null>(null);
+  const [recentItemsByRegion, setRecentItemsByRegion] = useState<Record<string, any[]>>({});
   
   // 使用数据提供者获取数据和方法
   const { 
@@ -160,7 +181,7 @@ export default function HomePage() {
         }
         
         // 根据HTTP状态码提供更详细的错误信息
-        let errorMessage = `获取即将上线内容失败 (${response.status})`;
+        let errorMessage = `获取影视资讯内容失败 (${response.status})`;
         if (response.status === 500) {
           errorMessage = `服务器内部错误 (500)，请稍后再试`;
         } else if (response.status === 503) {
@@ -204,7 +225,7 @@ export default function HomePage() {
           localStorage.setItem(`upcomingItems_${region}`, JSON.stringify(data.results));
           localStorage.setItem('upcomingLastUpdated', new Date().toLocaleString('zh-CN'));
         } catch (e) {
-          console.warn('无法保存即将上线数据到本地存储:', e);
+          console.warn('无法保存影视资讯数据到本地存储:', e);
         }
       } else {
         // 检查是否是API密钥未配置或无效的错误
@@ -212,10 +233,10 @@ export default function HomePage() {
           setIsMissingApiKey(true);
           throw new Error('TMDB API密钥无效，请在设置中重新配置');
         }
-        throw new Error(data.error || '获取即将上线内容失败');
+        throw new Error(data.error || '获取影视资讯内容失败');
       }
     } catch (error) {
-      console.error('获取即将上线内容失败:', error);
+      console.error('获取影视资讯内容失败:', error);
       setUpcomingError(error instanceof Error ? error.message : '未知错误');
       
       // 如果是网络错误或超时，尝试重试（最多5次）
@@ -225,7 +246,7 @@ export default function HomePage() {
            errorMessage.includes('timeout') || 
            errorMessage.includes('aborted') ||
            error instanceof TypeError)) {
-        console.log(`尝试重新获取即将上线内容，第${retryCount + 1}次重试`);
+        console.log(`尝试重新获取影视资讯内容，第${retryCount + 1}次重试`);
         
         // 使用指数退避算法计算延迟时间
         // 基础延迟为1000ms，每次重试翻倍，并添加随机因子
@@ -858,69 +879,154 @@ export default function HomePage() {
 
   // API密钥配置指南组件
   const ApiKeySetupGuide = () => (
-    <div className="bg-yellow-50 dark:bg-yellow-900/30 p-6 rounded-lg border border-yellow-200 dark:border-yellow-800 mb-6">
-      <h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-300 mb-3 flex items-center">
-        <Settings className="h-5 w-5 mr-2" />
-        需要配置TMDB API密钥
+    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-lg p-5 mb-6">
+      <div className="flex items-start space-x-4">
+        <div className="bg-blue-100 dark:bg-blue-800/30 p-2 rounded-full text-blue-700 dark:text-blue-300">
+          <Key className="h-5 w-5" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-1">
+            配置TMDB API密钥
       </h3>
-      <p className="text-yellow-700 dark:text-yellow-400 mb-4">
-        要使用"即将上线"功能，您需要配置有效的TMDB API密钥。
-      </p>
-      <div className="flex justify-center mb-4">
+          <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+            要使用"影视资讯"功能，您需要配置有效的TMDB API密钥。
+          </p>
+          <div className="space-y-2 text-sm text-blue-600 dark:text-blue-400">
+            <p>1. 访问 <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" className="underline">TMDB API设置</a> (需要先注册并登录)</p>
+            <p>2. 创建API密钥 (选择"开发者"类型)</p>
+            <p>3. 复制生成的API密钥(v3)</p>
+            <p>4. 点击下方的设置按钮，粘贴密钥并保存</p>
+          </div>
         <Button 
           onClick={() => setShowSettingsDialog(true)}
-          className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
         >
           <Settings className="h-4 w-4 mr-2" />
-          打开设置配置API密钥
+            打开设置
         </Button>
       </div>
-      <div className="bg-yellow-100 dark:bg-yellow-800/50 p-3 rounded border border-yellow-200 dark:border-yellow-700">
-        <p className="text-sm text-yellow-800 dark:text-yellow-300">
-          <strong>提示：</strong> 您已在设置中配置过API密钥，但可能无效或已过期。请检查并更新您的API密钥。
-        </p>
       </div>
     </div>
-  );
+  )
 
   // 区域选择导航栏
   const RegionNavigation = () => (
-    <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-30 mb-4">
+    <div className="mb-4 border-b border-blue-100/70 dark:border-blue-900/30 pb-3">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex space-x-1 overflow-x-auto py-3">
-          {REGIONS.map((region) => {
-            const isSelected = selectedRegion === region.id;
-            const regionItems = upcomingItemsByRegion[region.id] || [];
-            const validItems = regionItems.filter(upcomingItem => 
-              !items.some(item => 
-                item.tmdbId === upcomingItem.id.toString() && 
-                item.mediaType === upcomingItem.mediaType
+        <div className="flex items-center justify-between">
+          {/* 当前选中区域显示和切换按钮集成 */}
+          <div className="flex items-center">
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mr-2">区域:</span>
+            <div className="relative group">
+              <button className="flex items-center bg-white/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-md border border-blue-100 dark:border-blue-800/30 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-all text-sm">
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 shadow-inner mr-2">
+                  <span className="text-base">{REGIONS.find(r => r.id === selectedRegion)?.icon}</span>
+                </div>
+                <span className="font-medium text-sm text-blue-700 dark:text-blue-300 mr-1.5">
+                  {REGIONS.find(r => r.id === selectedRegion)?.name}
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {/* 下拉菜单 */}
+              <div className="absolute left-0 mt-1 w-52 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg rounded-lg border border-blue-100/70 dark:border-blue-800/30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 transform group-hover:translate-y-0 translate-y-1 z-50 overflow-hidden">
+                <div className="p-2">
+                  {REGION_GROUPS.map(group => (
+                    <div key={group.name} className="mb-2 last:mb-0">
+                      <div className="flex items-center px-2 py-0.5">
+                        <div className="h-px w-2 bg-blue-200 dark:bg-blue-800/70 mr-1.5"></div>
+                        <span className="text-[10px] font-medium text-blue-600/80 dark:text-blue-400/80 uppercase tracking-wider">
+                          {group.name}
+                        </span>
+                        <div className="h-px flex-grow bg-blue-200 dark:bg-blue-800/70 ml-1.5"></div>
+                      </div>
+                      <div className="mt-1 space-y-0.5">
+                        {group.regions.map(regionId => {
+                          const region = REGIONS.find(r => r.id === regionId);
+                          if (!region) return null;
+                          
+                          const isActive = selectedRegion === regionId;
+                          const regionItems = (mediaNewsType as string) === 'upcoming' 
+                            ? (upcomingItemsByRegion[regionId] || [])
+                            : (recentItemsByRegion[regionId] || []);
+                          const validItems = regionItems.filter(item => 
+                            !items.some(existingItem => 
+                              existingItem.tmdbId === item.id.toString() && 
+                              existingItem.mediaType === item.mediaType
               )
             );
 
             return (
-              <Button
-                key={region.id}
-                variant="ghost"
-                onClick={() => setSelectedRegion(region.id)}
-                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isSelected
-                    ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>{region.icon}</span>
-                  <span>{region.name}</span>
+                            <button
+                              key={regionId}
+                              onClick={() => setSelectedRegion(regionId)}
+                              className={`flex items-center justify-between w-full px-2.5 py-1.5 text-xs rounded-md transition-all duration-150 ${
+                                isActive
+                                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 shadow-sm"
+                                  : "hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              <div className="flex items-center">
+                                <div className={`w-5 h-5 flex items-center justify-center rounded-full ${
+                                  isActive 
+                                    ? "bg-white dark:bg-gray-800 shadow-inner" 
+                                    : "bg-gray-100 dark:bg-gray-700/50"
+                                }`}>
+                                  <span className="text-sm">{region.icon}</span>
+                                </div>
+                                <span className="ml-2 text-xs">{region.name}</span>
+                              </div>
                   {validItems.length > 0 && (
-                    <span className="bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
+                                <span className={`px-1.5 py-0.5 text-xs rounded-full flex items-center justify-center min-w-[1.25rem] ${
+                                  isActive
+                                    ? "bg-blue-200/80 dark:bg-blue-700/50 text-blue-800 dark:text-blue-200"
+                                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
+                                }`}>
                       {validItems.length}
                     </span>
                   )}
-                </div>
-              </Button>
+                            </button>
             );
           })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* 媒体资讯类型切换按钮 - 移到这里 */}
+          <div className="inline-flex p-0.5 rounded-md shadow-sm border border-blue-100 dark:border-blue-900/50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+            <button 
+              onClick={() => setMediaNewsType('upcoming')}
+              className={`px-2.5 py-1 rounded-sm text-sm font-medium transition-all duration-200 ${
+                (mediaNewsType as string) === 'upcoming' 
+                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              <div className="flex items-center space-x-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>即将上线</span>
+              </div>
+            </button>
+            <button 
+              onClick={() => setMediaNewsType('recent')}
+              className={`px-2.5 py-1 rounded-sm text-sm font-medium transition-all duration-200 ${
+                (mediaNewsType as string) === 'recent' 
+                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              <div className="flex items-center space-x-1.5">
+                <PlayCircle className="h-3.5 w-3.5" />
+                <span>近期开播</span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -962,7 +1068,7 @@ export default function HomePage() {
             </TabsTrigger>
             <TabsTrigger value="upcoming" className="flex items-center space-x-2 text-sm">
               <Calendar className="h-4 w-4" />
-              <span>即将上线</span>
+              <span>影视资讯</span>
               {upcomingItems.length > 0 && (
                 <Badge variant="secondary" className="ml-1 text-xs">
                   {upcomingItems.filter(upcomingItem => 
@@ -1053,19 +1159,25 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="upcoming">
-            {/* 全新设计的即将上线内容头部 */}
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center">
+            {/* 影视资讯内容头部 */}
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+              <div className="flex items-center mb-4 sm:mb-0">
                 <div className="relative mr-3">
                   <div className="absolute inset-0 bg-blue-500 blur-md opacity-20 rounded-full"></div>
                   <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-full text-white">
+                    {(mediaNewsType as string) === 'upcoming' ? (
                     <Calendar className="h-5 w-5" />
+                    ) : (
+                      <PlayCircle className="h-5 w-5" />
+                    )}
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">即将上线</h2>
-                    {upcomingItems.length > 0 && (
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+                      {(mediaNewsType as string) === 'upcoming' ? '即将上线' : '近期开播'}
+                    </h2>
+                    {(mediaNewsType as string) === 'upcoming' && upcomingItems.length > 0 && (
                       <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
                         {upcomingItems.filter(upcomingItem => 
                           !items.some(item => 
@@ -1075,28 +1187,47 @@ export default function HomePage() {
                         ).length}
                       </span>
                     )}
+                    {(mediaNewsType as string) === 'recent' && recentItems.length > 0 && (
+                      <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
+                        {recentItems.filter(recentItem => 
+                          !items.some(item => 
+                            item.tmdbId === recentItem.id.toString() && 
+                            item.mediaType === recentItem.mediaType
+                          )
+                        ).length}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">未来30天内上线的内容</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {(mediaNewsType as string) === 'upcoming' ? '未来30天将要上线的内容' : '过去30天刚刚开播的内容'}
+                  </p>
                 </div>
               </div>
               
-              {/* 功能按钮 */}
-              <div className="flex flex-wrap gap-2 mt-4">
-                <Button variant="outline" size="sm" onClick={() => fetchUpcomingItems(false, 0, selectedRegion)}>
-                  <RefreshCw className={`h-4 w-4 mr-2 ${loadingUpcoming ? 'animate-spin' : ''}`} />
-                  刷新数据
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => (mediaNewsType as string) === 'upcoming' ? fetchUpcomingItems(false, 0, selectedRegion) : fetchRecentItems(false, 0, selectedRegion)}
+                  className="h-9 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${((mediaNewsType as string) === 'upcoming' && loadingUpcoming) || ((mediaNewsType as string) === 'recent' && loadingRecent) ? 'animate-spin' : ''}`} />
+                  刷新
                 </Button>
               </div>
             </div>
             
-            {/* 区域选择导航 */}
+            {/* 区域导航 */}
             <RegionNavigation />
             
-            {/* 即将上线内容主体 */}
+            {/* 影视资讯内容主体 */}
             <div>
               {/* 显示API密钥配置指南 */}
               {isMissingApiKey && <ApiKeySetupGuide />}
               
+              {mediaNewsType === 'upcoming' ? (
+                // 即将上线内容
+                <>
               {loadingUpcoming ? (
                 <div className="flex justify-center items-center h-48">
                   <div className="flex flex-col items-center">
@@ -1132,7 +1263,7 @@ export default function HomePage() {
                     暂无即将上线的内容
                   </p>
                   <p className="text-gray-400 dark:text-gray-500 text-sm">
-                    未找到未来30天内上线的中文内容
+                        未找到未来30天内上线的影视动态
                   </p>
                 </div>
               ) : (
@@ -1149,7 +1280,7 @@ export default function HomePage() {
                         key={`${item.mediaType}-${item.id}`}
                         className="group"
                       >
-                        {/* 只显示上映日期标签 */}
+                            {/* 显示上映日期标签 */}
                         <div className="mb-2">
                           <Badge
                             className="bg-green-500 text-white text-xs px-2 py-1 rounded-full"
@@ -1158,7 +1289,7 @@ export default function HomePage() {
                           </Badge>
                         </div>
                         
-                        {/* 海报容器 - 不再直接链接到TMDB，点击按钮时才导航 */}
+                            {/* 海报容器 */}
                         <div
                           className="block cursor-pointer"
                           title={item.title}
@@ -1194,25 +1325,173 @@ export default function HomePage() {
                                     // 保存到localStorage
                                     localStorage.setItem('tmdb_prefilled_data', JSON.stringify(detailData));
                                     
-                                    // 添加点击反馈
-                                    const button = e.currentTarget;
-                                    button.classList.add('animate-ping-once');
-                                    button.disabled = true;
+                                        // 打开对话框
+                                        setShowAddDialog(true);
+                                      }}
+                                    >
+                                      <Plus className="h-5 w-5" />
+                                    </button>
                                     
-                                    // 使用超小图标显示成功状态
-                                    const originalInnerHTML = button.innerHTML;
-                                    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
-                                    
-                                    // 短暂延迟后打开对话框
-                                    setTimeout(() => {
+                                    {/* 链接到TMDB */}
+                                    <a 
+                                      href={`https://www.themoviedb.org/${item.mediaType}/${item.id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center justify-center h-11 w-11 rounded-full bg-gray-800/80 hover:bg-gray-900 text-white transition-all shadow-lg hover:shadow-gray-800/50 group-hover:-rotate-3"
+                                      title="在TMDB查看详情"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <ExternalLink className="h-5 w-5" />
+                                    </a>
+                                  </div>
+                                  
+                                  {/* 提示文字 */}
+                                  <div className="absolute bottom-4 left-0 right-0 text-center">
+                                    <span className="text-xs font-medium text-white/95 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
+                                      {item.mediaType === "movie" ? "电影" : "剧集"}
+                                      <span className="mx-1">·</span>
+                                      {(() => {
+                                        if (mediaNewsType === 'upcoming') {
+                                          return `${new Date(item.releaseDate).getMonth() + 1}月${new Date(item.releaseDate).getDate()}日`;
+                                        } else {
+                                          return `${Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24))}天前`;
+                                        }
+                                      })()}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="mt-2 space-y-1 relative z-0">
+                                <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
+                                  {item.title}
+                                </h3>
+                                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                  <span className="flex items-center">
+                                    {item.mediaType === "movie" ? "电影" : "剧集"}
+                                  </span>
+                                  <span className="mx-1">·</span>
+                                  <span className="flex items-center">
+                                    {(mediaNewsType as string) === 'upcoming' ? (
+                                      Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 0 
+                                        ? "今天上线" 
+                                        : `${Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 天后上线`
+                                    ) : mediaNewsType === 'recent' ? (
+                                      Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24)) <= 0 
+                                        ? "今天开播" 
+                                        : `${Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24))} 天前开播`
+                                    ) : ""}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                // 近期开播内容
+                <>
+                  {loadingRecent ? (
+                    <div className="flex justify-center items-center h-48">
+                      <div className="flex flex-col items-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">加载中，请稍候...</p>
+                      </div>
+                    </div>
+                  ) : recentError ? (
+                    <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
+                      <div className="flex flex-col items-center text-center mb-4">
+                        <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
+                        <p className="text-red-600 dark:text-red-300 font-medium mb-1">
+                          {recentError}
+                        </p>
+                        <p className="text-red-500 dark:text-red-400 text-sm mb-4">
+                          {isMissingApiKey 
+                            ? '请按照上方指南配置TMDB API密钥' 
+                            : '无法连接到TMDB服务，请检查网络连接或稍后重试'}
+                        </p>
+                        <Button 
+                          onClick={() => fetchRecentItems()} 
+                          variant="outline" 
+                          className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          重试
+                        </Button>
+                      </div>
+                    </div>
+                  ) : recentItems.length === 0 ? (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
+                      <p className="text-gray-500 dark:text-gray-400 mb-1">
+                        暂无近期开播的内容
+                      </p>
+                      <p className="text-gray-400 dark:text-gray-500 text-sm">
+                        未找到过去30天内开播的影视动态
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+                      {recentItems
+                        .filter(recentItem => 
+                          !items.some(item => 
+                            item.tmdbId === recentItem.id.toString() && 
+                            item.mediaType === recentItem.mediaType
+                          )
+                        )
+                        .map((item) => (
+                          <div 
+                            key={`${item.mediaType}-${item.id}`}
+                            className="group"
+                          >
+                            {/* 显示上映日期标签 */}
+                            <div className="mb-2">
+                              <Badge
+                                className="bg-green-500 text-white text-xs px-2 py-1 rounded-full"
+                              >
+                                {new Date(item.releaseDate).toLocaleDateString('zh-CN')}
+                              </Badge>
+                            </div>
+                            
+                            {/* 海报容器 */}
+                            <div
+                              className="block cursor-pointer"
+                              title={item.title}
+                            >
+                              <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl dark:group-hover:shadow-blue-900/40">
+                                <img
+                                  src={item.posterPath ? `https://image.tmdb.org/t/p/w500${item.posterPath}` : "/placeholder.svg"}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100">
+                                  {/* 悬停时显示两个按钮 */}
+                                  <div className="flex items-center gap-3 transform transition-transform duration-300 group-hover:scale-105">
+                                    {/* 添加按钮 */}
+                                    <button 
+                                      className="flex items-center justify-center h-11 w-11 rounded-full bg-blue-500/90 hover:bg-blue-600 text-white transition-all shadow-lg hover:shadow-blue-500/50 group-hover:rotate-3"
+                                      title="添加到我的列表"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        
+                                        // 预填充更多详细信息到localStorage
+                                        const detailData = {
+                                          id: item.id,
+                                          title: item.title,
+                                          media_type: item.mediaType,
+                                          poster_path: item.posterPath,
+                                          release_date: item.releaseDate,
+                                          overview: item.overview || "",
+                                          vote_average: item.voteAverage || 0
+                                        };
+                                        
+                                        // 保存到localStorage
+                                        localStorage.setItem('tmdb_prefilled_data', JSON.stringify(detailData));
+                                        
+                                        // 打开对话框
                                       setShowAddDialog(true);
-                                      // 恢复按钮状态
-                                      setTimeout(() => {
-                                        button.classList.remove('animate-ping-once');
-                                        button.disabled = false;
-                                        button.innerHTML = originalInnerHTML;
-                                      }, 500);
-                                    }, 300);
                                   }}
                                 >
                                   <Plus className="h-5 w-5" />
@@ -1236,7 +1515,10 @@ export default function HomePage() {
                                 <span className="text-xs font-medium text-white/95 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
                                   {item.mediaType === "movie" ? "电影" : "剧集"}
                                   <span className="mx-1">·</span>
-                                  {`${new Date(item.releaseDate).getMonth() + 1}月${new Date(item.releaseDate).getDate()}日`}
+                                      {mediaNewsType === 'upcoming'
+                                        ? `${new Date(item.releaseDate).getMonth() + 1}月${new Date(item.releaseDate).getDate()}日`
+                                        : `${Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24))}天前`
+                                      }
                                 </span>
                               </div>
                             </div>
@@ -1252,11 +1534,17 @@ export default function HomePage() {
                               </span>
                               <span className="mx-1">·</span>
                               <span className="flex items-center">
-                                {Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 0 
-                                  ? "今天上线" 
-                                  : (Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) > 0 
-                                    ? `${Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 天后上线`
-                                    : "已上线")}
+                                    {(() => {
+                                      if (mediaNewsType === 'upcoming') {
+                                        return Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 0 
+                                          ? "今天上线" 
+                                          : `${Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 天后上线`;
+                                      } else {
+                                        return Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24)) === 1 
+                                          ? "昨天开播" 
+                                          : `${Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24))} 天前开播`;
+                                      }
+                                    })()}
                               </span>
                             </div>
                           </div>
@@ -1264,6 +1552,8 @@ export default function HomePage() {
                       </div>
                     ))}
                 </div>
+                  )}
+                </>
               )}
             </div>
           </TabsContent>
@@ -1285,13 +1575,178 @@ export default function HomePage() {
     }
   }, [activeTab]);
   
-  // 确保即将上线页面不会消失
+  // 确保影视资讯页面不会消失
   useEffect(() => {
-    // 如果用户切换到即将上线标签，但数据为空，尝试重新获取
+    // 如果用户切换到影视资讯标签，但数据为空，尝试重新获取
     if (activeTab === "upcoming" && upcomingItems.length === 0 && !loadingUpcoming && !upcomingError) {
       fetchUpcomingItems();
     }
   }, [activeTab, upcomingItems.length, loadingUpcoming, upcomingError]);
+
+  // 获取近期开播内容
+  const fetchRecentItems = async (silent = false, retryCount = 0, region = selectedRegion) => {
+    if (!silent) {
+      setLoadingRecent(true);
+    }
+    setRecentError(null);
+    
+    try {
+      // 从localStorage获取API密钥
+      const apiKey = localStorage.getItem("tmdb_api_key");
+      
+      // 检查API密钥是否存在
+      if (!apiKey) {
+        setIsMissingApiKey(true);
+        throw new Error('TMDB API密钥未配置，请在设置中配置');
+      }
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+      
+      const response = await fetch(`/api/tmdb/upcoming?api_key=${encodeURIComponent(apiKey)}&region=${region}&type=recent`, {
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('服务器响应错误:', errorText);
+        
+        // 检查是否是API密钥未配置或无效的错误
+        if (errorText.includes('API密钥未配置') || errorText.includes('401 Unauthorized')) {
+          setIsMissingApiKey(true);
+          throw new Error('TMDB API密钥无效，请在设置中重新配置');
+        }
+        
+        // 根据HTTP状态码提供更详细的错误信息
+        let errorMessage = `获取近期开播内容失败 (${response.status})`;
+        if (response.status === 500) {
+          errorMessage = `服务器内部错误 (500)，请稍后再试`;
+        } else if (response.status === 503) {
+          errorMessage = `TMDB服务暂时不可用 (503)，请稍后再试`;
+        } else if (response.status === 429) {
+          errorMessage = `请求过于频繁 (429)，请稍后再试`;
+        } else if (response.status >= 400 && response.status < 500) {
+          errorMessage = `请求错误 (${response.status})，请检查API配置`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        // 保存数据到状态 - 区分不同区域的数据
+        const newRecentItemsByRegion = { ...recentItemsByRegion };
+        newRecentItemsByRegion[region] = data.results;
+        setRecentItemsByRegion(newRecentItemsByRegion);
+        
+        // 如果当前选中的是这个区域，也更新主要数据
+        if (region === selectedRegion) {
+          setRecentItems(data.results);
+        }
+        
+        setRecentLastUpdated(new Date().toLocaleString('zh-CN'));
+        
+        // 同时保存到localStorage作为缓存，以防页面刷新后数据丢失
+        try {
+          localStorage.setItem(`recentItems_${region}`, JSON.stringify(data.results));
+          localStorage.setItem('recentLastUpdated', new Date().toLocaleString('zh-CN'));
+        } catch (e) {
+          console.warn('无法保存近期开播数据到本地存储:', e);
+        }
+      } else {
+        // 检查是否是API密钥未配置或无效的错误
+        if (data.error && (data.error.includes('API密钥未配置') || data.error.includes('401 Unauthorized'))) {
+          setIsMissingApiKey(true);
+          throw new Error('TMDB API密钥无效，请在设置中重新配置');
+        }
+        throw new Error(data.error || '获取近期开播内容失败');
+      }
+    } catch (error) {
+      console.error('获取近期开播内容失败:', error);
+      setRecentError(error instanceof Error ? error.message : '未知错误');
+      
+      // 如果是网络错误或超时，尝试重试（最多5次）
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (retryCount < 5 && 
+          (errorMessage.includes('network') || 
+           errorMessage.includes('timeout') || 
+           errorMessage.includes('aborted') ||
+           error instanceof TypeError)) {
+        console.log(`尝试重新获取近期开播内容，第${retryCount + 1}次重试`);
+        
+        // 使用指数退避算法计算延迟时间
+        const baseDelay = 1000;
+        const exponentialDelay = baseDelay * Math.pow(2, retryCount);
+        const jitter = Math.random() * 1000;
+        const delay = exponentialDelay + jitter;
+        
+        console.log(`重试延迟: ${Math.round(delay)}ms`);
+        
+        setTimeout(() => {
+          fetchRecentItems(silent, retryCount + 1, region);
+        }, delay);
+        
+        return;
+      }
+      
+      // 如果重试失败或其他错误，尝试从localStorage加载缓存数据
+      if (retryCount >= 5) {
+        try {
+          const cachedItems = localStorage.getItem(`recentItems_${region}`);
+          if (cachedItems) {
+            const parsedItems = JSON.parse(cachedItems);
+            if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+              console.log(`从缓存中加载 ${parsedItems.length} 个近期开播内容`);
+              setRecentItems(parsedItems);
+              setRecentError(`无法连接到TMDB，显示的是缓存数据 (${new Date().toLocaleString('zh-CN')})`);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('无法从本地存储加载缓存数据:', e);
+        }
+      }
+    } finally {
+      if (!silent) {
+        setLoadingRecent(false);
+      }
+    }
+  };
+
+  // 加载选定区域的数据
+  useEffect(() => {
+    if (mediaNewsType === 'upcoming') {
+      fetchUpcomingItems(false, 0, selectedRegion);
+    } else {
+      fetchRecentItems(false, 0, selectedRegion);
+    }
+  }, [selectedRegion, mediaNewsType]);
+
+  // 在媒体类型变更时加载数据
+  useEffect(() => {
+    if (mediaNewsType === 'recent' && recentItems.length === 0 && !loadingRecent) {
+      fetchRecentItems();
+    }
+  }, [mediaNewsType]);
+
+  // 确保影视资讯页面不会消失
+  useEffect(() => {
+    // 如果用户切换到影视资讯标签，但数据为空，尝试重新获取
+    if (activeTab === "upcoming") {
+      if (mediaNewsType === 'upcoming' && upcomingItems.length === 0 && !loadingUpcoming && !upcomingError) {
+        fetchUpcomingItems();
+      } else if (mediaNewsType === 'recent' && recentItems.length === 0 && !loadingRecent && !recentError) {
+        fetchRecentItems();
+      }
+    }
+  }, [activeTab, mediaNewsType]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">

@@ -101,6 +101,7 @@ export async function GET(request: Request) {
     const apiKey = url.searchParams.get('api_key');
     const region = url.searchParams.get('region') || 'CN';
     const language = url.searchParams.get('language') || 'zh-CN';
+    const type = url.searchParams.get('type') || 'upcoming'; // upcoming 或 recent
     
     // 如果没有API密钥，返回错误
     if (!apiKey) {
@@ -110,14 +111,26 @@ export async function GET(request: Request) {
       );
     }
     
-    // 获取当前日期和30天后的日期
+    // 获取当前日期
     const today = new Date();
-    const thirtyDaysLater = new Date();
-    thirtyDaysLater.setDate(today.getDate() + 30);
+    let fromDate, toDate;
 
-    // 格式化日期为YYYY-MM-DD
-    const fromDate = today.toISOString().split('T')[0];
-    const toDate = thirtyDaysLater.toISOString().split('T')[0];
+    if (type === 'upcoming') {
+      // 即将上线 - 当前日期到30天后
+      fromDate = today.toISOString().split('T')[0];
+      const thirtyDaysLater = new Date();
+      thirtyDaysLater.setDate(today.getDate() + 30);
+      toDate = thirtyDaysLater.toISOString().split('T')[0];
+    } else {
+      // 近期开播 - 30天前到昨天（不包括今天）
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      fromDate = thirtyDaysAgo.toISOString().split('T')[0];
+      
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+      toDate = yesterday.toISOString().split('T')[0];
+    }
 
     try {
       // 并行请求电影和电视剧数据，添加超时处理
@@ -125,7 +138,7 @@ export async function GET(request: Request) {
         fetchTMDBWithRetry('/discover/movie', {
           language: language,
           region: region,
-          sort_by: 'release_date.asc',
+          sort_by: type === 'upcoming' ? 'release_date.asc' : 'release_date.desc',
           'release_date.gte': fromDate,
           'release_date.lte': toDate,
           ...(region === 'CN' || region === 'HK' || region === 'TW' ? { with_original_language: 'zh' } : {}),
@@ -133,7 +146,7 @@ export async function GET(request: Request) {
         }, apiKey, 3), // 最多重试3次
         fetchTMDBWithRetry('/discover/tv', {
           language: language,
-          sort_by: 'first_air_date.asc',
+          sort_by: type === 'upcoming' ? 'first_air_date.asc' : 'first_air_date.desc',
           'first_air_date.gte': fromDate,
           'first_air_date.lte': toDate,
           ...(region === 'CN' || region === 'HK' || region === 'TW' ? { with_original_language: 'zh' } : {}),
@@ -187,14 +200,25 @@ export async function GET(request: Request) {
 
       // 合并并按日期排序，只保留未来日期的条目
       const now = new Date().getTime();
+      const todayStart = new Date().setHours(0, 0, 0, 0);
       const combinedResults = [...movies, ...tvShows]
         .filter(item => {
           const releaseTime = new Date(item.releaseDate).getTime();
-          // 只保留今天和未来的内容（今天的内容也包含在内）
-          return releaseTime >= new Date().setHours(0, 0, 0, 0);
+          
+          if (type === 'upcoming') {
+            // 只保留今天和未来的内容（今天的内容也包含在内）
+            return releaseTime >= todayStart;
+          } else {
+            // 近期开播 - 过去30天内的内容，但不包括今天
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return releaseTime >= thirtyDaysAgo.setHours(0, 0, 0, 0) && releaseTime < todayStart;
+          }
         })
         .sort((a, b) => 
-          new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime()
+          type === 'upcoming'
+            ? new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime() // 升序
+            : new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime() // 降序
         );
 
       // 缓存这些结果到服务器内存（稍后可能需要实现）
@@ -205,6 +229,7 @@ export async function GET(request: Request) {
         results: combinedResults,
         region: region,
         language: language,
+        type: type,
         timestamp: new Date().toISOString()
       });
     } catch (apiError: any) {
