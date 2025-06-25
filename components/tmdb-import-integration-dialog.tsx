@@ -149,7 +149,14 @@ const STEPS: ImportStep[] = [
 ]
 
 export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, onItemUpdate, inTab = false }: TMDBImportIntegrationDialogProps) {
-  const [selectedSeason, setSelectedSeason] = useState(1)
+  const [selectedSeason, setSelectedSeason] = useState(() => {
+    // 尝试从localStorage读取上次选择的季数
+    if (typeof window !== 'undefined') {
+      const savedSeason = localStorage.getItem(`tmdb_season_${item.id}`);
+      return savedSeason ? parseInt(savedSeason, 10) : 1;
+    }
+    return 1;
+  })
   const [displayedTMDBCommand, setDisplayedTMDBCommand] = useState("")
   const [activeTab, setActiveTab] = useState<string>("process") // 默认显示处理标签
   // 添加一个标记记录组件是否已初始化
@@ -3262,6 +3269,11 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const handleSeasonChange = (newSeasonValue: string | number) => {
     const season = Number.parseInt(String(newSeasonValue)) || 1
     setSelectedSeason(season)
+    
+    // 保存选择的季数到localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`tmdb_season_${item.id}`, season.toString());
+    }
     
     // 更新显示的TMDB命令
     const tmdbCommand = generateTMDBCommand(season)
