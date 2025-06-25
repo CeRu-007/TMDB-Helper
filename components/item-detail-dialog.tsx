@@ -2153,19 +2153,42 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     <p className="text-lg font-medium">请选择或添加季</p>
                                     <p className="text-sm mt-1 max-w-md mx-auto">使用上方"选择季"面板选择一个季，或在编辑模式下添加新的季</p>
                                     {editing && (
-                                      <Button 
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          const newSeasonNumber = 1;
-                                          const episodeCount = 20;
-                                          handleAddSeason(newSeasonNumber, episodeCount);
-                                        }}
-                                        className="mt-4"
-                                      >
-                                        <PlusCircle className="h-4 w-4 mr-1" />
-                                        添加第1季 (20集)
-                                      </Button>
+                                      <div className="flex flex-col items-center space-y-3 mt-4">
+                                        <div className="flex items-center space-x-3">
+                                          <div className="flex items-center">
+                                            <div className="text-xs text-muted-foreground mr-1">季数:</div>
+                                            <Input
+                                              type="number"
+                                              min="1"
+                                              className="h-7 w-16 text-xs px-2"
+                                              value={customSeasonNumber}
+                                              onChange={(e) => setCustomSeasonNumber(parseInt(e.target.value, 10) || 1)}
+                                            />
+                                          </div>
+                                          <div className="flex items-center">
+                                            <div className="text-xs text-muted-foreground mr-1">集数:</div>
+                                            <Input
+                                              type="number"
+                                              min="1"
+                                              className="h-7 w-16 text-xs px-2"
+                                              defaultValue="20"
+                                              id="new-season-episodes"
+                                            />
+                                          </div>
+                                        </div>
+                                        <Button 
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            const episodeInput = document.getElementById("new-season-episodes") as HTMLInputElement;
+                                            const episodeCount = parseInt(episodeInput.value, 10) || 20;
+                                            handleAddSeason(customSeasonNumber, episodeCount);
+                                          }}
+                                        >
+                                          <PlusCircle className="h-4 w-4 mr-1" />
+                                          添加季
+                                        </Button>
+                                      </div>
                                     )}
                                   </div>
                                 )}
