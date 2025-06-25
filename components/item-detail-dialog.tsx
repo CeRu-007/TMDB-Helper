@@ -881,6 +881,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     
     // 如果删除的是当前选中的季，则重置选中的季
     if (selectedSeason === seasonToDelete) {
+      // 找出新的可用季节，如果没有则设置为undefined
       const newSelectedSeason = updatedSeasons.length > 0 ? updatedSeasons[0].seasonNumber : undefined;
       setSelectedSeason(newSelectedSeason);
       setCustomSeasonNumber(newSelectedSeason || 1);
@@ -2046,23 +2047,24 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           )}
 
                           {/* 剧集列表 */}
-                          {getCurrentSeason() && (
+                          {localItem.mediaType === "tv" && (
                             <Card variant="frosted">
-                                                              <CardHeader className="pb-2">
+                              <CardHeader className="pb-2">
                                 <CardTitle className="text-base flex items-center justify-between">
                                   <div className="flex items-center">
                                     <PlayCircle className="h-4 w-4 mr-2" />
                                     剧集列表
+                                    {!selectedSeason && <span className="text-xs text-muted-foreground ml-2">(请先选择或添加季)</span>}
                                   </div>
-                                  {/* 只在编辑模式下显示自定义集数编辑功能 */}
-                                  {editing && (
+                                  {/* 只在编辑模式下显示自定义集数编辑功能，且必须有选中的季 */}
+                                  {editing && currentSeason && (
                                     <div className="flex items-center space-x-2">
                                       <div className="text-xs text-muted-foreground mr-1">集数:</div>
                                       <Input
                                         type="number"
                                         min="1"
                                         className="h-6 w-16 text-xs px-2"
-                                        value={getCurrentSeason()?.totalEpisodes || 0}
+                                        value={currentSeason?.totalEpisodes || 0}
                                         onChange={(e) => handleTotalEpisodesChange(parseInt(e.target.value, 10) || 0)}
                                         title="自定义集数数量"
                                       />
@@ -2071,67 +2073,102 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                 </CardTitle>
                               </CardHeader>
                               <CardContent>
-                                {/* 批量操作说明 */}
-                                <div className="mb-2 text-xs text-muted-foreground">
-                                  提示: 按住Shift键可以批量选择剧集
-                                </div>
-                                
-                                {/* 快速批量操作 */}
-                                <div className="mb-3 flex flex-wrap gap-2">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => {
-                                      if (currentSeason) {
-                                        const episodes = currentSeason.episodes;
-                                        // 找到第一个未完成的集数
-                                        const firstIncomplete = episodes.find(ep => !ep.completed);
-                                        if (firstIncomplete) {
-                                          handleEpisodeToggle(firstIncomplete.number, true, selectedSeason!);
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    标记下一集
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => {
-                                      if (currentSeason) {
-                                        // 标记前10集为已完成
-                                        const episodes = currentSeason.episodes.slice(0, 10);
-                                        episodes.forEach(ep => {
-                                          if (!ep.completed) {
-                                            handleEpisodeToggle(ep.number, true, selectedSeason!);
+                                {selectedSeason ? (
+                                  <>
+                                    {/* 批量操作说明 */}
+                                    <div className="mb-2 text-xs text-muted-foreground">
+                                      提示: 按住Shift键可以批量选择剧集
+                                    </div>
+                                    
+                                    {/* 快速批量操作 */}
+                                    <div className="mb-3 flex flex-wrap gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                          if (currentSeason) {
+                                            const episodes = currentSeason.episodes;
+                                            // 找到第一个未完成的集数
+                                            const firstIncomplete = episodes.find(ep => !ep.completed);
+                                            if (firstIncomplete) {
+                                              handleEpisodeToggle(firstIncomplete.number, true, selectedSeason!);
+                                            }
                                           }
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    <CheckSquare className="h-3 w-3 mr-1" />
-                                    标记前10集
-                                  </Button>
-                                </div>
-                                
-                                {/* 剧集网格 */}
-                                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
-                                  {getCurrentSeason() && getCurrentSeason()!.episodes && getCurrentSeason()!.episodes.length > 0 && getCurrentSeason()!.episodes.map((episode) => (
-                                      <EpisodeCheckbox
-                                      key={episode.number}
-                                        id={`episode-${episode.number}-${selectedSeason}`}
-                                        checked={episode.completed}
-                                        onCheckedChange={(checked) => {
-                                          // 确保checked是布尔值
-                                          const isChecked = checked === true;
-                                          handleEpisodeToggle(episode.number, isChecked, selectedSeason!);
                                         }}
-                                        onClick={() => setLastClickedEpisode(episode.number)}
-                                        label={`${episode.number}`}
-                                    />
-                                  ))}
-                                </div>
+                                        disabled={!currentSeason}
+                                      >
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        标记下一集
+                                      </Button>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                          if (currentSeason) {
+                                            // 标记前10集为已完成
+                                            const episodes = currentSeason.episodes.slice(0, 10);
+                                            episodes.forEach(ep => {
+                                              if (!ep.completed) {
+                                                handleEpisodeToggle(ep.number, true, selectedSeason!);
+                                              }
+                                            });
+                                          }
+                                        }}
+                                        disabled={!currentSeason}
+                                      >
+                                        <CheckSquare className="h-3 w-3 mr-1" />
+                                        标记前10集
+                                      </Button>
+                                    </div>
+                                    
+                                    {/* 剧集网格 */}
+                                    {currentSeason && currentSeason.episodes && currentSeason.episodes.length > 0 ? (
+                                      <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                                        {currentSeason.episodes.map((episode) => (
+                                          <EpisodeCheckbox
+                                            key={episode.number}
+                                            id={`episode-${episode.number}-${selectedSeason}`}
+                                            checked={episode.completed}
+                                            onCheckedChange={(checked) => {
+                                              // 确保checked是布尔值
+                                              const isChecked = checked === true;
+                                              handleEpisodeToggle(episode.number, isChecked, selectedSeason);
+                                            }}
+                                            onClick={() => setLastClickedEpisode(episode.number)}
+                                            label={`${episode.number}`}
+                                          />
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-center p-4 text-muted-foreground">
+                                        <AlertCircle className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                                        <p>该季暂无集数数据</p>
+                                        <p className="text-xs mt-1">请在编辑模式下添加集数</p>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="text-center p-6 text-muted-foreground">
+                                    <Tv className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                                    <p className="text-lg font-medium">请选择或添加季</p>
+                                    <p className="text-sm mt-1 max-w-md mx-auto">使用上方"选择季"面板选择一个季，或在编辑模式下添加新的季</p>
+                                    {editing && (
+                                      <Button 
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const newSeasonNumber = 1;
+                                          const episodeCount = 20;
+                                          handleAddSeason(newSeasonNumber, episodeCount);
+                                        }}
+                                        className="mt-4"
+                                      >
+                                        <PlusCircle className="h-4 w-4 mr-1" />
+                                        添加第1季 (20集)
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
                               </CardContent>
                             </Card>
                           )}
