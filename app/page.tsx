@@ -36,6 +36,8 @@ import {
   Server,
   Filter,
   XCircle,
+  CalendarRange,
+  BarChart2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -139,7 +141,7 @@ export default function HomePage() {
   } = useData()
 
   // 获取即将上线的内容
-  const fetchUpcomingItems = async (silent = false, retryCount = 0, region = selectedRegion) => {
+  const fetchUpcomingItems = async (silent = false, retryCount = 0, region = selectedRegion, signal?: AbortSignal) => {
     if (!silent) {
       setLoadingUpcoming(true);
     }
@@ -156,11 +158,12 @@ export default function HomePage() {
         throw new Error('TMDB API密钥未配置，请在设置中配置');
       }
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+      // 使用传入的signal或创建一个新的AbortController
+      const controller = signal ? undefined : new AbortController();
+      const timeoutId = setTimeout(() => controller?.abort(), 30000); // 30秒超时
       
       const response = await fetch(`/api/tmdb/upcoming?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
-        signal: controller.signal,
+        signal: signal || controller?.signal,
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -259,7 +262,7 @@ export default function HomePage() {
         
         // 延迟重试，避免立即重试可能导致的同样错误
         setTimeout(() => {
-          fetchUpcomingItems(silent, retryCount + 1, region);
+          fetchUpcomingItems(silent, retryCount + 1, region, signal);
         }, delay);
         
         return; // 不要继续执行后面的代码
@@ -293,6 +296,9 @@ export default function HomePage() {
 
   // 加载缓存数据和自动刷新
   useEffect(() => {
+    // 创建一个AbortController
+    const abortController = new AbortController();
+    
     // 首先尝试从localStorage加载缓存数据
     try {
       // 加载所有区域的缓存数据
@@ -323,26 +329,43 @@ export default function HomePage() {
       console.warn('无法从本地存储加载缓存数据:', e);
     }
     
+    // 定义一个安全的fetchData函数，使用外部的AbortController
+    const safeFetchUpcomingItems = (silent = false, retryCount = 0, region = selectedRegion) => {
+      fetchUpcomingItems(silent, retryCount, region, abortController.signal);
+    };
+    
     // 然后获取最新数据 - 默认只获取当前选中的区域
-    fetchUpcomingItems(false, 0, selectedRegion);
+    safeFetchUpcomingItems(false, 0, selectedRegion);
     
     // 每小时刷新一次
     const intervalId = setInterval(() => {
-      fetchUpcomingItems(true, 0, selectedRegion); // 静默刷新
+      safeFetchUpcomingItems(true, 0, selectedRegion); // 静默刷新
     }, 60 * 60 * 1000); // 1小时
     
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      // 组件卸载时中止所有未完成的请求
+      abortController.abort();
+    };
   }, []);
-
+  
   // 当选中区域变化时加载对应区域的数据
   useEffect(() => {
+    // 为每个区域变化创建单独的AbortController
+    const abortController = new AbortController();
+    
     if (upcomingItemsByRegion[selectedRegion]) {
       // 如果已经有数据，直接使用
       setUpcomingItems(upcomingItemsByRegion[selectedRegion]);
     } else {
-      // 否则请求新数据
-      fetchUpcomingItems(false, 0, selectedRegion);
+      // 否则请求新数据，传入signal
+      fetchUpcomingItems(false, 0, selectedRegion, abortController.signal);
     }
+    
+    return () => {
+      // 区域变化时中止上一个区域的请求
+      abortController.abort();
+    };
   }, [selectedRegion]);
 
   // 添加自动修复定时任务的功能
@@ -661,48 +684,48 @@ export default function HomePage() {
 
   // 移动端操作菜单
   const MobileMenu = () => (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="md:hidden">
-          <Menu className="h-4 w-4" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-72">
-        <div className="flex flex-col space-y-4 mb-8">
-          <div className="flex flex-col space-y-1">
-            <h2 className="text-lg font-medium">快捷功能</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">常用功能快速访问</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" size="sm" onClick={() => setShowAddDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              添加词条
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowTasksDialog(true)}>
-            <AlarmClock className="h-4 w-4 mr-2" />
-              定时任务
-          </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowSettingsDialog(true)}>
-            <Settings className="h-4 w-4 mr-2" />
-            设置
-          </Button>
+    <>
+      <Sheet>
+        <SheetTrigger asChild>
           <Button
-            variant="outline"
-              size="sm"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="md:hidden fixed bottom-4 right-4 z-50 shadow-md"
+            size="icon"
           >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4 mr-2" />
-              ) : (
-                <Moon className="h-4 w-4 mr-2" />
-              )}
-              {theme === "dark" ? "浅色" : "深色"}
+            <Menu className="h-5 w-5" />
           </Button>
-          </div>
-        </div>
-      </SheetContent>
-    </Sheet>
-  )
+        </SheetTrigger>
+        <SheetContent className="w-[300px]">
+          {/* 移动端菜单内容 */}
+          <nav className="flex flex-col space-y-4 mt-8">
+            <Button
+              className="justify-start"
+              onClick={() => setActiveTab("upcoming")}
+            >
+              <Calendar className="h-4 w-4 mr-2" /> 即将上线
+            </Button>
+            <Button
+              className="justify-start"
+              onClick={() => setActiveTab("recent")}
+            >
+              <Film className="h-4 w-4 mr-2" /> 近期开播
+            </Button>
+            <Button
+              className="justify-start"
+              onClick={() => setActiveTab("weekly")}
+            >
+              <CalendarRange className="h-4 w-4 mr-2" /> 每周放送
+            </Button>
+            <Button
+              className="justify-start"
+              onClick={() => setActiveTab("progress")}
+            >
+              <BarChart2 className="h-4 w-4 mr-2" /> 追剧进度
+            </Button>
+          </nav>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
 
   // 周几导航栏 - 修复词条数量计算问题
   const WeekdayNavigation = () => {
@@ -1584,7 +1607,7 @@ export default function HomePage() {
   }, [activeTab, upcomingItems.length, loadingUpcoming, upcomingError]);
 
   // 获取近期开播内容
-  const fetchRecentItems = async (silent = false, retryCount = 0, region = selectedRegion) => {
+  const fetchRecentItems = async (silent = false, retryCount = 0, region = selectedRegion, signal?: AbortSignal) => {
     if (!silent) {
       setLoadingRecent(true);
     }
@@ -1596,15 +1619,15 @@ export default function HomePage() {
       
       // 检查API密钥是否存在
       if (!apiKey) {
-        setIsMissingApiKey(true);
         throw new Error('TMDB API密钥未配置，请在设置中配置');
       }
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+      // 使用传入的signal或创建一个新的AbortController
+      const controller = signal ? undefined : new AbortController();
+      const timeoutId = setTimeout(() => controller?.abort(), 30000); // 30秒超时
       
-      const response = await fetch(`/api/tmdb/upcoming?api_key=${encodeURIComponent(apiKey)}&region=${region}&type=recent`, {
-        signal: controller.signal,
+      const response = await fetch(`/api/tmdb/recent?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
+        signal: signal || controller?.signal,
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -1690,7 +1713,7 @@ export default function HomePage() {
         console.log(`重试延迟: ${Math.round(delay)}ms`);
         
         setTimeout(() => {
-          fetchRecentItems(silent, retryCount + 1, region);
+          fetchRecentItems(silent, retryCount + 1, region, signal);
         }, delay);
         
         return;
@@ -1747,6 +1770,61 @@ export default function HomePage() {
       }
     }
   }, [activeTab, mediaNewsType]);
+
+  // 加载近期开播数据和自动刷新
+  useEffect(() => {
+    // 创建一个AbortController
+    const abortController = new AbortController();
+    
+    // 首先尝试从localStorage加载缓存数据
+    try {
+      // 加载所有区域的缓存数据
+      const newRecentItemsByRegion: Record<string, any[]> = {};
+      let hasAnyData = false;
+      
+      REGIONS.forEach(region => {
+        const cachedItems = localStorage.getItem(`recentItems_${region.id}`);
+        if (cachedItems) {
+          newRecentItemsByRegion[region.id] = JSON.parse(cachedItems);
+          hasAnyData = true;
+        }
+      });
+      
+      if (hasAnyData) {
+        setRecentItemsByRegion(newRecentItemsByRegion);
+        // 设置当前选中区域的数据
+        if (newRecentItemsByRegion[selectedRegion]) {
+          setRecentItems(newRecentItemsByRegion[selectedRegion]);
+        }
+        
+        const cachedLastUpdated = localStorage.getItem('recentLastUpdated');
+        if (cachedLastUpdated) {
+          setRecentLastUpdated(cachedLastUpdated);
+        }
+      }
+    } catch (e) {
+      console.warn('无法从本地存储加载缓存数据:', e);
+    }
+    
+    // 定义一个安全的fetchData函数，使用外部的AbortController
+    const safeFetchRecentItems = (silent = false, retryCount = 0, region = selectedRegion) => {
+      fetchRecentItems(silent, retryCount, region, abortController.signal);
+    };
+    
+    // 然后获取最新数据 - 默认只获取当前选中的区域
+    safeFetchRecentItems(false, 0, selectedRegion);
+    
+    // 每小时刷新一次
+    const intervalId = setInterval(() => {
+      safeFetchRecentItems(true, 0, selectedRegion); // 静默刷新
+    }, 60 * 60 * 1000); // 1小时
+    
+    return () => {
+      clearInterval(intervalId);
+      // 组件卸载时中止所有未完成的请求
+      abortController.abort();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
