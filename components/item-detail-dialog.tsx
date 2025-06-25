@@ -1980,48 +1980,50 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     刷新TMDB数据、标志、评分和简介
                                   </Button>
                                   
-                                  {/* 添加新的季数区域 */}
-                                  <div className="w-full mt-3 border-t pt-3 border-border/30">
-                                    <div className="text-sm mb-2 flex items-center">
-                                      <PlusCircle className="h-4 w-4 mr-1.5" />
-                                      添加新季
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex items-center space-x-2">
-                                        <div className="text-xs text-muted-foreground">季数:</div>
-                                        <Input
-                                          type="number"
-                                          min="1"
-                                          className="h-7 w-16 text-xs px-2"
-                                          value={customSeasonNumber}
-                                          onChange={(e) => setCustomSeasonNumber(parseInt(e.target.value, 10) || 1)}
-                                        />
+                                  {/* 只在编辑模式下显示添加新季区域 */}
+                                  {editing && (
+                                    <div className="w-full mt-3 border-t pt-3 border-border/30">
+                                      <div className="text-sm mb-2 flex items-center">
+                                        <PlusCircle className="h-4 w-4 mr-1.5" />
+                                        添加新季
                                       </div>
-                                      <div className="flex items-center space-x-2">
-                                        <div className="text-xs text-muted-foreground">集数:</div>
-                                        <Input
-                                          type="number"
-                                          min="1"
-                                          className="h-7 w-16 text-xs px-2"
-                                          defaultValue="20"
-                                          id="new-season-episodes"
-                                        />
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex items-center space-x-2">
+                                          <div className="text-xs text-muted-foreground">季数:</div>
+                                          <Input
+                                            type="number"
+                                            min="1"
+                                            className="h-7 w-16 text-xs px-2"
+                                            value={customSeasonNumber}
+                                            onChange={(e) => setCustomSeasonNumber(parseInt(e.target.value, 10) || 1)}
+                                          />
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          <div className="text-xs text-muted-foreground">集数:</div>
+                                          <Input
+                                            type="number"
+                                            min="1"
+                                            className="h-7 w-16 text-xs px-2"
+                                            defaultValue="20"
+                                            id="new-season-episodes"
+                                          />
+                                        </div>
+                                        <Button
+                                          variant="default"
+                                          size="sm"
+                                          onClick={() => {
+                                            const episodeInput = document.getElementById("new-season-episodes") as HTMLInputElement;
+                                            const episodeCount = parseInt(episodeInput.value, 10) || 20;
+                                            handleAddSeason(customSeasonNumber, episodeCount);
+                                          }}
+                                          className="h-7"
+                                        >
+                                          <Plus className="h-4 w-4 mr-1" />
+                                          添加
+                                        </Button>
                                       </div>
-                                      <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={() => {
-                                          const episodeInput = document.getElementById("new-season-episodes") as HTMLInputElement;
-                                          const episodeCount = parseInt(episodeInput.value, 10) || 20;
-                                          handleAddSeason(customSeasonNumber, episodeCount);
-                                        }}
-                                        className="h-7"
-                                      >
-                                        <Plus className="h-4 w-4 mr-1" />
-                                        添加
-                                      </Button>
                                     </div>
-                                  </div>
+                                  )}
                                 </div>
                               </CardContent>
                             </Card>
@@ -2046,24 +2048,26 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           {/* 剧集列表 */}
                           {getCurrentSeason() && (
                             <Card variant="frosted">
-                              <CardHeader className="pb-2">
+                                                              <CardHeader className="pb-2">
                                 <CardTitle className="text-base flex items-center justify-between">
                                   <div className="flex items-center">
                                     <PlayCircle className="h-4 w-4 mr-2" />
                                     剧集列表
                                   </div>
-                                  {/* 添加自定义集数编辑功能 */}
-                                  <div className="flex items-center space-x-2">
-                                    <div className="text-xs text-muted-foreground mr-1">集数:</div>
-                                    <Input
-                                      type="number"
-                                      min="1"
-                                      className="h-6 w-16 text-xs px-2"
-                                      value={getCurrentSeason()?.totalEpisodes || 0}
-                                      onChange={(e) => handleTotalEpisodesChange(parseInt(e.target.value, 10) || 0)}
-                                      title="自定义集数数量"
-                                    />
-                                  </div>
+                                  {/* 只在编辑模式下显示自定义集数编辑功能 */}
+                                  {editing && (
+                                    <div className="flex items-center space-x-2">
+                                      <div className="text-xs text-muted-foreground mr-1">集数:</div>
+                                      <Input
+                                        type="number"
+                                        min="1"
+                                        className="h-6 w-16 text-xs px-2"
+                                        value={getCurrentSeason()?.totalEpisodes || 0}
+                                        onChange={(e) => handleTotalEpisodesChange(parseInt(e.target.value, 10) || 0)}
+                                        title="自定义集数数量"
+                                      />
+                                    </div>
+                                  )}
                                 </CardTitle>
                               </CardHeader>
                               <CardContent>
