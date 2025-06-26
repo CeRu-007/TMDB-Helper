@@ -30,9 +30,11 @@ import {
   Image as ImageIcon
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/storage"
+import { StorageManager } from "@/lib/storage"
 import { TMDBService } from "@/lib/tmdb"
 import { cn } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useToast } from "@/hooks/use-toast"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -79,6 +81,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
   const [backdropPath, setBackdropPath] = useState<string | undefined>(undefined)
   const [customBackdropUrl, setCustomBackdropUrl] = useState<string>("")
   const [showBackdropPreview, setShowBackdropPreview] = useState(false)
+  const { toast } = useToast()
   const [formData, setFormData] = useState({
     weekday: 1,
     secondWeekday: -1, // -1 表示未设置
@@ -465,12 +468,33 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         updatedAt: new Date().toISOString(),
       }
 
+      // 检查重复项目
+      const existingItems = StorageManager.getItems();
+      const duplicateItem = existingItems.find(item => 
+        item.tmdbId === newItem.tmdbId && 
+        item.mediaType === newItem.mediaType
+      );
+      
+      if (duplicateItem) {
+        toast({
+          title: "词条已存在",
+          description: `"${newItem.title}" 已存在于您的列表中`,
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
       onAdd(newItem)
       onOpenChange(false)
       resetForm()
     } catch (error) {
       console.error("添加词条失败:", error)
-      alert("添加词条失败: " + (error instanceof Error ? error.message : "未知错误"))
+      toast({
+        title: "添加失败",
+        description: error instanceof Error ? error.message : "未知错误",
+        variant: "destructive"
+      })
     } finally {
       setLoading(false)
     }
