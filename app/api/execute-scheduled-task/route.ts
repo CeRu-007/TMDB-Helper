@@ -403,7 +403,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     
     // 获取所有项目，用于后续各种情况
     const items = await StorageManager.getItemsWithRetry();
-    console.log(`[API] 系统中共有 ${items.length} 个项目`);;
+    console.log(`[API] 系统中共有 ${items.length} 个项目`);
     
     // 添加零项目保护 - 如果系统中没有任何项目，直接返回错误
     if (items.length === 0) {
@@ -426,6 +426,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (item) {
         console.log(`[API] 通过ID直接找到项目: ${item.title} (ID: ${item.id})`);
         foundValidItem = true;
+        
+        // 验证平台URL
+        if (!item.platformUrl) {
+          console.error(`[API] 错误: 项目 ${item.title} (ID: ${item.id}) 缺少平台URL`);
+          return NextResponse.json({
+            success: false,
+            error: `项目 ${item.title} 没有设置平台URL`,
+            suggestion: "请先在项目设置中添加平台URL"
+          }, { status: 400 });
+        }
       } else {
         console.warn(`[API] 通过ID ${requestData.itemId} 未找到项目，尝试其他方法`);
       }

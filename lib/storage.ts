@@ -462,63 +462,52 @@ export class StorageManager {
   }
 
   /**
-   * 标准化任务对象，确保所有必要字段都存在
+   * 规范化任务对象，确保所有必要字段都存在
    */
   private static normalizeTask(task: any): ScheduledTask {
-    // 确定是否是新任务（没有lastRun且没有nextRun）
-    const isNewTask = !task.lastRun && !task.nextRun && !task.createdAt;
-    
-    // 确保基本字段存在
     const normalized: ScheduledTask = {
       id: task.id || uuidv4(),
-      itemId: task.itemId || "",
-      itemTitle: task.itemTitle || task.name?.replace(/\s*定时任务$/, '') || "未知项目",
-      itemTmdbId: task.itemTmdbId || "",
-      name: task.name || "未命名任务",
-      type: task.type || "tmdb-import",
+      itemId: task.itemId || '',
+      itemTitle: task.itemTitle || '',
+      itemTmdbId: task.itemTmdbId || undefined,
+      name: task.name || '未命名任务',
+      type: "tmdb-import",
       schedule: {
-        type: task.schedule?.type || "daily",
-        hour: typeof task.schedule?.hour === 'number' ? task.schedule.hour : 3,
-        minute: typeof task.schedule?.minute === 'number' ? task.schedule.minute : 0
+        type: task.schedule?.type || "weekly",
+        dayOfWeek: task.schedule?.dayOfWeek ?? new Date().getDay(),
+        hour: task.schedule?.hour ?? new Date().getHours(),
+        minute: task.schedule?.minute ?? 0
       },
       action: {
-        seasonNumber: typeof task.action?.seasonNumber === 'number' ? task.action.seasonNumber : 1,
-        autoUpload: Boolean(task.action?.autoUpload),
-        autoRemoveMarked: Boolean(task.action?.autoRemoveMarked),
+        seasonNumber: task.action?.seasonNumber ?? 1,
+        autoUpload: task.action?.autoUpload ?? true,
+        autoRemoveMarked: task.action?.autoRemoveMarked ?? true,
         autoConfirm: task.action?.autoConfirm !== false,
         autoMarkUploaded: task.action?.autoMarkUploaded !== false,
-        removeIqiyiAirDate: Boolean(task.action?.removeIqiyiAirDate)
+        removeIqiyiAirDate: task.action?.removeIqiyiAirDate === true
       },
-      // 新任务强制设置为禁用状态，已有任务保持原有状态
-      enabled: isNewTask ? false : Boolean(task.enabled),
-      lastRun: task.lastRun || null,
-      nextRun: task.nextRun || null,
-      lastRunStatus: task.lastRunStatus || null,
-      lastRunError: task.lastRunError || null,
+      enabled: task.enabled ?? false,
+      lastRun: task.lastRun || undefined,
+      nextRun: task.nextRun || undefined,
+      lastRunStatus: task.lastRunStatus,
+      lastRunError: task.lastRunError,
       createdAt: task.createdAt || new Date().toISOString(),
       updatedAt: task.updatedAt || new Date().toISOString()
     };
     
-    // 如果是weekly类型，确保dayOfWeek字段存在
-    if (normalized.schedule.type === "weekly") {
-      normalized.schedule.dayOfWeek = typeof task.schedule?.dayOfWeek === 'number' 
-        ? task.schedule.dayOfWeek 
-        : (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1); // 默认为今天
-    }
-    
-    // 检查是否有问题ID
-    if (normalized.itemId === "1749566411729") {
-      console.warn(`[StorageManager] 检测到任务 ${normalized.id} 使用了已知的问题ID 1749566411729，标记为禁用状态`);
-      normalized.enabled = false;
-    }
-    
-    // 检查ID格式是否有问题（过长或格式错误）
-    if (!normalized.itemId || normalized.itemId.length > 20 || !/^\d+$/.test(normalized.itemId)) {
-      console.warn(`[StorageManager] 任务 ${normalized.id} 的项目ID "${normalized.itemId}"格式可能有问题，标记为禁用状态`);
-      normalized.enabled = false;
+    // 验证项目ID
+    if (!normalized.itemId) {
+      console.error("[StorageManager] 错误: 任务缺少项目ID", task);
+      normalized.lastRunStatus = "failed";
+      normalized.lastRunError = "任务缺少项目ID，无法执行";
+    } else if (/^\d+$/.test(normalized.itemId) || normalized.itemId.length > 40 || normalized.itemId.includes(' ')) {
+      console.warn("[StorageManager] 警告: 任务的项目ID格式可能有问题", normalized.itemId);
       normalized.lastRunStatus = "failed";
       normalized.lastRunError = `项目ID "${normalized.itemId}" 格式无效，请重新关联正确的项目`;
     }
+    
+    // 记录详细日志
+    console.log(`[StorageManager] 规范化任务: ID=${normalized.id}, 项目ID=${normalized.itemId}, 标题=${normalized.itemTitle}`);
     
     return normalized;
   }

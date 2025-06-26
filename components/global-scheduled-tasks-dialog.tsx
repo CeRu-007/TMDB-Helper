@@ -155,12 +155,57 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       console.log("[GlobalScheduledTasksDialog] 开始加载定时任务...");
       const allTasks = await StorageManager.forceRefreshScheduledTasks(); // 使用强制刷新方法
       console.log(`[GlobalScheduledTasksDialog] 加载了 ${allTasks.length} 个定时任务`);
-      setTasks(allTasks)
       
       // 加载项目
       console.log("[GlobalScheduledTasksDialog] 开始加载项目...");
       const allItems = await StorageManager.getItemsWithRetry()
       console.log(`[GlobalScheduledTasksDialog] 加载了 ${allItems.length} 个项目`);
+      
+      // 检查项目是否存在
+      if (allItems.length === 0) {
+        console.warn("[GlobalScheduledTasksDialog] 警告: 系统中没有项目，任务将无法执行");
+        toast({
+          title: "注意",
+          description: "系统中没有可用项目，定时任务将无法执行",
+          variant: "destructive"
+        });
+      }
+      
+      // 检查任务的项目关联
+      const tasksWithInvalidItem = allTasks.filter(task => !allItems.some(item => item.id === task.itemId));
+      if (tasksWithInvalidItem.length > 0) {
+        console.warn(`[GlobalScheduledTasksDialog] 警告: 有 ${tasksWithInvalidItem.length} 个任务关联的项目不存在`);
+        
+        // 显示警告并提供修复选项
+        if (tasksWithInvalidItem.length === 1) {
+          toast({
+            title: "项目关联问题",
+            description: `任务"${tasksWithInvalidItem[0].name}"关联的项目不存在，需要重新关联`,
+            variant: "destructive",
+            action: (
+              <ToastAction altText="重新关联" onClick={() => {
+                setTaskToRelink(tasksWithInvalidItem[0]);
+                setShowRelinkDialog(true);
+              }}>
+                重新关联
+              </ToastAction>
+            )
+          });
+        } else {
+          toast({
+            title: "项目关联问题",
+            description: `有 ${tasksWithInvalidItem.length} 个任务关联的项目不存在，需要修复`,
+            variant: "destructive",
+            action: (
+              <ToastAction altText="批量修复" onClick={handleCleanInvalidTasks}>
+                批量修复
+              </ToastAction>
+            )
+          });
+        }
+      }
+      
+      setTasks(allTasks)
       setItems(allItems)
 
       // 检查是否存在问题ID的任务，并且之前没有处理过
@@ -578,6 +623,17 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       };
       
       console.log(`[GlobalScheduledTasksDialog] 执行定时任务: ${task.name}，数据:`, requestData);
+      
+      // 验证重要字段
+      if (!requestData.itemId) {
+        console.error("[GlobalScheduledTasksDialog] 错误: 请求数据中缺少itemId");
+        throw new Error("请求数据构建错误: 缺少项目ID");
+      }
+      
+      if (!requestData.metadata.platformUrl) {
+        console.error("[GlobalScheduledTasksDialog] 错误: 请求数据中缺少platformUrl");
+        throw new Error("请求数据构建错误: 缺少平台URL");
+      }
       
       // 添加超时控制
       const controller = new AbortController();

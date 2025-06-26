@@ -158,6 +158,19 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     if (!currentTask) return
     
     try {
+      // 确保项目有效
+      if (!item || !item.id) {
+        console.error("[ScheduledTaskDialog] 错误: 当前项目无效或缺少ID");
+        throw new Error("当前项目无效，无法创建定时任务");
+      }
+
+      // 确保项目有平台URL
+      if (!item.platformUrl) {
+        console.error("[ScheduledTaskDialog] 错误: 当前项目缺少平台URL");
+        throw new Error("当前项目缺少平台URL，请先在项目设置中添加平台URL");
+      }
+      
+      // 构建任务对象，确保项目信息正确
       let success: boolean
       const updatedTask = {
         ...currentTask,
