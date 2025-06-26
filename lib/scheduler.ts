@@ -194,10 +194,10 @@ class TaskScheduler {
       }
       
       // 策略1：直接通过ID匹配
-      relatedItem = items.find(item => item.id === task.itemId);
-      if (relatedItem) {
-        console.log(`[TaskScheduler] 直接通过ID找到了项目: ${relatedItem.title} (ID: ${relatedItem.id})`);
-        return relatedItem;
+      const foundItem = items.find(item => item.id === task.itemId);
+      if (foundItem) {
+        console.log(`[TaskScheduler] 直接通过ID找到了项目: ${foundItem.title} (ID: ${foundItem.id})`);
+        return foundItem;
       }
       
       console.warn(`[TaskScheduler] 未找到ID为 ${task.itemId} 的项目，尝试替代方案...`);
@@ -205,22 +205,22 @@ class TaskScheduler {
       // 策略2：通过TMDB ID匹配
       if (task.itemTmdbId) {
         console.log(`[TaskScheduler] 尝试通过TMDB ID匹配: ${task.itemTmdbId}`);
-        relatedItem = items.find(item => item.tmdbId === task.itemTmdbId);
-        if (relatedItem) {
-          console.log(`[TaskScheduler] 通过TMDB ID找到了项目: ${relatedItem.title} (ID: ${relatedItem.id})`);
-          await this.updateTaskItemId(task.id, relatedItem.id);
-          return relatedItem;
+        const tmdbMatch = items.find(item => item.tmdbId === task.itemTmdbId);
+        if (tmdbMatch) {
+          console.log(`[TaskScheduler] 通过TMDB ID找到了项目: ${tmdbMatch.title} (ID: ${tmdbMatch.id})`);
+          await this.updateTaskItemId(task.id, tmdbMatch.id);
+          return tmdbMatch;
         }
       }
       
       // 策略3：通过标题精确匹配
       if (task.itemTitle) {
         console.log(`[TaskScheduler] 尝试通过标题精确匹配: "${task.itemTitle}"`);
-        relatedItem = items.find(item => item.title === task.itemTitle);
-        if (relatedItem) {
-          console.log(`[TaskScheduler] 通过标题精确匹配找到了项目: ${relatedItem.title} (ID: ${relatedItem.id})`);
-          await this.updateTaskItemId(task.id, relatedItem.id);
-          return relatedItem;
+        const titleMatch = items.find(item => item.title === task.itemTitle);
+        if (titleMatch) {
+          console.log(`[TaskScheduler] 通过标题精确匹配找到了项目: ${titleMatch.title} (ID: ${titleMatch.id})`);
+          await this.updateTaskItemId(task.id, titleMatch.id);
+          return titleMatch;
         }
       }
       
@@ -237,10 +237,10 @@ class TaskScheduler {
           
           // 如果只有一个匹配项，直接使用
           if (possibleItems.length === 1) {
-            relatedItem = possibleItems[0];
-            console.log(`[TaskScheduler] 选择唯一的模糊匹配项: ${relatedItem.title} (ID: ${relatedItem.id})`);
-            await this.updateTaskItemId(task.id, relatedItem.id);
-            return relatedItem;
+            const matchItem = possibleItems[0];
+            console.log(`[TaskScheduler] 选择唯一的模糊匹配项: ${matchItem.title} (ID: ${matchItem.id})`);
+            await this.updateTaskItemId(task.id, matchItem.id);
+            return matchItem;
           }
           
           // 如果有多个，尝试找到与任务创建时间最接近的项目
@@ -248,10 +248,10 @@ class TaskScheduler {
             Math.abs(new Date(a.createdAt).getTime() - new Date(task.createdAt).getTime()) -
             Math.abs(new Date(b.createdAt).getTime() - new Date(task.createdAt).getTime())
           );
-          relatedItem = sameTypeItems[0];
-          console.log(`[TaskScheduler] 从多个同类型候选项中选择创建时间最接近的: ${relatedItem.title} (ID: ${relatedItem.id})`);
-          await this.updateTaskItemId(task.id, relatedItem.id);
-          return relatedItem;
+          const bestMatch = sameTypeItems[0];
+          console.log(`[TaskScheduler] 从多个同类型候选项中选择创建时间最接近的: ${bestMatch.title} (ID: ${bestMatch.id})`);
+          await this.updateTaskItemId(task.id, bestMatch.id);
+          return bestMatch;
         }
       }
       
@@ -268,10 +268,10 @@ class TaskScheduler {
         
         if (recentItems.length > 0) {
           // 选择第一个项目作为应急措施
-          relatedItem = recentItems[0];
-          console.log(`[TaskScheduler] 应急修复: 将使用最近创建的项目 ${relatedItem.title} (ID: ${relatedItem.id}) 替代问题ID`);
-          await this.updateTaskItemId(task.id, relatedItem.id);
-          return relatedItem;
+          const emergencyItem = recentItems[0];
+          console.log(`[TaskScheduler] 应急修复: 将使用最近创建的项目 ${emergencyItem.title} (ID: ${emergencyItem.id}) 替代问题ID`);
+          await this.updateTaskItemId(task.id, emergencyItem.id);
+          return emergencyItem;
         }
       }
       
@@ -287,10 +287,10 @@ class TaskScheduler {
       if (nameMatchItems.length > 0) {
         // 如果只有一个匹配项，直接使用
         if (nameMatchItems.length === 1) {
-          relatedItem = nameMatchItems[0];
-          console.log(`[TaskScheduler] 通过任务名称找到匹配项: ${relatedItem.title} (ID: ${relatedItem.id})`);
-          await this.updateTaskItemId(task.id, relatedItem.id);
-          return relatedItem;
+          const nameMatch = nameMatchItems[0];
+          console.log(`[TaskScheduler] 通过任务名称找到匹配项: ${nameMatch.title} (ID: ${nameMatch.id})`);
+          await this.updateTaskItemId(task.id, nameMatch.id);
+          return nameMatch;
         }
         
         // 如果有多个，使用创建时间最接近的
@@ -299,10 +299,10 @@ class TaskScheduler {
           Math.abs(new Date(b.createdAt).getTime() - new Date(task.createdAt).getTime())
         );
         
-        relatedItem = sortedByDate[0];
-        console.log(`[TaskScheduler] 从多个名称匹配项中选择创建时间最接近的: ${relatedItem.title} (ID: ${relatedItem.id})`);
-        await this.updateTaskItemId(task.id, relatedItem.id);
-        return relatedItem;
+        const closestMatch = sortedByDate[0];
+        console.log(`[TaskScheduler] 从多个名称匹配项中选择创建时间最接近的: ${closestMatch.title} (ID: ${closestMatch.id})`);
+        await this.updateTaskItemId(task.id, closestMatch.id);
+        return closestMatch;
       }
       
       // 策略7：完全备用 - 如果所有策略都失败，使用最近创建的项目
@@ -313,10 +313,10 @@ class TaskScheduler {
       );
       
       if (sortedByDate.length > 0) {
-        relatedItem = sortedByDate[0];
-        console.log(`[TaskScheduler] 备用策略: 使用最近创建的项目 ${relatedItem.title} (ID: ${relatedItem.id})`);
-        await this.updateTaskItemId(task.id, relatedItem.id);
-        return relatedItem;
+        const lastResortItem = sortedByDate[0];
+        console.log(`[TaskScheduler] 备用策略: 使用最近创建的项目 ${lastResortItem.title} (ID: ${lastResortItem.id})`);
+        await this.updateTaskItemId(task.id, lastResortItem.id);
+        return lastResortItem;
       }
       
       // 如果所有策略都失败，返回null
@@ -396,18 +396,41 @@ class TaskScheduler {
           const relatedItem = await this.getRelatedItem(task);
           
           if (!relatedItem) {
-            throw new Error(`找不到任务关联的项目 (itemId: ${task.itemId}, 名称: ${task.itemTitle || task.name})`);
-          }
-          
-          // 检查项目是否有指定的季数
-          if (task.action.seasonNumber > 0 && relatedItem.mediaType === 'tv') {
-            if (!relatedItem.seasons || !relatedItem.seasons.some(s => s.seasonNumber === task.action.seasonNumber)) {
-              throw new Error(`项目 ${relatedItem.title} 没有第 ${task.action.seasonNumber} 季`);
+            // 尝试重新关联项目
+            const result = await this.attemptToRelinkTask(task);
+            if (!result.success) {
+              throw new Error(result.message || `找不到任务关联的项目 (itemId: ${task.itemId}, 名称: ${task.itemTitle || task.name})`);
             }
+            
+            // 使用新关联的项目
+            const updatedTask = {...task, itemId: result.newItemId as string};
+            const retriedItem = await this.getRelatedItem(updatedTask);
+            if (!retriedItem) {
+              throw new Error(`重新关联项目失败，仍然找不到有效项目 (itemId: ${result.newItemId})`);
+            }
+            
+            // 更新任务的项目ID
+            await this.updateTaskItemId(task.id, result.newItemId as string);
+            
+            // 执行导入任务，使用新关联的项目
+            await this.executeTMDBImportTask({...task, itemId: result.newItemId as string}, retriedItem);
+          } else {
+            // 检查项目是否有指定的季数
+            if (task.action.seasonNumber > 0 && relatedItem.mediaType === 'tv') {
+              if (!relatedItem.seasons || !relatedItem.seasons.some(s => s.seasonNumber === task.action.seasonNumber)) {
+                throw new Error(`项目 ${relatedItem.title} 没有第 ${task.action.seasonNumber} 季`);
+              }
+            }
+            
+            // 检查项目是否有平台URL
+            if (!relatedItem.platformUrl) {
+              throw new Error(`项目 ${relatedItem.title} 没有设置平台URL，无法执行TMDB-Import任务`);
+            }
+            
+            // 执行导入任务
+            await this.executeTMDBImportTask(task, relatedItem);
           }
           
-          // 执行导入任务
-          await this.executeTMDBImportTask(task, relatedItem);
           console.log(`[TaskScheduler] 任务执行成功: ${task.id} - ${task.name}`);
           
           // 更新任务状态，标记为成功
@@ -447,50 +470,108 @@ class TaskScheduler {
   }
 
   /**
-   * 立即执行任务
+   * 尝试重新关联任务到有效项目
    */
-  public async runTaskNow(taskId: string): Promise<{ success: boolean; message: string; }> {
+  private async attemptToRelinkTask(task: ScheduledTask): Promise<{success: boolean, message?: string, newItemId?: string}> {
     try {
-      const tasks = await StorageManager.getScheduledTasks();
-      const task = tasks.find(t => t.id === taskId);
+      console.log(`[TaskScheduler] 尝试重新关联任务 ${task.id} (${task.name})`);
       
-      if (!task) {
-        return { 
-          success: false, 
-          message: `找不到ID为 ${taskId} 的任务` 
+      // 获取所有项目
+      const items = await StorageManager.getItemsWithRetry();
+      
+      if (items.length === 0) {
+        return {
+          success: false,
+          message: "系统中没有任何项目，无法关联任务"
         };
       }
       
-      // 如果任务已在执行中，返回提示
-      if (this.currentExecution.has(taskId)) {
-        return { 
-          success: false, 
-          message: `任务 ${task.name} 已在执行中` 
+      // 策略1: 通过TMDB ID匹配
+      if (task.itemTmdbId) {
+        console.log(`[TaskScheduler] 尝试通过TMDB ID (${task.itemTmdbId}) 匹配项目`);
+        const matchByTmdbId = items.find(item => item.tmdbId === task.itemTmdbId);
+        
+        if (matchByTmdbId) {
+          console.log(`[TaskScheduler] 通过TMDB ID匹配到项目: ${matchByTmdbId.title} (ID: ${matchByTmdbId.id})`);
+          return {
+            success: true,
+            message: `已通过TMDB ID关联到项目 ${matchByTmdbId.title}`,
+            newItemId: matchByTmdbId.id
+          };
+        }
+      }
+      
+      // 策略2: 通过项目标题匹配
+      if (task.itemTitle) {
+        console.log(`[TaskScheduler] 尝试通过标题 (${task.itemTitle}) 匹配项目`);
+        
+        // 模糊匹配
+        const matchByTitle = items.find(item => 
+          item.title === task.itemTitle ||
+          (item.title.includes(task.itemTitle) && item.title.length - task.itemTitle.length < 10) ||
+          (task.itemTitle.includes(item.title) && task.itemTitle.length - item.title.length < 10)
+        );
+        
+        if (matchByTitle) {
+          console.log(`[TaskScheduler] 通过标题匹配到项目: ${matchByTitle.title} (ID: ${matchByTitle.id})`);
+          return {
+            success: true,
+            message: `已通过标题关联到项目 ${matchByTitle.title}`,
+            newItemId: matchByTitle.id
+          };
+        }
+      }
+      
+      // 策略3: 通过任务名称提取可能的标题
+      if (task.name) {
+        const possibleTitle = task.name.replace(/\s*定时任务$/, '');
+        console.log(`[TaskScheduler] 尝试通过任务名称提取的标题 (${possibleTitle}) 匹配项目`);
+        
+        // 模糊匹配
+        const matchByTaskName = items.find(item => 
+          item.title === possibleTitle ||
+          (item.title.includes(possibleTitle) && item.title.length - possibleTitle.length < 10) ||
+          (possibleTitle.includes(item.title) && possibleTitle.length - item.title.length < 10)
+        );
+        
+        if (matchByTaskName) {
+          console.log(`[TaskScheduler] 通过任务名称匹配到项目: ${matchByTaskName.title} (ID: ${matchByTaskName.id})`);
+          return {
+            success: true,
+            message: `已通过任务名称关联到项目 ${matchByTaskName.title}`,
+            newItemId: matchByTaskName.id
+          };
+        }
+      }
+      
+      // 策略4: 使用最近创建的项目作为最后手段
+      console.log(`[TaskScheduler] 使用最近创建的项目作为最后手段`);
+      
+      // 按创建时间排序
+      const sortedItems = [...items].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      if (sortedItems.length > 0) {
+        const fallbackItem = sortedItems[0];
+        console.log(`[TaskScheduler] 使用最近创建的项目: ${fallbackItem.title} (ID: ${fallbackItem.id})`);
+        
+        return {
+          success: true,
+          message: `已关联到最近创建的项目 ${fallbackItem.title}`,
+          newItemId: fallbackItem.id
         };
       }
       
-      console.log(`[TaskScheduler] 手动执行任务: ${task.id} - ${task.name}`);
-      
-      // 创建执行Promise
-      const executionPromise = this._executeTaskInternal(task);
-      
-      // 将当前执行添加到映射
-      this.currentExecution.set(taskId, executionPromise);
-      
-      // 等待执行完成
-      await executionPromise;
-      
-      return { 
-        success: true, 
-        message: `任务 ${task.name} 执行完成` 
+      return {
+        success: false,
+        message: "无法找到合适的项目进行关联"
       };
     } catch (error) {
-      this.lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(`[TaskScheduler] 手动执行任务失败:`, error);
-      
-      return { 
-        success: false, 
-        message: `执行失败: ${error instanceof Error ? error.message : String(error)}` 
+      console.error(`[TaskScheduler] 重新关联任务失败:`, error);
+      return {
+        success: false,
+        message: `重新关联任务失败: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
@@ -533,152 +614,93 @@ class TaskScheduler {
         }
       }
       
-      // 调用API端点执行任务
-      const response = await fetch('/api/execute-scheduled-task', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
+      // 设置超时
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000); // 5分钟超时
       
-      // 检查响应状态
-      if (!response.ok) {
-        let errorText = '';
-        let errorObj = null;
+      try {
+        // 调用API端点执行任务
+        const response = await fetch('/api/execute-scheduled-task', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData),
+          signal: controller.signal
+        });
         
-        try {
-          // 尝试解析JSON错误
-          errorObj = await response.json();
-          errorText = errorObj.error || errorObj.message || `HTTP错误: ${response.status}`;
-        } catch (parseError) {
-          // 如果不是JSON，直接读取文本
+        clearTimeout(timeoutId);
+        
+        // 检查响应状态
+        if (!response.ok) {
+          let errorText = '';
+          let errorObj = null;
+          
           try {
-            errorText = await response.text();
-          } catch (textError) {
-            errorText = `HTTP错误: ${response.status}`;
+            // 尝试解析JSON错误
+            errorObj = await response.json();
+            errorText = errorObj.error || errorObj.message || `HTTP错误: ${response.status}`;
+          } catch (parseError) {
+            // 如果不是JSON，直接读取文本
+            try {
+              errorText = await response.text();
+            } catch (textError) {
+              errorText = `HTTP错误: ${response.status}`;
+            }
           }
+          
+          // 提供更详细的错误信息
+          let enhancedError = `API请求失败 (${response.status}): ${errorText}`;
+          
+          // 如果有更多详细信息，加入增强错误中
+          if (errorObj && errorObj.suggestion) {
+            enhancedError += `\n${errorObj.suggestion}`;
+          }
+          
+          if (errorObj && errorObj.details) {
+            enhancedError += `\n详细信息: ${errorObj.details}`;
+          }
+          
+          console.error(`[TaskScheduler] TMDB导入请求失败:`, enhancedError);
+          
+          // 处理特定错误情况
+          if (errorText.includes("系统中没有可用项目") || errorText.includes("无法找到有效项目")) {
+            throw new Error(`系统错误: ${enhancedError}`);
+          }
+          
+          throw new Error(enhancedError);
         }
         
-        // 提供更详细的错误信息
-        let enhancedError = `API请求失败 (${response.status}): ${errorText}`;
+        // 解析响应
+        const responseData = await response.json();
         
-        // 如果有更多详细信息，加入增强错误中
-        if (errorObj && errorObj.suggestion) {
-          enhancedError += `\n${errorObj.suggestion}`;
+        if (responseData.success) {
+          console.log(`[TaskScheduler] API执行成功: ${responseData.message}`);
+          
+          // 如果返回了CSV路径，记录下来
+          if (responseData.csvPath) {
+            console.log(`[TaskScheduler] 生成的CSV文件路径: ${responseData.csvPath}`);
+          }
+          
+          // 如果返回了上传输出，记录下来
+          if (responseData.uploadOutput) {
+            console.log(`[TaskScheduler] 上传输出: ${responseData.uploadOutput.substring(0, 100)}...`);
+          }
+        } else {
+          throw new Error(responseData.error || responseData.message || '未知错误');
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        // 检查是否是超时错误
+        if (fetchError.name === 'AbortError') {
+          throw new Error('API请求超时（5分钟）');
         }
         
-        if (errorObj && errorObj.details) {
-          enhancedError += `\n详细信息: ${errorObj.details}`;
-        }
-        
-        console.error(`[TaskScheduler] TMDB导入请求失败:`, enhancedError);
-        
-        // 处理特定错误情况
-        if (errorText.includes("系统中没有可用项目") || errorText.includes("无法找到有效项目")) {
-          throw new Error(`系统错误: ${enhancedError}`);
-        }
-        
-        throw new Error(enhancedError);
+        throw fetchError;
       }
-      
-      const result = await response.json();
-      console.log(`[TaskScheduler] API执行结果:`, result);
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      
-      // 输出成功信息
-      if (result.message) {
-        console.log(`[TaskScheduler] 任务执行成功: ${result.message}`);
-      }
-      
-      return;
     } catch (error) {
       console.error(`[TaskScheduler] 执行TMDB-Import任务失败:`, error);
-      
-      // 如果发生系统错误，尝试进行更强大的修复
-      if (error instanceof Error && 
-          (error.message.includes('系统中没有可用项目') || 
-           error.message.includes('无法找到有效项目') ||
-           error.message.includes('找不到项目ID'))) {
-        console.warn(`[TaskScheduler] 检测到项目ID相关错误，尝试进行紧急修复`);
-        
-        try {
-          // 获取所有项目
-          const items = await StorageManager.getItemsWithRetry();
-          
-          if (items.length === 0) {
-            console.error(`[TaskScheduler] 系统中确实没有可用项目，无法继续执行`);
-            throw new Error("系统中没有可用项目，请先添加至少一个项目，然后再尝试执行任务");
-          }
-          
-          // 尝试根据TMDB ID匹配
-          let newItem: TMDBItem | null = null;
-          
-          if (item.tmdbId) {
-            const matchByTmdbId = items.find(i => i.tmdbId === item.tmdbId);
-            if (matchByTmdbId) {
-              console.log(`[TaskScheduler] 通过TMDB ID ${item.tmdbId} 找到了匹配项目: ${matchByTmdbId.title}`);
-              newItem = matchByTmdbId;
-            }
-          }
-          
-          // 如果TMDB ID匹配失败，尝试通过标题匹配
-          if (!newItem && item.title) {
-            const matchByTitle = items.find(i => 
-              i.title === item.title ||
-              (i.title.includes(item.title) && i.title.length - item.title.length < 10) ||
-              (item.title.includes(i.title) && item.title.length - i.title.length < 10)
-            );
-            
-            if (matchByTitle) {
-              console.log(`[TaskScheduler] 通过标题 "${item.title}" 找到了匹配项目: ${matchByTitle.title}`);
-              newItem = matchByTitle;
-            }
-          }
-          
-          // 如果所有匹配策略都失败，使用最近创建的项目
-          if (!newItem) {
-            // 选择最近创建的项目
-            const fallbackItem = [...items].sort((a, b) => 
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            )[0];
-            
-            console.log(`[TaskScheduler] 所有匹配策略失败，使用最近创建的项目: ${fallbackItem.title}`);
-            newItem = fallbackItem;
-          }
-          
-          if (newItem) {
-            console.log(`[TaskScheduler] 尝试使用项目 ${newItem.title} (ID: ${newItem.id}) 重新执行任务`);
-            
-            // 更新任务
-            const updatedTask = {
-              ...task,
-              itemId: newItem.id,
-              itemTitle: newItem.title,
-              itemTmdbId: newItem.tmdbId,
-              updatedAt: new Date().toISOString()
-            };
-            
-            // 保存更新后的任务
-            await StorageManager.updateScheduledTask(updatedTask);
-            console.log(`[TaskScheduler] 已更新任务 ${task.id} 的项目ID为 ${newItem.id}`);
-            
-            // 重新执行
-            return this.executeTMDBImportTask(updatedTask, newItem);
-          }
-        } catch (retryError) {
-          console.error(`[TaskScheduler] 紧急修复失败:`, retryError);
-          
-          // 如果重试过程中发生错误，抛出更详细的错误信息
-          const errorDetail = retryError instanceof Error ? retryError.message : String(retryError);
-          throw new Error(`尝试修复项目ID失败: ${errorDetail}`);
-        }
-      }
-      
-      // 针对其他类型的错误，保持原始错误信息
       throw error;
     }
   }
@@ -848,6 +870,55 @@ class TaskScheduler {
         success: false,
         message: `清理失败: ${error instanceof Error ? error.message : String(error)}`,
         cleanedCount: 0
+      };
+    }
+  }
+
+  /**
+   * 立即执行任务
+   */
+  public async runTaskNow(taskId: string): Promise<{ success: boolean; message: string; }> {
+    try {
+      const tasks = await StorageManager.getScheduledTasks();
+      const task = tasks.find(t => t.id === taskId);
+      
+      if (!task) {
+        return { 
+          success: false, 
+          message: `找不到ID为 ${taskId} 的任务` 
+        };
+      }
+      
+      // 如果任务已在执行中，返回提示
+      if (this.currentExecution.has(taskId)) {
+        return { 
+          success: false, 
+          message: `任务 ${task.name} 已在执行中` 
+        };
+      }
+      
+      console.log(`[TaskScheduler] 手动执行任务: ${task.id} - ${task.name}`);
+      
+      // 创建执行Promise
+      const executionPromise = this._executeTaskInternal(task);
+      
+      // 将当前执行添加到映射
+      this.currentExecution.set(taskId, executionPromise);
+      
+      // 等待执行完成
+      await executionPromise;
+      
+      return { 
+        success: true, 
+        message: `任务 ${task.name} 执行完成` 
+      };
+    } catch (error) {
+      this.lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`[TaskScheduler] 手动执行任务失败:`, error);
+      
+      return { 
+        success: false, 
+        message: `执行失败: ${error instanceof Error ? error.message : String(error)}` 
       };
     }
   }

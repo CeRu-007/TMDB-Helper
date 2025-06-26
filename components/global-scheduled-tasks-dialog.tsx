@@ -56,6 +56,7 @@ import {
 import { StorageManager, TMDBItem, ScheduledTask } from "@/lib/storage"
 import { taskScheduler } from "@/lib/scheduler"
 import { toast } from "@/components/ui/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 import ScheduledTaskDialog from "./scheduled-task-dialog"
 import { v4 as uuidv4 } from "uuid"
 import { 
@@ -407,40 +408,171 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         description: `正在执行任务: ${task.name}`
       });
       
-      // 使用调度器的runTaskNow方法
-      const result = await taskScheduler.runTaskNow(task.id);
+      // 获取任务相关的项目
+      const relatedItem = getTaskItem(task.itemId);
       
-      if (result.success) {
-        toast({
-          title: "任务执行成功",
-          description: result.message
-        });
+      if (!relatedItem) {
+        // 尝试查找可能的匹配项目
+        const possibleMatches = findPossibleMatches(task);
         
-        // 重新加载任务列表以更新状态
-        await loadTasksAndItems();
-      } else {
-        toast({
-          title: "任务执行失败",
-          description: result.message,
-          variant: "destructive"
-        });
-        
-        // 如果错误消息中包含"找不到项目"，提示用户使用重新关联功能
-        if (result.message.includes("找不到") && result.message.includes("项目")) {
+        if (possibleMatches.length > 0) {
+          // 找到了可能匹配的项目，提示用户重新关联
+          const bestMatch = possibleMatches[0];
           toast({
-            title: "项目关联问题",
-            description: "任务关联的项目可能已被删除，请使用重新关联功能",
+            title: "找不到关联项目",
+            description: `无法找到任务对应的项目，可能需要重新关联到 "${bestMatch.item.title}"`,
+            variant: "destructive",
+            action: (
+              <ToastAction altText="重新关联" onClick={() => openRelinkDialog(task, possibleMatches)}>
+                重新关联
+              </ToastAction>
+            )
+          });
+          return;
+        } else {
+          toast({
+            title: "执行失败",
+            description: "找不到任务关联的项目，无法执行任务",
             variant: "destructive"
           });
+          return;
         }
       }
-    } catch (error) {
-      console.error("执行任务失败:", error);
-      toast({
-        title: "执行任务失败",
-        description: error instanceof Error ? error.message : "未知错误",
-        variant: "destructive"
+      
+      // 检查项目平台URL
+      if (!relatedItem.platformUrl) {
+        toast({
+          title: "执行失败",
+          description: `项目 ${relatedItem.title} 没有设置平台URL，无法执行任务`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // 构建请求数据
+      const requestData = {
+        taskId: task.id,
+        itemId: relatedItem.id,
+        action: {
+          seasonNumber: task.action.seasonNumber,
+          autoUpload: task.action.autoUpload,
+          autoRemoveMarked: task.action.autoRemoveMarked,
+          autoConfirm: task.action.autoConfirm !== false,
+          autoMarkUploaded: task.action.autoMarkUploaded !== false,
+          removeIqiyiAirDate: task.action.removeIqiyiAirDate === true
+        },
+        metadata: {
+          tmdbId: relatedItem.tmdbId,
+          title: relatedItem.title,
+          platformUrl: relatedItem.platformUrl
+        }
+      };
+      
+      console.log(`[GlobalScheduledTasksDialog] 执行定时任务: ${task.name}，数据:`, requestData);
+      
+      // 直接通过API执行任务
+      const response = await fetch('/api/execute-scheduled-task', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
       });
+      
+      if (!response.ok) {
+        let errorMessage = '';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || `HTTP错误: ${response.status}`;
+        } catch (e) {
+          errorMessage = `HTTP错误: ${response.status}`;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || result.message || '执行失败，但未返回具体错误信息');
+      }
+      
+      // 更新任务的最后执行时间和状态
+      const updatedTask = {
+        ...task,
+        lastRun: new Date().toISOString(),
+        lastRunStatus: "success" as const,
+        lastRunError: null,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await StorageManager.updateScheduledTask(updatedTask);
+      
+      // 重新加载任务列表以更新状态
+      await loadTasksAndItems();
+      
+      // 构建成功消息
+      let successMessage = '任务已成功执行';
+      
+      // 如果有CSV路径信息，添加到消息中
+      if (result.csvPath) {
+        successMessage += `，生成了CSV文件: ${result.csvPath}`;
+      }
+      
+      // 如果自动标记了上传的集数，提示用户
+      if (result.markedEpisodes && result.markedEpisodes.length > 0) {
+        successMessage += `，已标记 ${result.markedEpisodes.length} 个集数为已完成`;
+      }
+      
+      toast({
+        title: "任务执行成功",
+        description: successMessage
+      });
+    } catch (error: any) {
+      console.error("[GlobalScheduledTasksDialog] 执行任务失败:", error);
+      
+      // 更新任务的失败状态
+      try {
+        // 查找最新的任务数据
+        const tasksRefreshed = await StorageManager.getScheduledTasks();
+        const taskToUpdate = tasksRefreshed.find(t => t.id === task.id);
+        
+        if (taskToUpdate) {
+          const failedTask = {
+            ...taskToUpdate,
+            lastRun: new Date().toISOString(),
+            lastRunStatus: "failed" as const,
+            lastRunError: error.message || "未知错误",
+            updatedAt: new Date().toISOString()
+          };
+          
+          await StorageManager.updateScheduledTask(failedTask);
+          
+          // 重新加载任务列表以更新状态
+          await loadTasksAndItems();
+        }
+      } catch (updateError) {
+        console.error("[GlobalScheduledTasksDialog] 更新任务失败状态时出错:", updateError);
+      }
+      
+      // 如果错误消息中包含"找不到项目"，提示用户使用重新关联功能
+      if (error.message && (error.message.includes("找不到") && error.message.includes("项目"))) {
+        toast({
+          title: "项目关联问题",
+          description: "任务关联的项目可能已被删除，请使用重新关联功能",
+          variant: "destructive",
+          action: (
+            <ToastAction altText="重新关联" onClick={() => openRelinkDialog(task)}>
+              重新关联
+            </ToastAction>
+          )
+        });
+      } else {
+        toast({
+          title: "执行任务失败",
+          description: error.message || "未知错误，请检查控制台获取详细信息",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsRunningTask(false);
       setRunningTaskId(null);

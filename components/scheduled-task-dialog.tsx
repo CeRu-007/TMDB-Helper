@@ -346,50 +346,72 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     setRunningTaskId(task.id)
     
     try {
-      // 构建执行参数
-      const params = new URLSearchParams({
-        itemId: task.itemId,
-        seasonNumber: task.action.seasonNumber.toString(),
-        autoUpload: task.action.autoUpload.toString(),
-        autoRemoveMarked: task.action.autoRemoveMarked.toString(),
-        // 添加新的参数
-        autoConfirm: (task.action.autoConfirm !== false).toString(),
-        autoMarkUploaded: (task.action.autoMarkUploaded !== false).toString(),
-        removeIqiyiAirDate: (task.action.removeIqiyiAirDate === true).toString()
-      })
+      // 获取最新的项目信息
+      let currentItem = item; // 默认使用当前组件的项目
       
-      // 添加额外的参数，用于在找不到项目时进行备用查找
-      // 获取当前项目信息
       try {
         const items = await StorageManager.getItemsWithRetry();
-        const currentItem = items.find(i => i.id === task.itemId);
-        if (currentItem) {
-          params.append('tmdbId', currentItem.tmdbId);
-          params.append('title', currentItem.title);
-          params.append('platformUrl', currentItem.platformUrl || '');
+        const foundItem = items.find(i => i.id === task.itemId);
+        if (foundItem) {
+          currentItem = foundItem;
         } else {
-          // 如果找不到项目，尝试使用当前组件中的项目
-          params.append('tmdbId', item.tmdbId);
-          params.append('title', item.title);
-          params.append('platformUrl', item.platformUrl || '');
+          console.warn(`找不到任务关联的项目ID: ${task.itemId}，将使用当前组件的项目`);
         }
       } catch (error) {
         console.warn("获取项目信息失败，将使用当前项目作为备用:", error);
-        params.append('tmdbId', item.tmdbId);
-        params.append('title', item.title);
-        params.append('platformUrl', item.platformUrl || '');
       }
       
-      // 调用API执行任务
-      console.log(`执行定时任务: ${task.name}，参数:`, Object.fromEntries(params.entries()));
-      const response = await fetch(`/api/execute-scheduled-task?${params.toString()}`)
+      // 检查项目平台URL
+      if (!currentItem.platformUrl) {
+        throw new Error(`项目 ${currentItem.title} 没有设置平台URL，无法执行TMDB导入任务`);
+      }
+      
+      // 构建请求体数据
+      const requestData = {
+        taskId: task.id,
+        itemId: currentItem.id,
+        action: {
+          seasonNumber: task.action.seasonNumber,
+          autoUpload: task.action.autoUpload,
+          autoRemoveMarked: task.action.autoRemoveMarked,
+          autoConfirm: task.action.autoConfirm !== false,
+          autoMarkUploaded: task.action.autoMarkUploaded !== false,
+          removeIqiyiAirDate: task.action.removeIqiyiAirDate === true
+        },
+        metadata: {
+          tmdbId: currentItem.tmdbId,
+          title: currentItem.title,
+          platformUrl: currentItem.platformUrl
+        }
+      };
+      
+      console.log(`[ScheduledTaskDialog] 执行定时任务: ${task.name}，数据:`, requestData);
+      
+      // 使用POST请求调用API执行任务
+      const response = await fetch('/api/execute-scheduled-task', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
       
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || '执行失败')
+        let errorMessage = '';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || `HTTP错误: ${response.status}`;
+        } catch (e) {
+          errorMessage = `HTTP错误: ${response.status}`;
+        }
+        throw new Error(errorMessage);
       }
       
-      const result = await response.json()
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || result.message || '执行失败，但未返回具体错误信息');
+      }
       
       // 更新任务的最后执行时间和状态
       const updatedTask = {
@@ -398,15 +420,22 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         lastRunStatus: "success" as const,
         lastRunError: null,
         updatedAt: new Date().toISOString()
-      }
+      };
       
-      await StorageManager.updateScheduledTask(updatedTask)
+      await StorageManager.updateScheduledTask(updatedTask);
       
       // 重新加载任务列表
-      await loadTasks()
+      await loadTasks();
+      
+      // 构建成功消息
+      let successMessage = '任务已成功执行';
+      
+      // 如果有CSV路径信息，添加到消息中
+      if (result.csvPath) {
+        successMessage += `，生成了CSV文件: ${result.csvPath}`;
+      }
       
       // 如果自动标记了上传的集数，提示用户
-      let successMessage = `任务已成功执行，处理了 ${result.csvData?.rows?.length || 0} 条数据`;
       if (result.markedEpisodes && result.markedEpisodes.length > 0) {
         successMessage += `，已标记 ${result.markedEpisodes.length} 个集数为已完成`;
       }
@@ -414,29 +443,33 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       toast({
         title: "执行成功",
         description: successMessage,
-      })
+      });
     } catch (error: any) {
-      console.error("执行任务失败:", error)
+      console.error("[ScheduledTaskDialog] 执行任务失败:", error);
       
       // 更新任务的失败状态
-      const failedTask = {
-        ...task,
-        lastRun: new Date().toISOString(),
-        lastRunStatus: "failed" as const,
-        lastRunError: error.message || "未知错误",
-        updatedAt: new Date().toISOString()
+      try {
+        const failedTask = {
+          ...task,
+          lastRun: new Date().toISOString(),
+          lastRunStatus: "failed" as const,
+          lastRunError: error.message || "未知错误",
+          updatedAt: new Date().toISOString()
+        };
+        
+        await StorageManager.updateScheduledTask(failedTask);
+      } catch (updateError) {
+        console.error("[ScheduledTaskDialog] 更新任务失败状态时出错:", updateError);
       }
-      
-      await StorageManager.updateScheduledTask(failedTask)
       
       toast({
         title: "执行失败",
-        description: error.message || "无法执行任务",
+        description: error.message || "无法执行任务，请检查控制台获取详细错误信息",
         variant: "destructive"
-      })
+      });
     } finally {
-      setIsRunningTask(false)
-      setRunningTaskId(null)
+      setIsRunningTask(false);
+      setRunningTaskId(null);
     }
   }
 
