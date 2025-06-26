@@ -220,12 +220,18 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     const handleKeyDown = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Shift") {
         setIsShiftPressed(true)
+        
+        // 为body添加类，防止文本选择
+        document.body.classList.add('shift-select-mode')
       }
     }
     
     const handleKeyUp = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Shift") {
         setIsShiftPressed(false)
+        
+        // 移除防止文本选择的类
+        document.body.classList.remove('shift-select-mode')
       }
     }
 
@@ -235,6 +241,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
       window.removeEventListener("keyup", handleKeyUp)
+      
+      // 确保在组件卸载时移除类
+      document.body.classList.remove('shift-select-mode')
     }
   }, [])
 

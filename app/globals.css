@@ -105,3 +105,23 @@
 .dark .card-hover-effect:hover {
   box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1);
 }
+
+/* 禁用Shift按下时的文本选择 */
+body.shift-select-mode {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  cursor: pointer;
+}
+
+/* 在Shift模式下突出显示可选择元素 */
+body.shift-select-mode .episode-item {
+  transition: transform 0.15s ease-in-out;
+}
+
+body.shift-select-mode .episode-item:hover {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}

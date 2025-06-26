@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, Info, CheckSquare, Square, RotateCcw } from "lucide-react"
+import { ChevronDown, ChevronUp, Info, CheckSquare, Square, RotateCcw, CheckCircle } from "lucide-react"
 import type { Season } from "@/lib/storage"
 import { useMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -209,11 +209,25 @@ export default function SeasonDisplay({
 
               {/* Shift批量选择提示 */}
               {onEpisodeToggle && (
-                <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
-                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                <div 
+                  className={`flex items-center space-x-2 p-3 rounded-lg border transition-all duration-200 ${
+                    isShiftPressed 
+                      ? "bg-blue-100 dark:bg-blue-800 border-blue-300 dark:border-blue-600 shadow-md" 
+                      : "bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-700"
+                  }`}
+                >
+                  {isShiftPressed ? (
+                    <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 animate-pulse" />
+                  ) : (
+                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  )}
+                  <p className={`text-xs ${isShiftPressed ? "text-blue-800 dark:text-blue-200 font-medium" : "text-blue-700 dark:text-blue-300"}`}>
                     按住 Shift 键点击可批量选择连续的集数
-                    {isShiftPressed && <span className="ml-2 font-bold">（Shift 已按下）</span>}
+                    {isShiftPressed && (
+                      <span className="ml-2 font-bold bg-blue-600 text-white dark:bg-blue-500 dark:text-blue-50 px-2 py-0.5 rounded-md">
+                        批量选择模式已启用
+                      </span>
+                    )}
                   </p>
                 </div>
               )}
@@ -222,12 +236,12 @@ export default function SeasonDisplay({
               <div
                 className={`grid gap-2 ${
                   isMobile ? "grid-cols-6" : "grid-cols-8 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-10"
-                }`}
+                } ${isShiftPressed ? "select-none" : ""}`}
               >
                 {episodesToShow?.map((episode) => (
                   <div
                     key={`${episode.seasonNumber || selectedSeason}-${episode.number}`}
-                    className={`flex items-center justify-center p-2 rounded-lg border-2 transition-all ${
+                    className={`episode-item flex items-center justify-center p-2 rounded-lg border-2 transition-all ${
                       onEpisodeToggle ? "cursor-pointer" : ""
                     } ${
                       episode.completed
@@ -237,8 +251,12 @@ export default function SeasonDisplay({
                       isShiftPressed && lastClickedEpisode !== null && onEpisodeToggle
                         ? "ring-2 ring-blue-400 dark:ring-blue-500"
                         : ""
-                    }`}
-                    onClick={() => onEpisodeToggle?.(episode.number, !episode.completed, selectedSeason)}
+                    } ${isShiftPressed ? "select-none" : ""}`}
+                    onClick={(e) => {
+                      // 阻止默认行为，避免触发文本选择
+                      e.preventDefault();
+                      onEpisodeToggle?.(episode.number, !episode.completed, selectedSeason);
+                    }}
                   >
                     <div className="flex items-center space-x-1">
                       <Checkbox
