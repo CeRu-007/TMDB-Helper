@@ -811,4 +811,31 @@ export class StorageManager {
     const allTasks = await this.getScheduledTasks();
     return allTasks.filter(task => task.itemId === itemId);
   }
+
+  /**
+   * 查找指定项目是否存在
+   */
+  static async findItemById(id: string): Promise<TMDBItem | null> {
+    try {
+      const items = await this.getItemsWithRetry();
+      const item = items.find(item => item.id === id);
+      return item || null;
+    } catch (error) {
+      console.error("[StorageManager] 查找项目失败:", error);
+      return null;
+    }
+  }
+  
+  /**
+   * 检查系统中是否有任何项目可用
+   */
+  static async hasAnyItems(): Promise<boolean> {
+    try {
+      const items = await this.getItemsWithRetry();
+      return items.length > 0;
+    } catch (error) {
+      console.error("[StorageManager] 检查项目可用性失败:", error);
+      return false;
+    }
+  }
 }

@@ -400,6 +400,52 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         return;
       }
       
+      // 检查是否有可用项目
+      if (await StorageManager.hasAnyItems() === false) {
+        console.error("[GlobalScheduledTasksDialog] 系统中没有可用项目");
+        toast({
+          title: "无法执行任务",
+          description: "系统中没有可用项目，请先添加至少一个项目后再试",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // 检查项目列表是否为空（本地状态检查，作为备份）
+      if (!items || items.length === 0) {
+        console.error("[GlobalScheduledTasksDialog] 本地项目列表为空，尝试重新加载...");
+        
+        // 尝试重新加载项目列表
+        setLoading(true);
+        try {
+          const allItems = await StorageManager.getItemsWithRetry();
+          console.log(`[GlobalScheduledTasksDialog] 重新加载了 ${allItems.length} 个项目`);
+          
+          // 如果仍然为空，提示用户
+          if (!allItems || allItems.length === 0) {
+            toast({
+              title: "无法执行任务",
+              description: "系统中没有可用项目，请先添加至少一个项目后再试",
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          // 更新项目列表
+          setItems(allItems);
+        } catch (loadError) {
+          console.error("[GlobalScheduledTasksDialog] 重新加载项目失败:", loadError);
+          toast({
+            title: "无法执行任务",
+            description: "系统中没有可用项目，请先添加至少一个项目后再试",
+            variant: "destructive"
+          });
+          return;
+        } finally {
+          setLoading(false);
+        }
+      }
+      
       setIsRunningTask(true);
       setRunningTaskId(task.id);
       
@@ -423,11 +469,17 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
             description: `无法找到任务对应的项目，可能需要重新关联到 "${bestMatch.item.title}"`,
             variant: "destructive",
             action: (
-              <ToastAction altText="重新关联" onClick={() => openRelinkDialog(task, possibleMatches)}>
+              <ToastAction altText="重新关联" onClick={() => {
+                setTaskToRelink(task);
+                setRelinkSuggestions(possibleMatches);
+                setShowRelinkDialog(true);
+              }}>
                 重新关联
               </ToastAction>
             )
           });
+          setIsRunningTask(false);
+          setRunningTaskId(null);
           return;
         } else {
           toast({
@@ -435,6 +487,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
             description: "找不到任务关联的项目，无法执行任务",
             variant: "destructive"
           });
+          setIsRunningTask(false);
+          setRunningTaskId(null);
           return;
         }
       }
@@ -446,6 +500,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           description: `项目 ${relatedItem.title} 没有设置平台URL，无法执行任务`,
           variant: "destructive"
         });
+        setIsRunningTask(false);
+        setRunningTaskId(null);
         return;
       }
       
@@ -470,63 +526,101 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       
       console.log(`[GlobalScheduledTasksDialog] 执行定时任务: ${task.name}，数据:`, requestData);
       
-      // 直接通过API执行任务
-      const response = await fetch('/api/execute-scheduled-task', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
+      // 添加超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000); // 3分钟超时
       
-      if (!response.ok) {
-        let errorMessage = '';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || `HTTP错误: ${response.status}`;
-        } catch (e) {
-          errorMessage = `HTTP错误: ${response.status}`;
+      try {
+        // 直接通过API执行任务
+        const response = await fetch('/api/execute-scheduled-task', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData),
+          signal: controller.signal
+        });
+        
+        // 清除超时计时器
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          let errorMessage = '';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || `HTTP错误: ${response.status}`;
+          } catch (e) {
+            errorMessage = `HTTP错误: ${response.status}`;
+          }
+          throw new Error(errorMessage);
         }
-        throw new Error(errorMessage);
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || result.message || '执行失败，但未返回具体错误信息');
+        }
+        
+        // 更新任务的最后执行时间和状态
+        const taskToUpdate = {
+          ...task,
+          lastRun: new Date().toISOString(),
+          lastRunStatus: "success" as const,
+          lastRunError: null,
+          updatedAt: new Date().toISOString()
+        };
+        
+        await StorageManager.updateScheduledTask(taskToUpdate);
+        
+        // 重新加载任务列表以更新状态
+        await loadTasksAndItems();
+        
+        // 构建成功消息
+        let successMessage = '任务已成功执行';
+        
+        // 如果有CSV路径信息，添加到消息中
+        if (result.csvPath) {
+          successMessage += `，生成了CSV文件: ${result.csvPath}`;
+        }
+        
+        // 如果自动标记了上传的集数，提示用户
+        if (result.markedEpisodes && result.markedEpisodes.length > 0) {
+          successMessage += `，已标记 ${result.markedEpisodes.length} 个集数为已完成`;
+        }
+        
+        toast({
+          title: "任务执行成功",
+          description: successMessage
+        });
+      } catch (fetchError: any) {
+        // 清除超时计时器
+        clearTimeout(timeoutId);
+        
+        // 检查是否是超时错误
+        if (fetchError.name === 'AbortError') {
+          console.error("[GlobalScheduledTasksDialog] 请求超时");
+          toast({
+            title: "执行超时",
+            description: "任务执行超时（3分钟），请检查网络连接或稍后再试",
+            variant: "destructive"
+          });
+          
+          // 更新任务状态为失败
+          const failedTask = {
+            ...task,
+            lastRun: new Date().toISOString(),
+            lastRunStatus: "failed" as const,
+            lastRunError: "请求超时（3分钟）",
+            updatedAt: new Date().toISOString()
+          };
+          
+          await StorageManager.updateScheduledTask(failedTask);
+          await loadTasksAndItems();
+          return;
+        }
+        
+        throw fetchError; // 重新抛出以便外层catch处理
       }
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || result.message || '执行失败，但未返回具体错误信息');
-      }
-      
-      // 更新任务的最后执行时间和状态
-      const updatedTask = {
-        ...task,
-        lastRun: new Date().toISOString(),
-        lastRunStatus: "success" as const,
-        lastRunError: null,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await StorageManager.updateScheduledTask(updatedTask);
-      
-      // 重新加载任务列表以更新状态
-      await loadTasksAndItems();
-      
-      // 构建成功消息
-      let successMessage = '任务已成功执行';
-      
-      // 如果有CSV路径信息，添加到消息中
-      if (result.csvPath) {
-        successMessage += `，生成了CSV文件: ${result.csvPath}`;
-      }
-      
-      // 如果自动标记了上传的集数，提示用户
-      if (result.markedEpisodes && result.markedEpisodes.length > 0) {
-        successMessage += `，已标记 ${result.markedEpisodes.length} 个集数为已完成`;
-      }
-      
-      toast({
-        title: "任务执行成功",
-        description: successMessage
-      });
     } catch (error: any) {
       console.error("[GlobalScheduledTasksDialog] 执行任务失败:", error);
       
@@ -554,14 +648,23 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         console.error("[GlobalScheduledTasksDialog] 更新任务失败状态时出错:", updateError);
       }
       
-      // 如果错误消息中包含"找不到项目"，提示用户使用重新关联功能
-      if (error.message && (error.message.includes("找不到") && error.message.includes("项目"))) {
+      // 根据错误类型提供不同的提示
+      if (error.message && error.message.includes("系统中没有可用项目")) {
+        toast({
+          title: "无法执行任务",
+          description: "系统中没有可用项目，请先添加至少一个项目后再试",
+          variant: "destructive",
+        });
+      } else if (error.message && (error.message.includes("找不到") && error.message.includes("项目"))) {
         toast({
           title: "项目关联问题",
           description: "任务关联的项目可能已被删除，请使用重新关联功能",
           variant: "destructive",
           action: (
-            <ToastAction altText="重新关联" onClick={() => openRelinkDialog(task)}>
+            <ToastAction altText="重新关联" onClick={() => {
+              setTaskToRelink(task);
+              setShowRelinkDialog(true);
+            }}>
               重新关联
             </ToastAction>
           )

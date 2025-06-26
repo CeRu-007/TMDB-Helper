@@ -409,6 +409,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (items.length === 0) {
       console.error('[API] 系统中没有可用项目，无法继续执行');
       return NextResponse.json({ 
+        success: false,
         error: "系统中没有可用项目", 
         suggestion: "请先添加至少一个项目，然后再尝试执行任务"
       }, { status: 500 });
@@ -803,6 +804,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // 验证必要参数
     if (!itemId) {
       return NextResponse.json({ error: '缺少必要参数: itemId' }, { status: 400 });
+    }
+    
+    // 检查系统中是否有项目
+    const items = await StorageManager.getItemsWithRetry();
+    if (items.length === 0) {
+      console.error('[API] GET请求处理错误: 系统中没有可用项目');
+      return NextResponse.json({ 
+        success: false,
+        error: "系统中没有可用项目", 
+        suggestion: "请先添加至少一个项目，然后再尝试执行任务"
+      }, { status: 500 });
     }
     
     // 模拟POST请求的请求体

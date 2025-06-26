@@ -346,6 +346,11 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     setRunningTaskId(task.id)
     
     try {
+      // 检查系统中是否有项目
+      if (await StorageManager.hasAnyItems() === false) {
+        throw new Error("系统中没有可用项目，请先添加至少一个项目后再试");
+      }
+      
       // 获取最新的项目信息
       let currentItem = item; // 默认使用当前组件的项目
       
@@ -387,63 +392,84 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       
       console.log(`[ScheduledTaskDialog] 执行定时任务: ${task.name}，数据:`, requestData);
       
-      // 使用POST请求调用API执行任务
-      const response = await fetch('/api/execute-scheduled-task', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
+      // 添加超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000); // 3分钟超时
       
-      if (!response.ok) {
-        let errorMessage = '';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || `HTTP错误: ${response.status}`;
-        } catch (e) {
-          errorMessage = `HTTP错误: ${response.status}`;
+      try {
+        // 使用POST请求调用API执行任务
+        const response = await fetch('/api/execute-scheduled-task', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData),
+          signal: controller.signal
+        });
+        
+        // 清除超时计时器
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          let errorMessage = '';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || `HTTP错误: ${response.status}`;
+          } catch (e) {
+            errorMessage = `HTTP错误: ${response.status}`;
+          }
+          throw new Error(errorMessage);
         }
-        throw new Error(errorMessage);
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || result.message || '执行失败，但未返回具体错误信息');
+        }
+        
+        // 更新任务的最后执行时间和状态
+        const updatedTask = {
+          ...task,
+          lastRun: new Date().toISOString(),
+          lastRunStatus: "success" as const,
+          lastRunError: null,
+          updatedAt: new Date().toISOString()
+        };
+        
+        await StorageManager.updateScheduledTask(updatedTask);
+        
+        // 重新加载任务列表
+        await loadTasks();
+        
+        // 构建成功消息
+        let successMessage = '任务已成功执行';
+        
+        // 如果有CSV路径信息，添加到消息中
+        if (result.csvPath) {
+          successMessage += `，生成了CSV文件: ${result.csvPath}`;
+        }
+        
+        // 如果自动标记了上传的集数，提示用户
+        if (result.markedEpisodes && result.markedEpisodes.length > 0) {
+          successMessage += `，已标记 ${result.markedEpisodes.length} 个集数为已完成`;
+        }
+        
+        toast({
+          title: "执行成功",
+          description: successMessage,
+        });
+      } catch (fetchError: any) {
+        // 清除超时计时器
+        clearTimeout(timeoutId);
+        
+        // 检查是否是超时错误
+        if (fetchError.name === 'AbortError') {
+          console.error("[ScheduledTaskDialog] 请求超时");
+          throw new Error("请求超时（3分钟），请检查网络连接或稍后再试");
+        }
+        
+        throw fetchError; // 重新抛出以便外层catch处理
       }
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || result.message || '执行失败，但未返回具体错误信息');
-      }
-      
-      // 更新任务的最后执行时间和状态
-      const updatedTask = {
-        ...task,
-        lastRun: new Date().toISOString(),
-        lastRunStatus: "success" as const,
-        lastRunError: null,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await StorageManager.updateScheduledTask(updatedTask);
-      
-      // 重新加载任务列表
-      await loadTasks();
-      
-      // 构建成功消息
-      let successMessage = '任务已成功执行';
-      
-      // 如果有CSV路径信息，添加到消息中
-      if (result.csvPath) {
-        successMessage += `，生成了CSV文件: ${result.csvPath}`;
-      }
-      
-      // 如果自动标记了上传的集数，提示用户
-      if (result.markedEpisodes && result.markedEpisodes.length > 0) {
-        successMessage += `，已标记 ${result.markedEpisodes.length} 个集数为已完成`;
-      }
-      
-      toast({
-        title: "执行成功",
-        description: successMessage,
-      });
     } catch (error: any) {
       console.error("[ScheduledTaskDialog] 执行任务失败:", error);
       
@@ -458,13 +484,25 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         };
         
         await StorageManager.updateScheduledTask(failedTask);
+        
+        // 重新加载任务列表
+        await loadTasks();
       } catch (updateError) {
         console.error("[ScheduledTaskDialog] 更新任务失败状态时出错:", updateError);
       }
       
+      // 提供特定错误消息
+      let errorTitle = "执行失败";
+      let errorDescription = error.message || "无法执行任务，请检查控制台获取详细错误信息";
+      
+      if (error.message && error.message.includes("系统中没有可用项目")) {
+        errorTitle = "无法执行任务";
+        errorDescription = "系统中没有可用项目，请先添加至少一个项目后再试";
+      }
+      
       toast({
-        title: "执行失败",
-        description: error.message || "无法执行任务，请检查控制台获取详细错误信息",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive"
       });
     } finally {
