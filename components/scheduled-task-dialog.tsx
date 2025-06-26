@@ -161,15 +161,14 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       let success: boolean
       const updatedTask = {
         ...currentTask,
-        // 不再强制设置为禁用状态，尊重用户通过按钮的选择
+        // 确保使用当前打开的项目ID、标题和TMDB ID
+        itemId: item.id,
+        itemTitle: item.title,
+        itemTmdbId: item.tmdbId,
         updatedAt: new Date().toISOString()
       }
       
       // 确保任务的必要字段都已设置
-      if (!updatedTask.itemId) {
-        updatedTask.itemId = item.id;
-      }
-      
       if (!updatedTask.name || updatedTask.name.trim() === '') {
         updatedTask.name = `${item.title} 定时任务`;
       }

@@ -544,17 +544,22 @@ export class StorageManager {
       // 规范化任务对象
       const normalizedTask = this.normalizeTask(task);
       
-      // 确保项目相关属性正确
-      const items = await this.getItemsWithRetry();
-      const relatedItem = items.find(item => item.id === normalizedTask.itemId);
-      
-      if (relatedItem) {
-        // 如果找到关联项目，更新任务的项目相关属性
-        normalizedTask.itemTitle = relatedItem.title;
-        normalizedTask.itemTmdbId = relatedItem.tmdbId;
-        console.log(`[StorageManager] 关联到项目: ${relatedItem.title} (ID: ${relatedItem.id})`);
+      // 仅在任务未提供完整项目信息时才从项目列表查找
+      if (!normalizedTask.itemTitle || !normalizedTask.itemTmdbId) {
+        // 确保项目相关属性正确
+        const items = await this.getItemsWithRetry();
+        const relatedItem = items.find(item => item.id === normalizedTask.itemId);
+        
+        if (relatedItem) {
+          // 只有在任务未提供这些信息时才更新
+          if (!normalizedTask.itemTitle) normalizedTask.itemTitle = relatedItem.title;
+          if (!normalizedTask.itemTmdbId) normalizedTask.itemTmdbId = relatedItem.tmdbId;
+          console.log(`[StorageManager] 补充项目信息: ${relatedItem.title} (ID: ${relatedItem.id})`);
+        } else {
+          console.warn(`[StorageManager] 添加定时任务警告: ID为 ${normalizedTask.itemId} 的项目不存在，但仍将保存任务`);
+        }
       } else {
-        console.warn(`[StorageManager] 添加定时任务警告: ID为 ${normalizedTask.itemId} 的项目不存在，但仍将保存任务`);
+        console.log(`[StorageManager] 任务已包含完整项目信息: ${normalizedTask.itemTitle} (ID: ${normalizedTask.itemId})`);
       }
       
       const tasks = await this.getScheduledTasks();
@@ -607,17 +612,22 @@ export class StorageManager {
       // 规范化任务对象
       const normalizedTask = this.normalizeTask(updatedTask);
       
-      // 确保项目相关属性正确
-      const items = await this.getItemsWithRetry();
-      const relatedItem = items.find(item => item.id === normalizedTask.itemId);
-      
-      if (relatedItem) {
-        // 如果找到关联项目，更新任务的项目相关属性
-        normalizedTask.itemTitle = relatedItem.title;
-        normalizedTask.itemTmdbId = relatedItem.tmdbId;
-        console.log(`[StorageManager] 关联到项目: ${relatedItem.title} (ID: ${relatedItem.id})`);
+      // 仅在任务未提供完整项目信息时才从项目列表查找
+      if (!normalizedTask.itemTitle || !normalizedTask.itemTmdbId) {
+        // 确保项目相关属性正确
+        const items = await this.getItemsWithRetry();
+        const relatedItem = items.find(item => item.id === normalizedTask.itemId);
+        
+        if (relatedItem) {
+          // 只有在任务未提供这些信息时才更新
+          if (!normalizedTask.itemTitle) normalizedTask.itemTitle = relatedItem.title;
+          if (!normalizedTask.itemTmdbId) normalizedTask.itemTmdbId = relatedItem.tmdbId;
+          console.log(`[StorageManager] 补充项目信息: ${relatedItem.title} (ID: ${relatedItem.id})`);
+        } else {
+          console.warn(`[StorageManager] 更新定时任务警告: ID为 ${normalizedTask.itemId} 的项目不存在，但仍将更新任务`);
+        }
       } else {
-        console.warn(`[StorageManager] 更新定时任务警告: ID为 ${normalizedTask.itemId} 的项目不存在，但仍将更新任务`);
+        console.log(`[StorageManager] 任务已包含完整项目信息: ${normalizedTask.itemTitle} (ID: ${normalizedTask.itemId})`);
       }
       
       // 更新updatedAt字段

@@ -262,8 +262,61 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   }
 
   // 获取任务关联的项目
-  const getTaskItem = (taskItemId: string): TMDBItem | undefined => {
-    return items.find(item => item.id === taskItemId)
+  const getTaskItem = (taskItemId: string, task?: ScheduledTask): TMDBItem | undefined => {
+    // 方法1: 通过ID直接匹配
+    const exactMatch = items.find(item => item.id === taskItemId);
+    if (exactMatch) {
+      console.log(`[GlobalScheduledTasksDialog] 通过ID直接找到项目: ${exactMatch.title}`);
+      return exactMatch;
+    }
+
+    // 如果没有直接找到，尝试通过其他方法查找
+    console.log(`[GlobalScheduledTasksDialog] 通过ID ${taskItemId} 未找到项目，尝试其他方法...`);
+    
+    // 方法2: 如果提供了任务对象，尝试通过itemTmdbId和itemTitle匹配
+    if (task) {
+      // 通过TMDB ID匹配
+      if (task.itemTmdbId) {
+        const tmdbIdMatch = items.find(item => item.tmdbId === task.itemTmdbId);
+        if (tmdbIdMatch) {
+          console.log(`[GlobalScheduledTasksDialog] 通过TMDB ID匹配到项目: ${tmdbIdMatch.title}`);
+          return tmdbIdMatch;
+        }
+      }
+      
+      // 通过标题匹配
+      if (task.itemTitle) {
+        const titleMatch = items.find(item => 
+          item.title === task.itemTitle ||
+          (item.title.includes(task.itemTitle) && item.title.length - task.itemTitle.length < 10) ||
+          (task.itemTitle.includes(item.title) && task.itemTitle.length - item.title.length < 10)
+        );
+        
+        if (titleMatch) {
+          console.log(`[GlobalScheduledTasksDialog] 通过标题匹配到项目: ${titleMatch.title}`);
+          return titleMatch;
+        }
+      }
+    }
+    
+    // 方法3: 如果ID是数字字符串或者长度不正确，可能是格式问题
+    if (/^\d+$/.test(taskItemId) || taskItemId.length > 40) {
+      console.log(`[GlobalScheduledTasksDialog] 检测到可能是格式问题的ID: ${taskItemId}`);
+      
+      // 按创建时间排序找最近的项目
+      const sortedItems = [...items].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      if (sortedItems.length > 0) {
+        console.log(`[GlobalScheduledTasksDialog] 使用最近创建的项目: ${sortedItems[0].title}`);
+        return sortedItems[0];
+      }
+    }
+    
+    // 最终结果是未找到项目
+    console.log(`[GlobalScheduledTasksDialog] 无法找到匹配的项目`);
+    return undefined;
   }
 
   // 查找可能匹配的项目
@@ -455,7 +508,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       });
       
       // 获取任务相关的项目
-      const relatedItem = getTaskItem(task.itemId);
+      const relatedItem = getTaskItem(task.itemId, task);
       
       if (!relatedItem) {
         // 尝试查找可能的匹配项目
