@@ -1,4 +1,5 @@
 # TMDB-Helper
+![Logo_设计 (1)](https://github.com/user-attachments/assets/7fabd3b5-dc7d-416f-83f8-ad79d223adc9)
 
 ## 简介
 TMDB-Helper 是一个功能强大的桌面应用程序，旨在帮助用户高效地管理和维护 TMDB (The Movie Database) 上的电影和电视剧词条。它提供了一个直观的用户界面，用户可以轻松追踪媒体内容的维护进度，管理多季剧集，并与 TMDB 平台进行无缝集成。
