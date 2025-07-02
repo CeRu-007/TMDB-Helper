@@ -170,6 +170,12 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         throw new Error("当前项目缺少平台URL，请先在项目设置中添加平台URL");
       }
       
+      // 验证项目ID格式
+      if (/^\d+$/.test(item.id) || item.id.length > 40 || item.id.includes(' ') || item.id === "1749566411729") {
+        console.error("[ScheduledTaskDialog] 错误: 当前项目ID格式无效", item.id);
+        throw new Error(`项目ID "${item.id}" 格式无效，请联系开发者修复`);
+      }
+      
       // 构建任务对象，确保项目信息正确
       let success: boolean
       const updatedTask = {

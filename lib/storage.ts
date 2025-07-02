@@ -495,15 +495,20 @@ export class StorageManager {
       updatedAt: task.updatedAt || new Date().toISOString()
     };
     
-    // 验证项目ID
+    // 增强的项目ID验证
     if (!normalized.itemId) {
       console.error("[StorageManager] 错误: 任务缺少项目ID", task);
       normalized.lastRunStatus = "failed";
       normalized.lastRunError = "任务缺少项目ID，无法执行";
-    } else if (/^\d+$/.test(normalized.itemId) || normalized.itemId.length > 40 || normalized.itemId.includes(' ')) {
+      normalized.enabled = false; // 自动禁用无效任务
+    } else if (/^\d+$/.test(normalized.itemId) || 
+               normalized.itemId.length > 40 || 
+               normalized.itemId.includes(' ') ||
+               normalized.itemId === "1749566411729") { // 特别检查已知的问题ID
       console.warn("[StorageManager] 警告: 任务的项目ID格式可能有问题", normalized.itemId);
       normalized.lastRunStatus = "failed";
       normalized.lastRunError = `项目ID "${normalized.itemId}" 格式无效，请重新关联正确的项目`;
+      normalized.enabled = false; // 自动禁用无效任务
     }
     
     // 记录详细日志

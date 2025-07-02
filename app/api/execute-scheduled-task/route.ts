@@ -477,39 +477,80 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     
     // 检查是否是问题ID
-    if (!foundValidItem && requestData.itemId && (requestData.itemId === "1749566411729" || requestData.itemId.length > 20)) {
-      console.log('[API] 检测到问题ID格式，尝试修复...');
-      
-      // 选择最近创建的项目
-      const sortedItems = [...items].sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      
-      if (sortedItems.length > 0) {
-        const newItemId = sortedItems[0].id;
-        console.log(`[API] 将使用最近创建的项目 ${sortedItems[0].title} (ID: ${newItemId}) 替代问题ID`);
+    if (!foundValidItem && requestData.itemId) {
+      // 特别处理已知的问题ID
+      if (requestData.itemId === "1749566411729") {
+        console.log('[API] 检测到已知问题ID 1749566411729，尝试修复...');
         
-        // 修改请求数据
-        requestData.itemId = newItemId;
-        item = sortedItems[0];
-        foundValidItem = true;
+        // 选择最近创建的项目
+        const sortedItems = [...items].sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
         
-        // 更新任务记录
-        if (requestData.taskId && requestData.taskId !== 'legacy-get-request') {
-          const tasks = await StorageManager.getScheduledTasks();
-          const taskToUpdate = tasks.find(t => t.id === requestData.taskId);
+        if (sortedItems.length > 0) {
+          const newItemId = sortedItems[0].id;
+          console.log(`[API] 将使用最近创建的项目 ${sortedItems[0].title} (ID: ${newItemId}) 替代问题ID`);
           
-          if (taskToUpdate) {
-            const updatedTask = { 
-              ...taskToUpdate, 
-              itemId: newItemId,
-              itemTitle: sortedItems[0].title,
-              itemTmdbId: sortedItems[0].tmdbId,
-              updatedAt: new Date().toISOString()
-            };
+          // 修改请求数据
+          requestData.itemId = newItemId;
+          item = sortedItems[0];
+          foundValidItem = true;
+          
+          // 更新任务记录
+          if (requestData.taskId && requestData.taskId !== 'legacy-get-request') {
+            const tasks = await StorageManager.getScheduledTasks();
+            const taskToUpdate = tasks.find(t => t.id === requestData.taskId);
             
-            await StorageManager.updateScheduledTask(updatedTask);
-            console.log(`[API] 已更新任务 ${requestData.taskId} 的项目ID`);
+            if (taskToUpdate) {
+              const updatedTask = { 
+                ...taskToUpdate, 
+                itemId: newItemId,
+                itemTitle: sortedItems[0].title,
+                itemTmdbId: sortedItems[0].tmdbId,
+                updatedAt: new Date().toISOString()
+              };
+              
+              await StorageManager.updateScheduledTask(updatedTask);
+              console.log(`[API] 已更新任务 ${requestData.taskId} 的项目ID`);
+            }
+          }
+        }
+      }
+      // 处理其他可能的问题ID格式
+      else if (/^\d+$/.test(requestData.itemId) || requestData.itemId.length > 40 || requestData.itemId.includes(' ')) {
+        console.log('[API] 检测到问题ID格式，尝试修复...');
+        
+        // 选择最近创建的项目
+        const sortedItems = [...items].sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        if (sortedItems.length > 0) {
+          const newItemId = sortedItems[0].id;
+          console.log(`[API] 将使用最近创建的项目 ${sortedItems[0].title} (ID: ${newItemId}) 替代问题ID`);
+          
+          // 修改请求数据
+          requestData.itemId = newItemId;
+          item = sortedItems[0];
+          foundValidItem = true;
+          
+          // 更新任务记录
+          if (requestData.taskId && requestData.taskId !== 'legacy-get-request') {
+            const tasks = await StorageManager.getScheduledTasks();
+            const taskToUpdate = tasks.find(t => t.id === requestData.taskId);
+            
+            if (taskToUpdate) {
+              const updatedTask = { 
+                ...taskToUpdate, 
+                itemId: newItemId,
+                itemTitle: sortedItems[0].title,
+                itemTmdbId: sortedItems[0].tmdbId,
+                updatedAt: new Date().toISOString()
+              };
+              
+              await StorageManager.updateScheduledTask(updatedTask);
+              console.log(`[API] 已更新任务 ${requestData.taskId} 的项目ID`);
+            }
           }
         }
       }
