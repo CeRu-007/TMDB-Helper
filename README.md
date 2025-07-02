@@ -32,6 +32,10 @@ TMDB-Helper 构建于以下领先技术之上：
     -   CSV 解析与验证
     -   文件系统操作
 
+## 核心依赖
+
+本项目在部分核心功能上依赖于外部开源项目 [fzlins/TMDB-Import](https://github.com/fzlins/TMDB-Import)。该项目是一个强大的 Python 脚本，用于从各种网站抓取剧集数据、导入到 TMDB 以及进行图片裁剪，极大地增强了 TMDB-Helper 在数据处理和 TMDB 交互方面的能力。
+
 ## 安装与运行
 
 要本地运行 TMDB-Helper，请按照以下步骤操作：
