@@ -43,43 +43,80 @@ export async function POST(request: NextRequest) {
     
     // 解析CSV头部
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    const episodeNumberIndex = headers.findIndex(h => 
-      h.toLowerCase().includes('episode') && h.toLowerCase().includes('number')
-    );
-    
+    console.log(`[API] CSV头部列名: [${headers.join(', ')}]`);
+
+    // 尝试多种可能的集数列名
+    const possibleEpisodeColumns = [
+      'episode_number',
+      'episode',
+      'ep',
+      'number',
+      'episode_num',
+      'ep_num',
+      '集数',
+      '第几集'
+    ];
+
+    let episodeNumberIndex = -1;
+    let matchedColumnName = '';
+
+    for (const possibleName of possibleEpisodeColumns) {
+      episodeNumberIndex = headers.findIndex(h =>
+        h.toLowerCase().includes(possibleName.toLowerCase())
+      );
+      if (episodeNumberIndex !== -1) {
+        matchedColumnName = headers[episodeNumberIndex];
+        break;
+      }
+    }
+
     if (episodeNumberIndex === -1) {
+      console.error(`[API] 无法找到集数列，可用列名: [${headers.join(', ')}]`);
       return NextResponse.json({
         success: false,
-        error: '无法找到episode_number列',
-        details: { headers }
+        error: '无法找到集数列',
+        details: {
+          headers,
+          searchedColumns: possibleEpisodeColumns
+        }
       }, { status: 400 });
     }
-    
-    console.log(`[API] 找到episode_number列在索引: ${episodeNumberIndex}`);
+
+    console.log(`[API] 找到集数列 "${matchedColumnName}" 在索引: ${episodeNumberIndex}`);
     
     // 过滤数据行，删除已标记的集数
     const headerLine = lines[0];
     const dataLines = lines.slice(1).filter(line => line.trim() !== '');
     const filteredLines = [];
     const removedEpisodes = [];
-    
-    for (const line of dataLines) {
+
+    console.log(`[API] 开始处理 ${dataLines.length} 行数据，需要删除的集数: [${markedEpisodes.join(', ')}]`);
+
+    for (let i = 0; i < dataLines.length; i++) {
+      const line = dataLines[i];
       const columns = parseCSVLine(line);
-      
+
       if (columns.length > episodeNumberIndex) {
-        const episodeNumber = parseInt(columns[episodeNumberIndex]);
-        
+        const episodeNumberStr = columns[episodeNumberIndex].trim();
+        const episodeNumber = parseInt(episodeNumberStr);
+
+        console.log(`[API] 第 ${i + 1} 行: 集数列值="${episodeNumberStr}", 解析为数字=${episodeNumber}`);
+
         if (!isNaN(episodeNumber) && markedEpisodes.includes(episodeNumber)) {
           removedEpisodes.push(episodeNumber);
-          console.log(`[API] 删除第 ${episodeNumber} 集的数据行`);
+          console.log(`[API] ✓ 删除第 ${episodeNumber} 集的数据行`);
         } else {
           filteredLines.push(line);
+          console.log(`[API] ✓ 保留第 ${episodeNumber} 集的数据行`);
         }
       } else {
         // 保留格式不正确的行
         filteredLines.push(line);
+        console.log(`[API] ✓ 保留格式不正确的行 (列数: ${columns.length})`);
       }
     }
+
+    console.log(`[API] 处理完成: 删除了 ${removedEpisodes.length} 行，保留了 ${filteredLines.length} 行`);
     
     // 应用特殊变量处理
     const processedLines = await applySpecialVariables(

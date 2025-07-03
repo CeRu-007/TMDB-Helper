@@ -886,9 +886,17 @@ class TaskScheduler {
     try {
       console.log(`[TaskScheduler] 处理CSV文件中的已标记集数`);
 
+      // 获取最新的项目数据，确保已标记集数信息是最新的
+      const latestItems = await StorageManager.getItemsWithRetry();
+      const latestItem = latestItems.find(i => i.id === item.id);
+
+      if (!latestItem) {
+        throw new Error(`无法找到项目 ${item.id}`);
+      }
+
       // 获取已标记的集数
-      const markedEpisodes = this.getMarkedEpisodes(item, seasonNumber);
-      console.log(`[TaskScheduler] 已标记的集数: ${markedEpisodes.join(', ')}`);
+      const markedEpisodes = this.getMarkedEpisodes(latestItem, seasonNumber);
+      console.log(`[TaskScheduler] 已标记的集数: [${markedEpisodes.join(', ')}]`);
 
       if (markedEpisodes.length === 0) {
         console.log(`[TaskScheduler] 没有已标记的集数，跳过CSV处理`);
@@ -907,8 +915,8 @@ class TaskScheduler {
         body: JSON.stringify({
           csvPath: csvPath,
           markedEpisodes: markedEpisodes,
-          platformUrl: item.platformUrl,
-          itemId: item.id
+          platformUrl: latestItem.platformUrl,
+          itemId: latestItem.id
         }),
         signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
       });
@@ -945,26 +953,48 @@ class TaskScheduler {
   private getMarkedEpisodes(item: TMDBItem, seasonNumber: number): number[] {
     const markedEpisodes: number[] = [];
 
+    console.log(`[TaskScheduler] 获取已标记集数 - 项目: ${item.title}, 季数: ${seasonNumber}`);
+    console.log(`[TaskScheduler] 项目数据结构:`, {
+      hasSeasons: !!(item.seasons && item.seasons.length > 0),
+      seasonsCount: item.seasons?.length || 0,
+      hasEpisodes: !!(item.episodes && item.episodes.length > 0),
+      episodesCount: item.episodes?.length || 0
+    });
+
     if (item.seasons && item.seasons.length > 0) {
       // 多季模式
+      console.log(`[TaskScheduler] 多季模式，查找第 ${seasonNumber} 季`);
       const targetSeason = item.seasons.find(s => s.seasonNumber === seasonNumber);
-      if (targetSeason && targetSeason.episodes) {
-        targetSeason.episodes.forEach(episode => {
-          if (episode.completed) {
-            markedEpisodes.push(episode.number);
-          }
-        });
+
+      if (targetSeason) {
+        console.log(`[TaskScheduler] 找到目标季，集数数量: ${targetSeason.episodes?.length || 0}`);
+        if (targetSeason.episodes) {
+          targetSeason.episodes.forEach(episode => {
+            console.log(`[TaskScheduler] 检查集数 ${episode.number}: completed=${episode.completed}`);
+            if (episode.completed) {
+              markedEpisodes.push(episode.number);
+            }
+          });
+        }
+      } else {
+        console.warn(`[TaskScheduler] 未找到第 ${seasonNumber} 季，可用季数: ${item.seasons.map(s => s.seasonNumber).join(', ')}`);
       }
     } else if (item.episodes) {
       // 单季模式
+      console.log(`[TaskScheduler] 单季模式，总集数: ${item.episodes.length}`);
       item.episodes.forEach(episode => {
+        console.log(`[TaskScheduler] 检查集数 ${episode.number}: completed=${episode.completed}`);
         if (episode.completed) {
           markedEpisodes.push(episode.number);
         }
       });
+    } else {
+      console.warn(`[TaskScheduler] 项目没有集数信息`);
     }
 
-    return markedEpisodes.sort((a, b) => a - b);
+    const sortedEpisodes = markedEpisodes.sort((a, b) => a - b);
+    console.log(`[TaskScheduler] 最终已标记集数: [${sortedEpisodes.join(', ')}]`);
+    return sortedEpisodes;
   }
 
 

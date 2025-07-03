@@ -516,6 +516,32 @@
         "enabled": true,
         "createdAt": "2025-07-03T10:52:30.601Z",
         "updatedAt": "2025-07-03T10:52:49.950Z"
+      },
+      {
+        "id": "9abf9c25-7c38-4e73-857d-8c258663156d",
+        "itemId": "1751538210692",
+        "itemTitle": "书卷一梦",
+        "itemTmdbId": "253193",
+        "name": "书卷一梦 定时任务",
+        "type": "tmdb-import",
+        "schedule": {
+          "type": "daily",
+          "dayOfWeek": 4,
+          "hour": 19,
+          "minute": 18
+        },
+        "action": {
+          "seasonNumber": 1,
+          "autoUpload": true,
+          "autoRemoveMarked": true,
+          "autoConfirm": true,
+          "removeIqiyiAirDate": true,
+          "autoMarkUploaded": true,
+          "conflictAction": "y"
+        },
+        "enabled": true,
+        "createdAt": "2025-07-03T11:16:42.777Z",
+        "updatedAt": "2025-07-03T11:17:35.555Z"
       }
     ]
   }
