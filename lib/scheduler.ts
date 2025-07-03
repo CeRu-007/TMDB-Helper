@@ -947,8 +947,8 @@ class TaskScheduler {
         body: JSON.stringify({
           csvPath: csvPath,
           markedEpisodes: markedEpisodes,
-          platformUrl: latestItem.platformUrl,
-          itemId: latestItem.id,
+          platformUrl: item.platformUrl,
+          itemId: item.id,
           testMode: true
         }),
         signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
