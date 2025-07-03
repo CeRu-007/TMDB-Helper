@@ -765,21 +765,31 @@ class TaskScheduler {
   private async executeTMDBImportTask(task: ScheduledTask, item: TMDBItem): Promise<void> {
     console.log(`[TaskScheduler] 开始执行完整的TMDB-Import工作流程: ${item.title}`);
 
+    // 获取最新的项目数据，确保整个流程使用一致的数据
+    const latestItems = await StorageManager.getItemsWithRetry();
+    let currentItem = latestItems.find(i => i.id === item.id);
+
+    if (!currentItem) {
+      throw new Error(`无法找到项目 ${item.id}，可能已被删除`);
+    }
+
+    console.log(`[TaskScheduler] 使用最新的项目数据: ${currentItem.title} (ID: ${currentItem.id})`);
+
     try {
       // 验证基本条件
-      if (!item.platformUrl) {
-        throw new Error(`项目 ${item.title} 缺少平台URL，无法执行TMDB导入`);
+      if (!currentItem.platformUrl) {
+        throw new Error(`项目 ${currentItem.title} 缺少平台URL，无法执行TMDB导入`);
       }
 
-      if (task.action.seasonNumber > 0 && item.mediaType === 'tv') {
-        if (!item.seasons || !item.seasons.some(s => s.seasonNumber === task.action.seasonNumber)) {
-          throw new Error(`项目 ${item.title} 没有第 ${task.action.seasonNumber} 季，请检查季数设置`);
+      if (task.action.seasonNumber > 0 && currentItem.mediaType === 'tv') {
+        if (!currentItem.seasons || !currentItem.seasons.some(s => s.seasonNumber === task.action.seasonNumber)) {
+          throw new Error(`项目 ${currentItem.title} 没有第 ${task.action.seasonNumber} 季，请检查季数设置`);
         }
       }
 
       // 步骤1: 播出平台抓取
       console.log(`[TaskScheduler] 步骤1: 执行播出平台抓取`);
-      const extractResult = await this.executePlatformExtraction(item, task.action.seasonNumber);
+      const extractResult = await this.executePlatformExtraction(currentItem, task.action.seasonNumber);
 
       if (!extractResult.success) {
         throw new Error(`播出平台抓取失败: ${extractResult.error}`);
@@ -791,7 +801,7 @@ class TaskScheduler {
 
       const csvProcessResult = await this.processCSVWithMarkedEpisodes(
         extractResult.csvPath!,
-        item,
+        currentItem,
         task.action.seasonNumber
       );
 
@@ -811,7 +821,7 @@ class TaskScheduler {
       const conflictAction = task.action.conflictAction || 'w';
       const importResult = await this.executeTMDBImport(
         csvProcessResult.processedCsvPath!,
-        item,
+        currentItem,
         task.action.seasonNumber,
         conflictAction
       );
@@ -826,7 +836,17 @@ class TaskScheduler {
 
       if (csvAnalysisResult.success && csvAnalysisResult.remainingEpisodes && csvAnalysisResult.remainingEpisodes.length > 0) {
         console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvAnalysisResult.remainingEpisodes.join(', ')}]`);
-        await this.markEpisodesAsCompleted(item, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
+
+        // 在标记前再次获取最新的项目数据，确保ID正确
+        const finalItems = await StorageManager.getItemsWithRetry();
+        const finalItem = finalItems.find(i => i.id === currentItem.id);
+
+        if (finalItem) {
+          console.log(`[TaskScheduler] 使用最终项目数据进行标记: ${finalItem.title} (ID: ${finalItem.id})`);
+          await this.markEpisodesAsCompleted(finalItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
+        } else {
+          console.error(`[TaskScheduler] 无法找到最终项目数据: ${currentItem.id}`);
+        }
       } else {
         console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
         if (!csvAnalysisResult.success) {
@@ -902,17 +922,10 @@ class TaskScheduler {
   }> {
     try {
       console.log(`[TaskScheduler] 处理CSV文件中的已标记集数`);
+      console.log(`[TaskScheduler] 使用项目: ${item.title} (ID: ${item.id})`);
 
-      // 获取最新的项目数据，确保已标记集数信息是最新的
-      const latestItems = await StorageManager.getItemsWithRetry();
-      const latestItem = latestItems.find(i => i.id === item.id);
-
-      if (!latestItem) {
-        throw new Error(`无法找到项目 ${item.id}`);
-      }
-
-      // 获取已标记的集数
-      const markedEpisodes = this.getMarkedEpisodes(latestItem, seasonNumber);
+      // 获取已标记的集数（使用传入的最新项目数据）
+      const markedEpisodes = this.getMarkedEpisodes(item, seasonNumber);
       console.log(`[TaskScheduler] 已标记的集数: [${markedEpisodes.join(', ')}]`);
 
       if (markedEpisodes.length === 0) {
@@ -969,8 +982,8 @@ class TaskScheduler {
         body: JSON.stringify({
           csvPath: csvPath,
           markedEpisodes: markedEpisodes,
-          platformUrl: latestItem.platformUrl,
-          itemId: latestItem.id,
+          platformUrl: item.platformUrl,
+          itemId: item.id,
           testMode: false
         }),
         signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
@@ -1163,6 +1176,7 @@ class TaskScheduler {
     try {
       console.log(`[TaskScheduler] 自动标记CSV剩余集数为已完成: 季=${seasonNumber}, 集数=[${episodeNumbers.join(', ')}]`);
       console.log(`[TaskScheduler] 这些集数是CSV中剩余的，表示已成功导入到TMDB`);
+      console.log(`[TaskScheduler] 使用项目ID: ${item.id}, 项目标题: ${item.title}`);
 
       const response = await fetch('/api/mark-episodes-completed', {
         method: 'POST',
