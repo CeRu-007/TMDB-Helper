@@ -855,6 +855,15 @@ class TaskScheduler {
         throw new Error(`CSV处理失败: ${csvProcessResult.error}`);
       }
 
+      // 步骤2.5: 检查CSV中是否还有包含词条标题的行（在TMDB导入前）
+      console.log(`[TaskScheduler] 步骤2.5: 检查CSV中的词条标题状态`);
+      const hasItemTitleInCSV = await this.checkItemTitleInCSV(csvProcessResult.processedCsvPath!, currentItem.title);
+
+      if (hasItemTitleInCSV) {
+        console.log(`[TaskScheduler] CSV中仍有包含词条标题"${currentItem.title}"的单元格，本次执行跳过自动标记`);
+        console.log(`[TaskScheduler] 将继续执行TMDB导入，但不进行集数标记，等待下次执行时词条标题完全清理后再标记`);
+      }
+
       // 步骤3: 执行TMDB导入
       console.log(`[TaskScheduler] 步骤3: 执行TMDB导入`);
       const conflictAction = task.action.conflictAction || 'w';
@@ -869,20 +878,14 @@ class TaskScheduler {
         throw new Error(`TMDB导入失败: ${importResult.error}`);
       }
 
-      // 步骤4: 根据CSV剩余集数自动标记已完成
-      console.log(`[TaskScheduler] 步骤4: 根据CSV剩余集数自动标记已完成`);
-      const csvAnalysisResult = await this.analyzeCSVRemainingEpisodes(csvProcessResult.processedCsvPath!);
+      // 步骤4: 条件性集数标记（仅在没有词条标题时执行）
+      if (!hasItemTitleInCSV) {
+        console.log(`[TaskScheduler] 步骤4: 执行自动集数标记`);
+        const csvAnalysisResult = await this.analyzeCSVRemainingEpisodes(csvProcessResult.processedCsvPath!);
 
-      if (csvAnalysisResult.success && csvAnalysisResult.remainingEpisodes && csvAnalysisResult.remainingEpisodes.length > 0) {
-        console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvAnalysisResult.remainingEpisodes.join(', ')}]`);
+        if (csvAnalysisResult.success && csvAnalysisResult.remainingEpisodes && csvAnalysisResult.remainingEpisodes.length > 0) {
+          console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvAnalysisResult.remainingEpisodes.join(', ')}]`);
 
-        // 检查CSV中是否还有包含词条标题的行
-        const hasItemTitleInCSV = await this.checkItemTitleInCSV(csvProcessResult.processedCsvPath!, currentItem.title);
-
-        if (hasItemTitleInCSV) {
-          console.log(`[TaskScheduler] CSV中仍有包含词条标题"${currentItem.title}"的行，跳过自动标记`);
-        } else {
-          console.log(`[TaskScheduler] CSV中没有包含词条标题的行，执行自动标记`);
           // 直接在调度器内部标记集数，不使用API
           const markingResult = await this.markEpisodesDirectly(currentItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
 
@@ -891,12 +894,15 @@ class TaskScheduler {
             console.log(`[TaskScheduler] 项目 ${currentItem.title} 已完结，准备删除定时任务`);
             await this.deleteCompletedTask(task);
           }
+        } else {
+          console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
+          if (!csvAnalysisResult.success) {
+            console.warn(`[TaskScheduler] CSV分析失败: ${csvAnalysisResult.error}`);
+          }
         }
       } else {
-        console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
-        if (!csvAnalysisResult.success) {
-          console.warn(`[TaskScheduler] CSV分析失败: ${csvAnalysisResult.error}`);
-        }
+        console.log(`[TaskScheduler] 步骤4: 跳过自动集数标记（CSV中仍有词条标题）`);
+        console.log(`[TaskScheduler] 任务将继续运行，等待下次执行时词条标题完全清理后再进行标记`);
       }
 
       console.log(`[TaskScheduler] TMDB-Import工作流程完成: ${item.title}`);

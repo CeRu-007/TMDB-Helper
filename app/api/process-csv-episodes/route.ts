@@ -140,25 +140,36 @@ export async function POST(request: NextRequest) {
 
         console.log(`[API] 第 ${i + 1} 行: 集数列值="${episodeNumberStr}", 解析为数字=${episodeNumber}`);
 
-        // 检查name列是否包含词条标题
+        // 检查name列是否包含词条标题，并清理单元格内容
         let containsItemTitle = false;
+        let cleanedLine = line;
+
         if (nameColumnIndex !== -1 && itemTitle && columns.length > nameColumnIndex) {
           const nameValue = columns[nameColumnIndex].trim();
           containsItemTitle = nameValue.includes(itemTitle);
+
           if (containsItemTitle) {
             console.log(`[API] 检测到name列包含词条标题: "${nameValue}" 包含 "${itemTitle}"`);
+
+            // 清理单元格内容：移除词条标题及其后面的内容
+            const cleanedNameValue = cleanNameCell(nameValue, itemTitle);
+            console.log(`[API] 清理name单元格: "${nameValue}" -> "${cleanedNameValue}"`);
+
+            // 重建CSV行，替换name列的内容
+            const newColumns = [...columns];
+            newColumns[nameColumnIndex] = cleanedNameValue;
+            cleanedLine = rebuildCSVLine(newColumns);
+
             titleMatchedLines.push({
               line: i + 1,
               episodeNumber,
-              nameValue
+              originalValue: nameValue,
+              cleanedValue: cleanedNameValue
             });
           }
         }
 
-        if (containsItemTitle) {
-          // 包含词条标题的行直接删除，不计入removedEpisodes
-          console.log(`[API] ✗ 删除包含词条标题的行: 第 ${episodeNumber} 集`);
-        } else if (!isNaN(episodeNumber)) {
+        if (!isNaN(episodeNumber)) {
           // 优酷平台特殊处理：删除已标记集数-1
           let shouldRemove = false;
 
@@ -180,8 +191,13 @@ export async function POST(request: NextRequest) {
           if (shouldRemove) {
             removedEpisodes.push(episodeNumber);
           } else {
-            filteredLines.push(line);
-            console.log(`[API] ✓ 保留第 ${episodeNumber} 集的数据行`);
+            // 使用清理后的行（如果有词条标题被清理）
+            filteredLines.push(cleanedLine);
+            if (containsItemTitle) {
+              console.log(`[API] ✓ 保留第 ${episodeNumber} 集的数据行（已清理name列词条标题）`);
+            } else {
+              console.log(`[API] ✓ 保留第 ${episodeNumber} 集的数据行`);
+            }
           }
         } else {
           // 无法解析集数的行保留
@@ -197,7 +213,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API] 处理完成: 删除了 ${removedEpisodes.length} 行，保留了 ${filteredLines.length} 行`);
     console.log(`[API] 删除的集数: [${removedEpisodes.sort((a, b) => a - b).join(', ')}]`);
-    console.log(`[API] 包含词条标题的行: ${titleMatchedLines.length} 行`);
+    console.log(`[API] 清理词条标题的单元格: ${titleMatchedLines.length} 个`);
 
     // 如果是测试模式，只返回分析结果，不实际处理文件
     if (testMode) {
@@ -350,10 +366,10 @@ function parseCSVLine(line: string): string[] {
   const result = [];
   let current = '';
   let inQuotes = false;
-  
+
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-    
+
     if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
@@ -363,9 +379,44 @@ function parseCSVLine(line: string): string[] {
       current += char;
     }
   }
-  
+
   result.push(current.trim());
   return result;
+}
+
+/**
+ * 清理name单元格内容，移除词条标题及其后面的内容
+ */
+function cleanNameCell(nameValue: string, itemTitle: string): string {
+  if (!nameValue.includes(itemTitle)) {
+    return nameValue;
+  }
+
+  // 找到词条标题的位置
+  const titleIndex = nameValue.indexOf(itemTitle);
+
+  if (titleIndex === 0) {
+    // 词条标题在开头，移除标题及其后面的所有内容
+    return '';
+  } else {
+    // 词条标题在中间或末尾，保留标题前面的内容
+    return nameValue.substring(0, titleIndex).trim();
+  }
+}
+
+/**
+ * 重建CSV行
+ */
+function rebuildCSVLine(columns: string[]): string {
+  return columns.map(col => {
+    // 如果列内容包含逗号或引号，需要用引号包围
+    if (col.includes(',') || col.includes('"') || col.includes('\n')) {
+      // 转义内部的引号
+      const escapedCol = col.replace(/"/g, '""');
+      return `"${escapedCol}"`;
+    }
+    return col;
+  }).join(',');
 }
 
 /**
