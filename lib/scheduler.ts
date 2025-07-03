@@ -740,46 +740,300 @@ class TaskScheduler {
   }
 
   /**
-   * 执行TMDB-Import任务
+   * 执行TMDB-Import任务 - 新的完整工作流程
    */
   private async executeTMDBImportTask(task: ScheduledTask, item: TMDBItem): Promise<void> {
-    // 构建请求数据
-    const requestData = {
-      taskId: task.id,
-      itemId: item.id,
-      action: task.action,
-      // 添加额外元数据，帮助API端识别和恢复
-      metadata: {
-        tmdbId: item.tmdbId,
-        title: item.title,
-        platformUrl: item.platformUrl,
-        attemptTime: new Date().toISOString()
-      }
-    };
-    
+    console.log(`[TaskScheduler] 开始执行完整的TMDB-Import工作流程: ${item.title}`);
+
     try {
-      console.log(`[TaskScheduler] 调用API执行TMDB-Import任务: ${JSON.stringify(requestData)}`);
-      
-      // 确保项目ID有效
-      if (!item.id) {
-        throw new Error("项目ID无效，无法执行任务");
-      }
-      
-      // 添加额外的错误检查
+      // 验证基本条件
       if (!item.platformUrl) {
         throw new Error(`项目 ${item.title} 缺少平台URL，无法执行TMDB导入`);
       }
-      
-      // 检查项目是否有指定的季数
+
       if (task.action.seasonNumber > 0 && item.mediaType === 'tv') {
         if (!item.seasons || !item.seasons.some(s => s.seasonNumber === task.action.seasonNumber)) {
           throw new Error(`项目 ${item.title} 没有第 ${task.action.seasonNumber} 季，请检查季数设置`);
         }
       }
-      
-      // 设置超时
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000); // 5分钟超时
+
+      // 步骤1: 播出平台抓取
+      console.log(`[TaskScheduler] 步骤1: 执行播出平台抓取`);
+      const extractResult = await this.executePlatformExtraction(item, task.action.seasonNumber);
+
+      if (!extractResult.success) {
+        throw new Error(`播出平台抓取失败: ${extractResult.error}`);
+      }
+
+      // 步骤2: 检测已标记集数并删除对应CSV行
+      console.log(`[TaskScheduler] 步骤2: 处理已标记集数`);
+      const csvProcessResult = await this.processCSVWithMarkedEpisodes(
+        extractResult.csvPath!,
+        item,
+        task.action.seasonNumber
+      );
+
+      if (!csvProcessResult.success) {
+        throw new Error(`CSV处理失败: ${csvProcessResult.error}`);
+      }
+
+      // 步骤3: 执行TMDB导入
+      console.log(`[TaskScheduler] 步骤3: 执行TMDB导入`);
+      const importResult = await this.executeTMDBImport(
+        csvProcessResult.processedCsvPath!,
+        item,
+        task.action.seasonNumber
+      );
+
+      if (!importResult.success) {
+        throw new Error(`TMDB导入失败: ${importResult.error}`);
+      }
+
+      // 步骤4: 根据导入结果自动标记集数
+      console.log(`[TaskScheduler] 步骤4: 自动标记导入的集数`);
+      if (importResult.importedEpisodes && importResult.importedEpisodes.length > 0) {
+        await this.markEpisodesAsCompleted(item, task.action.seasonNumber, importResult.importedEpisodes);
+      }
+
+      console.log(`[TaskScheduler] TMDB-Import工作流程完成: ${item.title}`);
+
+    } catch (error) {
+      console.error(`[TaskScheduler] TMDB-Import工作流程失败:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 步骤1: 执行播出平台抓取
+   */
+  private async executePlatformExtraction(item: TMDBItem, seasonNumber: number): Promise<{
+    success: boolean;
+    csvPath?: string;
+    error?: string;
+  }> {
+    try {
+      console.log(`[TaskScheduler] 执行播出平台抓取: ${item.platformUrl}`);
+
+      const response = await fetch('/api/execute-platform-extraction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platformUrl: item.platformUrl,
+          seasonNumber: seasonNumber,
+          itemId: item.id
+        }),
+        signal: AbortSignal.timeout(5 * 60 * 1000) // 5分钟超时
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '播出平台抓取失败');
+      }
+
+      return {
+        success: true,
+        csvPath: result.csvPath
+      };
+
+    } catch (error) {
+      console.error(`[TaskScheduler] 播出平台抓取失败:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+
+  /**
+   * 步骤2: 处理已标记集数的CSV
+   */
+  private async processCSVWithMarkedEpisodes(csvPath: string, item: TMDBItem, seasonNumber: number): Promise<{
+    success: boolean;
+    processedCsvPath?: string;
+    removedEpisodes?: number[];
+    error?: string;
+  }> {
+    try {
+      console.log(`[TaskScheduler] 处理CSV文件中的已标记集数`);
+
+      // 获取已标记的集数
+      const markedEpisodes = this.getMarkedEpisodes(item, seasonNumber);
+      console.log(`[TaskScheduler] 已标记的集数: ${markedEpisodes.join(', ')}`);
+
+      if (markedEpisodes.length === 0) {
+        console.log(`[TaskScheduler] 没有已标记的集数，跳过CSV处理`);
+        return {
+          success: true,
+          processedCsvPath: csvPath,
+          removedEpisodes: []
+        };
+      }
+
+      const response = await fetch('/api/process-csv-episodes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          csvPath: csvPath,
+          markedEpisodes: markedEpisodes,
+          platformUrl: item.platformUrl,
+          itemId: item.id
+        }),
+        signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'CSV处理失败');
+      }
+
+      return {
+        success: true,
+        processedCsvPath: result.processedCsvPath,
+        removedEpisodes: result.removedEpisodes
+      };
+
+    } catch (error) {
+      console.error(`[TaskScheduler] CSV处理失败:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+
+  /**
+   * 获取已标记的集数
+   */
+  private getMarkedEpisodes(item: TMDBItem, seasonNumber: number): number[] {
+    const markedEpisodes: number[] = [];
+
+    if (item.seasons && item.seasons.length > 0) {
+      // 多季模式
+      const targetSeason = item.seasons.find(s => s.seasonNumber === seasonNumber);
+      if (targetSeason && targetSeason.episodes) {
+        targetSeason.episodes.forEach(episode => {
+          if (episode.completed) {
+            markedEpisodes.push(episode.number);
+          }
+        });
+      }
+    } else if (item.episodes) {
+      // 单季模式
+      item.episodes.forEach(episode => {
+        if (episode.completed) {
+          markedEpisodes.push(episode.number);
+        }
+      });
+    }
+
+    return markedEpisodes.sort((a, b) => a - b);
+  }
+
+  /**
+   * 步骤3: 执行TMDB导入
+   */
+  private async executeTMDBImport(csvPath: string, item: TMDBItem, seasonNumber: number): Promise<{
+    success: boolean;
+    importedEpisodes?: number[];
+    error?: string;
+  }> {
+    try {
+      console.log(`[TaskScheduler] 执行TMDB导入`);
+
+      const response = await fetch('/api/execute-tmdb-import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          csvPath: csvPath,
+          seasonNumber: seasonNumber,
+          itemId: item.id,
+          tmdbId: item.tmdbId
+        }),
+        signal: AbortSignal.timeout(10 * 60 * 1000) // 10分钟超时
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'TMDB导入失败');
+      }
+
+      return {
+        success: true,
+        importedEpisodes: result.importedEpisodes || []
+      };
+
+    } catch (error) {
+      console.error(`[TaskScheduler] TMDB导入失败:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+
+  /**
+   * 步骤4: 自动标记导入的集数
+   */
+  private async markEpisodesAsCompleted(item: TMDBItem, seasonNumber: number, episodeNumbers: number[]): Promise<void> {
+    try {
+      console.log(`[TaskScheduler] 自动标记集数为已完成: 季=${seasonNumber}, 集数=${episodeNumbers.join(', ')}`);
+
+      const response = await fetch('/api/mark-episodes-completed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: item.id,
+          seasonNumber: seasonNumber,
+          episodeNumbers: episodeNumbers
+        }),
+        signal: AbortSignal.timeout(30 * 1000) // 30秒超时
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '标记集数失败');
+      }
+
+      console.log(`[TaskScheduler] 成功标记 ${episodeNumbers.length} 个集数为已完成`);
+
+    } catch (error) {
+      console.error(`[TaskScheduler] 标记集数失败:`, error);
+      // 这里不抛出错误，因为标记失败不应该影响整个任务的成功状态
+      console.warn(`[TaskScheduler] 标记集数失败，但任务继续执行`);
+    }
+  }
       
       try {
         // 调用API端点执行任务
