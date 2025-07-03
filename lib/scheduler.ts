@@ -822,13 +822,16 @@ class TaskScheduler {
 
       // 步骤4: 根据CSV剩余集数自动标记已完成
       console.log(`[TaskScheduler] 步骤4: 根据CSV剩余集数自动标记已完成`);
-      const csvRemainingEpisodes = await this.getCSVRemainingEpisodes(csvProcessResult.processedCsvPath!);
+      const csvAnalysisResult = await this.analyzeCSVRemainingEpisodes(csvProcessResult.processedCsvPath!);
 
-      if (csvRemainingEpisodes.length > 0) {
-        console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvRemainingEpisodes.join(', ')}]`);
-        await this.markEpisodesAsCompleted(item, task.action.seasonNumber, csvRemainingEpisodes);
+      if (csvAnalysisResult.success && csvAnalysisResult.remainingEpisodes && csvAnalysisResult.remainingEpisodes.length > 0) {
+        console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvAnalysisResult.remainingEpisodes.join(', ')}]`);
+        await this.markEpisodesAsCompleted(item, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
       } else {
         console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
+        if (!csvAnalysisResult.success) {
+          console.warn(`[TaskScheduler] CSV分析失败: ${csvAnalysisResult.error}`);
+        }
       }
 
       console.log(`[TaskScheduler] TMDB-Import工作流程完成: ${item.title}`);
@@ -1050,124 +1053,55 @@ class TaskScheduler {
   }
 
   /**
-   * 获取CSV文件中剩余的集数（即成功导入的集数）
+   * 通过API分析CSV文件中剩余的集数（即成功导入的集数）
    */
-  private async getCSVRemainingEpisodes(csvPath: string): Promise<number[]> {
+  private async analyzeCSVRemainingEpisodes(csvPath: string): Promise<{
+    success: boolean;
+    remainingEpisodes?: number[];
+    error?: string;
+  }> {
     try {
-      console.log(`[TaskScheduler] 读取CSV文件获取剩余集数: ${csvPath}`);
+      console.log(`[TaskScheduler] 通过API分析CSV文件剩余集数: ${csvPath}`);
 
-      // 检查文件是否存在
-      const fs = await import('fs/promises');
-      try {
-        await fs.access(csvPath);
-      } catch (error) {
-        console.error(`[TaskScheduler] CSV文件不存在: ${csvPath}`);
-        return [];
+      const response = await fetch('/api/analyze-csv-episodes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          csvPath: csvPath
+        }),
+        signal: AbortSignal.timeout(60 * 1000) // 1分钟超时
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
       }
 
-      // 读取CSV文件内容
-      const csvContent = await fs.readFile(csvPath, 'utf-8');
-      const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+      const result = await response.json();
 
-      if (lines.length <= 1) {
-        console.log(`[TaskScheduler] CSV文件为空或只有标题行`);
-        return [];
+      if (!result.success) {
+        throw new Error(result.error || 'CSV分析失败');
       }
 
-      // 解析CSV头部，查找集数列
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-      console.log(`[TaskScheduler] CSV头部: [${headers.join(', ')}]`);
+      console.log(`[TaskScheduler] CSV分析成功，剩余集数: [${result.remainingEpisodes?.join(', ') || ''}]`);
 
-      // 尝试多种可能的集数列名
-      const possibleEpisodeColumns = [
-        'episode_number',
-        'episode',
-        'ep',
-        'number',
-        'episode_num',
-        'ep_num',
-        '集数',
-        '第几集'
-      ];
-
-      let episodeColumnIndex = -1;
-      let matchedColumnName = '';
-
-      for (const possibleName of possibleEpisodeColumns) {
-        episodeColumnIndex = headers.findIndex(h =>
-          h.toLowerCase().includes(possibleName.toLowerCase())
-        );
-        if (episodeColumnIndex !== -1) {
-          matchedColumnName = headers[episodeColumnIndex];
-          break;
-        }
-      }
-
-      if (episodeColumnIndex === -1) {
-        console.error(`[TaskScheduler] 无法找到集数列，可用列: [${headers.join(', ')}]`);
-        return [];
-      }
-
-      console.log(`[TaskScheduler] 找到集数列 "${matchedColumnName}" 在索引: ${episodeColumnIndex}`);
-
-      // 解析数据行，提取集数
-      const remainingEpisodes: number[] = [];
-      const dataLines = lines.slice(1);
-
-      for (let i = 0; i < dataLines.length; i++) {
-        const line = dataLines[i];
-        const columns = this.parseCSVLine(line);
-
-        if (columns.length > episodeColumnIndex) {
-          const episodeNumberStr = columns[episodeColumnIndex].trim();
-          const episodeNumber = parseInt(episodeNumberStr);
-
-          if (!isNaN(episodeNumber)) {
-            remainingEpisodes.push(episodeNumber);
-            console.log(`[TaskScheduler] 找到剩余集数: ${episodeNumber}`);
-          } else {
-            console.warn(`[TaskScheduler] 无法解析集数: "${episodeNumberStr}" (第${i + 2}行)`);
-          }
-        } else {
-          console.warn(`[TaskScheduler] 第${i + 2}行列数不足: ${columns.length} < ${episodeColumnIndex + 1}`);
-        }
-      }
-
-      const sortedEpisodes = remainingEpisodes.sort((a, b) => a - b);
-      console.log(`[TaskScheduler] CSV中剩余的集数: [${sortedEpisodes.join(', ')}]`);
-
-      return sortedEpisodes;
+      return {
+        success: true,
+        remainingEpisodes: result.remainingEpisodes || []
+      };
 
     } catch (error) {
-      console.error(`[TaskScheduler] 读取CSV剩余集数失败:`, error);
-      return [];
+      console.error(`[TaskScheduler] CSV分析失败:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
     }
   }
 
-  /**
-   * 解析CSV行，处理引号和逗号
-   */
-  private parseCSVLine(line: string): string[] {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
 
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-
-    result.push(current.trim());
-    return result;
-  }
 
 
 
