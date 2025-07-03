@@ -764,16 +764,55 @@ class TaskScheduler {
    */
   private async executeTMDBImportTask(task: ScheduledTask, item: TMDBItem): Promise<void> {
     console.log(`[TaskScheduler] 开始执行完整的TMDB-Import工作流程: ${item.title}`);
+    console.log(`[TaskScheduler] 传入的项目ID: ${item.id}, 任务关联的项目ID: ${task.itemId}`);
 
     // 获取最新的项目数据，确保整个流程使用一致的数据
     const latestItems = await StorageManager.getItemsWithRetry();
+    console.log(`[TaskScheduler] 当前存储中有 ${latestItems.length} 个项目`);
+
     let currentItem = latestItems.find(i => i.id === item.id);
 
     if (!currentItem) {
-      throw new Error(`无法找到项目 ${item.id}，可能已被删除`);
+      console.warn(`[TaskScheduler] 无法通过传入ID ${item.id} 找到项目，尝试其他方式...`);
+
+      // 尝试通过任务的itemId查找
+      if (task.itemId && task.itemId !== item.id) {
+        console.log(`[TaskScheduler] 尝试使用任务关联的项目ID: ${task.itemId}`);
+        currentItem = latestItems.find(i => i.id === task.itemId);
+
+        if (currentItem) {
+          console.log(`[TaskScheduler] ✓ 通过任务关联ID找到项目: ${currentItem.title}`);
+        }
+      }
+
+      // 尝试通过标题查找
+      if (!currentItem && item.title) {
+        console.log(`[TaskScheduler] 尝试通过标题查找: ${item.title}`);
+        currentItem = latestItems.find(i => i.title === item.title);
+
+        if (currentItem) {
+          console.log(`[TaskScheduler] ✓ 通过标题找到项目: ${currentItem.title} (ID: ${currentItem.id})`);
+        }
+      }
+
+      // 尝试通过任务标题查找
+      if (!currentItem && task.itemTitle) {
+        console.log(`[TaskScheduler] 尝试通过任务标题查找: ${task.itemTitle}`);
+        currentItem = latestItems.find(i => i.title === task.itemTitle);
+
+        if (currentItem) {
+          console.log(`[TaskScheduler] ✓ 通过任务标题找到项目: ${currentItem.title} (ID: ${currentItem.id})`);
+        }
+      }
+
+      if (!currentItem) {
+        console.error(`[TaskScheduler] 所有查找方式都失败了`);
+        console.log(`[TaskScheduler] 可用的项目:`, latestItems.map(i => ({ id: i.id, title: i.title })));
+        throw new Error(`无法找到项目。尝试的ID: ${item.id}, 任务ID: ${task.itemId}, 标题: ${item.title || task.itemTitle}`);
+      }
     }
 
-    console.log(`[TaskScheduler] 使用最新的项目数据: ${currentItem.title} (ID: ${currentItem.id})`);
+    console.log(`[TaskScheduler] 使用项目数据: ${currentItem.title} (ID: ${currentItem.id})`);
 
     try {
       // 验证基本条件
