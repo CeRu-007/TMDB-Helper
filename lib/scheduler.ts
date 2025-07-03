@@ -787,11 +787,20 @@ class TaskScheduler {
 
       // 步骤2: 检测已标记集数并删除对应CSV行
       console.log(`[TaskScheduler] 步骤2: 处理已标记集数`);
+      console.log(`[TaskScheduler] 使用CSV文件: ${extractResult.csvPath}`);
+
       const csvProcessResult = await this.processCSVWithMarkedEpisodes(
         extractResult.csvPath!,
         item,
         task.action.seasonNumber
       );
+
+      console.log(`[TaskScheduler] CSV处理结果:`, {
+        success: csvProcessResult.success,
+        processedCsvPath: csvProcessResult.processedCsvPath,
+        removedEpisodes: csvProcessResult.removedEpisodes,
+        error: csvProcessResult.error
+      });
 
       if (!csvProcessResult.success) {
         throw new Error(`CSV处理失败: ${csvProcessResult.error}`);
@@ -907,6 +916,43 @@ class TaskScheduler {
         };
       }
 
+      // 先以测试模式运行，分析CSV处理需求
+      console.log(`[TaskScheduler] 先以测试模式分析CSV处理需求`);
+      const testResponse = await fetch('/api/process-csv-episodes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          csvPath: csvPath,
+          markedEpisodes: markedEpisodes,
+          platformUrl: latestItem.platformUrl,
+          itemId: latestItem.id,
+          testMode: true
+        }),
+        signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
+      });
+
+      if (!testResponse.ok) {
+        const testErrorData = await testResponse.json().catch(() => ({}));
+        throw new Error(`CSV测试分析失败: ${testErrorData.error || testResponse.statusText}`);
+      }
+
+      const testResult = await testResponse.json();
+      console.log(`[TaskScheduler] CSV测试分析结果:`, testResult.analysis);
+
+      // 如果测试显示不需要处理，直接返回原始文件
+      if (!testResult.analysis.wouldNeedProcessing) {
+        console.log(`[TaskScheduler] 测试显示不需要处理CSV，使用原始文件`);
+        return {
+          success: true,
+          processedCsvPath: csvPath,
+          removedEpisodes: []
+        };
+      }
+
+      // 执行实际的CSV处理
+      console.log(`[TaskScheduler] 执行实际的CSV处理`);
       const response = await fetch('/api/process-csv-episodes', {
         method: 'POST',
         headers: {
@@ -916,7 +962,8 @@ class TaskScheduler {
           csvPath: csvPath,
           markedEpisodes: markedEpisodes,
           platformUrl: latestItem.platformUrl,
-          itemId: latestItem.id
+          itemId: latestItem.id,
+          testMode: false
         }),
         signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
       });

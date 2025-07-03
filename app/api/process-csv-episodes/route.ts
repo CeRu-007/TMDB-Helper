@@ -7,7 +7,7 @@ import fs from 'fs/promises';
  */
 export async function POST(request: NextRequest) {
   try {
-    const { csvPath, markedEpisodes, platformUrl, itemId } = await request.json();
+    const { csvPath, markedEpisodes, platformUrl, itemId, testMode = false } = await request.json();
     
     if (!csvPath || !Array.isArray(markedEpisodes)) {
       return NextResponse.json({
@@ -16,25 +16,40 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
+    console.log(`[API] ========== CSV处理开始 ==========`);
     console.log(`[API] 处理CSV文件: ${csvPath}`);
-    console.log(`[API] 需要删除的集数: ${markedEpisodes.join(', ')}`);
-    
+    console.log(`[API] 需要删除的集数: [${markedEpisodes.join(', ')}]`);
+    console.log(`[API] 平台URL: ${platformUrl}`);
+    console.log(`[API] 项目ID: ${itemId}`);
+    console.log(`[API] 测试模式: ${testMode}`);
+
     // 检查CSV文件是否存在
     try {
       await fs.access(csvPath);
+      console.log(`[API] ✓ CSV文件存在且可访问`);
     } catch (error) {
+      console.error(`[API] ✗ CSV文件不存在或不可访问: ${error}`);
       return NextResponse.json({
         success: false,
         error: 'CSV文件不存在',
-        details: { csvPath }
+        details: { csvPath, error: error instanceof Error ? error.message : String(error) }
       }, { status: 404 });
     }
     
     // 读取CSV文件
+    console.log(`[API] 开始读取CSV文件...`);
     const csvContent = await fs.readFile(csvPath, 'utf-8');
+    console.log(`[API] CSV文件大小: ${csvContent.length} 字符`);
+
     const lines = csvContent.split('\n');
-    
+    console.log(`[API] CSV总行数: ${lines.length}`);
+    console.log(`[API] CSV前3行预览:`);
+    lines.slice(0, 3).forEach((line, index) => {
+      console.log(`[API]   第${index + 1}行: ${line.substring(0, 100)}${line.length > 100 ? '...' : ''}`);
+    });
+
     if (lines.length === 0) {
+      console.error(`[API] ✗ CSV文件为空`);
       return NextResponse.json({
         success: false,
         error: 'CSV文件为空'
@@ -117,6 +132,29 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[API] 处理完成: 删除了 ${removedEpisodes.length} 行，保留了 ${filteredLines.length} 行`);
+    console.log(`[API] 删除的集数: [${removedEpisodes.sort((a, b) => a - b).join(', ')}]`);
+
+    // 如果是测试模式，只返回分析结果，不实际处理文件
+    if (testMode) {
+      console.log(`[API] 测试模式：只分析，不实际处理文件`);
+      return NextResponse.json({
+        success: true,
+        testMode: true,
+        analysis: {
+          originalCsvPath: csvPath,
+          markedEpisodesInput: markedEpisodes,
+          foundEpisodeColumn: matchedColumnName,
+          episodeColumnIndex: episodeNumberIndex,
+          totalDataLines: dataLines.length,
+          episodesToRemove: removedEpisodes.sort((a, b) => a - b),
+          episodesToKeep: filteredLines.length,
+          wouldNeedProcessing: removedEpisodes.length > 0 ||
+                              (platformUrl && platformUrl.includes('iqiyi.com')) ||
+                              dataLines.some(line => line.includes('\n') || line.includes('\r'))
+        },
+        message: `测试模式：分析完成，将删除 ${removedEpisodes.length} 个集数的数据行`
+      }, { status: 200 });
+    }
 
     // 如果没有删除任何行，检查是否需要应用特殊变量处理
     if (removedEpisodes.length === 0) {
