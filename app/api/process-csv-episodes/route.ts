@@ -170,12 +170,14 @@ export async function POST(request: NextRequest) {
           success: true,
           processedCsvPath: csvPath, // 使用原始文件
           originalCsvPath: csvPath,
+          backupCsvPath: null, // 没有创建备份
           removedEpisodes: [],
           originalRowCount: dataLines.length,
           processedRowCount: dataLines.length,
           episodeColumnIndex: episodeNumberIndex,
           episodeColumnName: matchedColumnName,
           markedEpisodesInput: markedEpisodes,
+          strategy: 'no_processing_needed',
           message: `没有需要删除的集数，使用原始CSV文件`
         }, { status: 200 });
       }
@@ -191,11 +193,16 @@ export async function POST(request: NextRequest) {
     // 生成处理后的CSV内容
     const processedContent = processedLines.join('\n');
     
-    // 生成新的文件名
+    // 策略：直接覆盖原始文件，但先创建备份
     const originalDir = path.dirname(csvPath);
     const originalName = path.basename(csvPath, '.csv');
-    const processedFileName = `${originalName}_processed.csv`;
-    const processedCsvPath = path.join(originalDir, processedFileName);
+    const backupFileName = `${originalName}_backup_${Date.now()}.csv`;
+    const backupCsvPath = path.join(originalDir, backupFileName);
+    const processedCsvPath = csvPath; // 直接使用原始文件路径
+
+    console.log(`[API] 文件处理策略: 覆盖原始文件`);
+    console.log(`[API] 原始文件: ${csvPath}`);
+    console.log(`[API] 备份文件: ${backupCsvPath}`);
     
     // 验证目标目录是否存在
     const targetDir = path.dirname(processedCsvPath);
@@ -209,12 +216,19 @@ export async function POST(request: NextRequest) {
       throw new Error(`目标目录不可访问: ${targetDir}`);
     }
 
-    // 写入处理后的CSV文件
-    console.log(`[API] 开始写入处理后的CSV文件: ${processedCsvPath}`);
+    // 先创建原始文件的备份
+    console.log(`[API] 创建原始文件备份: ${backupCsvPath}`);
+    const originalContent = await fs.readFile(csvPath, 'utf-8');
+    await fs.writeFile(backupCsvPath, originalContent, 'utf-8');
+    console.log(`[API] ✓ 备份文件创建成功`);
+
+    // 覆盖原始文件
+    console.log(`[API] 开始覆盖原始CSV文件: ${processedCsvPath}`);
     console.log(`[API] 文件内容长度: ${processedContent.length} 字符`);
     console.log(`[API] 文件内容预览: ${processedContent.substring(0, 200)}...`);
 
     await fs.writeFile(processedCsvPath, processedContent, 'utf-8');
+    console.log(`[API] ✓ 原始文件覆盖成功`);
 
     // 验证文件是否成功写入
     try {
@@ -235,8 +249,9 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      processedCsvPath: processedCsvPath,
+      processedCsvPath: processedCsvPath, // 现在指向原始文件路径
       originalCsvPath: csvPath,
+      backupCsvPath: backupCsvPath,
       removedEpisodes: removedEpisodes.sort((a, b) => a - b),
       originalRowCount: dataLines.length,
       processedRowCount: filteredLines.length,
@@ -244,12 +259,13 @@ export async function POST(request: NextRequest) {
       episodeColumnName: matchedColumnName,
       markedEpisodesInput: markedEpisodes,
       fileInfo: {
-        originalSize: csvContent.length,
+        originalSize: originalContent.length,
         processedSize: processedContent.length,
         originalLines: lines.length,
         processedLines: processedLines.length
       },
-      message: `成功处理CSV文件，删除了 ${removedEpisodes.length} 个已标记集数的数据行`
+      strategy: 'overwrite_with_backup',
+      message: `成功处理CSV文件，删除了 ${removedEpisodes.length} 个已标记集数的数据行，原始文件已备份`
     }, { status: 200 });
     
   } catch (error) {
