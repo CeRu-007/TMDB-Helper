@@ -507,7 +507,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   }
 
   // 切换任务启用状态
-  const toggleTaskEnabled = async (task: ScheduledTask) => {
+  const toggleTaskEnabled = useCallback(async (task: ScheduledTask) => {
     const updatedTask = {
       ...task,
       enabled: !task.enabled,
@@ -545,10 +545,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         variant: "destructive"
       })
     }
-  }
+  }, []);
 
   // 立即执行任务
-  const runTaskNow = async (task: ScheduledTask) => {
+  const runTaskNow = useCallback(async (task: ScheduledTask) => {
     try {
       if (isRunningTask) {
         toast({
@@ -861,13 +861,13 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       setIsRunningTask(false);
       setRunningTaskId(null);
     }
-  };
+  }, [isRunningTask, refreshTasksOnly]);
 
   // 确认删除任务
-  const confirmDeleteTask = (taskId: string) => {
+  const confirmDeleteTask = useCallback((taskId: string) => {
     setTaskToDelete(taskId)
     setShowDeleteConfirm(true)
-  }
+  }, []);
 
   // 执行删除任务
   const handleDeleteTask = async () => {
@@ -898,7 +898,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   }
 
   // 编辑任务
-  const handleEditTask = (task: ScheduledTask) => {
+  const handleEditTask = useCallback((task: ScheduledTask) => {
     const item = getTaskItem(task.itemId)
     if (item) {
       setSelectedItem(item)
@@ -910,7 +910,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         variant: "destructive"
       })
     }
-  }
+  }, [getTaskItem]);
 
   // 格式化下次执行时间
   const formatNextRunTime = (task: ScheduledTask) => {
@@ -956,10 +956,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   }
 
   // 显示任务错误详情
-  const showTaskErrorDetails = (task: ScheduledTask) => {
+  const showTaskErrorDetails = useCallback((task: ScheduledTask) => {
     setSelectedErrorTask(task)
     setShowErrorDetails(true)
-  }
+  }, []);
   
   // 解析错误信息中的项目ID
   const parseItemIdFromError = (errorMessage: string): string | null => {
@@ -1027,7 +1027,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   };
   
   // 打开重新关联项目对话框
-  const openRelinkDialog = (task: ScheduledTask, possibleMatches?: Array<{item: TMDBItem, score: number, matchType: string, matchDetails: string}>) => {
+  const openRelinkDialog = useCallback((task: ScheduledTask, possibleMatches?: Array<{item: TMDBItem, score: number, matchType: string, matchDetails: string}>) => {
     setTaskToRelink(task)
     setSelectedItemId("")
     setItemSearchTerm("")
@@ -1039,7 +1039,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       setRelinkSuggestions([])
     }
     setShowRelinkDialog(true)
-  }
+  }, []);
   
   // 重新关联项目
   const handleRelinkTask = async () => {
@@ -1143,7 +1143,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   }
 
   // 复制任务
-  const copyTask = (task: ScheduledTask) => {
+  const copyTask = useCallback((task: ScheduledTask) => {
     // 获取关联的项目
     const relatedItem = getTaskItem(task.itemId)
     if (!relatedItem) {
@@ -1177,10 +1177,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       title: "已创建副本",
       description: "请编辑并保存任务副本",
     })
-  }
+  }, [getTaskItem]);
 
   // 选择/取消选择任务
-  const toggleTaskSelection = (taskId: string) => {
+  const toggleTaskSelection = useCallback((taskId: string) => {
     const newSelectedTasks = new Set(selectedTasks)
     if (newSelectedTasks.has(taskId)) {
       newSelectedTasks.delete(taskId)
@@ -1188,7 +1188,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       newSelectedTasks.add(taskId)
     }
     setSelectedTasks(newSelectedTasks)
-  }
+  }, [selectedTasks]);
   
   // 全选/取消全选
   const toggleSelectAll = () => {
@@ -1553,7 +1553,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                   </div>
                   </div>
     )
-  }, [loading, filteredTasks, tasks, selectedTasks, isRunningTask, runningTaskId, getTaskItem, handleToggleTask, handleDeleteTask, handleRunTask, openRelinkDialog]);
+  }, [loading, filteredTasks, tasks, selectedTasks, isRunningTask, runningTaskId, getTaskItem, toggleTaskEnabled, confirmDeleteTask, runTaskNow, openRelinkDialog, handleEditTask, copyTask, showTaskErrorDetails, toggleTaskSelection]);
 
   // 任务卡片组件
   const TaskCard = ({ 
