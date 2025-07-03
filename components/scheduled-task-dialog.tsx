@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -65,13 +65,21 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
   const [isRunningTask, setIsRunningTask] = useState(false)
   const [runningTaskId, setRunningTaskId] = useState<string | null>(null)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 加载任务或使用传入的existingTask
+  // 监听对话框状态变化，重置状态
   useEffect(() => {
     if (open) {
       console.log("ScheduledTaskDialog 打开，item.id:", item.id);
+      // 重置状态
+      setHasUnsavedChanges(false);
+      setIsAutoSaving(false);
+      setCurrentTask(null);
+      setIsAddingTask(false);
+      setIsEditingTask(false);
+
       if (existingTask) {
         // 如果传入了existingTask，直接使用它
         console.log("使用传入的 existingTask:", existingTask);
@@ -80,10 +88,38 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       } else {
         // 否则从存储中加载任务
         console.log("从存储中加载任务...");
-      loadTasks()
-    }
+        loadTasks()
+      }
+    } else {
+      // 对话框关闭时重置所有状态
+      console.log("ScheduledTaskDialog 关闭，重置状态");
+
+      // 清理防抖定时器
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+
+      setHasUnsavedChanges(false);
+      setIsAutoSaving(false);
+      setCurrentTask(null);
+      setIsAddingTask(false);
+      setIsEditingTask(false);
+      setShowDeleteConfirm(false);
+      setTaskToDelete(null);
+      setIsRunningTask(false);
+      setRunningTaskId(null);
     }
   }, [open, item.id, existingTask])
+
+  // 组件卸载时清理防抖定时器
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [])
 
   // 加载任务
   const loadTasks = async () => {
@@ -141,7 +177,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     console.log("新建任务数据:", newTask);
     setCurrentTask(newTask)
     setIsAddingTask(true)
-    setHasUnsavedChanges(true)
+    setHasUnsavedChanges(false) // 新建任务初始状态不应该有未保存更改
     setIsAutoSaving(false)
   }
 
@@ -149,7 +185,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   const handleEditTask = (task: ScheduledTask) => {
     setCurrentTask({...task})
     setIsEditingTask(true)
-    setHasUnsavedChanges(true)
+    setHasUnsavedChanges(false) // 编辑任务初始状态不应该有未保存更改
     setIsAutoSaving(false)
   }
 
@@ -233,7 +269,11 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         
         console.log(`[ScheduledTaskDialog] 验证成功: 任务 ID=${updatedTask.id} 已成功保存到存储`);
         
-        // 清除未保存更改状态
+        // 清除未保存更改状态和防抖定时器
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
         setHasUnsavedChanges(false)
         
         // 如果提供了onTaskSaved回调，调用它
@@ -278,6 +318,12 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
 
   // 取消编辑
   const cancelEditTask = () => {
+    // 清理防抖定时器
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
     setCurrentTask(null)
     setIsAddingTask(false)
     setIsEditingTask(false)
@@ -532,9 +578,27 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   // 更新任务字段
   const updateTaskField = (field: string, value: any) => {
     if (!currentTask) return
-    
+
+    // 获取当前值进行比较
+    let currentValue;
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      if (parent === 'schedule') {
+        currentValue = currentTask.schedule[child as keyof typeof currentTask.schedule];
+      } else if (parent === 'action') {
+        currentValue = currentTask.action[child as keyof typeof currentTask.action];
+      }
+    } else {
+      currentValue = (currentTask as any)[field];
+    }
+
+    // 如果值没有变化，不需要更新
+    if (currentValue === value) {
+      return;
+    }
+
     const updatedTask = { ...currentTask }
-    
+
     // 处理嵌套字段更新
     if (field.includes('.')) {
       const [parent, child] = field.split('.')
@@ -546,10 +610,22 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     } else {
       (updatedTask as any)[field] = value
     }
-    
+
     setCurrentTask(updatedTask)
-    setHasUnsavedChanges(true)
-    
+
+    // 只有在编辑模式下才设置未保存状态
+    if (isAddingTask || isEditingTask) {
+      // 清除之前的防抖定时器
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // 设置新的防抖定时器
+      debounceTimerRef.current = setTimeout(() => {
+        setHasUnsavedChanges(true);
+      }, 100); // 100ms 防抖
+    }
+
     // 如果是启用状态更改，自动保存
     if (field === 'enabled') {
       handleAutoSave(updatedTask)
