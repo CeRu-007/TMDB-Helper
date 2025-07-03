@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo, memo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -108,10 +108,10 @@ interface ScheduledTaskDialogProps {
 
 export default function GlobalScheduledTasksDialog({ open, onOpenChange }: GlobalScheduledTasksDialogProps) {
   const [tasks, setTasks] = useState<ScheduledTask[]>([])
-  const [filteredTasks, setFilteredTasks] = useState<ScheduledTask[]>([])
   const [items, setItems] = useState<TMDBItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "enabled" | "disabled">("all")
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
@@ -137,32 +137,76 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   const [hasFixedProblemId, setHasFixedProblemId] = useState(false)
   // 存储调试对话框状态
   const [showStorageDebug, setShowStorageDebug] = useState(false)
+  // 防止重复加载的标志
+  const [isLoadingData, setIsLoadingData] = useState(false)
+
+  // 搜索防抖
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // 加载任务列表和项目
   useEffect(() => {
-    if (open) {
+    if (open && !isLoadingData) {
       loadTasksAndItems()
     }
   }, [open])
 
-  // 过滤任务
-  useEffect(() => {
-    filterTasks()
-  }, [tasks, searchTerm, statusFilter])
+  // 使用useMemo优化过滤任务
+  const filteredTasks = useMemo(() => {
+    let filtered = [...tasks];
+
+    // 按状态过滤
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(task =>
+        statusFilter === "enabled" ? task.enabled : !task.enabled
+      );
+    }
+
+    // 按搜索词过滤
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
+      filtered = filtered.filter(task => {
+        // 获取关联项目
+        const relatedItem = items.find(item => item.id === task.itemId);
+
+        return (
+          task.name.toLowerCase().includes(term) ||
+          relatedItem?.title.toLowerCase().includes(term)
+        );
+      });
+    }
+
+    return filtered;
+  }, [tasks, debouncedSearchTerm, statusFilter, items]);
 
   // 加载任务和项目
-  const loadTasksAndItems = async () => {
-    setLoading(true)
+  const loadTasksAndItems = async (forceRefresh = false) => {
+    // 防止重复加载
+    if (isLoadingData) {
+      console.log("[GlobalScheduledTasksDialog] 数据正在加载中，跳过重复请求");
+      return;
+    }
+
+    setIsLoadingData(true);
+    setLoading(true);
+
     try {
-      // 加载任务
-      console.log("[GlobalScheduledTasksDialog] 开始加载定时任务...");
-      const allTasks = await StorageManager.forceRefreshScheduledTasks(); // 使用强制刷新方法
-      console.log(`[GlobalScheduledTasksDialog] 加载了 ${allTasks.length} 个定时任务`);
-      
-      // 加载项目
-      console.log("[GlobalScheduledTasksDialog] 开始加载项目...");
-      const allItems = await StorageManager.getItemsWithRetry()
-      console.log(`[GlobalScheduledTasksDialog] 加载了 ${allItems.length} 个项目`);
+      console.log("[GlobalScheduledTasksDialog] 开始加载数据...");
+
+      // 并行加载任务和项目，只在必要时强制刷新
+      const [allTasks, allItems] = await Promise.all([
+        forceRefresh
+          ? StorageManager.forceRefreshScheduledTasks()
+          : StorageManager.getScheduledTasks(),
+        StorageManager.getItemsWithRetry()
+      ]);
+
+      console.log(`[GlobalScheduledTasksDialog] 加载完成: ${allTasks.length} 个任务, ${allItems.length} 个项目`);
       
       // 检查项目是否存在
       if (allItems.length === 0) {
@@ -247,23 +291,36 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
               
               // 标记为已处理
               setHasFixedProblemId(true);
-              
-              // 重新加载任务列表
-              const updatedTasks = await StorageManager.getScheduledTasks();
+
+              // 直接更新任务列表，避免递归调用
+              const updatedTasks = allTasks.map(t =>
+                t.id === problemTask.id ? updatedTask : t
+              );
               setTasks(updatedTasks);
             }
           }
         }
       }
     } catch (error) {
-      console.error("[GlobalScheduledTasksDialog] 加载数据失败:", error)
+      console.error("[GlobalScheduledTasksDialog] 加载数据失败:", error);
       toast({
         title: "加载失败",
         description: "无法加载定时任务或项目数据",
         variant: "destructive"
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
+      setIsLoadingData(false);
+    }
+  }
+
+  // 轻量级任务更新，避免重新加载所有数据
+  const refreshTasksOnly = async () => {
+    try {
+      const updatedTasks = await StorageManager.getScheduledTasks();
+      setTasks(updatedTasks);
+    } catch (error) {
+      console.error("[GlobalScheduledTasksDialog] 刷新任务失败:", error);
     }
   }
 
@@ -274,43 +331,15 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       title: "正在刷新",
       description: "正在刷新定时任务列表...",
     });
-    await loadTasksAndItems();
+    await loadTasksAndItems(true); // 手动刷新时强制刷新
     toast({
       title: "刷新完成",
       description: `已加载 ${tasks.length} 个定时任务`,
     });
   }
 
-  // 过滤任务
-  const filterTasks = () => {
-    let filtered = [...tasks]
-    
-    // 按状态过滤
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(task => 
-        statusFilter === "enabled" ? task.enabled : !task.enabled
-      )
-    }
-    
-    // 按搜索词过滤
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(task => {
-        // 获取关联项目
-        const relatedItem = items.find(item => item.id === task.itemId)
-        
-        return (
-          task.name.toLowerCase().includes(term) || 
-          relatedItem?.title.toLowerCase().includes(term)
-        )
-      })
-    }
-    
-    setFilteredTasks(filtered)
-  }
-
   // 获取任务关联的项目
-  const getTaskItem = (taskItemId: string, task?: ScheduledTask): TMDBItem | undefined => {
+  const getTaskItem = useCallback((taskItemId: string, task?: ScheduledTask): TMDBItem | undefined => {
     // 方法1: 通过ID直接匹配
     const exactMatch = items.find(item => item.id === taskItemId);
     if (exactMatch) {
@@ -393,7 +422,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     // 最终结果是未找到项目
     console.log(`[GlobalScheduledTasksDialog] 无法找到匹配的项目`);
     return undefined;
-  }
+  }, [items]);
 
   // 查找可能匹配的项目
   const findPossibleMatches = (task: ScheduledTask): Array<{item: TMDBItem, score: number, matchType: string, matchDetails: string}> => {
@@ -719,8 +748,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         
         await StorageManager.updateScheduledTask(taskToUpdate);
         
-        // 重新加载任务列表以更新状态
-        await loadTasksAndItems();
+        // 轻量级刷新任务状态
+        await refreshTasksOnly();
         
         // 构建成功消息
         let successMessage = '任务已成功执行';
@@ -762,7 +791,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           };
           
           await StorageManager.updateScheduledTask(failedTask);
-          await loadTasksAndItems();
+          await refreshTasksOnly();
           return;
         }
         
@@ -788,8 +817,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           
           await StorageManager.updateScheduledTask(failedTask);
           
-          // 重新加载任务列表以更新状态
-          await loadTasksAndItems();
+          // 轻量级刷新任务状态
+          await refreshTasksOnly();
         }
       } catch (updateError) {
         console.error("[GlobalScheduledTasksDialog] 更新任务失败状态时出错:", updateError);
@@ -1419,7 +1448,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   };
 
   // 渲染任务列表
-  const renderTaskList = () => {
+  const renderTaskList = useCallback(() => {
     if (loading) {
       return (
         <div className="flex justify-center items-center p-8">
@@ -1524,7 +1553,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                   </div>
                   </div>
     )
-  }
+  }, [loading, filteredTasks, tasks, selectedTasks, isRunningTask, runningTaskId, getTaskItem, handleToggleTask, handleDeleteTask, handleRunTask, openRelinkDialog]);
 
   // 任务卡片组件
   const TaskCard = ({ 
@@ -1903,8 +1932,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           description: result.message
         });
         
-        // 重新加载任务列表
-        await loadTasksAndItems();
+        // 重新加载任务列表（清理后需要强制刷新）
+        await loadTasksAndItems(true);
       } else {
         toast({
           title: "清理失败",
@@ -1987,8 +2016,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         // 标记为已处理
         setHasFixedProblemId(true);
         
-        // 重新加载任务列表
-        await loadTasksAndItems();
+        // 轻量级刷新任务状态
+        await refreshTasksOnly();
       } else {
         toast({
           title: "修复失败",
