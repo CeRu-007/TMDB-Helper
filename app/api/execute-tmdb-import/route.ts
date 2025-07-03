@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-
-const execAsync = promisify(exec);
 
 /**
  * POST /api/execute-tmdb-import - 执行TMDB导入
  */
 export async function POST(request: NextRequest) {
   try {
-    const { csvPath, seasonNumber, itemId, tmdbId } = await request.json();
+    const { csvPath, seasonNumber, itemId, tmdbId, conflictAction = 'w' } = await request.json();
     
     if (!csvPath) {
       return NextResponse.json({
@@ -43,48 +40,42 @@ export async function POST(request: NextRequest) {
     
     // 构建TMDB导入命令
     const tmdbUrl = `https://www.themoviedb.org/tv/${tmdbId}/season/${seasonNumber}?language=zh-CN`;
-    const importCommand = `python -m tmdb-import "${tmdbUrl}"`;
-    
-    console.log(`[API] 执行TMDB导入命令: ${importCommand}`);
+
+    console.log(`[API] 执行TMDB导入命令: python -m tmdb-import "${tmdbUrl}"`);
     console.log(`[API] 工作目录: ${tmdbImportDir}`);
-    
+    console.log(`[API] 冲突处理选项: ${conflictAction}`);
+
     try {
-      const { stdout, stderr } = await execAsync(importCommand, {
-        cwd: tmdbImportDir,
-        timeout: 600000 // 10分钟超时
-      });
-      
-      console.log(`[API] TMDB导入命令执行完成`);
-      console.log(`[API] 标准输出:`, stdout);
-      if (stderr) {
-        console.log(`[API] 标准错误:`, stderr);
+      const result = await executeTMDBImportWithInteraction(tmdbImportDir, tmdbUrl, conflictAction);
+
+      if (!result.success) {
+        throw new Error(result.error);
       }
-      
+
       // 解析导入的集数
-      const importedEpisodes = parseImportedEpisodes(stdout);
-      
+      const importedEpisodes = parseImportedEpisodes(result.stdout);
+
       console.log(`[API] TMDB导入成功，导入的集数: ${importedEpisodes.join(', ')}`);
-      
+
       return NextResponse.json({
         success: true,
         importedEpisodes: importedEpisodes,
         message: `TMDB导入完成，成功导入 ${importedEpisodes.length} 集`,
-        output: stdout.substring(0, 1000)
+        output: result.stdout.substring(0, 1000),
+        conflictAction: conflictAction
       }, { status: 200 });
-      
+
     } catch (execError: any) {
       console.error(`[API] TMDB导入命令执行失败:`, execError);
-      
+
       return NextResponse.json({
         success: false,
         error: 'TMDB导入命令执行失败',
         details: {
-          command: importCommand,
+          command: `python -m tmdb-import "${tmdbUrl}"`,
           workingDir: tmdbImportDir,
           errorMessage: execError.message,
-          errorCode: execError.code,
-          stdout: execError.stdout || '',
-          stderr: execError.stderr || ''
+          conflictAction: conflictAction
         }
       }, { status: 500 });
     }
@@ -97,6 +88,111 @@ export async function POST(request: NextRequest) {
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
+}
+
+/**
+ * 执行TMDB导入命令并处理交互式输入
+ */
+async function executeTMDBImportWithInteraction(
+  workingDir: string,
+  tmdbUrl: string,
+  conflictAction: string
+): Promise<{ success: boolean; stdout: string; stderr: string; error?: string }> {
+  return new Promise((resolve) => {
+    console.log(`[API] 启动TMDB导入进程，冲突处理: ${conflictAction}`);
+
+    const child = spawn('python', ['-m', 'tmdb-import', tmdbUrl], {
+      cwd: workingDir,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let hasResponded = false;
+
+    // 设置超时
+    const timeout = setTimeout(() => {
+      if (!hasResponded) {
+        child.kill();
+        resolve({
+          success: false,
+          stdout,
+          stderr,
+          error: 'TMDB导入超时（10分钟）'
+        });
+      }
+    }, 600000); // 10分钟超时
+
+    // 监听标准输出
+    child.stdout.on('data', (data) => {
+      const output = data.toString();
+      stdout += output;
+      console.log(`[API] TMDB导入输出: ${output.trim()}`);
+
+      // 检测交互式提示
+      const lowerOutput = output.toLowerCase();
+      if (lowerOutput.includes('already exists') ||
+          lowerOutput.includes('overwrite') ||
+          lowerOutput.includes('(w/y/n)') ||
+          lowerOutput.includes('[w/y/n]') ||
+          lowerOutput.includes('w/y/n')) {
+
+        console.log(`[API] 检测到交互式提示，自动回答: ${conflictAction}`);
+
+        // 自动回答
+        child.stdin.write(`${conflictAction}\n`);
+      }
+    });
+
+    // 监听标准错误
+    child.stderr.on('data', (data) => {
+      const output = data.toString();
+      stderr += output;
+      console.log(`[API] TMDB导入错误: ${output.trim()}`);
+    });
+
+    // 监听进程结束
+    child.on('close', (code) => {
+      clearTimeout(timeout);
+
+      if (!hasResponded) {
+        hasResponded = true;
+
+        if (code === 0) {
+          console.log(`[API] TMDB导入进程成功结束`);
+          resolve({
+            success: true,
+            stdout,
+            stderr
+          });
+        } else {
+          console.error(`[API] TMDB导入进程异常结束，退出码: ${code}`);
+          resolve({
+            success: false,
+            stdout,
+            stderr,
+            error: `进程异常结束，退出码: ${code}`
+          });
+        }
+      }
+    });
+
+    // 监听进程错误
+    child.on('error', (error) => {
+      clearTimeout(timeout);
+
+      if (!hasResponded) {
+        hasResponded = true;
+        console.error(`[API] TMDB导入进程错误:`, error);
+        resolve({
+          success: false,
+          stdout,
+          stderr,
+          error: `进程启动失败: ${error.message}`
+        });
+      }
+    });
+  });
 }
 
 /**

@@ -30,6 +30,7 @@ export interface ScheduledTask {
   action: {
     seasonNumber: number
     autoUpload: boolean
+    conflictAction: 'w' | 'y' | 'n' // w=覆盖写入, y=是, n=否
     autoRemoveMarked: boolean
     autoConfirm?: boolean // 新增：自动确认上传（输入y）
     removeIqiyiAirDate?: boolean // 新增：删除爱奇艺平台的air_date列

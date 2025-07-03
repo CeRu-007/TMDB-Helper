@@ -160,14 +160,15 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         minute: 0
       },
       action: {
-        seasonNumber: item.seasons && item.seasons.length > 0 
-          ? Math.max(...item.seasons.map(s => s.seasonNumber)) 
+        seasonNumber: item.seasons && item.seasons.length > 0
+          ? Math.max(...item.seasons.map(s => s.seasonNumber))
           : 1,
         autoUpload: true,
         autoRemoveMarked: true,
         autoConfirm: true, // 默认自动确认上传
         removeIqiyiAirDate: item.platformUrl?.includes('iqiyi.com') || false, // 爱奇艺平台自动启用
-        autoMarkUploaded: true // 默认自动标记已上传的集数
+        autoMarkUploaded: true, // 默认自动标记已上传的集数
+        conflictAction: 'w' as const // 默认覆盖写入
       },
       enabled: false, // 强制设置为禁用状态
       createdAt: new Date().toISOString(),
@@ -783,6 +784,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                     第{task.action.seasonNumber}季
                     {task.action.autoUpload && " + 自动上传"}
                     {task.action.autoRemoveMarked && " + 自动过滤"}
+                    {task.action.conflictAction && ` + 冲突处理(${task.action.conflictAction})`}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -1077,6 +1079,41 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                 />
               </div>
             )}
+
+            <div className="space-y-1">
+              <Label className="text-sm">TMDB数据冲突处理</Label>
+              <Select
+                value={currentTask.action.conflictAction || 'w'}
+                onValueChange={(value: 'w' | 'y' | 'n') => updateTaskField('action.conflictAction', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择冲突处理方式" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="w">
+                    <div className="flex flex-col">
+                      <span className="font-medium">覆盖写入 (w)</span>
+                      <span className="text-xs text-muted-foreground">覆盖TMDB上的现有数据</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="y">
+                    <div className="flex flex-col">
+                      <span className="font-medium">确认 (y)</span>
+                      <span className="text-xs text-muted-foreground">确认执行操作</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="n">
+                    <div className="flex flex-col">
+                      <span className="font-medium">跳过 (n)</span>
+                      <span className="text-xs text-muted-foreground">跳过冲突的数据</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                当TMDB已有对应数据时的处理方式
+              </p>
+            </div>
           </div>
         </div>
         

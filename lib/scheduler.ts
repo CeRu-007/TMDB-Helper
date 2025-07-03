@@ -779,10 +779,12 @@ class TaskScheduler {
 
       // 步骤3: 执行TMDB导入
       console.log(`[TaskScheduler] 步骤3: 执行TMDB导入`);
+      const conflictAction = task.action.conflictAction || 'w';
       const importResult = await this.executeTMDBImport(
         csvProcessResult.processedCsvPath!,
         item,
-        task.action.seasonNumber
+        task.action.seasonNumber,
+        conflictAction
       );
 
       if (!importResult.success) {
@@ -945,10 +947,12 @@ class TaskScheduler {
     return markedEpisodes.sort((a, b) => a - b);
   }
 
+
+
   /**
    * 步骤3: 执行TMDB导入
    */
-  private async executeTMDBImport(csvPath: string, item: TMDBItem, seasonNumber: number): Promise<{
+  private async executeTMDBImport(csvPath: string, item: TMDBItem, seasonNumber: number, conflictAction: 'w' | 'y' | 'n' = 'w'): Promise<{
     success: boolean;
     importedEpisodes?: number[];
     error?: string;
@@ -965,7 +969,8 @@ class TaskScheduler {
           csvPath: csvPath,
           seasonNumber: seasonNumber,
           itemId: item.id,
-          tmdbId: item.tmdbId
+          tmdbId: item.tmdbId,
+          conflictAction: conflictAction
         }),
         signal: AbortSignal.timeout(10 * 60 * 1000) // 10分钟超时
       });

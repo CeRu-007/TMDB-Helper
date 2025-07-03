@@ -1,119 +1,119 @@
 [
   {
-    "id": "1751531412809",
-    "title": "七根心简",
-    "originalTitle": "七根心简",
+    "id": "1751538210692",
+    "title": "书卷一梦",
+    "originalTitle": "书卷一梦",
     "mediaType": "tv",
-    "tmdbId": "290054",
-    "tmdbUrl": "https://www.themoviedb.org/tv/290054",
-    "posterUrl": "https://image.tmdb.org/t/p/w500/huYOqDp8B63HgWiCZply5sf8rqI.jpg",
-    "backdropUrl": "https://image.tmdb.org/t/p/w1280/rXWd3WKDfyjU0sPEa2MjLNJwEsT.jpg",
-    "backdropPath": "/rXWd3WKDfyjU0sPEa2MjLNJwEsT.jpg",
-    "logoUrl": "https://image.tmdb.org/t/p/w300/f18FONAMacLUFwnt0WIg5kirCuK.png",
-    "logoPath": "/f18FONAMacLUFwnt0WIg5kirCuK.png",
-    "networkId": 1419,
-    "networkName": "Youku",
-    "networkLogoUrl": "https://image.tmdb.org/t/p/w300/w2TeR3fvPZ9a617tNIF1oOfyPtk.png",
-    "overview": "上古时期，陨铁包裹外星来物降临凤子岭，带来七个神秘生物。生物可寄生人体，干扰意识，引人作恶。上古大德与其弟子以神木打造七块木简，将异物引入其中，命名“七根心简”，再以陨铁打造凤凰鸾扣将其封印。历代能人志士继承大德遗志，记载封印心简之法，流传后世。百年前，一犬偶然在凤子岭刨出木简，心简再现人间。二十年间，一宗宗离奇凶案接踵而来，木代、罗韧、炎红砂、一万三和曹严华五个平凡而热血的年轻人因缘际会组成“凤凰小分队”，共同踏上收服凶简的冒险征途。",
-    "voteAverage": 9,
-    "weekday": 0,
+    "tmdbId": "253193",
+    "tmdbUrl": "https://www.themoviedb.org/tv/253193",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/tbAEg0cUUZf4FKrTQyPIQ5VtJim.jpg",
+    "backdropUrl": "https://image.tmdb.org/t/p/w1280/9yc7Vv85J8Bqp9rZhJ7W966oi8L.jpg",
+    "backdropPath": "/9yc7Vv85J8Bqp9rZhJ7W966oi8L.jpg",
+    "logoUrl": "https://image.tmdb.org/t/p/w300/hTpJ1ULSHefPOIvdHxhn7okd1lF.png",
+    "logoPath": "/hTpJ1ULSHefPOIvdHxhn7okd1lF.png",
+    "networkId": 1330,
+    "networkName": "iQiyi",
+    "networkLogoUrl": "https://image.tmdb.org/t/p/w300/fNxBFqWr7eWEgNeBDvvCxsSItXx.png",
+    "overview": "当意外穿越进剧本世界，成为被反派男主用完即弃、凌虐致死的女主角应该怎么办？宋小鱼想都不用想，当然是能跑多远跑多远啊。然而无论如何努力，“剧情”始终都会将她推往男主南珩身边，上演一个又一个剧本名场面。而在这个纸片世界里，亦有无数个早就被“设定”好的人物角色。有人被困深宫重院，有人囿于高门家宅，有人为雌竞所累，有人因权势奔走。有人渴望爱与自由，却只能戴着镣铐惶惶起舞，有人做着扶摇直上的大鹏之梦，却在日复一日的束缚与平庸中被消磨着激情。这不仅是人怂怕死的躺平咸鱼宋小鱼和心狠手辣的夺命卷王南珩间的鏖战，更是每个“小我”纸片人与既定命运的战斗。",
+    "voteAverage": 8.5,
+    "weekday": 4,
     "airTime": "19:00",
-    "totalEpisodes": 32,
-    "isDailyUpdate": false,
+    "totalEpisodes": 40,
+    "isDailyUpdate": true,
     "seasons": [
       {
         "seasonNumber": 1,
         "name": "第 1 季",
-        "totalEpisodes": 32,
+        "totalEpisodes": 40,
         "episodes": [
           {
             "number": 1,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 2,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 3,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 4,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 5,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 6,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 7,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 8,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 9,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 10,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 11,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 12,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 13,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 14,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 15,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 16,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 17,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 18,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
@@ -185,100 +185,140 @@
             "number": 32,
             "completed": false,
             "seasonNumber": 1
+          },
+          {
+            "number": 33,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 34,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 35,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 36,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 37,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 38,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 39,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 40,
+            "completed": false,
+            "seasonNumber": 1
           }
         ],
-        "posterUrl": "https://image.tmdb.org/t/p/w500/skmz6jxKKPFqdwA687vnurmbBLr.jpg"
+        "posterUrl": "https://image.tmdb.org/t/p/w500/lC1mTGpRlBnWMWCudhDQymrQnxL.jpg"
       }
     ],
     "episodes": [
       {
         "number": 1,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 2,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 3,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 4,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 5,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 6,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 7,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 8,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 9,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 10,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 11,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 12,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 13,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 14,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 15,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 16,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 17,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
         "number": 18,
-        "completed": false,
+        "completed": true,
         "seasonNumber": 1
       },
       {
@@ -350,76 +390,68 @@
         "number": 32,
         "completed": false,
         "seasonNumber": 1
+      },
+      {
+        "number": 33,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 34,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 35,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 36,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 37,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 38,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 39,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 40,
+        "completed": false,
+        "seasonNumber": 1
       }
     ],
     "completed": false,
     "status": "ongoing",
-    "platformUrl": "https://v.youku.com/video?s=bdfb0949ae4c4ac39168",
+    "platformUrl": "https://www.iqiyi.com/v_qyddodkuho.html",
     "category": "tv",
-    "createdAt": "2025-07-03T08:30:12.809Z",
-    "updatedAt": "2025-07-03T08:30:12.810Z",
+    "createdAt": "2025-07-03T10:23:30.692Z",
+    "updatedAt": "2025-07-03T10:27:50.359Z",
+    "blurIntensity": "medium",
+    "manuallySetEpisodes": false,
     "scheduledTasks": [
       {
-        "id": "aebe205e-2427-407b-8a56-b6b26d20d97c",
-        "itemId": "1751531412809",
-        "itemTitle": "七根心简",
-        "itemTmdbId": "290054",
-        "name": "七根心简 定时任务",
+        "id": "f222d8cf-5d0e-49e2-a143-75904139ee4f",
+        "itemId": "1751538210692",
+        "itemTitle": "书卷一梦",
+        "itemTmdbId": "253193",
+        "name": "书卷一梦 定时任务",
         "type": "tmdb-import",
         "schedule": {
           "type": "daily",
           "dayOfWeek": 4,
-          "hour": 16,
-          "minute": 59
-        },
-        "action": {
-          "seasonNumber": 1,
-          "autoUpload": true,
-          "autoRemoveMarked": true,
-          "autoConfirm": true,
-          "autoMarkUploaded": true,
-          "removeIqiyiAirDate": false
-        },
-        "enabled": true,
-        "createdAt": "2025-07-03T08:32:05.307Z",
-        "updatedAt": "2025-07-03T08:58:05.912Z"
-      },
-      {
-        "id": "f7943a64-9b77-4a41-a50f-90aa65409ed7",
-        "itemId": "1751531412809",
-        "itemTitle": "七根心简",
-        "itemTmdbId": "290054",
-        "name": "七根心简 定时任务",
-        "type": "tmdb-import",
-        "schedule": {
-          "type": "daily",
-          "dayOfWeek": 4,
-          "hour": 17,
-          "minute": 8
-        },
-        "action": {
-          "seasonNumber": 1,
-          "autoUpload": true,
-          "autoRemoveMarked": true,
-          "autoConfirm": true,
-          "removeIqiyiAirDate": false,
-          "autoMarkUploaded": true
-        },
-        "enabled": false,
-        "createdAt": "2025-07-03T09:06:58.172Z",
-        "updatedAt": "2025-07-03T09:07:03.739Z"
-      },
-      {
-        "id": "0c78b102-96ec-474d-8dba-431e609ef258",
-        "itemId": "1751531412809",
-        "itemTitle": "七根心简",
-        "itemTmdbId": "290054",
-        "name": "七根心简 定时任务",
-        "type": "tmdb-import",
-        "schedule": {
-          "type": "daily",
-          "dayOfWeek": 4,
-          "hour": 17,
+          "hour": 18,
           "minute": 25
         },
         "action": {
@@ -427,37 +459,37 @@
           "autoUpload": true,
           "autoRemoveMarked": true,
           "autoConfirm": true,
-          "removeIqiyiAirDate": false,
+          "removeIqiyiAirDate": true,
           "autoMarkUploaded": true
         },
-        "enabled": false,
-        "createdAt": "2025-07-03T09:23:46.017Z",
-        "updatedAt": "2025-07-03T09:24:06.234Z"
+        "enabled": true,
+        "createdAt": "2025-07-03T10:24:14.847Z",
+        "updatedAt": "2025-07-03T10:24:25.926Z"
       },
       {
-        "id": "a566a76e-2042-43f3-9437-f0bc39273920",
-        "itemId": "1751531412809",
-        "itemTitle": "七根心简",
-        "itemTmdbId": "290054",
-        "name": "七根心简 定时任务",
+        "id": "2a74493b-6ba9-4ec4-874d-40c1a5518285",
+        "itemId": "1751538210692",
+        "itemTitle": "书卷一梦",
+        "itemTmdbId": "253193",
+        "name": "书卷一梦 定时任务",
         "type": "tmdb-import",
         "schedule": {
           "type": "daily",
           "dayOfWeek": 4,
-          "hour": 17,
-          "minute": 0
+          "hour": 18,
+          "minute": 29
         },
         "action": {
           "seasonNumber": 1,
           "autoUpload": true,
           "autoRemoveMarked": true,
           "autoConfirm": true,
-          "removeIqiyiAirDate": false,
+          "removeIqiyiAirDate": true,
           "autoMarkUploaded": true
         },
-        "enabled": false,
-        "createdAt": "2025-07-03T09:50:26.488Z",
-        "updatedAt": "2025-07-03T09:50:36.550Z"
+        "enabled": true,
+        "createdAt": "2025-07-03T10:28:16.575Z",
+        "updatedAt": "2025-07-03T10:28:24.212Z"
       }
     ]
   }
