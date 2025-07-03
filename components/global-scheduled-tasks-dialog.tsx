@@ -673,132 +673,42 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         return;
       }
       
-      // 构建请求数据
-      const requestData = {
-        taskId: task.id,
-        itemId: relatedItem.id,
-        action: {
-          seasonNumber: task.action.seasonNumber,
-          autoUpload: task.action.autoUpload,
-          autoRemoveMarked: task.action.autoRemoveMarked,
-          autoConfirm: task.action.autoConfirm !== false,
-          autoMarkUploaded: task.action.autoMarkUploaded !== false,
-          removeIqiyiAirDate: task.action.removeIqiyiAirDate === true
-        },
-        metadata: {
-          tmdbId: relatedItem.tmdbId,
-          title: relatedItem.title,
-          platformUrl: relatedItem.platformUrl
-        }
-      };
-      
-      console.log(`[GlobalScheduledTasksDialog] 执行定时任务: ${task.name}，数据:`, requestData);
-      
+      console.log(`[GlobalScheduledTasksDialog] 执行定时任务: ${task.name}`);
+
       // 验证重要字段
-      if (!requestData.itemId) {
-        console.error("[GlobalScheduledTasksDialog] 错误: 请求数据中缺少itemId");
-        throw new Error("请求数据构建错误: 缺少项目ID");
+      if (!relatedItem.id) {
+        console.error("[GlobalScheduledTasksDialog] 错误: 项目缺少ID");
+        throw new Error("项目ID无效");
       }
-      
-      if (!requestData.metadata.platformUrl) {
-        console.error("[GlobalScheduledTasksDialog] 错误: 请求数据中缺少platformUrl");
-        throw new Error("请求数据构建错误: 缺少平台URL");
+
+      if (!relatedItem.platformUrl) {
+        console.error("[GlobalScheduledTasksDialog] 错误: 项目缺少平台URL");
+        throw new Error("项目缺少平台URL");
       }
-      
-      // 添加超时控制
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000); // 3分钟超时
-      
+
+      // 使用调度器直接执行任务
+      console.log(`[GlobalScheduledTasksDialog] 通过调度器执行任务: ${task.id}`);
+
       try {
-        // 直接通过API执行任务
-        const response = await fetch('/api/execute-scheduled-task', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestData),
-          signal: controller.signal
-        });
-        
-        // 清除超时计时器
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          let errorMessage = '';
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || `HTTP错误: ${response.status}`;
-          } catch (e) {
-            errorMessage = `HTTP错误: ${response.status}`;
-          }
-          throw new Error(errorMessage);
-        }
-        
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.error || result.message || '执行失败，但未返回具体错误信息');
-        }
-        
-        // 更新任务的最后执行时间和状态
-        const taskToUpdate = {
-          ...task,
-          lastRun: new Date().toISOString(),
-          lastRunStatus: "success" as const,
-          lastRunError: null,
-          updatedAt: new Date().toISOString()
-        };
-        
-        await StorageManager.updateScheduledTask(taskToUpdate);
-        
-        // 轻量级刷新任务状态
+        // 直接调用调度器的手动执行方法
+        await taskScheduler.executeTaskManually(task);
+
+        console.log(`[GlobalScheduledTasksDialog] 任务执行成功: ${task.name}`);
+
+        // 轻量级刷新任务状态（调度器已经更新了任务状态）
         await refreshTasksOnly();
-        
-        // 构建成功消息
-        let successMessage = '任务已成功执行';
-        
-        // 如果有CSV路径信息，添加到消息中
-        if (result.csvPath) {
-          successMessage += `，生成了CSV文件: ${result.csvPath}`;
-        }
-        
-        // 如果自动标记了上传的集数，提示用户
-        if (result.markedEpisodes && result.markedEpisodes.length > 0) {
-          successMessage += `，已标记 ${result.markedEpisodes.length} 个集数为已完成`;
-        }
-        
+
+        // 显示成功消息
+        const successMessage = `任务 "${task.name}" 执行完成`;
+
         toast({
           title: "任务执行成功",
-          description: successMessage
+          description: successMessage,
+          duration: 5000
         });
-      } catch (fetchError: any) {
-        // 清除超时计时器
-        clearTimeout(timeoutId);
-        
-        // 检查是否是超时错误
-        if (fetchError.name === 'AbortError') {
-          console.error("[GlobalScheduledTasksDialog] 请求超时");
-          toast({
-            title: "执行超时",
-            description: "任务执行超时（3分钟），请检查网络连接或稍后再试",
-            variant: "destructive"
-          });
-          
-          // 更新任务状态为失败
-          const failedTask = {
-            ...task,
-            lastRun: new Date().toISOString(),
-            lastRunStatus: "failed" as const,
-            lastRunError: "请求超时（3分钟）",
-            updatedAt: new Date().toISOString()
-          };
-          
-          await StorageManager.updateScheduledTask(failedTask);
-          await refreshTasksOnly();
-          return;
-        }
-        
-        throw fetchError; // 重新抛出以便外层catch处理
+      } catch (executionError: any) {
+        console.error("[GlobalScheduledTasksDialog] 调度器执行任务失败:", executionError);
+        throw executionError; // 重新抛出以便外层catch处理
       }
     } catch (error: any) {
       console.error("[GlobalScheduledTasksDialog] 执行任务失败:", error);

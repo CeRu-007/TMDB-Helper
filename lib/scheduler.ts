@@ -32,6 +32,26 @@ class TaskScheduler {
   }
 
   /**
+   * 手动执行任务（公开方法）
+   */
+  public async executeTaskManually(task: ScheduledTask): Promise<void> {
+    console.log(`[TaskScheduler] 手动执行任务: ${task.id} - ${task.name}`);
+
+    // 检查任务是否已在执行中
+    if (this.currentExecution.has(task.id)) {
+      throw new Error(`任务 ${task.name} 已在执行中，请等待完成`);
+    }
+
+    // 检查任务是否启用
+    if (!task.enabled) {
+      console.warn(`[TaskScheduler] 任务 ${task.id} 已禁用，但允许手动执行`);
+    }
+
+    // 执行任务
+    await this.executeTask(task);
+  }
+
+  /**
    * 获取调度器状态信息
    */
   public getSchedulerStatus(): {
