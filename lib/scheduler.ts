@@ -6,6 +6,7 @@ class TaskScheduler {
   private isInitialized: boolean = false;
   private lastError: Error | null = null;
   private currentExecution: Map<string, Promise<void>> = new Map(); // 跟踪当前正在执行的任务
+  private validationTimer: NodeJS.Timeout | null = null; // 定期验证定时器
 
   private constructor() {}
 
@@ -42,20 +43,81 @@ class TaskScheduler {
     try {
       // 清除所有现有的定时器
       this.clearAllTimers();
-      
-      // 加载所有定时任务
+
+      // 验证和修复任务关联
+      console.log('[TaskScheduler] 验证任务关联...');
+      const validationResult = await StorageManager.validateAndFixTaskAssociations();
+
+      if (validationResult.invalidTasks > 0) {
+        console.log(`[TaskScheduler] 任务关联验证结果: 总任务=${validationResult.totalTasks}, 无效=${validationResult.invalidTasks}, 修复=${validationResult.fixedTasks}, 删除=${validationResult.deletedTasks}`);
+
+        // 记录详细信息
+        validationResult.details.forEach(detail => {
+          console.log(`[TaskScheduler] ${detail}`);
+        });
+      }
+
+      // 加载所有定时任务（已经过验证和修复）
       const tasks = await StorageManager.getScheduledTasks();
-      
+
       // 为每个启用的任务设置定时器
-      tasks.filter(task => task.enabled).forEach(task => {
+      const enabledTasks = tasks.filter(task => task.enabled);
+      enabledTasks.forEach(task => {
         this.scheduleTask(task);
       });
-      
+
+      // 启动定期验证任务关联的定时器（每小时检查一次）
+      this.startPeriodicValidation();
+
       this.isInitialized = true;
-      console.log(`[TaskScheduler] 初始化完成，已加载 ${tasks.length} 个定时任务`);
+      console.log(`[TaskScheduler] 初始化完成，已加载 ${tasks.length} 个定时任务 (${enabledTasks.length} 个已启用)`);
     } catch (error) {
       this.lastError = error instanceof Error ? error : new Error(String(error));
       console.error('[TaskScheduler] 初始化失败:', error);
+    }
+  }
+
+  /**
+   * 启动定期验证任务关联
+   */
+  private startPeriodicValidation(): void {
+    // 清除现有的验证定时器
+    if (this.validationTimer) {
+      clearInterval(this.validationTimer);
+    }
+
+    // 设置每小时验证一次任务关联
+    this.validationTimer = setInterval(async () => {
+      try {
+        console.log('[TaskScheduler] 执行定期任务关联验证');
+        const result = await StorageManager.validateAndFixTaskAssociations();
+
+        if (result.invalidTasks > 0) {
+          console.log(`[TaskScheduler] 定期验证发现并处理了 ${result.invalidTasks} 个无效任务`);
+
+          // 如果有任务被修复或删除，重新初始化调度器
+          if (result.fixedTasks > 0 || result.deletedTasks > 0) {
+            console.log(`[TaskScheduler] 任务关联已更新，重新初始化调度器`);
+            this.isInitialized = false;
+            await this.initialize();
+          }
+        }
+      } catch (error) {
+        console.error('[TaskScheduler] 定期验证任务关联失败:', error);
+      }
+    }, 60 * 60 * 1000); // 每小时执行一次
+
+    console.log('[TaskScheduler] 已启动定期任务关联验证 (每小时一次)');
+  }
+
+  /**
+   * 停止定期验证
+   */
+  private stopPeriodicValidation(): void {
+    if (this.validationTimer) {
+      clearInterval(this.validationTimer);
+      this.validationTimer = null;
+      console.log('[TaskScheduler] 已停止定期任务关联验证');
     }
   }
 
@@ -68,6 +130,9 @@ class TaskScheduler {
       console.log(`[TaskScheduler] 清除定时器: ${id}`);
     });
     this.timers.clear();
+
+    // 同时清除验证定时器
+    this.stopPeriodicValidation();
   }
 
   /**
@@ -393,43 +458,74 @@ class TaskScheduler {
       if (task.type === 'tmdb-import') {
         try {
           // 首先获取关联的项目
-          const relatedItem = await this.getRelatedItem(task);
-          
+          let relatedItem = await this.getRelatedItem(task);
+
           if (!relatedItem) {
+            console.warn(`[TaskScheduler] 任务 ${task.name} 的关联项目不存在，尝试重新关联`);
+
             // 尝试重新关联项目
             const result = await this.attemptToRelinkTask(task);
             if (!result.success) {
-              throw new Error(result.message || `找不到任务关联的项目 (itemId: ${task.itemId}, 名称: ${task.itemTitle || task.name})`);
-            }
-            
-            // 使用新关联的项目
-            const updatedTask = {...task, itemId: result.newItemId as string};
-            const retriedItem = await this.getRelatedItem(updatedTask);
-            if (!retriedItem) {
-              throw new Error(`重新关联项目失败，仍然找不到有效项目 (itemId: ${result.newItemId})`);
-            }
-            
-            // 更新任务的项目ID
-            await this.updateTaskItemId(task.id, result.newItemId as string);
-            
-            // 执行导入任务，使用新关联的项目
-            await this.executeTMDBImportTask({...task, itemId: result.newItemId as string}, retriedItem);
-          } else {
-            // 检查项目是否有指定的季数
-            if (task.action.seasonNumber > 0 && relatedItem.mediaType === 'tv') {
-              if (!relatedItem.seasons || !relatedItem.seasons.some(s => s.seasonNumber === task.action.seasonNumber)) {
-                throw new Error(`项目 ${relatedItem.title} 没有第 ${task.action.seasonNumber} 季`);
+              // 如果重新关联失败，尝试使用存储管理器的修复方法
+              console.warn(`[TaskScheduler] 重新关联失败，尝试使用存储管理器修复`);
+              const items = await StorageManager.getItemsWithRetry();
+              const fixResult = await StorageManager['attemptToFixTaskAssociation'](task, items);
+
+              if (fixResult.success && fixResult.newItemId) {
+                // 更新任务关联
+                const updatedTask = {
+                  ...task,
+                  itemId: fixResult.newItemId,
+                  itemTitle: fixResult.newItemTitle || task.itemTitle,
+                  itemTmdbId: fixResult.newItemTmdbId || task.itemTmdbId,
+                  updatedAt: new Date().toISOString()
+                };
+
+                await StorageManager.updateScheduledTask(updatedTask);
+                relatedItem = await this.getRelatedItem(updatedTask);
+
+                if (relatedItem) {
+                  console.log(`[TaskScheduler] 成功修复任务关联: ${task.name} -> ${relatedItem.title}`);
+                } else {
+                  throw new Error(`修复任务关联后仍无法找到项目 (itemId: ${fixResult.newItemId})`);
+                }
+              } else {
+                throw new Error(result.message || `找不到任务关联的项目且无法修复 (itemId: ${task.itemId}, 名称: ${task.itemTitle || task.name})`);
               }
+            } else {
+              // 使用重新关联的项目
+              const updatedTask = {...task, itemId: result.newItemId as string};
+              relatedItem = await this.getRelatedItem(updatedTask);
+
+              if (!relatedItem) {
+                throw new Error(`重新关联项目失败，仍然找不到有效项目 (itemId: ${result.newItemId})`);
+              }
+
+              // 更新任务的项目ID
+              await this.updateTaskItemId(task.id, result.newItemId as string);
+              console.log(`[TaskScheduler] 成功重新关联任务: ${task.name} -> ${relatedItem.title}`);
             }
-            
-            // 检查项目是否有平台URL
-            if (!relatedItem.platformUrl) {
-              throw new Error(`项目 ${relatedItem.title} 没有设置平台URL，无法执行TMDB-Import任务`);
-            }
-            
-            // 执行导入任务
-            await this.executeTMDBImportTask(task, relatedItem);
           }
+
+          // 验证项目的有效性
+          if (!relatedItem) {
+            throw new Error(`无法获取有效的关联项目`);
+          }
+
+          // 检查项目是否有指定的季数
+          if (task.action.seasonNumber > 0 && relatedItem.mediaType === 'tv') {
+            if (!relatedItem.seasons || !relatedItem.seasons.some(s => s.seasonNumber === task.action.seasonNumber)) {
+              throw new Error(`项目 ${relatedItem.title} 没有第 ${task.action.seasonNumber} 季`);
+            }
+          }
+
+          // 检查项目是否有平台URL
+          if (!relatedItem.platformUrl) {
+            throw new Error(`项目 ${relatedItem.title} 没有设置平台URL，无法执行TMDB-Import任务`);
+          }
+
+          // 执行导入任务
+          await this.executeTMDBImportTask(task, relatedItem);
           
           console.log(`[TaskScheduler] 任务执行成功: ${task.id} - ${task.name}`);
           
@@ -881,44 +977,95 @@ class TaskScheduler {
     try {
       const tasks = await StorageManager.getScheduledTasks();
       const task = tasks.find(t => t.id === taskId);
-      
+
       if (!task) {
-        return { 
-          success: false, 
-          message: `找不到ID为 ${taskId} 的任务` 
+        return {
+          success: false,
+          message: `找不到ID为 ${taskId} 的任务`
         };
       }
-      
+
       // 如果任务已在执行中，返回提示
       if (this.currentExecution.has(taskId)) {
-        return { 
-          success: false, 
-          message: `任务 ${task.name} 已在执行中` 
+        return {
+          success: false,
+          message: `任务 ${task.name} 已在执行中`
         };
       }
-      
+
       console.log(`[TaskScheduler] 手动执行任务: ${task.id} - ${task.name}`);
-      
+
       // 创建执行Promise
       const executionPromise = this._executeTaskInternal(task);
-      
+
       // 将当前执行添加到映射
       this.currentExecution.set(taskId, executionPromise);
-      
+
       // 等待执行完成
       await executionPromise;
-      
-      return { 
-        success: true, 
-        message: `任务 ${task.name} 执行完成` 
+
+      return {
+        success: true,
+        message: `任务 ${task.name} 执行完成`
       };
     } catch (error) {
       this.lastError = error instanceof Error ? error : new Error(String(error));
       console.error(`[TaskScheduler] 手动执行任务失败:`, error);
-      
-      return { 
-        success: false, 
-        message: `执行失败: ${error instanceof Error ? error.message : String(error)}` 
+
+      return {
+        success: false,
+        message: `执行失败: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
+  /**
+   * 验证和修复所有任务的关联
+   */
+  public async validateAndFixAllTaskAssociations(): Promise<{
+    success: boolean;
+    message: string;
+    details: {
+      totalTasks: number;
+      invalidTasks: number;
+      fixedTasks: number;
+      deletedTasks: number;
+      details: string[]
+    }
+  }> {
+    try {
+      console.log(`[TaskScheduler] 开始验证和修复任务关联`);
+
+      const result = await StorageManager.validateAndFixTaskAssociations();
+
+      // 如果有任务被修复或删除，重新初始化调度器
+      if (result.fixedTasks > 0 || result.deletedTasks > 0) {
+        console.log(`[TaskScheduler] 任务关联已更新，重新初始化调度器`);
+        this.isInitialized = false;
+        await this.initialize();
+      }
+
+      const message = result.invalidTasks === 0
+        ? `所有 ${result.totalTasks} 个任务的关联都是有效的`
+        : `处理了 ${result.invalidTasks} 个无效任务: ${result.fixedTasks} 个已修复, ${result.deletedTasks} 个已删除`;
+
+      return {
+        success: true,
+        message,
+        details: result
+      };
+    } catch (error) {
+      console.error(`[TaskScheduler] 验证任务关联失败:`, error);
+      return {
+        success: false,
+        message: `验证失败: ${error instanceof Error ? error.message : String(error)}`,
+        details: {
+          totalTasks: 0,
+          invalidTasks: 0,
+          fixedTasks: 0,
+          deletedTasks: 0,
+          details: []
+        }
       };
     }
   }

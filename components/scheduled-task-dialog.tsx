@@ -170,8 +170,8 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         throw new Error("当前项目缺少平台URL，请先在项目设置中添加平台URL");
       }
       
-      // 验证项目ID格式
-      if (/^\d+$/.test(item.id) || item.id.length > 40 || item.id.includes(' ') || item.id === "1749566411729") {
+      // 验证项目ID格式（修复：允许时间戳格式的ID）
+      if (!item.id || item.id.trim() === '' || item.id.length > 50 || item.id.includes(' ')) {
         console.error("[ScheduledTaskDialog] 错误: 当前项目ID格式无效", item.id);
         throw new Error(`项目ID "${item.id}" 格式无效，请联系开发者修复`);
       }

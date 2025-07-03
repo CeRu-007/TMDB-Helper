@@ -77,13 +77,24 @@ export function updateItem(updatedItem: TMDBItem): boolean {
  * 删除项目
  */
 export function deleteItem(id: string): boolean {
+  console.log(`[ServerStorage] 开始删除项目: ID=${id}`);
+
   const items = readItems();
   const filteredItems = items.filter(item => item.id !== id);
-  
+
   if (filteredItems.length < items.length) {
-    return writeItems(filteredItems);
+    const success = writeItems(filteredItems);
+    if (success) {
+      console.log(`[ServerStorage] 项目删除成功: ID=${id}`);
+
+      // 注意：服务器端无法直接访问localStorage中的定时任务
+      // 任务清理将由客户端的StorageManager.deleteItem方法处理
+      console.log(`[ServerStorage] 提示：请确保客户端清理相关的定时任务`);
+    }
+    return success;
   }
-  
+
+  console.log(`[ServerStorage] 项目不存在或删除失败: ID=${id}`);
   return false;
 }
 

@@ -316,6 +316,20 @@ export class StorageManager {
    * 删除项目
    */
   static async deleteItem(id: string): Promise<boolean> {
+    console.log(`[StorageManager] 开始删除项目: ID=${id}`);
+
+    // 首先检查是否有关联的定时任务
+    const relatedTasks = await this.getRelatedScheduledTasks(id);
+    if (relatedTasks.length > 0) {
+      console.log(`[StorageManager] 发现 ${relatedTasks.length} 个关联的定时任务，将一并删除`);
+
+      // 删除所有关联的定时任务
+      for (const task of relatedTasks) {
+        await this.deleteScheduledTask(task.id);
+        console.log(`[StorageManager] 已删除关联任务: ${task.name} (ID: ${task.id})`);
+      }
+    }
+
     // 使用文件存储
     if (this.USE_FILE_STORAGE) {
       try {
@@ -327,28 +341,237 @@ export class StorageManager {
           throw new Error(`API请求失败: ${response.status}`);
         }
 
+        console.log(`[StorageManager] 项目删除成功: ID=${id}`);
         return true;
       } catch (error) {
         console.error('删除项目失败:', error);
         return false;
       }
     }
-    
+
     // 使用原始的localStorage方法
     if (!this.isClient() || !this.isStorageAvailable()) {
       console.error("Cannot delete item: localStorage is not available");
       return false;
     }
-    
+
     try {
       const items = this.getItems()
       const filteredItems = items.filter((item) => item.id !== id)
       this.saveItems(filteredItems)
+      console.log(`[StorageManager] 项目删除成功: ID=${id}`);
       return true;
     } catch (error) {
       console.error("Failed to delete item:", error);
       return false;
     }
+  }
+
+  /**
+   * 获取与指定项目ID关联的所有定时任务
+   */
+  static async getRelatedScheduledTasks(itemId: string): Promise<ScheduledTask[]> {
+    try {
+      const tasks = await this.getScheduledTasks();
+      return tasks.filter(task => task.itemId === itemId);
+    } catch (error) {
+      console.error(`[StorageManager] 获取关联任务失败:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * 验证并修复所有定时任务的关联
+   */
+  static async validateAndFixTaskAssociations(): Promise<{
+    totalTasks: number;
+    invalidTasks: number;
+    fixedTasks: number;
+    deletedTasks: number;
+    details: string[]
+  }> {
+    try {
+      console.log(`[StorageManager] 开始验证和修复任务关联`);
+
+      const tasks = await this.getScheduledTasks();
+      const items = await this.getItemsWithRetry();
+      const details: string[] = [];
+
+      let invalidTasks = 0;
+      let fixedTasks = 0;
+      let deletedTasks = 0;
+
+      for (const task of tasks) {
+        // 检查任务是否有有效的项目关联
+        const relatedItem = items.find(item => item.id === task.itemId);
+
+        if (!relatedItem) {
+          invalidTasks++;
+          console.log(`[StorageManager] 发现无效任务: ${task.name} (ID: ${task.id}, itemId: ${task.itemId})`);
+
+          // 尝试通过多种策略修复关联
+          const fixResult = await this.attemptToFixTaskAssociation(task, items);
+
+          if (fixResult.success && fixResult.newItemId) {
+            // 更新任务的关联
+            const updatedTask = {
+              ...task,
+              itemId: fixResult.newItemId,
+              itemTitle: fixResult.newItemTitle || task.itemTitle,
+              itemTmdbId: fixResult.newItemTmdbId || task.itemTmdbId,
+              updatedAt: new Date().toISOString()
+            };
+
+            await this.updateScheduledTask(updatedTask);
+            fixedTasks++;
+            details.push(`修复任务 "${task.name}": 重新关联到项目 "${fixResult.newItemTitle}" (ID: ${fixResult.newItemId})`);
+            console.log(`[StorageManager] 成功修复任务: ${task.name} -> ${fixResult.newItemTitle}`);
+          } else {
+            // 无法修复，删除任务
+            await this.deleteScheduledTask(task.id);
+            deletedTasks++;
+            details.push(`删除无效任务 "${task.name}": ${fixResult.reason || '无法找到合适的关联项目'}`);
+            console.log(`[StorageManager] 删除无效任务: ${task.name} - ${fixResult.reason}`);
+          }
+        }
+      }
+
+      const result = {
+        totalTasks: tasks.length,
+        invalidTasks,
+        fixedTasks,
+        deletedTasks,
+        details
+      };
+
+      console.log(`[StorageManager] 任务关联验证完成:`, result);
+      return result;
+    } catch (error) {
+      console.error(`[StorageManager] 验证任务关联失败:`, error);
+      return {
+        totalTasks: 0,
+        invalidTasks: 0,
+        fixedTasks: 0,
+        deletedTasks: 0,
+        details: [`验证失败: ${error instanceof Error ? error.message : String(error)}`]
+      };
+    }
+  }
+
+  /**
+   * 尝试修复单个任务的关联
+   */
+  private static async attemptToFixTaskAssociation(
+    task: ScheduledTask,
+    items: TMDBItem[]
+  ): Promise<{
+    success: boolean;
+    newItemId?: string;
+    newItemTitle?: string;
+    newItemTmdbId?: string;
+    reason?: string
+  }> {
+    if (items.length === 0) {
+      return { success: false, reason: "系统中没有可用项目" };
+    }
+
+    // 策略1: 通过TMDB ID匹配
+    if (task.itemTmdbId) {
+      const tmdbMatch = items.find(item => item.tmdbId === task.itemTmdbId);
+      if (tmdbMatch) {
+        return {
+          success: true,
+          newItemId: tmdbMatch.id,
+          newItemTitle: tmdbMatch.title,
+          newItemTmdbId: tmdbMatch.tmdbId,
+          reason: `通过TMDB ID匹配到项目`
+        };
+      }
+    }
+
+    // 策略2: 通过标题精确匹配
+    if (task.itemTitle) {
+      const titleMatch = items.find(item =>
+        item.title.toLowerCase().trim() === task.itemTitle.toLowerCase().trim()
+      );
+      if (titleMatch) {
+        return {
+          success: true,
+          newItemId: titleMatch.id,
+          newItemTitle: titleMatch.title,
+          newItemTmdbId: titleMatch.tmdbId,
+          reason: `通过标题精确匹配到项目`
+        };
+      }
+    }
+
+    // 策略3: 通过标题模糊匹配
+    if (task.itemTitle) {
+      const fuzzyMatches = items.filter(item => {
+        const taskTitle = task.itemTitle.toLowerCase().trim();
+        const itemTitle = item.title.toLowerCase().trim();
+        return taskTitle.includes(itemTitle) || itemTitle.includes(taskTitle);
+      });
+
+      if (fuzzyMatches.length === 1) {
+        const match = fuzzyMatches[0];
+        return {
+          success: true,
+          newItemId: match.id,
+          newItemTitle: match.title,
+          newItemTmdbId: match.tmdbId,
+          reason: `通过标题模糊匹配到项目`
+        };
+      }
+    }
+
+    // 策略4: 通过任务名称匹配项目标题
+    const taskNameMatches = items.filter(item => {
+      const taskName = task.name.toLowerCase().replace(/定时任务|任务/g, '').trim();
+      const itemTitle = item.title.toLowerCase().trim();
+      return taskName.includes(itemTitle) || itemTitle.includes(taskName);
+    });
+
+    if (taskNameMatches.length === 1) {
+      const match = taskNameMatches[0];
+      return {
+        success: true,
+        newItemId: match.id,
+        newItemTitle: match.title,
+        newItemTmdbId: match.tmdbId,
+        reason: `通过任务名称匹配到项目`
+      };
+    }
+
+    // 策略5: 如果只有一个项目，直接关联
+    if (items.length === 1) {
+      const onlyItem = items[0];
+      return {
+        success: true,
+        newItemId: onlyItem.id,
+        newItemTitle: onlyItem.title,
+        newItemTmdbId: onlyItem.tmdbId,
+        reason: `系统中只有一个项目，自动关联`
+      };
+    }
+
+    // 策略6: 使用最近创建的项目
+    const sortedItems = [...items].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    if (sortedItems.length > 0) {
+      const latestItem = sortedItems[0];
+      return {
+        success: true,
+        newItemId: latestItem.id,
+        newItemTitle: latestItem.title,
+        newItemTmdbId: latestItem.tmdbId,
+        reason: `关联到最近创建的项目`
+      };
+    }
+
+    return { success: false, reason: "无法找到合适的关联项目" };
   }
 
   /**
@@ -495,17 +718,17 @@ export class StorageManager {
       updatedAt: task.updatedAt || new Date().toISOString()
     };
     
-    // 增强的项目ID验证
-    if (!normalized.itemId) {
+    // 增强的项目ID验证（修复：允许时间戳格式的ID）
+    if (!normalized.itemId || normalized.itemId.trim() === '') {
       console.error("[StorageManager] 错误: 任务缺少项目ID", task);
       normalized.lastRunStatus = "failed";
       normalized.lastRunError = "任务缺少项目ID，无法执行";
       normalized.enabled = false; // 自动禁用无效任务
-    } else if (/^\d+$/.test(normalized.itemId) || 
-               normalized.itemId.length > 40 || 
+    } else if (normalized.itemId.length > 50 ||
                normalized.itemId.includes(' ') ||
-               normalized.itemId === "1749566411729") { // 特别检查已知的问题ID
-      console.warn("[StorageManager] 警告: 任务的项目ID格式可能有问题", normalized.itemId);
+               normalized.itemId.includes('\n') ||
+               normalized.itemId.includes('\t')) {
+      console.warn("[StorageManager] 警告: 任务的项目ID格式有问题", normalized.itemId);
       normalized.lastRunStatus = "failed";
       normalized.lastRunError = `项目ID "${normalized.itemId}" 格式无效，请重新关联正确的项目`;
       normalized.enabled = false; // 自动禁用无效任务
