@@ -7,7 +7,7 @@ import fs from 'fs/promises';
  */
 export async function POST(request: NextRequest) {
   try {
-    const { csvPath, markedEpisodes, platformUrl, itemId, testMode = false } = await request.json();
+    const { csvPath, markedEpisodes, platformUrl, itemId, testMode = false, itemTitle } = await request.json();
     
     if (!csvPath || !Array.isArray(markedEpisodes)) {
       return NextResponse.json({
@@ -21,7 +21,12 @@ export async function POST(request: NextRequest) {
     console.log(`[API] 需要删除的集数: [${markedEpisodes.join(', ')}]`);
     console.log(`[API] 平台URL: ${platformUrl}`);
     console.log(`[API] 项目ID: ${itemId}`);
+    console.log(`[API] 项目标题: ${itemTitle}`);
     console.log(`[API] 测试模式: ${testMode}`);
+
+    // 检测平台类型
+    const isYoukuPlatform = platformUrl && platformUrl.includes('youku.com');
+    console.log(`[API] 优酷平台检测: ${isYoukuPlatform}`);
 
     // 检查CSV文件是否存在
     try {
@@ -99,13 +104,31 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API] 找到集数列 "${matchedColumnName}" 在索引: ${episodeNumberIndex}`);
     
+    // 查找name列索引（用于词条标题检测）
+    let nameColumnIndex = -1;
+    const possibleNameColumns = ['name', 'title', '标题', '名称', '剧集名'];
+
+    for (const possibleName of possibleNameColumns) {
+      nameColumnIndex = headers.findIndex(h =>
+        h.toLowerCase().includes(possibleName.toLowerCase())
+      );
+      if (nameColumnIndex !== -1) {
+        console.log(`[API] 找到name列 "${headers[nameColumnIndex]}" 在索引: ${nameColumnIndex}`);
+        break;
+      }
+    }
+
     // 过滤数据行，删除已标记的集数
     const headerLine = lines[0];
     const dataLines = lines.slice(1).filter(line => line.trim() !== '');
     const filteredLines = [];
     const removedEpisodes = [];
+    const titleMatchedLines = [];
 
-    console.log(`[API] 开始处理 ${dataLines.length} 行数据，需要删除的集数: [${markedEpisodes.join(', ')}]`);
+    console.log(`[API] 开始处理 ${dataLines.length} 行数据`);
+    console.log(`[API] 需要删除的集数: [${markedEpisodes.join(', ')}]`);
+    console.log(`[API] 优酷平台特殊处理: ${isYoukuPlatform ? '是' : '否'}`);
+    console.log(`[API] 词条标题检测: ${itemTitle ? `"${itemTitle}"` : '未提供'}`);
 
     for (let i = 0; i < dataLines.length; i++) {
       const line = dataLines[i];
@@ -117,12 +140,53 @@ export async function POST(request: NextRequest) {
 
         console.log(`[API] 第 ${i + 1} 行: 集数列值="${episodeNumberStr}", 解析为数字=${episodeNumber}`);
 
-        if (!isNaN(episodeNumber) && markedEpisodes.includes(episodeNumber)) {
-          removedEpisodes.push(episodeNumber);
-          console.log(`[API] ✓ 删除第 ${episodeNumber} 集的数据行`);
+        // 检查name列是否包含词条标题
+        let containsItemTitle = false;
+        if (nameColumnIndex !== -1 && itemTitle && columns.length > nameColumnIndex) {
+          const nameValue = columns[nameColumnIndex].trim();
+          containsItemTitle = nameValue.includes(itemTitle);
+          if (containsItemTitle) {
+            console.log(`[API] 检测到name列包含词条标题: "${nameValue}" 包含 "${itemTitle}"`);
+            titleMatchedLines.push({
+              line: i + 1,
+              episodeNumber,
+              nameValue
+            });
+          }
+        }
+
+        if (containsItemTitle) {
+          // 包含词条标题的行直接删除，不计入removedEpisodes
+          console.log(`[API] ✗ 删除包含词条标题的行: 第 ${episodeNumber} 集`);
+        } else if (!isNaN(episodeNumber)) {
+          // 优酷平台特殊处理：删除已标记集数-1
+          let shouldRemove = false;
+
+          if (isYoukuPlatform && markedEpisodes.length > 0) {
+            // 优酷平台：删除已标记集数-1的行
+            const adjustedMarkedEpisodes = markedEpisodes.map(ep => ep - 1).filter(ep => ep > 0);
+            shouldRemove = adjustedMarkedEpisodes.includes(episodeNumber);
+            if (shouldRemove) {
+              console.log(`[API] ✓ 优酷平台特殊处理：删除第 ${episodeNumber} 集 (对应已标记第 ${episodeNumber + 1} 集)`);
+            }
+          } else {
+            // 普通平台：删除已标记的集数
+            shouldRemove = markedEpisodes.includes(episodeNumber);
+            if (shouldRemove) {
+              console.log(`[API] ✓ 删除已标记的第 ${episodeNumber} 集`);
+            }
+          }
+
+          if (shouldRemove) {
+            removedEpisodes.push(episodeNumber);
+          } else {
+            filteredLines.push(line);
+            console.log(`[API] ✓ 保留第 ${episodeNumber} 集的数据行`);
+          }
         } else {
+          // 无法解析集数的行保留
           filteredLines.push(line);
-          console.log(`[API] ✓ 保留第 ${episodeNumber} 集的数据行`);
+          console.log(`[API] ✓ 保留无法解析集数的行`);
         }
       } else {
         // 保留格式不正确的行
@@ -133,6 +197,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API] 处理完成: 删除了 ${removedEpisodes.length} 行，保留了 ${filteredLines.length} 行`);
     console.log(`[API] 删除的集数: [${removedEpisodes.sort((a, b) => a - b).join(', ')}]`);
+    console.log(`[API] 包含词条标题的行: ${titleMatchedLines.length} 行`);
 
     // 如果是测试模式，只返回分析结果，不实际处理文件
     if (testMode) {

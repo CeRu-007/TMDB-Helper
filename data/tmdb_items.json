@@ -118,12 +118,12 @@
           },
           {
             "number": 19,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
             "number": 20,
-            "completed": false,
+            "completed": true,
             "seasonNumber": 1
           },
           {
@@ -437,7 +437,7 @@
     "platformUrl": "https://www.iqiyi.com/v_qyddodkuho.html",
     "category": "tv",
     "createdAt": "2025-07-03T10:23:30.692Z",
-    "updatedAt": "2025-07-03T10:27:50.359Z",
+    "updatedAt": "2025-07-03T13:23:08.753Z",
     "blurIntensity": "medium",
     "manuallySetEpisodes": false,
     "scheduledTasks": [
@@ -596,5 +596,365 @@
         "updatedAt": "2025-07-03T13:01:34.172Z"
       }
     ]
+  },
+  {
+    "id": "1751549370618",
+    "title": "七根心简",
+    "originalTitle": "七根心简",
+    "mediaType": "tv",
+    "tmdbId": "290054",
+    "tmdbUrl": "https://www.themoviedb.org/tv/290054",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/huYOqDp8B63HgWiCZply5sf8rqI.jpg",
+    "backdropUrl": "https://image.tmdb.org/t/p/w1280/rXWd3WKDfyjU0sPEa2MjLNJwEsT.jpg",
+    "backdropPath": "/rXWd3WKDfyjU0sPEa2MjLNJwEsT.jpg",
+    "logoUrl": "https://image.tmdb.org/t/p/w300/f18FONAMacLUFwnt0WIg5kirCuK.png",
+    "logoPath": "/f18FONAMacLUFwnt0WIg5kirCuK.png",
+    "networkId": 1419,
+    "networkName": "Youku",
+    "networkLogoUrl": "https://image.tmdb.org/t/p/w300/w2TeR3fvPZ9a617tNIF1oOfyPtk.png",
+    "overview": "上古时期，陨铁包裹外星来物降临凤子岭，带来七个神秘生物。生物可寄生人体，干扰意识，引人作恶。上古大德与其弟子以神木打造七块木简，将异物引入其中，命名“七根心简”，再以陨铁打造凤凰鸾扣将其封印。历代能人志士继承大德遗志，记载封印心简之法，流传后世。百年前，一犬偶然在凤子岭刨出木简，心简再现人间。二十年间，一宗宗离奇凶案接踵而来，木代、罗韧、炎红砂、一万三和曹严华五个平凡而热血的年轻人因缘际会组成“凤凰小分队”，共同踏上收服凶简的冒险征途。",
+    "voteAverage": 9,
+    "weekday": 0,
+    "airTime": "19:00",
+    "totalEpisodes": 32,
+    "isDailyUpdate": true,
+    "seasons": [
+      {
+        "seasonNumber": 1,
+        "name": "第 1 季",
+        "totalEpisodes": 32,
+        "episodes": [
+          {
+            "number": 1,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 2,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 3,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 4,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 5,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 6,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 7,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 8,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 9,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 10,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 11,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 12,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 13,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 14,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 15,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 16,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 17,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 18,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 19,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 20,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 21,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 22,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 23,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 24,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 25,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 26,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 27,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 28,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 29,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 30,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 31,
+            "completed": false,
+            "seasonNumber": 1
+          },
+          {
+            "number": 32,
+            "completed": false,
+            "seasonNumber": 1
+          }
+        ],
+        "posterUrl": "https://image.tmdb.org/t/p/w500/skmz6jxKKPFqdwA687vnurmbBLr.jpg"
+      }
+    ],
+    "episodes": [
+      {
+        "number": 1,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 2,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 3,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 4,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 5,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 6,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 7,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 8,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 9,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 10,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 11,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 12,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 13,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 14,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 15,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 16,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 17,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 18,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 19,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 20,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 21,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 22,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 23,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 24,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 25,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 26,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 27,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 28,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 29,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 30,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 31,
+        "completed": false,
+        "seasonNumber": 1
+      },
+      {
+        "number": 32,
+        "completed": false,
+        "seasonNumber": 1
+      }
+    ],
+    "completed": false,
+    "status": "ongoing",
+    "platformUrl": "https://v.youku.com/video?s=bdfb0949ae4c4ac39168",
+    "category": "tv",
+    "createdAt": "2025-07-03T13:29:30.618Z",
+    "updatedAt": "2025-07-03T13:29:30.618Z"
   }
 ]

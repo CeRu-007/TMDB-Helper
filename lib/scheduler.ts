@@ -876,8 +876,22 @@ class TaskScheduler {
       if (csvAnalysisResult.success && csvAnalysisResult.remainingEpisodes && csvAnalysisResult.remainingEpisodes.length > 0) {
         console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvAnalysisResult.remainingEpisodes.join(', ')}]`);
 
-        // 直接在调度器内部标记集数，不使用API
-        await this.markEpisodesDirectly(currentItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
+        // 检查CSV中是否还有包含词条标题的行
+        const hasItemTitleInCSV = await this.checkItemTitleInCSV(csvProcessResult.processedCsvPath!, currentItem.title);
+
+        if (hasItemTitleInCSV) {
+          console.log(`[TaskScheduler] CSV中仍有包含词条标题"${currentItem.title}"的行，跳过自动标记`);
+        } else {
+          console.log(`[TaskScheduler] CSV中没有包含词条标题的行，执行自动标记`);
+          // 直接在调度器内部标记集数，不使用API
+          const markingResult = await this.markEpisodesDirectly(currentItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
+
+          // 检查项目是否已完结，如果是则删除定时任务
+          if (markingResult && markingResult.projectCompleted) {
+            console.log(`[TaskScheduler] 项目 ${currentItem.title} 已完结，准备删除定时任务`);
+            await this.deleteCompletedTask(task);
+          }
+        }
       } else {
         console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
         if (!csvAnalysisResult.success) {
@@ -980,6 +994,7 @@ class TaskScheduler {
           markedEpisodes: markedEpisodes,
           platformUrl: item.platformUrl,
           itemId: item.id,
+          itemTitle: item.title,
           testMode: true
         }),
         signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
@@ -1015,6 +1030,7 @@ class TaskScheduler {
           markedEpisodes: markedEpisodes,
           platformUrl: item.platformUrl,
           itemId: item.id,
+          itemTitle: item.title,
           testMode: false
         }),
         signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
@@ -1094,6 +1110,41 @@ class TaskScheduler {
     const sortedEpisodes = markedEpisodes.sort((a, b) => a - b);
     console.log(`[TaskScheduler] 最终已标记集数: [${sortedEpisodes.join(', ')}]`);
     return sortedEpisodes;
+  }
+
+  /**
+   * 检查CSV文件中是否还有包含词条标题的行
+   */
+  private async checkItemTitleInCSV(csvPath: string, itemTitle: string): Promise<boolean> {
+    try {
+      console.log(`[TaskScheduler] 检查CSV中是否包含词条标题: "${itemTitle}"`);
+
+      const response = await fetch('/api/check-csv-title', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          csvPath: csvPath,
+          itemTitle: itemTitle
+        }),
+        signal: AbortSignal.timeout(60 * 1000) // 1分钟超时
+      });
+
+      if (!response.ok) {
+        console.warn(`[TaskScheduler] 检查CSV标题失败: ${response.status}`);
+        return false; // 检查失败时默认允许标记
+      }
+
+      const result = await response.json();
+      console.log(`[TaskScheduler] CSV标题检查结果: ${result.hasItemTitle ? '包含' : '不包含'}词条标题`);
+
+      return result.hasItemTitle || false;
+
+    } catch (error) {
+      console.warn(`[TaskScheduler] 检查CSV标题异常: ${error}`);
+      return false; // 异常时默认允许标记
+    }
   }
 
   /**
@@ -1203,7 +1254,11 @@ class TaskScheduler {
   /**
    * 直接在调度器内部标记集数为已完成，不使用API
    */
-  private async markEpisodesDirectly(item: TMDBItem, seasonNumber: number, episodeNumbers: number[]): Promise<void> {
+  private async markEpisodesDirectly(item: TMDBItem, seasonNumber: number, episodeNumbers: number[]): Promise<{
+    success: boolean;
+    markedCount: number;
+    projectCompleted: boolean;
+  } | null> {
     try {
       console.log(`[TaskScheduler] 直接标记集数为已完成: 项目="${item.title}", 季=${seasonNumber}, 集数=[${episodeNumbers.join(', ')}]`);
 
@@ -1334,12 +1389,58 @@ class TaskScheduler {
       if (updateSuccess) {
         console.log(`[TaskScheduler] ✓ 成功标记 ${markedCount} 个集数为已完成`);
         console.log(`[TaskScheduler] 新标记的集数: [${markedEpisodes.join(', ')}]`);
+        console.log(`[TaskScheduler] 项目完成状态: ${allCompleted ? '已完结' : '进行中'}`);
+
+        return {
+          success: true,
+          markedCount: markedCount,
+          projectCompleted: allCompleted
+        };
       } else {
         console.error(`[TaskScheduler] 保存项目更新失败`);
+        return {
+          success: false,
+          markedCount: 0,
+          projectCompleted: false
+        };
       }
 
     } catch (error) {
       console.error(`[TaskScheduler] 直接标记集数失败:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * 删除已完结项目的定时任务
+   */
+  private async deleteCompletedTask(task: ScheduledTask): Promise<void> {
+    try {
+      console.log(`[TaskScheduler] 删除已完结项目的定时任务: ${task.name} (ID: ${task.id})`);
+
+      // 先取消任务调度
+      if (task.enabled) {
+        await this.cancelTask(task.id);
+        console.log(`[TaskScheduler] 已取消任务调度: ${task.id}`);
+      }
+
+      // 从存储中删除任务
+      const deleteSuccess = await StorageManager.deleteScheduledTask(task.id);
+
+      if (deleteSuccess) {
+        console.log(`[TaskScheduler] ✓ 成功删除已完结项目的定时任务: ${task.name}`);
+
+        // 强制刷新任务列表
+        await StorageManager.forceRefreshScheduledTasks();
+
+        // 可以在这里添加通知逻辑
+        console.log(`[TaskScheduler] 项目 ${task.itemTitle} 已完结，相关定时任务已自动删除`);
+      } else {
+        console.error(`[TaskScheduler] 删除定时任务失败: ${task.id}`);
+      }
+
+    } catch (error) {
+      console.error(`[TaskScheduler] 删除已完结任务异常:`, error);
     }
   }
 
