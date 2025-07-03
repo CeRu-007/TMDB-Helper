@@ -48,7 +48,6 @@ import {
   BarChart2,
   History,
   AlertTriangle,
-  Settings,
   Check,
   Lightbulb,
   Plus,
