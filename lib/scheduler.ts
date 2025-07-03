@@ -876,69 +876,8 @@ class TaskScheduler {
       if (csvAnalysisResult.success && csvAnalysisResult.remainingEpisodes && csvAnalysisResult.remainingEpisodes.length > 0) {
         console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvAnalysisResult.remainingEpisodes.join(', ')}]`);
 
-        // 详细调试项目ID问题
-        console.log(`[TaskScheduler] 调试信息 - 当前项目ID: "${currentItem.id}" (类型: ${typeof currentItem.id})`);
-        console.log(`[TaskScheduler] 调试信息 - 任务ID: "${task.id}"`);
-
-        // 调用调试API检查项目ID
-        try {
-          const debugResponse = await fetch('/api/debug-project-id', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              itemId: currentItem.id,
-              taskId: task.id
-            })
-          });
-
-          if (debugResponse.ok) {
-            const debugResult = await debugResponse.json();
-            console.log(`[TaskScheduler] 项目ID调试结果:`, debugResult.debug);
-
-            if (!debugResult.debug.storage.targetItemFound) {
-              console.error(`[TaskScheduler] 项目ID调试失败: 找不到项目 ${currentItem.id}`);
-              console.log(`[TaskScheduler] 可用的项目ID:`, debugResult.debug.allItemIds);
-
-              // 尝试使用任务关联的项目ID
-              if (debugResult.debug.taskRelatedItem) {
-                console.log(`[TaskScheduler] 尝试使用任务关联的项目: ${debugResult.debug.taskRelatedItem.id}`);
-                const taskRelatedItem = debugResult.debug.taskRelatedItem;
-                await this.markEpisodesAsCompleted({
-                  id: taskRelatedItem.id,
-                  title: taskRelatedItem.title
-                } as any, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
-                return;
-              }
-
-              throw new Error(`项目ID ${currentItem.id} 在存储中不存在`);
-            }
-          }
-        } catch (debugError) {
-          console.warn(`[TaskScheduler] 项目ID调试失败: ${debugError}`);
-        }
-
-        // 在标记前再次获取最新的项目数据，确保ID正确
-        const finalItems = await StorageManager.getItemsWithRetry();
-        console.log(`[TaskScheduler] 重新获取项目数据，总数: ${finalItems.length}`);
-
-        const finalItem = finalItems.find(i => i.id === currentItem.id);
-
-        if (finalItem) {
-          console.log(`[TaskScheduler] ✓ 找到最终项目数据: ${finalItem.title} (ID: "${finalItem.id}")`);
-          await this.markEpisodesAsCompleted(finalItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
-        } else {
-          console.error(`[TaskScheduler] ✗ 无法找到最终项目数据: "${currentItem.id}"`);
-          console.log(`[TaskScheduler] 可用项目列表:`, finalItems.map(i => ({ id: i.id, title: i.title })));
-
-          // 尝试通过标题匹配项目
-          const itemByTitle = finalItems.find(i => i.title === currentItem.title);
-          if (itemByTitle) {
-            console.log(`[TaskScheduler] 通过标题找到项目: ${itemByTitle.title} (ID: "${itemByTitle.id}")`);
-            await this.markEpisodesAsCompleted(itemByTitle, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
-          } else {
-            throw new Error(`无法找到项目: ID="${currentItem.id}", 标题="${currentItem.title}"`);
-          }
-        }
+        // 直接在调度器内部标记集数，不使用API
+        await this.markEpisodesDirectly(currentItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
       } else {
         console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
         if (!csvAnalysisResult.success) {
@@ -1262,7 +1201,150 @@ class TaskScheduler {
   }
 
   /**
-   * 步骤4: 自动标记CSV剩余集数为已完成（即成功导入的集数）
+   * 直接在调度器内部标记集数为已完成，不使用API
+   */
+  private async markEpisodesDirectly(item: TMDBItem, seasonNumber: number, episodeNumbers: number[]): Promise<void> {
+    try {
+      console.log(`[TaskScheduler] 直接标记集数为已完成: 项目="${item.title}", 季=${seasonNumber}, 集数=[${episodeNumbers.join(', ')}]`);
+
+      // 获取最新的项目数据
+      const allItems = await StorageManager.getItemsWithRetry();
+      let targetItem = allItems.find(i => i.id === item.id);
+
+      if (!targetItem) {
+        // 尝试通过标题查找
+        targetItem = allItems.find(i => i.title === item.title);
+        if (targetItem) {
+          console.log(`[TaskScheduler] 通过标题找到项目: ${targetItem.title} (ID: ${targetItem.id})`);
+        } else {
+          console.error(`[TaskScheduler] 无法找到项目: ID=${item.id}, 标题=${item.title}`);
+          return;
+        }
+      }
+
+      // 创建项目副本以避免直接修改
+      const updatedItem = JSON.parse(JSON.stringify(targetItem));
+      let markedCount = 0;
+      const markedEpisodes: number[] = [];
+
+      if (updatedItem.seasons && updatedItem.seasons.length > 0) {
+        // 多季模式
+        console.log(`[TaskScheduler] 多季模式，查找第 ${seasonNumber} 季`);
+        const targetSeason = updatedItem.seasons.find(s => s.seasonNumber === seasonNumber);
+
+        if (!targetSeason) {
+          console.error(`[TaskScheduler] 找不到第 ${seasonNumber} 季`);
+          return;
+        }
+
+        if (!targetSeason.episodes) {
+          targetSeason.episodes = [];
+        }
+
+        // 标记指定集数为已完成
+        episodeNumbers.forEach(episodeNum => {
+          let episode = targetSeason.episodes!.find(e => e.number === episodeNum);
+
+          if (!episode) {
+            // 如果集数不存在，创建新的集数记录
+            episode = {
+              number: episodeNum,
+              completed: false,
+              seasonNumber: seasonNumber
+            };
+            targetSeason.episodes!.push(episode);
+            console.log(`[TaskScheduler] 创建新集数记录: 第${seasonNumber}季第${episodeNum}集`);
+          }
+
+          if (!episode.completed) {
+            episode.completed = true;
+            markedCount++;
+            markedEpisodes.push(episodeNum);
+            console.log(`[TaskScheduler] ✓ 标记第 ${seasonNumber} 季第 ${episodeNum} 集为已完成`);
+          } else {
+            console.log(`[TaskScheduler] - 第 ${seasonNumber} 季第 ${episodeNum} 集已经标记为完成`);
+          }
+        });
+
+        // 按集数排序
+        targetSeason.episodes.sort((a, b) => a.number - b.number);
+
+      } else if (updatedItem.episodes) {
+        // 单季模式
+        console.log(`[TaskScheduler] 单季模式，当前集数: ${updatedItem.episodes.length}`);
+
+        episodeNumbers.forEach(episodeNum => {
+          let episode = updatedItem.episodes!.find(e => e.number === episodeNum);
+
+          if (!episode) {
+            // 如果集数不存在，创建新的集数记录
+            episode = {
+              number: episodeNum,
+              completed: false
+            };
+            updatedItem.episodes!.push(episode);
+            console.log(`[TaskScheduler] 创建新集数记录: 第${episodeNum}集`);
+          }
+
+          if (!episode.completed) {
+            episode.completed = true;
+            markedCount++;
+            markedEpisodes.push(episodeNum);
+            console.log(`[TaskScheduler] ✓ 标记第 ${episodeNum} 集为已完成`);
+          } else {
+            console.log(`[TaskScheduler] - 第 ${episodeNum} 集已经标记为完成`);
+          }
+        });
+
+        // 按集数排序
+        updatedItem.episodes.sort((a, b) => a.number - b.number);
+
+      } else {
+        console.error(`[TaskScheduler] 项目没有集数信息`);
+        return;
+      }
+
+      // 检查是否所有集数都已完成，更新项目状态
+      let allCompleted = false;
+      if (updatedItem.seasons && updatedItem.seasons.length > 0) {
+        // 多季模式：检查所有季的所有集数
+        allCompleted = updatedItem.seasons.every(season =>
+          season.episodes && season.episodes.length > 0 &&
+          season.episodes.every(ep => ep.completed)
+        );
+      } else if (updatedItem.episodes) {
+        // 单季模式：检查所有集数
+        allCompleted = updatedItem.episodes.length > 0 &&
+          updatedItem.episodes.every(ep => ep.completed);
+      }
+
+      if (allCompleted && updatedItem.status === "ongoing") {
+        updatedItem.status = "completed";
+        updatedItem.completed = true;
+        console.log(`[TaskScheduler] 项目 ${updatedItem.title} 所有集数已完成，更新状态为已完成`);
+      }
+
+      // 更新时间戳
+      updatedItem.updatedAt = new Date().toISOString();
+
+      // 保存更新后的项目
+      console.log(`[TaskScheduler] 保存更新后的项目数据...`);
+      const updateSuccess = await StorageManager.updateItem(updatedItem);
+
+      if (updateSuccess) {
+        console.log(`[TaskScheduler] ✓ 成功标记 ${markedCount} 个集数为已完成`);
+        console.log(`[TaskScheduler] 新标记的集数: [${markedEpisodes.join(', ')}]`);
+      } else {
+        console.error(`[TaskScheduler] 保存项目更新失败`);
+      }
+
+    } catch (error) {
+      console.error(`[TaskScheduler] 直接标记集数失败:`, error);
+    }
+  }
+
+  /**
+   * 步骤4: 自动标记CSV剩余集数为已完成（即成功导入的集数）- API版本（备用）
    */
   private async markEpisodesAsCompleted(item: TMDBItem, seasonNumber: number, episodeNumbers: number[]): Promise<void> {
     try {
