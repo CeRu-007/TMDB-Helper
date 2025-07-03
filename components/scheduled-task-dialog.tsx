@@ -168,7 +168,11 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         autoConfirm: true, // 默认自动确认上传
         removeIqiyiAirDate: item.platformUrl?.includes('iqiyi.com') || false, // 爱奇艺平台自动启用
         autoMarkUploaded: true, // 默认自动标记已上传的集数
-        conflictAction: 'w' as const // 默认覆盖写入
+        conflictAction: 'w' as const, // 默认覆盖写入
+        // 新增的用户自定义选项（默认启用）
+        enableYoukuSpecialHandling: true,  // 默认启用优酷特殊处理
+        enableTitleCleaning: true,         // 默认启用词条标题清理
+        autoDeleteWhenCompleted: true      // 默认启用完结后自动删除
       },
       enabled: false, // 强制设置为禁用状态
       createdAt: new Date().toISOString(),
@@ -785,6 +789,9 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                     {task.action.autoUpload && " + 自动上传"}
                     {task.action.autoRemoveMarked && " + 自动过滤"}
                     {task.action.conflictAction && ` + 冲突处理(${task.action.conflictAction})`}
+                    {task.action.enableYoukuSpecialHandling && " + 优酷特殊处理"}
+                    {task.action.enableTitleCleaning && " + 词条标题清理"}
+                    {task.action.autoDeleteWhenCompleted && " + 完结自动删除"}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -1113,6 +1120,58 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
               <p className="text-xs text-muted-foreground">
                 当TMDB已有对应数据时的处理方式
               </p>
+            </div>
+
+            <div className="space-y-3 border-t pt-4">
+              <Label className="text-sm font-medium">特殊处理选项</Label>
+
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1">
+                  <Label htmlFor="enable-youku-handling" className="text-sm">
+                    优酷平台特殊处理
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    优酷平台删除已标记集数-1的行（如第1-8集已标记，删除第1-7集）
+                  </p>
+                </div>
+                <Switch
+                  id="enable-youku-handling"
+                  checked={currentTask.action.enableYoukuSpecialHandling !== false}
+                  onCheckedChange={(checked) => updateTaskField('action.enableYoukuSpecialHandling', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1">
+                  <Label htmlFor="enable-title-cleaning" className="text-sm">
+                    词条标题清理功能
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    清理CSV中name列包含词条标题的单元格，直到完全清理后才进行集数标记
+                  </p>
+                </div>
+                <Switch
+                  id="enable-title-cleaning"
+                  checked={currentTask.action.enableTitleCleaning !== false}
+                  onCheckedChange={(checked) => updateTaskField('action.enableTitleCleaning', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1">
+                  <Label htmlFor="auto-delete-completed" className="text-sm">
+                    完结后自动删除任务
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    项目所有集数标记完成后自动删除该定时任务
+                  </p>
+                </div>
+                <Switch
+                  id="auto-delete-completed"
+                  checked={currentTask.action.autoDeleteWhenCompleted !== false}
+                  onCheckedChange={(checked) => updateTaskField('action.autoDeleteWhenCompleted', checked)}
+                />
+              </div>
             </div>
           </div>
         </div>

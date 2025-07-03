@@ -855,13 +855,19 @@ class TaskScheduler {
         throw new Error(`CSV处理失败: ${csvProcessResult.error}`);
       }
 
-      // 步骤2.5: 检查CSV中是否还有包含词条标题的行（在TMDB导入前）
-      console.log(`[TaskScheduler] 步骤2.5: 检查CSV中的词条标题状态`);
-      const hasItemTitleInCSV = await this.checkItemTitleInCSV(csvProcessResult.processedCsvPath!, currentItem.title);
+      // 步骤2.5: 检查CSV中是否还有包含词条标题的行（在TMDB导入前，仅在启用词条标题清理时）
+      let hasItemTitleInCSV = false;
 
-      if (hasItemTitleInCSV) {
-        console.log(`[TaskScheduler] CSV中仍有包含词条标题"${currentItem.title}"的单元格，本次执行跳过自动标记`);
-        console.log(`[TaskScheduler] 将继续执行TMDB导入，但不进行集数标记，等待下次执行时词条标题完全清理后再标记`);
+      if (task.action.enableTitleCleaning !== false) {
+        console.log(`[TaskScheduler] 步骤2.5: 检查CSV中的词条标题状态`);
+        hasItemTitleInCSV = await this.checkItemTitleInCSV(csvProcessResult.processedCsvPath!, currentItem.title);
+
+        if (hasItemTitleInCSV) {
+          console.log(`[TaskScheduler] CSV中仍有包含词条标题"${currentItem.title}"的单元格，本次执行跳过自动标记`);
+          console.log(`[TaskScheduler] 将继续执行TMDB导入，但不进行集数标记，等待下次执行时词条标题完全清理后再标记`);
+        }
+      } else {
+        console.log(`[TaskScheduler] 步骤2.5: 用户已禁用词条标题清理功能，跳过检查`);
       }
 
       // 步骤3: 执行TMDB导入
@@ -889,10 +895,12 @@ class TaskScheduler {
           // 直接在调度器内部标记集数，不使用API
           const markingResult = await this.markEpisodesDirectly(currentItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
 
-          // 检查项目是否已完结，如果是则删除定时任务
-          if (markingResult && markingResult.projectCompleted) {
-            console.log(`[TaskScheduler] 项目 ${currentItem.title} 已完结，准备删除定时任务`);
+          // 检查项目是否已完结，如果是且用户启用了自动删除则删除定时任务
+          if (markingResult && markingResult.projectCompleted && task.action.autoDeleteWhenCompleted !== false) {
+            console.log(`[TaskScheduler] 项目 ${currentItem.title} 已完结，用户启用了自动删除，准备删除定时任务`);
             await this.deleteCompletedTask(task);
+          } else if (markingResult && markingResult.projectCompleted) {
+            console.log(`[TaskScheduler] 项目 ${currentItem.title} 已完结，但用户未启用自动删除任务功能`);
           }
         } else {
           console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
@@ -1001,7 +1009,9 @@ class TaskScheduler {
           platformUrl: item.platformUrl,
           itemId: item.id,
           itemTitle: item.title,
-          testMode: true
+          testMode: true,
+          enableYoukuSpecialHandling: task.action.enableYoukuSpecialHandling !== false,
+          enableTitleCleaning: task.action.enableTitleCleaning !== false
         }),
         signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
       });
@@ -1037,7 +1047,9 @@ class TaskScheduler {
           platformUrl: item.platformUrl,
           itemId: item.id,
           itemTitle: item.title,
-          testMode: false
+          testMode: false,
+          enableYoukuSpecialHandling: task.action.enableYoukuSpecialHandling !== false,
+          enableTitleCleaning: task.action.enableTitleCleaning !== false
         }),
         signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
       });

@@ -35,6 +35,10 @@ export interface ScheduledTask {
     autoConfirm?: boolean // 新增：自动确认上传（输入y）
     removeIqiyiAirDate?: boolean // 新增：删除爱奇艺平台的air_date列
     autoMarkUploaded?: boolean // 新增：自动标记已上传的集数
+    // 用户自定义特殊处理选项
+    enableYoukuSpecialHandling?: boolean  // 优酷平台特殊处理（-1集数）
+    enableTitleCleaning?: boolean         // 词条标题清理功能
+    autoDeleteWhenCompleted?: boolean     // 完结后自动删除任务
   }
   enabled: boolean
   lastRun?: string

@@ -7,7 +7,16 @@ import fs from 'fs/promises';
  */
 export async function POST(request: NextRequest) {
   try {
-    const { csvPath, markedEpisodes, platformUrl, itemId, testMode = false, itemTitle } = await request.json();
+    const {
+      csvPath,
+      markedEpisodes,
+      platformUrl,
+      itemId,
+      testMode = false,
+      itemTitle,
+      enableYoukuSpecialHandling = true,
+      enableTitleCleaning = true
+    } = await request.json();
     
     if (!csvPath || !Array.isArray(markedEpisodes)) {
       return NextResponse.json({
@@ -23,10 +32,13 @@ export async function POST(request: NextRequest) {
     console.log(`[API] 项目ID: ${itemId}`);
     console.log(`[API] 项目标题: ${itemTitle}`);
     console.log(`[API] 测试模式: ${testMode}`);
+    console.log(`[API] 用户设置 - 优酷特殊处理: ${enableYoukuSpecialHandling}`);
+    console.log(`[API] 用户设置 - 词条标题清理: ${enableTitleCleaning}`);
 
-    // 检测平台类型
+    // 检测平台类型和用户设置
     const isYoukuPlatform = platformUrl && platformUrl.includes('youku.com');
-    console.log(`[API] 优酷平台检测: ${isYoukuPlatform}`);
+    const shouldUseYoukuHandling = isYoukuPlatform && enableYoukuSpecialHandling;
+    console.log(`[API] 优酷平台检测: ${isYoukuPlatform}, 启用优酷特殊处理: ${shouldUseYoukuHandling}`);
 
     // 检查CSV文件是否存在
     try {
@@ -140,11 +152,11 @@ export async function POST(request: NextRequest) {
 
         console.log(`[API] 第 ${i + 1} 行: 集数列值="${episodeNumberStr}", 解析为数字=${episodeNumber}`);
 
-        // 检查name列是否包含词条标题，并清理单元格内容
+        // 检查name列是否包含词条标题，并清理单元格内容（如果用户启用）
         let containsItemTitle = false;
         let cleanedLine = line;
 
-        if (nameColumnIndex !== -1 && itemTitle && columns.length > nameColumnIndex) {
+        if (enableTitleCleaning && nameColumnIndex !== -1 && itemTitle && columns.length > nameColumnIndex) {
           const nameValue = columns[nameColumnIndex].trim();
           containsItemTitle = nameValue.includes(itemTitle);
 
@@ -170,18 +182,18 @@ export async function POST(request: NextRequest) {
         }
 
         if (!isNaN(episodeNumber)) {
-          // 优酷平台特殊处理：删除已标记集数-1
+          // 根据用户设置决定删除策略
           let shouldRemove = false;
 
-          if (isYoukuPlatform && markedEpisodes.length > 0) {
-            // 优酷平台：删除已标记集数-1的行
+          if (shouldUseYoukuHandling && markedEpisodes.length > 0) {
+            // 优酷平台特殊处理：删除已标记集数-1的行
             const adjustedMarkedEpisodes = markedEpisodes.map(ep => ep - 1).filter(ep => ep > 0);
             shouldRemove = adjustedMarkedEpisodes.includes(episodeNumber);
             if (shouldRemove) {
               console.log(`[API] ✓ 优酷平台特殊处理：删除第 ${episodeNumber} 集 (对应已标记第 ${episodeNumber + 1} 集)`);
             }
           } else {
-            // 普通平台：删除已标记的集数
+            // 普通处理：删除已标记的集数
             shouldRemove = markedEpisodes.includes(episodeNumber);
             if (shouldRemove) {
               console.log(`[API] ✓ 删除已标记的第 ${episodeNumber} 集`);
