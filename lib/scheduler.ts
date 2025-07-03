@@ -837,15 +837,68 @@ class TaskScheduler {
       if (csvAnalysisResult.success && csvAnalysisResult.remainingEpisodes && csvAnalysisResult.remainingEpisodes.length > 0) {
         console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvAnalysisResult.remainingEpisodes.join(', ')}]`);
 
+        // 详细调试项目ID问题
+        console.log(`[TaskScheduler] 调试信息 - 当前项目ID: "${currentItem.id}" (类型: ${typeof currentItem.id})`);
+        console.log(`[TaskScheduler] 调试信息 - 任务ID: "${task.id}"`);
+
+        // 调用调试API检查项目ID
+        try {
+          const debugResponse = await fetch('/api/debug-project-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              itemId: currentItem.id,
+              taskId: task.id
+            })
+          });
+
+          if (debugResponse.ok) {
+            const debugResult = await debugResponse.json();
+            console.log(`[TaskScheduler] 项目ID调试结果:`, debugResult.debug);
+
+            if (!debugResult.debug.storage.targetItemFound) {
+              console.error(`[TaskScheduler] 项目ID调试失败: 找不到项目 ${currentItem.id}`);
+              console.log(`[TaskScheduler] 可用的项目ID:`, debugResult.debug.allItemIds);
+
+              // 尝试使用任务关联的项目ID
+              if (debugResult.debug.taskRelatedItem) {
+                console.log(`[TaskScheduler] 尝试使用任务关联的项目: ${debugResult.debug.taskRelatedItem.id}`);
+                const taskRelatedItem = debugResult.debug.taskRelatedItem;
+                await this.markEpisodesAsCompleted({
+                  id: taskRelatedItem.id,
+                  title: taskRelatedItem.title
+                } as any, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
+                return;
+              }
+
+              throw new Error(`项目ID ${currentItem.id} 在存储中不存在`);
+            }
+          }
+        } catch (debugError) {
+          console.warn(`[TaskScheduler] 项目ID调试失败: ${debugError}`);
+        }
+
         // 在标记前再次获取最新的项目数据，确保ID正确
         const finalItems = await StorageManager.getItemsWithRetry();
+        console.log(`[TaskScheduler] 重新获取项目数据，总数: ${finalItems.length}`);
+
         const finalItem = finalItems.find(i => i.id === currentItem.id);
 
         if (finalItem) {
-          console.log(`[TaskScheduler] 使用最终项目数据进行标记: ${finalItem.title} (ID: ${finalItem.id})`);
+          console.log(`[TaskScheduler] ✓ 找到最终项目数据: ${finalItem.title} (ID: "${finalItem.id}")`);
           await this.markEpisodesAsCompleted(finalItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
         } else {
-          console.error(`[TaskScheduler] 无法找到最终项目数据: ${currentItem.id}`);
+          console.error(`[TaskScheduler] ✗ 无法找到最终项目数据: "${currentItem.id}"`);
+          console.log(`[TaskScheduler] 可用项目列表:`, finalItems.map(i => ({ id: i.id, title: i.title })));
+
+          // 尝试通过标题匹配项目
+          const itemByTitle = finalItems.find(i => i.title === currentItem.title);
+          if (itemByTitle) {
+            console.log(`[TaskScheduler] 通过标题找到项目: ${itemByTitle.title} (ID: "${itemByTitle.id}")`);
+            await this.markEpisodesAsCompleted(itemByTitle, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
+          } else {
+            throw new Error(`无法找到项目: ID="${currentItem.id}", 标题="${currentItem.title}"`);
+          }
         }
       } else {
         console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
