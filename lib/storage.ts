@@ -87,7 +87,7 @@ export class StorageManager {
   private static readonly SCHEDULED_TASKS_KEY = "tmdb_helper_scheduled_tasks" // 添加定时任务存储键
   private static readonly MAX_RETRIES = 3
   private static readonly RETRY_DELAY = 300 // 毫秒
-  private static readonly USE_FILE_STORAGE = false // 控制是否使用文件存储
+  private static readonly USE_FILE_STORAGE = true // 控制是否使用文件存储
   private static readonly API_BASE_URL = "/api/storage"
 
   /**

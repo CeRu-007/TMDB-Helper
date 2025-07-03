@@ -33,6 +33,8 @@ export function StorageDebugDialog({ open, onOpenChange }: StorageDebugDialogPro
   const [loading, setLoading] = useState(false);
   const [storageStatus, setStorageStatus] = useState<StorageStatus | null>(null);
   const [rawData, setRawData] = useState<string | null>(null);
+  const [migrating, setMigrating] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<any>(null);
 
   const checkStorageStatus = async () => {
     setLoading(true);
@@ -80,9 +82,51 @@ export function StorageDebugDialog({ open, onOpenChange }: StorageDebugDialogPro
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      
+
       localStorage.setItem('tmdb_helper_items', JSON.stringify([sampleItem]));
       checkStorageStatus();
+    }
+  };
+
+  const migrateToFileStorage = async () => {
+    setMigrating(true);
+    setMigrationResult(null);
+
+    try {
+      if (typeof window !== 'undefined' && localStorage) {
+        const itemsData = localStorage.getItem('tmdb_helper_items');
+
+        if (!itemsData) {
+          throw new Error('localStorage中没有项目数据');
+        }
+
+        const items = JSON.parse(itemsData);
+
+        const response = await fetch('/api/migrate-storage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ items }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setMigrationResult(result);
+          checkStorageStatus();
+        } else {
+          throw new Error(result.error || '迁移失败');
+        }
+      }
+    } catch (error) {
+      console.error('迁移失败:', error);
+      setMigrationResult({
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    } finally {
+      setMigrating(false);
     }
   };
 
@@ -127,7 +171,18 @@ export function StorageDebugDialog({ open, onOpenChange }: StorageDebugDialogPro
             >
               创建测试项目
             </Button>
-            <Button 
+            <Button
+              onClick={migrateToFileStorage}
+              disabled={migrating}
+              variant="outline"
+              size="sm"
+            >
+              {migrating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : null}
+              迁移到文件存储
+            </Button>
+            <Button
               onClick={clearStorage}
               variant="destructive"
               size="sm"
@@ -175,6 +230,30 @@ export function StorageDebugDialog({ open, onOpenChange }: StorageDebugDialogPro
                 </Alert>
               )}
 
+              {/* 迁移结果 */}
+              {migrationResult && (
+                <Alert variant={migrationResult.success ? "default" : "destructive"}>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    {migrationResult.success ? (
+                      <div>
+                        <div className="font-medium">迁移成功！</div>
+                        <div className="mt-1 text-sm">
+                          总项目: {migrationResult.stats?.totalItems || 0}，
+                          新增: {migrationResult.stats?.addedItems || 0}，
+                          更新: {migrationResult.stats?.updatedItems || 0}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="font-medium">迁移失败</div>
+                        <div className="mt-1 text-sm">{migrationResult.error}</div>
+                      </div>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* 状态提示 */}
               {!storageStatus.hasItems && (
                 <Alert variant="destructive">
@@ -186,6 +265,7 @@ export function StorageDebugDialog({ open, onOpenChange }: StorageDebugDialogPro
                       <li>localStorage数据被清空</li>
                       <li>存储访问权限问题</li>
                       <li>浏览器隐私模式限制</li>
+                      <li>需要将localStorage数据迁移到文件存储</li>
                     </ul>
                   </AlertDescription>
                 </Alert>

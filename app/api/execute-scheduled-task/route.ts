@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StorageManager, TMDBItem, Season, Episode, ScheduledTask } from '@/lib/storage';
+import { readItems } from '@/lib/server-storage';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -402,15 +403,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     
     // 获取所有项目，用于后续各种情况
-    const items = await StorageManager.getItemsWithRetry();
-    console.log(`[API] 系统中共有 ${items.length} 个项目`);
-    
+    // 优先使用服务器端存储，确保数据一致性
+    let items: TMDBItem[] = [];
+    try {
+      items = readItems(); // 直接从服务器端文件读取
+      console.log(`[API] 从服务器存储读取到 ${items.length} 个项目`);
+    } catch (serverError) {
+      console.warn(`[API] 服务器存储读取失败，尝试StorageManager:`, serverError);
+      // 如果服务器存储失败，回退到StorageManager
+      items = await StorageManager.getItemsWithRetry();
+      console.log(`[API] 从StorageManager获取到 ${items.length} 个项目`);
+    }
+
     // 添加零项目保护 - 如果系统中没有任何项目，直接返回错误
     if (items.length === 0) {
       console.error('[API] 系统中没有可用项目，无法继续执行');
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: false,
-        error: "系统中没有可用项目", 
+        error: "系统中没有可用项目",
         suggestion: "请先添加至少一个项目，然后再尝试执行任务"
       }, { status: 500 });
     }
@@ -858,12 +868,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
     
     // 检查系统中是否有项目
-    const items = await StorageManager.getItemsWithRetry();
+    let items: TMDBItem[] = [];
+    try {
+      items = readItems(); // 直接从服务器端文件读取
+      console.log(`[API] GET请求从服务器存储读取到 ${items.length} 个项目`);
+    } catch (serverError) {
+      console.warn(`[API] GET请求服务器存储读取失败，尝试StorageManager:`, serverError);
+      items = await StorageManager.getItemsWithRetry();
+      console.log(`[API] GET请求从StorageManager获取到 ${items.length} 个项目`);
+    }
+
     if (items.length === 0) {
       console.error('[API] GET请求处理错误: 系统中没有可用项目');
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: false,
-        error: "系统中没有可用项目", 
+        error: "系统中没有可用项目",
         suggestion: "请先添加至少一个项目，然后再尝试执行任务"
       }, { status: 500 });
     }
