@@ -117,11 +117,36 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[API] 处理完成: 删除了 ${removedEpisodes.length} 行，保留了 ${filteredLines.length} 行`);
-    
+
+    // 如果没有删除任何行，检查是否需要应用特殊变量处理
+    if (removedEpisodes.length === 0) {
+      console.log(`[API] 没有删除任何行，检查是否需要应用特殊变量处理`);
+
+      // 检查是否需要特殊变量处理
+      const needsSpecialProcessing = (platformUrl && platformUrl.includes('iqiyi.com')) ||
+                                   dataLines.some(line => line.includes('\n') || line.includes('\r'));
+
+      if (!needsSpecialProcessing) {
+        console.log(`[API] 不需要特殊处理，直接使用原始文件`);
+        return NextResponse.json({
+          success: true,
+          processedCsvPath: csvPath, // 使用原始文件
+          originalCsvPath: csvPath,
+          removedEpisodes: [],
+          originalRowCount: dataLines.length,
+          processedRowCount: dataLines.length,
+          episodeColumnIndex: episodeNumberIndex,
+          episodeColumnName: matchedColumnName,
+          markedEpisodesInput: markedEpisodes,
+          message: `没有需要删除的集数，使用原始CSV文件`
+        }, { status: 200 });
+      }
+    }
+
     // 应用特殊变量处理
     const processedLines = await applySpecialVariables(
-      [headerLine, ...filteredLines], 
-      headers, 
+      [headerLine, ...filteredLines],
+      headers,
       platformUrl
     );
     
@@ -134,18 +159,58 @@ export async function POST(request: NextRequest) {
     const processedFileName = `${originalName}_processed.csv`;
     const processedCsvPath = path.join(originalDir, processedFileName);
     
+    // 验证目标目录是否存在
+    const targetDir = path.dirname(processedCsvPath);
+    console.log(`[API] 目标目录: ${targetDir}`);
+
+    try {
+      await fs.access(targetDir);
+      console.log(`[API] 目标目录存在且可访问`);
+    } catch (dirError) {
+      console.error(`[API] 目标目录不存在或不可访问: ${dirError}`);
+      throw new Error(`目标目录不可访问: ${targetDir}`);
+    }
+
     // 写入处理后的CSV文件
+    console.log(`[API] 开始写入处理后的CSV文件: ${processedCsvPath}`);
+    console.log(`[API] 文件内容长度: ${processedContent.length} 字符`);
+    console.log(`[API] 文件内容预览: ${processedContent.substring(0, 200)}...`);
+
     await fs.writeFile(processedCsvPath, processedContent, 'utf-8');
-    
+
+    // 验证文件是否成功写入
+    try {
+      const writtenContent = await fs.readFile(processedCsvPath, 'utf-8');
+      const writtenLines = writtenContent.split('\n').filter(line => line.trim() !== '');
+      console.log(`[API] 文件写入验证成功: ${writtenLines.length} 行数据`);
+
+      if (writtenLines.length !== processedLines.length) {
+        console.warn(`[API] 警告: 写入的行数(${writtenLines.length})与预期(${processedLines.length})不匹配`);
+      }
+    } catch (verifyError) {
+      console.error(`[API] 文件写入验证失败: ${verifyError}`);
+      throw new Error(`文件写入验证失败: ${verifyError}`);
+    }
+
     console.log(`[API] CSV处理完成: ${processedCsvPath}`);
     console.log(`[API] 删除了 ${removedEpisodes.length} 个集数的数据`);
     
     return NextResponse.json({
       success: true,
       processedCsvPath: processedCsvPath,
-      removedEpisodes: removedEpisodes,
+      originalCsvPath: csvPath,
+      removedEpisodes: removedEpisodes.sort((a, b) => a - b),
       originalRowCount: dataLines.length,
       processedRowCount: filteredLines.length,
+      episodeColumnIndex: episodeNumberIndex,
+      episodeColumnName: matchedColumnName,
+      markedEpisodesInput: markedEpisodes,
+      fileInfo: {
+        originalSize: csvContent.length,
+        processedSize: processedContent.length,
+        originalLines: lines.length,
+        processedLines: processedLines.length
+      },
       message: `成功处理CSV文件，删除了 ${removedEpisodes.length} 个已标记集数的数据行`
     }, { status: 200 });
     
