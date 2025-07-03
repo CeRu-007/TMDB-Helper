@@ -58,6 +58,7 @@ import { taskScheduler } from "@/lib/scheduler"
 import { toast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import ScheduledTaskDialog from "./scheduled-task-dialog"
+import { StorageDebugDialog } from "./storage-debug-dialog"
 import { v4 as uuidv4 } from "uuid"
 import { 
   Select,
@@ -134,6 +135,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   const [tasksToRelink, setTasksToRelink] = useState<ScheduledTask[]>([])
   // 在组件顶部添加一个新的状态变量，用于记录是否已经处理过ID问题
   const [hasFixedProblemId, setHasFixedProblemId] = useState(false)
+  // 存储调试对话框状态
+  const [showStorageDebug, setShowStorageDebug] = useState(false)
 
   // 加载任务列表和项目
   useEffect(() => {
@@ -527,12 +530,19 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       }
       
       // 检查是否有可用项目
-      if (await StorageManager.hasAnyItems() === false) {
+      const hasItems = await StorageManager.hasAnyItems();
+      if (!hasItems) {
         console.error("[GlobalScheduledTasksDialog] 系统中没有可用项目");
+
+        // 获取详细的存储状态信息
+        const storageStatus = await StorageManager.getStorageStatus();
+        console.log("[GlobalScheduledTasksDialog] 存储状态:", storageStatus);
+
         toast({
           title: "无法执行任务",
-          description: "系统中没有可用项目，请先添加至少一个项目后再试",
-          variant: "destructive"
+          description: `系统中没有可用项目，请先添加至少一个项目后再试。存储类型: ${storageStatus.storageType}，项目数量: ${storageStatus.itemCount}`,
+          variant: "destructive",
+          duration: 8000
         });
         return;
       }
@@ -787,10 +797,15 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       
       // 根据错误类型提供不同的提示
       if (error.message && error.message.includes("系统中没有可用项目")) {
+        // 获取存储状态信息
+        const storageStatus = await StorageManager.getStorageStatus();
+        console.log("[GlobalScheduledTasksDialog] 任务执行失败时的存储状态:", storageStatus);
+
         toast({
           title: "无法执行任务",
-          description: "系统中没有可用项目，请先添加至少一个项目后再试",
+          description: `系统中没有可用项目，请先添加至少一个项目后再试。当前存储: ${storageStatus.storageType}，项目数: ${storageStatus.itemCount}`,
           variant: "destructive",
+          duration: 8000
         });
       } else if (error.message && (error.message.includes("找不到") && error.message.includes("项目"))) {
         toast({
@@ -2087,6 +2102,21 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           <ScrollArea className="flex-1 h-[500px] pr-4">
             {renderTaskList()}
           </ScrollArea>
+
+          <DialogFooter className="border-t pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowStorageDebug(true)}
+              className="mr-auto"
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              存储调试
+            </Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              关闭
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       
@@ -2468,6 +2498,12 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 存储调试对话框 */}
+      <StorageDebugDialog
+        open={showStorageDebug}
+        onOpenChange={setShowStorageDebug}
+      />
     </>
   )
-} 
+}

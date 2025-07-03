@@ -1058,11 +1058,71 @@ export class StorageManager {
    */
   static async hasAnyItems(): Promise<boolean> {
     try {
+      console.log("[StorageManager] 检查项目可用性...");
       const items = await this.getItemsWithRetry();
+      console.log(`[StorageManager] 找到 ${items.length} 个项目`);
+
+      if (items.length === 0) {
+        // 如果没有项目，尝试调试存储状态
+        console.warn("[StorageManager] 系统中没有项目，检查存储状态");
+
+        // 检查localStorage是否可用
+        if (this.isClient() && this.isStorageAvailable()) {
+          const rawData = localStorage.getItem(this.STORAGE_KEY);
+          console.log(`[StorageManager] localStorage原始数据:`, rawData ? rawData.substring(0, 200) + '...' : 'null');
+        }
+
+        // 如果使用文件存储，尝试调用调试API
+        if (this.USE_FILE_STORAGE) {
+          try {
+            const debugResponse = await fetch('/api/debug-storage');
+            if (debugResponse.ok) {
+              const debugData = await debugResponse.json();
+              console.log(`[StorageManager] 服务器存储调试信息:`, debugData);
+            }
+          } catch (debugError) {
+            console.warn("[StorageManager] 无法获取调试信息:", debugError);
+          }
+        }
+      }
+
       return items.length > 0;
     } catch (error) {
       console.error("[StorageManager] 检查项目可用性失败:", error);
       return false;
+    }
+  }
+
+  /**
+   * 获取存储状态的详细信息
+   */
+  static async getStorageStatus(): Promise<{
+    hasItems: boolean;
+    itemCount: number;
+    storageType: 'localStorage' | 'fileStorage';
+    isClientEnvironment: boolean;
+    isStorageAvailable: boolean;
+    lastError?: string;
+  }> {
+    try {
+      const items = await this.getItemsWithRetry();
+
+      return {
+        hasItems: items.length > 0,
+        itemCount: items.length,
+        storageType: this.USE_FILE_STORAGE ? 'fileStorage' : 'localStorage',
+        isClientEnvironment: this.isClient(),
+        isStorageAvailable: this.isStorageAvailable(),
+      };
+    } catch (error) {
+      return {
+        hasItems: false,
+        itemCount: 0,
+        storageType: this.USE_FILE_STORAGE ? 'fileStorage' : 'localStorage',
+        isClientEnvironment: this.isClient(),
+        isStorageAvailable: this.isStorageAvailable(),
+        lastError: error instanceof Error ? error.message : String(error)
+      };
     }
   }
 }
