@@ -58,6 +58,10 @@ async function executeTMDBImportCommand(command: string, workingDirectory: strin
     }
     
     console.log(`[API] 命令执行完成，输出长度: ${stdout.length}字符`);
+    console.log(`[API] 标准输出内容:`, stdout);
+    if (stderr) {
+      console.log(`[API] 标准错误内容:`, stderr);
+    }
     return { stdout, stderr };
   } catch (error: any) {
     console.error('[API] 命令执行失败:', error);
@@ -78,9 +82,37 @@ async function executeTMDBImportCommand(command: string, workingDirectory: strin
  * 从输出中解析CSV文件路径
  */
 function parseCSVPathFromOutput(output: string): string | null {
-  const regex = /Saved to (.+\.csv)/;
-  const match = output.match(regex);
-  return match ? match[1] : null;
+  console.log(`[API] 尝试解析CSV路径，输出内容:`, output);
+
+  // 尝试多种可能的输出格式
+  const patterns = [
+    /Saved to (.+\.csv)/i,                    // 原始格式: "Saved to xxx.csv"
+    /(?:导出|输出|保存)(?:到|至)?\s*(.+\.csv)/i,  // 中文格式: "导出到 xxx.csv"
+    /(?:Output|Export|Save)(?:ed)?\s+(?:to\s+)?(.+\.csv)/i, // 英文格式: "Output xxx.csv"
+    /(.+\.csv)\s*(?:已保存|已创建|已生成)/i,        // 后置格式: "xxx.csv 已保存"
+    /(?:文件|File):\s*(.+\.csv)/i,             // 文件格式: "文件: xxx.csv"
+    /(.+\.csv)/g                              // 最后尝试: 任何.csv文件
+  ];
+
+  for (const pattern of patterns) {
+    const match = output.match(pattern);
+    if (match && match[1]) {
+      const csvPath = match[1].trim();
+      console.log(`[API] 找到CSV路径: ${csvPath} (使用模式: ${pattern})`);
+      return csvPath;
+    }
+  }
+
+  // 如果所有模式都失败，尝试查找输出中的所有.csv文件
+  const csvFiles = output.match(/\S+\.csv/g);
+  if (csvFiles && csvFiles.length > 0) {
+    const csvPath = csvFiles[csvFiles.length - 1]; // 使用最后一个找到的CSV文件
+    console.log(`[API] 通过通用匹配找到CSV路径: ${csvPath}`);
+    return csvPath;
+  }
+
+  console.warn(`[API] 无法解析CSV路径，完整输出:`, output);
+  return null;
 }
 
 /**
@@ -725,17 +757,71 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     
     // 从输出中解析CSV文件路径
-    const csvPath = parseCSVPathFromOutput(stdout);
+    let csvPath = parseCSVPathFromOutput(stdout);
+
+    // 如果无法从输出解析，尝试查找工作目录中最新的CSV文件
     if (!csvPath) {
-      return NextResponse.json({ 
-        error: '无法从输出中找到CSV文件路径', 
-        output: stdout.substring(0, 500) + (stdout.length > 500 ? '...' : '')
+      console.warn(`[API] 无法从输出解析CSV路径，尝试查找最新的CSV文件`);
+      try {
+        const files = await fs.promises.readdir(tmdbImportDir);
+        const csvFiles = files.filter(file => file.endsWith('.csv'));
+
+        if (csvFiles.length > 0) {
+          // 按修改时间排序，获取最新的CSV文件
+          const csvFilesWithStats = await Promise.all(
+            csvFiles.map(async file => {
+              const filePath = path.join(tmdbImportDir, file);
+              const stats = await fs.promises.stat(filePath);
+              return { file, mtime: stats.mtime };
+            })
+          );
+
+          csvFilesWithStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+          csvPath = csvFilesWithStats[0].file;
+          console.log(`[API] 找到最新的CSV文件: ${csvPath}`);
+        }
+      } catch (dirError) {
+        console.error(`[API] 查找CSV文件失败:`, dirError);
+      }
+    }
+
+    if (!csvPath) {
+      console.error(`[API] 无法解析CSV路径，完整输出:`, stdout);
+      console.error(`[API] 错误输出:`, stderr);
+
+      return NextResponse.json({
+        error: '无法从输出中找到CSV文件路径',
+        details: {
+          stdout: stdout.substring(0, 1000) + (stdout.length > 1000 ? '...' : ''),
+          stderr: stderr.substring(0, 500) + (stderr.length > 500 ? '...' : ''),
+          command: extractCommand,
+          workingDir: tmdbImportDir
+        }
       }, { status: 500 });
     }
     
     // 构建CSV文件的绝对路径
-    const csvAbsolutePath = path.resolve(tmdbImportDir, csvPath);
+    let csvAbsolutePath: string;
+    if (path.isAbsolute(csvPath)) {
+      csvAbsolutePath = csvPath;
+    } else {
+      csvAbsolutePath = path.resolve(tmdbImportDir, csvPath);
+    }
+
     console.log(`[API] CSV文件路径: ${csvAbsolutePath}`);
+
+    // 验证CSV文件是否存在
+    if (!fs.existsSync(csvAbsolutePath)) {
+      console.error(`[API] CSV文件不存在: ${csvAbsolutePath}`);
+      return NextResponse.json({
+        error: 'CSV文件不存在',
+        details: {
+          expectedPath: csvAbsolutePath,
+          parsedPath: csvPath,
+          workingDir: tmdbImportDir
+        }
+      }, { status: 500 });
+    }
     
     // 如果需要自动过滤已标记完成的集数
     if (requestData.action.autoRemoveMarked) {
