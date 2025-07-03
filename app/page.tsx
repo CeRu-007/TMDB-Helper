@@ -1396,9 +1396,16 @@ export default function HomePage() {
                                   <span className="mx-1">·</span>
                                   <span className="flex items-center">
                                     {(mediaNewsType as string) === 'upcoming' ? (
-                                      Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 0 
-                                        ? "今天上线" 
-                                        : `${Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 天后上线`
+                                      (() => {
+                                        const daysUntilRelease = Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                        if (daysUntilRelease <= 0) {
+                                          return "今天上线";
+                                        } else if (daysUntilRelease === 1) {
+                                          return "明天上线";
+                                        } else {
+                                          return `${daysUntilRelease} 天后上线`;
+                                        }
+                                      })()
                                     ) : mediaNewsType === 'recent' ? (
                                       Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24)) <= 0 
                                         ? "今天开播" 
@@ -1559,9 +1566,14 @@ export default function HomePage() {
                               <span className="flex items-center">
                                     {(() => {
                                       if (mediaNewsType === 'upcoming') {
-                                        return Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 0 
-                                          ? "今天上线" 
-                                          : `${Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 天后上线`;
+                                        const daysUntilRelease = Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                        if (daysUntilRelease <= 0) {
+                                          return "今天上线";
+                                        } else if (daysUntilRelease === 1) {
+                                          return "明天上线";
+                                        } else {
+                                          return `${daysUntilRelease} 天后上线`;
+                                        }
                                       } else {
                                         return Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24)) === 1 
                                           ? "昨天开播" 
