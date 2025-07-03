@@ -451,6 +451,16 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         posterPath: tmdbData.poster_path,
         backdropUrl: backdropUrl || tmdbData.backdropUrl,
         backdropPath: backdropPath || tmdbData.backdropPath,
+        // 添加logo相关字段
+        logoUrl: tmdbData.logoUrl,
+        logoPath: tmdbData.logoPath,
+        // 添加网络相关字段
+        networkId: tmdbData.networkId,
+        networkName: tmdbData.networkName,
+        networkLogoUrl: tmdbData.networkLogoUrl,
+        // 添加其他TMDB数据
+        overview: tmdbData.overview,
+        voteAverage: tmdbData.voteAverage,
         weekday: formData.weekday,
         secondWeekday: formData.secondWeekday >= 0 ? formData.secondWeekday : undefined,
         airTime: formData.airTime,

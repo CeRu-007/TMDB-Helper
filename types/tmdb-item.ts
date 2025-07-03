@@ -10,6 +10,13 @@ export interface TMDBItem {
   posterPath?: string
   backdropPath?: string
   backdropUrl?: string
+  // Logo相关字段
+  logoUrl?: string
+  logoPath?: string
+  // 网络相关字段
+  networkId?: number
+  networkName?: string
+  networkLogoUrl?: string
   overview?: string
   platformUrl?: string
   genres?: string[]

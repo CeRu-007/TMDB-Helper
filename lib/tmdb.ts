@@ -240,13 +240,16 @@ export class TMDBService {
   }
 
   // 添加获取标志的方法，增加forceRefresh参数
-  static async getItemLogoFromId(mediaType: "movie" | "tv", id: string, forceRefresh: boolean = false): Promise<string | null> {
+  static async getItemLogoFromId(mediaType: "movie" | "tv", id: string, forceRefresh: boolean = false): Promise<{url: string | null, path: string | null}> {
     try {
       // 如果不是强制刷新，先尝试从缓存获取
       if (!forceRefresh) {
         const cachedLogoPath = this.getCachedLogoPath(mediaType, id)
         if (cachedLogoPath) {
-          return `${this.LOGO_BASE_URL}${cachedLogoPath}`
+          return {
+            url: `${this.LOGO_BASE_URL}${cachedLogoPath}`,
+            path: cachedLogoPath
+          }
         }
       }
 
@@ -258,7 +261,7 @@ export class TMDBService {
         throw new Error("获取TMDB图片数据失败")
       }
 
-      const data = mediaType === "movie" 
+      const data = mediaType === "movie"
         ? (await response.json() as TMDBMovieImagesResponse)
         : (await response.json() as TMDBTVImagesResponse)
 
@@ -267,16 +270,19 @@ export class TMDBService {
       const englishLogo = data.logos.find(logo => logo.iso_639_1 === "en")
       const nullLangLogo = data.logos.find(logo => logo.iso_639_1 === null) // 无语言标记的标志通常是通用的
       const firstLogo = data.logos[0]
-      
+
       const logoPath = chineseLogo?.file_path || englishLogo?.file_path || nullLangLogo?.file_path || firstLogo?.file_path || null
-      
+
       if (logoPath) {
         // 缓存标志路径
         this.cacheLogoPath(mediaType, id, logoPath)
-        return `${this.LOGO_BASE_URL}${logoPath}`
+        return {
+          url: `${this.LOGO_BASE_URL}${logoPath}`,
+          path: logoPath
+        }
       }
-      
-      return null
+
+      return { url: null, path: null }
     } catch (error) {
       console.error("获取TMDB标志失败:", error)
       return null
@@ -306,7 +312,7 @@ export class TMDBService {
       let recommendedCategory: "anime" | "tv" | "kids" | "variety" | "short" | "movie" | undefined = undefined
 
       // 获取标志，传入forceRefresh参数
-      const logoUrl = await this.getItemLogoFromId(mediaType, id, forceRefresh)
+      const logoData = await this.getItemLogoFromId(mediaType, id, forceRefresh)
 
       if (mediaType === "movie") {
         const movieData = data as TMDBMovieResponse
@@ -362,7 +368,8 @@ export class TMDBService {
           posterUrl: movieData.poster_path ? `${this.IMAGE_BASE_URL}${movieData.poster_path}` : undefined,
           backdropUrl: movieData.backdrop_path ? `${this.BACKDROP_BASE_URL}${movieData.backdrop_path}` : undefined,
           backdropPath: movieData.backdrop_path,
-          logoUrl: logoUrl || undefined,  // 添加标志URL
+          logoUrl: logoData.url || undefined,  // 添加标志URL
+          logoPath: logoData.path || undefined,  // 添加标志路径
           platformUrl,
           weekday,
           recommendedCategory,
@@ -465,7 +472,8 @@ export class TMDBService {
           posterUrl: tvData.poster_path ? `${this.IMAGE_BASE_URL}${tvData.poster_path}` : undefined,
           backdropUrl: tvData.backdrop_path ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}` : undefined,
           backdropPath: tvData.backdrop_path,
-          logoUrl: logoUrl || undefined,
+          logoUrl: logoData.url || undefined,
+          logoPath: logoData.path || undefined,
           networkId: networkId,
           networkName: networkName,
           networkLogoUrl: networkLogoUrl,
