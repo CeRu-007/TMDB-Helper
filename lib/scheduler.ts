@@ -32,6 +32,30 @@ class TaskScheduler {
   }
 
   /**
+   * 获取调度器状态信息
+   */
+  public getSchedulerStatus(): {
+    isInitialized: boolean;
+    activeTimers: number;
+    runningTasks: number;
+    timerDetails: Array<{taskId: string, nextRun?: string}>;
+  } {
+    const timerDetails: Array<{taskId: string, nextRun?: string}> = [];
+
+    // 获取所有定时器的详细信息
+    this.timers.forEach((timer, taskId) => {
+      timerDetails.push({ taskId });
+    });
+
+    return {
+      isInitialized: this.isInitialized,
+      activeTimers: this.timers.size,
+      runningTasks: this.currentExecution.size,
+      timerDetails
+    };
+  }
+
+  /**
    * 初始化调度器，加载所有定时任务
    */
   public async initialize(): Promise<void> {
@@ -203,8 +227,21 @@ class TaskScheduler {
     this.updateTaskNextRunTime(task.id, nextRunTime.toISOString());
     
     // 设置定时器
-    const timer = setTimeout(() => {
-      this.executeTask(task);
+    const timer = setTimeout(async () => {
+      // 在执行时获取最新的任务状态
+      try {
+        const tasks = await StorageManager.getScheduledTasks();
+        const latestTask = tasks.find(t => t.id === task.id);
+
+        if (latestTask && latestTask.enabled) {
+          this.executeTask(latestTask);
+        } else {
+          console.warn(`[TaskScheduler] 任务 ${task.id} 不存在或已禁用，跳过执行`);
+        }
+      } catch (error) {
+        console.error(`[TaskScheduler] 获取最新任务状态失败，使用原始任务执行:`, error);
+        this.executeTask(task);
+      }
     }, adjustedDelay);
     
     // 保存定时器引用
@@ -422,11 +459,20 @@ class TaskScheduler {
    * 执行定时任务
    */
   private async executeTask(task: ScheduledTask): Promise<void> {
+    const currentTime = new Date().toLocaleString('zh-CN');
+    console.log(`[TaskScheduler] 定时器触发，准备执行任务: ${task.id} (${task.name}) 在 ${currentTime}`);
+
     // 如果任务已在执行中，跳过本次执行
     if (this.currentExecution.has(task.id)) {
       console.warn(`[TaskScheduler] 任务 ${task.id} (${task.name}) 已在执行中，跳过本次执行`);
       // 重新调度任务
       this.scheduleTask(task);
+      return;
+    }
+
+    // 检查任务是否仍然启用
+    if (!task.enabled) {
+      console.warn(`[TaskScheduler] 任务 ${task.id} (${task.name}) 已禁用，跳过执行`);
       return;
     }
     
@@ -528,40 +574,61 @@ class TaskScheduler {
           await this.executeTMDBImportTask(task, relatedItem);
           
           console.log(`[TaskScheduler] 任务执行成功: ${task.id} - ${task.name}`);
-          
+
           // 更新任务状态，标记为成功
-          const successTask = { 
-            ...updatedTask, 
-            lastRunStatus: 'success' as const, 
-            lastRunError: null 
+          const successTask = {
+            ...updatedTask,
+            lastRunStatus: 'success' as const,
+            lastRunError: null
           };
           await StorageManager.updateScheduledTask(successTask);
+
+          // 使用更新后的任务对象重新调度
+          this.scheduleTask(successTask);
         } catch (importError) {
           console.error(`[TaskScheduler] TMDB-Import任务执行失败:`, importError);
           
           // 更新任务状态，标记为失败
-          const failedTask = { 
-            ...updatedTask, 
+          const failedTask = {
+            ...updatedTask,
             lastRunStatus: 'failed' as const,
             lastRunError: importError instanceof Error ? importError.message : String(importError)
           };
           await StorageManager.updateScheduledTask(failedTask);
-          
+
+          // 即使失败也要重新调度任务
+          this.scheduleTask(failedTask);
+
           // 重新抛出错误，让外层捕获
           throw importError;
         }
       } else {
         console.warn(`[TaskScheduler] 未知的任务类型: ${task.type}`);
+        // 对于未知类型的任务，也要重新调度
+        this.scheduleTask(updatedTask);
       }
-      
-      // 重新调度任务
-      this.scheduleTask(updatedTask);
+
+      // 注意：成功和失败的重新调度已经在各自的分支中处理了
     } catch (error) {
       this.lastError = error instanceof Error ? error : new Error(String(error));
       console.error(`[TaskScheduler] 执行任务失败:`, error);
-      
-      // 即使失败也重新调度任务
-      this.scheduleTask(task);
+
+      // 对于未捕获的错误，使用原始任务重新调度
+      // 但首先尝试更新任务状态
+      try {
+        const errorTask = {
+          ...task,
+          lastRun: new Date().toISOString(),
+          lastRunStatus: 'failed' as const,
+          lastRunError: error instanceof Error ? error.message : String(error)
+        };
+        await StorageManager.updateScheduledTask(errorTask);
+        this.scheduleTask(errorTask);
+      } catch (updateError) {
+        console.error(`[TaskScheduler] 更新任务状态失败:`, updateError);
+        // 如果更新失败，使用原始任务重新调度
+        this.scheduleTask(task);
+      }
     }
   }
 

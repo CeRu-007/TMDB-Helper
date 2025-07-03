@@ -48,6 +48,7 @@ import {
   BarChart2,
   History,
   AlertTriangle,
+  Settings,
   Check,
   Lightbulb,
   Plus,
@@ -59,6 +60,7 @@ import { toast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import ScheduledTaskDialog from "./scheduled-task-dialog"
 import { StorageDebugDialog } from "./storage-debug-dialog"
+import { SchedulerDebugDialog } from "./scheduler-debug-dialog"
 import { v4 as uuidv4 } from "uuid"
 import { 
   Select,
@@ -137,6 +139,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   const [hasFixedProblemId, setHasFixedProblemId] = useState(false)
   // 存储调试对话框状态
   const [showStorageDebug, setShowStorageDebug] = useState(false)
+  // 调度器调试对话框状态
+  const [showSchedulerDebug, setShowSchedulerDebug] = useState(false)
   // 防止重复加载的标志
   const [isLoadingData, setIsLoadingData] = useState(false)
 
@@ -2133,15 +2137,24 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           </ScrollArea>
 
           <DialogFooter className="border-t pt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowStorageDebug(true)}
-              className="mr-auto"
-            >
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              存储调试
-            </Button>
+            <div className="flex gap-2 mr-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStorageDebug(true)}
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                存储调试
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSchedulerDebug(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                调度器调试
+              </Button>
+            </div>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               关闭
             </Button>
@@ -2532,6 +2545,12 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       <StorageDebugDialog
         open={showStorageDebug}
         onOpenChange={setShowStorageDebug}
+      />
+
+      {/* 调度器调试对话框 */}
+      <SchedulerDebugDialog
+        open={showSchedulerDebug}
+        onOpenChange={setShowSchedulerDebug}
       />
     </>
   )
