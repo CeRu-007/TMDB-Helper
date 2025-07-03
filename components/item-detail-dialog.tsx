@@ -1135,7 +1135,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
   // 获取播出时间 - 添加与词条卡片一致的转换逻辑
   const getAirTime = (weekday: number) => {
-    const airTime = item.airTime || "19:00"
+    const airTime = item.airTime || "18:00"
     // 将原始weekday（0-6，0是周日）转换为我们的数组索引（0-6，0是周一，6是周日）
     const adjustedWeekday = weekday === 0 ? 6 : weekday - 1
     return `${WEEKDAYS[adjustedWeekday]} ${airTime}`

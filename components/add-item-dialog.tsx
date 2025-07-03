@@ -85,7 +85,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
   const [formData, setFormData] = useState({
     weekday: 1,
     secondWeekday: -1, // -1 表示未设置
-    airTime: "19:00",
+    airTime: "18:00",
     totalEpisodes: 1,
     platformUrl: "",
     category: "" as CategoryType | "",
@@ -271,7 +271,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       setFormData({
         weekday: 1,
         secondWeekday: -1,
-        airTime: "19:00",
+        airTime: "18:00",
         totalEpisodes: 1,
         platformUrl: "",
         category: "",
@@ -367,7 +367,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     setFormData({
       weekday: 1,
       secondWeekday: -1,
-      airTime: "19:00",
+      airTime: "18:00",
       totalEpisodes: 1,
       platformUrl: "",
       category: "",
