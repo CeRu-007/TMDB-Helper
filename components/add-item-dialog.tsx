@@ -843,7 +843,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                             </Button>
                           </div>
                           <div className="flex justify-between items-center bg-muted/30 p-3 rounded-lg">
-                            <p className="text-xs text-muted-foreground flex items-center">
+                            <div className="text-xs text-muted-foreground flex items-center">
                               {backdropUrl ? (
                                 <>
                                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
@@ -855,7 +855,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                                   未设置背景图
                                 </>
                               )}
-                            </p>
+                            </div>
                             {backdropUrl && (
                               <Button
                                 type="button"
