@@ -1022,24 +1022,28 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           </div>
         )}
         
-        <div className="border p-3 rounded-md space-y-2">
-          <h3 className="text-sm font-medium mb-2">基本选项</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div className="flex items-center justify-between space-x-2">
-              <Label htmlFor="auto-upload" className="text-sm">
-                自动上传至TMDB
-              </Label>
+        <div className="border p-4 rounded-lg space-y-4">
+          <h3 className="text-sm font-medium text-center border-b pb-2">基本选项</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <div className="flex-1">
+                <Label htmlFor="auto-upload" className="text-sm font-medium">
+                  自动上传至TMDB
+                </Label>
+              </div>
               <Switch
                 id="auto-upload"
                 checked={currentTask.action.autoUpload}
                 onCheckedChange={(checked) => updateTaskField('action.autoUpload', checked)}
               />
             </div>
-            
-            <div className="flex items-center justify-between space-x-2">
-              <Label htmlFor="auto-remove-marked" className="text-sm">
-                自动过滤已完成集数
-              </Label>
+
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <div className="flex-1">
+                <Label htmlFor="auto-remove-marked" className="text-sm font-medium">
+                  自动过滤已完成集数
+                </Label>
+              </div>
               <Switch
                 id="auto-remove-marked"
                 checked={currentTask.action.autoRemoveMarked}
@@ -1049,36 +1053,43 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           </div>
         </div>
         
-        <div className="border p-3 rounded-md space-y-2">
-          <h3 className="text-sm font-medium mb-2">高级选项</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div className="flex items-center justify-between space-x-2">
-              <Label htmlFor="auto-confirm" className="text-sm">
-                自动确认上传
-              </Label>
+        <div className="border p-4 rounded-lg space-y-4">
+          <h3 className="text-sm font-medium text-center border-b pb-2">高级选项</h3>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <div className="flex-1">
+                <Label htmlFor="auto-confirm" className="text-sm font-medium">
+                  自动确认上传
+                </Label>
+              </div>
               <Switch
                 id="auto-confirm"
                 checked={currentTask.action.autoConfirm !== false}
                 onCheckedChange={(checked) => updateTaskField('action.autoConfirm', checked)}
               />
             </div>
-            
-            <div className="flex items-center justify-between space-x-2">
-              <Label htmlFor="auto-mark-uploaded" className="text-sm">
-                自动标记已上传集数
-              </Label>
+
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <div className="flex-1">
+                <Label htmlFor="auto-mark-uploaded" className="text-sm font-medium">
+                  自动标记已上传集数
+                </Label>
+              </div>
               <Switch
                 id="auto-mark-uploaded"
                 checked={currentTask.action.autoMarkUploaded !== false}
                 onCheckedChange={(checked) => updateTaskField('action.autoMarkUploaded', checked)}
               />
             </div>
-            
+
             {item.platformUrl?.includes('iqiyi.com') && (
-              <div className="flex items-center justify-between space-x-2">
-                <Label htmlFor="remove-iqiyi-air-date" className="text-sm">
-                  删除爱奇艺air_date列
-                </Label>
+              <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+                <div className="flex-1">
+                  <Label htmlFor="remove-iqiyi-air-date" className="text-sm font-medium">
+                    删除爱奇艺air_date列
+                  </Label>
+                </div>
                 <Switch
                   id="remove-iqiyi-air-date"
                   checked={currentTask.action.removeIqiyiAirDate !== false}
@@ -1086,92 +1097,94 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                 />
               </div>
             )}
+          </div>
 
-            <div className="space-y-1">
-              <Label className="text-sm">TMDB数据冲突处理</Label>
-              <Select
-                value={currentTask.action.conflictAction || 'w'}
-                onValueChange={(value: 'w' | 'y' | 'n') => updateTaskField('action.conflictAction', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择冲突处理方式" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="w">
-                    <div className="flex flex-col">
-                      <span className="font-medium">覆盖写入 (w)</span>
-                      <span className="text-xs text-muted-foreground">覆盖TMDB上的现有数据</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="y">
-                    <div className="flex flex-col">
-                      <span className="font-medium">确认 (y)</span>
-                      <span className="text-xs text-muted-foreground">确认执行操作</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="n">
-                    <div className="flex flex-col">
-                      <span className="font-medium">跳过 (n)</span>
-                      <span className="text-xs text-muted-foreground">跳过冲突的数据</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                当TMDB已有对应数据时的处理方式
-              </p>
+          <div className="space-y-3 p-3 bg-muted/20 rounded-md">
+            <Label className="text-sm font-medium">TMDB数据冲突处理</Label>
+            <Select
+              value={currentTask.action.conflictAction || 'w'}
+              onValueChange={(value: 'w' | 'y' | 'n') => updateTaskField('action.conflictAction', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="选择冲突处理方式" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="w">
+                  <div className="flex flex-col">
+                    <span className="font-medium">覆盖写入 (w)</span>
+                    <span className="text-xs text-muted-foreground">覆盖TMDB上的现有数据</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="y">
+                  <div className="flex flex-col">
+                    <span className="font-medium">确认 (y)</span>
+                    <span className="text-xs text-muted-foreground">确认执行操作</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="n">
+                  <div className="flex flex-col">
+                    <span className="font-medium">跳过 (n)</span>
+                    <span className="text-xs text-muted-foreground">跳过冲突的数据</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              当TMDB已有对应数据时的处理方式
+            </p>
+          </div>
+        </div>
+
+        <div className="border p-4 rounded-lg space-y-4">
+          <h3 className="text-sm font-medium text-center border-b pb-2">特殊处理选项</h3>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <div className="flex-1">
+                <Label htmlFor="enable-youku-handling" className="text-sm font-medium">
+                  优酷平台特殊处理
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  优酷平台删除已标记集数-1的行（如第1-8集已标记，删除第1-7集）
+                </p>
+              </div>
+              <Switch
+                id="enable-youku-handling"
+                checked={currentTask.action.enableYoukuSpecialHandling !== false}
+                onCheckedChange={(checked) => updateTaskField('action.enableYoukuSpecialHandling', checked)}
+              />
             </div>
 
-            <div className="space-y-3 border-t pt-4">
-              <Label className="text-sm font-medium">特殊处理选项</Label>
-
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex-1">
-                  <Label htmlFor="enable-youku-handling" className="text-sm">
-                    优酷平台特殊处理
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    优酷平台删除已标记集数-1的行（如第1-8集已标记，删除第1-7集）
-                  </p>
-                </div>
-                <Switch
-                  id="enable-youku-handling"
-                  checked={currentTask.action.enableYoukuSpecialHandling !== false}
-                  onCheckedChange={(checked) => updateTaskField('action.enableYoukuSpecialHandling', checked)}
-                />
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <div className="flex-1">
+                <Label htmlFor="enable-title-cleaning" className="text-sm font-medium">
+                  词条标题清理功能
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  清理CSV中name列包含词条标题的单元格，直到完全清理后才进行集数标记
+                </p>
               </div>
+              <Switch
+                id="enable-title-cleaning"
+                checked={currentTask.action.enableTitleCleaning !== false}
+                onCheckedChange={(checked) => updateTaskField('action.enableTitleCleaning', checked)}
+              />
+            </div>
 
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex-1">
-                  <Label htmlFor="enable-title-cleaning" className="text-sm">
-                    词条标题清理功能
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    清理CSV中name列包含词条标题的单元格，直到完全清理后才进行集数标记
-                  </p>
-                </div>
-                <Switch
-                  id="enable-title-cleaning"
-                  checked={currentTask.action.enableTitleCleaning !== false}
-                  onCheckedChange={(checked) => updateTaskField('action.enableTitleCleaning', checked)}
-                />
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <div className="flex-1">
+                <Label htmlFor="auto-delete-completed" className="text-sm font-medium">
+                  完结后自动删除任务
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  项目所有集数标记完成后自动删除该定时任务
+                </p>
               </div>
-
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex-1">
-                  <Label htmlFor="auto-delete-completed" className="text-sm">
-                    完结后自动删除任务
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    项目所有集数标记完成后自动删除该定时任务
-                  </p>
-                </div>
-                <Switch
-                  id="auto-delete-completed"
-                  checked={currentTask.action.autoDeleteWhenCompleted !== false}
-                  onCheckedChange={(checked) => updateTaskField('action.autoDeleteWhenCompleted', checked)}
-                />
-              </div>
+              <Switch
+                id="auto-delete-completed"
+                checked={currentTask.action.autoDeleteWhenCompleted !== false}
+                onCheckedChange={(checked) => updateTaskField('action.autoDeleteWhenCompleted', checked)}
+              />
             </div>
           </div>
         </div>
