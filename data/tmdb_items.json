@@ -433,6 +433,31 @@
         "enabled": false,
         "createdAt": "2025-07-03T09:23:46.017Z",
         "updatedAt": "2025-07-03T09:24:06.234Z"
+      },
+      {
+        "id": "a566a76e-2042-43f3-9437-f0bc39273920",
+        "itemId": "1751531412809",
+        "itemTitle": "七根心简",
+        "itemTmdbId": "290054",
+        "name": "七根心简 定时任务",
+        "type": "tmdb-import",
+        "schedule": {
+          "type": "daily",
+          "dayOfWeek": 4,
+          "hour": 17,
+          "minute": 0
+        },
+        "action": {
+          "seasonNumber": 1,
+          "autoUpload": true,
+          "autoRemoveMarked": true,
+          "autoConfirm": true,
+          "removeIqiyiAirDate": false,
+          "autoMarkUploaded": true
+        },
+        "enabled": false,
+        "createdAt": "2025-07-03T09:50:26.488Z",
+        "updatedAt": "2025-07-03T09:50:36.550Z"
       }
     ]
   }

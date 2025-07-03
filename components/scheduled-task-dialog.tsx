@@ -189,10 +189,10 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     setIsAutoSaving(false)
   }
 
-  // 保存任务
-  const handleSaveTask = async () => {
-    if (!currentTask) return
-    
+  // 保存任务（使用特定状态）
+  const handleSaveTaskWithState = async (taskToSave: ScheduledTask) => {
+    if (!taskToSave) return
+
     try {
       // 确保项目有效
       if (!item || !item.id) {
@@ -203,108 +203,75 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       // 确保项目有平台URL
       if (!item.platformUrl) {
         console.error("[ScheduledTaskDialog] 错误: 当前项目缺少平台URL");
-        throw new Error("当前项目缺少平台URL，请先在项目设置中添加平台URL");
+        throw new Error("当前项目缺少平台URL，无法创建定时任务");
       }
-      
-      // 验证项目ID格式（修复：允许时间戳格式的ID）
-      if (!item.id || item.id.trim() === '' || item.id.length > 50 || item.id.includes(' ')) {
-        console.error("[ScheduledTaskDialog] 错误: 当前项目ID格式无效", item.id);
-        throw new Error(`项目ID "${item.id}" 格式无效，请联系开发者修复`);
-      }
-      
-      // 构建任务对象，确保项目信息正确
-      let success: boolean
+
+      // 创建要保存的任务副本
       const updatedTask = {
-        ...currentTask,
-        // 确保使用当前打开的项目ID、标题和TMDB ID
+        ...taskToSave,
         itemId: item.id,
         itemTitle: item.title,
         itemTmdbId: item.tmdbId,
         updatedAt: new Date().toISOString()
-      }
-      
+      };
+
       // 确保任务的必要字段都已设置
       if (!updatedTask.name || updatedTask.name.trim() === '') {
         updatedTask.name = `${item.title} 定时任务`;
       }
-      
+
       console.log(`[ScheduledTaskDialog] 正在保存定时任务: ID=${updatedTask.id}, 项目ID=${updatedTask.itemId}, 名称=${updatedTask.name}, 启用状态=${updatedTask.enabled}`);
       console.log(`[ScheduledTaskDialog] 任务详情:`, JSON.stringify(updatedTask, null, 2));
-      
+
+      let success = false;
       if (isAddingTask) {
         success = await StorageManager.addScheduledTask(updatedTask)
         if (success) {
           console.log(`[ScheduledTaskDialog] 创建任务成功: ID=${updatedTask.id}`);
-          toast({
-            title: "创建成功",
-            description: "定时任务已创建",
-          })
-        } else {
-          console.error(`[ScheduledTaskDialog] 创建任务失败: ID=${updatedTask.id}`);
-          throw new Error("创建定时任务失败");
         }
       } else {
         success = await StorageManager.updateScheduledTask(updatedTask)
         if (success) {
           console.log(`[ScheduledTaskDialog] 更新任务成功: ID=${updatedTask.id}`);
-          toast({
-            title: "更新成功",
-            description: "定时任务已更新",
-          })
-        } else {
-          console.error(`[ScheduledTaskDialog] 更新任务失败: ID=${updatedTask.id}`);
-          throw new Error("更新定时任务失败");
         }
       }
-      
+
       if (success) {
-        // 验证任务是否已成功保存
-        const savedTasks = await StorageManager.forceRefreshScheduledTasks();
-        const taskSaved = savedTasks.some(t => t.id === updatedTask.id);
-        
-        if (!taskSaved) {
-          console.error(`[ScheduledTaskDialog] 验证失败: 任务 ID=${updatedTask.id} 未在存储中找到`);
-          throw new Error("任务保存验证失败，请尝试重新保存");
-        }
-        
-        console.log(`[ScheduledTaskDialog] 验证成功: 任务 ID=${updatedTask.id} 已成功保存到存储`);
-        
+        // 更新本地状态
+        setCurrentTask(updatedTask);
+
         // 清除未保存更改状态和防抖定时器
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
           debounceTimerRef.current = null;
         }
         setHasUnsavedChanges(false)
-        
+
+        // 重新加载任务列表
+        await loadTasks()
+
         // 如果提供了onTaskSaved回调，调用它
         if (onTaskSaved) {
-          console.log("[ScheduledTaskDialog] 调用onTaskSaved回调");
           onTaskSaved(updatedTask);
         } else if (onUpdate) {
-          // 否则使用旧的onUpdate回调
-          console.log("[ScheduledTaskDialog] 调用onUpdate回调");
-        // 重新加载任务列表
-          await loadTasks();
           onUpdate(item);
         } else {
           console.warn("[ScheduledTaskDialog] 未提供onTaskSaved或onUpdate回调，任务已保存但UI可能不会更新");
         }
-        
+
         // 如果任务已启用，重新调度
         if (updatedTask.enabled) {
           await taskScheduler.scheduleTask(updatedTask)
         }
-        
+
         // 关闭编辑框
         cancelEditTask()
 
-        if (success) {
-          console.log(`[ScheduledTaskDialog] ${isAddingTask ? '创建' : '更新'}任务成功: ID=${updatedTask.id}`);
-          toast({
-            title: `${isAddingTask ? '创建' : '更新'}成功`,
-            description: `定时任务已${isAddingTask ? '创建' : '更新'}${updatedTask.enabled ? '，并已启用' : '，处于禁用状态'}`,
-          })
-        }
+        console.log(`[ScheduledTaskDialog] ${isAddingTask ? '创建' : '更新'}任务成功: ID=${updatedTask.id}`);
+        toast({
+          title: `${isAddingTask ? '创建' : '更新'}成功`,
+          description: `定时任务已${isAddingTask ? '创建' : '更新'}${updatedTask.enabled ? '，并已启用' : '，处于禁用状态'}`,
+        })
       }
     } catch (error) {
       console.error("[ScheduledTaskDialog] 保存定时任务失败:", error)
@@ -315,6 +282,13 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       })
     }
   }
+
+  // 保存任务
+  const handleSaveTask = async () => {
+    if (!currentTask) return
+    await handleSaveTaskWithState(currentTask);
+  }
+
 
   // 取消编辑
   const cancelEditTask = () => {
@@ -615,15 +589,42 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
 
     // 只有在编辑模式下才设置未保存状态
     if (isAddingTask || isEditingTask) {
-      // 清除之前的防抖定时器
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
+      // 特殊处理：执行频率切换不应该触发未保存状态
+      const isFrequencyChange = field === 'schedule.frequency';
 
-      // 设置新的防抖定时器
-      debounceTimerRef.current = setTimeout(() => {
-        setHasUnsavedChanges(true);
-      }, 100); // 100ms 防抖
+      if (!isFrequencyChange) {
+        // 清除之前的防抖定时器
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+
+        // 设置新的防抖定时器
+        debounceTimerRef.current = setTimeout(() => {
+          setHasUnsavedChanges(true);
+        }, 100); // 100ms 防抖
+      } else {
+        // 执行频率切换时，重置表单状态但不设置未保存状态
+        console.log(`[ScheduledTaskDialog] 执行频率切换到: ${value}，重置相关字段`);
+
+        // 根据频率类型重置相关字段的默认值
+        if (value === 'daily') {
+          // 每日执行：重置时间
+          if (!updatedTask.schedule.time) {
+            updatedTask.schedule.time = '09:00';
+          }
+        } else if (value === 'weekly') {
+          // 每周执行：重置星期和时间
+          if (!updatedTask.schedule.weekday) {
+            updatedTask.schedule.weekday = 1; // 默认周一
+          }
+          if (!updatedTask.schedule.time) {
+            updatedTask.schedule.time = '09:00';
+          }
+        }
+
+        // 更新任务状态但不触发未保存提示
+        setCurrentTask(updatedTask);
+      }
     }
 
     // 如果是启用状态更改，自动保存
@@ -1099,32 +1100,34 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             </Button>
           ) : (
             <>
-              <Button 
-                variant="outline" 
-                onClick={() => {
+              <Button
+                variant="outline"
+                onClick={async () => {
                   // 设置为禁用状态并保存
                   if (currentTask) {
                     const taskWithDisabled = {...currentTask, enabled: false};
                     setCurrentTask(taskWithDisabled);
-                    setTimeout(() => handleSaveTask(), 0);
+                    // 直接调用保存函数，传入更新后的任务
+                    await handleSaveTaskWithState(taskWithDisabled);
                   }
-                }} 
+                }}
                 disabled={isAutoSaving}
                 size="sm"
               >
                 <PauseCircle className="h-3 w-3 mr-2" />
                 保存并禁用
               </Button>
-              
-              <Button 
-                onClick={() => {
+
+              <Button
+                onClick={async () => {
                   // 设置为启用状态并保存
                   if (currentTask) {
                     const taskWithEnabled = {...currentTask, enabled: true};
                     setCurrentTask(taskWithEnabled);
-                    setTimeout(() => handleSaveTask(), 0);
+                    // 直接调用保存函数，传入更新后的任务
+                    await handleSaveTaskWithState(taskWithEnabled);
                   }
-                }} 
+                }}
                 disabled={isAutoSaving}
                 size="sm"
               >
