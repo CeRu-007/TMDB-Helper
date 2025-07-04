@@ -576,7 +576,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
               </div>
             </div>
 
-              {/* 搜索结果区域 */}
+            {/* 搜索结果区域 - 只有搜索结果时才显示 */}
+            {searchResults.length > 0 && (
               <div className="bg-background border rounded-lg overflow-hidden">
                 <div className="bg-muted/30 px-3 py-1.5 border-b">
                   <h3 className="text-xs font-medium text-muted-foreground">搜索结果 ({searchResults.length})</h3>
@@ -632,6 +633,24 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                     ))}
                       </div>
                     </ScrollArea>
+              </div>
+            )}
+
+            {/* 空状态提示 - 当没有搜索结果且搜索过时显示 */}
+            {searchResults.length === 0 && searchQuery.trim() !== '' && !loading && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Search className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">未找到相关内容</p>
+                <p className="text-xs mt-1">请尝试其他关键词</p>
+              </div>
+            )}
+
+            {/* 初始状态提示 - 当没有搜索时显示 */}
+            {searchResults.length === 0 && searchQuery.trim() === '' && !loading && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Sparkles className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                <p className="text-base font-medium mb-2">开始搜索</p>
+                <p className="text-sm">在上方输入电影或剧集名称进行搜索</p>
               </div>
             )}
 
