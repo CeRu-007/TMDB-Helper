@@ -92,7 +92,7 @@ export class StorageManager {
   private static readonly SCHEDULED_TASKS_KEY = "tmdb_helper_scheduled_tasks" // 添加定时任务存储键
   private static readonly MAX_RETRIES = 3
   private static readonly RETRY_DELAY = 300 // 毫秒
-  private static readonly USE_FILE_STORAGE = true // 控制是否使用文件存储
+  private static readonly USE_FILE_STORAGE = false // 控制是否使用文件存储
   private static readonly API_BASE_URL = "/api/storage"
 
   /**
@@ -1362,4 +1362,74 @@ export class StorageManager {
       };
     }
   }
+
+  /**
+   * 调试方法：创建测试数据并尝试导入
+   */
+  static async debugImport(): Promise<void> {
+    console.log("=== 开始调试导入功能 ===");
+
+    // 创建测试数据
+    const testData = {
+      items: [
+        {
+          id: "debug-test-1",
+          title: "调试测试项目",
+          mediaType: "tv" as const,
+          tmdbId: "999999",
+          weekday: 1,
+          completed: false,
+          status: "ongoing" as const,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ],
+      tasks: [],
+      version: "1.0.0",
+      exportDate: new Date().toISOString()
+    };
+
+    const jsonData = JSON.stringify(testData, null, 2);
+    console.log("测试数据:", testData);
+    console.log("JSON数据长度:", jsonData.length);
+
+    try {
+      // 1. 测试验证
+      console.log("1. 测试数据验证...");
+      const validation = this.validateImportData(jsonData);
+      console.log("验证结果:", validation);
+
+      if (!validation.isValid) {
+        console.error("❌ 验证失败:", validation.error);
+        return;
+      }
+
+      // 2. 测试导入
+      console.log("2. 测试数据导入...");
+      const importResult = await this.importData(jsonData);
+      console.log("导入结果:", importResult);
+
+      if (importResult.success) {
+        console.log("✅ 导入成功!");
+
+        // 3. 验证导入结果
+        console.log("3. 验证导入结果...");
+        const items = await this.getItemsWithRetry();
+        const debugItem = items.find(item => item.id === "debug-test-1");
+        if (debugItem) {
+          console.log("✅ 找到导入的测试项目:", debugItem);
+        } else {
+          console.log("❌ 未找到导入的测试项目");
+        }
+      } else {
+        console.error("❌ 导入失败:", importResult.error);
+      }
+
+    } catch (error) {
+      console.error("调试过程中发生错误:", error);
+    }
+
+    console.log("=== 调试完成 ===");
+  }
+}
 }
