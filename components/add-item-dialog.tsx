@@ -491,16 +491,36 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       );
 
       if (duplicateItem) {
+        // 显示详细的重复提示
         toast({
-          title: "词条已存在",
-          description: `"${newItem.title}" 已存在于您的列表中`,
-          variant: "destructive"
+          title: "⚠️ 词条已存在",
+          description: `"${newItem.title}" 已经在您的列表中了，无法重复添加。请选择其他词条或检查现有列表。`,
+          variant: "destructive",
+          duration: 6000
         });
+
+        // 添加控制台日志用于调试
+        console.warn("重复词条检测:", {
+          title: newItem.title,
+          tmdbId: newItem.tmdbId,
+          mediaType: newItem.mediaType,
+          existingItem: duplicateItem
+        });
+
         setLoading(false);
         return;
       }
 
       onAdd(newItem)
+
+      // 显示成功提示
+      toast({
+        title: "✅ 添加成功",
+        description: `"${newItem.title}" 已成功添加到您的列表中`,
+        variant: "default",
+        duration: 3000
+      });
+
       onOpenChange(false)
       resetForm()
     } catch (error) {
