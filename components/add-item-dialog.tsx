@@ -524,169 +524,226 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-5xl h-[80vh] p-0 overflow-hidden flex flex-col">
         {/* 背景图预览 */}
         {showBackdropPreview && backdropUrl && (
           <div className="absolute inset-0 -z-10">
-            <BackgroundImage 
-              src={backdropUrl} 
+            <BackgroundImage
+              src={backdropUrl}
               alt="背景图预览"
               blur={true}
               overlayClassName="bg-gradient-to-b from-background/95 via-background/80 to-background/95 backdrop-blur-[2px]"
             />
           </div>
         )}
-        
-        <DialogHeader className="text-center pb-4">
-          <DialogTitle className="text-xl font-bold flex items-center justify-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            添加新词条
-          </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            搜索并添加电影或剧集到您的收藏列表
-          </DialogDescription>
-        </DialogHeader>
 
-          <div className="space-y-6">
-          {/* 搜索栏 */}
-          <div className="bg-muted/30 p-4 rounded-lg">
-            <div className="flex gap-3">
-              <div className="relative flex-1">
-                  <Input
-                  placeholder="搜索电影或剧集..."
-                    value={searchQuery}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pr-12 h-11 text-base"
-                  />
-                  {loading && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                  )}
-                </div>
-              <Button type="button" onClick={() => searchTMDB(searchQuery)} className="h-11 px-6">
-                <Search className="h-4 w-4 mr-2" />
-                搜索
-              </Button>
-              </div>
+        {/* 紧凑头部 */}
+        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-primary" />
             </div>
+            <div>
+              <h2 className="text-lg font-semibold">添加新词条</h2>
+              <p className="text-xs text-muted-foreground">搜索并添加到收藏列表</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            className="h-8 w-8 p-0"
+          >
+            ×
+          </Button>
+        </div>
 
-            {/* 搜索结果 */}
-            {searchResults.length > 0 && (
-            <div className="bg-background border rounded-lg overflow-hidden">
-              <div className="bg-muted/50 px-4 py-2 border-b">
-                <h3 className="text-sm font-medium">搜索结果 ({searchResults.length})</h3>
-              </div>
-              <ScrollArea className="h-[220px]">
-                <div className="p-3 space-y-2">
-                        {searchResults.map((result) => (
-                          <div
-                      key={`${result.media_type}-${result.id}`}
-                      className={cn(
-                        "flex items-start p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-accent/80 hover:shadow-sm",
-                        selectedResult?.id === result.id && "bg-primary/10 border border-primary/20 shadow-sm"
-                      )}
-                            onClick={() => handleSelectResult(result)}
-                    >
-                      <div className="flex-shrink-0 w-14 h-20 bg-muted rounded-md overflow-hidden mr-4 shadow-sm">
-                        {result.poster_path ? (
-                          <img
-                            src={`https://image.tmdb.org/t/p/w92${result.poster_path}`}
-                                alt={getDisplayTitle(result)}
-                            className="w-full h-full object-cover"
-                              />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Tv className="h-6 w-6 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{getDisplayTitle(result)}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {result.media_type === "movie" ? "电影" : "剧集"} •{" "}
-                          {formatDate(result.release_date || result.first_air_date)}
-                        </div>
-                        {result.vote_average && (
-                          <div className="flex items-center mt-2">
-                            <Star className="h-3 w-3 text-yellow-500 mr-1" />
-                            <span className="text-xs font-medium">{result.vote_average.toFixed(1)}</span>
-                                </div>
-                                )}
-                              </div>
-                      <div className="flex-shrink-0 flex flex-col items-center space-y-1">
-                        {result.backdrop_path && (
-                          <div className="text-xs text-blue-500">
-                            <ImageIcon className="h-4 w-4" />
+        {/* 搜索区域 */}
+        <div className="p-3 border-b bg-muted/10">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                placeholder="搜索电影或剧集..."
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="pr-8 h-8 text-sm"
+              />
+              {loading && (
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                </div>
+              )}
+            </div>
+            <Button
+              type="button"
+              onClick={() => searchTMDB(searchQuery)}
+              size="sm"
+              className="h-8 px-3"
+            >
+              <Search className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+
+        {/* 主要内容区域 */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* 左侧：搜索结果 */}
+          <div className="w-2/5 border-r flex flex-col">
+            <div className="p-2 border-b bg-muted/20">
+              <span className="text-xs font-medium text-muted-foreground">
+                {searchResults.length > 0 ? `找到 ${searchResults.length} 个结果` : '搜索结果'}
+              </span>
+            </div>
+            <div className="flex-1 overflow-hidden">
+
+              {searchResults.length > 0 ? (
+                <ScrollArea className="flex-1">
+                  <div className="p-2 space-y-1">
+                    {searchResults.map((result) => (
+                      <div
+                        key={`${result.media_type}-${result.id}`}
+                        className={cn(
+                          "flex items-center p-2 rounded-md cursor-pointer transition-all hover:bg-accent/60",
+                          selectedResult?.id === result.id && "bg-primary/15 border border-primary/30"
+                        )}
+                        onClick={() => handleSelectResult(result)}
+                      >
+                        <div className="flex-shrink-0 w-8 h-12 bg-muted rounded overflow-hidden mr-2">
+                          {result.poster_path ? (
+                            <img
+                              src={`https://image.tmdb.org/t/p/w92${result.poster_path}`}
+                              alt={getDisplayTitle(result)}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Tv className="h-3 w-3 text-muted-foreground" />
                             </div>
-                        )}
-                        {selectedResult?.id === result.id && (
-                          <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs truncate">{getDisplayTitle(result)}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <span>{result.media_type === "movie" ? "电影" : "剧集"}</span>
+                            <span>•</span>
+                            <span>{formatDate(result.release_date || result.first_air_date)}</span>
+                            {result.vote_average && (
+                              <>
+                                <span>•</span>
+                                <Star className="h-2 w-2 text-yellow-500" />
+                                <span>{result.vote_average.toFixed(1)}</span>
+                              </>
+                            )}
                           </div>
-                        ))}
+                        </div>
+                        <div className="flex-shrink-0 flex items-center gap-1">
+                          {result.backdrop_path && (
+                            <ImageIcon className="h-2.5 w-2.5 text-blue-500" />
+                          )}
+                          {selectedResult?.id === result.id && (
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                          )}
+                        </div>
                       </div>
-                    </ScrollArea>
-              </div>
-            )}
+                    ))}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs">搜索电影或剧集</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-          {/* 表单 */}
-          {selectedResult && (
-            <div className="bg-gradient-to-br from-muted/20 to-muted/40 p-4 rounded-xl border">
-              <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 右侧：表单区域 */}
+          <div className="flex-1 flex flex-col">
+              {/* 选中项目预览 */}
+              <div className="p-3 border-b bg-muted/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-14 bg-muted rounded overflow-hidden">
+                    {selectedResult.poster_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w92${selectedResult.poster_path}`}
+                        alt={getDisplayTitle(selectedResult)}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Tv className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm truncate">{getDisplayTitle(selectedResult)}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedResult.media_type === "movie" ? "电影" : "剧集"} • {formatDate(selectedResult.release_date || selectedResult.first_air_date)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 表单内容 */}
+              <div className="flex-1 overflow-y-auto p-3">
+                <form onSubmit={handleSubmit} className="space-y-3">
                 {/* 预览卡片 */}
                 {showPreviewCard && (
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium text-blue-700 dark:text-blue-300">TMDB详情预览</div>
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-medium text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        TMDB详情
+                      </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowPreviewCard(false)}
-                        className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
+                        className="h-5 w-5 p-0 text-gray-500 hover:text-gray-700"
                       >
                         ×
                       </Button>
                     </div>
-                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                      <p><strong>ID:</strong> {selectedResult.id}</p>
-                      <p><strong>标题:</strong> {getDisplayTitle(selectedResult)}</p>
-                      <p><strong>类型:</strong> {selectedResult.media_type === 'movie' ? '电影' : '剧集'}</p>
-                      <p><strong>TMDB链接:</strong>{' '}
+                    <div className="text-xs text-gray-600 dark:text-gray-400 grid grid-cols-2 gap-2">
+                      <span><strong>ID:</strong> {selectedResult.id}</span>
+                      <span><strong>类型:</strong> {selectedResult.media_type === 'movie' ? '电影' : '剧集'}</span>
+                      <span className="col-span-2"><strong>标题:</strong> {getDisplayTitle(selectedResult)}</span>
+                      <span className="col-span-2">
                         <a
                           href={`https://www.themoviedb.org/${selectedResult.media_type}/${selectedResult.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 hover:underline text-xs"
                         >
-                          查看TMDB页面
+                          查看TMDB页面 →
                         </a>
-                      </p>
+                      </span>
                     </div>
                   </div>
                 )}
 
                 {/* 基本信息行 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-3">
-                    <Label htmlFor="title" className="text-sm font-medium">标题</Label>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="title" className="text-xs font-medium text-muted-foreground">标题</Label>
                     <Input
                       id="title"
                       value={getDisplayTitle(selectedResult)}
                       disabled
-                      className="bg-muted/50 font-medium h-10"
+                      className="bg-muted/50 font-medium h-8 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-3">
-                    <Label htmlFor="category" className="text-sm font-medium">分类</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="category" className="text-xs font-medium text-muted-foreground">分类 *</Label>
                     <Select
                       value={formData.category}
                       onValueChange={(value) => setFormData({ ...formData, category: value as CategoryType })}
                     >
-                      <SelectTrigger className="h-10">
+                      <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="选择分类" />
                       </SelectTrigger>
                       <SelectContent>
@@ -694,7 +751,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                           <SelectItem key={category.id} value={category.id}>
                             <div className="flex items-center">
                               {category.icon}
-                              <span className="ml-2">{category.name}</span>
+                              <span className="ml-2 text-sm">{category.name}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -703,8 +760,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                   </div>
 
                   {selectedResult.media_type === "tv" && (
-                    <div className="space-y-3">
-                      <Label htmlFor="totalEpisodes" className="text-sm font-medium">总集数</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="totalEpisodes" className="text-xs font-medium text-muted-foreground">总集数</Label>
                       <Input
                         id="totalEpisodes"
                         type="number"
@@ -716,23 +773,37 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                             totalEpisodes: parseInt(e.target.value) || 1,
                           })
                         }
-                        className="h-10"
+                        className="h-8 text-sm"
                       />
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="platformUrl" className="text-xs font-medium text-muted-foreground">平台链接</Label>
+                    <Input
+                      id="platformUrl"
+                      type="url"
+                      placeholder="https://..."
+                      value={formData.platformUrl}
+                      onChange={(e) =>
+                        setFormData({ ...formData, platformUrl: e.target.value })
+                      }
+                      className="h-8 text-sm"
+                    />
+                  </div>
                 </div>
 
                 {/* 时间设置行 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-3">
-                    <Label htmlFor="weekday" className="text-sm font-medium">更新星期</Label>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="weekday" className="text-xs font-medium text-muted-foreground">更新星期</Label>
                     <Select
                       value={formData.weekday.toString()}
                       onValueChange={(value) =>
                         setFormData({ ...formData, weekday: parseInt(value) })
                       }
                     >
-                      <SelectTrigger className="h-10">
+                      <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="选择星期" />
                       </SelectTrigger>
                       <SelectContent>
@@ -746,29 +817,29 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                     </Select>
                   </div>
 
-                  <div className="space-y-3">
-                    <Label htmlFor="airTime" className="text-sm font-medium">更新时间</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="airTime" className="text-xs font-medium text-muted-foreground">更新时间</Label>
                     <Input
                       id="airTime"
-                      placeholder="时间 (如 18:00)"
+                      placeholder="18:00"
                       value={formData.airTime}
                       onChange={(e) =>
                         setFormData({ ...formData, airTime: e.target.value })
                       }
-                      className="h-10"
+                      className="h-8 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-3">
-                    <Label htmlFor="secondWeekday" className="text-sm font-medium">第二播出日</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="secondWeekday" className="text-xs font-medium text-muted-foreground">第二播出日</Label>
                     <Select
                       value={formData.secondWeekday.toString()}
                       onValueChange={(value) =>
                         setFormData({ ...formData, secondWeekday: parseInt(value) })
                       }
                     >
-                      <SelectTrigger className="h-10">
-                        <SelectValue placeholder="选择星期" />
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="无" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="-1">无</SelectItem>
@@ -780,130 +851,98 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                         <SelectItem value="0">周日</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-
-                {/* URL和背景图行 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <Label htmlFor="platformUrl" className="text-sm font-medium">播出平台URL</Label>
-                    <Input
-                      id="platformUrl"
-                      placeholder="https://example.com/show-page"
-                      value={formData.platformUrl}
-                      onChange={(e) =>
-                        setFormData({ ...formData, platformUrl: e.target.value })
-                      }
-                      className="h-10"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      💡 用于TMDB导入工具抓取元数据
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="backdropUrl" className="text-sm font-medium">背景图URL</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="backdropUrl"
-                        placeholder="https://example.com/backdrop.jpg"
-                        value={customBackdropUrl}
-                        onChange={handleCustomBackdropChange}
-                        className="h-10"
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Checkbox
+                        checked={formData.isDailyUpdate}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, isDailyUpdate: !!checked })
+                        }
                       />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handlePreviewBackdrop}
-                        disabled={!customBackdropUrl}
-                        className="h-10 px-3"
-                      >
-                        预览
-                      </Button>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="text-xs text-muted-foreground flex items-center">
-                        {backdropUrl ? (
-                          <>
-                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                            已设置背景图
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
-                            未设置背景图
-                          </>
-                        )}
-                      </div>
-                      {backdropUrl && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs"
-                          onClick={handleResetBackdrop}
-                        >
-                          重置
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 每日更新选项 */}
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <div className="flex items-center justify-center space-x-3">
-                    <Checkbox
-                      id="isDailyUpdate"
-                      checked={formData.isDailyUpdate}
-                      onCheckedChange={(checked) =>
-                        setFormData({
-                          ...formData,
-                          isDailyUpdate: checked === true,
-                        })
-                      }
-                      className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
-                    />
-                    <Label
-                      htmlFor="isDailyUpdate"
-                      className="text-sm flex items-center cursor-pointer font-medium"
-                    >
-                      <Zap className="h-4 w-4 mr-2 text-amber-500 animate-pulse" />
-                      设为每日更新
+                      每日更新
                     </Label>
                   </div>
                 </div>
 
+                {/* 背景图设置 */}
+                <div className="space-y-2">
+                  <Label htmlFor="backdropUrl" className="text-xs font-medium text-muted-foreground">自定义背景图</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="backdropUrl"
+                      placeholder="https://example.com/backdrop.jpg"
+                      value={customBackdropUrl}
+                      onChange={handleCustomBackdropChange}
+                      className="h-8 text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePreviewBackdrop}
+                      disabled={!customBackdropUrl}
+                      className="h-8 px-3 text-xs"
+                    >
+                      预览
+                    </Button>
+                    {backdropUrl && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResetBackdrop}
+                        className="h-8 px-3 text-xs"
+                      >
+                        重置
+                      </Button>
+                    )}
+                  <div className="text-xs text-muted-foreground flex items-center mt-1">
+                    {backdropUrl ? (
+                      <>
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></div>
+                        已设置背景图
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1"></div>
+                        使用默认背景图
+                      </>
+                    )}
+                  </div>
+                </div>
 
                 {/* 底部按钮 */}
-                <div className="flex justify-center gap-4 pt-4 border-t">
+                <div className="flex justify-center gap-3 pt-3 border-t border-muted/30">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => onOpenChange(false)}
-                    className="h-10 px-8 font-medium"
+                    className="h-9 px-6 text-sm"
                   >
                     取消
                   </Button>
                   <Button
                     type="submit"
                     disabled={detailLoading || loading}
-                    className="h-10 px-8 font-medium"
+                    className="h-9 px-6 text-sm bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
                   >
                     {(detailLoading || loading) ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                         {detailLoading ? "加载中" : "添加中"}
                       </>
                     ) : (
-                      "添加词条"
+                      <>
+                        <Sparkles className="mr-2 h-3 w-3" />
+                        添加词条
+                      </>
                     )}
                   </Button>
                 </div>
               </form>
             </div>
           )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
