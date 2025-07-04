@@ -152,16 +152,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setLoading(true)
       setError(null)
       console.log("Calling StorageManager.importData...");
-      const success = await StorageManager.importData(jsonData)
-      console.log("StorageManager.importData result:", success);
+      const result = await StorageManager.importData(jsonData)
+      console.log("StorageManager.importData result:", result);
 
-      if (!success) {
-        throw new Error("导入数据失败")
+      if (!result.success) {
+        throw new Error(result.error || "导入数据失败")
       }
 
       console.log("Reloading data after import...");
       await loadData()
       console.log("Data reload completed");
+
+      // 返回导入统计信息
+      return result.stats;
     } catch (err) {
       console.error("Failed to import data:", err)
       setError(`导入数据失败：${err instanceof Error ? err.message : '请检查文件格式'}`)

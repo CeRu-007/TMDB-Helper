@@ -602,14 +602,14 @@ export class StorageManager {
       try {
       const items = await this.getItemsWithRetry();
       const tasks = await this.getScheduledTasks();
-      
+
       const exportData = {
         items,
         tasks,
         version: "1.0.0",
         exportDate: new Date().toISOString()
       };
-      
+
       return JSON.stringify(exportData, null, 2);
     } catch (error) {
       console.error("Failed to export data:", error);
@@ -618,67 +618,203 @@ export class StorageManager {
   }
 
   /**
+   * 验证导入数据格式
+   */
+  static validateImportData(jsonData: string): {
+    isValid: boolean;
+    error?: string;
+    data?: {
+      items: TMDBItem[];
+      tasks: ScheduledTask[];
+      version?: string;
+      exportDate?: string;
+    };
+    stats?: {
+      itemCount: number;
+      taskCount: number;
+      validItemCount: number;
+      validTaskCount: number;
+    };
+  } {
+    try {
+      const parsedData = JSON.parse(jsonData);
+
+      let items: TMDBItem[] = [];
+      let tasks: ScheduledTask[] = [];
+      let version: string | undefined;
+      let exportDate: string | undefined;
+
+      // 检查数据格式
+      if (Array.isArray(parsedData)) {
+        // 旧格式：直接是项目数组
+        items = parsedData;
+      } else if (parsedData && typeof parsedData === 'object') {
+        // 新格式：包含items和tasks
+        if (parsedData.items && Array.isArray(parsedData.items)) {
+          items = parsedData.items;
+        } else {
+          return {
+            isValid: false,
+            error: "数据格式错误：缺少items字段或items不是数组"
+          };
+        }
+
+        if (parsedData.tasks && Array.isArray(parsedData.tasks)) {
+          tasks = parsedData.tasks;
+        }
+
+        version = parsedData.version;
+        exportDate = parsedData.exportDate;
+      } else {
+        return {
+          isValid: false,
+          error: "数据格式错误：不支持的数据结构"
+        };
+      }
+
+      // 验证项目数据
+      const validItems = items.filter(item => {
+        return item &&
+               typeof item === 'object' &&
+               item.id &&
+               item.title &&
+               item.mediaType &&
+               ['movie', 'tv'].includes(item.mediaType);
+      });
+
+      // 验证任务数据
+      const validTasks = tasks.filter(task => {
+        return task &&
+               typeof task === 'object' &&
+               task.itemId &&
+               task.name &&
+               task.type === 'tmdb-import';
+      });
+
+      return {
+        isValid: true,
+        data: {
+          items: validItems,
+          tasks: validTasks,
+          version,
+          exportDate
+        },
+        stats: {
+          itemCount: items.length,
+          taskCount: tasks.length,
+          validItemCount: validItems.length,
+          validTaskCount: validTasks.length
+        }
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        error: error instanceof Error ? error.message : "JSON解析失败"
+      };
+    }
+  }
+
+  /**
    * 导入数据
    */
-  static async importData(jsonData: string): Promise<boolean> {
+  static async importData(jsonData: string): Promise<{
+    success: boolean;
+    error?: string;
+    stats?: {
+      itemsImported: number;
+      tasksImported: number;
+      itemsSkipped: number;
+      tasksSkipped: number;
+    };
+  }> {
     console.log("StorageManager.importData called with data length:", jsonData.length);
 
     if (!this.isClient() || !this.isStorageAvailable()) {
       console.error("Cannot import data: localStorage is not available");
-      return false;
+      return {
+        success: false,
+        error: "localStorage不可用"
+      };
     }
 
-    try {
-      console.log("Parsing JSON data...");
-      const data = JSON.parse(jsonData);
-      console.log("Parsed data structure:", {
-        hasItems: !!data.items,
-        itemsType: Array.isArray(data.items) ? 'array' : typeof data.items,
-        itemsLength: Array.isArray(data.items) ? data.items.length : 'N/A',
-        hasTasks: !!data.tasks,
-        tasksType: Array.isArray(data.tasks) ? 'array' : typeof data.tasks,
-        tasksLength: Array.isArray(data.tasks) ? data.tasks.length : 'N/A',
-        version: data.version,
-        exportDate: data.exportDate
-      });
+    // 首先验证数据
+    const validation = this.validateImportData(jsonData);
+    if (!validation.isValid) {
+      return {
+        success: false,
+        error: validation.error
+      };
+    }
 
-      // 验证数据格式
-      if (!data.items || !Array.isArray(data.items)) {
-        throw new Error("Invalid data format: items array is missing or not an array");
+    const { items, tasks } = validation.data!;
+    const stats = validation.stats!;
+
+    try {
+      console.log(`开始导入 ${stats.validItemCount} 个项目和 ${stats.validTaskCount} 个任务`);
+
+      // 导入项目数据
+      if (this.USE_FILE_STORAGE) {
+        try {
+          const response = await fetch(`${this.API_BASE_URL}/data`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(items),
+          });
+
+          if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status}`);
+          }
+
+          console.log("项目数据通过API导入成功");
+        } catch (error) {
+          console.error('通过API导入项目失败:', error);
+          return {
+            success: false,
+            error: `导入项目失败: ${error instanceof Error ? error.message : '未知错误'}`
+          };
+        }
+      } else {
+        // 使用localStorage
+        this.saveItems(items);
+        console.log("项目数据保存到localStorage成功");
       }
 
-      console.log(`Importing ${data.items.length} items...`);
+      // 导入定时任务
+      let tasksImported = 0;
+      if (tasks.length > 0) {
+        console.log(`开始导入 ${tasks.length} 个定时任务`);
 
-      // 验证items数据结构
-      if (data.items.length > 0) {
-        const firstItem = data.items[0];
-        const requiredFields = ['id', 'title', 'mediaType'];
-        const missingFields = requiredFields.filter(field => !(field in firstItem));
-        if (missingFields.length > 0) {
-          console.warn(`Items missing required fields: ${missingFields.join(', ')}`);
+        // 规范化任务
+        const normalizedTasks = tasks.map(task => this.normalizeTask(task));
+
+        try {
+          localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(normalizedTasks));
+          tasksImported = normalizedTasks.length;
+          console.log(`${tasksImported} 个任务保存到localStorage成功`);
+        } catch (error) {
+          console.error("保存任务到localStorage失败:", error);
+          // 任务导入失败不应该影响整个导入过程
         }
       }
 
-      // 保存项目数据
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data.items));
-      console.log("Items saved to localStorage");
-
-      // 如果有定时任务数据，保存它
-      if (data.tasks && Array.isArray(data.tasks)) {
-        localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(data.tasks));
-        console.log(`Imported ${data.tasks.length} scheduled tasks`);
-      } else {
-        console.log("No tasks data to import");
-      }
-
-      console.log("Data import completed successfully");
-      return true;
+      console.log("数据导入完成");
+      return {
+        success: true,
+        stats: {
+          itemsImported: stats.validItemCount,
+          tasksImported,
+          itemsSkipped: stats.itemCount - stats.validItemCount,
+          tasksSkipped: stats.taskCount - stats.validTaskCount
+        }
+      };
     } catch (error) {
-      console.error("Failed to import data:", error);
-      if (error instanceof SyntaxError) {
-        console.error("JSON parsing error - invalid JSON format");
-      }
-      return false;
+      console.error("导入数据失败:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "导入过程中发生未知错误"
+      };
     }
   }
 

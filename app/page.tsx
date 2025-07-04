@@ -61,6 +61,8 @@ import { StatCard } from "@/components/ui/stat-card"
 import { StorageManager } from "@/lib/storage"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import ImportDataDialog from "@/components/import-data-dialog"
+import ExportDataDialog from "@/components/export-data-dialog"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -96,6 +98,8 @@ export default function HomePage() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showTasksDialog, setShowTasksDialog] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const [selectedItem, setSelectedItem] = useState<TMDBItem | null>(null)
   const [currentDay, setCurrentDay] = useState(() => {
     if (isClientEnv) {
@@ -423,69 +427,7 @@ export default function HomePage() {
     setCurrentDay(adjustedDay)
   }, [])
 
-  // 导入数据处理
-  const handleImportData = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isClientEnv) return;
 
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result as string
-          console.log("开始导入数据，文件大小:", data.length)
-
-          // 尝试解析JSON数据
-          let parsedData;
-          try {
-            parsedData = JSON.parse(data);
-          } catch (parseError) {
-            throw new Error("文件格式错误：不是有效的JSON文件");
-          }
-
-          // 检查数据格式并进行兼容性处理
-          let importData = data;
-
-          // 如果是旧格式（直接是数组），转换为新格式
-          if (Array.isArray(parsedData)) {
-            console.log("检测到旧格式数据，正在转换...");
-            const convertedData = {
-              items: parsedData,
-              tasks: [],
-              version: "1.0.0",
-              exportDate: new Date().toISOString()
-            };
-            importData = JSON.stringify(convertedData);
-          }
-          // 如果是新格式但缺少必要字段，进行修复
-          else if (parsedData && typeof parsedData === 'object') {
-            if (!parsedData.items) {
-              throw new Error("数据格式错误：缺少items字段");
-            }
-            if (!Array.isArray(parsedData.items)) {
-              throw new Error("数据格式错误：items必须是数组");
-            }
-            console.log("检测到新格式数据");
-          } else {
-            throw new Error("数据格式错误：不支持的数据结构");
-          }
-
-          // 调用导入函数
-          await importDataFromJson(importData)
-          alert("数据导入成功！")
-
-          // 清空文件输入，允许重复导入同一文件
-          if (event.target) {
-            event.target.value = ''
-          }
-        } catch (error) {
-          console.error("Failed to import data:", error)
-          alert(`数据导入失败：${error instanceof Error ? error.message : '请检查文件格式'}`)
-        }
-      }
-      reader.readAsText(file)
-    }
-  }
 
   const getItemsByStatus = (status: "ongoing" | "completed") => {
     return items.filter((item) => item.status === status)
@@ -1923,12 +1865,12 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => document.getElementById("import-file")?.click()}
+                  onClick={() => setShowImportDialog(true)}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   导入
                 </Button>
-                <Button variant="outline" size="sm" onClick={exportData}>
+                <Button variant="outline" size="sm" onClick={() => setShowExportDialog(true)}>
                   <Download className="h-4 w-4 mr-2" />
                   导出
                 </Button>
@@ -2069,8 +2011,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Hidden file input for import */}
-      <input id="import-file" type="file" accept=".json" className="hidden" onChange={handleImportData} />
+
 
       {/* Dialogs */}
       <AddItemDialog 
@@ -2080,6 +2021,8 @@ export default function HomePage() {
       />
       <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
       <GlobalScheduledTasksDialog open={showTasksDialog} onOpenChange={setShowTasksDialog} />
+      <ImportDataDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
+      <ExportDataDialog open={showExportDialog} onOpenChange={setShowExportDialog} />
       {selectedItem && (
         <ItemDetailDialog
           item={selectedItem}
