@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 
-const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六"]
 
 // 定义分类列表
 const CATEGORIES = [
@@ -776,12 +776,12 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                         <SelectValue placeholder="选择星期" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="0">周日</SelectItem>
                         {WEEKDAYS.map((day, index) => (
                           <SelectItem key={index} value={(index + 1).toString()}>
                             {day}
                           </SelectItem>
                         ))}
-                        <SelectItem value="0">周日</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -812,12 +812,12 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="-1">无</SelectItem>
+                        <SelectItem value="0">周日</SelectItem>
                         {WEEKDAYS.map((day, index) => (
                           <SelectItem key={index} value={(index + 1).toString()}>
                             {day}
                           </SelectItem>
                         ))}
-                        <SelectItem value="0">周日</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
