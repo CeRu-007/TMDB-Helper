@@ -1,0 +1,20 @@
+[
+  {
+    "id": "old-format-001",
+    "title": "旧格式测试数据",
+    "originalTitle": "Old Format Test",
+    "mediaType": "tv",
+    "tmdbId": "67890",
+    "tmdbUrl": "https://www.themoviedb.org/tv/67890",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/old.jpg",
+    "backdropUrl": "https://image.tmdb.org/t/p/w1280/old.jpg",
+    "backdropPath": "/old.jpg",
+    "overview": "这是旧格式的测试数据，应该能够被自动转换",
+    "voteAverage": 7.8,
+    "weekday": 2,
+    "airTime": "21:00",
+    "status": "completed",
+    "addedAt": "2024-12-01T00:00:00.000Z",
+    "updatedAt": "2024-12-01T00:00:00.000Z"
+  }
+]

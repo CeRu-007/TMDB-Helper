@@ -142,18 +142,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // 导入数据
   const importData = async (jsonData: string) => {
-    if (!isClient) return
-    
+    console.log("DataProvider.importData called");
+    if (!isClient) {
+      console.log("Not in client environment, skipping import");
+      return;
+    }
+
     try {
       setLoading(true)
+      setError(null)
+      console.log("Calling StorageManager.importData...");
       const success = await StorageManager.importData(jsonData)
+      console.log("StorageManager.importData result:", success);
+
       if (!success) {
         throw new Error("导入数据失败")
       }
+
+      console.log("Reloading data after import...");
       await loadData()
+      console.log("Data reload completed");
     } catch (err) {
       console.error("Failed to import data:", err)
-      setError("导入数据失败，请检查文件格式")
+      setError(`导入数据失败：${err instanceof Error ? err.message : '请检查文件格式'}`)
       throw err
     } finally {
       setLoading(false)

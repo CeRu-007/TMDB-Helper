@@ -621,30 +621,63 @@ export class StorageManager {
    * 导入数据
    */
   static async importData(jsonData: string): Promise<boolean> {
+    console.log("StorageManager.importData called with data length:", jsonData.length);
+
     if (!this.isClient() || !this.isStorageAvailable()) {
       console.error("Cannot import data: localStorage is not available");
       return false;
     }
-    
+
     try {
+      console.log("Parsing JSON data...");
       const data = JSON.parse(jsonData);
-      
+      console.log("Parsed data structure:", {
+        hasItems: !!data.items,
+        itemsType: Array.isArray(data.items) ? 'array' : typeof data.items,
+        itemsLength: Array.isArray(data.items) ? data.items.length : 'N/A',
+        hasTasks: !!data.tasks,
+        tasksType: Array.isArray(data.tasks) ? 'array' : typeof data.tasks,
+        tasksLength: Array.isArray(data.tasks) ? data.tasks.length : 'N/A',
+        version: data.version,
+        exportDate: data.exportDate
+      });
+
       // 验证数据格式
       if (!data.items || !Array.isArray(data.items)) {
-        throw new Error("Invalid data format: items array is missing");
+        throw new Error("Invalid data format: items array is missing or not an array");
       }
-      
+
+      console.log(`Importing ${data.items.length} items...`);
+
+      // 验证items数据结构
+      if (data.items.length > 0) {
+        const firstItem = data.items[0];
+        const requiredFields = ['id', 'title', 'mediaType'];
+        const missingFields = requiredFields.filter(field => !(field in firstItem));
+        if (missingFields.length > 0) {
+          console.warn(`Items missing required fields: ${missingFields.join(', ')}`);
+        }
+      }
+
       // 保存项目数据
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data.items));
-      
+      console.log("Items saved to localStorage");
+
       // 如果有定时任务数据，保存它
       if (data.tasks && Array.isArray(data.tasks)) {
         localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(data.tasks));
+        console.log(`Imported ${data.tasks.length} scheduled tasks`);
+      } else {
+        console.log("No tasks data to import");
       }
-      
+
+      console.log("Data import completed successfully");
       return true;
     } catch (error) {
       console.error("Failed to import data:", error);
+      if (error instanceof SyntaxError) {
+        console.error("JSON parsing error - invalid JSON format");
+      }
       return false;
     }
   }
