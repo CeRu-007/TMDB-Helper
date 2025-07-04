@@ -81,6 +81,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
   const [backdropPath, setBackdropPath] = useState<string | undefined>(undefined)
   const [customBackdropUrl, setCustomBackdropUrl] = useState<string>("")
   const [showBackdropPreview, setShowBackdropPreview] = useState(false)
+  const [showPreviewCard, setShowPreviewCard] = useState(false)
   const { toast } = useToast()
   const [formData, setFormData] = useState({
     weekday: 1,
@@ -111,43 +112,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       // 构建TMDB URL
       const tmdbUrl = `https://www.themoviedb.org/${result.media_type}/${result.id}`
 
-      // 创建详细信息预览卡片
-      const previewCard = document.createElement('div');
-      previewCard.className = 'p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-4';
-      previewCard.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div class="text-sm font-medium text-blue-700 dark:text-blue-300">TMDB详情预览</div>
-          <button type="button" class="text-gray-500 hover:text-gray-700" onclick="this.parentElement.parentElement.remove()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
-          <p><strong>ID:</strong> ${result.id}</p>
-          <p><strong>标题:</strong> ${getDisplayTitle(result)}</p>
-          <p><strong>类型:</strong> ${result.media_type === 'movie' ? '电影' : '剧集'}</p>
-          <p><strong>TMDB链接:</strong> 
-            <a href="https://www.themoviedb.org/${result.media_type}/${result.id}" 
-               target="_blank" 
-               rel="noopener noreferrer"
-               class="text-blue-600 hover:underline">
-              查看TMDB页面
-            </a>
-          </p>
-        </div>
-      `;
-      
-      // 插入预览卡片到表单顶部
-      const formElement = document.querySelector('form.space-y-6');
-      if (formElement && formElement.firstChild) {
-        const timeoutId = setTimeout(() => {
-          formElement.insertBefore(previewCard, formElement.firstChild);
-          // 清除超时
-          clearTimeout(timeoutId);
-        }, 100);
-      }
+      // 显示预览卡片
+      setShowPreviewCard(true)
 
       // 获取详细信息
       const tmdbData = await TMDBService.getItemFromUrl(tmdbUrl)
@@ -268,6 +234,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       setBackdropPath(undefined);
       setCustomBackdropUrl("");
       setShowBackdropPreview(false);
+      setShowPreviewCard(false);
       setFormData({
         weekday: 1,
         secondWeekday: -1,
@@ -310,7 +277,11 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       setSearchResults(results)
     } catch (error) {
       console.error("搜索失败:", error)
-      alert(error instanceof Error ? error.message : "搜索失败")
+      toast({
+        title: "搜索失败",
+        description: error instanceof Error ? error.message : "搜索失败，请重试",
+        variant: "destructive"
+      })
       setSearchResults([])
     } finally {
       setLoading(false)
@@ -322,6 +293,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     setSearchQuery(value)
     setSelectedResult(null)
     setTmdbSeasons([])
+    setShowPreviewCard(false)
 
     // 清除之前的定时器
     if (searchTimeoutRef.current) {
@@ -333,6 +305,15 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       searchTMDB(value)
     }, 500) as unknown as number
   }
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // 处理自定义背景图URL变更
   const handleCustomBackdropChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,17 +359,41 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     setBackdropPath(undefined)
     setCustomBackdropUrl("")
     setShowBackdropPreview(false)
+    setShowPreviewCard(false)
   }
 
   // 提交表单
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!selectedResult) {
-      alert("请先选择一个词条")
+      toast({
+        title: "请选择词条",
+        description: "请先从搜索结果中选择一个词条",
+        variant: "destructive"
+      })
       return
     }
-    
+
+    // 表单验证
+    if (!formData.category) {
+      toast({
+        title: "请选择分类",
+        description: "请为词条选择一个分类",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (formData.totalEpisodes < 1) {
+      toast({
+        title: "集数无效",
+        description: "总集数必须大于0",
+        variant: "destructive"
+      })
+      return
+    }
+
     setLoading(true)
     
     try {
@@ -626,6 +631,39 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
           {selectedResult && (
             <div className="bg-gradient-to-br from-muted/20 to-muted/40 p-4 rounded-xl border">
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* 预览卡片 */}
+                {showPreviewCard && (
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium text-blue-700 dark:text-blue-300">TMDB详情预览</div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPreviewCard(false)}
+                        className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                      <p><strong>ID:</strong> {selectedResult.id}</p>
+                      <p><strong>标题:</strong> {getDisplayTitle(selectedResult)}</p>
+                      <p><strong>类型:</strong> {selectedResult.media_type === 'movie' ? '电影' : '剧集'}</p>
+                      <p><strong>TMDB链接:</strong>{' '}
+                        <a
+                          href={`https://www.themoviedb.org/${selectedResult.media_type}/${selectedResult.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          查看TMDB页面
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* 基本信息行 */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-3">
@@ -846,13 +884,13 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                   </Button>
                   <Button
                     type="submit"
-                    disabled={detailLoading}
+                    disabled={detailLoading || loading}
                     className="h-10 px-8 font-medium"
                   >
-                    {detailLoading ? (
+                    {(detailLoading || loading) ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        加载中
+                        {detailLoading ? "加载中" : "添加中"}
                       </>
                     ) : (
                       "添加词条"
