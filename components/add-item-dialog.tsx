@@ -479,12 +479,12 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       }
 
       // 检查重复项目
-      const existingItems = StorageManager.getItems();
-      const duplicateItem = existingItems.find(item => 
-        item.tmdbId === newItem.tmdbId && 
+      const existingItems = await StorageManager.getItemsWithRetry();
+      const duplicateItem = existingItems.find(item =>
+        item.tmdbId === newItem.tmdbId &&
         item.mediaType === newItem.mediaType
       );
-      
+
       if (duplicateItem) {
         toast({
           title: "词条已存在",
