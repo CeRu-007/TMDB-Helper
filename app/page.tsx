@@ -52,7 +52,9 @@ import SettingsDialog from "@/components/settings-dialog"
 import ItemDetailDialog from "@/components/item-detail-dialog"
 import VideoThumbnailExtractor from "@/components/video-thumbnail-extractor"
 import GlobalScheduledTasksDialog from "@/components/global-scheduled-tasks-dialog"
-import { type TMDBItem } from "@/lib/storage"
+import { TaskExecutionLogsDialog } from "@/components/task-execution-logs-dialog"
+import { type TMDBItem, type ScheduledTask } from "@/lib/storage"
+import { taskScheduler } from "@/lib/scheduler"
 import { useMobile } from "@/hooks/use-mobile"
 import MediaCard from "@/components/media-card"
 import { useIsClient } from "@/hooks/use-is-client"
@@ -100,6 +102,8 @@ export default function HomePage() {
   const [showTasksDialog, setShowTasksDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
+  const [showExecutionLogs, setShowExecutionLogs] = useState(false)
+  const [runningTasks, setRunningTasks] = useState<ScheduledTask[]>([])
   const [selectedItem, setSelectedItem] = useState<TMDBItem | null>(null)
   const [currentDay, setCurrentDay] = useState(() => {
     if (isClientEnv) {
@@ -409,6 +413,31 @@ export default function HomePage() {
     }
   }, [])
 
+  // 监控正在运行的任务
+  useEffect(() => {
+    if (!isClientEnv) return;
+
+    const updateRunningTasks = async () => {
+      try {
+        const allTasks = await StorageManager.getScheduledTasks();
+        const running = allTasks.filter(task =>
+          task.isRunning || taskScheduler.isTaskRunning(task.id)
+        );
+        setRunningTasks(running);
+      } catch (error) {
+        console.error('获取正在运行的任务失败:', error);
+      }
+    };
+
+    // 初始加载
+    updateRunningTasks();
+
+    // 每2秒检查一次正在运行的任务
+    const interval = setInterval(updateRunningTasks, 2000);
+
+    return () => clearInterval(interval);
+  }, [isClientEnv]);
+
   // 定义分类列表
   const categories = [
     { id: "all", name: "全部", icon: <LayoutGrid className="h-4 w-4 mr-2" /> },
@@ -705,6 +734,52 @@ export default function HomePage() {
               onClick={() => setActiveTab("progress")}
             >
               <BarChart2 className="h-4 w-4 mr-2" /> 追剧进度
+            </Button>
+
+            {/* 分隔线 */}
+            <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
+
+            {/* 功能按钮 */}
+            <Button
+              className="justify-start"
+              variant="outline"
+              onClick={() => setShowTasksDialog(true)}
+            >
+              <AlarmClock className="h-4 w-4 mr-2" /> 定时任务
+            </Button>
+
+            {runningTasks.length > 0 && (
+              <Button
+                className="justify-start bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800"
+                variant="outline"
+                onClick={() => setShowExecutionLogs(true)}
+              >
+                <BarChart2 className="h-4 w-4 mr-2" /> 执行日志 ({runningTasks.length})
+              </Button>
+            )}
+
+            <Button
+              className="justify-start"
+              variant="outline"
+              onClick={() => setShowImportDialog(true)}
+            >
+              <Upload className="h-4 w-4 mr-2" /> 导入
+            </Button>
+
+            <Button
+              className="justify-start"
+              variant="outline"
+              onClick={() => setShowExportDialog(true)}
+            >
+              <Download className="h-4 w-4 mr-2" /> 导出
+            </Button>
+
+            <Button
+              className="justify-start"
+              variant="outline"
+              onClick={() => setShowSettingsDialog(true)}
+            >
+              <Settings className="h-4 w-4 mr-2" /> 设置
             </Button>
           </nav>
         </SheetContent>
@@ -1862,6 +1937,17 @@ export default function HomePage() {
                   <AlarmClock className="h-4 w-4 mr-2" />
                   定时任务
                 </Button>
+                {runningTasks.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowExecutionLogs(true)}
+                    className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                  >
+                    <BarChart2 className="h-4 w-4 mr-2" />
+                    执行日志 ({runningTasks.length})
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -2021,6 +2107,11 @@ export default function HomePage() {
       />
       <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
       <GlobalScheduledTasksDialog open={showTasksDialog} onOpenChange={setShowTasksDialog} />
+      <TaskExecutionLogsDialog
+        open={showExecutionLogs}
+        onOpenChange={setShowExecutionLogs}
+        runningTasks={runningTasks}
+      />
       <ImportDataDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
       <ExportDataDialog open={showExportDialog} onOpenChange={setShowExportDialog} />
       {selectedItem && (

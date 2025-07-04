@@ -1,5 +1,15 @@
 import { v4 as uuidv4 } from "uuid";
 
+// 执行日志条目接口
+export interface ExecutionLog {
+  id: string
+  timestamp: string
+  step: string
+  message: string
+  level: 'info' | 'success' | 'warning' | 'error'
+  details?: any
+}
+
 export interface Episode {
   number: number
   completed: boolean
@@ -45,6 +55,11 @@ export interface ScheduledTask {
   nextRun?: string
   lastRunStatus?: "success" | "failed" // 新增：最后执行状态
   lastRunError?: string | null // 新增：最后执行错误信息
+  // 执行日志相关字段
+  currentStep?: string           // 当前执行步骤
+  executionProgress?: number     // 执行进度 (0-100)
+  executionLogs?: ExecutionLog[] // 执行日志列表
+  isRunning?: boolean           // 是否正在执行
   createdAt: string
   updatedAt: string
 }
@@ -941,6 +956,7 @@ export class StorageManager {
       action: {
         seasonNumber: task.action?.seasonNumber ?? 1,
         autoUpload: task.action?.autoUpload ?? true,
+        conflictAction: task.action?.conflictAction ?? 'w',
         autoRemoveMarked: task.action?.autoRemoveMarked ?? true,
         autoConfirm: task.action?.autoConfirm !== false,
         autoMarkUploaded: task.action?.autoMarkUploaded !== false,

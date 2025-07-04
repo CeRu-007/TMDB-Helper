@@ -59,6 +59,7 @@ import { toast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import ScheduledTaskDialog from "./scheduled-task-dialog"
 import { StorageDebugDialog } from "./storage-debug-dialog"
+import { TaskExecutionLogsDialog } from "./task-execution-logs-dialog"
 import { SchedulerDebugDialog } from "./scheduler-debug-dialog"
 import { v4 as uuidv4 } from "uuid"
 import { 
@@ -140,8 +141,15 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   const [showStorageDebug, setShowStorageDebug] = useState(false)
   // 调度器调试对话框状态
   const [showSchedulerDebug, setShowSchedulerDebug] = useState(false)
+  // 任务执行日志对话框状态
+  const [showExecutionLogs, setShowExecutionLogs] = useState(false)
   // 防止重复加载的标志
   const [isLoadingData, setIsLoadingData] = useState(false)
+
+  // 获取正在运行的任务
+  const runningTasks = useMemo(() => {
+    return tasks.filter(task => task.isRunning || taskScheduler.isTaskRunning(task.id))
+  }, [tasks])
 
   // 搜索防抖
   useEffect(() => {
@@ -2063,6 +2071,16 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                 <Settings className="h-4 w-4 mr-2" />
                 调度器调试
               </Button>
+              {runningTasks.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowExecutionLogs(true)}
+                >
+                  <BarChart2 className="h-4 w-4 mr-2" />
+                  执行日志 ({runningTasks.length})
+                </Button>
+              )}
             </div>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               关闭
@@ -2110,7 +2128,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           onOpenChange={setShowTaskDialog}
           item={selectedItem}
           existingTask={taskToCopy || tasks.find(t => t.itemId === selectedItem.id)}
-          onTaskSaved={(task: ScheduledTask) => {
+          onTaskSaved={(task: ScheduledTask, isAutoSave?: boolean) => {
             // 更新任务列表
             setTasks(prev => {
               const index = prev.findIndex(t => t.id === task.id);
@@ -2121,9 +2139,13 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
               }
               return [...prev, task];
             });
-            setShowTaskDialog(false);
-            // 清除复制的任务
-            setTaskToCopy(null);
+
+            // 只有在非自动保存时才关闭对话框
+            if (!isAutoSave) {
+              setShowTaskDialog(false);
+              // 清除复制的任务
+              setTaskToCopy(null);
+            }
           }}
         />
       )}
@@ -2460,6 +2482,13 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       <SchedulerDebugDialog
         open={showSchedulerDebug}
         onOpenChange={setShowSchedulerDebug}
+      />
+
+      {/* 任务执行日志对话框 */}
+      <TaskExecutionLogsDialog
+        open={showExecutionLogs}
+        onOpenChange={setShowExecutionLogs}
+        runningTasks={runningTasks}
       />
     </>
   )

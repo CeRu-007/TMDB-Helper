@@ -52,7 +52,7 @@ interface ScheduledTaskDialogProps {
   onOpenChange: (open: boolean) => void
   onUpdate?: (item: TMDBItem) => void
   existingTask?: ScheduledTask
-  onTaskSaved?: (task: ScheduledTask) => void
+  onTaskSaved?: (task: ScheduledTask, isAutoSave?: boolean) => void
 }
 
 export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate, existingTask, onTaskSaved }: ScheduledTaskDialogProps) {
@@ -195,7 +195,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   }
 
   // 保存任务（使用特定状态）
-  const handleSaveTaskWithState = async (taskToSave: ScheduledTask) => {
+  const handleSaveTaskWithState = async (taskToSave: ScheduledTask, shouldCloseDialog: boolean = true) => {
     if (!taskToSave) return
 
     try {
@@ -269,14 +269,22 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           await taskScheduler.scheduleTask(updatedTask)
         }
 
-        // 关闭编辑框
-        cancelEditTask()
+        // 只有在需要关闭对话框时才关闭编辑框
+        if (shouldCloseDialog) {
+          cancelEditTask()
+        } else {
+          // 自动保存时只清除未保存更改状态
+          setHasUnsavedChanges(false)
+        }
 
         console.log(`[ScheduledTaskDialog] ${isAddingTask ? '创建' : '更新'}任务成功: ID=${updatedTask.id}`);
-        toast({
-          title: `${isAddingTask ? '创建' : '更新'}成功`,
-          description: `定时任务已${isAddingTask ? '创建' : '更新'}${updatedTask.enabled ? '，并已启用' : '，处于禁用状态'}`,
-        })
+
+        if (shouldCloseDialog) {
+          toast({
+            title: `${isAddingTask ? '创建' : '更新'}成功`,
+            description: `定时任务已${isAddingTask ? '创建' : '更新'}${updatedTask.enabled ? '，并已启用' : '，处于禁用状态'}`,
+          })
+        }
       }
     } catch (error) {
       console.error("[ScheduledTaskDialog] 保存定时任务失败:", error)
@@ -632,7 +640,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       }
     }
 
-    // 如果是启用状态更改，自动保存
+    // 只有启用状态更改才自动保存，特殊处理选项需要手动保存
     if (field === 'enabled') {
       handleAutoSave(updatedTask)
     }
@@ -672,12 +680,12 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         // 显示成功提示
         toast({
           title: "自动保存成功",
-          description: `任务已${updatedTask.enabled ? '启用，将按计划自动执行' : '禁用，不会自动执行'}`,
+          description: updatedTask.enabled ? "任务已启用，将按计划自动执行" : "任务设置已保存",
         })
         
-        // 如果提供了onTaskSaved回调，调用它
+        // 如果提供了onTaskSaved回调，调用它（标记为自动保存）
         if (onTaskSaved) {
-          onTaskSaved(updatedTask)
+          onTaskSaved(updatedTask, true)
         }
         
         // 重新加载任务列表

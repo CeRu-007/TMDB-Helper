@@ -1,11 +1,12 @@
 import { StorageManager, ScheduledTask, TMDBItem } from './storage';
+import { taskExecutionLogger } from './task-execution-logger';
 
 class TaskScheduler {
   private static instance: TaskScheduler;
   private timers: Map<string, NodeJS.Timeout> = new Map();
   private isInitialized: boolean = false;
   private lastError: Error | null = null;
-  private currentExecution: Map<string, Promise<void>> = new Map(); // 跟踪当前正在执行的任务
+  private currentExecution: Set<string> = new Set(); // 跟踪当前正在执行的任务
   private validationTimer: NodeJS.Timeout | null = null; // 定期验证定时器
 
   private constructor() {}
@@ -496,29 +497,42 @@ class TaskScheduler {
       return;
     }
     
-    // 创建执行Promise并存储
-    const executionPromise = this._executeTaskInternal(task).finally(() => {
-      // 执行完成后从映射中移除
-      this.currentExecution.delete(task.id);
-    });
-    
-    // 将当前执行添加到映射
-    this.currentExecution.set(task.id, executionPromise);
-    
-    // 等待执行完成
-    await executionPromise;
+    // 执行任务
+    await this._executeTaskInternal(task);
   }
   
   /**
    * 任务执行的内部实现
    */
   private async _executeTaskInternal(task: ScheduledTask): Promise<void> {
+    // 标记任务开始执行
+    this.currentExecution.add(task.id);
+
     try {
+      // 开始执行日志记录
+      try {
+        await taskExecutionLogger.startTaskExecution(task.id);
+      } catch (logError) {
+        console.error(`[TaskScheduler] 启动执行日志记录失败:`, logError);
+      }
+
       console.log(`[TaskScheduler] 开始执行任务: ${task.id} - ${task.name}`);
-      
+
+      try {
+        await taskExecutionLogger.addLog(task.id, '初始化', `开始执行任务: ${task.name}`, 'info');
+      } catch (logError) {
+        console.error(`[TaskScheduler] 记录初始化日志失败:`, logError);
+      }
+
       // 更新任务的最后执行时间
       const updatedTask = { ...task, lastRun: new Date().toISOString() };
       await StorageManager.updateScheduledTask(updatedTask);
+
+      try {
+        await taskExecutionLogger.updateProgress(task.id, 5);
+      } catch (logError) {
+        console.error(`[TaskScheduler] 记录初始进度失败:`, logError);
+      }
       
       // 执行TMDB-Import任务
       if (task.type === 'tmdb-import') {
@@ -592,8 +606,9 @@ class TaskScheduler {
 
           // 执行导入任务
           await this.executeTMDBImportTask(task, relatedItem);
-          
+
           console.log(`[TaskScheduler] 任务执行成功: ${task.id} - ${task.name}`);
+          await taskExecutionLogger.addLog(task.id, '完成', '任务执行成功', 'success');
 
           // 更新任务状态，标记为成功
           const successTask = {
@@ -603,18 +618,34 @@ class TaskScheduler {
           };
           await StorageManager.updateScheduledTask(successTask);
 
+          // 结束执行日志记录
+          try {
+            await taskExecutionLogger.endTaskExecution(task.id, true);
+          } catch (logError) {
+            console.error(`[TaskScheduler] 结束执行日志记录失败:`, logError);
+          }
+
           // 使用更新后的任务对象重新调度
           this.scheduleTask(successTask);
         } catch (importError) {
           console.error(`[TaskScheduler] TMDB-Import任务执行失败:`, importError);
-          
+          const errorMessage = importError instanceof Error ? importError.message : String(importError);
+          await taskExecutionLogger.addLog(task.id, '错误', `任务执行失败: ${errorMessage}`, 'error');
+
           // 更新任务状态，标记为失败
           const failedTask = {
             ...updatedTask,
             lastRunStatus: 'failed' as const,
-            lastRunError: importError instanceof Error ? importError.message : String(importError)
+            lastRunError: errorMessage
           };
           await StorageManager.updateScheduledTask(failedTask);
+
+          // 结束执行日志记录
+          try {
+            await taskExecutionLogger.endTaskExecution(task.id, false, errorMessage);
+          } catch (logError) {
+            console.error(`[TaskScheduler] 结束执行日志记录失败:`, logError);
+          }
 
           // 即使失败也要重新调度任务
           this.scheduleTask(failedTask);
@@ -633,6 +664,17 @@ class TaskScheduler {
       this.lastError = error instanceof Error ? error : new Error(String(error));
       console.error(`[TaskScheduler] 执行任务失败:`, error);
 
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // 如果任务执行日志还在记录中，结束它
+      if (taskExecutionLogger.isTaskRunning(task.id)) {
+        try {
+          await taskExecutionLogger.endTaskExecution(task.id, false, errorMessage);
+        } catch (logError) {
+          console.error(`[TaskScheduler] 结束执行日志记录失败:`, logError);
+        }
+      }
+
       // 对于未捕获的错误，使用原始任务重新调度
       // 但首先尝试更新任务状态
       try {
@@ -640,7 +682,7 @@ class TaskScheduler {
           ...task,
           lastRun: new Date().toISOString(),
           lastRunStatus: 'failed' as const,
-          lastRunError: error instanceof Error ? error.message : String(error)
+          lastRunError: errorMessage
         };
         await StorageManager.updateScheduledTask(errorTask);
         this.scheduleTask(errorTask);
@@ -649,6 +691,10 @@ class TaskScheduler {
         // 如果更新失败，使用原始任务重新调度
         this.scheduleTask(task);
       }
+    } finally {
+      // 确保无论如何都清理执行状态
+      this.currentExecution.delete(task.id);
+      console.log(`[TaskScheduler] 任务执行完成，清理执行状态: ${task.id}`);
     }
   }
 
@@ -763,58 +809,71 @@ class TaskScheduler {
    * 执行TMDB-Import任务 - 新的完整工作流程
    */
   private async executeTMDBImportTask(task: ScheduledTask, item: TMDBItem): Promise<void> {
-    console.log(`[TaskScheduler] 开始执行完整的TMDB-Import工作流程: ${item.title}`);
-    console.log(`[TaskScheduler] 传入的项目ID: ${item.id}, 任务关联的项目ID: ${task.itemId}`);
+    try {
+      console.log(`[TaskScheduler] 开始执行完整的TMDB-Import工作流程: ${item.title}`);
+      console.log(`[TaskScheduler] 传入的项目ID: ${item.id}, 任务关联的项目ID: ${task.itemId}`);
 
-    // 获取最新的项目数据，确保整个流程使用一致的数据
-    const latestItems = await StorageManager.getItemsWithRetry();
-    console.log(`[TaskScheduler] 当前存储中有 ${latestItems.length} 个项目`);
-
-    let currentItem = latestItems.find(i => i.id === item.id);
-
-    if (!currentItem) {
-      console.warn(`[TaskScheduler] 无法通过传入ID ${item.id} 找到项目，尝试其他方式...`);
-
-      // 尝试通过任务的itemId查找
-      if (task.itemId && task.itemId !== item.id) {
-        console.log(`[TaskScheduler] 尝试使用任务关联的项目ID: ${task.itemId}`);
-        currentItem = latestItems.find(i => i.id === task.itemId);
-
-        if (currentItem) {
-          console.log(`[TaskScheduler] ✓ 通过任务关联ID找到项目: ${currentItem.title}`);
-        }
+      try {
+        await taskExecutionLogger.addLog(task.id, '准备', `开始TMDB-Import工作流程: ${item.title}`, 'info');
+        await taskExecutionLogger.updateProgress(task.id, 10);
+      } catch (logError) {
+        console.error(`[TaskScheduler] 记录初始日志失败:`, logError);
       }
 
-      // 尝试通过标题查找
-      if (!currentItem && item.title) {
-        console.log(`[TaskScheduler] 尝试通过标题查找: ${item.title}`);
-        currentItem = latestItems.find(i => i.title === item.title);
+      // 获取最新的项目数据，确保整个流程使用一致的数据
+      const latestItems = await StorageManager.getItemsWithRetry();
+      console.log(`[TaskScheduler] 当前存储中有 ${latestItems.length} 个项目`);
 
-        if (currentItem) {
-          console.log(`[TaskScheduler] ✓ 通过标题找到项目: ${currentItem.title} (ID: ${currentItem.id})`);
-        }
+      try {
+        await taskExecutionLogger.addLog(task.id, '验证项目', `获取到 ${latestItems.length} 个项目数据`, 'info');
+      } catch (logError) {
+        console.error(`[TaskScheduler] 记录验证项目日志失败:`, logError);
       }
 
-      // 尝试通过任务标题查找
-      if (!currentItem && task.itemTitle) {
-        console.log(`[TaskScheduler] 尝试通过任务标题查找: ${task.itemTitle}`);
-        currentItem = latestItems.find(i => i.title === task.itemTitle);
-
-        if (currentItem) {
-          console.log(`[TaskScheduler] ✓ 通过任务标题找到项目: ${currentItem.title} (ID: ${currentItem.id})`);
-        }
-      }
+      let currentItem = latestItems.find(i => i.id === item.id);
 
       if (!currentItem) {
-        console.error(`[TaskScheduler] 所有查找方式都失败了`);
-        console.log(`[TaskScheduler] 可用的项目:`, latestItems.map(i => ({ id: i.id, title: i.title })));
-        throw new Error(`无法找到项目。尝试的ID: ${item.id}, 任务ID: ${task.itemId}, 标题: ${item.title || task.itemTitle}`);
+        console.warn(`[TaskScheduler] 无法通过传入ID ${item.id} 找到项目，尝试其他方式...`);
+
+        // 尝试通过任务的itemId查找
+        if (task.itemId && task.itemId !== item.id) {
+          console.log(`[TaskScheduler] 尝试使用任务关联的项目ID: ${task.itemId}`);
+          currentItem = latestItems.find(i => i.id === task.itemId);
+
+          if (currentItem) {
+            console.log(`[TaskScheduler] ✓ 通过任务关联ID找到项目: ${currentItem.title}`);
+          }
+        }
+
+        // 尝试通过标题查找
+        if (!currentItem && item.title) {
+          console.log(`[TaskScheduler] 尝试通过标题查找: ${item.title}`);
+          currentItem = latestItems.find(i => i.title === item.title);
+
+          if (currentItem) {
+            console.log(`[TaskScheduler] ✓ 通过标题找到项目: ${currentItem.title} (ID: ${currentItem.id})`);
+          }
+        }
+
+        // 尝试通过任务标题查找
+        if (!currentItem && task.itemTitle) {
+          console.log(`[TaskScheduler] 尝试通过任务标题查找: ${task.itemTitle}`);
+          currentItem = latestItems.find(i => i.title === task.itemTitle);
+
+          if (currentItem) {
+            console.log(`[TaskScheduler] ✓ 通过任务标题找到项目: ${currentItem.title} (ID: ${currentItem.id})`);
+          }
+        }
+
+        if (!currentItem) {
+          console.error(`[TaskScheduler] 所有查找方式都失败了`);
+          console.log(`[TaskScheduler] 可用的项目:`, latestItems.map(i => ({ id: i.id, title: i.title })));
+          throw new Error(`无法找到项目。尝试的ID: ${item.id}, 任务ID: ${task.itemId}, 标题: ${item.title || task.itemTitle}`);
+        }
       }
-    }
 
-    console.log(`[TaskScheduler] 使用项目数据: ${currentItem.title} (ID: ${currentItem.id})`);
+      console.log(`[TaskScheduler] 使用项目数据: ${currentItem.title} (ID: ${currentItem.id})`);
 
-    try {
       // 验证基本条件
       if (!currentItem.platformUrl) {
         throw new Error(`项目 ${currentItem.title} 缺少平台URL，无法执行TMDB导入`);
@@ -827,89 +886,215 @@ class TaskScheduler {
       }
 
       // 步骤1: 播出平台抓取
-      console.log(`[TaskScheduler] 步骤1: 执行播出平台抓取`);
-      const extractResult = await this.executePlatformExtraction(currentItem, task.action.seasonNumber);
+      let extractResult;
+      try {
+        console.log(`[TaskScheduler] 步骤1: 执行播出平台抓取`);
+        await taskExecutionLogger.startStep(task.id, '步骤1');
+        await taskExecutionLogger.addLog(task.id, '步骤1', '开始播出平台抓取', 'info');
+        await taskExecutionLogger.updateProgress(task.id, 20);
 
-      if (!extractResult.success) {
-        throw new Error(`播出平台抓取失败: ${extractResult.error}`);
+        console.log(`[TaskScheduler] 步骤1: 调用executePlatformExtraction，参数: item=${currentItem.title}, season=${task.action.seasonNumber}`);
+        extractResult = await this.executePlatformExtraction(currentItem, task.action.seasonNumber);
+        console.log(`[TaskScheduler] 步骤1: executePlatformExtraction返回结果:`, extractResult);
+
+        if (!extractResult.success) {
+          try {
+            await taskExecutionLogger.addLog(task.id, '步骤1', `播出平台抓取失败: ${extractResult.error}`, 'error');
+          } catch (logError) {
+            console.error(`[TaskScheduler] 记录日志失败:`, logError);
+          }
+          throw new Error(`播出平台抓取失败: ${extractResult.error}`);
+        }
+
+        try {
+          await taskExecutionLogger.addLog(task.id, '步骤1', `播出平台抓取成功，生成CSV: ${extractResult.csvPath}`, 'success');
+          await taskExecutionLogger.updateProgress(task.id, 30);
+          await taskExecutionLogger.completeStep(task.id, '步骤1', true);
+        } catch (logError) {
+          console.error(`[TaskScheduler] 记录日志失败:`, logError);
+        }
+        console.log(`[TaskScheduler] 步骤1: 播出平台抓取成功完成`);
+
+      } catch (step1Error) {
+        console.error(`[TaskScheduler] 步骤1执行过程中发生错误:`, step1Error);
+        await taskExecutionLogger.addLog(task.id, '步骤1', `执行过程中发生错误: ${step1Error instanceof Error ? step1Error.message : String(step1Error)}`, 'error');
+        await taskExecutionLogger.completeStep(task.id, '步骤1', false, step1Error instanceof Error ? step1Error.message : String(step1Error));
+        throw step1Error;
       }
 
       // 步骤2: 检测已标记集数并删除对应CSV行
-      console.log(`[TaskScheduler] 步骤2: 处理已标记集数`);
-      console.log(`[TaskScheduler] 使用CSV文件: ${extractResult.csvPath}`);
+      let csvProcessResult;
+      try {
+        console.log(`[TaskScheduler] 步骤2: 处理已标记集数`);
+        console.log(`[TaskScheduler] 使用CSV文件: ${extractResult.csvPath}`);
+        await taskExecutionLogger.startStep(task.id, '步骤2');
+        await taskExecutionLogger.addLog(task.id, '步骤2', '开始处理已标记集数', 'info');
+        await taskExecutionLogger.updateProgress(task.id, 40);
 
-      const csvProcessResult = await this.processCSVWithMarkedEpisodes(
-        extractResult.csvPath!,
-        currentItem,
-        task.action.seasonNumber
-      );
+        console.log(`[TaskScheduler] 步骤2: 调用processCSVWithMarkedEpisodes，参数: csvPath=${extractResult.csvPath}, item=${currentItem.title}, season=${task.action.seasonNumber}`);
+        csvProcessResult = await this.processCSVWithMarkedEpisodes(
+          extractResult.csvPath!,
+          currentItem,
+          task.action.seasonNumber,
+          task
+        );
 
-      console.log(`[TaskScheduler] CSV处理结果:`, {
-        success: csvProcessResult.success,
-        processedCsvPath: csvProcessResult.processedCsvPath,
-        removedEpisodes: csvProcessResult.removedEpisodes,
-        error: csvProcessResult.error
-      });
+        console.log(`[TaskScheduler] 步骤2: processCSVWithMarkedEpisodes返回结果:`, {
+          success: csvProcessResult.success,
+          processedCsvPath: csvProcessResult.processedCsvPath,
+          removedEpisodes: csvProcessResult.removedEpisodes,
+          error: csvProcessResult.error
+        });
 
-      if (!csvProcessResult.success) {
-        throw new Error(`CSV处理失败: ${csvProcessResult.error}`);
+        if (!csvProcessResult.success) {
+          await taskExecutionLogger.addLog(task.id, '步骤2', `CSV处理失败: ${csvProcessResult.error}`, 'error');
+          throw new Error(`CSV处理失败: ${csvProcessResult.error}`);
+        }
+
+        await taskExecutionLogger.addLog(task.id, '步骤2', `CSV处理成功，删除了 ${csvProcessResult.removedEpisodes?.length || 0} 个已标记集数`, 'success');
+        await taskExecutionLogger.updateProgress(task.id, 50);
+        await taskExecutionLogger.completeStep(task.id, '步骤2', true);
+        console.log(`[TaskScheduler] 步骤2: CSV处理成功完成`);
+
+      } catch (step2Error) {
+        console.error(`[TaskScheduler] 步骤2执行过程中发生错误:`, step2Error);
+        await taskExecutionLogger.addLog(task.id, '步骤2', `执行过程中发生错误: ${step2Error instanceof Error ? step2Error.message : String(step2Error)}`, 'error');
+        await taskExecutionLogger.completeStep(task.id, '步骤2', false, step2Error instanceof Error ? step2Error.message : String(step2Error));
+        throw step2Error;
       }
 
       // 步骤2.5: 检查CSV中是否还有包含词条标题的行（在TMDB导入前，仅在启用词条标题清理时）
       let hasItemTitleInCSV = false;
+      try {
+        if (task.action.enableTitleCleaning !== false) {
+          console.log(`[TaskScheduler] 步骤2.5: 检查CSV中的词条标题状态`);
+          await taskExecutionLogger.startStep(task.id, '步骤2.5');
+          await taskExecutionLogger.addLog(task.id, '步骤2.5', '检查CSV中的词条标题状态', 'info');
 
-      if (task.action.enableTitleCleaning !== false) {
-        console.log(`[TaskScheduler] 步骤2.5: 检查CSV中的词条标题状态`);
-        hasItemTitleInCSV = await this.checkItemTitleInCSV(csvProcessResult.processedCsvPath!, currentItem.title);
+          console.log(`[TaskScheduler] 步骤2.5: 调用checkItemTitleInCSV，参数: csvPath=${csvProcessResult.processedCsvPath}, title=${currentItem.title}`);
+          hasItemTitleInCSV = await this.checkItemTitleInCSV(csvProcessResult.processedCsvPath!, currentItem.title);
+          console.log(`[TaskScheduler] 步骤2.5: checkItemTitleInCSV返回结果: ${hasItemTitleInCSV}`);
 
-        if (hasItemTitleInCSV) {
-          console.log(`[TaskScheduler] CSV中仍有包含词条标题"${currentItem.title}"的单元格，本次执行跳过自动标记`);
-          console.log(`[TaskScheduler] 将继续执行TMDB导入，但不进行集数标记，等待下次执行时词条标题完全清理后再标记`);
+          if (hasItemTitleInCSV) {
+            console.log(`[TaskScheduler] CSV中仍有包含词条标题"${currentItem.title}"的单元格，本次执行跳过自动标记`);
+            console.log(`[TaskScheduler] 将继续执行TMDB导入，但不进行集数标记，等待下次执行时词条标题完全清理后再标记`);
+            await taskExecutionLogger.addLog(task.id, '步骤2.5', 'CSV中仍有词条标题，将跳过自动标记', 'warning');
+          } else {
+            await taskExecutionLogger.addLog(task.id, '步骤2.5', 'CSV中无词条标题，可以进行自动标记', 'success');
+          }
+          await taskExecutionLogger.completeStep(task.id, '步骤2.5', true);
+        } else {
+          console.log(`[TaskScheduler] 步骤2.5: 用户已禁用词条标题清理功能，跳过检查`);
+          await taskExecutionLogger.addLog(task.id, '步骤2.5', '用户已禁用词条标题清理功能，跳过检查', 'info');
+          await taskExecutionLogger.completeStep(task.id, '步骤2.5', true);
         }
-      } else {
-        console.log(`[TaskScheduler] 步骤2.5: 用户已禁用词条标题清理功能，跳过检查`);
+
+      } catch (step25Error) {
+        console.error(`[TaskScheduler] 步骤2.5执行过程中发生错误:`, step25Error);
+        await taskExecutionLogger.addLog(task.id, '步骤2.5', `执行过程中发生错误: ${step25Error instanceof Error ? step25Error.message : String(step25Error)}`, 'error');
+        await taskExecutionLogger.completeStep(task.id, '步骤2.5', false, step25Error instanceof Error ? step25Error.message : String(step25Error));
+        // 步骤2.5的错误不应该中断整个流程，设置默认值
+        hasItemTitleInCSV = false;
+        console.warn(`[TaskScheduler] 步骤2.5失败，但不中断整个流程，默认允许自动标记`);
       }
 
       // 步骤3: 执行TMDB导入
       console.log(`[TaskScheduler] 步骤3: 执行TMDB导入`);
-      const conflictAction = task.action.conflictAction || 'w';
-      const importResult = await this.executeTMDBImport(
-        csvProcessResult.processedCsvPath!,
-        currentItem,
-        task.action.seasonNumber,
-        conflictAction
-      );
+      await taskExecutionLogger.startStep(task.id, '步骤3');
+      await taskExecutionLogger.addLog(task.id, '步骤3', '开始TMDB导入', 'info');
+      await taskExecutionLogger.updateProgress(task.id, 60);
 
-      if (!importResult.success) {
-        throw new Error(`TMDB导入失败: ${importResult.error}`);
+      try {
+        const conflictAction = task.action.conflictAction || 'w';
+        console.log(`[TaskScheduler] 步骤3: 准备调用executeTMDBImport，参数: csvPath=${csvProcessResult.processedCsvPath}, item=${currentItem.title}, season=${task.action.seasonNumber}, conflictAction=${conflictAction}`);
+
+        await taskExecutionLogger.addLog(task.id, '步骤3', `调用TMDB导入API，冲突处理: ${conflictAction}`, 'info');
+
+        const importResult = await this.executeTMDBImport(
+          csvProcessResult.processedCsvPath!,
+          currentItem,
+          task.action.seasonNumber,
+          conflictAction
+        );
+
+        console.log(`[TaskScheduler] 步骤3: executeTMDBImport返回结果:`, importResult);
+
+        if (!importResult.success) {
+          await taskExecutionLogger.addLog(task.id, '步骤3', `TMDB导入失败: ${importResult.error}`, 'error');
+          throw new Error(`TMDB导入失败: ${importResult.error}`);
+        }
+
+        await taskExecutionLogger.addLog(task.id, '步骤3', 'TMDB导入成功', 'success');
+        await taskExecutionLogger.completeStep(task.id, '步骤3', true);
+        console.log(`[TaskScheduler] 步骤3: TMDB导入成功完成`);
+
+      } catch (step3Error) {
+        console.error(`[TaskScheduler] 步骤3执行过程中发生错误:`, step3Error);
+        await taskExecutionLogger.addLog(task.id, '步骤3', `执行过程中发生错误: ${step3Error instanceof Error ? step3Error.message : String(step3Error)}`, 'error');
+        await taskExecutionLogger.completeStep(task.id, '步骤3', false, step3Error instanceof Error ? step3Error.message : String(step3Error));
+        throw step3Error;
       }
 
       // 步骤4: 条件性集数标记（仅在没有词条标题时执行）
       if (!hasItemTitleInCSV) {
-        console.log(`[TaskScheduler] 步骤4: 执行自动集数标记`);
-        const csvAnalysisResult = await this.analyzeCSVRemainingEpisodes(csvProcessResult.processedCsvPath!);
+        try {
+          console.log(`[TaskScheduler] 步骤4: 执行自动集数标记`);
+          await taskExecutionLogger.startStep(task.id, '步骤4');
+          await taskExecutionLogger.addLog(task.id, '步骤4', '开始自动集数标记', 'info');
+          await taskExecutionLogger.updateProgress(task.id, 80);
 
-        if (csvAnalysisResult.success && csvAnalysisResult.remainingEpisodes && csvAnalysisResult.remainingEpisodes.length > 0) {
-          console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvAnalysisResult.remainingEpisodes.join(', ')}]`);
+          console.log(`[TaskScheduler] 步骤4: 分析CSV剩余集数`);
+          const csvAnalysisResult = await this.analyzeCSVRemainingEpisodes(csvProcessResult.processedCsvPath!);
+          console.log(`[TaskScheduler] 步骤4: CSV分析结果:`, csvAnalysisResult);
 
-          // 直接在调度器内部标记集数，不使用API
-          const markingResult = await this.markEpisodesDirectly(currentItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
+          if (csvAnalysisResult.success && csvAnalysisResult.remainingEpisodes && csvAnalysisResult.remainingEpisodes.length > 0) {
+            console.log(`[TaskScheduler] CSV中剩余的集数（即成功导入的集数）: [${csvAnalysisResult.remainingEpisodes.join(', ')}]`);
+            await taskExecutionLogger.addLog(task.id, '步骤4', `发现 ${csvAnalysisResult.remainingEpisodes.length} 个集数需要标记`, 'info');
 
-          // 检查项目是否已完结，如果是且用户启用了自动删除则删除定时任务
-          if (markingResult && markingResult.projectCompleted && task.action.autoDeleteWhenCompleted !== false) {
-            console.log(`[TaskScheduler] 项目 ${currentItem.title} 已完结，用户启用了自动删除，准备删除定时任务`);
-            await this.deleteCompletedTask(task);
-          } else if (markingResult && markingResult.projectCompleted) {
-            console.log(`[TaskScheduler] 项目 ${currentItem.title} 已完结，但用户未启用自动删除任务功能`);
+            // 直接在调度器内部标记集数，不使用API
+            console.log(`[TaskScheduler] 步骤4: 开始标记集数`);
+            const markingResult = await this.markEpisodesDirectly(currentItem, task.action.seasonNumber, csvAnalysisResult.remainingEpisodes);
+            console.log(`[TaskScheduler] 步骤4: 集数标记结果:`, markingResult);
+
+            if (markingResult) {
+              await taskExecutionLogger.addLog(task.id, '步骤4', `成功标记 ${csvAnalysisResult.remainingEpisodes.length} 个集数`, 'success');
+
+              // 检查项目是否已完结，如果是且用户启用了自动删除则删除定时任务
+              if (markingResult.projectCompleted && task.action.autoDeleteWhenCompleted !== false) {
+                console.log(`[TaskScheduler] 项目 ${currentItem.title} 已完结，用户启用了自动删除，准备删除定时任务`);
+                await taskExecutionLogger.addLog(task.id, '步骤4', '项目已完结，将删除定时任务', 'info');
+                await this.deleteCompletedTask(task);
+              } else if (markingResult.projectCompleted) {
+                console.log(`[TaskScheduler] 项目 ${currentItem.title} 已完结，但用户未启用自动删除任务功能`);
+                await taskExecutionLogger.addLog(task.id, '步骤4', '项目已完结，但未启用自动删除任务', 'info');
+              }
+            } else {
+              await taskExecutionLogger.addLog(task.id, '步骤4', '集数标记失败', 'warning');
+            }
+          } else {
+            console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
+            await taskExecutionLogger.addLog(task.id, '步骤4', 'CSV中没有剩余集数，无需标记', 'info');
+            if (!csvAnalysisResult.success) {
+              console.warn(`[TaskScheduler] CSV分析失败: ${csvAnalysisResult.error}`);
+              await taskExecutionLogger.addLog(task.id, '步骤4', `CSV分析失败: ${csvAnalysisResult.error}`, 'warning');
+            }
           }
-        } else {
-          console.log(`[TaskScheduler] CSV中没有剩余集数，无需标记`);
-          if (!csvAnalysisResult.success) {
-            console.warn(`[TaskScheduler] CSV分析失败: ${csvAnalysisResult.error}`);
-          }
+
+          await taskExecutionLogger.addLog(task.id, '步骤4', '自动集数标记完成', 'success');
+          await taskExecutionLogger.completeStep(task.id, '步骤4', true);
+
+        } catch (step4Error) {
+          console.error(`[TaskScheduler] 步骤4执行过程中发生错误:`, step4Error);
+          await taskExecutionLogger.addLog(task.id, '步骤4', `执行过程中发生错误: ${step4Error instanceof Error ? step4Error.message : String(step4Error)}`, 'error');
+          await taskExecutionLogger.completeStep(task.id, '步骤4', false, step4Error instanceof Error ? step4Error.message : String(step4Error));
+          // 步骤4的错误不应该中断整个流程，只记录警告
+          console.warn(`[TaskScheduler] 步骤4失败，但不中断整个流程`);
         }
       } else {
         console.log(`[TaskScheduler] 步骤4: 跳过自动集数标记（CSV中仍有词条标题）`);
+        await taskExecutionLogger.startStep(task.id, '步骤4');
+        await taskExecutionLogger.addLog(task.id, '步骤4', '跳过自动集数标记（CSV中仍有词条标题）', 'info');
+        await taskExecutionLogger.completeStep(task.id, '步骤4', true);
         console.log(`[TaskScheduler] 任务将继续运行，等待下次执行时词条标题完全清理后再进行标记`);
       }
 
@@ -931,38 +1116,78 @@ class TaskScheduler {
   }> {
     try {
       console.log(`[TaskScheduler] 执行播出平台抓取: ${item.platformUrl}`);
+      console.log(`[TaskScheduler] 步骤1参数: seasonNumber=${seasonNumber}, itemId=${item.id}`);
 
-      const response = await fetch('/api/execute-platform-extraction', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          platformUrl: item.platformUrl,
-          seasonNumber: seasonNumber,
-          itemId: item.id
-        }),
-        signal: AbortSignal.timeout(5 * 60 * 1000) // 5分钟超时
-      });
+      // 创建AbortController用于超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log(`[TaskScheduler] 播出平台抓取API调用超时，正在中止请求`);
+        controller.abort();
+      }, 5 * 60 * 1000); // 5分钟超时
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+      try {
+        console.log(`[TaskScheduler] 准备调用播出平台抓取API`);
+
+        const response = await fetch('/api/execute-platform-extraction', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            platformUrl: item.platformUrl,
+            seasonNumber: seasonNumber,
+            itemId: item.id
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        console.log(`[TaskScheduler] 播出平台抓取API响应状态: ${response.status} ${response.statusText}`);
+
+        if (!response.ok) {
+          console.error(`[TaskScheduler] 播出平台抓取API请求失败，状态码: ${response.status}`);
+          let errorData;
+          try {
+            errorData = await response.json();
+            console.error(`[TaskScheduler] 播出平台抓取API错误响应:`, errorData);
+          } catch (parseError) {
+            console.error(`[TaskScheduler] 无法解析播出平台抓取错误响应:`, parseError);
+            errorData = {};
+          }
+          throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+        }
+
+        console.log(`[TaskScheduler] 开始解析播出平台抓取API响应`);
+        const result = await response.json();
+        console.log(`[TaskScheduler] 播出平台抓取API响应结果:`, result);
+
+        if (!result.success) {
+          console.error(`[TaskScheduler] 播出平台抓取API返回失败结果:`, result.error);
+          throw new Error(result.error || '播出平台抓取失败');
+        }
+
+        console.log(`[TaskScheduler] 播出平台抓取成功，CSV路径: ${result.csvPath}`);
+        return {
+          success: true,
+          csvPath: result.csvPath
+        };
+
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || '播出平台抓取失败');
-      }
-
-      return {
-        success: true,
-        csvPath: result.csvPath
-      };
 
     } catch (error) {
       console.error(`[TaskScheduler] 播出平台抓取失败:`, error);
+
+      // 检查是否是超时错误
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: '播出平台抓取超时（5分钟），请检查网络连接或稍后重试'
+        };
+      }
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error)
@@ -973,7 +1198,7 @@ class TaskScheduler {
   /**
    * 步骤2: 处理已标记集数的CSV
    */
-  private async processCSVWithMarkedEpisodes(csvPath: string, item: TMDBItem, seasonNumber: number): Promise<{
+  private async processCSVWithMarkedEpisodes(csvPath: string, item: TMDBItem, seasonNumber: number, task: ScheduledTask): Promise<{
     success: boolean;
     processedCsvPath?: string;
     removedEpisodes?: number[];
@@ -998,81 +1223,122 @@ class TaskScheduler {
 
       // 先以测试模式运行，分析CSV处理需求
       console.log(`[TaskScheduler] 先以测试模式分析CSV处理需求`);
-      const testResponse = await fetch('/api/process-csv-episodes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          csvPath: csvPath,
-          markedEpisodes: markedEpisodes,
-          platformUrl: item.platformUrl,
-          itemId: item.id,
-          itemTitle: item.title,
-          testMode: true,
-          enableYoukuSpecialHandling: task.action.enableYoukuSpecialHandling !== false,
-          enableTitleCleaning: task.action.enableTitleCleaning !== false
-        }),
-        signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
-      });
 
-      if (!testResponse.ok) {
-        const testErrorData = await testResponse.json().catch(() => ({}));
-        throw new Error(`CSV测试分析失败: ${testErrorData.error || testResponse.statusText}`);
-      }
+      // 创建AbortController用于超时控制
+      const testController = new AbortController();
+      const testTimeoutId = setTimeout(() => {
+        console.log(`[TaskScheduler] CSV处理测试模式API调用超时，正在中止请求`);
+        testController.abort();
+      }, 2 * 60 * 1000); // 2分钟超时
 
-      const testResult = await testResponse.json();
-      console.log(`[TaskScheduler] CSV测试分析结果:`, testResult.analysis);
+      try {
+        const testResponse = await fetch('/api/process-csv-episodes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            csvPath: csvPath,
+            markedEpisodes: markedEpisodes,
+            platformUrl: item.platformUrl,
+            itemId: item.id,
+            itemTitle: item.title,
+            testMode: true,
+            enableYoukuSpecialHandling: task.action.enableYoukuSpecialHandling !== false,
+            enableTitleCleaning: task.action.enableTitleCleaning !== false
+          }),
+          signal: testController.signal
+        });
 
-      // 如果测试显示不需要处理，直接返回原始文件
-      if (!testResult.analysis.wouldNeedProcessing) {
-        console.log(`[TaskScheduler] 测试显示不需要处理CSV，使用原始文件`);
-        return {
-          success: true,
-          processedCsvPath: csvPath,
-          removedEpisodes: []
-        };
+        clearTimeout(testTimeoutId);
+
+        if (!testResponse.ok) {
+          const testErrorData = await testResponse.json().catch(() => ({}));
+          throw new Error(`CSV测试分析失败: ${testErrorData.error || testResponse.statusText}`);
+        }
+
+        const testResult = await testResponse.json();
+        console.log(`[TaskScheduler] CSV测试分析结果:`, testResult.analysis);
+
+        // 如果测试显示不需要处理，直接返回原始文件
+        if (!testResult.analysis.wouldNeedProcessing) {
+          console.log(`[TaskScheduler] 测试显示不需要处理CSV，使用原始文件`);
+          return {
+            success: true,
+            processedCsvPath: csvPath,
+            removedEpisodes: []
+          };
+        }
+
+      } catch (testFetchError) {
+        clearTimeout(testTimeoutId);
+        throw testFetchError;
       }
 
       // 执行实际的CSV处理
       console.log(`[TaskScheduler] 执行实际的CSV处理`);
-      const response = await fetch('/api/process-csv-episodes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          csvPath: csvPath,
-          markedEpisodes: markedEpisodes,
-          platformUrl: item.platformUrl,
-          itemId: item.id,
-          itemTitle: item.title,
-          testMode: false,
-          enableYoukuSpecialHandling: task.action.enableYoukuSpecialHandling !== false,
-          enableTitleCleaning: task.action.enableTitleCleaning !== false
-        }),
-        signal: AbortSignal.timeout(2 * 60 * 1000) // 2分钟超时
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+      // 创建AbortController用于超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log(`[TaskScheduler] CSV处理API调用超时，正在中止请求`);
+        controller.abort();
+      }, 2 * 60 * 1000); // 2分钟超时
+
+      try {
+        const response = await fetch('/api/process-csv-episodes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            csvPath: csvPath,
+            markedEpisodes: markedEpisodes,
+            platformUrl: item.platformUrl,
+            itemId: item.id,
+            itemTitle: item.title,
+            testMode: false,
+            enableYoukuSpecialHandling: task.action.enableYoukuSpecialHandling !== false,
+            enableTitleCleaning: task.action.enableTitleCleaning !== false
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || 'CSV处理失败');
+        }
+
+        return {
+          success: true,
+          processedCsvPath: result.processedCsvPath,
+          removedEpisodes: result.removedEpisodes
+        };
+
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'CSV处理失败');
-      }
-
-      return {
-        success: true,
-        processedCsvPath: result.processedCsvPath,
-        removedEpisodes: result.removedEpisodes
-      };
 
     } catch (error) {
       console.error(`[TaskScheduler] CSV处理失败:`, error);
+
+      // 检查是否是超时错误
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'CSV处理超时（2分钟），请检查网络连接或稍后重试'
+        };
+      }
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error)
@@ -1137,27 +1403,42 @@ class TaskScheduler {
     try {
       console.log(`[TaskScheduler] 检查CSV中是否包含词条标题: "${itemTitle}"`);
 
-      const response = await fetch('/api/check-csv-title', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          csvPath: csvPath,
-          itemTitle: itemTitle
-        }),
-        signal: AbortSignal.timeout(60 * 1000) // 1分钟超时
-      });
+      // 创建AbortController用于超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log(`[TaskScheduler] 检查CSV标题API调用超时，正在中止请求`);
+        controller.abort();
+      }, 60 * 1000); // 1分钟超时
 
-      if (!response.ok) {
-        console.warn(`[TaskScheduler] 检查CSV标题失败: ${response.status}`);
-        return false; // 检查失败时默认允许标记
+      try {
+        const response = await fetch('/api/check-csv-title', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            csvPath: csvPath,
+            itemTitle: itemTitle
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          console.warn(`[TaskScheduler] 检查CSV标题失败: ${response.status}`);
+          return false; // 检查失败时默认允许标记
+        }
+
+        const result = await response.json();
+        console.log(`[TaskScheduler] CSV标题检查结果: ${result.hasItemTitle ? '包含' : '不包含'}词条标题`);
+
+        return result.hasItemTitle || false;
+
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-
-      const result = await response.json();
-      console.log(`[TaskScheduler] CSV标题检查结果: ${result.hasItemTitle ? '包含' : '不包含'}词条标题`);
-
-      return result.hasItemTitle || false;
 
     } catch (error) {
       console.warn(`[TaskScheduler] 检查CSV标题异常: ${error}`);
@@ -1176,37 +1457,61 @@ class TaskScheduler {
     try {
       console.log(`[TaskScheduler] 通过API分析CSV文件剩余集数: ${csvPath}`);
 
-      const response = await fetch('/api/analyze-csv-episodes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          csvPath: csvPath
-        }),
-        signal: AbortSignal.timeout(60 * 1000) // 1分钟超时
-      });
+      // 创建AbortController用于超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log(`[TaskScheduler] 分析CSV集数API调用超时，正在中止请求`);
+        controller.abort();
+      }, 60 * 1000); // 1分钟超时
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+      try {
+        const response = await fetch('/api/analyze-csv-episodes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            csvPath: csvPath
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || 'CSV分析失败');
+        }
+
+        console.log(`[TaskScheduler] CSV分析成功，剩余集数: [${result.remainingEpisodes?.join(', ') || ''}]`);
+
+        return {
+          success: true,
+          remainingEpisodes: result.remainingEpisodes || []
+        };
+
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'CSV分析失败');
-      }
-
-      console.log(`[TaskScheduler] CSV分析成功，剩余集数: [${result.remainingEpisodes?.join(', ') || ''}]`);
-
-      return {
-        success: true,
-        remainingEpisodes: result.remainingEpisodes || []
-      };
 
     } catch (error) {
       console.error(`[TaskScheduler] CSV分析失败:`, error);
+
+      // 检查是否是超时错误
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'CSV分析超时（1分钟），请检查网络连接或稍后重试'
+        };
+      }
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error)
@@ -1227,41 +1532,129 @@ class TaskScheduler {
     error?: string;
   }> {
     try {
-      console.log(`[TaskScheduler] 执行TMDB导入`);
+      console.log(`[TaskScheduler] 开始执行TMDB导入`);
+      console.log(`[TaskScheduler] 参数详情: csvPath=${csvPath}, itemId=${item.id}, itemTitle=${item.title}, tmdbId=${item.tmdbId}, seasonNumber=${seasonNumber}, conflictAction=${conflictAction}`);
 
-      const response = await fetch('/api/execute-tmdb-import', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // 创建AbortController用于超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log(`[TaskScheduler] TMDB导入API调用超时，正在中止请求`);
+        controller.abort();
+      }, 10 * 60 * 1000); // 10分钟超时
+
+      try {
+        console.log(`[TaskScheduler] 准备调用TMDB导入API: /api/execute-tmdb-import`);
+
+        const requestBody = {
           csvPath: csvPath,
           seasonNumber: seasonNumber,
           itemId: item.id,
           tmdbId: item.tmdbId,
           conflictAction: conflictAction
-        }),
-        signal: AbortSignal.timeout(10 * 60 * 1000) // 10分钟超时
-      });
+        };
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+        console.log(`[TaskScheduler] API请求体:`, requestBody);
+
+        // 验证请求体
+        if (!requestBody.csvPath) {
+          throw new Error('CSV路径为空');
+        }
+        if (!requestBody.tmdbId) {
+          throw new Error('TMDB ID为空');
+        }
+        if (!requestBody.seasonNumber) {
+          throw new Error('季数为空');
+        }
+
+        const response = await fetch('/api/execute-tmdb-import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        console.log(`[TaskScheduler] API响应状态: ${response.status} ${response.statusText}`);
+
+        if (!response.ok) {
+          console.error(`[TaskScheduler] API请求失败，状态码: ${response.status}`);
+          let errorData;
+          try {
+            errorData = await response.json();
+            console.error(`[TaskScheduler] API错误响应:`, errorData);
+          } catch (parseError) {
+            console.error(`[TaskScheduler] 无法解析错误响应:`, parseError);
+            errorData = {};
+          }
+          throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+        }
+
+        console.log(`[TaskScheduler] 开始解析API响应`);
+        let result;
+        try {
+          const responseText = await response.text();
+          console.log(`[TaskScheduler] API响应原始文本长度:`, responseText.length);
+          console.log(`[TaskScheduler] API响应原始文本前500字符:`, responseText.substring(0, 500));
+
+          if (!responseText.trim()) {
+            throw new Error('API返回空响应');
+          }
+
+          result = JSON.parse(responseText);
+          console.log(`[TaskScheduler] API响应解析成功，结果类型:`, typeof result);
+          console.log(`[TaskScheduler] API响应结果:`, result);
+        } catch (parseError) {
+          console.error(`[TaskScheduler] 解析API响应失败:`, parseError);
+          console.error(`[TaskScheduler] 响应状态:`, response.status, response.statusText);
+          console.error(`[TaskScheduler] 响应头:`, Object.fromEntries(response.headers.entries()));
+          throw new Error(`API响应解析失败: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+        }
+
+        if (!result.success) {
+          console.error(`[TaskScheduler] API返回失败结果:`, result.error);
+          throw new Error(result.error || 'TMDB导入失败');
+        }
+
+        console.log(`[TaskScheduler] TMDB导入API调用成功`);
+        return {
+          success: true,
+          importedEpisodes: result.importedEpisodes || []
+        };
+
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'TMDB导入失败');
-      }
-
-      return {
-        success: true,
-        importedEpisodes: result.importedEpisodes || []
-      };
 
     } catch (error) {
       console.error(`[TaskScheduler] TMDB导入失败:`, error);
+
+      // 检查是否是超时错误
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'TMDB导入超时（10分钟），请检查网络连接或稍后重试'
+        };
+      }
+
+      // 检查是否是网络错误
+      if (error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))) {
+        return {
+          success: false,
+          error: `网络连接错误: ${error.message}`
+        };
+      }
+
+      // 检查是否是API错误
+      if (error instanceof Error && error.message.includes('API请求失败')) {
+        return {
+          success: false,
+          error: `API调用失败: ${error.message}`
+        };
+      }
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error)
@@ -1471,36 +1864,56 @@ class TaskScheduler {
       console.log(`[TaskScheduler] 这些集数是CSV中剩余的，表示已成功导入到TMDB`);
       console.log(`[TaskScheduler] 使用项目ID: ${item.id}, 项目标题: ${item.title}`);
 
-      const response = await fetch('/api/mark-episodes-completed', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemId: item.id,
-          seasonNumber: seasonNumber,
-          episodeNumbers: episodeNumbers
-        }),
-        signal: AbortSignal.timeout(30 * 1000) // 30秒超时
-      });
+      // 创建AbortController用于超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log(`[TaskScheduler] 标记集数完成API调用超时，正在中止请求`);
+        controller.abort();
+      }, 30 * 1000); // 30秒超时
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+      try {
+        const response = await fetch('/api/mark-episodes-completed', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            itemId: item.id,
+            seasonNumber: seasonNumber,
+            episodeNumbers: episodeNumbers
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || '标记集数失败');
+        }
+
+        console.log(`[TaskScheduler] 成功标记 ${episodeNumbers.length} 个集数为已完成`);
+
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || '标记集数失败');
-      }
-
-      console.log(`[TaskScheduler] 成功标记 ${episodeNumbers.length} 个集数为已完成`);
 
     } catch (error) {
       console.error(`[TaskScheduler] 标记集数失败:`, error);
-      // 这里不抛出错误，因为标记失败不应该影响整个任务的成功状态
-      console.warn(`[TaskScheduler] 标记集数失败，但任务继续执行`);
+
+      // 检查是否是超时错误
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn(`[TaskScheduler] 标记集数超时（30秒），但任务继续执行`);
+      } else {
+        console.warn(`[TaskScheduler] 标记集数失败，但任务继续执行: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
   }
 
@@ -1580,6 +1993,25 @@ class TaskScheduler {
   }
 
   /**
+   * 取消任务调度（只清除定时器，不删除任务）
+   */
+  public async cancelTask(taskId: string): Promise<boolean> {
+    try {
+      // 清除定时器
+      if (this.timers.has(taskId)) {
+        clearTimeout(this.timers.get(taskId));
+        this.timers.delete(taskId);
+        console.log(`[TaskScheduler] 已取消任务调度: ${taskId}`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('[TaskScheduler] 取消任务调度失败:', error);
+      return false;
+    }
+  }
+
+  /**
    * 删除任务
    */
   public async deleteTask(taskId: string): Promise<boolean> {
@@ -1589,7 +2021,7 @@ class TaskScheduler {
         clearTimeout(this.timers.get(taskId));
         this.timers.delete(taskId);
       }
-      
+
       // 从存储中删除任务
       return await StorageManager.deleteScheduledTask(taskId);
     } catch (error) {
@@ -1698,14 +2130,8 @@ class TaskScheduler {
 
       console.log(`[TaskScheduler] 手动执行任务: ${task.id} - ${task.name}`);
 
-      // 创建执行Promise
-      const executionPromise = this._executeTaskInternal(task);
-
-      // 将当前执行添加到映射
-      this.currentExecution.set(taskId, executionPromise);
-
-      // 等待执行完成
-      await executionPromise;
+      // 执行任务
+      await this._executeTaskInternal(task);
 
       return {
         success: true,
