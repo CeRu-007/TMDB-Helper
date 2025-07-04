@@ -60,7 +60,7 @@ import { useData } from "@/components/client-data-provider"
 import { StatCard } from "@/components/ui/stat-card"
 import { StorageManager } from "@/lib/storage"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 

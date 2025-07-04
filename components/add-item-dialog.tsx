@@ -34,7 +34,7 @@ import { StorageManager } from "@/lib/storage"
 import { TMDBService } from "@/lib/tmdb"
 import { cn } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -395,7 +395,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     }
 
     setLoading(true)
-    
+
     try {
       const tmdbUrl = `https://www.themoviedb.org/${selectedResult.media_type}/${selectedResult.id}`
       const tmdbData = await TMDBService.getItemFromUrl(tmdbUrl)
@@ -491,20 +491,14 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       );
 
       if (duplicateItem) {
-        // 显示详细的重复提示
+        console.log("检测到重复词条:", newItem.title);
+
+        // 显示重复提示
         toast({
           title: "⚠️ 词条已存在",
           description: `"${newItem.title}" 已经在您的列表中了，无法重复添加。请选择其他词条或检查现有列表。`,
           variant: "destructive",
           duration: 6000
-        });
-
-        // 添加控制台日志用于调试
-        console.warn("重复词条检测:", {
-          title: newItem.title,
-          tmdbId: newItem.tmdbId,
-          mediaType: newItem.mediaType,
-          existingItem: duplicateItem
         });
 
         setLoading(false);
