@@ -539,7 +539,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(
         "max-w-4xl overflow-hidden flex flex-col",
-        searchResults.length > 0 || selectedResult ? "h-[85vh]" : "h-auto max-h-[50vh]"
+        selectedResult ? "h-[85vh]" : "h-auto max-h-[60vh]"
       )}>
         {/* 背景图预览 */}
         {showBackdropPreview && backdropUrl && (
@@ -565,7 +565,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
         <div className={cn(
           "overflow-y-auto p-4",
-          searchResults.length > 0 || selectedResult ? "flex-1" : "flex-none"
+          selectedResult ? "flex-1" : "flex-none"
         )}>
           <div className="space-y-4">
             {/* 搜索栏 */}
@@ -602,7 +602,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                 <div className="bg-muted/30 px-3 py-1.5 border-b">
                   <h3 className="text-xs font-medium text-muted-foreground">搜索结果 ({searchResults.length})</h3>
                 </div>
-                <ScrollArea className="h-[180px]">
+                <ScrollArea className="h-[240px]">
                   <div className="p-2 space-y-1">
                     {searchResults.map((result) => (
                       <div
