@@ -576,8 +576,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
               </div>
             </div>
 
-            {/* 搜索结果 */}
-            {searchResults.length > 0 && (
+              {/* 搜索结果区域 */}
               <div className="bg-background border rounded-lg overflow-hidden">
                 <div className="bg-muted/30 px-3 py-1.5 border-b">
                   <h3 className="text-xs font-medium text-muted-foreground">搜索结果 ({searchResults.length})</h3>
@@ -791,6 +790,28 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                   </div>
                 </div>
 
+                {/* 每日更新选项 - 移动到这里 */}
+                <div className="flex items-center space-x-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-800">
+                  <Checkbox
+                    id="isDailyUpdate"
+                    checked={formData.isDailyUpdate}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        isDailyUpdate: checked === true,
+                      })
+                    }
+                    className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                  />
+                  <Label
+                    htmlFor="isDailyUpdate"
+                    className="text-sm flex items-center cursor-pointer font-medium"
+                  >
+                    <Zap className="h-4 w-4 mr-2 text-amber-500" />
+                    设为每日更新
+                  </Label>
+                </div>
+
                 {/* URL和背景图行 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
@@ -858,31 +879,6 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                     </div>
                   </div>
                 </div>
-
-                {/* 每日更新选项 */}
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <div className="flex items-center justify-center space-x-3">
-                    <Checkbox
-                      id="isDailyUpdate"
-                      checked={formData.isDailyUpdate}
-                      onCheckedChange={(checked) =>
-                        setFormData({
-                          ...formData,
-                          isDailyUpdate: checked === true,
-                        })
-                      }
-                      className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
-                    />
-                    <Label
-                      htmlFor="isDailyUpdate"
-                      className="text-sm flex items-center cursor-pointer font-medium"
-                    >
-                      <Zap className="h-4 w-4 mr-2 text-amber-500 animate-pulse" />
-                      设为每日更新
-                    </Label>
-                  </div>
-                </div>
-
 
                 {/* 底部按钮 */}
                 <div className="flex justify-center gap-4 pt-4 border-t">
