@@ -637,7 +637,17 @@ export class StorageManager {
     };
   } {
     try {
+      console.log("开始验证导入数据，数据长度:", jsonData.length);
       const parsedData = JSON.parse(jsonData);
+      console.log("解析后的数据结构:", {
+        isArray: Array.isArray(parsedData),
+        hasItems: !!parsedData.items,
+        hasItemsArray: Array.isArray(parsedData.items),
+        hasTasks: !!parsedData.tasks,
+        hasTasksArray: Array.isArray(parsedData.tasks),
+        version: parsedData.version,
+        exportDate: parsedData.exportDate
+      });
 
       let items: TMDBItem[] = [];
       let tasks: ScheduledTask[] = [];
@@ -647,12 +657,16 @@ export class StorageManager {
       // 检查数据格式
       if (Array.isArray(parsedData)) {
         // 旧格式：直接是项目数组
+        console.log("检测到旧格式数据（项目数组）");
         items = parsedData;
       } else if (parsedData && typeof parsedData === 'object') {
         // 新格式：包含items和tasks
+        console.log("检测到新格式数据（对象）");
         if (parsedData.items && Array.isArray(parsedData.items)) {
           items = parsedData.items;
+          console.log(`找到 ${items.length} 个项目`);
         } else {
+          console.error("数据格式错误：缺少items字段或items不是数组", parsedData);
           return {
             isValid: false,
             error: "数据格式错误：缺少items字段或items不是数组"
@@ -661,11 +675,15 @@ export class StorageManager {
 
         if (parsedData.tasks && Array.isArray(parsedData.tasks)) {
           tasks = parsedData.tasks;
+          console.log(`找到 ${tasks.length} 个任务`);
+        } else {
+          console.log("没有找到任务数据或任务数据不是数组");
         }
 
         version = parsedData.version;
         exportDate = parsedData.exportDate;
       } else {
+        console.error("数据格式错误：不支持的数据结构", typeof parsedData);
         return {
           isValid: false,
           error: "数据格式错误：不支持的数据结构"
@@ -673,22 +691,58 @@ export class StorageManager {
       }
 
       // 验证项目数据
-      const validItems = items.filter(item => {
-        return item &&
-               typeof item === 'object' &&
-               item.id &&
-               item.title &&
-               item.mediaType &&
-               ['movie', 'tv'].includes(item.mediaType);
+      console.log(`开始验证 ${items.length} 个项目`);
+      const validItems = items.filter((item, index) => {
+        // 基本结构检查
+        if (!item || typeof item !== 'object') {
+          console.warn(`项目 ${index} 不是有效对象:`, item);
+          return false;
+        }
+
+        // 必需字段检查
+        const requiredFields = ['id', 'title', 'mediaType', 'tmdbId'];
+        for (const field of requiredFields) {
+          if (!item[field]) {
+            console.warn(`项目 ${index} 缺少必需字段 ${field}:`, {
+              id: item.id,
+              title: item.title,
+              mediaType: item.mediaType,
+              tmdbId: item.tmdbId
+            });
+            return false;
+          }
+        }
+
+        // mediaType值检查
+        if (!['movie', 'tv'].includes(item.mediaType)) {
+          console.warn(`项目 ${index} mediaType无效: ${item.mediaType}`, item);
+          return false;
+        }
+
+        return true;
       });
+
+      console.log(`验证完成：${validItems.length}/${items.length} 个项目有效`);
 
       // 验证任务数据
       const validTasks = tasks.filter(task => {
-        return task &&
-               typeof task === 'object' &&
-               task.itemId &&
-               task.name &&
-               task.type === 'tmdb-import';
+        // 基本结构检查
+        if (!task || typeof task !== 'object') {
+          return false;
+        }
+
+        // 必需字段检查（更宽松的验证）
+        if (!task.itemId || !task.name) {
+          console.warn(`Task missing required fields (itemId or name)`, task);
+          return false;
+        }
+
+        // 如果没有type字段，默认设置为tmdb-import
+        if (!task.type) {
+          task.type = 'tmdb-import';
+        }
+
+        return true;
       });
 
       return {
@@ -755,16 +809,25 @@ export class StorageManager {
       // 导入项目数据
       if (this.USE_FILE_STORAGE) {
         try {
+          // 发送完整的导出格式给服务器，让服务器端处理格式兼容性
+          const serverData = {
+            items,
+            tasks: [], // 服务器端暂时不处理任务，任务仍然保存在客户端
+            version: "1.0.0",
+            exportDate: new Date().toISOString()
+          };
+
           const response = await fetch(`${this.API_BASE_URL}/data`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(items),
+            body: JSON.stringify(serverData),
           });
 
           if (!response.ok) {
-            throw new Error(`API请求失败: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`API请求失败: ${response.status} - ${errorText}`);
           }
 
           console.log("项目数据通过API导入成功");

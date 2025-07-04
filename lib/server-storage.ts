@@ -103,10 +103,24 @@ export function deleteItem(id: string): boolean {
  */
 export function importData(jsonData: string): boolean {
   try {
-    const items = JSON.parse(jsonData);
-    if (!Array.isArray(items)) {
-      throw new Error('无效的数据格式');
+    const parsedData = JSON.parse(jsonData);
+    let items: TMDBItem[] = [];
+
+    // 检查数据格式
+    if (Array.isArray(parsedData)) {
+      // 旧格式：直接是项目数组
+      items = parsedData;
+    } else if (parsedData && typeof parsedData === 'object' && parsedData.items) {
+      // 新格式：包含items和tasks的对象
+      if (!Array.isArray(parsedData.items)) {
+        throw new Error('无效的数据格式：items必须是数组');
+      }
+      items = parsedData.items;
+    } else {
+      throw new Error('无效的数据格式：期望数组或包含items字段的对象');
     }
+
+    console.log(`服务器端导入 ${items.length} 个项目`);
     return writeItems(items);
   } catch (error) {
     console.error('导入数据失败:', error);
