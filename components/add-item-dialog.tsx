@@ -920,7 +920,9 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                 </div>
 
                 {/* 底部按钮 */}
-                <div className="flex justify-center gap-4 pt-4 border-t">
+                <div className="flex justify-center gap-4 pt-6 relative">
+                  {/* 渐变分割效果 */}
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent"></div>
                   <Button
                     type="button"
                     variant="outline"
