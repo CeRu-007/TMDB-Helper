@@ -22,7 +22,6 @@ interface ExportOptions {
   includeItems: boolean
   includeTasks: boolean
   format: 'json' | 'csv'
-  itemsOnly: boolean // 仅导出项目（兼容旧格式）
   exactCopy: boolean // 导出与data文件夹完全一致的文件
 }
 
@@ -31,7 +30,6 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
     includeItems: true,
     includeTasks: true,
     format: 'json',
-    itemsOnly: false,
     exactCopy: false
   })
   const [exporting, setExporting] = useState(false)
@@ -87,10 +85,6 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
             console.error("从文件导出失败:", error)
             throw error
           }
-        } else if (options.itemsOnly) {
-          // 导出旧格式（仅项目数组）
-          const data = JSON.stringify(items, null, 2)
-          downloadFile(data, `tmdb-helper-items-${new Date().toISOString().split("T")[0]}.json`, 'application/json')
         } else {
           // 导出新格式 - 包含任务的完整备份
           try {
@@ -308,8 +302,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
                           ...prev,
                           exactCopy: checked as boolean,
                           includeItems: true,
-                          includeTasks: !checked,
-                          itemsOnly: false
+                          includeTasks: !checked
                         }))
                       }
                     />
@@ -318,30 +311,6 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
                         <div className="font-medium">导出data文件副本</div>
                         <div className="text-sm text-muted-foreground">
                           导出与data/tmdb_items.json完全一致的文件
-                        </div>
-                      </div>
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="itemsOnly"
-                      checked={options.itemsOnly}
-                      onCheckedChange={(checked) =>
-                        setOptions(prev => ({
-                          ...prev,
-                          itemsOnly: checked as boolean,
-                          includeItems: true,
-                          includeTasks: !checked,
-                          exactCopy: false
-                        }))
-                      }
-                    />
-                    <Label htmlFor="itemsOnly" className="flex-1">
-                      <div>
-                        <div className="font-medium">兼容旧版本格式</div>
-                        <div className="text-sm text-muted-foreground">
-                          仅导出项目数组，兼容旧版本导入
                         </div>
                       </div>
                     </Label>
