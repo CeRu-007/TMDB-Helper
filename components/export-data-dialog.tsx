@@ -23,6 +23,7 @@ interface ExportOptions {
   includeTasks: boolean
   format: 'json' | 'csv'
   itemsOnly: boolean // 仅导出项目（兼容旧格式）
+  exactCopy: boolean // 导出与data文件夹完全一致的文件
 }
 
 export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialogProps) {
@@ -30,7 +31,8 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
     includeItems: true,
     includeTasks: true,
     format: 'json',
-    itemsOnly: false
+    itemsOnly: false,
+    exactCopy: false
   })
   const [exporting, setExporting] = useState(false)
   const [stats, setStats] = useState<{
@@ -69,12 +71,28 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
 
     try {
       if (options.format === 'json') {
-        if (options.itemsOnly) {
+        if (options.exactCopy) {
+          // 导出与data文件夹完全一致的文件
+          try {
+            const response = await fetch('/api/storage/file-operations')
+            const result = await response.json()
+
+            if (result.success) {
+              const data = JSON.stringify(result.items, null, 2)
+              downloadFile(data, 'tmdb_items.json', 'application/json')
+            } else {
+              throw new Error(result.error || "读取数据失败")
+            }
+          } catch (error) {
+            console.error("从文件导出失败:", error)
+            throw error
+          }
+        } else if (options.itemsOnly) {
           // 导出旧格式（仅项目数组）
           const data = JSON.stringify(items, null, 2)
           downloadFile(data, `tmdb-helper-items-${new Date().toISOString().split("T")[0]}.json`, 'application/json')
         } else {
-          // 导出新格式 - 直接从文件读取，确保格式一致
+          // 导出新格式 - 包含任务的完整备份
           try {
             const response = await fetch('/api/storage/file-operations')
             const result = await response.json()
@@ -283,14 +301,39 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
 
                   <div className="flex items-center space-x-2">
                     <Checkbox
+                      id="exactCopy"
+                      checked={options.exactCopy}
+                      onCheckedChange={(checked) =>
+                        setOptions(prev => ({
+                          ...prev,
+                          exactCopy: checked as boolean,
+                          includeItems: true,
+                          includeTasks: !checked,
+                          itemsOnly: false
+                        }))
+                      }
+                    />
+                    <Label htmlFor="exactCopy" className="flex-1">
+                      <div>
+                        <div className="font-medium">导出data文件副本</div>
+                        <div className="text-sm text-muted-foreground">
+                          导出与data/tmdb_items.json完全一致的文件
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
                       id="itemsOnly"
                       checked={options.itemsOnly}
-                      onCheckedChange={(checked) => 
-                        setOptions(prev => ({ 
-                          ...prev, 
+                      onCheckedChange={(checked) =>
+                        setOptions(prev => ({
+                          ...prev,
                           itemsOnly: checked as boolean,
                           includeItems: true,
-                          includeTasks: !checked
+                          includeTasks: !checked,
+                          exactCopy: false
                         }))
                       }
                     />
