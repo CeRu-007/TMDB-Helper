@@ -38,3 +38,6 @@ Thumbs.db
 
 # TMDB-Import directory (external tool)
 TMDB-Import-master/
+
+# Local data files
+data/
