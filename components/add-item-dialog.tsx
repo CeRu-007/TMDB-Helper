@@ -537,7 +537,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className={cn(
+        "max-w-4xl overflow-hidden flex flex-col",
+        searchResults.length > 0 || selectedResult ? "h-[85vh]" : "h-auto max-h-[50vh]"
+      )}>
         {/* 背景图预览 */}
         {showBackdropPreview && backdropUrl && (
           <div className="absolute inset-0 -z-10">
@@ -560,7 +563,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className={cn(
+          "overflow-y-auto p-4",
+          searchResults.length > 0 || selectedResult ? "flex-1" : "flex-none"
+        )}>
           <div className="space-y-4">
             {/* 搜索栏 */}
             <div className="bg-gradient-to-r from-muted/20 to-muted/30 p-3 rounded-lg border">
@@ -661,9 +667,9 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
             {/* 初始状态提示 - 当没有搜索时显示 */}
             {searchResults.length === 0 && searchQuery.trim() === '' && !loading && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Sparkles className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                <p className="text-base font-medium mb-2">开始搜索</p>
+              <div className="text-center py-6 text-muted-foreground">
+                <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                <p className="text-base font-medium mb-1">开始搜索</p>
                 <p className="text-sm">在上方输入电影或剧集名称进行搜索</p>
               </div>
             )}
