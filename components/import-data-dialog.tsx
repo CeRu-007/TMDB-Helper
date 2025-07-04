@@ -38,6 +38,7 @@ export default function ImportDataDialog({ open, onOpenChange }: ImportDataDialo
   const [preview, setPreview] = useState<ImportPreview | null>(null)
   const [importing, setImporting] = useState(false)
   const [importProgress, setImportProgress] = useState(0)
+  const [importStep, setImportStep] = useState("")
   const [importResult, setImportResult] = useState<{
     success: boolean
     error?: string
@@ -101,18 +102,67 @@ export default function ImportDataDialog({ open, onOpenChange }: ImportDataDialo
       reader.onload = async (e) => {
         try {
           const data = e.target?.result as string
-          
-          // 模拟进度更新
+
+          setImportStep("正在解析文件...")
+          setImportProgress(10)
+
+          // 解析数据
+          const parsedData = JSON.parse(data)
+          let items: any[] = []
+
+          // 检查数据格式
+          if (Array.isArray(parsedData)) {
+            items = parsedData
+          } else if (parsedData.items && Array.isArray(parsedData.items)) {
+            items = parsedData.items
+          } else {
+            throw new Error("数据格式不正确")
+          }
+
+          setImportStep(`准备导入 ${items.length} 个项目...`)
           setImportProgress(30)
-          
-          const stats = await importData(data)
-          
-          setImportProgress(100)
-          setImportResult({
-            success: true,
-            stats
+
+          // 使用新的文件操作API直接导入
+          setImportStep("正在备份原数据...")
+          const response = await fetch('/api/storage/file-operations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              items,
+              backup: true // 自动备份原文件
+            }),
           })
+
+          setImportStep("正在写入数据文件...")
+          setImportProgress(70)
+
+          const result = await response.json()
+
+          setImportStep("导入完成！")
+          setImportProgress(100)
+
+          if (result.success) {
+            setImportResult({
+              success: true,
+              stats: {
+                itemsImported: result.itemCount,
+                tasksImported: 0,
+                itemsSkipped: 0,
+                tasksSkipped: 0
+              }
+            })
+
+            // 延迟刷新页面，让用户看到成功信息
+            setTimeout(() => {
+              window.location.reload()
+            }, 2000)
+          } else {
+            throw new Error(result.error || "导入失败")
+          }
         } catch (error) {
+          setImportStep("导入失败")
           setImportResult({
             success: false,
             error: error instanceof Error ? error.message : "导入失败"
@@ -137,6 +187,7 @@ export default function ImportDataDialog({ open, onOpenChange }: ImportDataDialo
     setPreview(null)
     setImportResult(null)
     setImportProgress(0)
+    setImportStep("")
     setImporting(false)
   }
 
@@ -276,8 +327,11 @@ export default function ImportDataDialog({ open, onOpenChange }: ImportDataDialo
               <CardContent>
                 <Progress value={importProgress} className="w-full" />
                 <p className="text-sm text-muted-foreground mt-2">
-                  正在导入数据，请稍候...
+                  {importStep || "正在导入数据，请稍候..."}
                 </p>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {importProgress}% 完成
+                </div>
               </CardContent>
             </Card>
           )}

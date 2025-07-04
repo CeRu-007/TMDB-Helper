@@ -66,7 +66,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
   // 处理导出
   const handleExport = async () => {
     setExporting(true)
-    
+
     try {
       if (options.format === 'json') {
         if (options.itemsOnly) {
@@ -74,14 +74,36 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
           const data = JSON.stringify(items, null, 2)
           downloadFile(data, `tmdb-helper-items-${new Date().toISOString().split("T")[0]}.json`, 'application/json')
         } else {
-          // 导出新格式
-          await exportData()
+          // 导出新格式 - 直接从文件读取，确保格式一致
+          try {
+            const response = await fetch('/api/storage/file-operations')
+            const result = await response.json()
+
+            if (result.success) {
+              // 创建完整的导出格式
+              const exportData = {
+                items: result.items,
+                tasks: await StorageManager.getScheduledTasks(), // 从localStorage获取任务
+                version: "1.0.0",
+                exportDate: new Date().toISOString()
+              }
+
+              const data = JSON.stringify(exportData, null, 2)
+              downloadFile(data, `tmdb-helper-backup-${new Date().toISOString().split("T")[0]}.json`, 'application/json')
+            } else {
+              throw new Error(result.error || "读取数据失败")
+            }
+          } catch (error) {
+            console.error("从文件导出失败，尝试使用内存数据:", error)
+            // 降级到原来的导出方法
+            await exportData()
+          }
         }
       } else if (options.format === 'csv') {
         // 导出CSV格式
         await exportToCSV()
       }
-      
+
       onOpenChange(false)
     } catch (error) {
       console.error("Export failed:", error)
