@@ -168,18 +168,24 @@ export default function HomePage() {
       
       // 使用传入的signal或创建一个新的AbortController
       const controller = signal ? undefined : new AbortController();
-      const timeoutId = setTimeout(() => controller?.abort(), 30000); // 30秒超时
-      
+      const requestSignal = signal || controller?.signal;
+
+      // 只有在创建了新controller时才设置超时
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 30000) : null; // 30秒超时
+
       const response = await fetch(`/api/tmdb/upcoming?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
-        signal: signal || controller?.signal,
+        signal: requestSignal,
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
       });
-      
-      clearTimeout(timeoutId);
+
+      // 只有在设置了超时时才清除
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -247,14 +253,20 @@ export default function HomePage() {
         throw new Error(data.error || '获取影视资讯内容失败');
       }
     } catch (error) {
+      // 如果是AbortError，说明请求被取消，不需要显示错误
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('请求被取消');
+        return;
+      }
+
       console.error('获取影视资讯内容失败:', error);
       setUpcomingError(error instanceof Error ? error.message : '未知错误');
-      
+
       // 如果是网络错误或超时，尝试重试（最多5次）
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (retryCount < 5 && 
-          (errorMessage.includes('network') || 
-           errorMessage.includes('timeout') || 
+      if (retryCount < 5 &&
+          (errorMessage.includes('network') ||
+           errorMessage.includes('timeout') ||
            errorMessage.includes('aborted') ||
            error instanceof TypeError)) {
         console.log(`尝试重新获取影视资讯内容，第${retryCount + 1}次重试`);
