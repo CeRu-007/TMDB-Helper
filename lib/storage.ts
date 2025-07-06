@@ -118,6 +118,22 @@ export class StorageManager {
   }
 
   /**
+   * 检查开发环境状态
+   */
+  private static checkDevelopmentEnvironment(): void {
+    if (this.isClient()) {
+      console.log(`[StorageManager] 环境检查:`, {
+        userAgent: navigator.userAgent,
+        location: window.location.href,
+        protocol: window.location.protocol,
+        host: window.location.host,
+        useFileStorage: this.USE_FILE_STORAGE,
+        apiBaseUrl: this.API_BASE_URL
+      });
+    }
+  }
+
+  /**
    * 检查localStorage是否可用
    */
   static isStorageAvailable(): boolean {
@@ -137,35 +153,125 @@ export class StorageManager {
   }
 
   /**
+   * 通用的API调用方法，带有超时和错误处理
+   */
+  private static async makeApiCall(url: string, options: RequestInit = {}): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 增加到15秒超时
+
+    console.log(`[StorageManager] 发起API请求: ${url}`);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        cache: 'no-cache',
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
+
+      clearTimeout(timeoutId);
+      console.log(`[StorageManager] API请求成功: ${url}, 状态码: ${response.status}`);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      console.error(`[StorageManager] API请求失败: ${url}`, error);
+
+      // 提供更详细的错误信息
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('请求超时：API调用超过15秒未响应');
+      } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        // 检查是否是本地开发环境
+        const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
+        if (isLocalhost) {
+          throw new Error('本地服务器连接失败：请确认Next.js开发服务器正在运行 (npm run dev)');
+        } else {
+          throw new Error('网络连接失败：无法连接到服务器');
+        }
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * 降级到localStorage的方法
+   */
+  private static fallbackToLocalStorage(): TMDBItem[] {
+    console.log('[StorageManager] 尝试从localStorage获取数据作为降级方案');
+
+    if (!this.isClient()) {
+      console.warn("[StorageManager] 不在客户端环境，无法访问localStorage");
+      return [];
+    }
+
+    try {
+      if (!this.isStorageAvailable()) {
+        console.warn("[StorageManager] localStorage不可用");
+        return [];
+      }
+
+      const data = localStorage.getItem(this.STORAGE_KEY);
+      if (!data) {
+        console.log('[StorageManager] localStorage中没有数据');
+        return [];
+      }
+
+      try {
+        const parsedData = JSON.parse(data);
+        const items = Array.isArray(parsedData) ? parsedData : [];
+        console.log(`[StorageManager] 从localStorage成功获取 ${items.length} 个项目`);
+        return items;
+      } catch (parseError) {
+        console.error("[StorageManager] 解析localStorage数据失败:", parseError);
+        return [];
+      }
+    } catch (error) {
+      console.error("[StorageManager] 从localStorage获取数据失败:", error);
+      return [];
+    }
+  }
+
+  /**
    * 带重试机制的获取items方法
    */
   static async getItemsWithRetry(retries = this.MAX_RETRIES): Promise<TMDBItem[]> {
+    // 首次调用时进行环境检查
+    if (retries === this.MAX_RETRIES) {
+      this.checkDevelopmentEnvironment();
+    }
+
     // 如果使用文件存储，则调用API
     if (this.USE_FILE_STORAGE) {
       try {
-        const response = await fetch(`${this.API_BASE_URL}/items`, {
+        console.log(`[StorageManager] 尝试获取数据，剩余重试次数: ${retries}`);
+
+        const response = await this.makeApiCall(`${this.API_BASE_URL}/items`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
         });
 
         if (!response.ok) {
-          throw new Error(`API请求失败: ${response.status}`);
+          throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
+        console.log(`[StorageManager] 成功获取 ${data.items?.length || 0} 个项目`);
         return data.items || [];
       } catch (error) {
-        console.error('从API获取数据失败:', error);
-        
+        console.error('[StorageManager] 从API获取数据失败:', error);
+
         if (retries > 0) {
-          console.log(`重试获取数据... (剩余${retries}次尝试)`);
+          console.log(`[StorageManager] 重试获取数据... (剩余${retries}次尝试)`);
           await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
           return this.getItemsWithRetry(retries - 1);
         }
-        
-        return [];
+
+        // 所有重试都失败后，尝试降级到localStorage
+        console.warn('[StorageManager] API获取失败，尝试降级到localStorage');
+        return this.fallbackToLocalStorage();
       }
     }
     
@@ -249,16 +355,13 @@ export class StorageManager {
     // 使用文件存储
     if (this.USE_FILE_STORAGE) {
       try {
-        const response = await fetch(`${this.API_BASE_URL}/item`, {
+        const response = await this.makeApiCall(`${this.API_BASE_URL}/item`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify({ item }),
         });
 
         if (!response.ok) {
-          throw new Error(`API请求失败: ${response.status}`);
+          throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
         }
 
         return true;
