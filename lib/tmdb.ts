@@ -510,6 +510,7 @@ export class TMDBService {
     } catch (error) {
       console.error(`[TMDBService] 获取TMDB数据失败:`, error);
       return null;
+    }
   }
 
   private static parseUrl(url: string): { mediaType: "movie" | "tv" | null; id: string | null } {
