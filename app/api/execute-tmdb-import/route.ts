@@ -129,13 +129,30 @@ export async function POST(request: NextRequest) {
         console.log(`[API] TMDB导入进程执行完成，结果:`, { success: result.success, hasError: !!result.error });
       } catch (processError) {
         console.error(`[API] 进程执行异常:`, processError);
+
+        // 分析错误类型
+        let errorType = 'unknown';
+        let errorMessage = processError instanceof Error ? processError.message : String(processError);
+
+        if (errorMessage.includes('timeout') || errorMessage.includes('超时')) {
+          errorType = 'timeout';
+          errorMessage = '进程执行超时，请检查网络连接或稍后重试';
+        } else if (errorMessage.includes('ENOENT') || errorMessage.includes('找不到')) {
+          errorType = 'not_found';
+          errorMessage = 'Python或tmdb-import工具未找到，请检查安装';
+        } else if (errorMessage.includes('permission') || errorMessage.includes('权限')) {
+          errorType = 'permission';
+          errorMessage = '权限不足，请检查文件权限';
+        }
+
         return NextResponse.json({
           success: false,
-          error: '进程执行异常',
+          error: errorMessage,
+          errorType: errorType,
           details: {
             command: `python -m tmdb-import "${tmdbUrl}"`,
             workingDir: tmdbImportDir,
-            errorMessage: processError instanceof Error ? processError.message : String(processError),
+            originalError: processError instanceof Error ? processError.message : String(processError),
             conflictAction: conflictAction
           }
         }, { status: 500 });
@@ -146,9 +163,25 @@ export async function POST(request: NextRequest) {
         console.error(`[API] 进程输出 (stdout):`, result.stdout?.substring(0, 500) || '无输出');
         console.error(`[API] 进程错误 (stderr):`, result.stderr?.substring(0, 500) || '无错误输出');
 
+        // 分析错误类型
+        let errorType = 'process_failed';
+        let enhancedError = result.error || 'TMDB导入进程失败';
+
+        if (result.stderr?.includes('HTTP 500') || result.stdout?.includes('HTTP 500')) {
+          errorType = 'server_error';
+          enhancedError = '目标服务器返回500错误，请稍后重试';
+        } else if (result.stderr?.includes('timeout') || result.stdout?.includes('timeout')) {
+          errorType = 'timeout';
+          enhancedError = '网络请求超时，请检查网络连接';
+        } else if (result.stderr?.includes('ConnectionError') || result.stdout?.includes('ConnectionError')) {
+          errorType = 'connection_error';
+          enhancedError = '网络连接失败，请检查网络设置';
+        }
+
         return NextResponse.json({
           success: false,
-          error: result.error || 'TMDB导入进程失败',
+          error: enhancedError,
+          errorType: errorType,
           details: {
             command: `python -m tmdb-import "${tmdbUrl}"`,
             workingDir: tmdbImportDir,

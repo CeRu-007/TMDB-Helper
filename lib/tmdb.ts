@@ -290,29 +290,60 @@ export class TMDBService {
   }
 
   static async getItemFromUrl(url: string, forceRefresh: boolean = false): Promise<TMDBItemData | null> {
-    try {
-      const { mediaType, id } = this.parseUrl(url)
-      if (!mediaType || !id) {
-        throw new Error("无效的TMDB URL")
-      }
+    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-      const apiKey = this.getApiKey()
-      const endpoint = mediaType === "movie" ? "movie" : "tv"
-      const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}?api_key=${apiKey}&language=zh-CN`)
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const { mediaType, id } = this.parseUrl(url)
+        if (!mediaType || !id) {
+          throw new Error("无效的TMDB URL")
+        }
 
-      if (!response.ok) {
-        throw new Error("获取TMDB数据失败")
-      }
+        const apiKey = this.getApiKey()
+        const endpoint = mediaType === "movie" ? "movie" : "tv"
+
+        console.log(`[TMDBService] 获取项目数据 (尝试 ${attempt}/${maxRetries}): ${endpoint}/${id}`);
+
+        // 创建AbortController用于超时控制
+        const controller = new AbortController();
+        const timeout = setTimeout(() => {
+          console.log(`[TMDBService] 请求超时，中止请求 (尝试 ${attempt})`);
+          controller.abort();
+        }, 15000 + (attempt - 1) * 5000); // 15秒基础，每次重试增加5秒
+
+        const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}?api_key=${apiKey}&language=zh-CN`, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'TMDB-Helper/1.0',
+            'Accept': 'application/json',
+          }
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          console.error(`[TMDBService] API请求失败: ${response.status} ${response.statusText} (尝试 ${attempt})`);
+
+          // 对于某些错误，不需要重试
+          if (response.status === 404 || response.status === 401) {
+            throw new Error(`获取TMDB数据失败: ${response.status} ${response.statusText}`);
+          }
+
+          // 对于服务器错误，可以重试
+          throw new Error(`获取TMDB数据失败: ${response.status} ${response.statusText}`);
+        }
 
       const data = await response.json()
+        console.log(`[TMDBService] 获取到TMDB数据 (尝试 ${attempt}):`, { mediaType, id, title: data.title || data.name })
 
-      let platformUrl = ""
-      let totalEpisodes = undefined
-      let seasons: TMDBSeasonData[] = []
-      let recommendedCategory: "anime" | "tv" | "kids" | "variety" | "short" | "movie" | undefined = undefined
+        let platformUrl = ""
+        let totalEpisodes = undefined
+        let seasons: TMDBSeasonData[] = []
+        let recommendedCategory: "anime" | "tv" | "kids" | "variety" | "short" | "movie" | undefined = undefined
 
-      // 获取标志，传入forceRefresh参数
-      const logoData = await this.getItemLogoFromId(mediaType, id, forceRefresh)
+        // 获取标志，传入forceRefresh参数
+        const logoData = await this.getItemLogoFromId(mediaType, id, forceRefresh)
 
       if (mediaType === "movie") {
         const movieData = data as TMDBMovieResponse
@@ -485,11 +516,23 @@ export class TMDBService {
           voteAverage: tvData.vote_average === null ? undefined : tvData.vote_average,
           overview: tvData.overview === null ? undefined : tvData.overview
         }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.error(`[TMDBService] 获取TMDB数据失败 (尝试 ${attempt}):`, lastError.message);
+
+        // 如果不是最后一次尝试，等待后重试
+        if (attempt < maxRetries) {
+          const retryDelay = Math.pow(2, attempt - 1) * 1000; // 指数退避: 1s, 2s, 4s
+          console.log(`[TMDBService] 等待 ${retryDelay}ms 后进行第 ${attempt + 1} 次尝试...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          continue;
+        }
       }
-    } catch (error) {
-      console.error("获取TMDB数据失败:", error)
-      return null
     }
+
+    // 所有重试都失败了
+    console.error(`[TMDBService] 获取TMDB数据失败，已重试 ${maxRetries} 次:`, lastError?.message);
+    return null;
   }
 
   private static parseUrl(url: string): { mediaType: "movie" | "tv" | null; id: string | null } {

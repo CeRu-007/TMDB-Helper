@@ -33,9 +33,11 @@ const fetchWithTimeout = async (url: string, options = {}, timeout = 20000) => {
 // 带重试和多服务器故障转移的TMDB API请求函数
 const fetchTMDBWithRetry = async (endpoint: string, params: Record<string, string> = {}, apiKey: string, maxRetries = 3) => {
   let lastError;
-  
+
   // 尝试所有可能的代理服务器
   for (const baseUrl of PROXY_URLS) {
+    console.log(`[TMDB API] 尝试代理服务器: ${baseUrl}`);
+
     // 每个代理尝试多次
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
@@ -44,53 +46,76 @@ const fetchTMDBWithRetry = async (endpoint: string, params: Record<string, strin
           api_key: apiKey,
           ...params
         }).toString();
-        
+
         const url = `${baseUrl}${endpoint}?${queryParams}`;
-        
+
         // 增加重试间隔时间
         if (attempt > 0) {
-          const delay = Math.pow(2, attempt) * 500; // 指数退避算法
+          const delay = Math.pow(2, attempt) * 1000; // 指数退避算法: 1s, 2s, 4s
+          console.log(`[TMDB API] 等待 ${delay}ms 后重试...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
-        
+
         // 使用带超时的fetch，超时时间随着尝试次数增加
-        const timeout = 10000 + (attempt * 5000); // 从10秒开始，每次增加5秒
+        const timeout = 15000 + (attempt * 5000); // 从15秒开始，每次增加5秒
+        console.log(`[TMDB API] 发送请求 (尝试 ${attempt + 1}/${maxRetries}): ${url.substring(0, 100)}...`);
+
         const response = await fetchWithTimeout(url, {
           headers: {
             'Content-Type': 'application/json',
-            'User-Agent': 'TMDB-Helper/1.0', // 添加自定义User-Agent
+            'User-Agent': 'TMDB-Helper/1.0',
+            'Accept': 'application/json',
           }
         }, timeout);
-        
+
+        console.log(`[TMDB API] 响应状态: ${response.status} (尝试 ${attempt + 1})`);
+
         // 如果成功，直接返回
         if (response.ok) {
+          console.log(`[TMDB API] 请求成功`);
           return response;
         }
-        
+
         // 如果遇到特定错误码，可能需要立即跳到下一个代理
         if (response.status === 401 || response.status === 404) {
+          console.error(`[TMDB API] 致命错误 ${response.status}，跳到下一个代理`);
           throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
         }
-        
+
         // 如果是限流，等待更长时间
         if (response.status === 429) {
           const retryAfter = response.headers.get('Retry-After') || '10';
           const waitTime = parseInt(retryAfter, 10) * 1000;
+          console.warn(`[TMDB API] 遇到限流，等待 ${waitTime}ms`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue; // 继续尝试当前代理
         }
-        
-        // 其他错误，记录下来，进行下一次尝试
+
+        // 对于500错误，记录详细信息
+        if (response.status === 500) {
+          console.error(`[TMDB API] 服务器内部错误 (500)，尝试 ${attempt + 1}/${maxRetries}`);
+          const errorText = await response.text().catch(() => '无法读取错误响应');
+          console.error(`[TMDB API] 错误详情:`, errorText.substring(0, 200));
+        }
+
         lastError = new Error(`API请求失败: ${response.status} ${response.statusText}`);
       } catch (error) {
         // 记录错误，进行下一次尝试
         lastError = error;
-        console.warn(`TMDB API请求失败 (${baseUrl})，尝试次数: ${attempt + 1}/${maxRetries}`, error);
+        console.error(`[TMDB API] 请求异常 (尝试 ${attempt + 1}):`, error instanceof Error ? error.message : String(error));
+
+        // 如果是网络错误或超时，尝试下一个代理
+        if (error instanceof TypeError ||
+            (error instanceof Error && (error.message.includes('network') || error.name === 'AbortError'))) {
+          console.warn(`[TMDB API] 网络错误，跳到下一个代理`);
+          break; // 跳出当前代理的循环，尝试下一个代理
+        }
       }
     }
   }
-  
+
   // 如果所有尝试都失败了，抛出最后一个错误
+  console.error(`[TMDB API] 所有代理服务器都失败了`);
   throw lastError || new Error('无法连接到TMDB API');
 };
 
