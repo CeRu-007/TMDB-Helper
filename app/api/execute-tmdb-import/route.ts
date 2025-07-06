@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
             originalError: processError instanceof Error ? processError.message : String(processError),
             conflictAction: conflictAction
           }
-        }, { status: 500 });
+        }, { status: 200 }); // 改为200状态码，避免触发错误处理
       }
 
       if (!result.success) {
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
             stderr: result.stderr?.substring(0, 500) || '',
             conflictAction: conflictAction
           }
-        }, { status: 500 });
+        }, { status: 200 }); // 改为200状态码，避免触发错误处理
       }
 
       // 解析导入的集数

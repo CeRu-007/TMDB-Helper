@@ -1531,207 +1531,145 @@ class TaskScheduler {
     importedEpisodes?: number[];
     error?: string;
   }> {
-    const maxRetries = 3;
-    let lastError: Error | null = null;
+    try {
+      console.log(`[TaskScheduler] 开始执行TMDB导入`);
+      console.log(`[TaskScheduler] 参数详情: csvPath=${csvPath}, itemId=${item.id}, itemTitle=${item.title}, tmdbId=${item.tmdbId}, seasonNumber=${seasonNumber}, conflictAction=${conflictAction}`);
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      // 创建AbortController用于超时控制
+      const controller = new AbortController();
+      const timeoutDuration = 15 * 60 * 1000; // 15分钟超时
+      const timeoutId = setTimeout(() => {
+        console.log(`[TaskScheduler] TMDB导入API调用超时 (${timeoutDuration/60000}分钟)，正在中止请求`);
+        controller.abort();
+      }, timeoutDuration);
+
       try {
-        console.log(`[TaskScheduler] 开始执行TMDB导入 (尝试 ${attempt}/${maxRetries})`);
-        console.log(`[TaskScheduler] 参数详情: csvPath=${csvPath}, itemId=${item.id}, itemTitle=${item.title}, tmdbId=${item.tmdbId}, seasonNumber=${seasonNumber}, conflictAction=${conflictAction}`);
+        console.log(`[TaskScheduler] 准备调用TMDB导入API: /api/execute-tmdb-import`);
 
-        // 创建AbortController用于超时控制，根据尝试次数调整超时时间
-        const controller = new AbortController();
-        const timeoutDuration = (10 + (attempt - 1) * 5) * 60 * 1000; // 10分钟基础，每次重试增加5分钟
-        const timeoutId = setTimeout(() => {
-          console.log(`[TaskScheduler] TMDB导入API调用超时 (${timeoutDuration/60000}分钟)，正在中止请求`);
-          controller.abort();
-        }, timeoutDuration);
+        const requestBody = {
+          csvPath: csvPath,
+          seasonNumber: seasonNumber,
+          itemId: item.id,
+          tmdbId: item.tmdbId,
+          conflictAction: conflictAction
+        };
 
-        try {
-          console.log(`[TaskScheduler] 准备调用TMDB导入API: /api/execute-tmdb-import (尝试 ${attempt}/${maxRetries})`);
+        console.log(`[TaskScheduler] API请求体:`, requestBody);
 
-          const requestBody = {
-            csvPath: csvPath,
-            seasonNumber: seasonNumber,
-            itemId: item.id,
-            tmdbId: item.tmdbId,
-            conflictAction: conflictAction
-          };
+        // 验证请求体
+        if (!requestBody.csvPath) {
+          throw new Error('CSV路径为空');
+        }
+        if (!requestBody.tmdbId) {
+          throw new Error('TMDB ID为空');
+        }
+        if (!requestBody.seasonNumber) {
+          throw new Error('季数为空');
+        }
 
-          console.log(`[TaskScheduler] API请求体 (尝试 ${attempt}):`, requestBody);
+        const response = await fetch('/api/execute-tmdb-import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
 
-          // 验证请求体
-          if (!requestBody.csvPath) {
-            throw new Error('CSV路径为空');
-          }
-          if (!requestBody.tmdbId) {
-            throw new Error('TMDB ID为空');
-          }
-          if (!requestBody.seasonNumber) {
-            throw new Error('季数为空');
-          }
+        clearTimeout(timeoutId);
+        console.log(`[TaskScheduler] API响应状态: ${response.status} ${response.statusText}`);
 
-          const response = await fetch('/api/execute-tmdb-import', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-            signal: controller.signal
-          });
-
-          clearTimeout(timeoutId);
-          console.log(`[TaskScheduler] API响应状态: ${response.status} ${response.statusText} (尝试 ${attempt})`);
-
-          if (!response.ok) {
-            console.error(`[TaskScheduler] API请求失败，状态码: ${response.status} (尝试 ${attempt})`);
-            let errorData;
-            try {
-              errorData = await response.json();
-              console.error(`[TaskScheduler] API错误响应:`, errorData);
-            } catch (parseError) {
-              console.error(`[TaskScheduler] 无法解析错误响应:`, parseError);
-              errorData = {};
-            }
-
-            // 对于某些错误，不需要重试
-            if (response.status === 400 || response.status === 404) {
-              throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
-            }
-
-            // 对于服务器错误，可以重试
-            throw new Error(`API请求失败 (${response.status}): ${errorData.error || response.statusText}`);
-          }
-
-          console.log(`[TaskScheduler] 开始解析API响应 (尝试 ${attempt})`);
-          let result;
+        if (!response.ok) {
+          console.error(`[TaskScheduler] API请求失败，状态码: ${response.status}`);
+          let errorData;
           try {
-            const responseText = await response.text();
-            console.log(`[TaskScheduler] API响应原始文本长度:`, responseText.length);
-            console.log(`[TaskScheduler] API响应原始文本前500字符:`, responseText.substring(0, 500));
-
-            if (!responseText.trim()) {
-              throw new Error('API返回空响应');
-            }
-
-            result = JSON.parse(responseText);
-            console.log(`[TaskScheduler] API响应解析成功，结果类型:`, typeof result);
-            console.log(`[TaskScheduler] API响应结果:`, result);
+            errorData = await response.json();
+            console.error(`[TaskScheduler] API错误响应:`, errorData);
           } catch (parseError) {
-            console.error(`[TaskScheduler] 解析API响应失败:`, parseError);
-            console.error(`[TaskScheduler] 响应状态:`, response.status, response.statusText);
-            console.error(`[TaskScheduler] 响应头:`, Object.fromEntries(response.headers.entries()));
-            throw new Error(`API响应解析失败: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+            console.error(`[TaskScheduler] 无法解析错误响应:`, parseError);
+            errorData = {};
           }
 
-          if (!result.success) {
-            console.error(`[TaskScheduler] API返回失败结果:`, result.error);
-            throw new Error(result.error || 'TMDB导入失败');
-          }
-
-          console.log(`[TaskScheduler] TMDB导入API调用成功 (尝试 ${attempt})`);
+          // 返回失败结果而不是抛出错误
           return {
-            success: true,
-            importedEpisodes: result.importedEpisodes || []
+            success: false,
+            error: `API请求失败 (${response.status}): ${errorData.error || response.statusText}`
           };
-
-        } catch (fetchError) {
-          clearTimeout(timeoutId);
-          throw fetchError;
         }
 
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        console.error(`[TaskScheduler] TMDB导入尝试 ${attempt} 失败:`, lastError.message);
+        console.log(`[TaskScheduler] 开始解析API响应`);
+        let result;
+        try {
+          const responseText = await response.text();
+          console.log(`[TaskScheduler] API响应原始文本长度:`, responseText.length);
+          console.log(`[TaskScheduler] API响应原始文本前500字符:`, responseText.substring(0, 500));
 
-        // 如果不是最后一次尝试，等待后重试
-        if (attempt < maxRetries) {
-          const retryDelay = Math.pow(2, attempt - 1) * 2000; // 指数退避: 2s, 4s, 8s
-          console.log(`[TaskScheduler] 等待 ${retryDelay}ms 后进行第 ${attempt + 1} 次尝试...`);
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          continue;
+          if (!responseText.trim()) {
+            return {
+              success: false,
+              error: 'API返回空响应'
+            };
+          }
+
+          result = JSON.parse(responseText);
+          console.log(`[TaskScheduler] API响应解析成功，结果类型:`, typeof result);
+          console.log(`[TaskScheduler] API响应结果:`, result);
+        } catch (parseError) {
+          console.error(`[TaskScheduler] 解析API响应失败:`, parseError);
+          console.error(`[TaskScheduler] 响应状态:`, response.status, response.statusText);
+          console.error(`[TaskScheduler] 响应头:`, Object.fromEntries(response.headers.entries()));
+          return {
+            success: false,
+            error: `API响应解析失败: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+          };
         }
+
+        if (!result.success) {
+          console.error(`[TaskScheduler] API返回失败结果:`, result.error);
+          return {
+            success: false,
+            error: result.error || 'TMDB导入失败'
+          };
+        }
+
+        console.log(`[TaskScheduler] TMDB导入API调用成功`);
+        return {
+          success: true,
+          importedEpisodes: result.importedEpisodes || []
+        };
+
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        return this.handleTMDBImportError(fetchError instanceof Error ? fetchError : new Error(String(fetchError)));
       }
-    }
 
-    // 所有重试都失败了
-    console.error(`[TaskScheduler] TMDB导入失败，已重试 ${maxRetries} 次:`, lastError?.message);
-    return this.handleTMDBImportError(lastError || new Error('未知错误'));
+    } catch (error) {
+      console.error(`[TaskScheduler] TMDB导入失败:`, error);
+      return this.handleTMDBImportError(error instanceof Error ? error : new Error(String(error)));
+    }
   }
 
   /**
    * 处理TMDB导入错误
    */
   private handleTMDBImportError(error: Error): { success: false; error: string } {
-    console.log(`[TaskScheduler] 分析错误类型: ${error.name}, 消息: ${error.message}`);
+    console.log(`[TaskScheduler] 处理错误: ${error.message}`);
 
-    // 检查是否是超时错误
+    // 简化错误处理，直接返回错误信息，不抛出异常
+    let errorMessage = error.message;
+
+    // 对常见错误提供友好提示
     if (error.name === 'AbortError') {
-      return {
-        success: false,
-        error: 'TMDB导入超时，请检查网络连接或稍后重试'
-      };
-    }
-
-    // 检查是否是网络错误
-    if (error.message.includes('fetch') ||
-        error.message.includes('network') ||
-        error.message.includes('ENOTFOUND') ||
-        error.message.includes('ECONNREFUSED')) {
-      return {
-        success: false,
-        error: `网络连接错误，请检查网络设置: ${error.message}`
-      };
-    }
-
-    // 检查是否是API错误
-    if (error.message.includes('API请求失败')) {
-      // 提取状态码
-      const statusMatch = error.message.match(/\((\d+)\)/);
-      const statusCode = statusMatch ? statusMatch[1] : '';
-
-      if (statusCode === '500') {
-        return {
-          success: false,
-          error: '服务器内部错误(500)，请稍后重试或联系管理员'
-        };
-      } else if (statusCode === '503') {
-        return {
-          success: false,
-          error: '服务暂时不可用(503)，请稍后重试'
-        };
-      } else if (statusCode === '429') {
-        return {
-          success: false,
-          error: '请求过于频繁(429)，请稍后重试'
-        };
-      }
-
-      return {
-        success: false,
-        error: `API调用失败: ${error.message}`
-      };
-    }
-
-    // 检查是否是进程相关错误
-    if (error.message.includes('进程') || error.message.includes('process')) {
-      return {
-        success: false,
-        error: `进程执行错误: ${error.message}`
-      };
-    }
-
-    // 检查是否是Python相关错误
-    if (error.message.includes('Python') || error.message.includes('python')) {
-      return {
-        success: false,
-        error: `Python环境错误: ${error.message}`
-      };
+      errorMessage = 'TMDB导入超时，任务已停止';
+    } else if (error.message.includes('500')) {
+      errorMessage = '服务器暂时不可用，任务已停止';
+    } else if (error.message.includes('network') || error.message.includes('fetch')) {
+      errorMessage = '网络连接问题，任务已停止';
     }
 
     return {
       success: false,
-      error: `未知错误: ${error.message}`
+      error: errorMessage
     };
   }
 
