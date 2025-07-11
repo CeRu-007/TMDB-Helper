@@ -123,6 +123,9 @@ class TaskScheduler {
       // 启动定期检查错过任务的定时器（每10分钟检查一次）
       this.startMissedTasksCheck();
 
+      // 启动定期清理已完结项目的任务（每小时检查一次）
+      this.startCompletedProjectsCleanup();
+
       this.isInitialized = true;
       console.log(`[TaskScheduler] 初始化完成，已加载 ${tasks.length} 个定时任务 (${enabledTasks.length} 个已启用)`);
     } catch (error) {
@@ -212,6 +215,112 @@ class TaskScheduler {
   }
 
   /**
+   * 启动定期清理已完结项目的任务
+   */
+  private completedProjectsCleanupTimer: NodeJS.Timeout | null = null;
+
+  private startCompletedProjectsCleanup(): void {
+    // 清除现有的清理定时器
+    if (this.completedProjectsCleanupTimer) {
+      clearInterval(this.completedProjectsCleanupTimer);
+    }
+
+    // 每小时检查一次已完结项目的任务清理
+    this.completedProjectsCleanupTimer = setInterval(async () => {
+      try {
+        console.log('[TaskScheduler] 执行定期已完结项目任务清理检查');
+        await this.cleanupCompletedProjectTasks();
+      } catch (error) {
+        console.error('[TaskScheduler] 定期清理已完结项目任务失败:', error);
+      }
+    }, 60 * 60 * 1000); // 每小时执行一次
+
+    console.log('[TaskScheduler] 已启动定期已完结项目任务清理 (每小时一次)');
+  }
+
+  /**
+   * 停止定期清理已完结项目的任务
+   */
+  private stopCompletedProjectsCleanup(): void {
+    if (this.completedProjectsCleanupTimer) {
+      clearInterval(this.completedProjectsCleanupTimer);
+      this.completedProjectsCleanupTimer = null;
+      console.log('[TaskScheduler] 已停止定期已完结项目任务清理');
+    }
+  }
+
+  /**
+   * 清理已完结项目的定时任务
+   */
+  private async cleanupCompletedProjectTasks(): Promise<void> {
+    try {
+      console.log('[TaskScheduler] 开始检查已完结项目的定时任务清理');
+
+      // 获取所有定时任务
+      const tasks = await StorageManager.getScheduledTasks();
+      const enabledTasks = tasks.filter(task => task.enabled && task.action.autoDeleteWhenCompleted);
+
+      if (enabledTasks.length === 0) {
+        console.log('[TaskScheduler] 没有启用自动删除的定时任务，跳过清理');
+        return;
+      }
+
+      console.log(`[TaskScheduler] 找到 ${enabledTasks.length} 个启用自动删除的定时任务，开始检查对应项目状态`);
+
+      // 获取所有项目
+      const items = await StorageManager.getItemsWithRetry();
+      let deletedCount = 0;
+
+      for (const task of enabledTasks) {
+        try {
+          // 查找对应的项目
+          const relatedItem = items.find(item => item.id === task.itemId);
+
+          if (!relatedItem) {
+            console.log(`[TaskScheduler] 任务 ${task.name} 的关联项目不存在，跳过清理检查`);
+            continue;
+          }
+
+          // 检查项目是否已完结
+          const isCompleted = relatedItem.status === 'completed' || relatedItem.completed === true;
+
+          if (isCompleted) {
+            console.log(`[TaskScheduler] 发现已完结项目 ${relatedItem.title} 的定时任务 ${task.name}，准备自动删除`);
+
+            // 清除定时器
+            if (this.timers.has(task.id)) {
+              clearTimeout(this.timers.get(task.id));
+              this.timers.delete(task.id);
+              console.log(`[TaskScheduler] 清除任务 ${task.id} 的定时器`);
+            }
+
+            // 从存储中删除任务
+            const deleteSuccess = await StorageManager.deleteScheduledTask(task.id);
+
+            if (deleteSuccess) {
+              deletedCount++;
+              console.log(`[TaskScheduler] ✓ 成功自动删除已完结项目的定时任务: ${task.name}`);
+            } else {
+              console.error(`[TaskScheduler] ✗ 自动删除定时任务失败: ${task.name}`);
+            }
+          }
+        } catch (error) {
+          console.error(`[TaskScheduler] 处理任务 ${task.id} 时出错:`, error);
+        }
+      }
+
+      if (deletedCount > 0) {
+        console.log(`[TaskScheduler] 定期清理完成，共删除 ${deletedCount} 个已完结项目的定时任务`);
+      } else {
+        console.log(`[TaskScheduler] 定期清理完成，没有需要删除的任务`);
+      }
+
+    } catch (error) {
+      console.error(`[TaskScheduler] 清理已完结项目任务时出错:`, error);
+    }
+  }
+
+  /**
    * 同步任务到服务端
    */
   private async syncTasksToServer(tasks: ScheduledTask[]): Promise<void> {
@@ -297,9 +406,10 @@ class TaskScheduler {
     });
     this.timers.clear();
 
-    // 同时清除验证定时器和错过任务检查定时器
+    // 同时清除所有后台定时器
     this.stopPeriodicValidation();
     this.stopMissedTasksCheck();
+    this.stopCompletedProjectsCleanup();
   }
 
   /**
@@ -780,8 +890,13 @@ class TaskScheduler {
             console.error(`[TaskScheduler] 结束执行日志记录失败:`, logError);
           }
 
-          // 使用更新后的任务对象重新调度
-          this.scheduleTask(successTask);
+          // 检查是否需要自动删除已完结项目的任务
+          const shouldAutoDelete = await this.checkAndHandleCompletedProject(successTask, relatedItem);
+
+          if (!shouldAutoDelete) {
+            // 只有在不需要自动删除时才重新调度
+            this.scheduleTask(successTask);
+          }
         } catch (importError) {
           console.error(`[TaskScheduler] TMDB-Import任务执行失败:`, importError);
           const errorMessage = importError instanceof Error ? importError.message : String(importError);
@@ -802,8 +917,13 @@ class TaskScheduler {
             console.error(`[TaskScheduler] 结束执行日志记录失败:`, logError);
           }
 
-          // 即使失败也要重新调度任务
-          this.scheduleTask(failedTask);
+          // 检查是否需要自动删除已完结项目的任务（即使任务失败也要检查）
+          const shouldAutoDelete = await this.checkAndHandleCompletedProject(failedTask, relatedItem);
+
+          if (!shouldAutoDelete) {
+            // 只有在不需要自动删除时才重新调度
+            this.scheduleTask(failedTask);
+          }
 
           // 重新抛出错误，让外层捕获
           throw importError;
@@ -2080,6 +2200,60 @@ class TaskScheduler {
       } else {
         console.warn(`[TaskScheduler] 标记集数失败，但任务继续执行: ${error instanceof Error ? error.message : String(error)}`);
       }
+    }
+  }
+
+  /**
+   * 检查并处理已完结项目的任务自动删除
+   */
+  private async checkAndHandleCompletedProject(task: ScheduledTask, relatedItem: TMDBItem): Promise<boolean> {
+    try {
+      // 检查任务是否启用了自动删除选项
+      if (!task.action.autoDeleteWhenCompleted) {
+        console.log(`[TaskScheduler] 任务 ${task.name} 未启用自动删除选项，跳过检查`);
+        return false;
+      }
+
+      // 检查项目是否已完结
+      const isCompleted = relatedItem.status === 'completed' || relatedItem.completed === true;
+
+      if (!isCompleted) {
+        console.log(`[TaskScheduler] 项目 ${relatedItem.title} 尚未完结，继续执行任务`);
+        return false;
+      }
+
+      console.log(`[TaskScheduler] 检测到项目 ${relatedItem.title} 已完结，且任务 ${task.name} 启用了自动删除选项`);
+
+      // 记录删除日志
+      await taskExecutionLogger.addLog(task.id, '自动删除', `项目已完结，自动删除定时任务`, 'info');
+
+      // 清除定时器
+      if (this.timers.has(task.id)) {
+        clearTimeout(this.timers.get(task.id));
+        this.timers.delete(task.id);
+        console.log(`[TaskScheduler] 清除任务 ${task.id} 的定时器`);
+      }
+
+      // 从存储中删除任务
+      const deleteSuccess = await StorageManager.deleteScheduledTask(task.id);
+
+      if (deleteSuccess) {
+        console.log(`[TaskScheduler] ✓ 成功自动删除已完结项目的定时任务: ${task.name}`);
+
+        // 记录最终删除日志
+        await taskExecutionLogger.addLog(task.id, '删除完成', `定时任务已自动删除`, 'success');
+
+        return true; // 返回true表示任务已被删除
+      } else {
+        console.error(`[TaskScheduler] ✗ 自动删除定时任务失败: ${task.name}`);
+        await taskExecutionLogger.addLog(task.id, '删除失败', `自动删除定时任务失败`, 'error');
+        return false;
+      }
+
+    } catch (error) {
+      console.error(`[TaskScheduler] 检查并处理已完结项目时出错:`, error);
+      await taskExecutionLogger.addLog(task.id, '检查错误', `检查项目完结状态时出错: ${error instanceof Error ? error.message : String(error)}`, 'error');
+      return false;
     }
   }
 
