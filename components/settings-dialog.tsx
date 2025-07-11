@@ -10,6 +10,10 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/hooks/use-toast"
 import {
   Eye,
   EyeOff,
@@ -21,6 +25,9 @@ import {
   Settings,
   Terminal,
   FolderOpen,
+  FileText,
+  RefreshCw,
+  Save,
 } from "lucide-react"
 
 interface SettingsDialogProps {
@@ -28,13 +35,40 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
+interface TMDBConfig {
+  encoding?: string
+  logging_level?: string
+  browser?: string
+  save_user_profile?: boolean
+  tmdb_username?: string
+  tmdb_password?: string
+  backdrop_forced_upload?: boolean
+  filter_words?: string
+}
+
 export default function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+  const { toast } = useToast()
   const [apiKey, setApiKey] = useState("")
   const [showApiKey, setShowApiKey] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle")
   const [validationMessage, setValidationMessage] = useState("")
   const [tmdbImportPath, setTmdbImportPath] = useState("")
   const directoryInputRef = useRef<HTMLInputElement>(null)
+
+  // TMDB配置相关状态
+  const [tmdbConfig, setTmdbConfig] = useState<TMDBConfig>({
+    encoding: 'utf-8-sig',
+    logging_level: 'INFO',
+    browser: 'edge',
+    save_user_profile: true,
+    tmdb_username: '',
+    tmdb_password: '',
+    backdrop_forced_upload: false,
+    filter_words: ''
+  })
+  const [configLoading, setConfigLoading] = useState(false)
+  const [configSaving, setConfigSaving] = useState(false)
+  const [showTmdbPassword, setShowTmdbPassword] = useState(false)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -46,8 +80,84 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
     const savedTmdbImportPath = localStorage.getItem("tmdb_import_path")
     if (savedTmdbImportPath) {
       setTmdbImportPath(savedTmdbImportPath)
+      // 当路径存在时，尝试加载TMDB配置
+      loadTmdbConfig(savedTmdbImportPath)
     }
   }, [])
+
+  // 加载TMDB配置
+  const loadTmdbConfig = async (path: string) => {
+    if (!path) return
+
+    setConfigLoading(true)
+    try {
+      const response = await fetch(`/api/tmdb-config?path=${encodeURIComponent(path)}`)
+      const data = await response.json()
+
+      if (data.success && data.config) {
+        setTmdbConfig({
+          encoding: data.config.encoding || 'utf-8-sig',
+          logging_level: data.config.logging_level || 'INFO',
+          browser: data.config.browser || 'edge',
+          save_user_profile: data.config.save_user_profile !== false,
+          tmdb_username: data.config.tmdb_username || '',
+          tmdb_password: data.config.tmdb_password || '',
+          backdrop_forced_upload: data.config.backdrop_forced_upload === true,
+          filter_words: data.config.filter_words || ''
+        })
+      }
+    } catch (error) {
+      console.error('加载TMDB配置失败:', error)
+    } finally {
+      setConfigLoading(false)
+    }
+  }
+
+  // 保存TMDB配置
+  const saveTmdbConfig = async () => {
+    if (!tmdbImportPath) {
+      toast({
+        title: "错误",
+        description: "请先设置TMDB-Import工具路径",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setConfigSaving(true)
+    try {
+      const response = await fetch('/api/tmdb-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tmdbImportPath,
+          config: tmdbConfig
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "成功",
+          description: "TMDB配置保存成功",
+        })
+      } else {
+        throw new Error(data.error || '保存失败')
+      }
+    } catch (error) {
+      console.error('保存TMDB配置失败:', error)
+      toast({
+        title: "错误",
+        description: `保存TMDB配置失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        variant: "destructive",
+      })
+    } finally {
+      setConfigSaving(false)
+    }
+  }
 
   const validateApiKey = (key: string) => {
     if (!key) {
@@ -83,7 +193,13 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
 
       if (typeof window !== "undefined") {
         localStorage.setItem("tmdb_api_key", apiKey)
+        const oldPath = localStorage.getItem("tmdb_import_path")
         localStorage.setItem("tmdb_import_path", tmdbImportPath)
+
+        // 如果路径发生变化，重新加载TMDB配置
+        if (oldPath !== tmdbImportPath && tmdbImportPath) {
+          loadTmdbConfig(tmdbImportPath)
+        }
       }
 
       setSaveStatus("success")
@@ -300,6 +416,187 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
                   </span>
                 )}
               </div>
+
+              {/* config.ini配置 */}
+              {tmdbImportPath && (
+                <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm font-medium text-blue-800 dark:text-blue-200">config.ini 配置</span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => loadTmdbConfig(tmdbImportPath)}
+                        disabled={configLoading}
+                        className="text-xs"
+                      >
+                        {configLoading ? (
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3" />
+                        )}
+                        刷新
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={saveTmdbConfig}
+                        disabled={configSaving}
+                        className="text-xs"
+                      >
+                        {configSaving ? (
+                          <Save className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Save className="h-3 w-3" />
+                        )}
+                        保存配置
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 编码设置 */}
+                    <div>
+                      <Label className="text-xs font-medium text-blue-700 dark:text-blue-300">编码</Label>
+                      <Select
+                        value={tmdbConfig.encoding}
+                        onValueChange={(value) => setTmdbConfig(prev => ({ ...prev, encoding: value }))}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="utf-8-sig">utf-8-sig</SelectItem>
+                          <SelectItem value="utf-8">utf-8</SelectItem>
+                          <SelectItem value="gbk">gbk</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 日志级别 */}
+                    <div>
+                      <Label className="text-xs font-medium text-blue-700 dark:text-blue-300">日志级别</Label>
+                      <Select
+                        value={tmdbConfig.logging_level}
+                        onValueChange={(value) => setTmdbConfig(prev => ({ ...prev, logging_level: value }))}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DEBUG">DEBUG</SelectItem>
+                          <SelectItem value="INFO">INFO</SelectItem>
+                          <SelectItem value="WARNING">WARNING</SelectItem>
+                          <SelectItem value="ERROR">ERROR</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 浏览器 */}
+                    <div>
+                      <Label className="text-xs font-medium text-blue-700 dark:text-blue-300">浏览器</Label>
+                      <Select
+                        value={tmdbConfig.browser}
+                        onValueChange={(value) => setTmdbConfig(prev => ({ ...prev, browser: value }))}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="edge">Edge</SelectItem>
+                          <SelectItem value="chrome">Chrome</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 保存用户配置文件 */}
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="save_user_profile"
+                        checked={tmdbConfig.save_user_profile}
+                        onCheckedChange={(checked) => setTmdbConfig(prev => ({ ...prev, save_user_profile: checked }))}
+                      />
+                      <Label htmlFor="save_user_profile" className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                        保存用户配置文件
+                      </Label>
+                    </div>
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  <div className="space-y-4">
+                    {/* TMDB账户信息 */}
+                    <div className="space-y-3">
+                      <Label className="text-xs font-medium text-blue-700 dark:text-blue-300">TMDB 账户信息</Label>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-blue-600 dark:text-blue-400">用户名</Label>
+                          <Input
+                            value={tmdbConfig.tmdb_username}
+                            onChange={(e) => setTmdbConfig(prev => ({ ...prev, tmdb_username: e.target.value }))}
+                            placeholder="TMDB用户名"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-xs text-blue-600 dark:text-blue-400">密码</Label>
+                          <div className="relative">
+                            <Input
+                              type={showTmdbPassword ? "text" : "password"}
+                              value={tmdbConfig.tmdb_password}
+                              onChange={(e) => setTmdbConfig(prev => ({ ...prev, tmdb_password: e.target.value }))}
+                              placeholder="TMDB密码"
+                              className="h-8 text-xs pr-8"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-8 w-8 px-0"
+                              onClick={() => setShowTmdbPassword(!showTmdbPassword)}
+                            >
+                              {showTmdbPassword ? (
+                                <EyeOff className="h-3 w-3" />
+                              ) : (
+                                <Eye className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 其他设置 */}
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="backdrop_forced_upload"
+                          checked={tmdbConfig.backdrop_forced_upload}
+                          onCheckedChange={(checked) => setTmdbConfig(prev => ({ ...prev, backdrop_forced_upload: checked }))}
+                        />
+                        <Label htmlFor="backdrop_forced_upload" className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                          强制上传背景图
+                        </Label>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-medium text-blue-700 dark:text-blue-300">过滤词 (用逗号分隔)</Label>
+                        <Textarea
+                          value={tmdbConfig.filter_words}
+                          onChange={(e) => setTmdbConfig(prev => ({ ...prev, filter_words: e.target.value }))}
+                          placeholder="番外,加更"
+                          className="h-16 text-xs resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 帮助信息 */}
               <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
