@@ -105,6 +105,12 @@ class TaskScheduler {
       // 加载所有定时任务（已经过验证和修复）
       const tasks = await StorageManager.getScheduledTasks();
 
+      // 同步任务到服务端
+      await this.syncTasksToServer(tasks);
+
+      // 检查是否有错过的任务需要立即执行
+      await this.checkMissedTasks(tasks);
+
       // 为每个启用的任务设置定时器
       const enabledTasks = tasks.filter(task => task.enabled);
       enabledTasks.forEach(task => {
@@ -113,6 +119,9 @@ class TaskScheduler {
 
       // 启动定期验证任务关联的定时器（每小时检查一次）
       this.startPeriodicValidation();
+
+      // 启动定期检查错过任务的定时器（每10分钟检查一次）
+      this.startMissedTasksCheck();
 
       this.isInitialized = true;
       console.log(`[TaskScheduler] 初始化完成，已加载 ${tasks.length} 个定时任务 (${enabledTasks.length} 个已启用)`);
@@ -167,6 +176,118 @@ class TaskScheduler {
   }
 
   /**
+   * 启动定期检查错过的任务
+   */
+  private missedTasksTimer: NodeJS.Timeout | null = null;
+
+  private startMissedTasksCheck(): void {
+    // 清除现有的错过任务检查定时器
+    if (this.missedTasksTimer) {
+      clearInterval(this.missedTasksTimer);
+    }
+
+    // 每10分钟检查一次错过的任务
+    this.missedTasksTimer = setInterval(async () => {
+      try {
+        console.log('[TaskScheduler] 执行定期错过任务检查');
+        const tasks = await StorageManager.getScheduledTasks();
+        await this.checkMissedTasks(tasks);
+      } catch (error) {
+        console.error('[TaskScheduler] 定期检查错过任务失败:', error);
+      }
+    }, 10 * 60 * 1000); // 每10分钟执行一次
+
+    console.log('[TaskScheduler] 已启动定期错过任务检查 (每10分钟一次)');
+  }
+
+  /**
+   * 停止定期检查错过的任务
+   */
+  private stopMissedTasksCheck(): void {
+    if (this.missedTasksTimer) {
+      clearInterval(this.missedTasksTimer);
+      this.missedTasksTimer = null;
+      console.log('[TaskScheduler] 已停止定期错过任务检查');
+    }
+  }
+
+  /**
+   * 同步任务到服务端
+   */
+  private async syncTasksToServer(tasks: ScheduledTask[]): Promise<void> {
+    try {
+      console.log(`[TaskScheduler] 开始同步 ${tasks.length} 个任务到服务端`);
+
+      const response = await fetch('/api/sync-scheduled-tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tasks })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          console.log(`[TaskScheduler] 成功同步任务到服务端，共 ${result.syncedCount} 个任务`);
+        } else {
+          console.error(`[TaskScheduler] 同步任务到服务端失败:`, result.error);
+        }
+      } else {
+        console.error(`[TaskScheduler] 同步任务到服务端失败，状态码: ${response.status}`);
+      }
+    } catch (error) {
+      console.error(`[TaskScheduler] 同步任务到服务端时出错:`, error);
+    }
+  }
+
+  /**
+   * 检查错过的任务
+   */
+  private async checkMissedTasks(tasks: ScheduledTask[]): Promise<void> {
+    const now = new Date();
+    const enabledTasks = tasks.filter(task => task.enabled);
+
+    for (const task of enabledTasks) {
+      try {
+        // 如果任务没有设置下次执行时间，跳过
+        if (!task.nextRun) {
+          continue;
+        }
+
+        const nextRunTime = new Date(task.nextRun);
+        const timeDiff = now.getTime() - nextRunTime.getTime();
+
+        // 如果当前时间超过了预定执行时间超过5分钟，认为是错过的任务
+        if (timeDiff > 5 * 60 * 1000) {
+          console.log(`[TaskScheduler] 发现错过的任务: ${task.name} (${task.id}), 预定时间: ${nextRunTime.toLocaleString('zh-CN')}, 当前时间: ${now.toLocaleString('zh-CN')}`);
+
+          // 检查任务是否正在执行中
+          if (this.currentExecution.has(task.id)) {
+            console.log(`[TaskScheduler] 任务 ${task.id} 正在执行中，跳过错过任务处理`);
+            continue;
+          }
+
+          // 检查是否在合理的补偿时间窗口内（24小时内）
+          if (timeDiff <= 24 * 60 * 60 * 1000) {
+            console.log(`[TaskScheduler] 执行错过的任务: ${task.name} (${task.id})`);
+
+            // 立即执行错过的任务
+            await this.executeTask(task);
+          } else {
+            console.log(`[TaskScheduler] 任务 ${task.name} (${task.id}) 错过时间过长 (${Math.round(timeDiff / (60 * 60 * 1000))} 小时)，跳过执行并重新调度`);
+
+            // 重新调度任务到下一个执行时间
+            this.scheduleTask(task);
+          }
+        }
+      } catch (error) {
+        console.error(`[TaskScheduler] 检查错过任务失败 ${task.id}:`, error);
+      }
+    }
+  }
+
+  /**
    * 清除所有定时器
    */
   private clearAllTimers(): void {
@@ -176,8 +297,9 @@ class TaskScheduler {
     });
     this.timers.clear();
 
-    // 同时清除验证定时器
+    // 同时清除验证定时器和错过任务检查定时器
     this.stopPeriodicValidation();
+    this.stopMissedTasksCheck();
   }
 
   /**

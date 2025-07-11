@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "task-daemon": "node scripts/task-scheduler-daemon.js",
+    "task-daemon:dev": "node scripts/task-scheduler-daemon.js --port=3000 --interval=300"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
