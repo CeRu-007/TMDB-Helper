@@ -307,22 +307,54 @@ class TaskScheduler {
    */
   private calculateNextRunTime(task: ScheduledTask): Date {
     const now = new Date();
-    const nextRun = new Date();
-    
-    // 设置小时和分钟
-    nextRun.setHours(task.schedule.hour);
-    nextRun.setMinutes(task.schedule.minute);
-    nextRun.setSeconds(0);
-    nextRun.setMilliseconds(0);
-    
+
     // 如果是每周执行
     if (task.schedule.type === 'weekly' && task.schedule.dayOfWeek !== undefined) {
-      // 获取当前是周几 (0-6, 0是周日)
-      const currentDay = now.getDay();
-      // 调整为我们的约定 (0-6, 0是周一)
-      const adjustedCurrentDay = currentDay === 0 ? 6 : currentDay - 1;
-      const targetDay = task.schedule.dayOfWeek;
-      
+      return this.calculateNextWeeklyRunTime(task, now);
+    } else {
+      // 每天执行
+      const nextRun = new Date();
+      nextRun.setHours(task.schedule.hour);
+      nextRun.setMinutes(task.schedule.minute);
+      nextRun.setSeconds(0);
+      nextRun.setMilliseconds(0);
+
+      // 如果今天的时间已过，则设为明天
+      if (now > nextRun) {
+        nextRun.setDate(nextRun.getDate() + 1);
+      }
+
+      return nextRun;
+    }
+  }
+
+  /**
+   * 计算每周任务的下一次执行时间（支持双播出日）
+   */
+  private calculateNextWeeklyRunTime(task: ScheduledTask, now: Date): Date {
+    const targetDays: number[] = [task.schedule.dayOfWeek!];
+
+    // 如果有第二播出日，添加到目标日期列表
+    if (task.schedule.secondDayOfWeek !== undefined) {
+      targetDays.push(task.schedule.secondDayOfWeek);
+    }
+
+    // 获取当前是周几 (0-6, 0是周日)
+    const currentDay = now.getDay();
+    // 调整为我们的约定 (0-6, 0是周一)
+    const adjustedCurrentDay = currentDay === 0 ? 6 : currentDay - 1;
+
+    let nearestNextRun: Date | null = null;
+    let minDaysUntilTarget = Infinity;
+
+    // 为每个目标日期计算下次执行时间
+    for (const targetDay of targetDays) {
+      const nextRun = new Date();
+      nextRun.setHours(task.schedule.hour);
+      nextRun.setMinutes(task.schedule.minute);
+      nextRun.setSeconds(0);
+      nextRun.setMilliseconds(0);
+
       // 计算到目标日期的天数差
       let daysUntilTarget = targetDay - adjustedCurrentDay;
       if (daysUntilTarget < 0) {
@@ -330,17 +362,18 @@ class TaskScheduler {
       } else if (daysUntilTarget === 0 && now > nextRun) {
         daysUntilTarget = 7; // 如果是今天但已经过了时间，设为下周
       }
-      
+
       // 设置到正确的日期
       nextRun.setDate(now.getDate() + daysUntilTarget);
-    } else {
-      // 每天执行，如果今天的时间已过，则设为明天
-      if (now > nextRun) {
-        nextRun.setDate(nextRun.getDate() + 1);
+
+      // 选择最近的执行时间
+      if (daysUntilTarget < minDaysUntilTarget) {
+        minDaysUntilTarget = daysUntilTarget;
+        nearestNextRun = nextRun;
       }
     }
-    
-    return nextRun;
+
+    return nearestNextRun || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 默认一周后
   }
 
   /**

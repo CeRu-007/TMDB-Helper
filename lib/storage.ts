@@ -34,6 +34,7 @@ export interface ScheduledTask {
   schedule: {
     type: "weekly" | "daily"
     dayOfWeek?: number // 0-6，周一到周日，仅weekly类型需要
+    secondDayOfWeek?: number // 0-6，第二播出日，用于每周双更剧集，可选
     hour: number // 0-23
     minute: number // 0-59
   }
@@ -1053,6 +1054,7 @@ export class StorageManager {
       schedule: {
         type: task.schedule?.type || "weekly",
         dayOfWeek: task.schedule?.dayOfWeek ?? new Date().getDay(),
+        secondDayOfWeek: task.schedule?.secondDayOfWeek ?? undefined,
         hour: task.schedule?.hour ?? new Date().getHours(),
         minute: task.schedule?.minute ?? 0
       },

@@ -776,8 +776,13 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                   </CardTitle>
                   <CardDescription className="text-xs">
                     {task.schedule.type === "weekly" ? (
-                      <>每周{getDayOfWeekName(task.schedule.dayOfWeek || 0)} {task.schedule.hour}:
-                      {task.schedule.minute.toString().padStart(2, '0')}</>
+                      task.schedule.secondDayOfWeek !== undefined ? (
+                        <>每周{getDayOfWeekName(task.schedule.dayOfWeek || 0)}、{getDayOfWeekName(task.schedule.secondDayOfWeek)} {task.schedule.hour}:
+                        {task.schedule.minute.toString().padStart(2, '0')} (双更)</>
+                      ) : (
+                        <>每周{getDayOfWeekName(task.schedule.dayOfWeek || 0)} {task.schedule.hour}:
+                        {task.schedule.minute.toString().padStart(2, '0')}</>
+                      )
                     ) : (
                       <>每天 {task.schedule.hour}:{task.schedule.minute.toString().padStart(2, '0')}</>
                     )}
@@ -917,7 +922,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           />
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
           <div className="space-y-1">
             <Label>执行频率</Label>
             <Select
@@ -933,29 +938,76 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
               </SelectContent>
             </Select>
           </div>
-          
-          {currentTask.schedule.type === "weekly" ? (
-            <div className="space-y-1">
-              <Label>执行日期</Label>
-              <Select
-                value={currentTask.schedule.dayOfWeek?.toString() || "0"}
-                onValueChange={(value) => updateTaskField('schedule.dayOfWeek', parseInt(value, 10))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择星期几" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">周一</SelectItem>
-                  <SelectItem value="1">周二</SelectItem>
-                  <SelectItem value="2">周三</SelectItem>
-                  <SelectItem value="3">周四</SelectItem>
-                  <SelectItem value="4">周五</SelectItem>
-                  <SelectItem value="5">周六</SelectItem>
-                  <SelectItem value="6">周日</SelectItem>
-                </SelectContent>
-              </Select>
+
+          {currentTask.schedule.type === "weekly" && (
+            <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">播出日期设置</Label>
+                <Badge variant="outline" className="text-xs">
+                  {currentTask.schedule.secondDayOfWeek !== undefined ? "双更模式" : "单更模式"}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">主播出日</Label>
+                  <Select
+                    value={currentTask.schedule.dayOfWeek?.toString() || "0"}
+                    onValueChange={(value) => updateTaskField('schedule.dayOfWeek', parseInt(value, 10))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择星期几" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">周一</SelectItem>
+                      <SelectItem value="1">周二</SelectItem>
+                      <SelectItem value="2">周三</SelectItem>
+                      <SelectItem value="3">周四</SelectItem>
+                      <SelectItem value="4">周五</SelectItem>
+                      <SelectItem value="5">周六</SelectItem>
+                      <SelectItem value="6">周日</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">第二播出日 (可选)</Label>
+                  <Select
+                    value={currentTask.schedule.secondDayOfWeek?.toString() || "none"}
+                    onValueChange={(value) => {
+                      const secondDay = value === "none" ? undefined : parseInt(value, 10);
+                      updateTaskField('schedule.secondDayOfWeek', secondDay);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择第二播出日" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">不设置</SelectItem>
+                      <SelectItem value="0">周一</SelectItem>
+                      <SelectItem value="1">周二</SelectItem>
+                      <SelectItem value="2">周三</SelectItem>
+                      <SelectItem value="3">周四</SelectItem>
+                      <SelectItem value="4">周五</SelectItem>
+                      <SelectItem value="5">周六</SelectItem>
+                      <SelectItem value="6">周日</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {currentTask.schedule.secondDayOfWeek !== undefined && (
+                <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-2 rounded border-l-2 border-blue-500">
+                  <div className="flex items-center">
+                    <Info className="h-3 w-3 mr-1 text-blue-500" />
+                    双更模式：任务将在每周的两个不同日期执行
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
+          )}
+
+          {currentTask.schedule.type === "daily" && (
             <div className="space-y-1">
               <Label>季数</Label>
               <Select
@@ -985,15 +1037,17 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           <div className="flex justify-between items-center">
             <Label>执行时间</Label>
             <div className="text-xs text-muted-foreground">
-              {currentTask.schedule.type === "weekly" 
-                ? `每周${getDayOfWeekName(currentTask.schedule.dayOfWeek || 0)} ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`
+              {currentTask.schedule.type === "weekly"
+                ? (currentTask.schedule.secondDayOfWeek !== undefined
+                    ? `每周${getDayOfWeekName(currentTask.schedule.dayOfWeek || 0)}、${getDayOfWeekName(currentTask.schedule.secondDayOfWeek)} ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`
+                    : `每周${getDayOfWeekName(currentTask.schedule.dayOfWeek || 0)} ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`)
                 : `每天 ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`
               }
             </div>
           </div>
           <div className="flex justify-center">
-            <ModernTimePicker 
-              hour={currentTask.schedule.hour} 
+            <ModernTimePicker
+              hour={currentTask.schedule.hour}
               minute={currentTask.schedule.minute}
               minuteStep={1}
               onTimeChange={(hour, minute) => {
