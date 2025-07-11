@@ -33,11 +33,11 @@
   justify-content: center;
 }
 
-/* 高亮效果 */
+/* 高亮效果 - 移除投影 */
 .time-wheel-highlight {
   background: rgba(var(--primary-rgb), 0.08);
   border-radius: 4px;
-  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.1);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
 }
 
 /* 触摸设备优化 */

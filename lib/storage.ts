@@ -54,7 +54,7 @@ export interface ScheduledTask {
   enabled: boolean
   lastRun?: string
   nextRun?: string
-  lastRunStatus?: "success" | "failed" // 新增：最后执行状态
+  lastRunStatus?: "success" | "failed" | "user_interrupted" // 新增：最后执行状态
   lastRunError?: string | null // 新增：最后执行错误信息
   // 执行日志相关字段
   currentStep?: string           // 当前执行步骤

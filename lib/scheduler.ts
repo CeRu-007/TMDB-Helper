@@ -1,5 +1,6 @@
 import { StorageManager, ScheduledTask, TMDBItem } from './storage';
-import { taskExecutionLogger } from './task-execution-logger';
+import { taskExecutionLogger } from './task-execution-logger'
+import { BrowserInterruptDetector, BrowserInterruptResult } from './browser-interrupt-detector';
 
 class TaskScheduler {
   private static instance: TaskScheduler;
@@ -899,34 +900,68 @@ class TaskScheduler {
           }
         } catch (importError) {
           console.error(`[TaskScheduler] TMDB-Import任务执行失败:`, importError);
+
+          // 使用浏览器中断检测器分析错误
+          const interruptResult = BrowserInterruptDetector.analyzeError(importError);
           const errorMessage = importError instanceof Error ? importError.message : String(importError);
-          await taskExecutionLogger.addLog(task.id, '错误', `任务执行失败: ${errorMessage}`, 'error');
 
-          // 更新任务状态，标记为失败
-          const failedTask = {
-            ...updatedTask,
-            lastRunStatus: 'failed' as const,
-            lastRunError: errorMessage
-          };
-          await StorageManager.updateScheduledTask(failedTask);
+          console.log(`[TaskScheduler] 错误分析结果:`, interruptResult);
 
-          // 结束执行日志记录
-          try {
-            await taskExecutionLogger.endTaskExecution(task.id, false, errorMessage);
-          } catch (logError) {
-            console.error(`[TaskScheduler] 结束执行日志记录失败:`, logError);
+          if (interruptResult.isUserInterrupted) {
+            // 用户中断：记录为用户操作，不作为错误处理
+            const userMessage = BrowserInterruptDetector.generateUserFriendlyMessage(interruptResult);
+            await taskExecutionLogger.addLog(task.id, '用户中断', userMessage, 'warning');
+
+            // 更新任务状态，标记为用户中断
+            const interruptedTask = {
+              ...updatedTask,
+              lastRunStatus: 'user_interrupted' as const,
+              lastRunError: userMessage
+            };
+
+            await StorageManager.updateScheduledTask(interruptedTask);
+
+            // 结束执行日志记录
+            try {
+              await taskExecutionLogger.endTaskExecution(task.id, false, userMessage);
+            } catch (logError) {
+              console.error(`[TaskScheduler] 结束执行日志记录失败:`, logError);
+            }
+
+            // 用户中断的任务仍然重新调度，但不增加错误计数
+            this.scheduleTask(interruptedTask);
+
+          } else {
+            // 系统错误：按原有逻辑处理
+            await taskExecutionLogger.addLog(task.id, '错误', `任务执行失败: ${errorMessage}`, 'error');
+
+            // 更新任务状态，标记为失败
+            const failedTask = {
+              ...updatedTask,
+              lastRunStatus: 'failed' as const,
+              lastRunError: errorMessage
+            };
+
+            await StorageManager.updateScheduledTask(failedTask);
+
+            // 结束执行日志记录
+            try {
+              await taskExecutionLogger.endTaskExecution(task.id, false, errorMessage);
+            } catch (logError) {
+              console.error(`[TaskScheduler] 结束执行日志记录失败:`, logError);
+            }
+
+            // 检查是否需要自动删除已完结项目的任务（即使任务失败也要检查）
+            const shouldAutoDelete = await this.checkAndHandleCompletedProject(failedTask, relatedItem);
+
+            if (!shouldAutoDelete) {
+              // 只有在不需要自动删除时才重新调度
+              this.scheduleTask(failedTask);
+            }
+
+            // 重新抛出错误，让外层捕获
+            throw importError;
           }
-
-          // 检查是否需要自动删除已完结项目的任务（即使任务失败也要检查）
-          const shouldAutoDelete = await this.checkAndHandleCompletedProject(failedTask, relatedItem);
-
-          if (!shouldAutoDelete) {
-            // 只有在不需要自动删除时才重新调度
-            this.scheduleTask(failedTask);
-          }
-
-          // 重新抛出错误，让外层捕获
-          throw importError;
         }
       } else {
         console.warn(`[TaskScheduler] 未知的任务类型: ${task.type}`);

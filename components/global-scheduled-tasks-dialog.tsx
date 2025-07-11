@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, memo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -49,7 +49,7 @@ import {
   History,
   AlertTriangle,
   Check,
-  Lightbulb,
+
   Plus,
   RefreshCcw,
 } from "lucide-react"
@@ -58,9 +58,7 @@ import { taskScheduler } from "@/lib/scheduler"
 import { toast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import ScheduledTaskDialog from "./scheduled-task-dialog"
-import { StorageDebugDialog } from "./storage-debug-dialog"
 import { TaskExecutionLogsDialog } from "./task-execution-logs-dialog"
-import { SchedulerDebugDialog } from "./scheduler-debug-dialog"
 import { v4 as uuidv4 } from "uuid"
 import { 
   Select,
@@ -131,25 +129,21 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false)
   const [isBatchProcessing, setIsBatchProcessing] = useState(false)
+  // 选择模式状态
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [itemSearchTerm, setItemSearchTerm] = useState("")
   const [relinkSuggestions, setRelinkSuggestions] = useState<Array<{item: TMDBItem, score: number, matchType: string, matchDetails: string}>>([])
   const [showBatchRelinkDialog, setShowBatchRelinkDialog] = useState(false)
   const [tasksToRelink, setTasksToRelink] = useState<ScheduledTask[]>([])
-  // 在组件顶部添加一个新的状态变量，用于记录是否已经处理过ID问题
-  const [hasFixedProblemId, setHasFixedProblemId] = useState(false)
-  // 存储调试对话框状态
-  const [showStorageDebug, setShowStorageDebug] = useState(false)
-  // 调度器调试对话框状态
-  const [showSchedulerDebug, setShowSchedulerDebug] = useState(false)
   // 任务执行日志对话框状态
   const [showExecutionLogs, setShowExecutionLogs] = useState(false)
   // 防止重复加载的标志
   const [isLoadingData, setIsLoadingData] = useState(false)
 
-  // 获取正在运行的任务
+  // 获取正在运行的任务 - 使用更稳定的依赖
   const runningTasks = useMemo(() => {
     return tasks.filter(task => task.isRunning || taskScheduler.isTaskRunning(task.id))
-  }, [tasks])
+  }, [tasks, runningTaskId])
 
   // 搜索防抖
   useEffect(() => {
@@ -160,10 +154,14 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // 加载任务列表和项目
+  // 加载任务列表和项目 - 添加防抖
   useEffect(() => {
     if (open && !isLoadingData) {
-      loadTasksAndItems()
+      const timer = setTimeout(() => {
+        loadTasksAndItems()
+      }, 100) // 100ms防抖
+
+      return () => clearTimeout(timer)
     }
   }, [open])
 
@@ -266,52 +264,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       setTasks(allTasks)
       setItems(allItems)
 
-      // 检查是否存在问题ID的任务，并且之前没有处理过
-      if (!hasFixedProblemId) {
-        const problemTask = allTasks.find(task => task.itemId === "1749566411729");
-        if (problemTask) {
-          console.log("[GlobalScheduledTasksDialog] 检测到问题ID任务，尝试自动修复...");
-          
-          // 尝试使用最近创建的项目进行关联
-          if (allItems.length > 0) {
-            // 按创建时间排序
-            const sortedItems = [...allItems].sort((a, b) => 
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-            
-            const newItemId = sortedItems[0].id;
-            
-            // 更新任务
-            const updatedTask = { 
-              ...problemTask,
-              itemId: newItemId,
-              itemTitle: sortedItems[0].title,
-              itemTmdbId: sortedItems[0].tmdbId,
-              updatedAt: new Date().toISOString()
-            };
-            
-            // 保存更新后的任务
-            const success = await StorageManager.updateScheduledTask(updatedTask);
-            
-            if (success) {
-              console.log(`[GlobalScheduledTasksDialog] 成功修复问题ID任务，新项目ID: ${newItemId}`);
-              toast({
-                title: "自动修复",
-                description: `已修复问题ID 1749566411729，关联到项目"${sortedItems[0].title}"`,
-              });
-              
-              // 标记为已处理
-              setHasFixedProblemId(true);
 
-              // 直接更新任务列表，避免递归调用
-              const updatedTasks = allTasks.map(t =>
-                t.id === problemTask.id ? updatedTask : t
-              );
-              setTasks(updatedTasks);
-            }
-          }
-        }
-      }
     } catch (error) {
       console.error("[GlobalScheduledTasksDialog] 加载数据失败:", error);
       toast({
@@ -361,20 +314,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     // 如果没有直接找到，尝试通过其他方法查找
     console.log(`[GlobalScheduledTasksDialog] 通过ID ${taskItemId} 未找到项目，尝试其他方法...`);
     
-    // 特殊处理已知的问题ID
-    if (taskItemId === "1749566411729") {
-      console.log(`[GlobalScheduledTasksDialog] 检测到已知问题ID 1749566411729，尝试特殊处理`);
-      
-      // 按创建时间排序找最近的项目
-      const sortedItems = [...items].sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      
-      if (sortedItems.length > 0) {
-        console.log(`[GlobalScheduledTasksDialog] 使用最近创建的项目: ${sortedItems[0].title}`);
-        return sortedItems[0];
-      }
-    }
+
     
     // 方法2: 如果提供了任务对象，尝试通过itemTmdbId和itemTitle匹配
     if (task) {
@@ -1100,6 +1040,17 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     })
   }, [getTaskItem]);
 
+  // 切换选择模式
+  const toggleSelectionMode = useCallback(() => {
+    const newSelectionMode = !isSelectionMode
+    setIsSelectionMode(newSelectionMode)
+
+    // 退出选择模式时清空选中的任务
+    if (!newSelectionMode) {
+      setSelectedTasks(new Set())
+    }
+  }, [isSelectionMode])
+
   // 选择/取消选择任务
   const toggleTaskSelection = useCallback((taskId: string) => {
     const newSelectedTasks = new Set(selectedTasks)
@@ -1162,6 +1113,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           title: "批量操作成功",
           description: `已启用 ${updatedTasks.length} 个任务`,
         })
+
+        // 操作完成后退出选择模式
+        setIsSelectionMode(false)
+        setSelectedTasks(new Set())
       }
     } catch (error) {
       console.error("批量启用任务失败:", error)
@@ -1214,6 +1169,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           title: "批量操作成功",
           description: `已禁用 ${updatedTasks.length} 个任务`,
         })
+
+        // 操作完成后退出选择模式
+        setIsSelectionMode(false)
+        setSelectedTasks(new Set())
       }
     } catch (error) {
       console.error("批量禁用任务失败:", error)
@@ -1247,9 +1206,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         // 更新本地任务列表
         setTasks(prev => prev.filter(task => !deletedTaskIds.includes(task.id)))
         
-        // 清空选中状态
+        // 清空选中状态并退出选择模式
         setSelectedTasks(new Set())
-        
+        setIsSelectionMode(false)
+
         toast({
           title: "批量删除成功",
           description: `已删除 ${deletedTaskIds.length} 个任务`,
@@ -1389,11 +1349,11 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     
     return (
       <div className="space-y-4">
-        {selectedTasks.size > 0 && (
+        {isSelectionMode && (
           <div className="bg-muted p-2 rounded-md flex items-center justify-between">
             <div className="flex items-center">
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
                 onClick={toggleSelectAll}
@@ -1413,7 +1373,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                 variant="outline"
                 size="sm"
                 onClick={batchEnableTasks}
-                disabled={isBatchProcessing}
+                disabled={isBatchProcessing || selectedTasks.size === 0}
               >
                 <PlayCircle className="h-4 w-4 mr-1" />
                 启用
@@ -1422,7 +1382,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                 variant="outline"
                 size="sm"
                 onClick={batchDisableTasks}
-                disabled={isBatchProcessing}
+                disabled={isBatchProcessing || selectedTasks.size === 0}
               >
                 <PauseCircle className="h-4 w-4 mr-1" />
                 禁用
@@ -1431,23 +1391,34 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                 variant="outline"
                 size="sm"
                 onClick={() => setShowBatchDeleteConfirm(true)}
-                disabled={isBatchProcessing}
+                disabled={isBatchProcessing || selectedTasks.size === 0}
                 className="text-red-500 hover:text-red-600"
               >
                 <Trash2 className="h-4 w-4 mr-1" />
                 删除
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSelectionMode}
+                disabled={isBatchProcessing}
+                className="ml-2"
+              >
+                <X className="h-4 w-4 mr-1" />
+                退出选择
+              </Button>
                 </div>
                   </div>
         )}
         
-        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+        <div className="grid gap-3 grid-cols-1 xl:grid-cols-2">
           {filteredTasks.map(task => {
             // 获取关联的项目
             const relatedItem = getTaskItem(task.itemId)
             const hasError = task.lastRunStatus === "failed" && !!task.lastRunError
             const isRunning = isRunningTask && runningTaskId === task.id
             const isSuccess = task.lastRunStatus === "success"
+            const isUserInterrupted = task.lastRunStatus === "user_interrupted"
             const isSelected = selectedTasks.has(task.id)
             
             return (
@@ -1458,7 +1429,9 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                 hasError={!!hasError}
                 isRunning={!!isRunning}
                 isSuccess={!!isSuccess}
+                isUserInterrupted={!!isUserInterrupted}
                 isSelected={isSelected}
+                isSelectionMode={isSelectionMode}
                 onToggleSelect={() => toggleTaskSelection(task.id)}
                 onEdit={handleEditTask}
                 onDelete={confirmDeleteTask}
@@ -1474,16 +1447,18 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                   </div>
                   </div>
     )
-  }, [loading, filteredTasks, tasks, selectedTasks, isRunningTask, runningTaskId, getTaskItem, toggleTaskEnabled, confirmDeleteTask, runTaskNow, openRelinkDialog, handleEditTask, copyTask, showTaskErrorDetails, toggleTaskSelection]);
+  }, [loading, filteredTasks, tasks, selectedTasks, isSelectionMode, isRunningTask, runningTaskId, getTaskItem, toggleTaskEnabled, confirmDeleteTask, runTaskNow, openRelinkDialog, handleEditTask, copyTask, showTaskErrorDetails, toggleTaskSelection]);
 
-  // 任务卡片组件
-  const TaskCard = ({ 
-    task, 
-    relatedItem, 
-    hasError, 
+  // 任务卡片组件 - 使用memo优化
+  const TaskCard = memo(({
+    task,
+    relatedItem,
+    hasError,
     isRunning,
     isSuccess,
+    isUserInterrupted,
     isSelected,
+    isSelectionMode,
     onToggleSelect,
     onEdit,
     onDelete,
@@ -1499,7 +1474,9 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     hasError: boolean;
     isRunning: boolean;
     isSuccess: boolean;
+    isUserInterrupted: boolean;
     isSelected: boolean;
+    isSelectionMode: boolean;
     onToggleSelect: () => void;
     onEdit: (task: ScheduledTask) => void;
     onDelete: (taskId: string) => void;
@@ -1532,6 +1509,15 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           borderColor: "border-red-300 dark:border-red-800",
           icon: <AlertCircle className="h-4 w-4" />,
           label: "执行失败"
+        };
+      } else if (isUserInterrupted) {
+        return {
+          color: "bg-orange-500 dark:bg-orange-600",
+          textColor: "text-orange-600 dark:text-orange-400",
+          bgColor: "bg-orange-50 dark:bg-orange-900/30",
+          borderColor: "border-orange-300 dark:border-orange-800",
+          icon: <PauseCircle className="h-4 w-4" />,
+          label: "用户中断"
         };
       } else if (isSuccess) {
         return {
@@ -1566,274 +1552,263 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     const statusInfo = getStatusInfo();
     
     return (
-      <Card 
-        className={`overflow-hidden transition-all duration-200 ${
-          isSelected ? 'ring-2 ring-primary' : ''
-        } ${
-          hasError ? statusInfo.borderColor : 
-          isRunning ? statusInfo.borderColor : 
-          ''
+      <div
+        className={`bg-card border border-border rounded-lg task-card-compact ${
+          isSelected ? 'task-card-selected' : ''
         }`}
+        onClick={(e) => {
+          // 阻止卡片点击事件冒泡，避免影响菜单
+          e.stopPropagation();
+        }}
       >
-        <div className={`h-1 ${statusInfo.color}`}>
-          {isRunning && <Progress value={45} className="h-full" />}
-                  </div>
-        
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <CardTitle className="text-base font-medium flex items-center group">
-                  <Button
+        {/* 状态指示器 */}
+        <div className={`status-indicator ${
+          hasError ? 'error' :
+          isRunning ? 'running' :
+          isUserInterrupted ? 'user-interrupted' :
+          isSuccess ? 'success' :
+          !task.enabled ? 'disabled' : ''
+        }`}>
+          {isRunning && <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 opacity-60" />}
+        </div>
+
+        {/* 主要内容区域 - 水平布局 */}
+        <div className="task-info-horizontal pt-3">
+          {/* 选择框和状态图标 */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {isSelectionMode && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSelect();
+                }}
+              >
+                {isSelected ? (
+                  <CheckSquare className="h-3.5 w-3.5 text-primary" />
+                ) : (
+                  <Square className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            )}
+
+            <div className={`p-1.5 rounded-full ${
+              task.enabled ? 'bg-green-100 dark:bg-green-900/50' : 'bg-gray-100 dark:bg-gray-800'
+            }`}>
+              <AlarmClock className={`h-3.5 w-3.5 ${
+                task.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+              }`} />
+            </div>
+          </div>
+
+          {/* 任务信息 */}
+          <div className="flex-1 min-w-0">
+            <div className="task-title-horizontal group flex items-center">
+              <span className="truncate">{task.name}</span>
+              {hasError && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <AlertCircle className="h-3.5 w-3.5 ml-2 text-red-500 flex-shrink-0" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>任务执行失败</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 w-5 p-0 ml-2 opacity-0 group-hover:opacity-100 simple-hover-button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopy(task);
+                }}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+
+            {/* 关联项目信息 */}
+            <div className="task-meta-horizontal mt-1">
+              {relatedItem ? (
+                <span className="flex items-center text-xs opacity-70">
+                  <Link className="h-3 w-3 mr-1" />
+                  {relatedItem.title}
+                </span>
+              ) : (
+                <span className="flex items-center text-xs text-red-400">
+                  <Link2Off className="h-3 w-3 mr-1" />
+                  项目未找到
+                </span>
+              )}
+
+              {/* 调度信息 */}
+              <span className="flex items-center text-xs opacity-70">
+                <Calendar className="h-3 w-3 mr-1" />
+                {getScheduleDescription(task)}
+              </span>
+            </div>
+          </div>
+
+          {/* 状态和操作 */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className={`px-2 py-1 rounded-md border bg-background text-xs ${
+              task.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+            }`}>
+              <span className="flex items-center gap-1">
+                {statusInfo.icon}
+                <span className="hidden sm:inline">{statusInfo.label}</span>
+              </span>
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
                   variant="ghost"
-                    size="sm"
-                  className="h-6 w-6 p-0 mr-1"
+                  size="sm"
+                  className="h-7 w-7 p-0"
                   onClick={(e) => {
+                    // 阻止事件冒泡到父容器
                     e.stopPropagation();
-                    onToggleSelect();
                   }}
                 >
-                  {isSelected ? (
-                    <CheckSquare className="h-4 w-4 text-primary" />
-                  ) : (
-                    <Square className="h-4 w-4" />
-                  )}
-                  </Button>
-                <div className={`p-1 rounded-full mr-2 ${
-                  task.enabled ? 'bg-green-100 dark:bg-green-900/50' : 'bg-gray-100 dark:bg-gray-800'
-                }`}>
-                  <AlarmClock className={`h-4 w-4 ${
-                    task.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
-                  }`} />
-                </div>
-                <span className="flex-1">{task.name}</span>
-                {hasError && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <AlertCircle className="h-4 w-4 ml-2 text-red-500 shrink-0" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>任务执行失败</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-                  <Button
-                  variant="ghost" 
-                    size="sm"
-                  className="h-6 w-6 p-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="bg-popover border border-border"
+                sideOffset={5}
+                style={{ zIndex: 9999 }}
+              >
+                <DropdownMenuLabel>任务操作</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(task);
+                  }}
+                  disabled={isRunning || !relatedItem}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  编辑任务
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
                     onCopy(task);
                   }}
                 >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              </CardTitle>
-              <CardDescription className="mt-1 ml-8">
-                {relatedItem ? (
-                  <span className="flex items-center text-xs">
-                    <Link className="h-3 w-3 mr-1" />
-                    关联项目: {relatedItem.title}
-                  </span>
-                ) : (
-                  <span className="flex items-center text-xs text-red-500">
-                    <Link2Off className="h-3 w-3 mr-1" />
-                    找不到关联项目 (ID: {task.itemId})
-                  </span>
-                )}
-              </CardDescription>
-            </div>
-            <div className="flex items-center">
-              <Badge 
-                variant={task.enabled ? "default" : "outline"} 
-                className={`mr-2 ${isRunning ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
-              >
-                <span className="flex items-center">
-                  {statusInfo.icon}
-                  <span className="ml-1">{statusInfo.label}</span>
-                </span>
-              </Badge>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>任务操作</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => onEdit(task)} disabled={isRunning || !relatedItem}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    编辑任务
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onCopy(task)}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    复制任务
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onToggleEnabled(task)} disabled={isRunning}>
-                    {task.enabled ? (
-                      <>
-                        <PauseCircle className="h-4 w-4 mr-2" />
-                        禁用任务
-                      </>
-                    ) : (
-                      <>
-                        <PlayCircle className="h-4 w-4 mr-2" />
-                        启用任务
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onRun(task)} disabled={isRunning || !relatedItem}>
-                    <Play className="h-4 w-4 mr-2" />
-                    立即执行
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onDelete(task.id)} disabled={isRunning} className="text-red-600 dark:text-red-400">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    删除任务
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-                </div>
+                  <Copy className="h-4 w-4 mr-2" />
+                  复制任务
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleEnabled(task);
+                  }}
+                  disabled={isRunning}
+                >
+                  {task.enabled ? (
+                    <>
+                      <PauseCircle className="h-4 w-4 mr-2" />
+                      禁用任务
+                    </>
+                  ) : (
+                    <>
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      启用任务
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRun(task);
+                  }}
+                  disabled={isRunning || !relatedItem}
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  立即执行
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(task.id);
+                  }}
+                  disabled={isRunning}
+                  className="text-red-600 dark:text-red-400"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  删除任务
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </CardHeader>
+        </div>
         
-        <CardContent className={`pb-2 text-sm ${statusInfo.bgColor}`}>
-          <div className="grid grid-cols-2 gap-2">
-                <div>
-              <div className="flex items-center text-muted-foreground">
-                <Calendar className="h-3 w-3 mr-1 shrink-0" />
-                {getScheduleDescription(task)}
+        {/* 错误信息显示 */}
+        {hasError && (
+          <div className="mt-3 p-2 bg-red-500/10 backdrop-blur-sm border border-red-500/20 rounded-lg text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-red-400">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span className="font-medium">执行失败</span>
               </div>
-              <div className="flex items-center text-muted-foreground mt-1">
-                <Clock className="h-3 w-3 mr-1 shrink-0" />
-                下次执行: {formatNextRunTime(task)}
-              </div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">
-                季: {task.action.seasonNumber}
-              </div>
-              <div className="text-muted-foreground mt-1 flex flex-wrap gap-1">
-                {task.action.autoUpload && (
-                  <Badge variant="outline" className="text-xs py-0 h-5">自动上传</Badge>
-                )}
-                {task.action.autoRemoveMarked && (
-                  <Badge variant="outline" className="text-xs py-0 h-5">自动过滤</Badge>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {hasError && (
-            <div className="mt-2 p-2 bg-red-50 dark:bg-red-950 rounded text-xs text-red-600 dark:text-red-400">
-              <div className="font-medium">错误信息:</div>
-              <div className="truncate">{task.lastRunError}</div>
-              <div className="mt-1 flex justify-between">
-                  <Button
-                  variant="ghost" 
-                    size="sm"
-                  className="h-6 text-xs px-2 py-0"
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs px-2 py-0 text-red-400 hover:text-red-300"
                   onClick={() => onShowError(task)}
-                  >
-                  查看详情
-                  </Button>
-                  <Button
-                  variant="ghost" 
-                    size="sm"
-                  className="h-6 text-xs px-2 py-0"
+                >
+                  详情
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs px-2 py-0 text-red-400 hover:text-red-300"
                   onClick={() => onRelink(task)}
                 >
-                  重新关联项目
+                  重新关联
                 </Button>
               </div>
             </div>
-          )}
-          
-          {task.lastRun && !hasError && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              上次执行: {formatLastRunTime(task)}
-              {isSuccess && (
-                <span className={`ml-2 ${statusInfo.textColor}`}>
-                  <CheckCircle2 className="h-3 w-3 inline" /> 成功
-                </span>
-              )}
-            </div>
-          )}
-          
-          {/* 展开的额外信息 */}
-          {expanded && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <h4 className="text-xs font-medium mb-2">高级选项</h4>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div className="flex items-center justify-between">
-                  <span>自动确认上传:</span>
-                  <Badge variant="outline" className="font-normal">
-                    {task.action.autoConfirm !== false ? "是" : "否"}
-                  </Badge>
+          </div>
+        )}
+
+        {/* 额外信息 - 仅在展开时显示 */}
+        {expanded && (
+          <div className="mt-3 pt-3 border-t border-white/10 text-xs opacity-70">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>下次: {formatNextRunTime(task)}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>自动标记已上传:</span>
-                  <Badge variant="outline" className="font-normal">
-                    {task.action.autoMarkUploaded !== false ? "是" : "否"}
-                  </Badge>
-                </div>
-                {task.action.removeIqiyiAirDate !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span>删除爱奇艺日期:</span>
-                    <Badge variant="outline" className="font-normal">
-                      {task.action.removeIqiyiAirDate ? "是" : "否"}
-                    </Badge>
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <span>创建时间:</span>
-                  <span>{new Date(task.createdAt).toLocaleDateString()}</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <span>季: {task.action.seasonNumber}</span>
                 </div>
               </div>
+              <div className="flex flex-wrap gap-1">
+                {task.action.autoUpload && (
+                  <span className="px-2 py-1 rounded-md border bg-background text-xs">自动上传</span>
+                )}
+                {task.action.autoRemoveMarked && (
+                  <span className="px-2 py-1 rounded-md border bg-background text-xs">自动过滤</span>
+                )}
+              </div>
             </div>
-          )}
-        </CardContent>
-        
-        <CardFooter className="pt-2 flex flex-col gap-2">
-          <div className="flex justify-between w-full">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onRun(task)}
-              disabled={isRunning || !relatedItem}
-              className={`flex-1 ${isRunning ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800' : ''}`}
-            >
-              {isRunning && runningTaskId === task.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  执行中...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-1" />
-                        立即执行
-                      </>
-                    )}
-                  </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpanded(!expanded)}
-              className="ml-2"
-            >
-              {expanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
+          </div>
+        )}
+      </div>
     );
-  };
+  });
 
   // 清理无效任务
   const handleCleanInvalidTasks = async () => {
@@ -1874,218 +1849,143 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     }
   };
 
-  // 添加一个专门修复1749566411729任务ID的函数
-  const fixProblemIdTask = async () => {
-    try {
-      setLoading(true);
-      
-      toast({
-        title: "修复中",
-        description: "正在修复问题ID 1749566411729...",
-      });
-      
-      // 获取任务列表
-      const allTasks = await StorageManager.getScheduledTasks();
-      const problemTask = allTasks.find(task => task.itemId === "1749566411729");
-      
-      if (!problemTask) {
-        toast({
-          title: "未找到问题任务",
-          description: "未找到ID为1749566411729的任务",
-        });
-        return;
-      }
-      
-      // 获取项目列表
-      const allItems = await StorageManager.getItemsWithRetry();
-      
-      if (allItems.length === 0) {
-        toast({
-          title: "无可用项目",
-          description: "系统中没有可用的项目进行关联",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // 按创建时间排序
-      const sortedItems = [...allItems].sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      
-      // 使用第一个项目
-      const newItemId = sortedItems[0].id;
-      
-      // 更新任务
-      const updatedTask = { 
-        ...problemTask,
-        itemId: newItemId,
-        itemTitle: sortedItems[0].title,
-        itemTmdbId: sortedItems[0].tmdbId,
-        updatedAt: new Date().toISOString()
-      };
-      
-      // 保存更新后的任务
-      const success = await StorageManager.updateScheduledTask(updatedTask);
-      
-      if (success) {
-        toast({
-          title: "修复成功",
-          description: `已将任务"${problemTask.name}"关联到项目"${sortedItems[0].title}"`,
-        });
-        
-        // 标记为已处理
-        setHasFixedProblemId(true);
-        
-        // 轻量级刷新任务状态
-        await refreshTasksOnly();
-      } else {
-        toast({
-          title: "修复失败",
-          description: "无法更新任务",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("修复问题ID任务失败:", error);
-      toast({
-        title: "修复失败",
-        description: "操作过程中发生错误",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <AlarmClock className="h-5 w-5 mr-2" />
-              定时任务管理
-              <Badge className="ml-3" variant="outline">
-                共 {tasks.length} 个任务
-              </Badge>
-            </DialogTitle>
-          </DialogHeader>
-          
-          {/* 工具栏 */}
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="搜索任务..."
-                  className="pl-8 w-[200px]"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <Select value={statusFilter} onValueChange={(value: "all" | "enabled" | "disabled") => setStatusFilter(value)}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="状态筛选" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">所有状态</SelectItem>
-                  <SelectItem value="enabled">已启用</SelectItem>
-                  <SelectItem value="disabled">已禁用</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline" 
-                size="sm"
-                onClick={handleCleanInvalidTasks}
-                disabled={loading || isRunningTask}
-                title="清理无效任务"
-                className="mr-2"
-              >
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                清理无效
-              </Button>
-              
-              <Button
-                variant="outline" 
-                size="sm"
-                onClick={fixProblemIdTask}
-                disabled={loading || hasFixedProblemId}
-                title="修复问题ID 1749566411729"
-                className="mr-2"
-              >
-                <Lightbulb className="h-4 w-4 mr-2" />
-                修复ID问题
-              </Button>
+        <DialogContent className="max-w-6xl bg-background border border-border" showCloseButton={false}>
+          <DialogHeader className="pb-4">
+            <div className="flex items-center justify-between w-full">
+              <DialogTitle className="flex items-center text-lg">
+                <div className="p-2 rounded-full bg-blue-500/20 mr-3">
+                  <AlarmClock className="h-5 w-5 text-blue-400" />
+                </div>
+                定时任务管理
+                <Badge className="ml-3" variant="outline">
+                  共 {tasks.length} 个任务
+                </Badge>
+              </DialogTitle>
 
-              <Button
-                variant="outline" 
-                size="sm"
-                onClick={handleManualRefresh}
-                disabled={loading}
-                title="刷新任务列表"
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RotateCw className="h-4 w-4 mr-2" />
+              <div className="dialog-header-buttons">
+                {runningTasks.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowExecutionLogs(true)}
+                    className=""
+                  >
+                    <BarChart2 className="h-4 w-4 mr-2" />
+                    执行日志 ({runningTasks.length})
+                  </Button>
                 )}
-                刷新
-              </Button>
-
-              {selectedItem && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowTaskDialog(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  添加任务
-                </Button>
-              )}
-            </div>
-          </div>
-          
-          <ScrollArea className="flex-1 h-[500px] pr-4">
-            {renderTaskList()}
-          </ScrollArea>
-
-          <DialogFooter className="border-t pt-4">
-            <div className="flex gap-2 mr-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowStorageDebug(true)}
-              >
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                存储调试
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSchedulerDebug(true)}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                调度器调试
-              </Button>
-              {runningTasks.length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowExecutionLogs(true)}
+                  onClick={() => onOpenChange(false)}
+                  className=""
                 >
-                  <BarChart2 className="h-4 w-4 mr-2" />
-                  执行日志 ({runningTasks.length})
+                  关闭
                 </Button>
-              )}
+              </div>
             </div>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              关闭
-            </Button>
-          </DialogFooter>
+          </DialogHeader>
+          
+          {/* 工具栏 */}
+          <div className="glass-card rounded-lg p-4 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="搜索任务..."
+                    className="pl-10 w-[220px] border border-input bg-background/40 backdrop-blur-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <Select value={statusFilter} onValueChange={(value: "all" | "enabled" | "disabled") => setStatusFilter(value)}>
+                  <SelectTrigger className="w-[140px] border border-input bg-background/40 backdrop-blur-sm">
+                    <SelectValue placeholder="状态筛选" />
+                  </SelectTrigger>
+                  <SelectContent className="border border-input bg-popover/80 backdrop-blur-md">
+                    <SelectItem value="all">所有状态</SelectItem>
+                    <SelectItem value="enabled">已启用</SelectItem>
+                    <SelectItem value="disabled">已禁用</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleSelectionMode}
+                  disabled={loading || isRunningTask}
+                  title={isSelectionMode ? "退出选择模式" : "进入选择模式"}
+                  className={isSelectionMode ? "bg-primary/20 border-primary/30" : ""}
+                >
+                  {isSelectionMode ? (
+                    <>
+                      <X className="h-4 w-4 mr-2" />
+                      退出选择
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                      选择模式
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCleanInvalidTasks}
+                  disabled={loading || isRunningTask}
+                  title="清理无效任务"
+                  className=""
+                >
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  清理无效
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleManualRefresh}
+                  disabled={loading}
+                  title="刷新任务列表"
+                  className=""
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RotateCw className="h-4 w-4 mr-2" />
+                  )}
+                  刷新
+                </Button>
+
+                {selectedItem && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowTaskDialog(true)}
+                    className="bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/30 text-blue-300"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    添加任务
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className={`task-display-area glass-card rounded-lg p-4 ${isSelectionMode ? 'selection-mode' : ''}`}>
+            <ScrollArea className="h-[500px] pr-4">
+              {renderTaskList()}
+            </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
       
@@ -2472,17 +2372,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         </DialogContent>
       </Dialog>
 
-      {/* 存储调试对话框 */}
-      <StorageDebugDialog
-        open={showStorageDebug}
-        onOpenChange={setShowStorageDebug}
-      />
 
-      {/* 调度器调试对话框 */}
-      <SchedulerDebugDialog
-        open={showSchedulerDebug}
-        onOpenChange={setShowSchedulerDebug}
-      />
 
       {/* 任务执行日志对话框 */}
       <TaskExecutionLogsDialog

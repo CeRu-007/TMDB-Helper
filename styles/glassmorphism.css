@@ -1,0 +1,361 @@
+/* Glassmorphism 毛玻璃效果样式 */
+
+/* 性能优化 - 减少重绘和回流 */
+.glass-card,
+.task-card-glass,
+.action-button-glass {
+  /* 使用GPU加速 */
+  transform: translateZ(0);
+  /* 优化渲染性能 */
+  backface-visibility: hidden;
+  /* 减少重绘区域 */
+  contain: layout style paint;
+}
+
+/* 基础毛玻璃效果 - 移除投影 */
+.glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: border-color 0.15s ease;
+  will-change: border-color;
+}
+
+.dark .glass-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 悬停效果 - 简化以避免闪烁 */
+.glass-card:hover {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-card:hover {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 任务卡片专用样式 */
+.task-card-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  transition: border-color 0.15s ease;
+  position: relative;
+  overflow: visible; /* 改为 visible 以确保菜单能正确显示 */
+  will-change: border-color;
+}
+
+.dark .task-card-glass {
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 任务卡片悬停效果 - 移除transform避免闪烁 */
+.task-card-glass:hover {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.dark .task-card-glass:hover {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* 状态指示器 */
+.status-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  border-radius: 12px 12px 0 0;
+}
+
+.status-indicator.running {
+  background: linear-gradient(90deg, 
+    rgba(59, 130, 246, 0.8), 
+    rgba(147, 197, 253, 0.8), 
+    rgba(59, 130, 246, 0.8)
+  );
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.status-indicator.success {
+  background: linear-gradient(90deg,
+    rgba(34, 197, 94, 0.8),
+    rgba(134, 239, 172, 0.8),
+    rgba(34, 197, 94, 0.8)
+  );
+}
+
+.status-indicator.error {
+  background: linear-gradient(90deg,
+    rgba(239, 68, 68, 0.8),
+    rgba(252, 165, 165, 0.8),
+    rgba(239, 68, 68, 0.8)
+  );
+}
+
+.status-indicator.user-interrupted {
+  background: linear-gradient(90deg,
+    rgba(249, 115, 22, 0.8),
+    rgba(254, 215, 170, 0.8),
+    rgba(249, 115, 22, 0.8)
+  );
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+.status-indicator.disabled {
+  background: linear-gradient(90deg,
+    rgba(156, 163, 175, 0.5),
+    rgba(209, 213, 219, 0.5),
+    rgba(156, 163, 175, 0.5)
+  );
+}
+
+/* 动画效果 */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* 紧凑布局样式 */
+.task-card-compact {
+  padding: 12px 16px;
+  min-height: 80px;
+  max-height: 120px;
+  position: relative;
+  overflow: visible;
+  transition: border-color 0.15s ease;
+}
+
+.task-card-compact:hover {
+  border-color: hsl(var(--muted-foreground) / 0.3) !important;
+}
+
+/* 水平布局 */
+.task-info-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.task-title-horizontal {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-meta-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+/* 状态徽章样式 */
+.status-badge-glass {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  /* 移除backdrop-filter和transition以提升性能 */
+}
+
+.dark .status-badge-glass {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 操作按钮样式 */
+.action-button-glass {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  will-change: background-color, border-color;
+}
+
+.action-button-glass:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  /* 移除transform和backdrop-filter避免闪烁 */
+}
+
+.dark .action-button-glass {
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dark .action-button-glass:hover {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* 选中状态 */
+.task-card-selected {
+  border: 2px solid hsl(var(--primary)) !important;
+  background-color: hsl(var(--primary) / 0.05);
+}
+
+.dark .task-card-selected {
+  border: 2px solid hsl(var(--primary)) !important;
+  background-color: hsl(var(--primary) / 0.1);
+}
+
+/* 简化的按钮样式 - 避免与其他样式冲突 */
+.simple-hover-button {
+  background: transparent;
+  border: none;
+  transition: opacity 0.2s ease;
+  will-change: opacity;
+}
+
+.simple-hover-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark .simple-hover-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* 对话框头部按钮组样式 */
+.dialog-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.dialog-header-buttons .action-button-glass {
+  height: 32px;
+  font-size: 13px;
+  padding: 0 12px;
+  min-width: auto;
+}
+
+/* 响应式头部按钮 */
+@media (max-width: 768px) {
+  .dialog-header-buttons {
+    gap: 8px;
+  }
+
+  .dialog-header-buttons .action-button-glass {
+    height: 28px;
+    font-size: 12px;
+    padding: 0 8px;
+  }
+
+  .dialog-header-buttons .action-button-glass .lucide {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+
+
+
+
+
+
+/* 菜单层级优化 */
+.glass-card[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+/* 确保dropdown menu内容有足够高的z-index */
+[data-radix-dropdown-menu-content] {
+  z-index: 9999 !important;
+}
+
+/* 任务卡片菜单特殊处理 */
+.task-card-glass [data-radix-dropdown-menu-content] {
+  z-index: 10000 !important;
+  position: fixed !important;
+}
+
+/* 防止任务卡片内容遮挡菜单 */
+.task-card-glass {
+  isolation: isolate;
+}
+
+/* 菜单触发按钮样式优化 */
+.task-card-glass .action-button-glass {
+  position: relative;
+  z-index: 1;
+}
+
+/* 任务展示区域专用边框样式 */
+.task-display-area {
+  /* 覆盖默认glass-card边框，使用更明显的边框 */
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  /* 确保边框在所有状态下都稳定显示 */
+  transition: border-color 0.2s ease !important;
+}
+
+.dark .task-display-area {
+  /* 深色主题下的边框 */
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 悬停效果 - 增强边框可见性 */
+.task-display-area:hover {
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+}
+
+.dark .task-display-area:hover {
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 确保在选择模式下边框保持稳定 */
+.task-display-area.selection-mode {
+  border: 2px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+.dark .task-display-area.selection-mode {
+  border: 2px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+
+  .task-card-compact {
+    padding: 10px 12px;
+    min-height: 70px;
+  }
+
+  .task-title-horizontal {
+    font-size: 13px;
+  }
+
+  .task-meta-horizontal {
+    font-size: 11px;
+    gap: 6px;
+  }
+}

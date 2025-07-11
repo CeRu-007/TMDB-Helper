@@ -279,20 +279,37 @@ export default function HomePage() {
       // 如果重试失败或其他错误，尝试从localStorage加载缓存数据
       if (retryCount >= 5) {
         try {
+          // 检查是否在客户端环境
+          if (typeof window === 'undefined') {
+            console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+            return;
+          }
+
           const cachedItems = localStorage.getItem(`upcomingItems_${region}`);
           const cachedLastUpdated = localStorage.getItem('upcomingLastUpdated');
-          
-          if (cachedItems) {
-            const newUpcomingItemsByRegion: Record<string, any[]> = { ...upcomingItemsByRegion };
-            newUpcomingItemsByRegion[region] = JSON.parse(cachedItems);
-            setUpcomingItemsByRegion(newUpcomingItemsByRegion);
-            if (cachedLastUpdated) {
-              setUpcomingLastUpdated(cachedLastUpdated + ' (缓存)');
+
+          if (cachedItems && cachedItems.trim() !== '') {
+            const parsedItems = JSON.parse(cachedItems);
+            if (Array.isArray(parsedItems)) {
+              const newUpcomingItemsByRegion: Record<string, any[]> = { ...upcomingItemsByRegion };
+              newUpcomingItemsByRegion[region] = parsedItems;
+              setUpcomingItemsByRegion(newUpcomingItemsByRegion);
+              if (cachedLastUpdated) {
+                setUpcomingLastUpdated(cachedLastUpdated + ' (缓存)');
+              }
+              setUpcomingError('无法获取最新数据，显示的是缓存数据');
             }
-            setUpcomingError('无法获取最新数据，显示的是缓存数据');
           }
         } catch (e) {
           console.warn('无法从本地存储加载缓存数据:', e);
+          // 清除损坏的缓存数据
+          try {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem(`upcomingItems_${region}`);
+            }
+          } catch (cleanupError) {
+            console.warn('清除损坏缓存失败:', cleanupError);
+          }
         }
       }
     } finally {
@@ -306,18 +323,37 @@ export default function HomePage() {
   useEffect(() => {
     // 创建一个AbortController
     const abortController = new AbortController();
-    
+
     // 首先尝试从localStorage加载缓存数据
     try {
+      // 检查是否在客户端环境
+      if (typeof window === 'undefined') {
+        console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+        return;
+      }
+
       // 加载所有区域的缓存数据
       const newUpcomingItemsByRegion: Record<string, any[]> = {};
       let hasAnyData = false;
-      
+
       REGIONS.forEach(region => {
-        const cachedItems = localStorage.getItem(`upcomingItems_${region.id}`);
-        if (cachedItems) {
-          newUpcomingItemsByRegion[region.id] = JSON.parse(cachedItems);
-          hasAnyData = true;
+        try {
+          const cachedItems = localStorage.getItem(`upcomingItems_${region.id}`);
+          if (cachedItems && cachedItems.trim() !== '') {
+            const parsedItems = JSON.parse(cachedItems);
+            if (Array.isArray(parsedItems)) {
+              newUpcomingItemsByRegion[region.id] = parsedItems;
+              hasAnyData = true;
+            }
+          }
+        } catch (parseError) {
+          console.warn(`[HomePage] 解析缓存数据失败 (${region.id}):`, parseError);
+          // 清除损坏的缓存数据
+          try {
+            localStorage.removeItem(`upcomingItems_${region.id}`);
+          } catch (e) {
+            console.warn(`[HomePage] 清除损坏缓存失败:`, e);
+          }
         }
       });
       
@@ -1794,8 +1830,14 @@ export default function HomePage() {
       // 如果重试失败或其他错误，尝试从localStorage加载缓存数据
       if (retryCount >= 5) {
         try {
+          // 检查是否在客户端环境
+          if (typeof window === 'undefined') {
+            console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+            return;
+          }
+
           const cachedItems = localStorage.getItem(`recentItems_${region}`);
-          if (cachedItems) {
+          if (cachedItems && cachedItems.trim() !== '') {
             const parsedItems = JSON.parse(cachedItems);
             if (Array.isArray(parsedItems) && parsedItems.length > 0) {
               console.log(`从缓存中加载 ${parsedItems.length} 个近期开播内容`);
@@ -1806,6 +1848,14 @@ export default function HomePage() {
           }
         } catch (e) {
           console.warn('无法从本地存储加载缓存数据:', e);
+          // 清除损坏的缓存数据
+          try {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem(`recentItems_${region}`);
+            }
+          } catch (cleanupError) {
+            console.warn('清除损坏缓存失败:', cleanupError);
+          }
         }
       }
     } finally {
@@ -1847,18 +1897,37 @@ export default function HomePage() {
   useEffect(() => {
     // 创建一个AbortController
     const abortController = new AbortController();
-    
+
     // 首先尝试从localStorage加载缓存数据
     try {
+      // 检查是否在客户端环境
+      if (typeof window === 'undefined') {
+        console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+        return;
+      }
+
       // 加载所有区域的缓存数据
       const newRecentItemsByRegion: Record<string, any[]> = {};
       let hasAnyData = false;
-      
+
       REGIONS.forEach(region => {
-        const cachedItems = localStorage.getItem(`recentItems_${region.id}`);
-        if (cachedItems) {
-          newRecentItemsByRegion[region.id] = JSON.parse(cachedItems);
-          hasAnyData = true;
+        try {
+          const cachedItems = localStorage.getItem(`recentItems_${region.id}`);
+          if (cachedItems && cachedItems.trim() !== '') {
+            const parsedItems = JSON.parse(cachedItems);
+            if (Array.isArray(parsedItems)) {
+              newRecentItemsByRegion[region.id] = parsedItems;
+              hasAnyData = true;
+            }
+          }
+        } catch (parseError) {
+          console.warn(`[HomePage] 解析近期开播缓存数据失败 (${region.id}):`, parseError);
+          // 清除损坏的缓存数据
+          try {
+            localStorage.removeItem(`recentItems_${region.id}`);
+          } catch (e) {
+            console.warn(`[HomePage] 清除损坏缓存失败:`, e);
+          }
         }
       });
       

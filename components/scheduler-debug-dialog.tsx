@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Clock, AlertTriangle, CheckCircle, RefreshCw, Settings } from 'lucide-react';
+import { Loader2, Clock, AlertTriangle, CheckCircle, PauseCircle, RefreshCw, Settings } from 'lucide-react';
 
 interface SchedulerStatus {
   scheduler: {
@@ -131,7 +131,10 @@ export function SchedulerDebugDialog({ open, onOpenChange }: SchedulerDebugDialo
       return <AlertTriangle className="h-4 w-4 text-red-500" />;
     }
     if (task.lastRunStatus === 'failed') {
-      return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+      return <AlertTriangle className="h-4 w-4 text-red-500" />;
+    }
+    if (task.lastRunStatus === 'user_interrupted') {
+      return <PauseCircle className="h-4 w-4 text-orange-500" />;
     }
     return <CheckCircle className="h-4 w-4 text-green-500" />;
   };
@@ -141,6 +144,7 @@ export function SchedulerDebugDialog({ open, onOpenChange }: SchedulerDebugDialo
     if (!task.enabled) return '已禁用';
     if (!task.hasActiveTimer) return '缺少定时器';
     if (task.lastRunStatus === 'failed') return '上次失败';
+    if (task.lastRunStatus === 'user_interrupted') return '用户中断';
     return '正常';
   };
 

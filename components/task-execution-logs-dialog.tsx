@@ -19,6 +19,7 @@ import {
   Info,
   Clock,
   Play,
+  PauseCircle,
   RefreshCw,
   X
 } from "lucide-react"
@@ -110,6 +111,8 @@ export function TaskExecutionLogsDialog({
       return { label: '成功', color: 'bg-green-500', icon: <CheckCircle2 className="h-3 w-3" /> }
     } else if (task.lastRunStatus === 'failed') {
       return { label: '失败', color: 'bg-red-500', icon: <XCircle className="h-3 w-3" /> }
+    } else if (task.lastRunStatus === 'user_interrupted') {
+      return { label: '用户中断', color: 'bg-orange-500', icon: <PauseCircle className="h-3 w-3" /> }
     } else {
       return { label: '等待', color: 'bg-gray-500', icon: <Clock className="h-3 w-3" /> }
     }

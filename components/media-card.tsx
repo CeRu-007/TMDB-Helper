@@ -193,7 +193,7 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
           {/* 点击提示 - 调整位置确保不超出边界 */}
           <div className="absolute bottom-3 left-3 right-3">
-            <div className="bg-white/95 backdrop-blur-sm rounded-md px-3 py-2 shadow-lg transform translate-y-1 group-hover:translate-y-0 transition-transform duration-200">
+            <div className="bg-white/95 backdrop-blur-sm rounded-md px-3 py-2 border border-white/20 transform translate-y-1 group-hover:translate-y-0 transition-transform duration-200">
               <div className="flex items-center justify-center space-x-2">
                 <MousePointer2 className="h-3 w-3 text-blue-600" />
                 <p className="text-xs font-medium text-gray-900">点击查看详情</p>

@@ -135,14 +135,13 @@ body {
     cursor: crosshair !important;
   }
 
-  /* 批量选择区域样式 */
+  /* 批量选择区域样式 - 移除投影 */
   .tmdb-selection-area {
     position: absolute;
     background-color: rgba(59, 130, 246, 0.15);
     border: 2px solid rgb(59, 130, 246);
     pointer-events: none;
     z-index: 100;
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
     transition: all 0.1s ease;
   }
   
