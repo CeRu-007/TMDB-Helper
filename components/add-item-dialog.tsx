@@ -92,6 +92,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     category: "" as CategoryType | "",
     isDailyUpdate: false // 添加每日更新选项
   })
+  // 添加标记来跟踪用户是否手动修改了总集数
+  const [isManualTotalEpisodes, setIsManualTotalEpisodes] = useState(false)
   // Node.js和浏览器环境中setTimeout返回类型不同，使用any类型避免类型错误
   const searchTimeoutRef = useRef<any>();
   
@@ -122,7 +124,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         // 更新表单数据
         setFormData((prev) => ({
           ...prev,
-          totalEpisodes: tmdbData.totalEpisodes || prev.totalEpisodes,
+          // 只有在用户没有手动设置总集数时才使用TMDB数据
+          totalEpisodes: isManualTotalEpisodes ? prev.totalEpisodes : (tmdbData.totalEpisodes || prev.totalEpisodes),
           platformUrl: prev.platformUrl || tmdbData.platformUrl || "",
           weekday: tmdbData.weekday !== undefined ? tmdbData.weekday : prev.weekday,
           // 根据标签自动设置推荐分类
@@ -194,7 +197,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                 // 更新表单数据
                 setFormData(prev => ({
                   ...prev,
-                  totalEpisodes: tmdbData.totalEpisodes || prev.totalEpisodes,
+                  // 只有在用户没有手动设置总集数时才使用TMDB数据
+                  totalEpisodes: isManualTotalEpisodes ? prev.totalEpisodes : (tmdbData.totalEpisodes || prev.totalEpisodes),
                   platformUrl: prev.platformUrl || tmdbData.platformUrl || "",
                   weekday: tmdbData.weekday !== undefined ? tmdbData.weekday : prev.weekday,
                   category: prev.category || tmdbData.recommendedCategory || (mockResult.media_type === "movie" ? "movie" : "tv") as CategoryType
@@ -244,6 +248,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         category: "",
         isDailyUpdate: false
       });
+      // 重置手动设置标记
+      setIsManualTotalEpisodes(false);
     }
   }, [open]);
 
@@ -354,6 +360,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       category: "",
       isDailyUpdate: false
     })
+    // 重置手动设置标记
+    setIsManualTotalEpisodes(false)
     setTmdbSeasons([])
     setBackdropUrl(undefined)
     setBackdropPath(undefined)
@@ -756,12 +764,15 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                         type="number"
                         min="1"
                         value={formData.totalEpisodes}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const newValue = parseInt(e.target.value) || 1;
                           setFormData({
                             ...formData,
-                            totalEpisodes: parseInt(e.target.value) || 1,
-                          })
-                        }
+                            totalEpisodes: newValue,
+                          });
+                          // 标记用户已手动设置总集数
+                          setIsManualTotalEpisodes(true);
+                        }}
                         className="h-10"
                       />
                     </div>
