@@ -44,6 +44,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useTheme } from "next-themes"
 import Link from "next/link"
 import Image from "next/image"
@@ -65,6 +66,9 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import ImportDataDialog from "@/components/import-data-dialog"
 import ExportDataDialog from "@/components/export-data-dialog"
+import { SidebarLayout } from "@/components/sidebar-layout"
+import { LayoutSwitcher } from "@/components/layout-switcher"
+import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferences"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -112,6 +116,9 @@ export default function HomePage() {
     }
     return 0 // 默认周一
   })
+
+  // 确保客户端渲染时正确设置当前日期
+  const [isClientReady, setIsClientReady] = useState(false)
   const [activeTab, setActiveTab] = useState("ongoing")
   const [selectedDayFilter, setSelectedDayFilter] = useState<"recent" | number>("recent")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
@@ -133,7 +140,23 @@ export default function HomePage() {
   const [recentError, setRecentError] = useState<string | null>(null);
   const [recentLastUpdated, setRecentLastUpdated] = useState<string | null>(null);
   const [recentItemsByRegion, setRecentItemsByRegion] = useState<Record<string, any[]>>({});
-  
+
+  // 布局状态管理
+  const [currentLayout, setCurrentLayout] = useState<LayoutType>('original')
+
+  // 初始化布局偏好
+  useEffect(() => {
+    if (isClient) {
+      const preferences = LayoutPreferencesManager.getPreferences()
+      setCurrentLayout(preferences.layoutType)
+    }
+  }, [isClient])
+
+  // 处理布局切换
+  const handleLayoutChange = (newLayout: LayoutType) => {
+    setCurrentLayout(newLayout)
+  }
+
   // 使用数据提供者获取数据和方法
   const { 
     items, 
@@ -435,19 +458,21 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // 更新当前日期
+  // 定时更新当前日期（仅在客户端）
   useEffect(() => {
+    if (!isClient) return
+
     const dayTimer = setInterval(() => {
       // 将JS的日期（0=周日，1=周一）转换为我们的数组索引（0=周一，6=周日）
       const jsDay = new Date().getDay() // 0-6，0是周日
       const adjustedDay = jsDay === 0 ? 6 : jsDay - 1 // 转换为0=周一，6=周日
       setCurrentDay(adjustedDay)
     }, 60000)
-    
+
     return () => {
       clearInterval(dayTimer);
     }
-  }, [])
+  }, [isClient])
 
   // 监控正在运行的任务
   useEffect(() => {
@@ -485,12 +510,15 @@ export default function HomePage() {
     { id: "movie", name: "电影", icon: <Clapperboard className="h-4 w-4 mr-2" /> },
   ]
 
-  // 初始化时也需要设置正确的当前日期
+  // 客户端渲染时正确初始化当前日期
   useEffect(() => {
-    const jsDay = new Date().getDay()
-    const adjustedDay = jsDay === 0 ? 6 : jsDay - 1
-    setCurrentDay(adjustedDay)
-  }, [])
+    if (isClient) {
+      const jsDay = new Date().getDay()
+      const adjustedDay = jsDay === 0 ? 6 : jsDay - 1
+      setCurrentDay(adjustedDay)
+      setIsClientReady(true)
+    }
+  }, [isClient])
 
 
 
@@ -823,58 +851,96 @@ export default function HomePage() {
     </>
   );
 
-  // 周几导航栏 - 修复词条数量计算问题
+  // 周几导航栏 - 修复词条数量计算问题和侧边栏布局适配
   const WeekdayNavigation = () => {
     // 根据当前活动标签页获取对应状态的词条
     const currentTabItems = activeTab === "ongoing" ? ongoingItems : completedItems
-    
+
     // 先按分类筛选当前标签页的词条
     const filteredTabItems = filterItemsByCategory(currentTabItems)
 
-    return (
-      <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1 overflow-x-auto py-3">
-            <button
-              onClick={() => setSelectedDayFilter("recent")}
-              className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                selectedDayFilter === "recent"
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
-            >
-              最近更新
-            </button>
-            {WEEKDAYS.map((day, index) => {
-              // 将我们的索引（0=周一，6=周日）转换回JS的日期（0=周日，1=周一）
-              const jsWeekday = index === 6 ? 0 : index + 1
-              // 修复：根据当前标签页状态和分类计算词条数量
-              const dayItems = getItemsByDay(filteredTabItems, jsWeekday)
-              const isToday = index === currentDay
-              const isSelected = selectedDayFilter === jsWeekday
+    // 根据布局类型调整样式
+    const isInSidebar = currentLayout === 'sidebar'
+    const containerClasses = isInSidebar
+      ? "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-50" // 侧边栏布局：top-0, z-50
+      : "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-30" // 原始布局：top-16, z-30
 
-              return (
-                <button
-                  key={day}
-                  onClick={() => setSelectedDayFilter(jsWeekday)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isSelected
-                      ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  } ${isToday ? "ring-2 ring-yellow-400" : ""}`}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>{day}</span>
-                    {isToday && <Calendar className="h-3 w-3 text-yellow-600" />}
-                    {dayItems.length > 0 && (
-                      <span className="bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
-                        {dayItems.length}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              )
-            })}
+    return (
+      <div className={containerClasses}>
+        <div className={isInSidebar ? "mx-auto px-4 sm:px-6 lg:px-8" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"}>
+          <div className="flex justify-between items-center py-3">
+            {/* 左侧：日期导航按钮 */}
+            <div className="flex space-x-1 overflow-x-auto">
+              <button
+                onClick={() => setSelectedDayFilter("recent")}
+                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  selectedDayFilter === "recent"
+                    ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+              >
+                最近更新
+              </button>
+              {WEEKDAYS.map((day, index) => {
+                // 将我们的索引（0=周一，6=周日）转换回JS的日期（0=周日，1=周一）
+                const jsWeekday = index === 6 ? 0 : index + 1
+                // 修复：根据当前标签页状态和分类计算词条数量
+                const dayItems = getItemsByDay(filteredTabItems, jsWeekday)
+                // 只有在客户端准备好时才显示今日高亮
+                const isToday = index === currentDay
+                const isSelected = selectedDayFilter === jsWeekday
+
+                return (
+                  <button
+                    key={day}
+                    onClick={() => setSelectedDayFilter(jsWeekday)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isSelected
+                        ? isToday
+                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                          : "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    } ${isToday ? "!border-2 !border-yellow-400 relative z-10" : ""}`}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>{day}</span>
+                      {isToday && <Calendar className="h-3 w-3 text-yellow-600" />}
+                      {dayItems.length > 0 && (
+                        <span className="bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
+                          {dayItems.length}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* 右侧：状态选择器（仅在侧边栏布局中显示） */}
+            {isInSidebar && (
+              <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">状态:</span>
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[60]">
+                    <SelectItem value="ongoing">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-4 w-4" />
+                        <span>连载中</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="completed">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>已完结</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1967,6 +2033,157 @@ export default function HomePage() {
     };
   }, []);
 
+  // 如果是侧边栏布局，使用SidebarLayout组件
+  if (currentLayout === 'sidebar') {
+    return (
+      <>
+        <SidebarLayout
+          onLayoutChange={handleLayoutChange}
+          currentLayout={currentLayout}
+          totalItems={totalItems}
+          runningTasks={runningTasks}
+          onShowAddDialog={() => setShowAddDialog(true)}
+          onShowSettingsDialog={() => setShowSettingsDialog(true)}
+          onShowTasksDialog={() => setShowTasksDialog(true)}
+          onShowExecutionLogs={() => setShowExecutionLogs(true)}
+          onShowImportDialog={() => setShowImportDialog(true)}
+          onShowExportDialog={() => setShowExportDialog(true)}
+          // 影视资讯相关状态和函数
+          upcomingItems={upcomingItems}
+          recentItems={recentItems}
+          loadingUpcoming={loadingUpcoming}
+          loadingRecent={loadingRecent}
+          upcomingError={upcomingError}
+          recentError={recentError}
+          upcomingLastUpdated={upcomingLastUpdated}
+          recentLastUpdated={recentLastUpdated}
+          selectedRegion={selectedRegion}
+          mediaNewsType={mediaNewsType}
+          isMissingApiKey={isMissingApiKey}
+          fetchUpcomingItems={fetchUpcomingItems}
+          fetchRecentItems={fetchRecentItems}
+          setMediaNewsType={setMediaNewsType}
+          setSelectedRegion={setSelectedRegion}
+          // 词条维护相关状态和函数
+          activeTab={activeTab}
+          selectedDayFilter={selectedDayFilter}
+          selectedCategory={selectedCategory}
+          categories={categories}
+          filteredOngoingItems={filteredOngoingItems}
+          filteredCompletedItems={filteredCompletedItems}
+          getFilteredItems={getFilteredItems}
+          setActiveTab={setActiveTab}
+          setSelectedDayFilter={setSelectedDayFilter}
+          setSelectedCategory={setSelectedCategory}
+          onItemClick={(item) => setSelectedItem(item)}
+          // 组件引用
+          RegionNavigation={RegionNavigation}
+          ApiKeySetupGuide={ApiKeySetupGuide}
+          VideoThumbnailExtractor={VideoThumbnailExtractor}
+          WeekdayNavigation={WeekdayNavigation}
+        >
+          {/* 侧边栏布局的词条维护内容 - 移除重复的标签页导航 */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            {/* 只保留词条维护相关的内容，移除TabsList */}
+              <TabsContent value="ongoing">
+                {/* 周几导航栏 */}
+                <WeekdayNavigation />
+
+                {/* 内容展示区域 */}
+                <div className="mt-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+                    {getFilteredItems(filteredOngoingItems).map((item) => (
+                      <MediaCard
+                        key={item.id}
+                        item={item}
+                        onClick={() => setSelectedItem(item)}
+                        showAirTime={true}
+                      />
+                    ))}
+                  </div>
+
+                  {getFilteredItems(filteredOngoingItems).length === 0 && (
+                    <div className="text-center py-16">
+                      <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
+                      <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                        {selectedCategory !== "all"
+                          ? `${categories.find(c => c.id === selectedCategory)?.name}分类暂无连载中词条`
+                          : selectedDayFilter === "recent"
+                            ? "暂无最近更新的词条"
+                            : `${WEEKDAYS[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]}暂无连载中词条`}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">添加新词条后会自动出现在这里</p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="completed">
+                {/* 周几导航栏 */}
+                <WeekdayNavigation />
+
+                {/* 内容展示区域 */}
+                <div className="mt-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+                    {getFilteredItems(filteredCompletedItems).map((item) => (
+                      <MediaCard
+                        key={item.id}
+                        item={item}
+                        onClick={() => setSelectedItem(item)}
+                        showAirTime={true}
+                      />
+                    ))}
+                  </div>
+
+                  {getFilteredItems(filteredCompletedItems).length === 0 && (
+                    <div className="text-center py-16">
+                      <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
+                      <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                        {selectedCategory !== "all"
+                          ? `${categories.find(c => c.id === selectedCategory)?.name}分类暂无已完结词条`
+                          : selectedDayFilter === "recent"
+                            ? "暂无最近完成的词条"
+                            : `${WEEKDAYS[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]}暂无已完结词条`}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">完成维护的词条会自动出现在这里</p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+        </SidebarLayout>
+
+        {/* Dialogs */}
+        <AddItemDialog
+          open={showAddDialog}
+          onOpenChange={setShowAddDialog}
+          onAdd={handleAddItem}
+        />
+        <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
+        <GlobalScheduledTasksDialog open={showTasksDialog} onOpenChange={setShowTasksDialog} />
+        <TaskExecutionLogsDialog
+          open={showExecutionLogs}
+          onOpenChange={setShowExecutionLogs}
+          runningTasks={runningTasks}
+        />
+        <ImportDataDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
+        <ExportDataDialog open={showExportDialog} onOpenChange={setShowExportDialog} />
+        {selectedItem && (
+          <ItemDetailDialog
+            item={selectedItem}
+            open={!!selectedItem}
+            onOpenChange={(open) => {
+              if (!open) setSelectedItem(null)
+            }}
+            onUpdate={handleUpdateItem}
+            onDelete={handleDeleteItem}
+          />
+        )}
+      </>
+    )
+  }
+
+  // 原始布局
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
@@ -1974,29 +2191,16 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              {/* 替换为上传的图标并添加适度的动画效果 */}
-              <div className="relative group">
-                {/* 添加更柔和的背景光晕效果 */}
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition duration-500"></div>
-                
-                <div className="relative transform group-hover:scale-105 transition duration-300">
-                  <Image 
-                    src="/images/tmdb-helper-logo-new.png"
-                    alt="TMDB维护助手"
-                    width={44}
-                    height={44}
-                    className="rounded-lg transition-all duration-300"
-                  />
-                </div>
-              </div>
-              <div>
-                {/* 优化标题样式 */}
-                <div className="flex flex-col">
-                  <h1 className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-700 dark:from-cyan-400 dark:to-blue-500">
-                    TMDB<span className="font-bold tracking-wide">维护助手</span>
-                  </h1>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">共 {totalItems} 个词条</p>
-                </div>
+              {/* Logo */}
+              <div className="group">
+                <Image
+                  src="/tmdb-helper-logo.png"
+                  alt="TMDB维护助手"
+                  width={160}
+                  height={60}
+                  className="h-14 w-auto object-contain transform group-hover:scale-105 transition duration-300"
+                  priority
+                />
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -2033,6 +2237,10 @@ export default function HomePage() {
                   <Settings className="h-4 w-4 mr-2" />
                   设置
                 </Button>
+                <LayoutSwitcher
+                  onLayoutChange={handleLayoutChange}
+                  currentLayout={currentLayout}
+                />
                 <Button
                   variant="outline"
                   size="sm"
