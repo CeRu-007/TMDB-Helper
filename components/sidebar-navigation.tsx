@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import {
   ChevronDown,
   ChevronRight,
@@ -23,12 +23,6 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 export interface SidebarNavigationProps {
   onMenuSelect: (menuId: string, submenuId?: string) => void
@@ -91,6 +85,8 @@ export function SidebarNavigation({
 }: SidebarNavigationProps) {
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set())
   const [hoveredMenuItem, setHoveredMenuItem] = useState<string | null>(null)
+  const [submenuHovered, setSubmenuHovered] = useState<boolean>(false)
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // 初始化时展开包含活动项的菜单
   useEffect(() => {
@@ -99,18 +95,76 @@ export function SidebarNavigation({
     }
   }, [activeMenu])
 
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // 清除隐藏定时器
+  const clearHideTimeout = useCallback(() => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current)
+      hideTimeoutRef.current = null
+    }
+  }, [])
+
   // 菜单项悬停逻辑
-  const handleMenuItemMouseEnter = (itemId: string) => {
+  const handleMenuItemMouseEnter = useCallback((itemId: string) => {
     if (collapsed) {
+      clearHideTimeout()
       setHoveredMenuItem(itemId)
     }
-  }
+  }, [collapsed, clearHideTimeout])
 
-  const handleMenuItemMouseLeave = () => {
+  const handleMenuItemMouseLeave = useCallback(() => {
     if (collapsed) {
-      setHoveredMenuItem(null)
+      // 延迟隐藏，给用户时间移动到子菜单
+      hideTimeoutRef.current = setTimeout(() => {
+        if (!submenuHovered) {
+          setHoveredMenuItem(null)
+        }
+      }, 150)
     }
-  }
+  }, [collapsed, submenuHovered])
+
+  // 子菜单悬停逻辑
+  const handleSubmenuMouseEnter = useCallback(() => {
+    clearHideTimeout()
+    setSubmenuHovered(true)
+  }, [clearHideTimeout])
+
+  const handleSubmenuMouseLeave = useCallback(() => {
+    setSubmenuHovered(false)
+    setHoveredMenuItem(null)
+  }, [])
+
+  // 计算子菜单位置，紧贴侧边栏边缘
+  const getSubmenuPosition = useCallback((index: number) => {
+    const buttonHeight = 56 // 按钮高度 (h-12 + margin)
+    const submenuHeight = 250 // 估算的子菜单高度
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800
+    const headerHeight = 64 // header高度
+    const sidebarWidth = 64 // 收起状态下的侧边栏宽度
+
+    // 计算理想位置 - 与按钮垂直对齐
+    let topPosition = headerHeight + (index * buttonHeight) + 8 // 8px微调对齐
+
+    // 检查是否会超出底部边界
+    const availableSpace = viewportHeight - topPosition - 20 // 留20px缓冲
+    if (availableSpace < submenuHeight) {
+      // 如果空间不足，向上调整位置
+      topPosition = Math.max(headerHeight + 8, topPosition - (submenuHeight - availableSpace))
+    }
+
+    return {
+      top: `${topPosition}px`,
+      left: `${sidebarWidth}px` // 紧贴侧边栏右边缘
+    }
+  }, [])
 
   const toggleMenu = (menuId: string) => {
     setExpandedMenus(prev => {
@@ -138,13 +192,12 @@ export function SidebarNavigation({
   }
 
   return (
-    <TooltipProvider>
-      <div
-        className={cn(
-          "bg-white dark:bg-gray-900 border-r dark:border-gray-700 h-full transition-all duration-300 ease-in-out relative",
-          collapsed ? "w-16" : "w-64"
-        )}
-      >
+    <div
+      className={cn(
+        "bg-white dark:bg-gray-900 border-r dark:border-gray-700 h-full transition-all duration-300 ease-in-out relative",
+        collapsed ? "w-16" : "w-64"
+      )}
+    >
 
         {/* 主侧边栏内容 */}
         <div className={collapsed ? "p-2" : "p-4"}>
@@ -158,54 +211,81 @@ export function SidebarNavigation({
                     onMouseLeave={handleMenuItemMouseLeave}
                     className="relative"
                   >
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={activeMenu === item.id ? "secondary" : "ghost"}
-                          size="icon"
-                          className="w-12 h-12"
-                          onClick={() => handleMenuClick(item.id, item.submenu?.[0]?.id)}
-                        >
-                          {item.icon}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="ml-2">
-                        <p>{item.label}</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <Button
+                      variant={activeMenu === item.id ? "secondary" : "ghost"}
+                      size="icon"
+                      className={`w-12 h-12 relative transition-all duration-200 ${
+                        activeMenu === item.id
+                          ? "bg-blue-100 dark:bg-blue-900/50 border-r-2 border-r-blue-500"
+                          : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`}
+                      onClick={() => handleMenuClick(item.id, item.submenu?.[0]?.id)}
+                    >
+                      {item.icon}
+                      {/* 激活状态指示器 */}
+                      {activeMenu === item.id && (
+                        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-l-full"></div>
+                      )}
+                    </Button>
 
-                    {/* 悬停展开的子菜单 */}
+                    {/* 悬停展开的子菜单 - 紧凑现代设计 */}
                     {hoveredMenuItem === item.id && item.submenu && (
-                      <div
-                        className="absolute left-16 top-0 w-48 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-md shadow-lg z-50"
-                        style={{ top: `${index * 56}px` }}
-                      >
-                        <div className="p-2">
-                          <div className="mb-2 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 border-b dark:border-gray-700">
-                            {item.label}
-                          </div>
-                          <div className="space-y-1">
-                            {item.submenu.map((subitem) => (
-                              <Button
+                      <>
+                        {/* 连接指示器 - 从按钮到子菜单的视觉桥梁 */}
+                        <div
+                          className="fixed w-1 h-12 bg-blue-500 z-[99] transition-all duration-300 ease-out"
+                          style={{
+                            top: `${64 + (index * 56) + 8}px`, // 与按钮对齐
+                            left: '63px', // 侧边栏右边缘
+                          }}
+                        />
+
+                        <div
+                          className="fixed w-36 bg-white dark:bg-gray-800 border-l-4 border-l-blue-500 border-r border-t border-b border-gray-200 dark:border-gray-600 shadow-2xl z-[100] transition-all duration-300 ease-out"
+                          style={{
+                            ...getSubmenuPosition(index),
+                            transform: 'translateX(-1px)',
+                            boxShadow: '4px 0 20px -2px rgba(0, 0, 0, 0.1), 0 8px 25px -5px rgba(0, 0, 0, 0.1)'
+                          }}
+                          onMouseEnter={handleSubmenuMouseEnter}
+                          onMouseLeave={handleSubmenuMouseLeave}
+                        >
+                        <div className="py-1">
+                          {/* 移除标题，直接显示菜单项 */}
+                          <div className="space-y-0">
+                            {item.submenu.map((subitem, subIndex) => (
+                              <div
                                 key={subitem.id}
-                                variant={
+                                className={`relative cursor-pointer transition-all duration-200 ${
                                   activeMenu === item.id && activeSubmenu === subitem.id
-                                    ? "default"
-                                    : "ghost"
-                                }
-                                size="sm"
-                                className="w-full justify-start"
+                                    ? "bg-blue-500 text-white"
+                                    : "hover:bg-blue-50 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300"
+                                }`}
                                 onClick={() => handleMenuClick(item.id, subitem.id)}
                               >
-                                <div className="flex items-center space-x-2">
-                                  {subitem.icon}
-                                  <span>{subitem.label}</span>
+                                {/* 左侧蓝色指示条 */}
+                                {activeMenu === item.id && activeSubmenu === subitem.id && (
+                                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>
+                                )}
+
+                                <div className="flex items-center px-3 py-2.5">
+                                  <div className="flex items-center space-x-2 w-full">
+                                    <div className="flex-shrink-0">
+                                      {React.cloneElement(subitem.icon as React.ReactElement, {
+                                        className: "h-3.5 w-3.5"
+                                      })}
+                                    </div>
+                                    <span className="text-xs font-medium truncate flex-1">
+                                      {subitem.label}
+                                    </span>
+                                  </div>
                                 </div>
-                              </Button>
+                              </div>
                             ))}
                           </div>
                         </div>
-                      </div>
+                        </div>
+                      </>
                     )}
                   </div>
                 ) : (
@@ -270,6 +350,5 @@ export function SidebarNavigation({
           </nav>
         </div>
       </div>
-    </TooltipProvider>
   )
 }

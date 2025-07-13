@@ -810,23 +810,24 @@ export function SidebarLayout({
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
       <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm border-b dark:border-gray-700 sticky top-0 z-40">
-        <div className="flex items-center h-16 px-4">
-          {/* 侧边栏切换按钮 */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSidebarToggle}
-            className="mr-3"
-          >
-            {sidebarCollapsed ? (
-              <PanelLeftOpen className="h-5 w-5" />
-            ) : (
-              <PanelLeftClose className="h-5 w-5" />
-            )}
-          </Button>
+        <div className="flex items-center h-16">
+          {/* 左侧：侧边栏切换按钮和Logo */}
+          <div className="flex items-center pl-4">
+            {/* 侧边栏切换按钮 */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSidebarToggle}
+              className="mr-3"
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="h-5 w-5" />
+              ) : (
+                <PanelLeftClose className="h-5 w-5" />
+              )}
+            </Button>
 
-          {/* Logo */}
-          <div className="flex items-center flex-1">
+            {/* Logo */}
             <div className="group">
               <Image
                 src="/tmdb-helper-logo.png"
@@ -839,8 +840,10 @@ export function SidebarLayout({
             </div>
           </div>
 
-          {/* 右侧操作按钮 */}
-          <div className="flex items-center space-x-2">
+          {/* 右侧操作按钮 - 与主内容区域对齐 */}
+          <div className="flex-1 flex justify-end">
+            <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-end space-x-2">
             {/* 布局切换器 */}
             <LayoutSwitcher 
               onLayoutChange={onLayoutChange}
@@ -885,14 +888,17 @@ export function SidebarLayout({
               </Button>
             </div>
             
-            <Button
-              onClick={onShowAddDialog}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              size={isMobile ? "sm" : "default"}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              添加
-            </Button>
+                <Button
+                  onClick={onShowAddDialog}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  size={isMobile ? "sm" : "default"}
+                >
+                  <Plus className="h-4 w-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">添加词条</span>
+                  <span className="sm:hidden">添加</span>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
