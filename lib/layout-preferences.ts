@@ -7,6 +7,12 @@
 
 export type LayoutType = 'original' | 'sidebar'
 
+// 布局显示名称映射
+export const LAYOUT_NAMES = {
+  original: '标签页布局',
+  sidebar: '侧边栏布局'
+} as const
+
 export interface LayoutPreferences {
   layoutType: LayoutType
   sidebarCollapsed?: boolean
@@ -78,10 +84,11 @@ export class LayoutPreferencesManager {
 
   /**
    * 获取默认布局偏好设置
+   * 默认使用标签页布局（original）
    */
   static getDefaultPreferences(): LayoutPreferences {
     return {
-      layoutType: 'original',
+      layoutType: 'original', // 标签页布局作为默认布局
       sidebarCollapsed: false,
       lastUpdated: new Date().toISOString()
     }

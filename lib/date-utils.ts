@@ -143,17 +143,81 @@ export function isDateColumn(values: string[]): boolean {
 export function isTimeColumn(values: string[]): boolean {
   // 如果没有数据，返回false
   if (!values || values.length === 0) return false;
-  
+
   // 检查非空值中是否有符合时间格式的
   const nonEmptyValues = values.filter(v => v.trim() !== '');
   if (nonEmptyValues.length === 0) return false;
-  
+
   // 检查前10个非空值是否都是有效时间
   const sampleSize = Math.min(10, nonEmptyValues.length);
   const validTimes = nonEmptyValues
     .slice(0, sampleSize)
     .filter(v => hasTimeMinutes(v));
-  
+
   // 如果至少50%的样本是有效时间，则认为是时间列
   return validTimes.length >= sampleSize * 0.5;
-} 
+}
+
+/**
+ * 格式化即将上线的时间描述
+ * @param releaseDate 上线日期
+ * @returns 格式化的时间描述（如"今天上线"、"明天上线"、"3天后上线"）
+ */
+export function formatUpcomingTimeDescription(releaseDate: string): string {
+  const daysUntilRelease = Math.ceil((new Date(releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysUntilRelease <= 0) {
+    return "今天上线";
+  } else if (daysUntilRelease === 1) {
+    return "明天上线";
+  } else {
+    return `${daysUntilRelease} 天后上线`;
+  }
+}
+
+/**
+ * 格式化近期开播的时间描述
+ * @param releaseDate 开播日期
+ * @returns 格式化的时间描述（如"今天开播"、"昨天开播"、"3天前开播"）
+ */
+export function formatRecentTimeDescription(releaseDate: string): string {
+  const daysSinceRelease = Math.ceil((new Date().getTime() - new Date(releaseDate).getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysSinceRelease <= 0) {
+    return "今天开播";
+  } else if (daysSinceRelease === 1) {
+    return "昨天开播";
+  } else {
+    return `${daysSinceRelease} 天前开播`;
+  }
+}
+
+/**
+ * 格式化简短的时间描述（用于卡片上的标签）
+ * @param releaseDate 日期
+ * @param isUpcoming 是否为即将上线（true）还是近期开播（false）
+ * @returns 简短的时间描述（如"今天上线"、"明天上线"、"3天后"、"昨天开播"、"3天前"）
+ */
+export function formatShortTimeDescription(releaseDate: string, isUpcoming: boolean): string {
+  if (isUpcoming) {
+    const daysUntilRelease = Math.ceil((new Date(releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysUntilRelease <= 0) {
+      return "今天上线";
+    } else if (daysUntilRelease === 1) {
+      return "明天上线";
+    } else {
+      return `${daysUntilRelease}天后`;
+    }
+  } else {
+    const daysSinceRelease = Math.ceil((new Date().getTime() - new Date(releaseDate).getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysSinceRelease <= 0) {
+      return "今天开播";
+    } else if (daysSinceRelease === 1) {
+      return "昨天开播";
+    } else {
+      return `${daysSinceRelease}天前`;
+    }
+  }
+}

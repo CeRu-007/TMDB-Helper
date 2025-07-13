@@ -17,7 +17,8 @@ import {
   Clapperboard,
   Clock,
   Play,
-  Download
+  Download,
+  Scissors
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -76,7 +77,8 @@ const menuItems: MenuItem[] = [
     label: "缩略图",
     icon: <Image className="h-4 w-4" />,
     submenu: [
-      { id: "extract", label: "分集图片提取", icon: <Download className="h-3 w-3" /> }
+      { id: "extract", label: "分集图片提取", icon: <Download className="h-3 w-3" /> },
+      { id: "crop", label: "分集图片裁切", icon: <Scissors className="h-3 w-3" /> }
     ]
   }
 ]

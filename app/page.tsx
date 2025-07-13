@@ -52,6 +52,7 @@ import AddItemDialog from "@/components/add-item-dialog"
 import SettingsDialog from "@/components/settings-dialog"
 import ItemDetailDialog from "@/components/item-detail-dialog"
 import VideoThumbnailExtractor from "@/components/video-thumbnail-extractor"
+import { ImageCropper } from "@/components/image-cropper"
 import GlobalScheduledTasksDialog from "@/components/global-scheduled-tasks-dialog"
 import { TaskExecutionLogsDialog } from "@/components/task-execution-logs-dialog"
 import { type TMDBItem, type ScheduledTask } from "@/lib/storage"
@@ -1756,7 +1757,20 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="thumbnail">
-            <VideoThumbnailExtractor />
+            <Tabs defaultValue="extract" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="extract">分集图片提取</TabsTrigger>
+                <TabsTrigger value="crop">分集图片裁切</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="extract" className="mt-6">
+                <VideoThumbnailExtractor />
+              </TabsContent>
+
+              <TabsContent value="crop" className="mt-6">
+                <ImageCropper />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>
@@ -2060,11 +2074,14 @@ export default function HomePage() {
           selectedRegion={selectedRegion}
           mediaNewsType={mediaNewsType}
           isMissingApiKey={isMissingApiKey}
+          upcomingItemsByRegion={upcomingItemsByRegion}
+          recentItemsByRegion={recentItemsByRegion}
           fetchUpcomingItems={fetchUpcomingItems}
           fetchRecentItems={fetchRecentItems}
           setMediaNewsType={setMediaNewsType}
           setSelectedRegion={setSelectedRegion}
           // 词条维护相关状态和函数
+          items={items}
           activeTab={activeTab}
           selectedDayFilter={selectedDayFilter}
           selectedCategory={selectedCategory}
@@ -2080,6 +2097,7 @@ export default function HomePage() {
           RegionNavigation={RegionNavigation}
           ApiKeySetupGuide={ApiKeySetupGuide}
           VideoThumbnailExtractor={VideoThumbnailExtractor}
+          ImageCropper={ImageCropper}
           WeekdayNavigation={WeekdayNavigation}
         >
           {/* 侧边栏布局的词条维护内容 - 移除重复的标签页导航 */}
