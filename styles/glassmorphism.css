@@ -294,6 +294,20 @@
   z-index: 9999 !important;
 }
 
+/* 确保select下拉框内容在对话框中有足够高的z-index */
+[data-radix-select-content] {
+  z-index: 150 !important;
+}
+
+/* 确保alert dialog内容在对话框中有足够高的z-index */
+[data-radix-alert-dialog-overlay] {
+  z-index: 200 !important;
+}
+
+[data-radix-alert-dialog-content] {
+  z-index: 210 !important;
+}
+
 /* 任务卡片菜单特殊处理 */
 .task-card-glass [data-radix-dropdown-menu-content] {
   z-index: 10000 !important;

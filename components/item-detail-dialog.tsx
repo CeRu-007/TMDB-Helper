@@ -21,6 +21,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogNoOverlay,
+  AlertDialogNoOverlayContent,
 } from "@/components/ui/alert-dialog"
 import {
   Copy,
@@ -72,14 +74,11 @@ import {
   Bug,
   Calendar,
   ImageIcon,
-  Layers,
   BarChart,
   Languages,
   CalendarDays,
-  Hash,
   PlusCircle,
   AlertCircle,
-  Star,
   Heart,
   Share2,
   StickyNote,
@@ -172,11 +171,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [isContentReady, setIsContentReady] = useState(false);
 
   useEffect(() => {
-    // 确保所有属性都被正确初始化，包括isDailyUpdate和blurIntensity
+    // 确保所有属性都被正确初始化，包括isDailyUpdate
     const initialEditData = {
       ...item,
-      isDailyUpdate: item.isDailyUpdate || false,
-      blurIntensity: item.blurIntensity || 'medium'
+      isDailyUpdate: item.isDailyUpdate || false
     }
     setEditData(initialEditData)
     setLocalItem(item)
@@ -632,9 +630,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       updatedAt: new Date().toISOString(),
       // 设置手动集数标记
       manuallySetEpisodes: editData.mediaType === "tv" && editData.totalEpisodes !== item.totalEpisodes,
-      // 确保每日更新设置和毛玻璃效果强度被保存
-      isDailyUpdate: editData.isDailyUpdate,
-      blurIntensity: editData.blurIntensity || 'medium'
+      // 确保每日更新设置被保存
+      isDailyUpdate: editData.isDailyUpdate
     }
     
     // 只有在背景图或标志发生变化时才强制刷新背景图（使用带时间戳的刷新键）
@@ -1565,78 +1562,20 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                               </SelectContent>
                             </Select>
                           </div>
-                          
-                          {/* 高级设置区域 */}
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div className="space-y-1">
-                              <Label htmlFor="edit-blur-intensity" className="flex items-center text-xs text-muted-foreground">
-                                <Layers className="h-3.5 w-3.5 mr-1" />
-                                模糊效果
-                              </Label>
-                              <Select 
-                                value={editData.blurIntensity || "none"} 
-                                onValueChange={(value) => setEditData({...editData, blurIntensity: value === "none" ? undefined : value as "light" | "medium" | "heavy"})}
-                              >
-                                <SelectTrigger className="w-full h-7 text-xs">
-                                  <SelectValue placeholder="选择效果" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">无效果</SelectItem>
-                                  <SelectItem value="light">弱效果</SelectItem>
-                                  <SelectItem value="medium">中等效果</SelectItem>
-                                  <SelectItem value="heavy">强效果</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            <div className="space-y-1">
-                              <Label htmlFor="edit-rating" className="flex items-center text-xs text-muted-foreground">
-                                <Star className="h-3.5 w-3.5 mr-1" />
-                                评分
-                              </Label>
-                              <Input 
-                                id="edit-rating" 
-                                type="number"
-                                min="0"
-                                max="10"
-                                step="0.1"
-                                value={editData.rating?.toString() || ""} 
-                                onChange={(e) => setEditData({...editData, rating: e.target.value ? parseFloat(e.target.value) : undefined})}
-                                placeholder="0-10"
-                                className="h-7 text-xs"
-                              />
-                            </div>
-                          </div>
-                          
-                          {/* TMDB ID设置 */}
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div className="space-y-1">
-                              <Label htmlFor="edit-tmdb-id" className="flex items-center text-xs text-muted-foreground">
-                                <Hash className="h-3.5 w-3.5 mr-1" />
-                                TMDB ID
-                              </Label>
-                              <Input 
-                                id="edit-tmdb-id" 
-                                value={editData.tmdbId || ""} 
-                                onChange={(e) => setEditData({...editData, tmdbId: e.target.value})}
-                                placeholder="例如: 12345"
-                                className="h-7 text-xs"
-                              />
-                            </div>
-                            
-                            <div className="space-y-1">
-                              <Label htmlFor="edit-tmdb-url" className="flex items-center text-xs text-muted-foreground">
-                                <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                                TMDB URL
-                              </Label>
-                              <Input 
-                                id="edit-tmdb-url" 
-                                value={editData.tmdbUrl || ""} 
-                                onChange={(e) => setEditData({...editData, tmdbUrl: e.target.value})}
-                                placeholder="TMDB链接"
-                                className="h-7 text-xs"
-                              />
-                            </div>
+
+                          {/* TMDB URL设置 */}
+                          <div className="space-y-1">
+                            <Label htmlFor="edit-tmdb-url" className="flex items-center text-xs text-muted-foreground">
+                              <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                              TMDB URL
+                            </Label>
+                            <Input
+                              id="edit-tmdb-url"
+                              value={editData.tmdbUrl || ""}
+                              onChange={(e) => setEditData({...editData, tmdbUrl: e.target.value})}
+                              placeholder="TMDB链接"
+                              className="h-7 text-xs"
+                            />
                           </div>
                           
                           {/* 刷新TMDB数据按钮 */}
@@ -2265,8 +2204,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             </AlertDialogContent>
           </AlertDialog>
           
-          <AlertDialog open={showDeleteSeasonDialog} onOpenChange={setShowDeleteSeasonDialog}>
-            <AlertDialogContent>
+          <AlertDialogNoOverlay open={showDeleteSeasonDialog} onOpenChange={setShowDeleteSeasonDialog}>
+            <AlertDialogNoOverlayContent>
               <AlertDialogHeader>
                     <AlertDialogTitle>确认删除季</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -2277,11 +2216,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                     <AlertDialogCancel onClick={() => setShowDeleteSeasonDialog(false)}>取消</AlertDialogCancel>
                     <AlertDialogAction onClick={confirmDeleteSeason}>确认</AlertDialogAction>
               </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            </AlertDialogNoOverlayContent>
+          </AlertDialogNoOverlay>
 
-          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <AlertDialogContent>
+          <AlertDialogNoOverlay open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogNoOverlayContent>
               <AlertDialogHeader>
                     <AlertDialogTitle>确认删除</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -2290,7 +2229,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               </AlertDialogHeader>
               <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>取消</AlertDialogCancel>
-                <AlertDialogAction 
+                <AlertDialogAction
                       onClick={() => {
                         setShowDeleteDialog(false)
                         onOpenChange(false)
@@ -2301,8 +2240,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                       删除
                 </AlertDialogAction>
               </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            </AlertDialogNoOverlayContent>
+          </AlertDialogNoOverlay>
 
           {/* 定时任务对话框 */}
           <ScheduledTaskDialog

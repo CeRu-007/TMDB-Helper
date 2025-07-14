@@ -18,7 +18,7 @@ const AlertDialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-[200] bg-background/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -62,7 +62,7 @@ const AlertDialogContent = React.forwardRef<
       <AlertDialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+          "fixed left-[50%] top-[50%] z-[210] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
           className,
         )}
         aria-describedby={describedById}
@@ -126,6 +126,66 @@ const AlertDialogCancel = React.forwardRef<
 ))
 AlertDialogCancel.displayName = AlertDialogPrimitive.Cancel.displayName
 
+// 创建无背景遮罩的AlertDialog变体，专用于删除确认对话框
+const AlertDialogNoOverlay = AlertDialogPrimitive.Root
+
+const AlertDialogNoOverlayTrigger = AlertDialogPrimitive.Trigger
+
+const AlertDialogNoOverlayPortal = AlertDialogPrimitive.Portal
+
+const AlertDialogNoOverlayContent = React.forwardRef<
+  React.ElementRef<typeof AlertDialogPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
+>(({ className, children, ...props }, ref) => {
+  const descriptionId = React.useId();
+
+  const userDescribedBy = props["aria-describedby"];
+
+  let hasDescription = false;
+
+  React.Children.forEach(children, (child) => {
+    if (React.isValidElement(child)) {
+      const childType = child.type;
+      if (childType === AlertDialogDescription) {
+        hasDescription = true;
+      }
+      else if (
+        typeof childType === 'object' &&
+        childType !== null &&
+        // @ts-ignore - 运行时检查，TypeScript无法静态分析
+        childType.displayName === 'AlertDialogDescription'
+      ) {
+        hasDescription = true;
+      }
+    }
+  });
+
+  const describedById = userDescribedBy || descriptionId;
+
+  return (
+    <AlertDialogNoOverlayPortal>
+      {/* 无背景遮罩，直接显示对话框内容 */}
+      <AlertDialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          "fixed left-[50%] top-[50%] z-[210] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+          className,
+        )}
+        aria-describedby={describedById}
+        {...props}
+      >
+        {children}
+        {!hasDescription && (
+          <span id={descriptionId} className="sr-only">
+            警告对话框内容
+          </span>
+        )}
+      </AlertDialogPrimitive.Content>
+    </AlertDialogNoOverlayPortal>
+  );
+})
+AlertDialogNoOverlayContent.displayName = "AlertDialogNoOverlayContent"
+
 export {
   AlertDialog,
   AlertDialogPortal,
@@ -138,4 +198,9 @@ export {
   AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
+  // 导出无背景遮罩的变体
+  AlertDialogNoOverlay,
+  AlertDialogNoOverlayTrigger,
+  AlertDialogNoOverlayPortal,
+  AlertDialogNoOverlayContent,
 }
