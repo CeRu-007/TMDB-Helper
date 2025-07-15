@@ -170,3 +170,62 @@ body > [data-dropdown-menu="true"] {
   backface-visibility: hidden !important;
   perspective: 1000px !important;
 }
+
+/* 外观设置相关样式 */
+.compact-mode {
+  --spacing-unit: 0.75;
+}
+
+.compact-mode .p-4 {
+  padding: calc(1rem * var(--spacing-unit));
+}
+
+.compact-mode .p-6 {
+  padding: calc(1.5rem * var(--spacing-unit));
+}
+
+.compact-mode .space-y-4 > * + * {
+  margin-top: calc(1rem * var(--spacing-unit));
+}
+
+.compact-mode .space-y-6 > * + * {
+  margin-top: calc(1.5rem * var(--spacing-unit));
+}
+
+.no-animations * {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+/* 主色调变量 */
+:root[data-primary-color="blue"] {
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+}
+
+:root[data-primary-color="green"] {
+  --primary: 142.1 76.2% 36.3%;
+  --primary-foreground: 355.7 100% 97.3%;
+}
+
+:root[data-primary-color="purple"] {
+  --primary: 262.1 83.3% 57.8%;
+  --primary-foreground: 210 40% 98%;
+}
+
+:root[data-primary-color="red"] {
+  --primary: 0 84.2% 60.2%;
+  --primary-foreground: 210 40% 98%;
+}
+
+:root[data-primary-color="orange"] {
+  --primary: 24.6 95% 53.1%;
+  --primary-foreground: 210 40% 98%;
+}
+
+:root[data-primary-color="pink"] {
+  --primary: 330.4 81.2% 60.4%;
+  --primary-foreground: 210 40% 98%;
+}
