@@ -3,6 +3,8 @@
  * 使用单例模式实现，确保整个应用中只有一个实例
  */
 
+import { log } from '@/lib/logger'
+
 // 定义Worker类型
 type ImageProcessingWorker = Worker;
 
@@ -45,12 +47,12 @@ export class ImageProcessor {
       try {
         // 如果已经初始化，直接返回
         if (this.initialized && this.worker) {
-          console.log('图像处理器已初始化，跳过');
+          log.debug('ImageProcessor', '图像处理器已初始化，跳过');
           resolve();
           return;
         }
         
-        console.log('正在初始化图像处理器...');
+        log.info('ImageProcessor', '正在初始化图像处理器...');
         
         try {
           // 直接创建Worker，不使用Blob

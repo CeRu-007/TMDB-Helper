@@ -3,6 +3,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import type React from "react"
 import MidLayout from "./mid-layout"
+import { ErrorBoundary } from '@/components/error-boundary'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,7 +21,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body className={inter.className}>
-        <MidLayout>{children}</MidLayout>
+        <ErrorBoundary>
+          <MidLayout>{children}</MidLayout>
+        </ErrorBoundary>
       </body>
     </html>
   )
