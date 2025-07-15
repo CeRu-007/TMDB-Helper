@@ -1,412 +1,428 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Activity,
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   AlertTriangle,
-  CheckCircle,
-  Clock,
-  Database,
-  Lock,
-  Settings,
-  Zap,
-  TrendingUp,
-  TrendingDown,
+  CheckCircle2,
+  XCircle,
   RefreshCw,
+  Settings,
+  Wrench,
+  Activity,
+  Database,
+  FileText,
+  Loader2,
+  Info,
   ExternalLink
-} from 'lucide-react';
-import { EnhancedMonitoringDialog } from './enhanced-monitoring-dialog';
-import { ConfigManagementDialog } from './config-management-dialog';
-import { performanceMonitor } from '@/lib/performance-monitor';
-import { configManager } from '@/lib/config-manager';
-import { StorageSyncManager } from '@/lib/storage-sync-manager';
-import { DistributedLock } from '@/lib/distributed-lock';
+} from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
+import FixTMDBImportBugDialog from "./fix-tmdb-import-bug-dialog"
 
 interface SystemStatus {
-  overall: 'healthy' | 'warning' | 'critical' | 'unknown';
-  scheduler: {
-    status: 'running' | 'stopped' | 'error';
-    activeTasks: number;
-    totalTasks: number;
-  };
-  performance: {
-    memoryUsage: number;
-    averageResponseTime: number;
-    errorRate: number;
-  };
+  tmdbImport: {
+    exists: boolean
+    fixed: boolean
+    version?: string
+    lastError?: string
+  }
   storage: {
-    usage: number;
-    syncStatus: 'synced' | 'syncing' | 'error';
-    lastSync: string;
-  };
-  locks: {
-    active: number;
-    expired: number;
-  };
-  config: {
-    customized: number;
-    total: number;
-  };
+    type: string
+    itemCount: number
+    taskCount: number
+    healthy: boolean
+  }
+  scheduler: {
+    isInitialized: boolean
+    activeTimers: number
+    runningTasks: number
+    lastError?: string
+  }
+  python: {
+    available: boolean
+    version?: string
+    packages: string[]
+  }
 }
 
-export function SystemStatusPanel() {
-  const [status, setStatus] = useState<SystemStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showMonitoring, setShowMonitoring] = useState(false);
-  const [showConfig, setShowConfig] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+interface SystemStatusPanelProps {
+  className?: string
+}
 
-  const fetchStatus = async () => {
+export default function SystemStatusPanel({ className }: SystemStatusPanelProps) {
+  const [status, setStatus] = useState<SystemStatus | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [showFixDialog, setShowFixDialog] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // 加载系统状态
+  const loadSystemStatus = async () => {
+    setLoading(true)
     try {
-      // 并行获取所有状态信息
-      const [
-        schedulerResponse,
-        performanceData,
-        syncStats,
-        lockStatus,
-        configStats
-      ] = await Promise.all([
-        fetch('/api/scheduler-status').then(r => r.json()).catch(() => ({ success: false })),
-        performanceMonitor.getRealTimeMetrics(),
-        StorageSyncManager.getSyncStats().catch(() => ({
-          status: { syncInProgress: false, conflictCount: 0 },
-          lastSyncAgo: '未知'
-        })),
-        DistributedLock.getAllLockStatus().catch(() => ({
-          activeLocks: [],
-          expiredLocks: [],
-          totalLocks: 0
-        })),
-        configManager.getConfigStats()
-      ]);
-
-      // 计算整体健康状态
-      const issues = [];
-      if (!schedulerResponse.success) issues.push('调度器异常');
-      if (performanceData.systemMetrics?.memory.percentage > 80) issues.push('内存使用率过高');
-      if (syncStats.status.conflictCount > 10) issues.push('同步冲突过多');
-      if (lockStatus.expiredLocks.length > 5) issues.push('过期锁过多');
-
-      let overall: SystemStatus['overall'] = 'healthy';
-      if (issues.length > 2) {
-        overall = 'critical';
-      } else if (issues.length > 0) {
-        overall = 'warning';
-      }
+      // 并行获取各个系统状态
+      const [tmdbResponse, storageResponse, schedulerResponse] = await Promise.all([
+        fetch('/api/fix-tmdb-import-bug').catch(() => null),
+        fetch('/api/debug-storage').catch(() => null),
+        fetch('/api/scheduler-status').catch(() => null)
+      ])
 
       const systemStatus: SystemStatus = {
-        overall,
-        scheduler: {
-          status: schedulerResponse.success ? 
-            (schedulerResponse.status.scheduler.isInitialized ? 'running' : 'stopped') : 'error',
-          activeTasks: schedulerResponse.success ? schedulerResponse.status.tasks.running : 0,
-          totalTasks: schedulerResponse.success ? schedulerResponse.status.tasks.total : 0
-        },
-        performance: {
-          memoryUsage: performanceData.systemMetrics?.memory.percentage || 0,
-          averageResponseTime: 0, // 需要从性能数据中计算
-          errorRate: 0 // 需要从性能数据中计算
+        tmdbImport: {
+          exists: false,
+          fixed: false
         },
         storage: {
-          usage: performanceData.systemMetrics?.storage.percentage || 0,
-          syncStatus: syncStats.status.syncInProgress ? 'syncing' : 'synced',
-          lastSync: syncStats.lastSyncAgo
+          type: 'unknown',
+          itemCount: 0,
+          taskCount: 0,
+          healthy: false
         },
-        locks: {
-          active: lockStatus.activeLocks.length,
-          expired: lockStatus.expiredLocks.length
+        scheduler: {
+          isInitialized: false,
+          activeTimers: 0,
+          runningTasks: 0
         },
-        config: {
-          customized: configStats.customizedSettings,
-          total: configStats.totalSettings
+        python: {
+          available: false,
+          packages: []
         }
-      };
+      }
 
-      setStatus(systemStatus);
+      // 处理 TMDB-Import 状态
+      if (tmdbResponse?.ok) {
+        const tmdbData = await tmdbResponse.json()
+        systemStatus.tmdbImport = {
+          exists: tmdbData.exists || false,
+          fixed: tmdbData.fixed || false,
+          lastError: tmdbData.error
+        }
+      }
+
+      // 处理存储状态
+      if (storageResponse?.ok) {
+        const storageData = await storageResponse.json()
+        if (storageData.success) {
+          systemStatus.storage = {
+            type: storageData.storageType || 'unknown',
+            itemCount: storageData.itemCount || 0,
+            taskCount: storageData.taskCount || 0,
+            healthy: storageData.healthy !== false
+          }
+        }
+      }
+
+      // 处理调度器状态
+      if (schedulerResponse?.ok) {
+        const schedulerData = await schedulerResponse.json()
+        if (schedulerData.success) {
+          systemStatus.scheduler = {
+            isInitialized: schedulerData.status?.scheduler?.isInitialized || false,
+            activeTimers: schedulerData.status?.scheduler?.activeTimers || 0,
+            runningTasks: schedulerData.status?.scheduler?.runningTasks || 0
+          }
+        }
+      }
+
+      setStatus(systemStatus)
     } catch (error) {
-      console.error('获取系统状态失败:', error);
+      console.error("加载系统状态失败:", error)
+      toast({
+        title: "加载失败",
+        description: "无法获取系统状态信息",
+        variant: "destructive"
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
+  // 刷新状态
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await loadSystemStatus()
+    setRefreshing(false)
+    toast({
+      title: "刷新完成",
+      description: "系统状态已更新",
+    })
+  }
+
+  // 初始加载
   useEffect(() => {
-    fetchStatus();
+    loadSystemStatus()
+  }, [])
 
-    let interval: NodeJS.Timeout | null = null;
-    if (autoRefresh) {
-      interval = setInterval(fetchStatus, 30000); // 30秒刷新
+  // 获取整体健康状态
+  const getOverallHealth = () => {
+    if (!status) return { status: 'unknown', score: 0 }
+    
+    let score = 0
+    let maxScore = 0
+    
+    // TMDB-Import 状态 (30分)
+    maxScore += 30
+    if (status.tmdbImport.exists) {
+      score += 15
+      if (status.tmdbImport.fixed) {
+        score += 15
+      }
     }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [autoRefresh]);
-
-  const getStatusColor = (status: SystemStatus['overall']) => {
-    switch (status) {
-      case 'healthy': return 'text-green-600';
-      case 'warning': return 'text-yellow-600';
-      case 'critical': return 'text-red-600';
-      default: return 'text-gray-600';
+    
+    // 存储状态 (25分)
+    maxScore += 25
+    if (status.storage.healthy) {
+      score += 25
     }
-  };
-
-  const getStatusIcon = (status: SystemStatus['overall']) => {
-    switch (status) {
-      case 'healthy': return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
-      case 'critical': return <AlertTriangle className="h-5 w-5 text-red-600" />;
-      default: return <Clock className="h-5 w-5 text-gray-600" />;
+    
+    // 调度器状态 (25分)
+    maxScore += 25
+    if (status.scheduler.isInitialized) {
+      score += 25
     }
-  };
-
-  const getStatusText = (status: SystemStatus['overall']) => {
-    switch (status) {
-      case 'healthy': return '系统运行正常';
-      case 'warning': return '系统存在警告';
-      case 'critical': return '系统存在严重问题';
-      default: return '状态未知';
+    
+    // Python环境 (20分)
+    maxScore += 20
+    if (status.python.available) {
+      score += 20
     }
-  };
+    
+    const percentage = maxScore > 0 ? (score / maxScore) * 100 : 0
+    
+    if (percentage >= 90) return { status: 'excellent', score: percentage }
+    if (percentage >= 70) return { status: 'good', score: percentage }
+    if (percentage >= 50) return { status: 'warning', score: percentage }
+    return { status: 'error', score: percentage }
+  }
+
+  const health = getOverallHealth()
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            系统状态
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center p-4">
-            <RefreshCw className="h-6 w-6 animate-spin" />
-            <span className="ml-2">加载中...</span>
+      <Card className={className}>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+            <span>加载系统状态...</span>
           </div>
         </CardContent>
       </Card>
-    );
-  }
-
-  if (!status) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            系统状态
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              无法获取系统状态信息
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
+    )
   }
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <Card className={className}>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              系统状态
+            <CardTitle className="text-base flex items-center space-x-2">
+              <Activity className="h-4 w-4" />
+              <span>系统状态</span>
             </CardTitle>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAutoRefresh(!autoRefresh)}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
-                {autoRefresh ? '自动刷新' : '手动刷新'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMonitoring(true)}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                详细监控
-              </Button>
-            </div>
-          </div>
-          <CardDescription>
-            定时任务系统的实时运行状态概览
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* 整体状态 */}
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex items-center gap-3">
-              {getStatusIcon(status.overall)}
-              <div>
-                <div className="font-medium">整体状态</div>
-                <div className={`text-sm ${getStatusColor(status.overall)}`}>
-                  {getStatusText(status.overall)}
-                </div>
-              </div>
-            </div>
-            <Badge variant={status.overall === 'healthy' ? 'default' : 'destructive'}>
-              {status.overall.toUpperCase()}
-            </Badge>
-          </div>
-
-          {/* 状态指标网格 */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* 调度器状态 */}
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="h-4 w-4 text-blue-500" />
-                <span className="text-sm font-medium">调度器</span>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">状态</span>
-                  <Badge 
-                    variant={status.scheduler.status === 'running' ? 'default' : 'destructive'}
-                    className="text-xs"
-                  >
-                    {status.scheduler.status === 'running' ? '运行中' : '已停止'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">活跃任务</span>
-                  <span className="text-sm font-medium">
-                    {status.scheduler.activeTasks}/{status.scheduler.totalTasks}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* 性能指标 */}
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm font-medium">性能</span>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">内存使用</span>
-                  <span className="text-sm font-medium">
-                    {status.performance.memoryUsage.toFixed(1)}%
-                  </span>
-                </div>
-                <Progress 
-                  value={status.performance.memoryUsage} 
-                  className="h-1"
-                />
-              </div>
-            </div>
-
-            {/* 存储状态 */}
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Database className="h-4 w-4 text-green-500" />
-                <span className="text-sm font-medium">存储</span>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">使用率</span>
-                  <span className="text-sm font-medium">
-                    {status.storage.usage.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">同步</span>
-                  <Badge 
-                    variant={status.storage.syncStatus === 'synced' ? 'default' : 'outline'}
-                    className="text-xs"
-                  >
-                    {status.storage.syncStatus === 'synced' ? '已同步' : '同步中'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            {/* 锁状态 */}
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Lock className="h-4 w-4 text-purple-500" />
-                <span className="text-sm font-medium">锁管理</span>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">活跃锁</span>
-                  <span className="text-sm font-medium">{status.locks.active}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">过期锁</span>
-                  <span className={`text-sm font-medium ${status.locks.expired > 0 ? 'text-red-500' : ''}`}>
-                    {status.locks.expired}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 快速操作 */}
-          <div className="flex gap-2 pt-2 border-t">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowConfig(true)}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              配置管理
-            </Button>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchStatus}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              刷新状态
-            </Button>
-
-            {status.overall !== 'healthy' && (
+            <div className="flex items-center space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center space-x-2">
+                      {health.status === 'excellent' && (
+                        <Badge className="bg-green-500">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          优秀
+                        </Badge>
+                      )}
+                      {health.status === 'good' && (
+                        <Badge className="bg-blue-500">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          良好
+                        </Badge>
+                      )}
+                      {health.status === 'warning' && (
+                        <Badge className="bg-yellow-500">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          警告
+                        </Badge>
+                      )}
+                      {health.status === 'error' && (
+                        <Badge className="bg-red-500">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          错误
+                        </Badge>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>系统健康度: {health.score.toFixed(1)}%</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowMonitoring(true)}
+                onClick={handleRefresh}
+                disabled={refreshing}
               >
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                查看问题
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
+          
+          {/* 健康度进度条 */}
+          <div className="mt-2">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-muted-foreground">系统健康度</span>
+              <span className="font-medium">{health.score.toFixed(1)}%</span>
+            </div>
+            <Progress 
+              value={health.score} 
+              className={`h-2 ${
+                health.status === 'excellent' ? 'bg-green-100' :
+                health.status === 'good' ? 'bg-blue-100' :
+                health.status === 'warning' ? 'bg-yellow-100' : 'bg-red-100'
+              }`}
+            />
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {/* TMDB-Import 状态 */}
+          <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                {status?.tmdbImport.exists ? (
+                  status.tmdbImport.fixed ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  )
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500" />
+                )}
+                <span className="font-medium text-sm">TMDB-Import</span>
+              </div>
+              
+              <div className="text-xs text-muted-foreground">
+                {status?.tmdbImport.exists ? (
+                  status.tmdbImport.fixed ? '正常运行' : '需要修复'
+                ) : '未安装'}
+              </div>
+            </div>
+            
+            {status?.tmdbImport.exists && !status.tmdbImport.fixed && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFixDialog(true)}
+              >
+                <Wrench className="h-3 w-3 mr-1" />
+                修复
               </Button>
             )}
           </div>
 
-          {/* 最后同步时间 */}
-          <div className="text-xs text-gray-500 text-center pt-2 border-t">
-            上次同步: {status.storage.lastSync} | 配置自定义: {status.config.customized}/{status.config.total}
+          {/* 存储状态 */}
+          <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                {status?.storage.healthy ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500" />
+                )}
+                <span className="font-medium text-sm">数据存储</span>
+              </div>
+              
+              <div className="text-xs text-muted-foreground">
+                {status?.storage.type} • {status?.storage.itemCount} 项目 • {status?.storage.taskCount} 任务
+              </div>
+            </div>
           </div>
+
+          {/* 调度器状态 */}
+          <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                {status?.scheduler.isInitialized ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500" />
+                )}
+                <span className="font-medium text-sm">任务调度器</span>
+              </div>
+              
+              <div className="text-xs text-muted-foreground">
+                {status?.scheduler.activeTimers} 定时器 • {status?.scheduler.runningTasks} 运行中
+              </div>
+            </div>
+          </div>
+
+          {/* 问题提醒 */}
+          {status && (
+            <>
+              {!status.tmdbImport.exists && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    TMDB-Import 工具未安装或配置不正确。
+                    <Button variant="link" className="p-0 h-auto text-sm" asChild>
+                      <a href="https://github.com/your-repo/TMDB-Import" target="_blank" rel="noopener noreferrer">
+                        查看安装指南 <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {status.tmdbImport.exists && !status.tmdbImport.fixed && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    检测到 TMDB-Import 中文字符解析错误，建议立即修复。
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-sm ml-2"
+                      onClick={() => setShowFixDialog(true)}
+                    >
+                      立即修复
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {!status.scheduler.isInitialized && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    任务调度器未初始化，定时任务可能无法正常执行。
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* 监控对话框 */}
-      <EnhancedMonitoringDialog
-        open={showMonitoring}
-        onOpenChange={setShowMonitoring}
-      />
-
-      {/* 配置对话框 */}
-      <ConfigManagementDialog
-        open={showConfig}
-        onOpenChange={setShowConfig}
+      {/* 修复对话框 */}
+      <FixTMDBImportBugDialog
+        open={showFixDialog}
+        onOpenChange={(open) => {
+          setShowFixDialog(open)
+          if (!open) {
+            // 修复完成后刷新状态
+            loadSystemStatus()
+          }
+        }}
       />
     </>
-  );
+  )
 }
