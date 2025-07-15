@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Clock, ChevronUp, ChevronDown } from "lucide-react"
 import { TimePickerDial } from "./time-picker-dial"
@@ -29,7 +29,7 @@ export function ModernTimePicker({
   disabled = false,
   use12Hours = false,
 }: ModernTimePickerProps) {
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<"input" | "dial" | "presets">("input")
   const [dialMode, setDialMode] = useState<"hour" | "minute">("hour")
   const [internalHour, setInternalHour] = useState(hour)
@@ -145,34 +145,33 @@ export function ModernTimePicker({
 
   return (
     <div className={cn("flex flex-col", className)}>
-      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-        <PopoverTrigger asChild>
-          <div className="relative flex items-center">
-            <Input
-              type="text"
-              value={formatTime(internalHour, internalMinute)}
-              onChange={handleInputChange}
-              className="pr-20 text-center"
-              placeholder="00:00"
-              disabled={disabled}
-            />
-            <div className="absolute right-1 top-1 bottom-1 flex">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-full rounded-l-none border-l"
-                onClick={(e) => {
-                  e.preventDefault()
-                  setIsPopoverOpen(true)
-                }}
-                disabled={disabled}
-              >
-                <Clock className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="center">
+      <div className="relative flex items-center">
+        <Input
+          type="text"
+          value={formatTime(internalHour, internalMinute)}
+          onChange={handleInputChange}
+          className="pr-20 text-center"
+          placeholder="00:00"
+          disabled={disabled}
+        />
+        <div className="absolute right-1 top-1 bottom-1 flex">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-full rounded-l-none border-l"
+            onClick={(e) => {
+              e.preventDefault()
+              setIsDialogOpen(true)
+            }}
+            disabled={disabled}
+          >
+            <Clock className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md p-0">
           <Tabs defaultValue="input" value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
             <div className="border-b px-3">
               <TabsList className="grid grid-cols-3">
@@ -309,14 +308,14 @@ export function ModernTimePicker({
               </Button>
               <Button
                 size="sm"
-                onClick={() => setIsPopoverOpen(false)}
+                onClick={() => setIsDialogOpen(false)}
               >
                 确定
               </Button>
             </div>
           </Tabs>
-        </PopoverContent>
-      </Popover>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

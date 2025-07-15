@@ -158,6 +158,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [showMetadataDialog, setShowMetadataDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showFixBugDialog, setShowFixBugDialog] = useState(false)
+  const [scheduledTaskDialogOpen, setScheduledTaskDialogOpen] = useState(false)
   const [tmdbCommands, setTmdbCommands] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState("episodes")
   const [detailTab, setDetailTab] = useState("details")
@@ -2259,6 +2260,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           />
         </DialogContent>
       </Dialog>
+
+      {/* 定时任务对话框 */}
+      <ScheduledTaskDialog
+        item={localItem}
+        open={scheduledTaskDialogOpen}
+        onOpenChange={setScheduledTaskDialogOpen}
+        onUpdate={onUpdate}
+      />
     </>
   )
 }
