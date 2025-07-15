@@ -126,3 +126,47 @@ body.shift-select-mode .episode-item:hover {
   z-index: 10;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
+
+/* 用户头像下拉菜单层级优化 - 简化z-index，因为日期导航栏已降低到z-10 */
+[data-dropdown-menu="true"],
+.user-dropdown-menu {
+  z-index: 100 !important; /* 简化z-index，高于日期导航栏的z-10即可 */
+  isolation: isolate !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  contain: layout style paint !important;
+}
+
+/* 侧边栏布局下使用Portal渲染到body */
+[data-dropdown-menu="true"][data-layout="sidebar"] {
+  position: fixed !important;
+  z-index: 100 !important; /* 简化z-index，高于日期导航栏即可 */
+  isolation: isolate !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  contain: layout style paint !important;
+  pointer-events: auto !important;
+}
+
+/* 移动端用户抽屉菜单 */
+[data-user-drawer="true"] {
+  z-index: 101 !important; /* 略高于下拉菜单 */
+  isolation: isolate !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  contain: layout style paint !important;
+}
+
+/* 确保Portal渲染的菜单不受其他样式影响 */
+body > [data-dropdown-menu="true"] {
+  position: fixed !important;
+  z-index: 100 !important;
+  /* 重置可能影响定位的属性 */
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  /* 确保渲染层优化 */
+  backface-visibility: hidden !important;
+  perspective: 1000px !important;
+}

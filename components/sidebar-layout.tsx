@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { LayoutSwitcher } from "@/components/layout-switcher"
+import { UserAvatar, useUser } from "@/components/user-identity-provider"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -844,12 +845,7 @@ export function SidebarLayout({
           <div className="flex-1 flex justify-end">
             <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-end space-x-2">
-            {/* 布局切换器 */}
-            <LayoutSwitcher 
-              onLayoutChange={onLayoutChange}
-              currentLayout={currentLayout}
-            />
-            
+
             {/* 桌面版操作按钮 */}
             <div className="hidden md:flex md:items-center md:space-x-2">
               <Button variant="outline" size="sm" onClick={onShowTasksDialog}>
@@ -867,14 +863,7 @@ export function SidebarLayout({
                   执行日志 ({runningTasks.length})
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={onShowImportDialog}>
-                <Upload className="h-4 w-4 mr-2" />
-                导入
-              </Button>
-              <Button variant="outline" size="sm" onClick={onShowExportDialog}>
-                <Download className="h-4 w-4 mr-2" />
-                导出
-              </Button>
+
               <Button variant="outline" size="sm" onClick={onShowSettingsDialog}>
                 <Settings className="h-4 w-4 mr-2" />
                 设置
@@ -887,16 +876,26 @@ export function SidebarLayout({
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
             </div>
-            
-                <Button
-                  onClick={onShowAddDialog}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  size={isMobile ? "sm" : "default"}
-                >
-                  <Plus className="h-4 w-4 mr-1 md:mr-2" />
-                  <span className="hidden sm:inline">添加词条</span>
-                  <span className="sm:hidden">添加</span>
-                </Button>
+
+            {/* 用户头像 - 在侧边栏布局中的显示入口 */}
+            <div className="flex items-center space-x-2">
+              <UserAvatar
+                onShowImportDialog={onShowImportDialog}
+                onShowExportDialog={onShowExportDialog}
+                onLayoutChange={onLayoutChange}
+                currentLayout={currentLayout}
+              />
+
+              <Button
+                onClick={onShowAddDialog}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                size={isMobile ? "sm" : "default"}
+              >
+                <Plus className="h-4 w-4 mr-1 md:mr-2" />
+                <span className="hidden sm:inline">添加词条</span>
+                <span className="sm:hidden">添加</span>
+              </Button>
+            </div>
               </div>
             </div>
           </div>

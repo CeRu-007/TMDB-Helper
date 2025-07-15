@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { UserManager } from "./user-manager";
 
 // 执行日志条目接口
 export interface ExecutionLog {
@@ -154,23 +155,33 @@ export class StorageManager {
   }
 
   /**
-   * 通用的API调用方法，带有超时和错误处理
+   * 通用的API调用方法，带有超时和错误处理（包含用户身份信息）
    */
   private static async makeApiCall(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 增加到15秒超时
 
-    console.log(`[StorageManager] 发起API请求: ${url}`);
+    // 获取用户ID并添加到请求头
+    const userId = this.isClient() ? UserManager.getUserId() : null;
+
+    console.log(`[StorageManager] 发起API请求: ${url} (用户: ${userId})`);
 
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...options.headers as Record<string, string>,
+      };
+
+      // 添加用户ID到请求头
+      if (userId) {
+        headers['x-user-id'] = userId;
+      }
+
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
         cache: 'no-cache',
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
       });
 
       clearTimeout(timeoutId);

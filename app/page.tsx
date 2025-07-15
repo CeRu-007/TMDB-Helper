@@ -70,6 +70,7 @@ import ExportDataDialog from "@/components/export-data-dialog"
 import { SidebarLayout } from "@/components/sidebar-layout"
 import { LayoutSwitcher } from "@/components/layout-switcher"
 import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferences"
+import { UserAvatar, useUser } from "@/components/user-identity-provider"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -102,6 +103,7 @@ const isClientEnv = typeof window !== 'undefined'
 export default function HomePage() {
   const { toast } = useToast()
   const router = useRouter()
+  const { userInfo, isInitialized } = useUser()
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showTasksDialog, setShowTasksDialog] = useState(false)
@@ -775,7 +777,18 @@ export default function HomePage() {
         </SheetTrigger>
         <SheetContent className="w-[300px]">
           {/* 移动端菜单内容 */}
-          <nav className="flex flex-col space-y-4 mt-8">
+          <div className="mt-6">
+            {/* 用户信息 */}
+            {isInitialized && userInfo && (
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <UserAvatar
+                  onShowImportDialog={() => setShowImportDialog(true)}
+                  onShowExportDialog={() => setShowExportDialog(true)}
+                />
+              </div>
+            )}
+
+            <nav className="flex flex-col space-y-4">
             <Button
               className="justify-start"
               onClick={() => setActiveTab("upcoming")}
@@ -847,6 +860,7 @@ export default function HomePage() {
               <Settings className="h-4 w-4 mr-2" /> 设置
             </Button>
           </nav>
+          </div>
         </SheetContent>
       </Sheet>
     </>
@@ -860,11 +874,11 @@ export default function HomePage() {
     // 先按分类筛选当前标签页的词条
     const filteredTabItems = filterItemsByCategory(currentTabItems)
 
-    // 根据布局类型调整样式
+    // 根据布局类型调整样式 - 降低z-index确保不遮挡用户下拉菜单
     const isInSidebar = currentLayout === 'sidebar'
     const containerClasses = isInSidebar
-      ? "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-50" // 侧边栏布局：top-0, z-50
-      : "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-30" // 原始布局：top-16, z-30
+      ? "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10" // 侧边栏布局：降低到z-10
+      : "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-30" // 原始布局：保持z-30
 
     return (
       <div className={containerClasses}>
@@ -1235,6 +1249,7 @@ export default function HomePage() {
     // 原有的内容渲染逻辑...
     return (
       <div className="container mx-auto p-4 max-w-7xl">
+
         {/* 原有的标签页内容 */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-6 h-12">
@@ -2239,26 +2254,11 @@ export default function HomePage() {
                     执行日志 ({runningTasks.length})
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowImportDialog(true)}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  导入
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowExportDialog(true)}>
-                  <Download className="h-4 w-4 mr-2" />
-                  导出
-                </Button>
+
                 <Button variant="outline" size="sm" onClick={() => setShowSettingsDialog(true)}>
                   <Settings className="h-4 w-4 mr-2" />
                   设置
                 </Button>
-                <LayoutSwitcher
-                  onLayoutChange={handleLayoutChange}
-                  currentLayout={currentLayout}
-                />
                 <Button
                   variant="outline"
                   size="sm"
@@ -2266,6 +2266,17 @@ export default function HomePage() {
                 >
                   {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
+                {/* 用户头像 */}
+                {isInitialized && userInfo && (
+                  <div className="ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                    <UserAvatar
+                      onShowImportDialog={() => setShowImportDialog(true)}
+                      onShowExportDialog={() => setShowExportDialog(true)}
+                      onLayoutChange={handleLayoutChange}
+                      currentLayout={currentLayout}
+                    />
+                  </div>
+                )}
               </div>
               {/* 移动端菜单 */}
               <MobileMenu />
