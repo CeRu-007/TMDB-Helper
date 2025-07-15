@@ -65,6 +65,7 @@ import VideoThumbnailExtractor from "@/components/video-thumbnail-extractor"
 import { ImageCropper } from "@/components/image-cropper"
 import GlobalScheduledTasksDialog from "@/components/global-scheduled-tasks-dialog"
 import { TaskExecutionLogsDialog } from "@/components/task-execution-logs-dialog"
+import ScheduledTaskDialog from "@/components/scheduled-task-dialog"
 import { type TMDBItem, type ScheduledTask } from "@/lib/storage"
 import { taskScheduler } from "@/lib/scheduler"
 import { useMobile } from "@/hooks/use-mobile"
@@ -121,6 +122,8 @@ export default function HomePage() {
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [showExecutionLogs, setShowExecutionLogs] = useState(false)
   const [runningTasks, setRunningTasks] = useState<ScheduledTask[]>([])
+  const [showScheduledTaskDialog, setShowScheduledTaskDialog] = useState(false)
+  const [scheduledTaskItem, setScheduledTaskItem] = useState<TMDBItem | null>(null)
   const [selectedItem, setSelectedItem] = useState<TMDBItem | null>(null)
   const [currentDay, setCurrentDay] = useState(() => {
     if (isClientEnv) {
@@ -2211,6 +2214,24 @@ export default function HomePage() {
         />
         <ImportDataDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
         <ExportDataDialog open={showExportDialog} onOpenChange={setShowExportDialog} />
+        {scheduledTaskItem && (
+          <ScheduledTaskDialog
+            item={scheduledTaskItem}
+            open={showScheduledTaskDialog}
+            onOpenChange={(open) => {
+              setShowScheduledTaskDialog(open);
+              if (!open) setScheduledTaskItem(null);
+            }}
+            onUpdate={handleUpdateItem}
+            onTaskSaved={(task) => {
+              console.log("定时任务已保存:", task);
+              toast({
+                title: "定时任务已保存",
+                description: `任务 "${task.name}" 已成功保存`,
+              });
+            }}
+          />
+        )}
         {selectedItem && (
           <ItemDetailDialog
             item={selectedItem}
@@ -2220,6 +2241,10 @@ export default function HomePage() {
             }}
             onUpdate={handleUpdateItem}
             onDelete={handleDeleteItem}
+            onOpenScheduledTask={(item) => {
+              setScheduledTaskItem(item);
+              setShowScheduledTaskDialog(true);
+            }}
           />
         )}
       </>
@@ -2430,6 +2455,24 @@ export default function HomePage() {
       />
       <ImportDataDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
       <ExportDataDialog open={showExportDialog} onOpenChange={setShowExportDialog} />
+      {scheduledTaskItem && (
+        <ScheduledTaskDialog
+          item={scheduledTaskItem}
+          open={showScheduledTaskDialog}
+          onOpenChange={(open) => {
+            setShowScheduledTaskDialog(open);
+            if (!open) setScheduledTaskItem(null);
+          }}
+          onUpdate={handleUpdateItem}
+          onTaskSaved={(task) => {
+            console.log("定时任务已保存:", task);
+            toast({
+              title: "定时任务已保存",
+              description: `任务 "${task.name}" 已成功保存`,
+            });
+          }}
+        />
+      )}
       {selectedItem && (
         <ItemDetailDialog
           item={selectedItem}
@@ -2439,6 +2482,10 @@ export default function HomePage() {
           }}
           onUpdate={handleUpdateItem}
           onDelete={handleDeleteItem}
+          onOpenScheduledTask={(item) => {
+            setScheduledTaskItem(item);
+            setShowScheduledTaskDialog(true);
+          }}
         />
       )}
     </div>

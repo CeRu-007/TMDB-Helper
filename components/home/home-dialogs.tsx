@@ -1,15 +1,18 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import AddItemDialog from '@/components/add-item-dialog'
 import SettingsDialog from '@/components/settings-dialog'
 import ItemDetailDialog from '@/components/item-detail-dialog'
+import ScheduledTaskDialog from '@/components/scheduled-task-dialog'
 import GlobalScheduledTasksDialog from '@/components/global-scheduled-tasks-dialog'
 import { TaskExecutionLogsDialog } from '@/components/task-execution-logs-dialog'
 import ImportDataDialog from '@/components/import-data-dialog'
 import ExportDataDialog from '@/components/export-data-dialog'
 import { UseHomeStateReturn } from '@/hooks/use-home-state'
 import { useData } from '@/components/client-data-provider'
+import { TMDBItem } from '@/lib/storage'
+import { toast } from '@/components/ui/use-toast'
 
 interface HomeDialogsProps {
   homeState: UseHomeStateReturn
@@ -23,6 +26,10 @@ export function HomeDialogs({ homeState }: HomeDialogsProps) {
     exportData,
     importData: importDataFromJson
   } = useData()
+
+  // 定时任务对话框状态
+  const [showScheduledTaskDialog, setShowScheduledTaskDialog] = useState(false)
+  const [scheduledTaskItem, setScheduledTaskItem] = useState<TMDBItem | null>(null)
 
   return (
     <>
@@ -47,8 +54,32 @@ export function HomeDialogs({ homeState }: HomeDialogsProps) {
           onOpenChange={(open) => {
             if (!open) homeState.setSelectedItem(null)
           }}
-          onUpdateItem={handleUpdateItem}
-          onDeleteItem={handleDeleteItem}
+          onUpdate={handleUpdateItem}
+          onDelete={(id) => handleDeleteItem(id)}
+          onOpenScheduledTask={(item) => {
+            setScheduledTaskItem(item);
+            setShowScheduledTaskDialog(true);
+          }}
+        />
+      )}
+
+      {/* 单项定时任务对话框 */}
+      {scheduledTaskItem && (
+        <ScheduledTaskDialog
+          item={scheduledTaskItem}
+          open={showScheduledTaskDialog}
+          onOpenChange={(open) => {
+            setShowScheduledTaskDialog(open);
+            if (!open) setScheduledTaskItem(null);
+          }}
+          onUpdate={handleUpdateItem}
+          onTaskSaved={(task) => {
+            console.log("定时任务已保存:", task);
+            toast({
+              title: "定时任务已保存",
+              description: `任务 "${task.name}" 已成功保存`,
+            });
+          }}
         />
       )}
 

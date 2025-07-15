@@ -132,9 +132,10 @@ interface ItemDetailDialogProps {
   onOpenChange: (open: boolean) => void
   onUpdate: (item: TMDBItem) => void
   onDelete: (id: string) => void
+  onOpenScheduledTask?: (item: TMDBItem) => void
 }
 
-export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete }: ItemDetailDialogProps) {
+export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, onOpenScheduledTask }: ItemDetailDialogProps) {
   const [editing, setEditing] = useState(false)
   const [editData, setEditData] = useState(item)
   const [localItem, setLocalItem] = useState<TMDBItem>(item)
@@ -156,7 +157,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [customSeasonNumber, setCustomSeasonNumber] = useState(1)
   const [showMetadataDialog, setShowMetadataDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [scheduledTaskDialogOpen, setScheduledTaskDialogOpen] = useState(false)
   const [showFixBugDialog, setShowFixBugDialog] = useState(false)
   const [tmdbCommands, setTmdbCommands] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState("episodes")
@@ -1750,7 +1750,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 <Button
                   variant="outline"
                   className="flex items-center transition-all duration-300 hover:scale-105"
-                  onClick={() => setScheduledTaskDialogOpen(true)}
+                  onClick={() => {
+                    if (onOpenScheduledTask) {
+                      onOpenScheduledTask(localItem);
+                    } else {
+                      setScheduledTaskDialogOpen(true);
+                    }
+                  }}
                 >
                   <AlarmClock className="h-4 w-4 mr-2" />
                   定时任务
@@ -2243,85 +2249,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             </AlertDialogNoOverlayContent>
           </AlertDialogNoOverlay>
 
-          {/* 定时任务对话框 */}
-          <ScheduledTaskDialog
-            open={scheduledTaskDialogOpen}
-            onOpenChange={setScheduledTaskDialogOpen}
-            item={localItem}
-            onUpdate={(updatedItem) => {
-              setLocalItem(updatedItem)
-              onUpdate(updatedItem)
-            }}
-            onTaskSaved={(task) => {
-              // 当任务保存成功后，确保更新本地状态
-              console.log("[ItemDetailDialog] 定时任务保存成功:", task);
-              
-              try {
-                // 重新加载最新的项目数据，确保包含最新的定时任务信息
-                const updatedItem = {...localItem};
-                
-                // 如果项目中没有 scheduledTasks 数组，创建一个
-                if (!updatedItem.scheduledTasks) {
-                  updatedItem.scheduledTasks = [];
-                }
-                
-                // 检查任务是否已存在，如果存在则更新，否则添加
-                const taskIndex = updatedItem.scheduledTasks.findIndex(t => t.id === task.id);
-                if (taskIndex >= 0) {
-                  updatedItem.scheduledTasks[taskIndex] = task;
-                } else {
-                  updatedItem.scheduledTasks.push(task);
-                }
-                
-                // 验证任务是否已添加到项目中
-                const taskAdded = updatedItem.scheduledTasks.some(t => t.id === task.id);
-                if (!taskAdded) {
-                  console.error("[ItemDetailDialog] 任务未成功添加到项目中:", task.id);
-                  throw new Error("任务未成功添加到项目中");
-                }
-                
-                console.log("[ItemDetailDialog] 更新后的项目:", updatedItem);
-                
-                // 更新本地状态和父组件状态
-                setLocalItem(updatedItem);
-                onUpdate(updatedItem);
-                
-                // 显示成功提示
-                toast({
-                  title: "定时任务已保存",
-                  description: `任务 "${task.name}" 已成功保存，请在全局定时任务管理中查看`,
-                });
-                
-                // 验证任务是否已成功保存到 localStorage
-                setTimeout(async () => {
-                  try {
-                    const savedTasks = await StorageManager.forceRefreshScheduledTasks();
-                    const taskSaved = savedTasks.some(t => t.id === task.id);
-                    
-                    if (taskSaved) {
-                      console.log("[ItemDetailDialog] 验证成功: 任务已成功保存到 localStorage");
-                    } else {
-                      console.error("[ItemDetailDialog] 验证失败: 任务未在 localStorage 中找到");
-                      toast({
-                        title: "警告",
-                        description: "任务可能未正确保存，请在全局定时任务管理中检查",
-                        variant: "destructive"
-                      });
-                    }
-                  } catch (error) {
-                    console.error("[ItemDetailDialog] 验证任务保存状态时出错:", error);
-                  }
-                }, 1000);
-              } catch (error) {
-                console.error("[ItemDetailDialog] 更新项目状态失败:", error);
-                toast({
-                  title: "更新失败",
-                  description: "无法更新项目状态，但任务可能已保存",
-                  variant: "destructive"
-                });
-              }
-            }}
-          />
+
 
           {/* 修复TMDB导入Bug对话框 */}
           <FixTMDBImportBugDialog
