@@ -1,6 +1,8 @@
 import { StorageManager, ScheduledTask, TMDBItem } from './storage';
 import { taskExecutionLogger } from './task-execution-logger'
 import { BrowserInterruptDetector, BrowserInterruptResult } from './browser-interrupt-detector';
+import { DistributedLock } from './distributed-lock';
+import { StorageSyncManager } from './storage-sync-manager';
 
 class TaskScheduler {
   private static instance: TaskScheduler;
@@ -42,6 +44,12 @@ class TaskScheduler {
     // 检查任务是否已在执行中
     if (this.currentExecution.has(task.id)) {
       throw new Error(`任务 ${task.name} 已在执行中，请等待完成`);
+    }
+
+    // 使用分布式锁检查
+    const isLocked = await DistributedLock.isLocked(`task_${task.id}`);
+    if (isLocked) {
+      throw new Error(`任务 ${task.name} 已被其他进程锁定，请稍后再试`);
     }
 
     // 检查任务是否启用
@@ -87,6 +95,18 @@ class TaskScheduler {
     }
 
     try {
+      // 初始化分布式锁系统
+      DistributedLock.initialize();
+      
+      // 初始化存储同步管理器
+      await StorageSyncManager.initialize();
+      
+      // 启动性能监控
+      const config = configManager.getConfig();
+      if (config.enablePerformanceMonitoring) {
+        performanceMonitor.startMonitoring(30000); // 30秒间隔
+      }
+
       // 清除所有现有的定时器
       this.clearAllTimers();
 
@@ -771,6 +791,17 @@ class TaskScheduler {
    * 任务执行的内部实现
    */
   private async _executeTaskInternal(task: ScheduledTask): Promise<void> {
+    // 获取分布式锁
+    const lockKey = `task_${task.id}`;
+    const lockResult = await DistributedLock.acquireLock(lockKey, 'task_execution', 10 * 60 * 1000); // 10分钟超时
+    
+    if (!lockResult.success) {
+      console.warn(`[TaskScheduler] 无法获取任务执行锁: ${task.name}, 原因: ${lockResult.error}`);
+      // 重新调度任务
+      this.scheduleTask(task);
+      return;
+    }
+
     // 标记任务开始执行
     this.currentExecution.add(task.id);
 
@@ -1002,9 +1033,12 @@ class TaskScheduler {
         this.scheduleTask(task);
       }
     } finally {
+      // 释放分布式锁
+      await DistributedLock.releaseLock(lockKey);
+      
       // 确保无论如何都清理执行状态
       this.currentExecution.delete(task.id);
-      console.log(`[TaskScheduler] 任务执行完成，清理执行状态: ${task.id}`);
+      console.log(`[TaskScheduler] 任务执行完成，已释放锁和清理状态: ${task.id}`);
     }
   }
 
