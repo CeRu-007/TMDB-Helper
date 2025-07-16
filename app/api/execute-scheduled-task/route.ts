@@ -209,9 +209,9 @@ function formatCSVField(value: string): string {
 }
 
 /**
- * 自动删除已标记完成的集数
+ * 自动删除已标记完成的集数（改进版：范围删除）
  */
-function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][] }, item: TMDBItem): { headers: string[], rows: string[][] } {
+function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][] }, item: TMDBItem, isYoukuPlatform: boolean = false): { headers: string[], rows: string[][] } {
   // 如果没有集数数据或CSV数据为空，直接返回
   if (!item.episodes && (!item.seasons || item.seasons.length === 0) || csvData.rows.length === 0) {
     return csvData;
@@ -227,49 +227,166 @@ function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][]
     return csvData;
   }
   
-  // 创建已完成集数的映射，便于快速查找
-  const completedEpisodesMap = new Map();
+  // 收集已完成的集数
+  const completedEpisodes: number[] = [];
   
   // 处理多季情况
   if (item.seasons && item.seasons.length > 0) {
     item.seasons.forEach((season: Season) => {
       if (season.episodes) {
-      season.episodes.forEach((episode: Episode) => {
-        if (episode.completed) {
-          // 标准化集数格式，以便匹配
-          const normalizedNumber = normalizeEpisodeNumber(episode.number.toString());
-          completedEpisodesMap.set(normalizedNumber, true);
-        }
-      });
+        season.episodes.forEach((episode: Episode) => {
+          if (episode.completed) {
+            completedEpisodes.push(episode.number);
+          }
+        });
       }
     });
   } else if (item.episodes) {
     // 处理单季情况
     item.episodes.forEach((episode: Episode) => {
       if (episode.completed) {
-        const normalizedNumber = normalizeEpisodeNumber(episode.number.toString());
-        completedEpisodesMap.set(normalizedNumber, true);
+        completedEpisodes.push(episode.number);
       }
     });
   }
   
-  // 过滤掉已完成的集数
-  const filteredRows = csvData.rows.filter(row => {
-    if (episodeColumnIndex >= row.length) {
-      return true; // 如果行不完整，保留
-    }
-    
-    const episodeValue = row[episodeColumnIndex];
-    const normalizedEpisode = normalizeEpisodeNumber(episodeValue);
-    
-    // 如果在已完成集数映射中找到，则过滤掉
-    return !completedEpisodesMap.has(normalizedEpisode);
-  });
+  if (completedEpisodes.length === 0) {
+    return csvData; // 没有已完成的集数
+  }
+  
+  // 排序集数
+  completedEpisodes.sort((a, b) => a - b);
+  
+  // 优酷特殊处理：删除已标记集数-1
+  let episodesToRemove = [...completedEpisodes];
+  if (isYoukuPlatform && episodesToRemove.length > 0) {
+    // 移除最后一集，即只删除1到n-1集
+    episodesToRemove.pop();
+    console.log(`[API] 优酷平台特殊处理：原本要删除${completedEpisodes.length}集，实际删除${episodesToRemove.length}集`);
+  }
+  
+  if (episodesToRemove.length === 0) {
+    return csvData; // 优酷特殊处理后没有要删除的集数
+  }
+  
+  console.log(`[API] 准备删除已完成的集数: ${episodesToRemove.join(', ')}`);
+  
+  // 使用范围删除策略
+  const filteredRows = filterRowsByEpisodeRange(csvData.rows, episodeColumnIndex, episodesToRemove);
+  
+  console.log(`[API] CSV行数变化: ${csvData.rows.length} -> ${filteredRows.length} (删除了${csvData.rows.length - filteredRows.length}行)`);
   
   return {
     headers: csvData.headers,
     rows: filteredRows
   };
+}
+
+/**
+ * 按集数范围过滤CSV行（改进版）
+ */
+function filterRowsByEpisodeRange(rows: string[][], episodeColumnIndex: number, episodesToRemove: number[]): string[][] {
+  if (episodesToRemove.length === 0) {
+    return rows;
+  }
+  
+  // 创建删除范围映射
+  const deleteRanges: Array<{start: number, end: number}> = [];
+  
+  // 为每个要删除的集数创建删除范围
+  episodesToRemove.forEach(episodeNum => {
+    deleteRanges.push({
+      start: episodeNum,
+      end: episodeNum + 1 // 删除到下一集之前
+    });
+  });
+  
+  console.log(`[API] 删除范围: ${deleteRanges.map(r => `${r.start}到${r.end}之前`).join(', ')}`);
+  
+  const filteredRows: string[][] = [];
+  
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    
+    // 检查行是否完整
+    if (episodeColumnIndex >= row.length) {
+      filteredRows.push(row); // 保留不完整的行
+      continue;
+    }
+    
+    const episodeValue = row[episodeColumnIndex];
+    const episodeNumber = extractEpisodeNumber(episodeValue);
+    
+    if (episodeNumber === null) {
+      filteredRows.push(row); // 无法解析集数的行保留
+      continue;
+    }
+    
+    // 检查是否在删除范围内
+    let shouldDelete = false;
+    for (const range of deleteRanges) {
+      if (episodeNumber >= range.start && episodeNumber < range.end) {
+        shouldDelete = true;
+        break;
+      }
+    }
+    
+    if (!shouldDelete) {
+      filteredRows.push(row);
+    } else {
+      console.log(`[API] 删除第${episodeNumber}集的数据行: ${episodeValue}`);
+    }
+  }
+  
+  return filteredRows;
+}
+
+/**
+ * 从文本中提取集数编号（增强版）
+ */
+function extractEpisodeNumber(episodeValue: string): number | null {
+  if (!episodeValue) {
+    return null;
+  }
+  
+  const str = episodeValue.toString().trim();
+  
+  // 尝试直接转换数字
+  if (/^\d+$/.test(str)) {
+    return parseInt(str, 10);
+  }
+  
+  // 常见的集数模式
+  const patterns = [
+    /第(\d+)集/,           // 第X集
+    /第(\d+)话/,           // 第X话
+    /EP(\d+)/i,            // EPX
+    /Episode\s*(\d+)/i,    // Episode X
+    /E(\d+)/i,             // EX
+    /(\d+)$/,              // 以数字结尾
+    /^(\d+)/,              // 以数字开头
+  ];
+  
+  for (const pattern of patterns) {
+    const match = str.match(pattern);
+    if (match && match[1]) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num)) {
+        return num;
+      }
+    }
+  }
+  
+  // 提取所有数字，取第一个
+  const numbers = str.match(/\d+/g);
+  if (numbers && numbers.length > 0) {
+    const num = parseInt(numbers[0], 10);
+    if (!isNaN(num)) {
+      return num;
+    }
+  }
+  
+  return null;
 }
 
 /**
@@ -832,8 +949,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         // 解析CSV内容
         const csvData = parseCSV(csvContent);
         
+        // 检测是否为优酷平台
+        const isYoukuPlatform = item.platformUrl.includes('youku.com');
+        
         // 过滤掉已标记完成的集数
-        const filteredData = autoRemoveMarkedEpisodes(csvData, item);
+        const filteredData = autoRemoveMarkedEpisodes(csvData, item, isYoukuPlatform);
         
         // 如果过滤后没有数据，返回提示
         if (filteredData.rows.length === 0) {
