@@ -49,7 +49,7 @@ export class TaskExecutionLogger {
     // 初始化步骤状态
     const steps = new Map<string, StepInfo>();
     steps.set('步骤1', { name: '播出平台抓取', status: 'pending', progress: 0 });
-    steps.set('步骤2', { name: '处理已标记集数', status: 'pending', progress: 0 });
+    steps.set('步骤2', { name: '强化CSV处理', status: 'pending', progress: 0 });
     steps.set('步骤2.5', { name: '检查CSV词条标题', status: 'pending', progress: 0 });
     steps.set('步骤3', { name: 'TMDB导入', status: 'pending', progress: 0 });
     steps.set('步骤4', { name: '自动集数标记', status: 'pending', progress: 0 });

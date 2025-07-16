@@ -424,6 +424,8 @@ export default function EnhancedTaskFormDialog({
                               // 自动设置爱奇艺特殊处理
                               if (selectedItem.platformUrl?.includes('iqiyi.com')) {
                                 updateField('action.removeIqiyiAirDate', true)
+                              } else {
+                                updateField('action.removeIqiyiAirDate', false)
                               }
                             }
                           }}
@@ -857,7 +859,7 @@ export default function EnhancedTaskFormDialog({
                             checked={formData.action?.enableYoukuSpecialHandling || false}
                             onCheckedChange={(checked) => updateField('action.enableYoukuSpecialHandling', checked)}
                           />
-                          <Label htmlFor="enableYoukuSpecialHandling">优酷特殊处理</Label>
+                          <Label htmlFor="enableYoukuSpecialHandling">强化CSV处理</Label>
                         </div>
                         <TooltipProvider>
                           <Tooltip>
@@ -865,7 +867,7 @@ export default function EnhancedTaskFormDialog({
                               <Info className="h-4 w-4 text-muted-foreground" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>启用优酷平台的特殊处理逻辑</p>
+                              <p>启用强化CSV处理器，修复损坏的CSV结构并安全删除剧集</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

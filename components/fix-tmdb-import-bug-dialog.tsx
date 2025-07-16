@@ -139,11 +139,11 @@ def fixed_episode_comparison(episoideID, episoideNumber):
   const handleFix = async () => {
     setFixing(true)
     setFixResult("")
-    
+
     try {
       // 模拟修复过程
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
+
       // 调用修复API
       const response = await fetch('/api/fix-tmdb-import-bug', {
         method: 'POST',
@@ -155,9 +155,9 @@ def fixed_episode_comparison(episoideID, episoideNumber):
           fixType: 'chinese_character_parsing'
         })
       })
-      
+
       const result = await response.json()
-      
+
       if (result.success) {
         setFixed(true)
         setFixResult("修复成功！已应用中文字符解析错误修复补丁。")
@@ -256,7 +256,7 @@ def fixed_episode_comparison(episoideID, episoideNumber):
                 <p className="text-sm text-muted-foreground">
                   点击下方按钮自动应用修复补丁，修复中文字符解析错误。
                 </p>
-                
+
                 <div className="space-y-3">
                   <Button
                     onClick={handleFix}
@@ -280,7 +280,7 @@ def fixed_episode_comparison(episoideID, episoideNumber):
                       </>
                     )}
                   </Button>
-                  
+
                   {fixResult && (
                     <Alert className={fixed ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
                       <AlertDescription className={fixed ? "text-green-700" : "text-red-700"}>
@@ -367,7 +367,7 @@ def fixed_episode_comparison(episoideID, episoideNumber):
               复制代码
             </Button>
           </div>
-          
+
           <div className="flex space-x-2">
             <Button
               variant="outline"

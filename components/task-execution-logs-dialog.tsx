@@ -155,7 +155,7 @@ export function TaskExecutionLogsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="flex-shrink-0 pr-12">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center">
               <Play className="h-5 w-5 mr-2" />
@@ -164,14 +164,14 @@ export function TaskExecutionLogsDialog({
                 {runningTasks.length} 个任务
               </Badge>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mr-8">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setAutoRefresh(!autoRefresh)}
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
-                {autoRefresh ? '自动刷新' : '手动刷新'}
+                {autoRefresh ? '自动' : '手动'}
               </Button>
               {!autoRefresh && (
                 <Button
@@ -179,8 +179,7 @@ export function TaskExecutionLogsDialog({
                   size="sm"
                   onClick={updateTaskData}
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  刷新
+                  <RefreshCw className="h-4 w-4" />
                 </Button>
               )}
             </div>

@@ -1565,59 +1565,8 @@ class TaskScheduler {
         };
       }
 
-      // 先以测试模式运行，分析CSV处理需求
-      console.log(`[TaskScheduler] 先以测试模式分析CSV处理需求`);
-
-      // 创建AbortController用于超时控制
-      const testController = new AbortController();
-      const testTimeoutId = setTimeout(() => {
-        console.log(`[TaskScheduler] CSV处理测试模式API调用超时，正在中止请求`);
-        testController.abort();
-      }, 2 * 60 * 1000); // 2分钟超时
-
-      try {
-        const testResponse = await fetch('/api/process-csv-episodes', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            csvPath: csvPath,
-            markedEpisodes: markedEpisodes,
-            platformUrl: item.platformUrl,
-            itemId: item.id,
-            itemTitle: item.title,
-            testMode: true,
-            enableYoukuSpecialHandling: task.action.enableYoukuSpecialHandling !== false,
-            enableTitleCleaning: task.action.enableTitleCleaning !== false
-          }),
-          signal: testController.signal
-        });
-
-        clearTimeout(testTimeoutId);
-
-        if (!testResponse.ok) {
-          const testErrorData = await testResponse.json().catch(() => ({}));
-          throw new Error(`CSV测试分析失败: ${testErrorData.error || testResponse.statusText}`);
-        }
-
-        const testResult = await testResponse.json();
-        console.log(`[TaskScheduler] CSV测试分析结果:`, testResult.analysis);
-
-        // 如果测试显示不需要处理，直接返回原始文件
-        if (!testResult.analysis.wouldNeedProcessing) {
-          console.log(`[TaskScheduler] 测试显示不需要处理CSV，使用原始文件`);
-          return {
-            success: true,
-            processedCsvPath: csvPath,
-            removedEpisodes: []
-          };
-        }
-
-      } catch (testFetchError) {
-        clearTimeout(testTimeoutId);
-        throw testFetchError;
-      }
+      // 使用API处理CSV（统一方式，避免客户端/服务端差异）
+      console.log(`[TaskScheduler] 使用API处理CSV...`);
 
       // 执行实际的CSV处理
       console.log(`[TaskScheduler] 执行实际的CSV处理`);

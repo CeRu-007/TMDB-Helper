@@ -131,7 +131,7 @@ async function readCSVFile(filePath: string): Promise<string> {
 }
 
 /**
- * 解析CSV内容
+ * 解析CSV内容（增强版）
  */
 function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
   const lines = csvContent.split('\n').filter(line => line.trim());
@@ -139,49 +139,86 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
     return { headers: [], rows: [] };
   }
   
-  const headers = parseCSVLine(lines[0]);
-  const rows = lines.slice(1).map(line => parseCSVLine(line));
+  console.log(`[API] 开始解析CSV，总行数: ${lines.length}`);
   
+  const headers = parseCSVLine(lines[0]);
+  console.log(`[API] CSV表头: ${headers.join(' | ')}`);
+  
+  const rows: string[][] = [];
+  
+  for (let i = 1; i < lines.length; i++) {
+    try {
+      const row = parseCSVLine(lines[i]);
+      
+      // 验证行的字段数量
+      if (row.length !== headers.length) {
+        console.warn(`[API] 第${i+1}行字段数量不匹配: 期望${headers.length}个，实际${row.length}个`);
+        console.warn(`[API] 问题行内容: ${lines[i].substring(0, 100)}...`);
+        
+        // 尝试修复字段数量
+        while (row.length < headers.length) {
+          row.push(''); // 补充空字段
+        }
+        while (row.length > headers.length) {
+          row.pop(); // 移除多余字段
+        }
+      }
+      
+      rows.push(row);
+    } catch (error) {
+      console.error(`[API] 解析第${i+1}行失败:`, error);
+      console.error(`[API] 问题行: ${lines[i]}`);
+      // 跳过有问题的行
+      continue;
+    }
+  }
+  
+  console.log(`[API] CSV解析完成: ${headers.length}列 x ${rows.length}行`);
   return { headers, rows };
 }
 
 /**
- * 解析CSV行
+ * 解析CSV行（修复版 - 使用更可靠的CSV解析）
  */
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
   let currentField = '';
   let inQuotes = false;
+  let i = 0;
   
-  for (let i = 0; i < line.length; i++) {
+  while (i < line.length) {
     const char = line[i];
-    const nextChar = line[i + 1];
     
-    if (char === '"' && !inQuotes) {
-      // 开始引号
-      inQuotes = true;
-    } else if (char === '"' && inQuotes) {
-      // 结束引号或转义引号
-      if (nextChar === '"') {
-        // 转义引号
-        currentField += '"';
-        i++; // 跳过下一个引号
+    if (char === '"') {
+      if (!inQuotes) {
+        // 开始引号
+        inQuotes = true;
       } else {
-        // 结束引号
-        inQuotes = false;
+        // 在引号内，检查下一个字符
+        const nextChar = line[i + 1];
+        if (nextChar === '"') {
+          // 转义引号 - 两个连续的引号表示一个引号字符
+          currentField += '"';
+          i++; // 跳过下一个引号
+        } else {
+          // 结束引号
+          inQuotes = false;
+        }
       }
     } else if (char === ',' && !inQuotes) {
-      // 字段分隔符
-      result.push(currentField);
+      // 字段分隔符（不在引号内）
+      result.push(currentField.trim());
       currentField = '';
     } else {
       // 普通字符
       currentField += char;
     }
+    
+    i++;
   }
   
   // 添加最后一个字段
-  result.push(currentField);
+  result.push(currentField.trim());
   
   return result;
 }
@@ -283,34 +320,29 @@ function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][]
 }
 
 /**
- * 按集数范围过滤CSV行（改进版）
+ * 按集数范围过滤CSV行（修复版）
  */
 function filterRowsByEpisodeRange(rows: string[][], episodeColumnIndex: number, episodesToRemove: number[]): string[][] {
   if (episodesToRemove.length === 0) {
     return rows;
   }
   
-  // 创建删除范围映射
-  const deleteRanges: Array<{start: number, end: number}> = [];
+  console.log(`[API] 开始过滤CSV行，总行数: ${rows.length}, 集数列索引: ${episodeColumnIndex}`);
+  console.log(`[API] 要删除的集数: ${episodesToRemove.join(', ')}`);
   
-  // 为每个要删除的集数创建删除范围
-  episodesToRemove.forEach(episodeNum => {
-    deleteRanges.push({
-      start: episodeNum,
-      end: episodeNum + 1 // 删除到下一集之前
-    });
-  });
-  
-  console.log(`[API] 删除范围: ${deleteRanges.map(r => `${r.start}到${r.end}之前`).join(', ')}`);
+  // 创建要删除的集数Set，提高查找效率
+  const episodesToRemoveSet = new Set(episodesToRemove);
   
   const filteredRows: string[][] = [];
+  let deletedCount = 0;
   
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     
     // 检查行是否完整
     if (episodeColumnIndex >= row.length) {
-      filteredRows.push(row); // 保留不完整的行
+      console.log(`[API] 保留不完整的行 ${i}: 列数不足`);
+      filteredRows.push(row);
       continue;
     }
     
@@ -318,26 +350,22 @@ function filterRowsByEpisodeRange(rows: string[][], episodeColumnIndex: number, 
     const episodeNumber = extractEpisodeNumber(episodeValue);
     
     if (episodeNumber === null) {
-      filteredRows.push(row); // 无法解析集数的行保留
+      console.log(`[API] 保留无法解析集数的行 ${i}: "${episodeValue}"`);
+      filteredRows.push(row);
       continue;
     }
     
-    // 检查是否在删除范围内
-    let shouldDelete = false;
-    for (const range of deleteRanges) {
-      if (episodeNumber >= range.start && episodeNumber < range.end) {
-        shouldDelete = true;
-        break;
-      }
-    }
-    
-    if (!shouldDelete) {
-      filteredRows.push(row);
+    // 检查是否需要删除
+    if (episodesToRemoveSet.has(episodeNumber)) {
+      console.log(`[API] 删除第${episodeNumber}集的数据行 ${i}: "${episodeValue}"`);
+      deletedCount++;
     } else {
-      console.log(`[API] 删除第${episodeNumber}集的数据行: ${episodeValue}`);
+      console.log(`[API] 保留第${episodeNumber}集的数据行 ${i}: "${episodeValue}"`);
+      filteredRows.push(row);
     }
   }
   
+  console.log(`[API] 过滤完成: 原始${rows.length}行 -> 保留${filteredRows.length}行 (删除${deletedCount}行)`);
   return filteredRows;
 }
 
