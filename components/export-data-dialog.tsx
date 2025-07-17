@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Download, FileText, Database, Settings, Info } from "lucide-react"
-import { useData } from "@/components/client-data-provider"
+import { useEnhancedData } from "@/components/enhanced-client-data-provider"
 import { StorageManager } from "@/lib/storage"
 
 interface ExportDataDialogProps {
@@ -38,7 +38,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
     taskCount: number
   } | null>(null)
 
-  const { items, exportData } = useData()
+  const { items, exportData } = useEnhancedData()
 
   // 加载统计信息
   React.useEffect(() => {

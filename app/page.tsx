@@ -71,7 +71,7 @@ import { taskScheduler } from "@/lib/scheduler"
 import { useMobile } from "@/hooks/use-mobile"
 import MediaCard from "@/components/media-card"
 import { useIsClient } from "@/hooks/use-is-client"
-import { useData } from "@/components/client-data-provider"
+import { useEnhancedData } from "@/components/enhanced-client-data-provider"
 import { StatCard } from "@/components/ui/stat-card"
 import { StorageManager } from "@/lib/storage"
 import { useRouter } from "next/navigation"
@@ -82,6 +82,9 @@ import { SidebarLayout } from "@/components/sidebar-layout"
 import { LayoutSwitcher } from "@/components/layout-switcher"
 import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferences"
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
+import { MobileFloatingStatusIndicator } from "@/components/realtime-status-indicator"
+
+
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -173,19 +176,24 @@ export default function HomePage() {
     setCurrentLayout(newLayout)
   }
 
-  // 使用数据提供者获取数据和方法
+  // 使用增强的数据提供者获取数据和方法
   const { 
     items, 
+    baseItems,
     loading, 
     error: loadError, 
     initialized, 
+    isConnected,
+    pendingOperations,
     refreshData: handleRefresh, 
     addItem: handleAddItem, 
     updateItem: handleUpdateItem, 
     deleteItem: handleDeleteItem,
     exportData,
-    importData: importDataFromJson
-  } = useData()
+    importData: importDataFromJson,
+    clearError,
+    getOptimisticStats
+  } = useEnhancedData()
 
   // 获取即将上线的内容
   const fetchUpcomingItems = async (silent = false, retryCount = 0, region = selectedRegion, signal?: AbortSignal) => {
@@ -2302,6 +2310,10 @@ export default function HomePage() {
                   {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
                 {/* 用户头像 */}
+
+
+
+
                 {isInitialized && userInfo && (
                   <div className="ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
                     <UserAvatar
@@ -2315,6 +2327,29 @@ export default function HomePage() {
               </div>
               {/* 移动端菜单 */}
               <MobileMenu />
+              
+              {/* 移动端浮动状态指示器 */}
+              <MobileFloatingStatusIndicator
+                isConnected={isConnected}
+                pendingOperations={pendingOperations}
+                onTap={() => {
+                  // 点击时显示详细状态信息
+                  if (pendingOperations > 0) {
+                    toast({
+                      title: "数据同步中",
+                      description: `正在处理 ${pendingOperations} 个操作`,
+                      duration: 3000
+                    })
+                  } else if (!isConnected) {
+                    toast({
+                      title: "连接状态",
+                      description: "实时同步连接已断开",
+                      variant: "destructive",
+                      duration: 3000
+                    })
+                  }
+                }}
+              />
               <Button
                 onClick={() => setShowAddDialog(true)}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
@@ -2392,6 +2427,8 @@ export default function HomePage() {
           </div>
         </div>
         
+
+
         {/* Stats Bar - 统计卡片 */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <StatCard 

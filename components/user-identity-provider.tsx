@@ -6,7 +6,7 @@ import ImportDataDialog from "./import-data-dialog"
 import ExportDataDialog from "./export-data-dialog"
 import { UserManager, UserInfo } from "@/lib/user-manager"
 import { useIsClient } from "@/hooks/use-is-client"
-import { useData } from "@/components/client-data-provider"
+import { useEnhancedData } from "@/components/enhanced-client-data-provider"
 import { useTheme } from "next-themes"
 import {
   User,
@@ -321,7 +321,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
   ({ onClose, triggerElement, onShowImportDialog, onShowExportDialog, onLayoutChange, currentLayout }, ref) => {
     const { toast } = useToast()
     const { userInfo, updateDisplayName, resetUser } = useUser()
-    const { items } = useData()
+    const { items } = useEnhancedData()
     const { theme, setTheme } = useTheme()
     const [showProfileEdit, setShowProfileEdit] = useState(false)
     const [showDataStats, setShowDataStats] = useState(false)
@@ -636,7 +636,7 @@ UserDropdownMenu.displayName = 'UserDropdownMenu'
  */
 function MobileUserDrawer({ onClose }: { onClose: () => void }) {
   const { userInfo, updateDisplayName, resetUser } = useUser()
-  const { items } = useData()
+  const { items } = useEnhancedData()
   const { theme, setTheme } = useTheme()
 
   if (!userInfo) return null
@@ -956,7 +956,7 @@ function DataStatsSection({
  */
 function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { userInfo, updateDisplayName, resetUser } = useUser()
-  const { items } = useData()
+  const { items } = useEnhancedData()
   const [isEditing, setIsEditing] = useState(false)
   const [newName, setNewName] = useState('')
   const [isResetting, setIsResetting] = useState(false)

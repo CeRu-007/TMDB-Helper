@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react"
+import { useEnhancedData } from "@/components/enhanced-client-data-provider"
+import { RealtimeStatusIndicator } from "@/components/realtime-status-indicator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -136,6 +138,7 @@ interface ItemDetailDialogProps {
 }
 
 export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, onOpenScheduledTask }: ItemDetailDialogProps) {
+  const { updateItem, isConnected, pendingOperations } = useEnhancedData()
   const [editing, setEditing] = useState(false)
   const [editData, setEditData] = useState(item)
   const [localItem, setLocalItem] = useState<TMDBItem>(item)
@@ -625,7 +628,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     setEpisodeChangeData(null)
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     const updatedItem = {
       ...editData,
       updatedAt: new Date().toISOString(),
@@ -640,8 +643,16 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setBackgroundRefreshKey(`${updatedItem.tmdbId || updatedItem.id}_${Date.now()}`);
     }
     
-    onUpdate(updatedItem)
-    setEditing(false)
+    try {
+      // 使用增强数据提供者进行乐观更新
+      await updateItem(updatedItem)
+      // 同时通知父组件（保持兼容性）
+      onUpdate(updatedItem)
+      setEditing(false)
+    } catch (error) {
+      console.error('更新项目失败:', error)
+      // 错误处理已在增强数据提供者中完成
+    }
   }
 
   const copyToClipboard = async (text: string, type: string) => {
@@ -1202,6 +1213,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           <div className="relative z-10 h-full overflow-auto">
           <DialogHeader className="p-6 pb-2 flex flex-row items-start justify-between">
             <div className="flex-1 pr-4">
+
               <DialogTitle className="text-xl flex items-center">
                 {localItem.mediaType === "movie" ? (
                   <Film className="mr-2 h-5 w-5" />

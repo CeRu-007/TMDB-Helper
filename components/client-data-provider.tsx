@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { useIsClient } from "@/hooks/use-is-client"
 import { StorageManager, TMDBItem } from "@/lib/storage"
+import { realtimeSyncManager } from "@/lib/realtime-sync-manager"
+import { optimisticUpdateManager } from "@/lib/optimistic-update-manager"
 
 // 创建上下文
 interface DataContextType {
@@ -29,7 +31,8 @@ export function useData() {
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<TMDBItem[]>([])
+  const [baseItems, setBaseItems] = useState<TMDBItem[]>([]) // 基础数据
+  const [items, setItems] = useState<TMDBItem[]>([]) // 应用乐观更新后的数据
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [initialized, setInitialized] = useState(false)
@@ -44,8 +47,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
     try {
       const data = await StorageManager.getItemsWithRetry()
-      setItems(data)
+      setBaseItems(data)
       setInitialized(true)
+      console.log('[DataProvider] 加载数据成功:', data.length, '个项目')
     } catch (err) {
       console.error("Failed to load data:", err)
       setError("加载数据失败，请刷新页面重试")
@@ -53,6 +57,56 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     }
   }
+
+  // 应用乐观更新到数据
+  const applyOptimisticUpdates = () => {
+    const updatedItems = optimisticUpdateManager.applyOptimisticUpdates(baseItems, 'item')
+    setItems(updatedItems)
+  }
+
+  // 初始化实时同步和乐观更新
+  useEffect(() => {
+    if (!isClient) return
+
+    console.log('[DataProvider] 初始化实时同步和乐观更新')
+
+    // 初始化实时同步管理器
+    realtimeSyncManager.initialize()
+
+    // 监听数据变更事件
+    const handleDataChange = (event: any) => {
+      console.log('[DataProvider] 收到实时数据变更:', event)
+      
+      switch (event.type) {
+        case 'item_added':
+        case 'item_updated':
+        case 'item_deleted':
+        case 'task_completed':
+          // 重新加载数据以确保一致性
+          loadData()
+          break
+      }
+    }
+
+    // 监听乐观更新变化
+    const handleOptimisticUpdate = () => {
+      applyOptimisticUpdates()
+    }
+
+    realtimeSyncManager.addEventListener('*', handleDataChange)
+    optimisticUpdateManager.addListener(handleOptimisticUpdate)
+
+    // 清理函数
+    return () => {
+      realtimeSyncManager.removeEventListener('*', handleDataChange)
+      optimisticUpdateManager.removeListener(handleOptimisticUpdate)
+    }
+  }, [isClient])
+
+  // 当基础数据变化时，重新应用乐观更新
+  useEffect(() => {
+    applyOptimisticUpdates()
+  }, [baseItems])
 
   // 当客户端渲染完成后加载数据
   useEffect(() => {
@@ -65,18 +119,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addItem = async (item: TMDBItem) => {
     if (!isClient) return
     
+    // 乐观更新：立即添加到UI
+    const operationId = optimisticUpdateManager.addOperation({
+      type: 'add',
+      entity: 'item',
+      data: item
+    })
+
     try {
-      setLoading(true)
+      console.log('[DataProvider] 乐观添加项目:', item.title)
+      
+      // 发送到服务器
       const success = await StorageManager.addItem(item)
       if (!success) {
         throw new Error("添加项目失败")
       }
-      await loadData()
+
+      // 确认操作成功
+      optimisticUpdateManager.confirmOperation(operationId, item)
+      
+      // 通知其他客户端
+      await realtimeSyncManager.notifyDataChange({
+        type: 'item_added',
+        data: item
+      })
+
+      console.log('[DataProvider] 项目添加成功:', item.title)
     } catch (err) {
       console.error("Failed to add item:", err)
       setError("添加项目失败")
-    } finally {
-      setLoading(false)
+      
+      // 标记操作失败
+      optimisticUpdateManager.failOperation(operationId, err instanceof Error ? err.message : '添加项目失败')
     }
   }
 
@@ -84,18 +158,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const updateItem = async (item: TMDBItem) => {
     if (!isClient) return
     
+    // 保存原始数据用于回滚
+    const originalItem = baseItems.find(i => i.id === item.id)
+    
+    // 乐观更新：立即更新UI
+    const operationId = optimisticUpdateManager.addOperation({
+      type: 'update',
+      entity: 'item',
+      data: item,
+      originalData: originalItem
+    })
+
     try {
-      setLoading(true)
+      console.log('[DataProvider] 乐观更新项目:', item.title)
+      
+      // 发送到服务器
       const success = await StorageManager.updateItem(item)
       if (!success) {
         throw new Error("更新项目失败")
       }
-      await loadData()
+
+      // 确认操作成功
+      optimisticUpdateManager.confirmOperation(operationId, item)
+      
+      // 通知其他客户端
+      await realtimeSyncManager.notifyDataChange({
+        type: 'item_updated',
+        data: item
+      })
+
+      console.log('[DataProvider] 项目更新成功:', item.title)
     } catch (err) {
       console.error("Failed to update item:", err)
       setError("更新项目失败")
-    } finally {
-      setLoading(false)
+      
+      // 标记操作失败
+      optimisticUpdateManager.failOperation(operationId, err instanceof Error ? err.message : '更新项目失败')
     }
   }
 
@@ -103,18 +201,46 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const deleteItem = async (id: string) => {
     if (!isClient) return
     
+    // 保存原始数据用于回滚
+    const originalItem = baseItems.find(i => i.id === id)
+    if (!originalItem) {
+      setError("要删除的项目不存在")
+      return
+    }
+    
+    // 乐观更新：立即从UI移除
+    const operationId = optimisticUpdateManager.addOperation({
+      type: 'delete',
+      entity: 'item',
+      data: { id },
+      originalData: originalItem
+    })
+
     try {
-      setLoading(true)
+      console.log('[DataProvider] 乐观删除项目:', originalItem.title)
+      
+      // 发送到服务器
       const success = await StorageManager.deleteItem(id)
       if (!success) {
         throw new Error("删除项目失败")
       }
-      await loadData()
+
+      // 确认操作成功
+      optimisticUpdateManager.confirmOperation(operationId)
+      
+      // 通知其他客户端
+      await realtimeSyncManager.notifyDataChange({
+        type: 'item_deleted',
+        data: { id, item: originalItem }
+      })
+
+      console.log('[DataProvider] 项目删除成功:', originalItem.title)
     } catch (err) {
       console.error("Failed to delete item:", err)
       setError("删除项目失败")
-    } finally {
-      setLoading(false)
+      
+      // 标记操作失败
+      optimisticUpdateManager.failOperation(operationId, err instanceof Error ? err.message : '删除项目失败')
     }
   }
 

@@ -3,6 +3,7 @@ import { taskExecutionLogger } from './task-execution-logger'
 import { BrowserInterruptDetector, BrowserInterruptResult } from './browser-interrupt-detector';
 import { DistributedLock } from './distributed-lock';
 import { StorageSyncManager } from './storage-sync-manager';
+import { realtimeSyncManager } from './realtime-sync-manager';
 
 class TaskScheduler {
   private static instance: TaskScheduler;
@@ -913,6 +914,23 @@ class TaskScheduler {
             lastRunStatus: 'success' as const,
             lastRunError: null
           };
+
+          // 发送实时同步通知
+          try {
+            await realtimeSyncManager.notifyDataChange({
+              type: 'task_completed',
+              data: {
+                taskId: task.id,
+                taskName: task.name,
+                itemId: task.itemId,
+                itemTitle: relatedItem?.title,
+                completedAt: new Date().toISOString()
+              }
+            });
+            console.log(`[TaskScheduler] 已发送任务完成通知: ${task.name}`);
+          } catch (syncError) {
+            console.error(`[TaskScheduler] 发送实时同步通知失败:`, syncError);
+          }
           await StorageManager.updateScheduledTask(successTask);
 
           // 结束执行日志记录
@@ -972,6 +990,23 @@ class TaskScheduler {
               lastRunStatus: 'failed' as const,
               lastRunError: errorMessage
             };
+
+            // 发送实时同步通知
+            try {
+              await realtimeSyncManager.notifyDataChange({
+                type: 'task_status_changed',
+                data: {
+                  taskId: task.id,
+                  taskName: task.name,
+                  status: 'failed',
+                  error: errorMessage,
+                  failedAt: new Date().toISOString()
+                }
+              });
+              console.log(`[TaskScheduler] 已发送任务失败通知: ${task.name}`);
+            } catch (syncError) {
+              console.error(`[TaskScheduler] 发送实时同步通知失败:`, syncError);
+            }
 
             await StorageManager.updateScheduledTask(failedTask);
 

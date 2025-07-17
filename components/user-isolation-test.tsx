@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useUser } from "@/components/user-identity-provider"
-import { useData } from "@/components/client-data-provider"
+import { useEnhancedData } from "@/components/enhanced-client-data-provider"
 import { Loader2, Users, Database, CheckCircle, AlertCircle, Info } from "lucide-react"
 
 /**
@@ -34,7 +34,7 @@ interface MigrationStatus {
 
 export function UserIsolationTest() {
   const { userInfo, isInitialized } = useUser()
-  const { items, loading } = useData()
+  const { items, loading } = useEnhancedData()
   const [migrationStatus, setMigrationStatus] = useState<MigrationStatus | null>(null)
   const [isLoadingMigration, setIsLoadingMigration] = useState(false)
   const [testResults, setTestResults] = useState<{
