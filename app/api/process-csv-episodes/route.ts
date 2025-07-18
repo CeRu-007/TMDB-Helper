@@ -382,16 +382,11 @@ export async function POST(request: NextRequest) {
       processedRowCount = processedData.rows.length;
     }
     
-    // 策略：直接覆盖原始文件，但先创建备份
-    const originalDir = path.dirname(csvPath);
-    const originalName = path.basename(csvPath, '.csv');
-    const backupFileName = `${originalName}_backup_${Date.now()}.csv`;
-    const backupCsvPath = path.join(originalDir, backupFileName);
+    // 策略：直接覆盖原始文件，不创建备份
     const processedCsvPath = csvPath; // 直接使用原始文件路径
 
-    console.log(`[API] 文件处理策略: 覆盖原始文件`);
+    console.log(`[API] 文件处理策略: 直接覆盖原始文件（不创建备份）`);
     console.log(`[API] 原始文件: ${csvPath}`);
-    console.log(`[API] 备份文件: ${backupCsvPath}`);
     
     // 验证目标目录是否存在
     const targetDir = path.dirname(processedCsvPath);
@@ -404,12 +399,6 @@ export async function POST(request: NextRequest) {
       console.error(`[API] 目标目录不存在或不可访问: ${dirError}`);
       throw new Error(`目标目录不可访问: ${targetDir}`);
     }
-
-    // 先创建原始文件的备份
-    console.log(`[API] 创建原始文件备份: ${backupCsvPath}`);
-    const originalContent = await fs.readFile(csvPath, 'utf-8');
-    await fs.writeFile(backupCsvPath, originalContent, 'utf-8');
-    console.log(`[API] ✓ 备份文件创建成功`);
 
     // 覆盖原始文件
     console.log(`[API] 开始覆盖原始CSV文件: ${processedCsvPath}`);
@@ -436,18 +425,17 @@ export async function POST(request: NextRequest) {
       success: true,
       processedCsvPath: processedCsvPath,
       originalCsvPath: csvPath,
-      backupCsvPath: backupCsvPath,
+      backupCsvPath: null, // 不再创建备份文件
       removedEpisodes: removedEpisodes.sort((a, b) => a - b),
       originalRowCount: originalRowCount,
       processedRowCount: processedRowCount,
       markedEpisodesInput: markedEpisodes,
       processingMethod: useRobustProcessing ? 'robust' : 'traditional',
       fileInfo: {
-        originalSize: originalContent.length,
         processedSize: finalContent.length
       },
-      strategy: 'overwrite_with_backup',
-      message: `成功处理CSV文件，删除了 ${removedEpisodes.length} 个已标记集数的数据行，原始文件已备份`
+      strategy: 'direct_overwrite',
+      message: `成功处理CSV文件，删除了 ${removedEpisodes.length} 个已标记集数的数据行`
     }, { status: 200 });
     
   } catch (error) {
