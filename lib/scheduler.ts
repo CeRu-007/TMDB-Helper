@@ -12,8 +12,25 @@ class TaskScheduler {
   private lastError: Error | null = null;
   private currentExecution: Set<string> = new Set(); // 跟踪当前正在执行的任务
   private validationTimer: NodeJS.Timeout | null = null; // 定期验证定时器
+  private timerValidations: Map<string, NodeJS.Timeout> = new Map(); // 单个定时器验证
 
-  private constructor() {}
+  private constructor() {
+    // 监听浏览器可见性变化
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          console.log('[TaskScheduler] 浏览器标签页重新激活，检查定时器状态');
+          this.validateAllTimers();
+        }
+      });
+      
+      // 监听窗口焦点变化
+      window.addEventListener('focus', () => {
+        console.log('[TaskScheduler] 窗口重新获得焦点，检查定时器状态');
+        this.validateAllTimers();
+      });
+    }
+  }
 
   public static getInstance(): TaskScheduler {
     if (!TaskScheduler.instance) {
@@ -148,6 +165,9 @@ class TaskScheduler {
       // 启动定期清理已完结项目的任务（每小时检查一次）
       this.startCompletedProjectsCleanup();
 
+      // 启动定期验证所有定时器（每30分钟检查一次）
+      this.startPeriodicTimerValidation();
+
       this.isInitialized = true;
       console.log(`[TaskScheduler] 初始化完成，已加载 ${tasks.length} 个定时任务 (${enabledTasks.length} 个已启用)`);
     } catch (error) {
@@ -268,6 +288,41 @@ class TaskScheduler {
       clearInterval(this.completedProjectsCleanupTimer);
       this.completedProjectsCleanupTimer = null;
       console.log('[TaskScheduler] 已停止定期已完结项目任务清理');
+    }
+  }
+
+  /**
+   * 启动定期验证所有定时器
+   */
+  private periodicTimerValidationTimer: NodeJS.Timeout | null = null;
+
+  private startPeriodicTimerValidation(): void {
+    // 清除现有的验证定时器
+    if (this.periodicTimerValidationTimer) {
+      clearInterval(this.periodicTimerValidationTimer);
+    }
+
+    // 每30分钟验证一次所有定时器
+    this.periodicTimerValidationTimer = setInterval(async () => {
+      try {
+        console.log('[TaskScheduler] 执行定期定时器验证');
+        await this.validateAllTimers();
+      } catch (error) {
+        console.error('[TaskScheduler] 定期定时器验证失败:', error);
+      }
+    }, 30 * 60 * 1000); // 每30分钟执行一次
+
+    console.log('[TaskScheduler] 已启动定期定时器验证 (每30分钟一次)');
+  }
+
+  /**
+   * 停止定期验证所有定时器
+   */
+  private stopPeriodicTimerValidation(): void {
+    if (this.periodicTimerValidationTimer) {
+      clearInterval(this.periodicTimerValidationTimer);
+      this.periodicTimerValidationTimer = null;
+      console.log('[TaskScheduler] 已停止定期定时器验证');
     }
   }
 
@@ -428,10 +483,18 @@ class TaskScheduler {
     });
     this.timers.clear();
 
+    // 清除所有定时器验证
+    this.timerValidations.forEach((timer, id) => {
+      clearTimeout(timer);
+      console.log(`[TaskScheduler] 清除定时器验证: ${id}`);
+    });
+    this.timerValidations.clear();
+
     // 同时清除所有后台定时器
     this.stopPeriodicValidation();
     this.stopMissedTasksCheck();
     this.stopCompletedProjectsCleanup();
+    this.stopPeriodicTimerValidation();
   }
 
   /**
@@ -452,10 +515,16 @@ class TaskScheduler {
       nextRun.setMilliseconds(0);
 
       // 如果今天的时间已过，则设为明天
-      if (now > nextRun) {
+      if (now >= nextRun) {
         nextRun.setDate(nextRun.getDate() + 1);
       }
 
+      // 确保时间不会设置到过去
+      if (nextRun <= now) {
+        nextRun.setDate(nextRun.getDate() + 1);
+      }
+
+      console.log(`[TaskScheduler] 计算每日任务下次执行时间: ${task.name} -> ${nextRun.toLocaleString('zh-CN')} (当前时间: ${now.toLocaleString('zh-CN')})`);
       return nextRun;
     }
   }
@@ -481,7 +550,7 @@ class TaskScheduler {
 
     // 为每个目标日期计算下次执行时间
     for (const targetDay of targetDays) {
-      const nextRun = new Date();
+      const nextRun = new Date(now);
       nextRun.setHours(task.schedule.hour);
       nextRun.setMinutes(task.schedule.minute);
       nextRun.setSeconds(0);
@@ -491,12 +560,18 @@ class TaskScheduler {
       let daysUntilTarget = targetDay - adjustedCurrentDay;
       if (daysUntilTarget < 0) {
         daysUntilTarget += 7; // 如果是过去的日期，加上一周
-      } else if (daysUntilTarget === 0 && now > nextRun) {
+      } else if (daysUntilTarget === 0 && now >= nextRun) {
         daysUntilTarget = 7; // 如果是今天但已经过了时间，设为下周
       }
 
       // 设置到正确的日期
       nextRun.setDate(now.getDate() + daysUntilTarget);
+
+      // 确保时间不会设置到过去
+      if (nextRun <= now) {
+        nextRun.setDate(nextRun.getDate() + 7);
+        daysUntilTarget += 7;
+      }
 
       // 选择最近的执行时间
       if (daysUntilTarget < minDaysUntilTarget) {
@@ -505,7 +580,9 @@ class TaskScheduler {
       }
     }
 
-    return nearestNextRun || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 默认一周后
+    const result = nearestNextRun || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    console.log(`[TaskScheduler] 计算每周任务下次执行时间: ${task.name} -> ${result.toLocaleString('zh-CN')} (当前时间: ${now.toLocaleString('zh-CN')}, 目标星期: ${targetDays.join(',')})`);
+    return result;
   }
 
   /**
@@ -534,21 +611,31 @@ class TaskScheduler {
     // 更新任务的下一次执行时间
     this.updateTaskNextRunTime(task.id, nextRunTime.toISOString());
     
-    // 设置定时器
+    // 设置定时器 - 增强版本，支持浏览器环境检测和自动重试
     const timer = setTimeout(async () => {
+      console.log(`[TaskScheduler] 定时器触发: ${task.id} (${task.name}) 在 ${new Date().toLocaleString('zh-CN')}`);
+      
+      // 检查浏览器环境状态
+      if (typeof window !== 'undefined' && document.hidden) {
+        console.warn(`[TaskScheduler] 浏览器标签页不活跃，延迟执行任务: ${task.name}`);
+        // 延迟30秒后重试
+        setTimeout(() => this.executeTaskWithRetry(task), 30000);
+        return;
+      }
+      
       // 在执行时获取最新的任务状态
       try {
         const tasks = await StorageManager.getScheduledTasks();
         const latestTask = tasks.find(t => t.id === task.id);
 
         if (latestTask && latestTask.enabled) {
-          this.executeTask(latestTask);
+          await this.executeTaskWithRetry(latestTask);
         } else {
           console.warn(`[TaskScheduler] 任务 ${task.id} 不存在或已禁用，跳过执行`);
         }
       } catch (error) {
         console.error(`[TaskScheduler] 获取最新任务状态失败，使用原始任务执行:`, error);
-        this.executeTask(task);
+        await this.executeTaskWithRetry(task);
       }
     }, adjustedDelay);
     
@@ -566,6 +653,9 @@ class TaskScheduler {
     });
     
     console.log(`[TaskScheduler] 已为任务 ${task.id} 设置定时器，将在 ${nextRunLocale} 执行 (延迟 ${Math.round(adjustedDelay / 1000 / 60)} 分钟)`);
+    
+    // 设置定时器验证机制 - 每5分钟检查一次定时器是否还存在
+    this.scheduleTimerValidation(task.id, adjustedDelay);
   }
 
   /**
@@ -584,6 +674,105 @@ class TaskScheduler {
       }
     } catch (error) {
       console.error(`[TaskScheduler] 更新任务执行时间失败: ${error}`);
+    }
+  }
+
+  /**
+   * 设置单个定时器的验证机制
+   */
+  private scheduleTimerValidation(taskId: string, originalDelay: number): void {
+    // 清除现有的验证定时器
+    if (this.timerValidations.has(taskId)) {
+      clearTimeout(this.timerValidations.get(taskId));
+      this.timerValidations.delete(taskId);
+    }
+
+    // 设置验证间隔：原始延迟的一半，但不少于5分钟，不超过30分钟
+    const validationInterval = Math.max(5 * 60 * 1000, Math.min(originalDelay / 2, 30 * 60 * 1000));
+
+    const validationTimer = setTimeout(async () => {
+      await this.validateSingleTimer(taskId);
+    }, validationInterval);
+
+    this.timerValidations.set(taskId, validationTimer);
+    console.log(`[TaskScheduler] 为任务 ${taskId} 设置定时器验证，${Math.round(validationInterval / 60000)} 分钟后检查`);
+  }
+
+  /**
+   * 验证单个定时器是否仍然有效
+   */
+  private async validateSingleTimer(taskId: string): Promise<void> {
+    try {
+      // 检查定时器是否还存在
+      if (!this.timers.has(taskId)) {
+        console.warn(`[TaskScheduler] 定时器验证失败: 任务 ${taskId} 的定时器已丢失，尝试重新设置`);
+        
+        // 获取任务信息并重新设置定时器
+        const tasks = await StorageManager.getScheduledTasks();
+        const task = tasks.find(t => t.id === taskId);
+        
+        if (task && task.enabled) {
+          console.log(`[TaskScheduler] 重新设置丢失的定时器: ${task.name}`);
+          this.scheduleTask(task);
+        } else {
+          console.warn(`[TaskScheduler] 无法重新设置定时器: 任务不存在或已禁用 (${taskId})`);
+        }
+      } else {
+        // 定时器存在，检查是否应该已经执行了
+        const tasks = await StorageManager.getScheduledTasks();
+        const task = tasks.find(t => t.id === taskId);
+        
+        if (task && task.nextRun) {
+          const nextRunTime = new Date(task.nextRun);
+          const now = new Date();
+          const timeDiff = now.getTime() - nextRunTime.getTime();
+          
+          // 如果已经超过执行时间5分钟以上，说明定时器可能有问题
+          if (timeDiff > 5 * 60 * 1000) {
+            console.warn(`[TaskScheduler] 定时器异常: 任务 ${task.name} 应该在 ${nextRunTime.toLocaleString('zh-CN')} 执行，但现在是 ${now.toLocaleString('zh-CN')}`);
+            
+            // 清除异常的定时器并重新设置
+            if (this.timers.has(taskId)) {
+              clearTimeout(this.timers.get(taskId));
+              this.timers.delete(taskId);
+            }
+            
+            // 立即执行错过的任务
+            console.log(`[TaskScheduler] 立即执行错过的任务: ${task.name}`);
+            await this.executeTaskWithRetry(task);
+          } else {
+            // 定时器正常，继续下一次验证
+            this.scheduleTimerValidation(taskId, Math.max(nextRunTime.getTime() - now.getTime(), 5 * 60 * 1000));
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`[TaskScheduler] 验证定时器时出错 (${taskId}):`, error);
+    }
+  }
+
+  /**
+   * 验证所有定时器
+   */
+  private async validateAllTimers(): Promise<void> {
+    try {
+      console.log('[TaskScheduler] 开始验证所有定时器状态');
+      const tasks = await StorageManager.getScheduledTasks();
+      const enabledTasks = tasks.filter(task => task.enabled);
+      
+      for (const task of enabledTasks) {
+        if (!this.timers.has(task.id)) {
+          console.warn(`[TaskScheduler] 发现缺失的定时器: ${task.name}，重新设置`);
+          this.scheduleTask(task);
+        } else {
+          // 验证现有定时器
+          await this.validateSingleTimer(task.id);
+        }
+      }
+      
+      console.log(`[TaskScheduler] 定时器验证完成，当前活跃定时器: ${this.timers.size} 个`);
+    } catch (error) {
+      console.error('[TaskScheduler] 验证所有定时器时出错:', error);
     }
   }
 
@@ -764,11 +953,12 @@ class TaskScheduler {
   }
 
   /**
-   * 执行定时任务
+   * 执行定时任务（带重试机制）
    */
-  private async executeTask(task: ScheduledTask): Promise<void> {
+  private async executeTaskWithRetry(task: ScheduledTask, retryCount: number = 0): Promise<void> {
+    const maxRetries = 3;
     const currentTime = new Date().toLocaleString('zh-CN');
-    console.log(`[TaskScheduler] 定时器触发，准备执行任务: ${task.id} (${task.name}) 在 ${currentTime}`);
+    console.log(`[TaskScheduler] 准备执行任务: ${task.id} (${task.name}) 在 ${currentTime} (重试次数: ${retryCount})`);
 
     // 如果任务已在执行中，跳过本次执行
     if (this.currentExecution.has(task.id)) {
@@ -784,8 +974,33 @@ class TaskScheduler {
       return;
     }
     
-    // 执行任务
-    await this._executeTaskInternal(task);
+    try {
+      // 执行任务
+      await this._executeTaskInternal(task);
+    } catch (error) {
+      console.error(`[TaskScheduler] 任务执行失败: ${task.name}, 错误:`, error);
+      
+      // 如果还有重试次数，延迟后重试
+      if (retryCount < maxRetries) {
+        const retryDelay = Math.pow(2, retryCount) * 60000; // 指数退避：1分钟、2分钟、4分钟
+        console.log(`[TaskScheduler] 将在 ${retryDelay / 60000} 分钟后重试任务: ${task.name} (第${retryCount + 1}次重试)`);
+        
+        setTimeout(() => {
+          this.executeTaskWithRetry(task, retryCount + 1);
+        }, retryDelay);
+      } else {
+        console.error(`[TaskScheduler] 任务 ${task.name} 重试次数已用完，放弃执行`);
+        // 仍然重新调度到下一个执行时间
+        this.scheduleTask(task);
+      }
+    }
+  }
+
+  /**
+   * 执行定时任务（原方法保持兼容性）
+   */
+  private async executeTask(task: ScheduledTask): Promise<void> {
+    await this.executeTaskWithRetry(task, 0);
   }
   
   /**
@@ -2280,11 +2495,16 @@ class TaskScheduler {
       // 记录删除日志
       await taskExecutionLogger.addLog(task.id, '自动删除', `项目已完结，自动删除定时任务`, 'info');
 
-      // 清除定时器
+      // 清除定时器和验证定时器
       if (this.timers.has(task.id)) {
         clearTimeout(this.timers.get(task.id));
         this.timers.delete(task.id);
         console.log(`[TaskScheduler] 清除任务 ${task.id} 的定时器`);
+      }
+      if (this.timerValidations.has(task.id)) {
+        clearTimeout(this.timerValidations.get(task.id));
+        this.timerValidations.delete(task.id);
+        console.log(`[TaskScheduler] 清除任务 ${task.id} 的定时器验证`);
       }
 
       // 从存储中删除任务
@@ -2375,6 +2595,11 @@ class TaskScheduler {
             this.timers.delete(task.id);
             console.log(`[TaskScheduler] 任务 ${task.id} 已禁用，清除定时器`);
           }
+          if (this.timerValidations.has(task.id)) {
+            clearTimeout(this.timerValidations.get(task.id));
+            this.timerValidations.delete(task.id);
+            console.log(`[TaskScheduler] 任务 ${task.id} 已禁用，清除定时器验证`);
+          }
         }
       }
       
@@ -2409,10 +2634,16 @@ class TaskScheduler {
    */
   public async deleteTask(taskId: string): Promise<boolean> {
     try {
-      // 清除定时器
+      // 清除定时器和验证定时器
       if (this.timers.has(taskId)) {
         clearTimeout(this.timers.get(taskId));
         this.timers.delete(taskId);
+        console.log(`[TaskScheduler] 清除任务 ${taskId} 的定时器`);
+      }
+      if (this.timerValidations.has(taskId)) {
+        clearTimeout(this.timerValidations.get(taskId));
+        this.timerValidations.delete(taskId);
+        console.log(`[TaskScheduler] 清除任务 ${taskId} 的定时器验证`);
       }
 
       // 从存储中删除任务
