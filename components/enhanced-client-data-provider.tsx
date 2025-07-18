@@ -317,17 +317,19 @@ export function EnhancedDataProvider({ children }: { children: ReactNode }) {
       console.error("Failed to add item:", err)
       const errorMessage = err instanceof Error ? err.message : '添加项目失败'
       setError(errorMessage)
-      
-      // 标记操作失败
+
+      // 标记操作失败（不立即显示toast，让用户通过状态组件处理）
       optimisticUpdateManager.failOperation(operationId, errorMessage)
-      
-      // 显示错误提示
-      toast({
-        title: "添加项目失败",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 5000
-      })
+
+      // 只在网络错误或超时时显示toast，其他错误通过状态组件处理
+      if (errorMessage.includes('网络') || errorMessage.includes('超时') || errorMessage.includes('timeout')) {
+        toast({
+          title: "网络错误",
+          description: "请检查网络连接后重试",
+          variant: "destructive",
+          duration: 5000
+        })
+      }
     }
   }
 
@@ -377,17 +379,19 @@ export function EnhancedDataProvider({ children }: { children: ReactNode }) {
       console.error("Failed to update item:", err)
       const errorMessage = err instanceof Error ? err.message : '更新项目失败'
       setError(errorMessage)
-      
-      // 标记操作失败
+
+      // 标记操作失败（不立即显示toast，让用户通过状态组件处理）
       optimisticUpdateManager.failOperation(operationId, errorMessage)
-      
-      // 显示错误提示
-      toast({
-        title: "更新项目失败",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 5000
-      })
+
+      // 只在网络错误或超时时显示toast，其他错误通过状态组件处理
+      if (errorMessage.includes('网络') || errorMessage.includes('超时') || errorMessage.includes('timeout')) {
+        toast({
+          title: "网络错误",
+          description: "请检查网络连接后重试",
+          variant: "destructive",
+          duration: 5000
+        })
+      }
     }
   }
 

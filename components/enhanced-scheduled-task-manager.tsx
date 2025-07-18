@@ -102,7 +102,9 @@ interface TaskTemplate {
         autoUpload: boolean
         autoRemoveMarked: boolean
         autoConfirm: boolean
-        removeIqiyiAirDate: boolean
+        removeAirDateColumn: boolean
+        removeRuntimeColumn: boolean
+        removeBackdropColumn: boolean
         autoMarkUploaded: boolean
         conflictAction: 'w' | 'a' | 's'
         enableYoukuSpecialHandling: boolean
@@ -121,40 +123,40 @@ interface EnhancedScheduledTaskManagerProps {
 }
 
 export default function EnhancedScheduledTaskManager({ open, onOpenChange }: EnhancedScheduledTaskManagerProps) {
-    // 基础状态
+    // 基础状�?
     const [tasks, setTasks] = useState<ScheduledTask[]>([])
     const [items, setItems] = useState<TMDBItem[]>([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState("tasks")
 
-    // 搜索和过滤状态
+    // 搜索和过滤状�?
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState<"all" | "enabled" | "disabled" | "running" | "failed">("all")
     const [sortBy, setSortBy] = useState<"name" | "created" | "lastRun" | "nextRun" | "status">("name")
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
-    // 批量操作状态
+    // 批量操作状�?
     const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
     const [isSelectionMode, setIsSelectionMode] = useState(false)
 
-    // 对话框状态
+    // 对话框状�?
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false)
     const [showTaskForm, setShowTaskForm] = useState(false)
     const [showTemplateManager, setShowTemplateManager] = useState(false)
     const [showExecutionMonitor, setShowExecutionMonitor] = useState(false)
 
-    // 任务操作状态
+    // 任务操作状�?
     const [isRunningTask, setIsRunningTask] = useState(false)
     const [runningTaskId, setRunningTaskId] = useState<string | null>(null)
     const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
     const [currentTask, setCurrentTask] = useState<ScheduledTask | null>(null)
     const [isEditingTask, setIsEditingTask] = useState(false)
 
-    // 统计状态
+    // 统计状�?
     const [statistics, setStatistics] = useState<TaskStatistics | null>(null)
 
-    // 视图状态
+    // 视图状�?
     const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set())
 
     // 加载数据
@@ -211,7 +213,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
         setStatistics(stats)
     }
 
-    // 过滤和排序任务
+    // 过滤和排序任�?
     const filteredAndSortedTasks = useMemo(() => {
         let filtered = [...tasks]
 
@@ -228,7 +230,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
             })
         }
 
-        // 状态过滤
+        // 状态过�?
         if (statusFilter !== "all") {
             filtered = filtered.filter(task => {
                 switch (statusFilter) {
@@ -283,14 +285,14 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
         return filtered
     }, [tasks, items, searchTerm, statusFilter, sortBy, sortOrder])
 
-    // 初始化
+    // 初始�?
     useEffect(() => {
         if (open) {
             loadData()
         }
     }, [open, loadData])
 
-    // 切换任务启用状态
+    // 切换任务启用状�?
     const toggleTaskEnabled = async (task: ScheduledTask) => {
         const updatedTask = {
             ...task,
@@ -308,13 +310,13 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                 if (updatedTask.enabled) {
                     await taskScheduler.scheduleTask(updatedTask)
                     toast({
-                        title: "任务已启用",
+                        title: "任务已启�?,
                         description: `下次执行时间: ${new Date(updatedTask.nextRun || '').toLocaleString()}`,
                     })
                 } else {
                     await taskScheduler.updateTask(updatedTask)
                     toast({
-                        title: "任务已禁用",
+                        title: "任务已禁�?,
                         description: "此任务将不再自动执行",
                     })
                 }
@@ -323,10 +325,10 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                 calculateStatistics(tasks.map(t => t.id === task.id ? updatedTask : t))
             }
         } catch (error) {
-            console.error("更新任务状态失败:", error)
+            console.error("更新任务状态失�?", error)
             toast({
                 title: "操作失败",
-                description: "无法更新任务状态",
+                description: "无法更新任务状�?,
                 variant: "destructive"
             })
         }
@@ -336,7 +338,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
     const runTaskNow = async (task: ScheduledTask) => {
         if (isRunningTask) {
             toast({
-                title: "任务执行中",
+                title: "任务执行�?,
                 description: "已有任务正在执行，请等待完成"
             })
             return
@@ -379,7 +381,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
 
                 toast({
                     title: "删除成功",
-                    description: "定时任务已删除",
+                    description: "定时任务已删�?,
                 })
 
                 // 重新计算统计信息
@@ -414,7 +416,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
 
             toast({
                 title: "批量删除成功",
-                description: `已删除 ${selectedTasks.size} 个任务`,
+                description: `已删�?${selectedTasks.size} 个任务`,
             })
 
             // 重新计算统计信息
@@ -463,7 +465,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
 
             toast({
                 title: enabled ? "批量启用成功" : "批量禁用成功",
-                description: `已${enabled ? '启用' : '禁用'} ${selectedTasks.size} 个任务`,
+                description: `�?{enabled ? '启用' : '禁用'} ${selectedTasks.size} 个任务`,
             })
 
             // 重新计算统计信息
@@ -481,9 +483,9 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
         }
     }
 
-    // 格式化时间
+    // 格式化时�?
     const formatTime = (timeStr?: string) => {
-        if (!timeStr) return "未设置"
+        if (!timeStr) return "未设�?
         try {
             return new Date(timeStr).toLocaleString()
         } catch (error) {
@@ -491,19 +493,19 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
         }
     }
 
-    // 获取任务状态信息
+    // 获取任务状态信�?
     const getTaskStatusInfo = (task: ScheduledTask) => {
         if (taskScheduler.isTaskRunning(task.id)) {
             return {
                 status: "running",
-                label: "执行中",
+                label: "执行�?,
                 color: "bg-blue-500",
                 icon: <Loader2 className="h-3 w-3 animate-spin" />
             }
         } else if (!task.enabled) {
             return {
                 status: "disabled",
-                label: "已禁用",
+                label: "已禁�?,
                 color: "bg-gray-500",
                 icon: <PauseCircle className="h-3 w-3" />
             }
@@ -524,7 +526,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
         } else {
             return {
                 status: "pending",
-                label: "等待中",
+                label: "等待�?,
                 color: "bg-yellow-500",
                 icon: <Clock className="h-3 w-3" />
             }
@@ -580,11 +582,11 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                     {relatedItem ? (
                                         <span className="flex items-center space-x-1">
                                             <span>{relatedItem.title}</span>
-                                            <span>•</span>
-                                            <span>第{task.action.seasonNumber}季</span>
+                                            <span>�?/span>
+                                            <span>第{task.action.seasonNumber}�?/span>
                                         </span>
                                     ) : (
-                                        <span className="text-red-500">项目不存在</span>
+                                        <span className="text-red-500">项目不存�?/span>
                                     )}
                                 </CardDescription>
                             </div>
@@ -699,9 +701,9 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                             {task.schedule.type === 'daily' ? '每天' : '每周'}
                                             {task.schedule.type === 'weekly' && (
                                                 <span>
-                                                    {['一', '二', '三', '四', '五', '六', '日'][task.schedule.dayOfWeek || 0]}
+                                                    {['一', '�?, '�?, '�?, '�?, '�?, '�?][task.schedule.dayOfWeek || 0]}
                                                     {task.schedule.secondDayOfWeek !== undefined &&
-                                                        `、${['一', '二', '三', '四', '五', '六', '日'][task.schedule.secondDayOfWeek]}`
+                                                        `�?{['一', '�?, '�?, '�?, '�?, '�?, '�?][task.schedule.secondDayOfWeek]}`
                                                     }
                                                 </span>
                                             )}
@@ -730,7 +732,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                 </div>
 
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">执行状态</Label>
+                                    <Label className="text-xs text-muted-foreground">执行状�?/Label>
                                     <div className="flex items-center space-x-1 mt-1">
                                         {statusInfo.icon}
                                         <span className="text-xs">{statusInfo.label}</span>
@@ -778,7 +780,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                             <span>增强定时任务管理</span>
                             {statistics && (
                                 <Badge variant="outline">
-                                    {statistics.total} 个任务
+                                    {statistics.total} 个任�?
                                 </Badge>
                             )}
                         </div>
@@ -874,7 +876,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                 <div className="flex-1 relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input
-                                        placeholder="搜索任务名称或项目..."
+                                        placeholder="搜索任务名称或项�?.."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="pl-10"
@@ -883,13 +885,13 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
 
                                 <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
                                     <SelectTrigger className="w-32">
-                                        <SelectValue placeholder="状态筛选" />
+                                        <SelectValue placeholder="状态筛�? />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">全部</SelectItem>
-                                        <SelectItem value="enabled">已启用</SelectItem>
-                                        <SelectItem value="disabled">已禁用</SelectItem>
-                                        <SelectItem value="running">执行中</SelectItem>
+                                        <SelectItem value="enabled">已启�?/SelectItem>
+                                        <SelectItem value="disabled">已禁�?/SelectItem>
+                                        <SelectItem value="running">执行�?/SelectItem>
                                         <SelectItem value="failed">失败</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -903,7 +905,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                         <SelectItem value="created">创建时间</SelectItem>
                                         <SelectItem value="lastRun">上次执行</SelectItem>
                                         <SelectItem value="nextRun">下次执行</SelectItem>
-                                        <SelectItem value="status">状态</SelectItem>
+                                        <SelectItem value="status">状�?/SelectItem>
                                     </SelectContent>
                                 </Select>
 
@@ -950,7 +952,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                 {loading ? (
                                     <div className="flex items-center justify-center h-64">
                                         <Loader2 className="h-8 w-8 animate-spin" />
-                                        <span className="ml-2">加载中...</span>
+                                        <span className="ml-2">加载�?..</span>
                                     </div>
                                 ) : (
                                     <ScrollArea className="h-full">
@@ -963,8 +965,8 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                                     <h3 className="text-lg font-medium mb-2">暂无任务</h3>
                                                     <p className="text-muted-foreground mb-4">
                                                         {searchTerm || statusFilter !== "all"
-                                                            ? "没有找到符合条件的任务"
-                                                            : "还没有创建任何定时任务"
+                                                            ? "没有找到符合条件的任�?
+                                                            : "还没有创建任何定时任�?
                                                         }
                                                     </p>
                                                     <Button
@@ -975,7 +977,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                                         }}
                                                     >
                                                         <Plus className="h-4 w-4 mr-2" />
-                                                        创建第一个任务
+                                                        创建第一个任�?
                                                     </Button>
                                                 </div>
                                             )}
@@ -1006,7 +1008,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                             <CardContent className="p-4">
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm text-muted-foreground">已启用</p>
+                                                        <p className="text-sm text-muted-foreground">已启�?/p>
                                                         <p className="text-2xl font-bold text-green-600">{statistics.enabled}</p>
                                                     </div>
                                                     <PlayCircle className="h-8 w-8 text-green-600" />
@@ -1018,7 +1020,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                             <CardContent className="p-4">
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm text-muted-foreground">执行中</p>
+                                                        <p className="text-sm text-muted-foreground">执行�?/p>
                                                         <p className="text-2xl font-bold text-blue-600">{statistics.running}</p>
                                                     </div>
                                                     <Activity className="h-8 w-8 text-blue-600" />
@@ -1030,7 +1032,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                             <CardContent className="p-4">
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm text-muted-foreground">成功率</p>
+                                                        <p className="text-sm text-muted-foreground">成功�?/p>
                                                         <p className="text-2xl font-bold text-green-600">
                                                             {statistics.successRate.toFixed(1)}%
                                                         </p>
@@ -1080,7 +1082,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                             <div className="text-center py-12">
                                 <History className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                                 <h3 className="text-lg font-medium mb-2">执行历史</h3>
-                                <p className="text-muted-foreground mb-4">查看任务的详细执行历史记录</p>
+                                <p className="text-muted-foreground mb-4">查看任务的详细执行历史记�?/p>
                                 <Button onClick={() => setShowExecutionMonitor(true)}>
                                     <Activity className="h-4 w-4 mr-2" />
                                     打开执行监控
@@ -1090,13 +1092,13 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                     </Tabs>
                 </div>
 
-                {/* 删除确认对话框 */}
+                {/* 删除确认对话�?*/}
                 <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>确认删除</AlertDialogTitle>
                             <AlertDialogDescription>
-                                确定要删除这个定时任务吗？此操作无法撤销。
+                                确定要删除这个定时任务吗？此操作无法撤销�?
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -1106,13 +1108,13 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                     </AlertDialogContent>
                 </AlertDialog>
 
-                {/* 批量删除确认对话框 */}
+                {/* 批量删除确认对话�?*/}
                 <AlertDialog open={showBatchDeleteConfirm} onOpenChange={setShowBatchDeleteConfirm}>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>确认批量删除</AlertDialogTitle>
                             <AlertDialogDescription>
-                                确定要删除选中的 {selectedTasks.size} 个定时任务吗？此操作无法撤销。
+                                确定要删除选中�?{selectedTasks.size} 个定时任务吗？此操作无法撤销�?
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -1123,7 +1125,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                 </AlertDialog>
             </DialogContent>
 
-            {/* 任务表单对话框 */}
+            {/* 任务表单对话�?*/}
             <EnhancedTaskFormDialog
                 open={showTaskForm}
                 onOpenChange={setShowTaskForm}
@@ -1144,12 +1146,12 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                 }}
             />
 
-            {/* 模板管理对话框 */}
+            {/* 模板管理对话�?*/}
             <TaskTemplateManager
                 open={showTemplateManager}
                 onOpenChange={setShowTemplateManager}
                 onTemplateSelect={(template) => {
-                    // 使用模板创建新任务
+                    // 使用模板创建新任�?
                     const newTask: Partial<ScheduledTask> = {
                         id: uuidv4(),
                         name: `${template.name} 任务`,
@@ -1167,7 +1169,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                 }}
             />
 
-            {/* 执行监控对话框 */}
+            {/* 执行监控对话�?*/}
             <TaskExecutionMonitor
                 open={showExecutionMonitor}
                 onOpenChange={setShowExecutionMonitor}
@@ -1178,7 +1180,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="搜索任务名称或项目..."
+                    placeholder="搜索任务名称或项�?.."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -1187,13 +1189,13 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                 
                 <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
                   <SelectTrigger className="w-32">
-                    <SelectValue placeholder="状态筛选" />
+                    <SelectValue placeholder="状态筛�? />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">全部</SelectItem>
-                    <SelectItem value="enabled">已启用</SelectItem>
-                    <SelectItem value="disabled">已禁用</SelectItem>
-                    <SelectItem value="running">执行中</SelectItem>
+                    <SelectItem value="enabled">已启�?/SelectItem>
+                    <SelectItem value="disabled">已禁�?/SelectItem>
+                    <SelectItem value="running">执行�?/SelectItem>
                     <SelectItem value="failed">失败</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1207,7 +1209,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                     <SelectItem value="created">创建时间</SelectItem>
                     <SelectItem value="lastRun">上次执行</SelectItem>
                     <SelectItem value="nextRun">下次执行</SelectItem>
-                    <SelectItem value="status">状态</SelectItem>
+                    <SelectItem value="status">状�?/SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -1255,7 +1257,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
         loading?(
                   <div className = "flex items-center justify-center h-64" >
                     <Loader2 className="h-8 w-8 animate-spin" />
-                    <span className="ml-2">加载中...</span>
+                    <span className="ml-2">加载�?..</span>
                   </div>
                 ) : (
     <ScrollArea className="h-full">
@@ -1268,8 +1270,8 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                     <h3 className="text-lg font-medium mb-2">暂无任务</h3>
                     <p className="text-muted-foreground mb-4">
                         {searchTerm || statusFilter !== "all"
-                            ? "没有找到符合条件的任务"
-                            : "还没有创建任何定时任务"
+                            ? "没有找到符合条件的任�?
+                            : "还没有创建任何定时任�?
                         }
                     </p>
                 </div>
@@ -1301,7 +1303,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-muted-foreground">已启用</p>
+                            <p className="text-sm text-muted-foreground">已启�?/p>
                             <p className="text-2xl font-bold text-green-600">{statistics.enabled}</p>
                           </div>
                           <PlayCircle className="h-8 w-8 text-green-600" />
@@ -1313,7 +1315,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-muted-foreground">执行中</p>
+                            <p className="text-sm text-muted-foreground">执行�?/p>
                             <p className="text-2xl font-bold text-blue-600">{statistics.running}</p>
                           </div>
                           <Activity className="h-8 w-8 text-blue-600" />
@@ -1325,7 +1327,7 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-muted-foreground">成功率</p>
+                            <p className="text-sm text-muted-foreground">成功�?/p>
                             <p className="text-2xl font-bold text-green-600">
                               {statistics.successRate.toFixed(1)}%
                             </p>
@@ -1381,13 +1383,13 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
           </Tabs >
         </div >
 
-    {/* 删除确认对话框 */ }
+    {/* 删除确认对话�?*/ }
     < AlertDialog open = { showDeleteConfirm } onOpenChange = { setShowDeleteConfirm } >
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>确认删除</AlertDialogTitle>
                 <AlertDialogDescription>
-                    确定要删除这个定时任务吗？此操作无法撤销。
+                    确定要删除这个定时任务吗？此操作无法撤销�?
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -1397,13 +1399,13 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
         </AlertDialogContent>
         </AlertDialog >
 
-    {/* 批量删除确认对话框 */ }
+    {/* 批量删除确认对话�?*/ }
     < AlertDialog open = { showBatchDeleteConfirm } onOpenChange = { setShowBatchDeleteConfirm } >
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>确认批量删除</AlertDialogTitle>
                 <AlertDialogDescription>
-                    确定要删除选中的 {selectedTasks.size} 个定时任务吗？此操作无法撤销。
+                    确定要删除选中�?{selectedTasks.size} 个定时任务吗？此操作无法撤销�?
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -5,6 +5,139 @@ import fs from 'fs'
 import { BrowserInterruptDetector } from '@/lib/browser-interrupt-detector';
 
 /**
+ * 读取CSV文件内容
+ */
+async function readCSVFile(filePath: string): Promise<string> {
+  try {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`CSV文件不存在: ${filePath}`);
+    }
+    return await fs.promises.readFile(filePath, 'utf-8');
+  } catch (error) {
+    throw new Error(`无法读取CSV文件: ${filePath}`);
+  }
+}
+
+/**
+ * 解析CSV内容（增强版）
+ */
+function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
+  const lines = csvContent.split('\n').filter(line => line.trim());
+  if (lines.length === 0) {
+    return { headers: [], rows: [] };
+  }
+
+  console.log(`[API] 开始解析CSV，总行数: ${lines.length}`);
+
+  const headers = parseCSVLine(lines[0]);
+  console.log(`[API] CSV表头: ${headers.join(' | ')}`);
+
+  const rows: string[][] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    try {
+      const row = parseCSVLine(lines[i]);
+
+      // 验证行的字段数量
+      if (row.length !== headers.length) {
+        console.warn(`[API] 第${i + 1}行字段数量不匹配: 期望${headers.length}个，实际${row.length}个`);
+        console.warn(`[API] 问题行内容: ${lines[i].substring(0, 100)}...`);
+
+        // 补齐或截断字段以匹配表头数量
+        while (row.length < headers.length) {
+          row.push('');
+        }
+        if (row.length > headers.length) {
+          row.splice(headers.length);
+        }
+      }
+
+      rows.push(row);
+    } catch (error) {
+      console.error(`[API] 解析第${i + 1}行时出错:`, error);
+      console.error(`[API] 问题行内容: ${lines[i]}`);
+      // 跳过有问题的行，继续处理
+    }
+  }
+
+  console.log(`[API] CSV解析完成，有效数据行数: ${rows.length}`);
+  return { headers, rows };
+}
+
+/**
+ * 解析CSV行（修复版）- 使用更可靠的CSV解析器
+ */
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let currentField = '';
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < line.length) {
+    const char = line[i];
+    const nextChar = i + 1 < line.length ? line[i + 1] : null;
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        // 转义的引号
+        currentField += '"';
+        i += 2;
+      } else {
+        // 开始或结束引号
+        inQuotes = !inQuotes;
+        i++;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // 字段分隔符
+      result.push(currentField);
+      currentField = '';
+      i++;
+    } else {
+      // 普通字符
+      currentField += char;
+      i++;
+    }
+  }
+
+  // 添加最后一个字段
+  result.push(currentField);
+
+  return result;
+}
+
+/**
+ * 将CSV数据转换为字符串
+ */
+function csvDataToString(data: { headers: string[], rows: string[][] }): string {
+  const headerLine = data.headers.map(formatCSVField).join(',');
+  const rowLines = data.rows.map(row => row.map(formatCSVField).join(','));
+  return [headerLine, ...rowLines].join('\n');
+}
+
+/**
+ * 格式化CSV字段（处理包含逗号、引号、换行符的字段）
+ */
+function formatCSVField(field: string): string {
+  if (field.includes(',') || field.includes('"') || field.includes('\n') || field.includes('\r')) {
+    // 转义引号并用引号包围
+    return `"${field.replace(/"/g, '""')}"`;
+  }
+  return field;
+}
+
+/**
+ * 写入CSV文件
+ */
+async function writeCSVFile(filePath: string, content: string): Promise<void> {
+  try {
+    await fs.promises.writeFile(filePath, content, 'utf-8');
+  } catch (error) {
+    console.error('写入CSV文件失败:', error);
+    throw new Error(`无法写入CSV文件: ${filePath}`);
+  }
+}
+
+/**
  * POST /api/execute-tmdb-import - 执行TMDB导入
  */
 export async function POST(request: NextRequest) {
@@ -23,7 +156,16 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { csvPath, seasonNumber, itemId, tmdbId, conflictAction = 'w' } = requestBody;
+    const {
+      csvPath,
+      seasonNumber,
+      itemId,
+      tmdbId,
+      conflictAction = 'w',
+      removeAirDateColumn = false,
+      removeRuntimeColumn = false,
+      removeBackdropColumn = false
+    } = requestBody;
     
     if (!csvPath) {
       return NextResponse.json({
@@ -47,6 +189,7 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`[API] 执行TMDB导入: CSV=${csvPath}, Season=${seasonNumber}, TMDB ID=${tmdbId}, Item ID=${itemId}`);
+    console.log(`[API] 列删除选项: removeAirDateColumn=${removeAirDateColumn}, removeRuntimeColumn=${removeRuntimeColumn}, removeBackdropColumn=${removeBackdropColumn}`);
 
     // 检查CSV文件是否存在
     try {
@@ -77,6 +220,90 @@ export async function POST(request: NextRequest) {
         error: '文件系统操作失败',
         details: { error: fsError instanceof Error ? fsError.message : String(fsError) }
       }, { status: 500 });
+    }
+
+    // 处理列数据清空选项
+    if (removeAirDateColumn || removeRuntimeColumn || removeBackdropColumn) {
+      try {
+        console.log(`[API] 开始处理列删除选项`);
+
+        // 读取CSV文件
+        const csvContent = await readCSVFile(csvPath);
+
+        // 解析CSV内容
+        const csvData = parseCSV(csvContent);
+        let modified = false;
+
+        // 需要清空数据的列名映射
+        const columnsToEmpty: { [key: string]: string[] } = {};
+
+        if (removeAirDateColumn) {
+          columnsToEmpty['air_date'] = ['air_date', 'airdate', '播出日期', '首播日期'];
+        }
+
+        if (removeRuntimeColumn) {
+          columnsToEmpty['runtime'] = ['runtime', '时长', '分钟', 'duration', '片长'];
+        }
+
+        if (removeBackdropColumn) {
+          columnsToEmpty['backdrop'] = ['backdrop_path', 'backdrop', 'still_path', 'still', '分集图片', '背景图片', '剧照', 'episode_image'];
+        }
+
+        // 收集要清空数据的列索引
+        const indicesToEmpty: number[] = [];
+
+        Object.entries(columnsToEmpty).forEach(([type, possibleNames]) => {
+          possibleNames.forEach(name => {
+            const index = csvData.headers.findIndex(h =>
+              h.toLowerCase() === name.toLowerCase() ||
+              h.toLowerCase().includes(name.toLowerCase()) ||
+              name.toLowerCase().includes(h.toLowerCase())
+            );
+            if (index !== -1 && !indicesToEmpty.includes(index)) {
+              indicesToEmpty.push(index);
+              console.log(`[API] 找到要清空数据的${type}列: ${csvData.headers[index]} (索引: ${index})`);
+            } else if (index === -1) {
+              console.log(`[API] 未找到${type}列，搜索名称: ${name}，CSV表头: [${csvData.headers.join(', ')}]`);
+            }
+          });
+        });
+
+        if (indicesToEmpty.length > 0) {
+          indicesToEmpty.forEach(index => {
+            const columnName = csvData.headers[index];
+            // 保留表头，只清空所有行中对应列的数据
+            csvData.rows.forEach(row => {
+              if (index < row.length) {
+                row[index] = ''; // 清空数据，保留列结构和逗号分隔符
+              }
+            });
+            console.log(`[API] 已清空列数据: ${columnName}`);
+          });
+
+          // 将修改后的数据写回CSV文件
+          const modifiedContent = csvDataToString(csvData);
+          await writeCSVFile(csvPath, modifiedContent);
+
+          console.log(`[API] 已清空 ${indicesToEmpty.length} 个列的数据，CSV文件已更新`);
+          modified = true;
+        } else {
+          console.log(`[API] 未找到需要清空数据的列`);
+        }
+
+        if (modified) {
+          console.log(`[API] CSV文件已根据列删除选项进行修改`);
+        }
+
+      } catch (csvError) {
+        console.error(`[API] 处理CSV列删除选项时出错:`, csvError);
+        return NextResponse.json({
+          success: false,
+          error: '处理CSV列删除选项失败',
+          details: { error: csvError instanceof Error ? csvError.message : String(csvError) }
+        }, { status: 500 });
+      }
+    } else {
+      console.log(`[API] 未启用列删除选项，跳过CSV修改`);
     }
     
     // 查找TMDB-Import目录

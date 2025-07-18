@@ -427,13 +427,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         // 忽略日期解析错误
       }
       
-      // 4. 检查平台URL相似度
-      if (item.platformUrl && task.action.removeIqiyiAirDate) {
-        // 如果任务有爱奇艺特殊处理，且项目是爱奇艺平台
-        if (item.platformUrl.includes('iqiyi.com')) {
-          totalScore += 30;
-          matchReasons.push("平台匹配 (爱奇艺)");
-        }
+      // 4. 检查列删除选项匹配
+      if (task.action.removeAirDateColumn || task.action.removeRuntimeColumn || task.action.removeBackdropColumn) {
+        totalScore += 5;
+        matchReasons.push("有列删除配置");
       }
       
       // 5. 检查季数匹配

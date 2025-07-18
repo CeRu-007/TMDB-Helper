@@ -186,13 +186,18 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
       }
     } catch (error) {
       const appError = handleError(error, { region, silent })
-      setUpcomingError(appError.userMessage)
+      
+      // 对于TMDB API连接错误，不设置错误状态，避免在界面上显示错误
+      if (!appError.message.includes('TMDB API连接失败') && !appError.message.includes('网络连接异常')) {
+        setUpcomingError(appError.userMessage)
+      }
       
       if (appError.type === 'API' && appError.code === '401') {
         setIsMissingApiKey(true)
       }
       
-      log.error('useMediaNews', '获取即将上线内容失败', appError)
+      // 静默记录日志，不显示用户错误
+      log.debug('useMediaNews', '获取即将上线内容失败', appError)
     } finally {
       if (!silent) setLoadingUpcoming(false)
       perf.endTiming(timingLabel)
@@ -257,8 +262,14 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
       }
     } catch (error) {
       const appError = handleError(error, { region, silent })
-      setRecentError(appError.userMessage)
-      log.error('useMediaNews', '获取近期开播内容失败', appError)
+      
+      // 对于TMDB API连接错误，不设置错误状态，避免在界面上显示错误
+      if (!appError.message.includes('TMDB API连接失败') && !appError.message.includes('网络连接异常')) {
+        setRecentError(appError.userMessage)
+      }
+      
+      // 静默记录日志，不显示用户错误
+      log.debug('useMediaNews', '获取近期开播内容失败', appError)
     } finally {
       if (!silent) setLoadingRecent(false)
       perf.endTiming(timingLabel)

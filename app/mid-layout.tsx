@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes"
 import { EnhancedDataProvider } from "@/components/enhanced-client-data-provider"
 import { UserIdentityProvider } from "@/components/user-identity-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { OptimisticUpdateStatus } from "@/components/ui/optimistic-update-status"
 import { suppressRefWarnings } from "@/lib/utils"
 
 export default function MidLayout({
@@ -23,6 +24,7 @@ export default function MidLayout({
         <EnhancedDataProvider>
           {children}
           <Toaster />
+          <OptimisticUpdateStatus showOnlyFailed={true} autoHide={true} />
         </EnhancedDataProvider>
       </UserIdentityProvider>
     </ThemeProvider>

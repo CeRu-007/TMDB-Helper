@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ import {
   Trash2,
   Plus,
   Play,
+  Info,
   PauseCircle,
   PlayCircle,
   Settings,
@@ -37,7 +39,6 @@ import {
   RotateCw,
   Upload,
   Check,
-  Info,
   AlertTriangle,
   Loader2
 } from "lucide-react"
@@ -166,7 +167,9 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         autoUpload: true,
         autoRemoveMarked: true,
         autoConfirm: true, // 默认自动确认上传
-        removeIqiyiAirDate: item.platformUrl?.includes('iqiyi.com') || false, // 爱奇艺平台自动启用
+        removeAirDateColumn: false, // 默认不删除air_date列
+        removeRuntimeColumn: false, // 默认不删除runtime列
+        removeBackdropColumn: false, // 默认不删除backdrop列
         autoMarkUploaded: true, // 默认自动标记已上传的集数
         conflictAction: 'w' as const, // 默认覆盖写入
         // 新增的用户自定义选项（默认启用）
@@ -178,7 +181,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
-    
+
     console.log("新建任务数据:", newTask);
     setCurrentTask(newTask)
     setIsAddingTask(true)
@@ -188,7 +191,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
 
   // 编辑任务
   const handleEditTask = (task: ScheduledTask) => {
-    setCurrentTask({...task})
+    setCurrentTask({ ...task })
     setIsEditingTask(true)
     setHasUnsavedChanges(false) // 编辑任务初始状态不应该有未保存更改
     setIsAutoSaving(false)
@@ -327,7 +330,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   // 执行删除任务
   const handleDeleteTask = async () => {
     if (!taskToDelete) return
-    
+
     try {
       const success = await StorageManager.deleteScheduledTask(taskToDelete)
       if (success) {
@@ -335,7 +338,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           title: "删除成功",
           description: "定时任务已删除",
         })
-        
+
         // 重新加载任务列表
         await loadTasks()
       }
@@ -359,13 +362,13 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       enabled: !task.enabled,
       updatedAt: new Date().toISOString()
     }
-    
+
     try {
       const success = await StorageManager.updateScheduledTask(updatedTask)
       if (success) {
         // 重新加载任务列表
         await loadTasks()
-        
+
         // 更新调度器
         if (updatedTask.enabled) {
           await taskScheduler.scheduleTask(updatedTask)
@@ -395,16 +398,16 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   const runTaskNow = async (task: ScheduledTask) => {
     setIsRunningTask(true)
     setRunningTaskId(task.id)
-    
+
     try {
       // 检查系统中是否有项目
       if (await StorageManager.hasAnyItems() === false) {
         throw new Error("系统中没有可用项目，请先添加至少一个项目后再试");
       }
-      
+
       // 获取最新的项目信息
       let currentItem = item; // 默认使用当前组件的项目
-      
+
       try {
         const items = await StorageManager.getItemsWithRetry();
         const foundItem = items.find(i => i.id === task.itemId);
@@ -416,12 +419,12 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       } catch (error) {
         console.warn("获取项目信息失败，将使用当前项目作为备用:", error);
       }
-      
+
       // 检查项目平台URL
       if (!currentItem.platformUrl) {
         throw new Error(`项目 ${currentItem.title} 没有设置平台URL，无法执行TMDB导入任务`);
       }
-      
+
       // 构建请求体数据
       const requestData = {
         taskId: task.id,
@@ -432,7 +435,9 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           autoRemoveMarked: task.action.autoRemoveMarked,
           autoConfirm: task.action.autoConfirm !== false,
           autoMarkUploaded: task.action.autoMarkUploaded !== false,
-          removeIqiyiAirDate: task.action.removeIqiyiAirDate === true
+          removeAirDateColumn: task.action.removeAirDateColumn === true,
+          removeRuntimeColumn: task.action.removeRuntimeColumn === true,
+          removeBackdropColumn: task.action.removeBackdropColumn === true
         },
         metadata: {
           tmdbId: currentItem.tmdbId,
@@ -440,13 +445,14 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           platformUrl: currentItem.platformUrl
         }
       };
-      
+
       console.log(`[ScheduledTaskDialog] 执行定时任务: ${task.name}，数据:`, requestData);
-      
+      console.log(`[ScheduledTaskDialog] 列删除选项: removeAirDateColumn=${requestData.action.removeAirDateColumn}, removeRuntimeColumn=${requestData.action.removeRuntimeColumn}, removeBackdropColumn=${requestData.action.removeBackdropColumn}`);
+
       // 添加超时控制
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000); // 3分钟超时
-      
+
       try {
         // 使用POST请求调用API执行任务
         const response = await fetch('/api/execute-scheduled-task', {
@@ -457,10 +463,10 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           body: JSON.stringify(requestData),
           signal: controller.signal
         });
-        
+
         // 清除超时计时器
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) {
           let errorMessage = '';
           try {
@@ -471,13 +477,13 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           }
           throw new Error(errorMessage);
         }
-        
+
         const result = await response.json();
-        
+
         if (!result.success) {
           throw new Error(result.error || result.message || '执行失败，但未返回具体错误信息');
         }
-        
+
         // 更新任务的最后执行时间和状态
         const updatedTask = {
           ...task,
@@ -486,25 +492,25 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           lastRunError: null,
           updatedAt: new Date().toISOString()
         };
-        
+
         await StorageManager.updateScheduledTask(updatedTask);
-        
+
         // 重新加载任务列表
         await loadTasks();
-        
+
         // 构建成功消息
         let successMessage = '任务已成功执行';
-        
+
         // 如果有CSV路径信息，添加到消息中
         if (result.csvPath) {
           successMessage += `，生成了CSV文件: ${result.csvPath}`;
         }
-        
+
         // 如果自动标记了上传的集数，提示用户
         if (result.markedEpisodes && result.markedEpisodes.length > 0) {
           successMessage += `，已标记 ${result.markedEpisodes.length} 个集数为已完成`;
         }
-        
+
         toast({
           title: "执行成功",
           description: successMessage,
@@ -512,18 +518,18 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       } catch (fetchError: any) {
         // 清除超时计时器
         clearTimeout(timeoutId);
-        
+
         // 检查是否是超时错误
         if (fetchError.name === 'AbortError') {
           console.error("[ScheduledTaskDialog] 请求超时");
           throw new Error("请求超时（3分钟），请检查网络连接或稍后再试");
         }
-        
+
         throw fetchError; // 重新抛出以便外层catch处理
       }
     } catch (error: any) {
       console.error("[ScheduledTaskDialog] 执行任务失败:", error);
-      
+
       // 更新任务的失败状态
       try {
         const failedTask = {
@@ -533,24 +539,24 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           lastRunError: error.message || "未知错误",
           updatedAt: new Date().toISOString()
         };
-        
+
         await StorageManager.updateScheduledTask(failedTask);
-        
+
         // 重新加载任务列表
         await loadTasks();
       } catch (updateError) {
         console.error("[ScheduledTaskDialog] 更新任务失败状态时出错:", updateError);
       }
-      
+
       // 提供特定错误消息
       let errorTitle = "执行失败";
       let errorDescription = error.message || "无法执行任务，请检查控制台获取详细错误信息";
-      
+
       if (error.message && error.message.includes("系统中没有可用项目")) {
         errorTitle = "无法执行任务";
         errorDescription = "系统中没有可用项目，请先添加至少一个项目后再试";
       }
-      
+
       toast({
         title: errorTitle,
         description: errorDescription,
@@ -649,45 +655,45 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   // 自动保存功能
   const handleAutoSave = async (taskToSave: ScheduledTask) => {
     if (!taskToSave) return
-    
+
     setIsAutoSaving(true)
     console.log(`[ScheduledTaskDialog] 自动保存任务: ID=${taskToSave.id}, enabled=${taskToSave.enabled}`)
-    
+
     try {
       const updatedTask = {
         ...taskToSave,
         // 不再强制设置为禁用状态，尊重用户通过按钮的选择
         updatedAt: new Date().toISOString()
       }
-      
+
       let success: boolean
-      
+
       if (isAddingTask) {
         success = await StorageManager.addScheduledTask(updatedTask)
       } else {
         success = await StorageManager.updateScheduledTask(updatedTask)
       }
-      
+
       if (success) {
         console.log(`[ScheduledTaskDialog] 自动保存成功: ID=${updatedTask.id}`)
         setHasUnsavedChanges(false)
-        
+
         // 如果任务已启用，重新调度
         if (updatedTask.enabled) {
           await taskScheduler.scheduleTask(updatedTask)
         }
-        
+
         // 显示成功提示
         toast({
           title: "自动保存成功",
           description: updatedTask.enabled ? "任务已启用，将按计划自动执行" : "任务设置已保存",
         })
-        
+
         // 如果提供了onTaskSaved回调，调用它（标记为自动保存）
         if (onTaskSaved) {
           onTaskSaved(updatedTask, true)
         }
-        
+
         // 重新加载任务列表
         await loadTasks()
       } else {
@@ -713,7 +719,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   // 格式化下次执行时间
   const formatNextRunTime = (task: ScheduledTask) => {
     if (!task.nextRun) return "未调度"
-    
+
     try {
       const nextRun = new Date(task.nextRun)
       return nextRun.toLocaleString()
@@ -725,7 +731,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   // 格式化上次执行时间
   const formatLastRunTime = (task: ScheduledTask) => {
     if (!task.lastRun) return "从未执行"
-    
+
     try {
       const lastRun = new Date(task.lastRun)
       return lastRun.toLocaleString()
@@ -750,7 +756,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         </div>
       )
     }
-    
+
     if (tasks.length === 0) {
       return (
         <div className="text-center p-4">
@@ -762,7 +768,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         </div>
       )
     }
-    
+
     return (
       <div className="space-y-2">
         {tasks.map(task => (
@@ -778,10 +784,10 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                     {task.schedule.type === "weekly" ? (
                       task.schedule.secondDayOfWeek !== undefined ? (
                         <>每周{getDayOfWeekName(task.schedule.dayOfWeek || 0)}、{getDayOfWeekName(task.schedule.secondDayOfWeek)} {task.schedule.hour}:
-                        {task.schedule.minute.toString().padStart(2, '0')} (双更)</>
+                          {task.schedule.minute.toString().padStart(2, '0')} (双更)</>
                       ) : (
                         <>每周{getDayOfWeekName(task.schedule.dayOfWeek || 0)} {task.schedule.hour}:
-                        {task.schedule.minute.toString().padStart(2, '0')}</>
+                          {task.schedule.minute.toString().padStart(2, '0')}</>
                       )
                     ) : (
                       <>每天 {task.schedule.hour}:{task.schedule.minute.toString().padStart(2, '0')}</>
@@ -894,7 +900,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             </CardFooter>
           </Card>
         ))}
-        
+
         <div className="flex justify-center">
           <Button size="sm" onClick={handleAddTask}>
             <Plus className="h-3 w-3 mr-1" />
@@ -908,7 +914,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   // 修改任务表单函数，使布局更加紧凑
   const renderTaskForm = () => {
     if (!currentTask) return null
-    
+
     return (
       <div className="space-y-3">
         <div className="space-y-1">
@@ -921,7 +927,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             autoFocus
           />
         </div>
-        
+
         <div className="space-y-3">
           <div className="space-y-1">
             <Label>执行频率</Label>
@@ -1039,8 +1045,8 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             <div className="text-xs text-muted-foreground">
               {currentTask.schedule.type === "weekly"
                 ? (currentTask.schedule.secondDayOfWeek !== undefined
-                    ? `每周${getDayOfWeekName(currentTask.schedule.dayOfWeek || 0)}、${getDayOfWeekName(currentTask.schedule.secondDayOfWeek)} ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`
-                    : `每周${getDayOfWeekName(currentTask.schedule.dayOfWeek || 0)} ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`)
+                  ? `每周${getDayOfWeekName(currentTask.schedule.dayOfWeek || 0)}、${getDayOfWeekName(currentTask.schedule.secondDayOfWeek)} ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`
+                  : `每周${getDayOfWeekName(currentTask.schedule.dayOfWeek || 0)} ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`)
                 : `每天 ${currentTask.schedule.hour.toString().padStart(2, '0')}:${currentTask.schedule.minute.toString().padStart(2, '0')}`
               }
             </div>
@@ -1083,7 +1089,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             </Select>
           </div>
         )}
-        
+
         <div className="border p-4 rounded-lg space-y-4">
           <h3 className="text-sm font-medium text-center border-b pb-2">基本选项</h3>
           <div className="grid grid-cols-2 gap-4">
@@ -1114,7 +1120,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             </div>
           </div>
         </div>
-        
+
         <div className="border p-4 rounded-lg space-y-4">
           <h3 className="text-sm font-medium text-center border-b pb-2">高级选项</h3>
 
@@ -1145,20 +1151,38 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
               />
             </div>
 
-            {item.platformUrl?.includes('iqiyi.com') && (
-              <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
-                <div className="flex-1">
-                  <Label htmlFor="remove-iqiyi-air-date" className="text-sm font-medium">
-                    删除爱奇艺air_date列
-                  </Label>
-                </div>
-                <Switch
-                  id="remove-iqiyi-air-date"
-                  checked={currentTask.action.removeIqiyiAirDate !== false}
-                  onCheckedChange={(checked) => updateTaskField('action.removeIqiyiAirDate', checked)}
-                />
-              </div>
-            )}
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <Label htmlFor="remove-air-date" className="text-sm font-medium">
+                删除播出日期列
+              </Label>
+              <Switch
+                id="remove-air-date"
+                checked={currentTask.action.removeAirDateColumn === true}
+                onCheckedChange={(checked) => updateTaskField('action.removeAirDateColumn', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <Label htmlFor="remove-runtime" className="text-sm font-medium">
+                删除时长/分钟列
+              </Label>
+              <Switch
+                id="remove-runtime"
+                checked={currentTask.action.removeRuntimeColumn === true}
+                onCheckedChange={(checked) => updateTaskField('action.removeRuntimeColumn', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between space-x-3 p-3 bg-muted/30 rounded-md">
+              <Label htmlFor="remove-backdrop" className="text-sm font-medium">
+                删除分集图片URL列
+              </Label>
+              <Switch
+                id="remove-backdrop"
+                checked={currentTask.action.removeBackdropColumn === true}
+                onCheckedChange={(checked) => updateTaskField('action.removeBackdropColumn', checked)}
+              />
+            </div>
           </div>
 
           <div className="space-y-3 p-3 bg-muted/20 rounded-md">
@@ -1250,7 +1274,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             </div>
           </div>
         </div>
-        
+
         {/* 未保存更改提示 */}
         {hasUnsavedChanges && !isAutoSaving && (
           <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 p-2 rounded-md flex items-center">
@@ -1258,12 +1282,12 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
             有未保存的更改
           </div>
         )}
-        
+
         <div className="flex justify-end space-x-2 pt-3">
           <Button variant="outline" onClick={cancelEditTask} disabled={isAutoSaving} size="sm">
             取消
           </Button>
-          
+
           {isAutoSaving ? (
             <Button disabled size="sm">
               <Loader2 className="h-3 w-3 mr-2 animate-spin" />
@@ -1276,7 +1300,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                 onClick={async () => {
                   // 设置为禁用状态并保存
                   if (currentTask) {
-                    const taskWithDisabled = {...currentTask, enabled: false};
+                    const taskWithDisabled = { ...currentTask, enabled: false };
                     setCurrentTask(taskWithDisabled);
                     // 直接调用保存函数，传入更新后的任务
                     await handleSaveTaskWithState(taskWithDisabled);
@@ -1293,7 +1317,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
                 onClick={async () => {
                   // 设置为启用状态并保存
                   if (currentTask) {
-                    const taskWithEnabled = {...currentTask, enabled: true};
+                    const taskWithEnabled = { ...currentTask, enabled: true };
                     setCurrentTask(taskWithEnabled);
                     // 直接调用保存函数，传入更新后的任务
                     await handleSaveTaskWithState(taskWithEnabled);
@@ -1325,11 +1349,11 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
               为此项目创建和管理自动执行的定时任务
             </DialogDescription>
           </DialogHeader>
-          
+
           {isAddingTask || isEditingTask ? renderTaskForm() : renderTaskList()}
         </DialogContent>
       </Dialog>
-      
+
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>

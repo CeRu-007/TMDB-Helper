@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -68,7 +68,9 @@ interface TaskTemplate {
     autoUpload: boolean
     autoRemoveMarked: boolean
     autoConfirm: boolean
-    removeIqiyiAirDate: boolean
+    removeAirDateColumn: boolean
+    removeRuntimeColumn: boolean
+    removeBackdropColumn: boolean
     autoMarkUploaded: boolean
     conflictAction: 'w' | 'a' | 's'
     enableYoukuSpecialHandling: boolean
@@ -86,20 +88,20 @@ export default function EnhancedTaskFormDialog({
   isEditing = false,
   onTaskSaved
 }: EnhancedTaskFormDialogProps) {
-  // 表单状态
+  // 表单状�?
   const [formData, setFormData] = useState<Partial<ScheduledTask>>({})
   const [items, setItems] = useState<TMDBItem[]>([])
   const [templates, setTemplates] = useState<TaskTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<string>("")
   const [activeTab, setActiveTab] = useState("basic")
   
-  // UI状态
+  // UI状�?
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  // 初始化表单数据
+  // 初始化表单数�?
   useEffect(() => {
     if (open) {
       if (task) {
@@ -126,7 +128,9 @@ export default function EnhancedTaskFormDialog({
             autoUpload: true,
             autoRemoveMarked: true,
             autoConfirm: true,
-            removeIqiyiAirDate: item.platformUrl?.includes('iqiyi.com') || false,
+            removeAirDateColumn: false,
+            removeRuntimeColumn: false,
+            removeBackdropColumn: false,
             autoMarkUploaded: true,
             conflictAction: 'w',
             enableYoukuSpecialHandling: true,
@@ -138,7 +142,7 @@ export default function EnhancedTaskFormDialog({
           updatedAt: new Date().toISOString()
         })
       } else {
-        // 创建空任务
+        // 创建空任�?
         setFormData({
           id: uuidv4(),
           name: '',
@@ -154,7 +158,9 @@ export default function EnhancedTaskFormDialog({
             autoUpload: true,
             autoRemoveMarked: true,
             autoConfirm: true,
-            removeIqiyiAirDate: false,
+            removeAirDateColumn: false,
+            removeRuntimeColumn: false,
+            removeBackdropColumn: false,
             autoMarkUploaded: true,
             conflictAction: 'w',
             enableYoukuSpecialHandling: true,
@@ -188,7 +194,7 @@ export default function EnhancedTaskFormDialog({
       console.error("加载数据失败:", error)
       toast({
         title: "加载失败",
-        description: "无法加载项目或模板数据",
+        description: "无法加载项目或模板数�?,
         variant: "destructive"
       })
     } finally {
@@ -253,8 +259,8 @@ export default function EnhancedTaskFormDialog({
     
     setHasUnsavedChanges(true)
     toast({
-      title: "模板已应用",
-      description: `已应用模板: ${template.name}`,
+      title: "模板已应�?,
+      description: `已应用模�? ${template.name}`,
     })
   }
 
@@ -271,11 +277,11 @@ export default function EnhancedTaskFormDialog({
     }
     
     if (!formData.schedule?.hour && formData.schedule?.hour !== 0) {
-      errors['schedule.hour'] = "请设置执行小时"
+      errors['schedule.hour'] = "请设置执行小�?
     }
     
     if (!formData.schedule?.minute && formData.schedule?.minute !== 0) {
-      errors['schedule.minute'] = "请设置执行分钟"
+      errors['schedule.minute'] = "请设置执行分�?
     }
     
     if (formData.schedule?.type === 'weekly' && formData.schedule?.dayOfWeek === undefined) {
@@ -318,7 +324,7 @@ export default function EnhancedTaskFormDialog({
       if (success) {
         toast({
           title: isEditing ? "更新成功" : "创建成功",
-          description: `定时任务已${isEditing ? '更新' : '创建'}`,
+          description: `定时任务�?{isEditing ? '更新' : '创建'}`,
         })
         
         if (onTaskSaved) {
@@ -341,7 +347,7 @@ export default function EnhancedTaskFormDialog({
     }
   }
 
-  // 获取星期几名称
+  // 获取星期几名�?
   const getDayName = (day: number) => {
     const days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
     return days[day] || "未知"
@@ -366,7 +372,7 @@ export default function EnhancedTaskFormDialog({
             <span>{isEditing ? '编辑定时任务' : '创建定时任务'}</span>
             {hasUnsavedChanges && (
               <Badge variant="outline" className="text-orange-600">
-                未保存
+                未保�?
               </Badge>
             )}
           </DialogTitle>
@@ -421,11 +427,11 @@ export default function EnhancedTaskFormDialog({
                                 updateField('action.seasonNumber', maxSeason)
                               }
                               
-                              // 自动设置爱奇艺特殊处理
+                              // 自动设置爱奇艺特殊处�?
                               if (selectedItem.platformUrl?.includes('iqiyi.com')) {
-                                updateField('action.removeIqiyiAirDate', true)
+                                updateField('action.removeAirDateColumn', true)
                               } else {
-                                updateField('action.removeIqiyiAirDate', false)
+                                updateField('action.removeAirDateColumn', false)
                               }
                             }
                           }}
@@ -464,7 +470,7 @@ export default function EnhancedTaskFormDialog({
                               <Info className="h-4 w-4 text-muted-foreground" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>启用后任务将按计划自动执行</p>
+                              <p>启用后任务将按计划自动执�?/p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -475,7 +481,7 @@ export default function EnhancedTaskFormDialog({
                   {/* 模板选择 */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">快速配置</CardTitle>
+                      <CardTitle className="text-base">快速配�?/CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
@@ -514,9 +520,9 @@ export default function EnhancedTaskFormDialog({
                           <div>执行频率: {formData.schedule?.type === 'daily' ? '每天' : '每周'}</div>
                           {formData.schedule?.type === 'weekly' && (
                             <div>
-                              执行日期: {formData.schedule.dayOfWeek !== undefined ? getDayName(formData.schedule.dayOfWeek) : '未设置'}
+                              执行日期: {formData.schedule.dayOfWeek !== undefined ? getDayName(formData.schedule.dayOfWeek) : '未设�?}
                               {formData.schedule.secondDayOfWeek !== undefined && 
-                                ` 和 ${getDayName(formData.schedule.secondDayOfWeek)}`
+                                ` �?${getDayName(formData.schedule.secondDayOfWeek)}`
                               }
                             </div>
                           )}
@@ -524,7 +530,7 @@ export default function EnhancedTaskFormDialog({
                             执行时间: {formData.schedule?.hour?.toString().padStart(2, '0') || '00'}:
                             {formData.schedule?.minute?.toString().padStart(2, '0') || '00'}
                           </div>
-                          <div>季数: 第{formData.action?.seasonNumber || 1}季</div>
+                          <div>季数: 第{formData.action?.seasonNumber || 1}�?/div>
                           <div className="flex flex-wrap gap-1 mt-2">
                             {formData.action?.autoUpload && <Badge variant="outline" className="text-xs">自动上传</Badge>}
                             {formData.action?.autoRemoveMarked && <Badge variant="outline" className="text-xs">自动过滤</Badge>}
@@ -573,7 +579,7 @@ export default function EnhancedTaskFormDialog({
                             onValueChange={(value) => updateField('schedule.dayOfWeek', parseInt(value))}
                           >
                             <SelectTrigger className={validationErrors['schedule.dayOfWeek'] ? 'border-red-500' : ''}>
-                              <SelectValue placeholder="选择星期几" />
+                              <SelectValue placeholder="选择星期�? />
                             </SelectTrigger>
                             <SelectContent>
                               {['周一', '周二', '周三', '周四', '周五', '周六', '周日'].map((day, index) => (
@@ -607,7 +613,7 @@ export default function EnhancedTaskFormDialog({
                                 <Info className="h-4 w-4 text-muted-foreground" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>启用后可设置一周两次更新</p>
+                                <p>启用后可设置一周两次更�?/p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -615,7 +621,7 @@ export default function EnhancedTaskFormDialog({
 
                         {formData.schedule.secondDayOfWeek !== undefined && (
                           <div>
-                            <Label>第二播出日</Label>
+                            <Label>第二播出�?/Label>
                             <Select
                               value={formData.schedule.secondDayOfWeek.toString()}
                               onValueChange={(value) => updateField('schedule.secondDayOfWeek', parseInt(value))}
@@ -750,7 +756,7 @@ export default function EnhancedTaskFormDialog({
                                 <Info className="h-4 w-4 text-muted-foreground" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>导出后自动执行上传操作</p>
+                                <p>导出后自动执行上传操�?/p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -763,7 +769,7 @@ export default function EnhancedTaskFormDialog({
                               checked={formData.action?.autoRemoveMarked || false}
                               onCheckedChange={(checked) => updateField('action.autoRemoveMarked', checked)}
                             />
-                            <Label htmlFor="autoRemoveMarked">自动过滤已完成</Label>
+                            <Label htmlFor="autoRemoveMarked">自动过滤已完�?/Label>
                           </div>
                           <TooltipProvider>
                             <Tooltip>
@@ -771,7 +777,7 @@ export default function EnhancedTaskFormDialog({
                                 <Info className="h-4 w-4 text-muted-foreground" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>自动过滤掉已标记完成的集数</p>
+                                <p>自动过滤掉已标记完成的集�?/p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -805,7 +811,7 @@ export default function EnhancedTaskFormDialog({
                               checked={formData.action?.autoMarkUploaded || false}
                               onCheckedChange={(checked) => updateField('action.autoMarkUploaded', checked)}
                             />
-                            <Label htmlFor="autoMarkUploaded">自动标记已上传</Label>
+                            <Label htmlFor="autoMarkUploaded">自动标记已上�?/Label>
                           </div>
                           <TooltipProvider>
                             <Tooltip>
@@ -813,7 +819,7 @@ export default function EnhancedTaskFormDialog({
                                 <Info className="h-4 w-4 text-muted-foreground" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>上传成功后自动标记集数为已完成</p>
+                                <p>上传成功后自动标记集数为已完�?/p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -831,25 +837,31 @@ export default function EnhancedTaskFormDialog({
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="removeIqiyiAirDate"
-                            checked={formData.action?.removeIqiyiAirDate || false}
-                            onCheckedChange={(checked) => updateField('action.removeIqiyiAirDate', checked)}
-                          />
-                          <Label htmlFor="removeIqiyiAirDate">移除爱奇艺播出日期</Label>
-                        </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>爱奇艺平台特殊处理，移除air_date字段</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="removeAirDateColumn"
+                          checked={formData.action?.removeAirDateColumn || false}
+                          onCheckedChange={(checked) => updateField('action.removeAirDateColumn', checked)}
+                        />
+                        <Label htmlFor="removeAirDateColumn">删除播出日期列</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="removeRuntimeColumn"
+                          checked={formData.action?.removeRuntimeColumn || false}
+                          onCheckedChange={(checked) => updateField('action.removeRuntimeColumn', checked)}
+                        />
+                        <Label htmlFor="removeRuntimeColumn">删除时长/分钟列</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="removeBackdropColumn"
+                          checked={formData.action?.removeBackdropColumn || false}
+                          onCheckedChange={(checked) => updateField('action.removeBackdropColumn', checked)}
+                        />
+                        <Label htmlFor="removeBackdropColumn">删除分集图片URL列</Label>
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -867,7 +879,7 @@ export default function EnhancedTaskFormDialog({
                               <Info className="h-4 w-4 text-muted-foreground" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>启用强化CSV处理器，修复损坏的CSV结构并安全删除剧集</p>
+                              <p>启用强化CSV处理器，修复损坏的CSV结构并安全删除剧�?/p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -901,7 +913,7 @@ export default function EnhancedTaskFormDialog({
                             checked={formData.action?.autoDeleteWhenCompleted || false}
                             onCheckedChange={(checked) => updateField('action.autoDeleteWhenCompleted', checked)}
                           />
-                          <Label htmlFor="autoDeleteWhenCompleted">完结后自动删除</Label>
+                          <Label htmlFor="autoDeleteWhenCompleted">完结后自动删�?/Label>
                         </div>
                         <TooltipProvider>
                           <Tooltip>
@@ -927,7 +939,7 @@ export default function EnhancedTaskFormDialog({
             {hasUnsavedChanges && (
               <div className="flex items-center space-x-1 text-sm text-orange-600">
                 <AlertTriangle className="h-4 w-4" />
-                <span>有未保存的更改</span>
+                <span>有未保存的更�?/span>
               </div>
             )}
           </div>
@@ -958,3 +970,4 @@ export default function EnhancedTaskFormDialog({
     </Dialog>
   )
 }
+

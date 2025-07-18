@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+﻿import { v4 as uuidv4 } from "uuid";
 import { UserManager } from "./user-manager";
 
 // 执行日志条目接口
@@ -42,13 +42,15 @@ export interface ScheduledTask {
   action: {
     seasonNumber: number
     autoUpload: boolean
-    conflictAction: 'w' | 'y' | 'n' // w=覆盖写入, y=是, n=否
+    conflictAction: 'w' | 'y' | 'n' // w=覆盖写入, y=跳过, n=取消
     autoRemoveMarked: boolean
     autoConfirm?: boolean // 新增：自动确认上传（输入y）
-    removeIqiyiAirDate?: boolean // 新增：删除爱奇艺平台的air_date列
+    removeAirDateColumn?: boolean // 删除air_date列
+    removeRuntimeColumn?: boolean // 删除runtime列
+    removeBackdropColumn?: boolean // 删除backdrop列
     autoMarkUploaded?: boolean // 新增：自动标记已上传的集数
     // 用户自定义特殊处理选项
-    enableYoukuSpecialHandling?: boolean  // 优酷平台特殊处理（-1集数）
+    enableYoukuSpecialHandling?: boolean  // 优酷平台特殊处理（+1集数）
     enableTitleCleaning?: boolean         // 词条标题清理功能
     autoDeleteWhenCompleted?: boolean     // 完结后自动删除任务
   }
@@ -81,16 +83,16 @@ export interface TMDBItem {
   networkId?: number // 播出网络ID
   networkName?: string // 播出网络名称
   networkLogoUrl?: string // 播出网络logo URL
-  overview?: string // TMDB简介
+  overview?: string // TMDB简�?
   voteAverage?: number // TMDB评分
   weekday: number // 0-6 (Sunday-Saturday)
-  secondWeekday?: number // 第二播出日（用于一周两更的动漫）
+  secondWeekday?: number // 第二播出日（用于一周两更的动漫�?
   airTime?: string // 播出时间，格式如 "19:00"
   isDailyUpdate?: boolean // 是否为每日更新的内容
-  totalEpisodes?: number // 总集数（所有季的总和）
+  totalEpisodes?: number // 总集数（所有季的总和�?
   manuallySetEpisodes?: boolean // 标记总集数是否为手动设置
   seasons?: Season[] // 多季数据
-  episodes?: Episode[] // 保留兼容性，用于单季或总集数
+  episodes?: Episode[] // 保留兼容性，用于单季或总集�?
   completed: boolean
   status: "ongoing" | "completed"
   platformUrl?: string
@@ -98,7 +100,7 @@ export interface TMDBItem {
   notes?: string
   category?: "anime" | "tv" | "kids" | "variety" | "short" | "movie" // 添加分类字段
   scheduledTasks?: ScheduledTask[] // 添加定时任务
-  blurIntensity?: 'light' | 'medium' | 'heavy' // 背景图模糊强度
+  blurIntensity?: 'light' | 'medium' | 'heavy' // 背景图模糊强�?
   rating?: number // 用户评分
   createdAt: string
   updatedAt: string
@@ -106,25 +108,25 @@ export interface TMDBItem {
 
 export class StorageManager {
   private static readonly STORAGE_KEY = "tmdb_helper_items"
-  private static readonly SCHEDULED_TASKS_KEY = "tmdb_helper_scheduled_tasks" // 添加定时任务存储键
+  private static readonly SCHEDULED_TASKS_KEY = "tmdb_helper_scheduled_tasks" // 添加定时任务存储�?
   private static readonly MAX_RETRIES = 3
   private static readonly RETRY_DELAY = 300 // 毫秒
   private static readonly USE_FILE_STORAGE = true // 控制是否使用文件存储
   private static readonly API_BASE_URL = "/api/storage"
 
   /**
-   * 检查当前环境是否为客户端
+   * 检查当前环境是否为客户�?
    */
   static isClient(): boolean {
     return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
   }
 
   /**
-   * 检查开发环境状态
+   * 检查开发环境状�?
    */
   private static checkDevelopmentEnvironment(): void {
     if (this.isClient()) {
-      console.log(`[StorageManager] 环境检查:`, {
+      console.log(`[StorageManager] 环境检�?`, {
         userAgent: navigator.userAgent,
         location: window.location.href,
         protocol: window.location.protocol,
@@ -159,9 +161,9 @@ export class StorageManager {
    */
   private static async makeApiCall(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 增加到15秒超时
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 增加�?5秒超�?
 
-    // 获取用户ID并添加到请求头
+    // 获取用户ID并添加到请求�?
     const userId = this.isClient() ? UserManager.getUserId() : null;
 
     console.log(`[StorageManager] 发起API请求: ${url} (用户: ${userId})`);
@@ -210,7 +212,7 @@ export class StorageManager {
   }
 
   /**
-   * 降级到localStorage的方法
+   * 降级到localStorage的方�?
    */
   private static fallbackToLocalStorage(): TMDBItem[] {
     console.log('[StorageManager] 尝试从localStorage获取数据作为降级方案');
@@ -251,7 +253,7 @@ export class StorageManager {
    * 带重试机制的获取items方法
    */
   static async getItemsWithRetry(retries = this.MAX_RETRIES): Promise<TMDBItem[]> {
-    // 首次调用时进行环境检查
+    // 首次调用时进行环境检�?
     if (retries === this.MAX_RETRIES) {
       this.checkDevelopmentEnvironment();
     }
@@ -259,7 +261,7 @@ export class StorageManager {
     // 如果使用文件存储，则调用API
     if (this.USE_FILE_STORAGE) {
       try {
-        console.log(`[StorageManager] 尝试获取数据，剩余重试次数: ${retries}`);
+        console.log(`[StorageManager] 尝试获取数据，剩余重试次�? ${retries}`);
 
         const response = await this.makeApiCall(`${this.API_BASE_URL}/items`, {
           method: 'GET',
@@ -276,7 +278,7 @@ export class StorageManager {
         console.error('[StorageManager] 从API获取数据失败:', error);
 
         if (retries > 0) {
-          console.log(`[StorageManager] 重试获取数据... (剩余${retries}次尝试)`);
+          console.log(`[StorageManager] 重试获取数据... (剩余${retries}次尝�?`);
           await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
           return this.getItemsWithRetry(retries - 1);
         }
@@ -332,7 +334,7 @@ export class StorageManager {
   }
 
   /**
-   * 同步获取所有项目
+   * 同步获取所有项�?
    */
   static getItems(): TMDBItem[] {
     // 如果使用文件存储但在客户端调用同步方法，返回空数组并警告
@@ -361,7 +363,7 @@ export class StorageManager {
   }
 
   /**
-   * 添加新项目
+   * 添加新项�?
    */
   static async addItem(item: TMDBItem): Promise<boolean> {
     // 使用文件存储
@@ -451,9 +453,9 @@ export class StorageManager {
    * 删除项目
    */
   static async deleteItem(id: string): Promise<boolean> {
-    console.log(`[StorageManager] 开始删除项目: ID=${id}`);
+    console.log(`[StorageManager] 开始删除项�? ID=${id}`);
 
-    // 首先检查是否有关联的定时任务
+    // 首先检查是否有关联的定时任�?
     const relatedTasks = await this.getRelatedScheduledTasks(id);
     if (relatedTasks.length > 0) {
       console.log(`[StorageManager] 发现 ${relatedTasks.length} 个关联的定时任务，将一并删除`);
@@ -461,7 +463,7 @@ export class StorageManager {
       // 删除所有关联的定时任务
       for (const task of relatedTasks) {
         await this.deleteScheduledTask(task.id);
-        console.log(`[StorageManager] 已删除关联任务: ${task.name} (ID: ${task.id})`);
+        console.log(`[StorageManager] 已删除关联任�? ${task.name} (ID: ${task.id})`);
       }
     }
 
@@ -503,7 +505,7 @@ export class StorageManager {
   }
 
   /**
-   * 获取与指定项目ID关联的所有定时任务
+   * 获取与指定项目ID关联的所有定时任�?
    */
   static async getRelatedScheduledTasks(itemId: string): Promise<ScheduledTask[]> {
     try {
@@ -537,7 +539,7 @@ export class StorageManager {
       let deletedTasks = 0;
 
       for (const task of tasks) {
-        // 检查任务是否有有效的项目关联
+        // 检查任务是否有有效的项目关�?
         const relatedItem = items.find(item => item.id === task.itemId);
 
         if (!relatedItem) {
@@ -548,7 +550,7 @@ export class StorageManager {
           const fixResult = await this.attemptToFixTaskAssociation(task, items);
 
           if (fixResult.success && fixResult.newItemId) {
-            // 更新任务的关联
+            // 更新任务的关�?
             const updatedTask = {
               ...task,
               itemId: fixResult.newItemId,
@@ -559,10 +561,10 @@ export class StorageManager {
 
             await this.updateScheduledTask(updatedTask);
             fixedTasks++;
-            details.push(`修复任务 "${task.name}": 重新关联到项目 "${fixResult.newItemTitle}" (ID: ${fixResult.newItemId})`);
+            details.push(`修复任务 "${task.name}": 重新关联到项�?"${fixResult.newItemTitle}" (ID: ${fixResult.newItemId})`);
             console.log(`[StorageManager] 成功修复任务: ${task.name} -> ${fixResult.newItemTitle}`);
           } else {
-            // 无法修复，删除任务
+            // 无法修复，删除任�?
             await this.deleteScheduledTask(task.id);
             deletedTasks++;
             details.push(`删除无效任务 "${task.name}": ${fixResult.reason || '无法找到合适的关联项目'}`);
@@ -686,7 +688,7 @@ export class StorageManager {
         if (titleSimilarity > 0.8) {
           score += Math.round(titleSimilarity * 70);
           if (matchType === 'unknown') matchType = 'title_fuzzy';
-          reasons.push(`标题模糊匹配: "${task.itemTitle}" ≈ "${item.title}" (${Math.round(titleSimilarity * 100)}%)`);
+          reasons.push(`标题模糊匹配: "${task.itemTitle}" 与 "${item.title}" (${Math.round(titleSimilarity * 100)}%)`);
         }
       }
 
@@ -697,11 +699,11 @@ export class StorageManager {
         if (nameSimilarity > 0.7) {
           score += Math.round(nameSimilarity * 50);
           if (matchType === 'unknown') matchType = 'task_name';
-          reasons.push(`任务名称匹配: "${taskNameClean}" ≈ "${item.title}" (${Math.round(nameSimilarity * 100)}%)`);
+          reasons.push(`任务名称匹配: "${taskNameClean}" 与 "${item.title}" (${Math.round(nameSimilarity * 100)}%)`);
         }
       }
 
-      // 5. 创建时间接近度
+      // 5. 创建时间接近�?
       try {
         const taskTime = new Date(task.createdAt).getTime();
         const itemTime = new Date(item.createdAt).getTime();
@@ -724,7 +726,7 @@ export class StorageManager {
       }
 
       // 7. 平台URL匹配
-      if (item.platformUrl && task.action.removeIqiyiAirDate && item.platformUrl.includes('iqiyi.com')) {
+      if (item.platformUrl && task.action.removeAirDateColumn && item.platformUrl.includes('iqiyi.com')) {
         score += 15;
         reasons.push('平台匹配: 爱奇艺');
       }
@@ -739,11 +741,11 @@ export class StorageManager {
       }
     });
 
-    // 按得分排序
+    // 按得分排�?
     candidates.sort((a, b) => b.score - a.score);
 
     if (candidates.length === 0) {
-      // 如果没有好的匹配，使用最近创建的项目作为备选
+      // 如果没有好的匹配，使用最近创建的项目作为备�?
       const recentItems = [...items].sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
@@ -753,7 +755,7 @@ export class StorageManager {
           item: recentItems[0],
           confidence: 0.3,
           matchType: 'fallback_recent',
-          reason: `使用最近创建的项目作为备选: ${recentItems[0].title}`
+          reason: `使用最近创建的项目作为备�? ${recentItems[0].title}`
         };
       }
       
@@ -772,7 +774,7 @@ export class StorageManager {
   }
 
   /**
-   * 数据完整性验证
+   * 数据完整性验�?
    */
   private static validateTaskData(task: ScheduledTask): {
     isValid: boolean;
@@ -782,7 +784,7 @@ export class StorageManager {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    // 必需字段检查
+    // 必需字段检�?
     if (!task.id) errors.push('任务ID不能为空');
     if (!task.name) errors.push('任务名称不能为空');
     if (!task.itemId) errors.push('关联项目ID不能为空');
@@ -790,38 +792,38 @@ export class StorageManager {
     if (!task.schedule) errors.push('调度配置不能为空');
     if (!task.action) errors.push('执行动作不能为空');
 
-    // ID格式检查
+    // ID格式检�?
     if (task.id && this.isProblematicId(task.id)) {
-      warnings.push(`任务ID格式可能有问题: ${task.id}`);
+      warnings.push(`任务ID格式可能有问�? ${task.id}`);
     }
     if (task.itemId && this.isProblematicId(task.itemId)) {
-      warnings.push(`项目ID格式可能有问题: ${task.itemId}`);
+      warnings.push(`项目ID格式可能有问�? ${task.itemId}`);
     }
 
-    // 调度配置检查
+    // 调度配置检�?
     if (task.schedule) {
       if (!['daily', 'weekly'].includes(task.schedule.type)) {
-        errors.push('调度类型必须是 daily 或 weekly');
+        errors.push('调度类型必须为daily或weekly');
       }
       if (typeof task.schedule.hour !== 'number' || task.schedule.hour < 0 || task.schedule.hour > 23) {
-        errors.push('小时必须是0-23之间的数字');
+        errors.push('小时必须在0-23之间的数字');
       }
       if (typeof task.schedule.minute !== 'number' || task.schedule.minute < 0 || task.schedule.minute > 59) {
-        errors.push('分钟必须是0-59之间的数字');
+        errors.push('分钟必须在0-59之间的数字');
       }
       if (task.schedule.type === 'weekly' && (typeof task.schedule.dayOfWeek !== 'number' || task.schedule.dayOfWeek < 0 || task.schedule.dayOfWeek > 6)) {
         errors.push('星期几必须是0-6之间的数字');
       }
     }
 
-    // 执行动作检查
+    // 执行动作检�?
     if (task.action) {
       if (typeof task.action.seasonNumber !== 'number' || task.action.seasonNumber < 1) {
-        errors.push('季数必须是大于0的数字');
+        errors.push('季数必须是大于1的数字');
       }
     }
 
-    // 时间戳检查
+    // 时间戳检�?
     if (task.createdAt && isNaN(new Date(task.createdAt).getTime())) {
       warnings.push('创建时间格式无效');
     }
@@ -840,7 +842,7 @@ export class StorageManager {
   }
 
   /**
-   * 尝试修复单个任务的关联 - 增强版
+   * 尝试修复单个任务的关�?- 增强�?
    */
   private static async attemptToFixTaskAssociation(
     task: ScheduledTask,
@@ -874,7 +876,7 @@ export class StorageManager {
     const matchResult = this.findBestItemMatch(task, items);
     
     if (matchResult.item && matchResult.confidence > 0.5) {
-      console.log(`[StorageManager] 找到高置信度匹配: ${matchResult.item.title} (置信度: ${Math.round(matchResult.confidence * 100)}%)`);
+      console.log(`[StorageManager] 找到高置信度匹配: ${matchResult.item.title} (置信�? ${Math.round(matchResult.confidence * 100)}%)`);
       return {
         success: true,
         newItemId: matchResult.item.id,
@@ -884,7 +886,7 @@ export class StorageManager {
         confidence: matchResult.confidence
       };
     } else if (matchResult.item && matchResult.confidence > 0.2) {
-      console.log(`[StorageManager] 找到低置信度匹配: ${matchResult.item.title} (置信度: ${Math.round(matchResult.confidence * 100)}%)`);
+      console.log(`[StorageManager] 找到低置信度匹配: ${matchResult.item.title} (置信�? ${Math.round(matchResult.confidence * 100)}%)`);
       return {
         success: true,
         newItemId: matchResult.item.id,
@@ -977,9 +979,9 @@ export class StorageManager {
       let version: string | undefined;
       let exportDate: string | undefined;
 
-      // 检查数据格式
+      // 检查数据格�?
       if (Array.isArray(parsedData)) {
-        // 旧格式：直接是项目数组
+        // 旧格式：直接是项目数�?
         console.log("检测到旧格式数据（项目数组）");
         items = parsedData;
       } else if (parsedData && typeof parsedData === 'object') {
@@ -1016,13 +1018,13 @@ export class StorageManager {
       // 验证项目数据
       console.log(`开始验证 ${items.length} 个项目`);
       const validItems = items.filter((item, index) => {
-        // 基本结构检查
+        // 基本结构检�?
         if (!item || typeof item !== 'object') {
           console.warn(`项目 ${index} 不是有效对象:`, item);
           return false;
         }
 
-        // 必需字段检查
+        // 必需字段检�?
         const requiredFields = ['id', 'title', 'mediaType', 'tmdbId'];
         for (const field of requiredFields) {
           if (!item[field]) {
@@ -1036,7 +1038,7 @@ export class StorageManager {
           }
         }
 
-        // mediaType值检查
+        // mediaType值检�?
         if (!['movie', 'tv'].includes(item.mediaType)) {
           console.warn(`项目 ${index} mediaType无效: ${item.mediaType}`, item);
           return false;
@@ -1045,16 +1047,16 @@ export class StorageManager {
         return true;
       });
 
-      console.log(`验证完成：${validItems.length}/${items.length} 个项目有效`);
+      console.log(`验证完成�?{validItems.length}/${items.length} 个项目有效`);
 
       // 验证任务数据
       const validTasks = tasks.filter(task => {
-        // 基本结构检查
+        // 基本结构检�?
         if (!task || typeof task !== 'object') {
           return false;
         }
 
-        // 必需字段检查（更宽松的验证）
+        // 必需字段检查（更宽松的验证�?
         if (!task.itemId || !task.name) {
           console.warn(`Task missing required fields (itemId or name)`, task);
           return false;
@@ -1127,12 +1129,12 @@ export class StorageManager {
     const stats = validation.stats!;
 
     try {
-      console.log(`开始导入 ${stats.validItemCount} 个项目和 ${stats.validTaskCount} 个任务`);
+      console.log(`开始导�?${stats.validItemCount} 个项目和 ${stats.validTaskCount} 个任务`);
 
       // 导入项目数据
       if (this.USE_FILE_STORAGE) {
         try {
-          // 发送完整的导出格式给服务器，让服务器端处理格式兼容性
+          // 发送完整的导出格式给服务器，让服务器端处理格式兼容�?
           const serverData = {
             items,
             tasks: [], // 服务器端暂时不处理任务，任务仍然保存在客户端
@@ -1170,9 +1172,9 @@ export class StorageManager {
       // 导入定时任务
       let tasksImported = 0;
       if (tasks.length > 0) {
-        console.log(`开始导入 ${tasks.length} 个定时任务`);
+        console.log(`开始导�?${tasks.length} 个定时任务`);
 
-        // 规范化任务
+        // 规范化任�?
         const normalizedTasks = tasks.map(task => this.normalizeTask(task));
 
         try {
@@ -1181,7 +1183,7 @@ export class StorageManager {
           console.log(`${tasksImported} 个任务保存到localStorage成功`);
         } catch (error) {
           console.error("保存任务到localStorage失败:", error);
-          // 任务导入失败不应该影响整个导入过程
+          // 任务导入失败不应该影响整个导入过�?
         }
       }
 
@@ -1205,42 +1207,132 @@ export class StorageManager {
   }
 
   /**
-   * 获取所有定时任务
+   * 获取所有定时任务（增强版，包含详细错误处理）
    */
   static async getScheduledTasks(): Promise<ScheduledTask[]> {
-    if (!this.isClient() || !this.isStorageAvailable()) {
-      console.warn("Not in client environment or storage not available");
+    // 环境检查
+    if (!this.isClient()) {
+      console.warn("[StorageManager] getScheduledTasks: 不在客户端环境中");
       return [];
     }
-    
+
+    if (!this.isStorageAvailable()) {
+      console.error("[StorageManager] getScheduledTasks: localStorage不可用");
+      throw new Error("localStorage不可用，无法读取定时任务数据");
+    }
+
     try {
+      console.log(`[StorageManager] 开始读取定时任务，存储键: ${this.SCHEDULED_TASKS_KEY}`);
+
       const data = localStorage.getItem(this.SCHEDULED_TASKS_KEY);
       let tasks: ScheduledTask[] = [];
-      
-      if (data) {
+
+      if (data === null) {
+        console.log("[StorageManager] 定时任务数据为空，返回空数组");
+        return [];
+      }
+
+      if (data === '') {
+        console.warn("[StorageManager] 定时任务数据为空字符串，返回空数组");
+        return [];
+      }
+
+      try {
+        tasks = JSON.parse(data);
+
+        // 验证数据格式
+        if (!Array.isArray(tasks)) {
+          console.error("[StorageManager] 定时任务数据格式错误：不是数组", typeof tasks);
+          throw new Error("定时任务数据格式错误：期望数组格式");
+        }
+
+        console.log(`[StorageManager] 成功解析定时任务: 找到 ${tasks.length} 个任务`);
+      } catch (parseError) {
+        console.error("[StorageManager] 解析定时任务数据失败:", parseError);
+        console.error("[StorageManager] 原始数据:", data.substring(0, 200) + (data.length > 200 ? '...' : ''));
+
+        // 尝试修复损坏的数据
         try {
-          tasks = JSON.parse(data);
-          console.log(`[StorageManager] 读取定时任务: 找到 ${tasks.length} 个任务`);
-        } catch (parseError) {
-          console.error("解析定时任务数据失败:", parseError);
-          tasks = [];
+          // 备份损坏的数据
+          const backupKey = `${this.SCHEDULED_TASKS_KEY}_corrupted_${Date.now()}`;
+          localStorage.setItem(backupKey, data);
+          console.log(`[StorageManager] 已备份损坏的数据到: ${backupKey}`);
+
+          // 清除损坏的数据
+          localStorage.removeItem(this.SCHEDULED_TASKS_KEY);
+          console.log("[StorageManager] 已清除损坏的定时任务数据");
+
+          throw new Error(`定时任务数据损坏，已备份并清除。原始错误: ${parseError instanceof Error ? parseError.message : '未知错误'}`);
+        } catch (backupError) {
+          console.error("[StorageManager] 备份损坏数据失败:", backupError);
+          throw new Error("定时任务数据损坏且无法备份");
         }
       }
-      
+
       // 确保所有任务都有必要的字段
-      const normalizedTasks = tasks.map(task => this.normalizeTask(task));
-      
-      // 检查是否需要自动修复
-      const needsAutoFix = JSON.stringify(normalizedTasks) !== JSON.stringify(tasks);
-      if (needsAutoFix) {
-        console.log("[StorageManager] 任务数据需要标准化，正在保存修复后的数据");
-        localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(normalizedTasks));
+      // 验证和规范化任务数据
+      const normalizedTasks: ScheduledTask[] = [];
+      const invalidTasks: any[] = [];
+
+      for (let i = 0; i < tasks.length; i++) {
+        try {
+          const task = tasks[i];
+
+          // 基本字段验证
+          if (!task || typeof task !== 'object') {
+            invalidTasks.push({ index: i, task, reason: '不是有效对象' });
+            continue;
+          }
+
+          if (!task.id || typeof task.id !== 'string') {
+            invalidTasks.push({ index: i, task, reason: '缺少有效的ID' });
+            continue;
+          }
+
+          // 规范化任务
+          const normalizedTask = this.normalizeTask(task);
+          normalizedTasks.push(normalizedTask);
+
+        } catch (taskError) {
+          console.error(`[StorageManager] 处理任务 ${i} 时出错:`, taskError);
+          invalidTasks.push({ index: i, task: tasks[i], reason: taskError instanceof Error ? taskError.message : '未知错误' });
+        }
       }
-      
+
+      // 报告无效任务
+      if (invalidTasks.length > 0) {
+        console.warn(`[StorageManager] 发现 ${invalidTasks.length} 个无效任务:`, invalidTasks);
+      }
+
+      // 检查是否需要自动修复
+      const needsAutoFix = normalizedTasks.length !== tasks.length ||
+                          JSON.stringify(normalizedTasks) !== JSON.stringify(tasks);
+
+      if (needsAutoFix) {
+        console.log(`[StorageManager] 检测到任务数据需要修复，正在自动修复...`);
+        console.log(`[StorageManager] 原始任务数: ${tasks.length}, 有效任务数: ${normalizedTasks.length}`);
+
+        try {
+          localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(normalizedTasks));
+          console.log(`[StorageManager] 任务数据修复完成`);
+        } catch (saveError) {
+          console.error("[StorageManager] 保存修复后的任务数据失败:", saveError);
+          // 不抛出错误，继续返回数据
+        }
+      }
+
+      console.log(`[StorageManager] 成功获取 ${normalizedTasks.length} 个有效定时任务`);
       return normalizedTasks;
+
     } catch (error) {
-      console.error("Failed to load scheduled tasks from storage:", error);
-      return [];
+      console.error("[StorageManager] 获取定时任务失败:", error);
+
+      // 提供更详细的错误信息
+      if (error instanceof Error) {
+        throw new Error(`读取定时任务数据失败: ${error.message}`);
+      } else {
+        throw new Error("读取定时任务数据失败: 未知错误");
+      }
     }
   }
 
@@ -1269,7 +1361,9 @@ export class StorageManager {
         autoRemoveMarked: task.action?.autoRemoveMarked ?? true,
         autoConfirm: task.action?.autoConfirm !== false,
         autoMarkUploaded: task.action?.autoMarkUploaded !== false,
-        removeIqiyiAirDate: task.action?.removeIqiyiAirDate === true
+        removeAirDateColumn: task.action?.removeAirDateColumn === true,
+        removeRuntimeColumn: task.action?.removeRuntimeColumn === true,
+        removeBackdropColumn: task.action?.removeBackdropColumn === true
       },
       enabled: task.enabled ?? false,
       lastRun: task.lastRun || undefined,
@@ -1280,7 +1374,7 @@ export class StorageManager {
       updatedAt: task.updatedAt || new Date().toISOString()
     };
     
-    // 增强的项目ID验证（修复：允许时间戳格式的ID）
+    // 增强的项目ID验证（修复：允许时间戳格式的ID�?
     if (!normalized.itemId || normalized.itemId.trim() === '') {
       console.error("[StorageManager] 错误: 任务缺少项目ID", task);
       normalized.lastRunStatus = "failed";
@@ -1303,7 +1397,7 @@ export class StorageManager {
   }
 
   /**
-   * 添加定时任务，自动关联项目属性
+   * 添加定时任务，自动关联项目属�?
    */
   static async addScheduledTask(task: ScheduledTask): Promise<boolean> {
     if (!this.isClient() || !this.isStorageAvailable()) {
@@ -1312,7 +1406,7 @@ export class StorageManager {
     }
     
     try {
-      // 验证任务的必要字段
+      // 验证任务的必要字�?
       if (!task.id) {
         console.error("添加定时任务失败: 缺少必要字段 id");
         return false;
@@ -1320,12 +1414,12 @@ export class StorageManager {
       
       console.log(`[StorageManager] 添加定时任务: ID=${task.id}, 项目ID=${task.itemId}, 名称=${task.name}`);
       
-      // 规范化任务对象
+      // 规范化任务对�?
       const normalizedTask = this.normalizeTask(task);
       
       // 仅在任务未提供完整项目信息时才从项目列表查找
       if (!normalizedTask.itemTitle || !normalizedTask.itemTmdbId) {
-        // 确保项目相关属性正确
+        // 确保项目相关属性正�?
         const items = await this.getItemsWithRetry();
         const relatedItem = items.find(item => item.id === normalizedTask.itemId);
         
@@ -1335,25 +1429,25 @@ export class StorageManager {
           if (!normalizedTask.itemTmdbId) normalizedTask.itemTmdbId = relatedItem.tmdbId;
           console.log(`[StorageManager] 补充项目信息: ${relatedItem.title} (ID: ${relatedItem.id})`);
         } else {
-          console.warn(`[StorageManager] 添加定时任务警告: ID为 ${normalizedTask.itemId} 的项目不存在，但仍将保存任务`);
+          console.warn(`[StorageManager] 添加定时任务警告: ID�?${normalizedTask.itemId} 的项目不存在，但仍将保存任务`);
         }
       } else {
-        console.log(`[StorageManager] 任务已包含完整项目信息: ${normalizedTask.itemTitle} (ID: ${normalizedTask.itemId})`);
+        console.log(`[StorageManager] 任务已包含完整项目信�? ${normalizedTask.itemTitle} (ID: ${normalizedTask.itemId})`);
       }
       
       const tasks = await this.getScheduledTasks();
       
-      // 检查是否已存在相同ID的任务
+      // 检查是否已存在相同ID的任�?
       const taskExists = tasks.some(t => t.id === normalizedTask.id);
       if (taskExists) {
-        console.warn(`[StorageManager] 添加定时任务警告: ID为 ${normalizedTask.id} 的任务已存在，将更新现有任务`);
+        console.warn(`[StorageManager] 添加定时任务警告: ID�?${normalizedTask.id} 的任务已存在，将更新现有任务`);
         return this.updateScheduledTask(normalizedTask);
       }
       
       tasks.push(normalizedTask);
       localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(tasks));
       
-      // 验证任务是否已成功保存
+      // 验证任务是否已成功保�?
       const savedTasks = await this.getScheduledTasks();
       const taskSaved = savedTasks.some(t => t.id === normalizedTask.id);
       
@@ -1371,7 +1465,7 @@ export class StorageManager {
   }
 
   /**
-   * 更新定时任务，自动更新项目关联属性
+   * 更新定时任务，自动更新项目关联属�?
    */
   static async updateScheduledTask(updatedTask: ScheduledTask): Promise<boolean> {
     if (!this.isClient() || !this.isStorageAvailable()) {
@@ -1380,7 +1474,7 @@ export class StorageManager {
     }
     
     try {
-      // 验证任务的必要字段
+      // 验证任务的必要字�?
       if (!updatedTask.id) {
         console.error("更新定时任务失败: 缺少必要字段 id");
         return false;
@@ -1388,12 +1482,12 @@ export class StorageManager {
       
       console.log(`[StorageManager] 更新定时任务: ID=${updatedTask.id}, 项目ID=${updatedTask.itemId}, 名称=${updatedTask.name}`);
       
-      // 规范化任务对象
+      // 规范化任务对�?
       const normalizedTask = this.normalizeTask(updatedTask);
       
       // 仅在任务未提供完整项目信息时才从项目列表查找
       if (!normalizedTask.itemTitle || !normalizedTask.itemTmdbId) {
-        // 确保项目相关属性正确
+        // 确保项目相关属性正�?
         const items = await this.getItemsWithRetry();
         const relatedItem = items.find(item => item.id === normalizedTask.itemId);
         
@@ -1403,10 +1497,10 @@ export class StorageManager {
           if (!normalizedTask.itemTmdbId) normalizedTask.itemTmdbId = relatedItem.tmdbId;
           console.log(`[StorageManager] 补充项目信息: ${relatedItem.title} (ID: ${relatedItem.id})`);
         } else {
-          console.warn(`[StorageManager] 更新定时任务警告: ID为 ${normalizedTask.itemId} 的项目不存在，但仍将更新任务`);
+          console.warn(`[StorageManager] 更新定时任务警告: ID�?${normalizedTask.itemId} 的项目不存在，但仍将更新任务`);
         }
       } else {
-        console.log(`[StorageManager] 任务已包含完整项目信息: ${normalizedTask.itemTitle} (ID: ${normalizedTask.itemId})`);
+        console.log(`[StorageManager] 任务已包含完整项目信�? ${normalizedTask.itemTitle} (ID: ${normalizedTask.itemId})`);
       }
       
       // 更新updatedAt字段
@@ -1414,10 +1508,10 @@ export class StorageManager {
       
       const tasks = await this.getScheduledTasks();
       
-      // 检查任务是否存在
+      // 检查任务是否存�?
       const taskExists = tasks.some(t => t.id === normalizedTask.id);
       if (!taskExists) {
-        console.warn(`[StorageManager] 更新定时任务警告: ID为 ${normalizedTask.id} 的任务不存在，将添加新任务`);
+        console.warn(`[StorageManager] 更新定时任务警告: ID�?${normalizedTask.id} 的任务不存在，将添加新任务`);
         return this.addScheduledTask(normalizedTask);
       }
       
@@ -1426,7 +1520,7 @@ export class StorageManager {
       );
       localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(updatedTasks));
       
-      // 验证任务是否已成功更新
+      // 验证任务是否已成功更�?
       const savedTasks = await this.getScheduledTasks();
       const taskUpdated = savedTasks.some(t => 
         t.id === normalizedTask.id && t.updatedAt === normalizedTask.updatedAt
@@ -1460,7 +1554,7 @@ export class StorageManager {
       const filteredTasks = tasks.filter(task => task.id !== id);
       localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(filteredTasks));
       
-      // 验证任务是否已成功删除
+      // 验证任务是否已成功删�?
       const savedTasks = await this.getScheduledTasks();
       const taskDeleted = !savedTasks.some(t => t.id === id);
       
@@ -1478,7 +1572,7 @@ export class StorageManager {
   }
 
   /**
-   * 强制刷新定时任务列表，修复无效项目关联
+   * 强制刷新定时任务列表，修复无效项目关�?
    */
   static async forceRefreshScheduledTasks(): Promise<ScheduledTask[]> {
     if (!this.isClient() || !this.isStorageAvailable()) {
@@ -1491,12 +1585,12 @@ export class StorageManager {
       const tasks = await this.getScheduledTasks();
       const items = await this.getItemsWithRetry();
       
-      console.log(`[StorageManager] 强制刷新定时任务: 开始检查 ${tasks.length} 个任务的有效性`);
+      console.log(`[StorageManager] 强制刷新定时任务: 开始检�?${tasks.length} 个任务的有效性`);
       
-      // 修复所有任务
+      // 修复所有任�?
       let changed = false;
       const fixedTasks = tasks.map(task => {
-        // 检查任务是否已关联到有效项目
+        // 检查任务是否已关联到有效项�?
         const relatedItem = items.find(item => item.id === task.itemId);
         
         if (relatedItem) {
@@ -1514,14 +1608,14 @@ export class StorageManager {
           return task;
         }
         
-        // 如果没有关联到有效项目，尝试通过项目标题、TMDB ID或项目名称匹配
+        // 如果没有关联到有效项目，尝试通过项目标题、TMDB ID或项目名称匹�?
         console.log(`[StorageManager] 任务 ${task.id} (${task.name}) 关联的项目ID ${task.itemId} 无效，尝试修复`);
         
         // 1. 尝试通过TMDB ID匹配
         if (task.itemTmdbId) {
           const matchByTmdbId = items.find(item => item.tmdbId === task.itemTmdbId);
           if (matchByTmdbId) {
-            console.log(`[StorageManager] 通过TMDB ID匹配到项目: ${matchByTmdbId.title}`);
+            console.log(`[StorageManager] 通过TMDB ID匹配到项�? ${matchByTmdbId.title}`);
             changed = true;
             return {
               ...task,
@@ -1541,7 +1635,7 @@ export class StorageManager {
           );
           
           if (matchByTitle) {
-            console.log(`[StorageManager] 通过项目标题匹配到项目: ${matchByTitle.title}`);
+            console.log(`[StorageManager] 通过项目标题匹配到项�? ${matchByTitle.title}`);
             changed = true;
             return {
               ...task,
@@ -1553,7 +1647,7 @@ export class StorageManager {
           }
         }
         
-        // 3. 尝试通过任务名称匹配（去除"定时任务"后缀）
+        // 3. 尝试通过任务名称匹配（去�?定时任务"后缀�?
         const taskTitle = task.name.replace(/\s*定时任务$/, '');
         const matchByTaskName = items.find(item => 
           item.title === taskTitle ||
@@ -1562,7 +1656,7 @@ export class StorageManager {
         );
         
         if (matchByTaskName) {
-          console.log(`[StorageManager] 通过任务名称匹配到项目: ${matchByTaskName.title}`);
+          console.log(`[StorageManager] 通过任务名称匹配到项�? ${matchByTaskName.title}`);
           changed = true;
           return {
             ...task,
@@ -1573,15 +1667,15 @@ export class StorageManager {
           };
         }
         
-        // 如果无法修复，保留原始任务
-        console.warn(`[StorageManager] 无法为任务 ${task.id} (${task.name}) 找到匹配项目`);
+        // 如果无法修复，保留原始任�?
+        console.warn(`[StorageManager] 无法为任�?${task.id} (${task.name}) 找到匹配项目`);
         return task;
       });
       
-      // 如果有任务被修改，保存更新后的任务列表
+      // 如果有任务被修改，保存更新后的任务列�?
       if (changed) {
         localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(fixedTasks));
-        console.log(`[StorageManager] 已保存修复后的任务列表，共 ${fixedTasks.length} 个任务`);
+        console.log(`[StorageManager] 已保存修复后的任务列表，�?${fixedTasks.length} 个任务`);
       } else {
         console.log(`[StorageManager] 所有任务都有效，无需修复`);
       }
@@ -1594,7 +1688,7 @@ export class StorageManager {
   }
 
   /**
-   * 获取指定项目的所有定时任务
+   * 获取指定项目的所有定时任�?
    */
   static async getItemScheduledTasks(itemId: string): Promise<ScheduledTask[]> {
     const allTasks = await this.getScheduledTasks();
@@ -1616,11 +1710,11 @@ export class StorageManager {
   }
   
   /**
-   * 检查系统中是否有任何项目可用
+   * 检查系统中是否有任何项目可�?
    */
   static async hasAnyItems(): Promise<boolean> {
     try {
-      console.log("[StorageManager] 检查项目可用性...");
+      console.log("[StorageManager] 检查项目可用�?..");
       const items = await this.getItemsWithRetry();
       console.log(`[StorageManager] 找到 ${items.length} 个项目`);
 
@@ -1640,7 +1734,7 @@ export class StorageManager {
             const debugResponse = await fetch('/api/debug-storage');
             if (debugResponse.ok) {
               const debugData = await debugResponse.json();
-              console.log(`[StorageManager] 服务器存储调试信息:`, debugData);
+              console.log(`[StorageManager] 服务器存储调试信�?`, debugData);
             }
           } catch (debugError) {
             console.warn("[StorageManager] 无法获取调试信息:", debugError);
@@ -1650,7 +1744,7 @@ export class StorageManager {
 
       return items.length > 0;
     } catch (error) {
-      console.error("[StorageManager] 检查项目可用性失败:", error);
+      console.error("[StorageManager] 检查项目可用性失�?", error);
       return false;
     }
   }
@@ -1692,7 +1786,7 @@ export class StorageManager {
    * 调试方法：创建测试数据并尝试导入
    */
   static async debugImport(): Promise<void> {
-    console.log("=== 开始调试导入功能 ===");
+    console.log("=== 开始调试导入功�?===");
 
     // 创建测试数据
     const testData = {
@@ -1725,7 +1819,7 @@ export class StorageManager {
       console.log("验证结果:", validation);
 
       if (!validation.isValid) {
-        console.error("❌ 验证失败:", validation.error);
+        console.error("�?验证失败:", validation.error);
         return;
       }
 
@@ -1735,23 +1829,23 @@ export class StorageManager {
       console.log("导入结果:", importResult);
 
       if (importResult.success) {
-        console.log("✅ 导入成功!");
+        console.log("�?导入成功!");
 
         // 3. 验证导入结果
         console.log("3. 验证导入结果...");
         const items = await this.getItemsWithRetry();
         const debugItem = items.find(item => item.id === "debug-test-1");
         if (debugItem) {
-          console.log("✅ 找到导入的测试项目:", debugItem);
+          console.log("�?找到导入的测试项�?", debugItem);
         } else {
-          console.log("❌ 未找到导入的测试项目");
+          console.log("�?未找到导入的测试项目");
         }
       } else {
-        console.error("❌ 导入失败:", importResult.error);
+        console.error("�?导入失败:", importResult.error);
       }
 
     } catch (error) {
-      console.error("调试过程中发生错误:", error);
+      console.error("调试过程中发生错�?", error);
     }
 
     console.log("=== 调试完成 ===");

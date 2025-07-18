@@ -72,7 +72,9 @@ interface TaskTemplate {
     autoUpload: boolean
     autoRemoveMarked: boolean
     autoConfirm: boolean
-    removeIqiyiAirDate: boolean
+    removeAirDateColumn: boolean
+    removeRuntimeColumn: boolean
+    removeBackdropColumn: boolean
     autoMarkUploaded: boolean
     conflictAction: 'w' | 'a' | 's'
     enableYoukuSpecialHandling: boolean
@@ -105,7 +107,7 @@ export default function TaskTemplateManager({
   const [isEditing, setIsEditing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
 
-  // 表单状态
+  // 表单状�?
   const [formData, setFormData] = useState<Partial<TaskTemplate>>({})
   const [saving, setSaving] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -136,7 +138,7 @@ export default function TaskTemplateManager({
     }
   }
 
-  // 保存模板到本地存储
+  // 保存模板到本地存�?
   const saveTemplates = async (templateList: TaskTemplate[]) => {
     try {
       localStorage.setItem('tmdb_task_templates', JSON.stringify(templateList))
@@ -152,7 +154,7 @@ export default function TaskTemplateManager({
       {
         id: uuidv4(),
         name: "每日更新模板",
-        description: "适用于每日更新的剧集，自动执行所有操作",
+        description: "适用于每日更新的剧集，自动执行所有操�?,
         schedule: {
           type: 'daily',
           hour: 9,
@@ -163,7 +165,9 @@ export default function TaskTemplateManager({
           autoUpload: true,
           autoRemoveMarked: true,
           autoConfirm: true,
-          removeIqiyiAirDate: false,
+          removeAirDateColumn: false,
+          removeRuntimeColumn: false,
+          removeBackdropColumn: false,
           autoMarkUploaded: true,
           conflictAction: 'w',
           enableYoukuSpecialHandling: true,
@@ -190,7 +194,9 @@ export default function TaskTemplateManager({
           autoUpload: true,
           autoRemoveMarked: true,
           autoConfirm: true,
-          removeIqiyiAirDate: false,
+          removeAirDateColumn: false,
+          removeRuntimeColumn: false,
+          removeBackdropColumn: false,
           autoMarkUploaded: true,
           conflictAction: 'w',
           enableYoukuSpecialHandling: true,
@@ -218,7 +224,9 @@ export default function TaskTemplateManager({
           autoUpload: true,
           autoRemoveMarked: true,
           autoConfirm: true,
-          removeIqiyiAirDate: false,
+          removeAirDateColumn: false,
+          removeRuntimeColumn: false,
+          removeBackdropColumn: false,
           autoMarkUploaded: true,
           conflictAction: 'w',
           enableYoukuSpecialHandling: true,
@@ -233,7 +241,7 @@ export default function TaskTemplateManager({
       {
         id: uuidv4(),
         name: "手动确认模板",
-        description: "仅导出数据，需要手动确认上传",
+        description: "仅导出数据，需要手动确认上�?,
         schedule: {
           type: 'weekly',
           dayOfWeek: 0,
@@ -245,7 +253,9 @@ export default function TaskTemplateManager({
           autoUpload: false,
           autoRemoveMarked: true,
           autoConfirm: false,
-          removeIqiyiAirDate: false,
+          removeAirDateColumn: false,
+          removeRuntimeColumn: false,
+          removeBackdropColumn: false,
           autoMarkUploaded: false,
           conflictAction: 'w',
           enableYoukuSpecialHandling: true,
@@ -260,7 +270,7 @@ export default function TaskTemplateManager({
     ]
   }
 
-  // 初始化
+  // 初始�?
   useEffect(() => {
     if (open) {
       loadTemplates()
@@ -315,11 +325,11 @@ export default function TaskTemplateManager({
     }
     
     if (!formData.schedule?.hour && formData.schedule?.hour !== 0) {
-      errors['schedule.hour'] = "请设置执行小时"
+      errors['schedule.hour'] = "请设置执行小�?
     }
     
     if (!formData.schedule?.minute && formData.schedule?.minute !== 0) {
-      errors['schedule.minute'] = "请设置执行分钟"
+      errors['schedule.minute'] = "请设置执行分�?
     }
     
     if (formData.schedule?.type === 'weekly' && formData.schedule?.dayOfWeek === undefined) {
@@ -334,7 +344,7 @@ export default function TaskTemplateManager({
     return Object.keys(errors).length === 0
   }
 
-  // 创建新模板
+  // 创建新模�?
   const handleCreateTemplate = () => {
     setCurrentTemplate(null)
     setFormData({
@@ -352,7 +362,9 @@ export default function TaskTemplateManager({
         autoUpload: true,
         autoRemoveMarked: true,
         autoConfirm: true,
-        removeIqiyiAirDate: false,
+        removeAirDateColumn: false,
+          removeRuntimeColumn: false,
+          removeBackdropColumn: false,
         autoMarkUploaded: true,
         conflictAction: 'w',
         enableYoukuSpecialHandling: true,
@@ -429,7 +441,7 @@ export default function TaskTemplateManager({
       
       toast({
         title: isEditing ? "更新成功" : "创建成功",
-        description: `模板已${isEditing ? '更新' : '创建'}`,
+        description: `模板�?{isEditing ? '更新' : '创建'}`,
       })
       
       setShowTemplateForm(false)
@@ -456,7 +468,7 @@ export default function TaskTemplateManager({
       
       toast({
         title: "删除成功",
-        description: "模板已删除",
+        description: "模板已删�?,
       })
     } catch (error) {
       console.error("删除模板失败:", error)
@@ -479,7 +491,7 @@ export default function TaskTemplateManager({
     onOpenChange(false)
   }
 
-  // 获取星期几名称
+  // 获取星期几名�?
   const getDayName = (day: number) => {
     const days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
     return days[day] || "未知"
@@ -554,7 +566,7 @@ export default function TaskTemplateManager({
                     <span>
                       {getDayName(template.schedule.dayOfWeek || 0)}
                       {template.schedule.secondDayOfWeek !== undefined && 
-                        `、${getDayName(template.schedule.secondDayOfWeek)}`
+                        `�?{getDayName(template.schedule.secondDayOfWeek)}`
                       }
                     </span>
                   )}
@@ -601,7 +613,7 @@ export default function TaskTemplateManager({
                 <FileText className="h-5 w-5" />
                 <span>任务模板管理</span>
                 <Badge variant="outline">
-                  {templates.length} 个模板
+                  {templates.length} 个模�?
                 </Badge>
               </div>
               
@@ -613,7 +625,7 @@ export default function TaskTemplateManager({
           </DialogHeader>
 
           <div className="flex-1 flex flex-col space-y-4 min-h-0">
-            {/* 搜索栏 */}
+            {/* 搜索�?*/}
             <div className="flex items-center space-x-4">
               <div className="flex-1">
                 <Input
@@ -629,7 +641,7 @@ export default function TaskTemplateManager({
               {loading ? (
                 <div className="flex items-center justify-center h-64">
                   <Loader2 className="h-8 w-8 animate-spin" />
-                  <span className="ml-2">加载中...</span>
+                  <span className="ml-2">加载�?..</span>
                 </div>
               ) : (
                 <ScrollArea className="h-full">
@@ -642,13 +654,13 @@ export default function TaskTemplateManager({
                         <h3 className="text-lg font-medium mb-2">暂无模板</h3>
                         <p className="text-muted-foreground mb-4">
                           {searchTerm 
-                            ? "没有找到符合条件的模板" 
-                            : "还没有创建任何模板"
+                            ? "没有找到符合条件的模�? 
+                            : "还没有创建任何模�?
                           }
                         </p>
                         <Button onClick={handleCreateTemplate}>
                           <Plus className="h-4 w-4 mr-2" />
-                          创建第一个模板
+                          创建第一个模�?
                         </Button>
                       </div>
                     )}
@@ -660,7 +672,7 @@ export default function TaskTemplateManager({
         </DialogContent>
       </Dialog>
 
-      {/* 模板表单对话框 */}
+      {/* 模板表单对话�?*/}
       <Dialog open={showTemplateForm} onOpenChange={setShowTemplateForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
@@ -742,7 +754,7 @@ export default function TaskTemplateManager({
                       onValueChange={(value) => updateField('schedule.dayOfWeek', parseInt(value))}
                     >
                       <SelectTrigger className={validationErrors['schedule.dayOfWeek'] ? 'border-red-500' : ''}>
-                        <SelectValue placeholder="选择星期几" />
+                        <SelectValue placeholder="选择星期�? />
                       </SelectTrigger>
                       <SelectContent>
                         {['周一', '周二', '周三', '周四', '周五', '周六', '周日'].map((day, index) => (
@@ -840,7 +852,7 @@ export default function TaskTemplateManager({
                           <Info className="h-4 w-4 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>导出后自动执行上传操作</p>
+                          <p>导出后自动执行上传操�?/p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -853,7 +865,7 @@ export default function TaskTemplateManager({
                         checked={formData.action?.autoRemoveMarked || false}
                         onCheckedChange={(checked) => updateField('action.autoRemoveMarked', checked)}
                       />
-                      <Label htmlFor="autoRemoveMarked">自动过滤已完成</Label>
+                      <Label htmlFor="autoRemoveMarked">自动过滤已完�?/Label>
                     </div>
                   </div>
 
@@ -875,7 +887,7 @@ export default function TaskTemplateManager({
                         checked={formData.action?.autoMarkUploaded || false}
                         onCheckedChange={(checked) => updateField('action.autoMarkUploaded', checked)}
                       />
-                      <Label htmlFor="autoMarkUploaded">自动标记已上传</Label>
+                      <Label htmlFor="autoMarkUploaded">自动标记已上�?/Label>
                     </div>
                   </div>
                 </div>
@@ -907,13 +919,13 @@ export default function TaskTemplateManager({
         </DialogContent>
       </Dialog>
 
-      {/* 删除确认对话框 */}
+      {/* 删除确认对话�?*/}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除这个模板吗？此操作无法撤销。
+              确定要删除这个模板吗？此操作无法撤销�?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -295,10 +295,23 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error('获取影视资讯内容失败:', error);
-      setUpcomingError(error instanceof Error ? error.message : '未知错误');
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // 对于TMDB API连接失败，不显示错误，静默处理
+      if (errorMessage.includes('TMDB API连接失败') || 
+          errorMessage.includes('网络连接异常') ||
+          errorMessage.includes('fetch failed')) {
+        console.debug('TMDB API连接问题，静默处理:', errorMessage);
+        if (!silent) {
+          setLoadingUpcoming(false);
+        }
+        return;
+      }
+      
+      setUpcomingError(errorMessage);
       
       // 如果是网络错误或超时，尝试重试（最多5次）
-      const errorMessage = error instanceof Error ? error.message : String(error);
       if (retryCount < 5 && 
           (errorMessage.includes('network') || 
            errorMessage.includes('timeout') || 
@@ -1917,10 +1930,23 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error('获取近期开播内容失败:', error);
-      setRecentError(error instanceof Error ? error.message : '未知错误');
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // 对于TMDB API连接失败，不显示错误，静默处理
+      if (errorMessage.includes('TMDB API连接失败') || 
+          errorMessage.includes('网络连接异常') ||
+          errorMessage.includes('fetch failed')) {
+        console.debug('TMDB API连接问题，静默处理:', errorMessage);
+        if (!silent) {
+          setLoadingRecent(false);
+        }
+        return;
+      }
+      
+      setRecentError(errorMessage);
       
       // 如果是网络错误或超时，尝试重试（最多5次）
-      const errorMessage = error instanceof Error ? error.message : String(error);
       if (retryCount < 5 && 
           (errorMessage.includes('network') || 
            errorMessage.includes('timeout') || 

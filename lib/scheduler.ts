@@ -1608,7 +1608,8 @@ class TaskScheduler {
           csvProcessResult.processedCsvPath!,
           currentItem,
           task.action.seasonNumber,
-          conflictAction
+          conflictAction,
+          task
         );
 
         console.log(`[TaskScheduler] 步骤3: executeTMDBImport返回结果:`, importResult);
@@ -1842,7 +1843,10 @@ class TaskScheduler {
             itemTitle: item.title,
             testMode: false,
             enableYoukuSpecialHandling: task.action.enableYoukuSpecialHandling !== false,
-            enableTitleCleaning: task.action.enableTitleCleaning !== false
+            enableTitleCleaning: task.action.enableTitleCleaning !== false,
+            removeAirDateColumn: task.action.removeAirDateColumn === true,
+            removeRuntimeColumn: task.action.removeRuntimeColumn === true,
+            removeBackdropColumn: task.action.removeBackdropColumn === true
           }),
           signal: controller.signal
         });
@@ -2069,7 +2073,7 @@ class TaskScheduler {
   /**
    * 步骤3: 执行TMDB导入
    */
-  private async executeTMDBImport(csvPath: string, item: TMDBItem, seasonNumber: number, conflictAction: 'w' | 'y' | 'n' = 'w'): Promise<{
+  private async executeTMDBImport(csvPath: string, item: TMDBItem, seasonNumber: number, conflictAction: 'w' | 'y' | 'n' = 'w', task?: ScheduledTask): Promise<{
     success: boolean;
     importedEpisodes?: number[];
     error?: string;
@@ -2094,7 +2098,11 @@ class TaskScheduler {
           seasonNumber: seasonNumber,
           itemId: item.id,
           tmdbId: item.tmdbId,
-          conflictAction: conflictAction
+          conflictAction: conflictAction,
+          // 添加三个高级选项
+          removeAirDateColumn: task?.action.removeAirDateColumn === true,
+          removeRuntimeColumn: task?.action.removeRuntimeColumn === true,
+          removeBackdropColumn: task?.action.removeBackdropColumn === true
         };
 
         console.log(`[TaskScheduler] API请求体:`, requestBody);

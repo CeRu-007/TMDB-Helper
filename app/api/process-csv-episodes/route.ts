@@ -16,7 +16,10 @@ export async function POST(request: NextRequest) {
       testMode = false,
       itemTitle,
       enableYoukuSpecialHandling = true,
-      enableTitleCleaning = true
+      enableTitleCleaning = true,
+      removeAirDateColumn = false,
+      removeRuntimeColumn = false,
+      removeBackdropColumn = false
     } = await request.json();
     
     if (!csvPath || !Array.isArray(markedEpisodes)) {
@@ -35,6 +38,9 @@ export async function POST(request: NextRequest) {
     console.log(`[API] 测试模式: ${testMode}`);
     console.log(`[API] 用户设置 - 优酷特殊处理: ${enableYoukuSpecialHandling}`);
     console.log(`[API] 用户设置 - 词条标题清理: ${enableTitleCleaning}`);
+    console.log(`[API] 用户设置 - 删除air_date列: ${removeAirDateColumn}`);
+    console.log(`[API] 用户设置 - 删除runtime列: ${removeRuntimeColumn}`);
+    console.log(`[API] 用户设置 - 删除backdrop列: ${removeBackdropColumn}`);
 
     // 检测平台类型和用户设置
     const isYoukuPlatform = platformUrl && platformUrl.includes('youku.com');
@@ -318,22 +324,42 @@ export async function POST(request: NextRequest) {
       // 应用特殊变量处理到强化处理的数据
       let finalData = processedData;
       
-      // 检查是否需要删除爱奇艺air_date列
-      if (platformUrl && platformUrl.includes('iqiyi.com')) {
-        console.log(`[API] 检测到爱奇艺平台，清空air_date列`);
-        const airDateIndex = finalData.headers.findIndex(h => 
-          h.toLowerCase().includes('air_date') || h.toLowerCase().includes('airdate')
-        );
+      // 删除指定的CSV列
+      const columnsToRemove = [];
+      if (removeAirDateColumn) columnsToRemove.push('air_date');
+      if (removeRuntimeColumn) columnsToRemove.push('runtime');
+      if (removeBackdropColumn) columnsToRemove.push('backdrop');
+      
+      if (columnsToRemove.length > 0) {
+        console.log(`[API] 需要删除的列: ${columnsToRemove.join(', ')}`);
         
-        if (airDateIndex !== -1) {
-          finalData.rows = finalData.rows.map(row => {
-            const newRow = [...row];
-            if (newRow.length > airDateIndex) {
-              newRow[airDateIndex] = '';
-            }
-            return newRow;
-          });
-          console.log(`[API] 已清空air_date列 (索引: ${airDateIndex})`);
+        // 查找要删除的列的索引（从后往前删除，避免索引变化）
+        const columnsToRemoveIndexes = [];
+        for (const columnName of columnsToRemove) {
+          const columnIndex = finalData.headers.findIndex(h => 
+            h.toLowerCase() === columnName.toLowerCase() || 
+            h.toLowerCase().includes(columnName.toLowerCase())
+          );
+          if (columnIndex !== -1) {
+            columnsToRemoveIndexes.push({ index: columnIndex, name: columnName });
+          }
+        }
+        
+        // 按索引从大到小排序，从后往前删除
+        columnsToRemoveIndexes.sort((a, b) => b.index - a.index);
+        
+        if (columnsToRemoveIndexes.length > 0) {
+          // 删除列
+          for (const { index, name } of columnsToRemoveIndexes) {
+            finalData.headers.splice(index, 1);
+            finalData.rows.forEach(row => {
+              if (index < row.length) {
+                row.splice(index, 1);
+              }
+            });
+            console.log(`[API] 已删除 ${name} 列 (索引: ${index})`);
+          }
+          console.log(`[API] 总共删除了 ${columnsToRemoveIndexes.length} 个列`);
         }
       }
       
@@ -374,7 +400,10 @@ export async function POST(request: NextRequest) {
       const processedLines = await applySpecialVariables(
         [processedData.headers.join(','), ...processedData.rows.map(row => row.join(','))],
         processedData.headers,
-        platformUrl
+        platformUrl,
+        removeAirDateColumn,
+        removeRuntimeColumn,
+        removeBackdropColumn
       );
       
       finalContent = processedLines.join('\n');
@@ -514,36 +543,53 @@ function rebuildCSVLine(columns: string[]): string {
 async function applySpecialVariables(
   lines: string[], 
   headers: string[], 
-  platformUrl?: string
+  platformUrl?: string,
+  removeAirDateColumn?: boolean,
+  removeRuntimeColumn?: boolean,
+  removeBackdropColumn?: boolean
 ): Promise<string[]> {
   if (lines.length === 0) return lines;
   
   const headerLine = lines[0];
   const dataLines = lines.slice(1);
   
-  // 变量1: 检测到播出平台地址带有iqiyi.com的话，则自动删除csv文件中air_date的列日期
-  let shouldRemoveAirDate = false;
-  if (platformUrl && platformUrl.includes('iqiyi.com')) {
-    shouldRemoveAirDate = true;
-    console.log(`[API] 检测到爱奇艺平台，将删除air_date列的日期`);
+  // 确定需要删除的列
+  const columnsToRemove = [];
+  if (removeAirDateColumn) columnsToRemove.push('air_date');
+  if (removeRuntimeColumn) columnsToRemove.push('runtime');
+  if (removeBackdropColumn) columnsToRemove.push('backdrop');
+  
+  if (columnsToRemove.length > 0) {
+    console.log(`[API] 将删除以下列: ${columnsToRemove.join(', ')}`);
   }
   
   // 查找相关列的索引
-  const airDateIndex = headers.findIndex(h => 
-    h.toLowerCase().includes('air_date') || h.toLowerCase().includes('airdate')
-  );
+  const columnsToRemoveIndexes = [];
+  for (const columnName of columnsToRemove) {
+    const columnIndex = headers.findIndex(h => 
+      h.toLowerCase() === columnName.toLowerCase() || 
+      h.toLowerCase().includes(columnName.toLowerCase())
+    );
+    if (columnIndex !== -1) {
+      columnsToRemoveIndexes.push({ index: columnIndex, name: columnName });
+    }
+  }
+  
   const overviewIndex = headers.findIndex(h => 
     h.toLowerCase().includes('overview') || h.toLowerCase().includes('description')
   );
   
-  console.log(`[API] air_date列索引: ${airDateIndex}, overview列索引: ${overviewIndex}`);
+  console.log(`[API] 要删除的列索引:`, columnsToRemoveIndexes);
+  console.log(`[API] overview列索引: ${overviewIndex}`);
   
   const processedDataLines = dataLines.map(line => {
     const columns = parseCSVLine(line);
     
-    // 变量1: 删除air_date列的日期
-    if (shouldRemoveAirDate && airDateIndex !== -1 && columns.length > airDateIndex) {
-      columns[airDateIndex] = ''; // 清空air_date
+    // 删除指定列的内容
+    for (const { index } of columnsToRemoveIndexes) {
+      if (columns.length > index) {
+        columns[index] = ''; // 清空列内容
+      }
     }
     
     // 变量2: 删除overview列中的换行符
