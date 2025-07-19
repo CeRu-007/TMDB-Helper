@@ -3,6 +3,8 @@
  * 用于监控和分析 AbortError 的发生情况，提供诊断信息
  */
 
+'use client';
+
 export interface AbortErrorEvent {
   id: string;
   timestamp: number;

@@ -3,6 +3,8 @@
  * 确保前端和后端数据的一致性，自动检测和修复不一致问题
  */
 
+'use client';
+
 import { TMDBItem } from './storage';
 import { StorageManager } from './storage';
 import { optimisticUpdateManager } from './optimistic-update-manager';

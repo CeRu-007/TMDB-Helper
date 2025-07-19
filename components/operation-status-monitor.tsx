@@ -7,16 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Activity, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  Activity,
+  CheckCircle,
+  XCircle,
+  Clock,
   AlertTriangle,
   RefreshCw,
   TrendingUp,
   Database
 } from 'lucide-react';
+
+// 静态导入替代动态导入，避免 ChunkLoadError
+import { operationQueueManager } from '@/lib/operation-queue-manager';
+import { dataConsistencyValidator } from '@/lib/data-consistency-validator';
+import { optimisticUpdateManager } from '@/lib/optimistic-update-manager';
+import { ChunkErrorBoundary } from './chunk-error-boundary';
 
 interface OperationStatus {
   totalQueued: number;
@@ -41,7 +47,7 @@ interface OptimisticOperation {
   lastError?: string;
 }
 
-export function OperationStatusMonitor() {
+function OperationStatusMonitorInner() {
   const [queueStatus, setQueueStatus] = useState<OperationStatus>({
     totalQueued: 0,
     processingItems: 0,
@@ -60,38 +66,47 @@ export function OperationStatusMonitor() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  // 获取状态数据
+  // 获取状态数据（修复版，使用静态导入避免 ChunkLoadError）
   const fetchStatus = async () => {
     try {
       setIsLoading(true);
-      
-      // 获取队列状态
-      const { operationQueueManager } = await import('@/lib/operation-queue-manager');
+
+      // 使用静态导入的模块，避免动态导入可能的 chunk 加载失败
       const queueData = operationQueueManager.getQueueStatus();
       setQueueStatus(queueData);
 
-      // 获取验证统计
-      const { dataConsistencyValidator } = await import('@/lib/data-consistency-validator');
       const validationData = dataConsistencyValidator.getValidationStats();
       setValidationStats(validationData);
 
-      // 获取乐观更新操作
-      const { optimisticUpdateManager } = await import('@/lib/optimistic-update-manager');
       const operations = optimisticUpdateManager.getPendingOperations();
       setOptimisticOps(operations);
 
       setLastUpdate(new Date());
     } catch (error) {
       console.error('获取操作状态失败:', error);
+
+      // 添加降级处理
+      setQueueStatus({
+        totalQueued: 0,
+        processingItems: 0,
+        queuesByItem: {}
+      });
+      setValidationStats({
+        totalValidations: 0,
+        averageInconsistencies: 0,
+        totalFixed: 0,
+        lastValidationTime: 0,
+        isValidating: false
+      });
+      setOptimisticOps([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 手动验证数据一致性
+  // 手动验证数据一致性（修复版，使用静态导入）
   const handleManualValidation = async () => {
     try {
-      const { dataConsistencyValidator } = await import('@/lib/data-consistency-validator');
       await dataConsistencyValidator.validateConsistency();
       await fetchStatus();
     } catch (error) {
@@ -99,10 +114,9 @@ export function OperationStatusMonitor() {
     }
   };
 
-  // 清理队列
+  // 清理队列（修复版，使用静态导入）
   const handleCleanupQueue = async () => {
     try {
-      const { operationQueueManager } = await import('@/lib/operation-queue-manager');
       operationQueueManager.cleanup();
       await fetchStatus();
     } catch (error) {
@@ -360,5 +374,34 @@ export function OperationStatusMonitor() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// 导出包装了错误边界的组件
+export function OperationStatusMonitor() {
+  return (
+    <ChunkErrorBoundary
+      fallback={
+        <Card className="max-w-2xl mx-auto mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              操作状态监控暂时不可用
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                操作状态监控组件加载失败。这可能是由于网络问题或模块加载错误导致的。
+                请刷新页面重试，或联系技术支持。
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      }
+    >
+      <OperationStatusMonitorInner />
+    </ChunkErrorBoundary>
   );
 }

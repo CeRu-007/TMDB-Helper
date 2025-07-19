@@ -258,70 +258,76 @@ export function EnhancedDataProvider({ children }: { children: ReactNode }) {
     // 监听乐观更新变化
     optimisticUpdateManager.addListener(handleOptimisticUpdate)
 
-    // 设置操作队列的执行器
-    operationQueueManager.setOperationExecutor(async (operation) => {
-      try {
-        console.log(`[EnhancedDataProvider] 执行队列操作: ${operation.type} ${operation.itemId}`);
+    // 设置操作队列的执行器（增强版，添加错误边界保护）
+    try {
+      operationQueueManager.setOperationExecutor(async (operation) => {
+        try {
+          console.log(`[EnhancedDataProvider] 执行队列操作: ${operation.type} ${operation.itemId}`);
 
-        let success = false;
-        switch (operation.type) {
-          case 'update':
-            success = await StorageManager.updateItem(operation.data);
-            break;
-          case 'add':
-            success = await StorageManager.addItem(operation.data);
-            break;
-          case 'delete':
-            success = await StorageManager.deleteItem(operation.itemId);
-            break;
-        }
-
-        if (success) {
-          // 通知其他客户端
-          await realtimeSyncManager.notifyDataChange({
-            type: `item_${operation.type}d` as any,
-            data: operation.data
-          });
-
-          // 显示成功提示
-          toast({
-            title: "操作成功",
-            description: `项目 "${operation.data.title}" ${operation.type === 'update' ? '更新' : operation.type === 'add' ? '添加' : '删除'}成功`,
-            duration: 3000
-          });
-        }
-
-        return success;
-      } catch (error) {
-        console.error(`[EnhancedDataProvider] 队列操作失败:`, error);
-
-        // 增强的错误处理
-        let errorMessage = '未知错误';
-        let shouldRetry = false;
-
-        if (error instanceof Error) {
-          errorMessage = error.message;
-
-          // 检查是否是可重试的错误
-          if (error.message.includes('请求超时') ||
-              error.message.includes('请求被中止') ||
-              error.message.includes('网络连接失败') ||
-              error.message.includes('API调用失败')) {
-            shouldRetry = true;
-            errorMessage = `${errorMessage} (系统将自动重试)`;
+          let success = false;
+          switch (operation.type) {
+            case 'update':
+              success = await StorageManager.updateItem(operation.data);
+              break;
+            case 'add':
+              success = await StorageManager.addItem(operation.data);
+              break;
+            case 'delete':
+              success = await StorageManager.deleteItem(operation.itemId);
+              break;
           }
+
+          if (success) {
+            // 通知其他客户端
+            await realtimeSyncManager.notifyDataChange({
+              type: `item_${operation.type}d` as any,
+              data: operation.data
+            });
+
+            // 显示成功提示
+            toast({
+              title: "操作成功",
+              description: `项目 "${operation.data.title}" ${operation.type === 'update' ? '更新' : operation.type === 'add' ? '添加' : '删除'}成功`,
+              duration: 3000
+            });
+          }
+
+          return success;
+        } catch (error) {
+          console.error(`[EnhancedDataProvider] 队列操作失败:`, error);
+
+          // 增强的错误处理
+          let errorMessage = '未知错误';
+          let shouldRetry = false;
+
+          if (error instanceof Error) {
+            errorMessage = error.message;
+
+            // 检查是否是可重试的错误
+            if (error.message.includes('请求超时') ||
+                error.message.includes('请求被中止') ||
+                error.message.includes('网络连接失败') ||
+                error.message.includes('API调用失败') ||
+                error.message.includes('ChunkLoadError')) {
+              shouldRetry = true;
+              errorMessage = `${errorMessage} (系统将自动重试)`;
+            }
+          }
+
+          // 显示错误提示
+          toast({
+            title: shouldRetry ? "操作暂时失败" : "操作失败",
+            description: `项目操作失败: ${errorMessage}`,
+            duration: shouldRetry ? 3000 : 5000
+          });
+
+          return false;
         }
-
-        // 显示错误提示
-        toast({
-          title: shouldRetry ? "操作暂时失败" : "操作失败",
-          description: `项目操作失败: ${errorMessage}`,
-          duration: shouldRetry ? 3000 : 5000
-        });
-
-        return false;
-      }
-    });
+      });
+    } catch (error) {
+      console.error('[EnhancedDataProvider] 设置操作执行器失败:', error);
+      // 降级处理：如果设置执行器失败，至少确保基本功能可用
+    }
 
     // 启动数据一致性验证
     dataConsistencyValidator.startPeriodicValidation();

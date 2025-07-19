@@ -3,6 +3,8 @@
  * 处理高频操作的去重、合并和排队，防止并发冲突
  */
 
+'use client';
+
 import { TMDBItem } from './storage';
 import { DistributedLock } from './distributed-lock';
 
