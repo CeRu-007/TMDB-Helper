@@ -7,6 +7,8 @@ import { realtimeSyncManager } from "@/lib/realtime-sync-manager"
 import { optimisticUpdateManager } from "@/lib/optimistic-update-manager"
 import { performanceMonitor } from "@/lib/performance-monitor"
 import { errorRecoveryManager } from "@/lib/error-recovery-manager"
+import { operationQueueManager } from "@/lib/operation-queue-manager"
+import { dataConsistencyValidator } from "@/lib/data-consistency-validator"
 import { toast } from "@/components/ui/use-toast"
 
 // 创建上下文
@@ -252,14 +254,66 @@ export function EnhancedDataProvider({ children }: { children: ReactNode }) {
 
     // 监听数据变更事件
     realtimeSyncManager.addEventListener('*', handleRealtimeDataChange)
-    
+
     // 监听乐观更新变化
     optimisticUpdateManager.addListener(handleOptimisticUpdate)
+
+    // 设置操作队列的执行器
+    operationQueueManager.setOperationExecutor(async (operation) => {
+      try {
+        console.log(`[EnhancedDataProvider] 执行队列操作: ${operation.type} ${operation.itemId}`);
+
+        let success = false;
+        switch (operation.type) {
+          case 'update':
+            success = await StorageManager.updateItem(operation.data);
+            break;
+          case 'add':
+            success = await StorageManager.addItem(operation.data);
+            break;
+          case 'delete':
+            success = await StorageManager.deleteItem(operation.itemId);
+            break;
+        }
+
+        if (success) {
+          // 通知其他客户端
+          await realtimeSyncManager.notifyDataChange({
+            type: `item_${operation.type}d` as any,
+            data: operation.data
+          });
+
+          // 显示成功提示
+          toast({
+            title: "操作成功",
+            description: `项目 "${operation.data.title}" ${operation.type === 'update' ? '更新' : operation.type === 'add' ? '添加' : '删除'}成功`,
+            duration: 3000
+          });
+        }
+
+        return success;
+      } catch (error) {
+        console.error(`[EnhancedDataProvider] 队列操作失败:`, error);
+
+        // 显示错误提示
+        toast({
+          title: "操作失败",
+          description: `项目操作失败: ${error instanceof Error ? error.message : '未知错误'}`,
+          duration: 5000
+        });
+
+        return false;
+      }
+    });
+
+    // 启动数据一致性验证
+    dataConsistencyValidator.startPeriodicValidation();
 
     // 清理函数
     return () => {
       realtimeSyncManager.removeEventListener('*', handleRealtimeDataChange)
       optimisticUpdateManager.removeListener(handleOptimisticUpdate)
+      dataConsistencyValidator.stopPeriodicValidation()
     }
   }, [isClient, handleRealtimeDataChange, handleOptimisticUpdate])
 
@@ -333,52 +387,56 @@ export function EnhancedDataProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // 更新项目
+  // 更新项目（增强版，支持并发控制和防抖）
   const updateItem = async (item: TMDBItem) => {
     if (!isClient) return
-    
-    // 保存原始数据用于回滚
-    const originalItem = baseItems.find(i => i.id === item.id)
-    
-    // 乐观更新：立即更新UI
-    const operationId = optimisticUpdateManager.addOperation({
-      type: 'update',
-      entity: 'item',
-      data: item,
-      originalData: originalItem
-    })
+
+    // 性能监控开始
+    const performanceId = `update_item_${item.id}_${Date.now()}`;
+    performanceMonitor.startEvent(performanceId);
 
     try {
-      console.log('[EnhancedDataProvider] 乐观更新项目:', item.title)
-      
-      // 发送到服务器
-      const success = await StorageManager.updateItem(item)
-      if (!success) {
-        throw new Error("更新项目失败")
+      // 保存原始数据用于回滚
+      const originalItem = baseItems.find(i => i.id === item.id)
+
+      // 检查是否有相同项目的操作正在进行
+      const queueStatus = operationQueueManager.getQueueStatus();
+      const hasQueuedOperation = queueStatus.queuesByItem[item.id] > 0;
+
+      if (hasQueuedOperation) {
+        console.log(`[EnhancedDataProvider] 项目 ${item.id} 有操作在队列中，将合并操作`);
       }
 
-      // 确认操作成功
-      optimisticUpdateManager.confirmOperation(operationId, item)
-      
-      // 通知其他客户端
-      await realtimeSyncManager.notifyDataChange({
-        type: 'item_updated',
-        data: item
+      // 乐观更新：立即更新UI（增强版会自动处理合并）
+      const operationId = optimisticUpdateManager.addOperation({
+        type: 'update',
+        entity: 'item',
+        data: item,
+        originalData: originalItem
       })
 
-      console.log('[EnhancedDataProvider] 项目更新成功:', item.title)
-      
-      // 显示成功提示
+      console.log('[EnhancedDataProvider] 乐观更新项目:', item.title, `操作ID: ${operationId}`)
+
+      // 注意：实际的服务器更新现在由OptimisticUpdateManager通过队列处理
+      // 这里不再直接调用StorageManager.updateItem，避免并发冲突
+
+      // 显示操作状态提示
       toast({
-        title: "项目更新成功",
-        description: `已成功更新项目 "${item.title}"`,
-        duration: 3000
+        title: "正在更新项目",
+        description: `正在更新项目 "${item.title}"...`,
+        duration: 2000
       })
-      
+
+      // 性能监控结束
+      performanceMonitor.endEvent(performanceId, true);
+
     } catch (err) {
       console.error("Failed to update item:", err)
       const errorMessage = err instanceof Error ? err.message : '更新项目失败'
       setError(errorMessage)
+
+      // 性能监控结束（失败）
+      performanceMonitor.endEvent(performanceId, false, errorMessage);
 
       // 标记操作失败（不立即显示toast，让用户通过状态组件处理）
       optimisticUpdateManager.failOperation(operationId, errorMessage)
