@@ -23,6 +23,7 @@ import { operationQueueManager } from '@/lib/operation-queue-manager';
 import { dataConsistencyValidator } from '@/lib/data-consistency-validator';
 import { optimisticUpdateManager } from '@/lib/optimistic-update-manager';
 import { ChunkErrorBoundary } from './chunk-error-boundary';
+import { ApiHealthMonitor } from './api-health-monitor';
 
 interface OperationStatus {
   totalQueued: number;
@@ -195,6 +196,7 @@ function OperationStatusMonitorInner() {
           <TabsTrigger value="queue">操作队列</TabsTrigger>
           <TabsTrigger value="optimistic">乐观更新</TabsTrigger>
           <TabsTrigger value="validation">数据验证</TabsTrigger>
+          <TabsTrigger value="api-health">API 健康</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -371,6 +373,10 @@ function OperationStatusMonitorInner() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="api-health" className="space-y-4">
+          <ApiHealthMonitor />
         </TabsContent>
       </Tabs>
     </div>
