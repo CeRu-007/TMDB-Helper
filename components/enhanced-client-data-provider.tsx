@@ -295,11 +295,28 @@ export function EnhancedDataProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error(`[EnhancedDataProvider] 队列操作失败:`, error);
 
+        // 增强的错误处理
+        let errorMessage = '未知错误';
+        let shouldRetry = false;
+
+        if (error instanceof Error) {
+          errorMessage = error.message;
+
+          // 检查是否是可重试的错误
+          if (error.message.includes('请求超时') ||
+              error.message.includes('请求被中止') ||
+              error.message.includes('网络连接失败') ||
+              error.message.includes('API调用失败')) {
+            shouldRetry = true;
+            errorMessage = `${errorMessage} (系统将自动重试)`;
+          }
+        }
+
         // 显示错误提示
         toast({
-          title: "操作失败",
-          description: `项目操作失败: ${error instanceof Error ? error.message : '未知错误'}`,
-          duration: 5000
+          title: shouldRetry ? "操作暂时失败" : "操作失败",
+          description: `项目操作失败: ${errorMessage}`,
+          duration: shouldRetry ? 3000 : 5000
         });
 
         return false;

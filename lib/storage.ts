@@ -1,5 +1,6 @@
 ﻿import { v4 as uuidv4 } from "uuid";
 import { UserManager } from "./user-manager";
+import { abortErrorMonitor } from "./abort-error-monitor";
 
 // 执行日志条目接口
 export interface ExecutionLog {
@@ -160,10 +161,14 @@ export class StorageManager {
    * 通用的API调用方法，带有超时和错误处理（包含用户身份信息）
    */
   private static async makeApiCall(url: string, options: RequestInit = {}): Promise<Response> {
+    const startTime = Date.now();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 增加�?5秒超�?
+    const timeoutId = setTimeout(() => {
+      console.log(`[StorageManager] API请求超时，正在中止: ${url}`);
+      controller.abort();
+    }, 15000); // 15秒超时
 
-    // 获取用户ID并添加到请求�?
+    // 获取用户ID并添加到请求头
     const userId = this.isClient() ? UserManager.getUserId() : null;
 
     console.log(`[StorageManager] 发起API请求: ${url} (用户: ${userId})`);
@@ -191,12 +196,29 @@ export class StorageManager {
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
+      const duration = Date.now() - startTime;
 
       console.error(`[StorageManager] API请求失败: ${url}`, error);
 
-      // 提供更详细的错误信息
+      // 增强的错误处理和监控
       if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error('请求超时：API调用超过15秒未响应');
+        // 检查是否是我们主动中止的（超时）还是被意外中止的
+        const isTimeout = controller.signal.aborted;
+        const errorMessage = isTimeout
+          ? '请求超时：API调用超过15秒未响应'
+          : '请求被中止：可能由于网络问题或浏览器限制';
+
+        // 记录 AbortError 事件
+        abortErrorMonitor.recordAbortError(
+          url,
+          options.method || 'GET',
+          'storage_api_call',
+          error,
+          isTimeout,
+          duration
+        );
+
+        throw new Error(errorMessage);
       } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         // 检查是否是本地开发环境
         const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
@@ -205,8 +227,11 @@ export class StorageManager {
         } else {
           throw new Error('网络连接失败：无法连接到服务器');
         }
+      } else if (error instanceof Error) {
+        // 保留原始错误信息，但添加上下文
+        throw new Error(`API调用失败 (${url}): ${error.message}`);
       } else {
-        throw error;
+        throw new Error(`API调用失败 (${url}): 未知错误`);
       }
     }
   }
@@ -403,27 +428,34 @@ export class StorageManager {
   }
 
   /**
-   * 更新项目
+   * 更新项目（增强版，使用统一的API调用方法）
    */
   static async updateItem(updatedItem: TMDBItem): Promise<boolean> {
     // 使用文件存储
     if (this.USE_FILE_STORAGE) {
       try {
-        const response = await fetch(`${this.API_BASE_URL}/item`, {
+        console.log(`[StorageManager] 开始更新项目: ${updatedItem.title} (ID: ${updatedItem.id})`);
+
+        const response = await this.makeApiCall(`${this.API_BASE_URL}/item`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify({ item: updatedItem }),
         });
 
         if (!response.ok) {
-          throw new Error(`API请求失败: ${response.status}`);
+          const errorText = await response.text();
+          throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
+        console.log(`[StorageManager] 项目更新成功: ${updatedItem.title}`);
         return true;
       } catch (error) {
-        console.error('更新项目失败:', error);
+        console.error(`[StorageManager] 更新项目失败: ${updatedItem.title}`, error);
+
+        // 如果是 AbortError，提供更友好的错误信息
+        if (error instanceof Error && error.message.includes('请求超时')) {
+          console.warn(`[StorageManager] 项目更新超时，可能需要重试: ${updatedItem.title}`);
+        }
+
         return false;
       }
     }
@@ -470,18 +502,27 @@ export class StorageManager {
     // 使用文件存储
     if (this.USE_FILE_STORAGE) {
       try {
-        const response = await fetch(`${this.API_BASE_URL}/item?id=${encodeURIComponent(id)}`, {
+        console.log(`[StorageManager] 开始删除项目: ID=${id}`);
+
+        const response = await this.makeApiCall(`${this.API_BASE_URL}/item?id=${encodeURIComponent(id)}`, {
           method: 'DELETE',
         });
 
         if (!response.ok) {
-          throw new Error(`API请求失败: ${response.status}`);
+          const errorText = await response.text();
+          throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         console.log(`[StorageManager] 项目删除成功: ID=${id}`);
         return true;
       } catch (error) {
-        console.error('删除项目失败:', error);
+        console.error(`[StorageManager] 删除项目失败: ID=${id}`, error);
+
+        // 如果是 AbortError，提供更友好的错误信息
+        if (error instanceof Error && error.message.includes('请求超时')) {
+          console.warn(`[StorageManager] 项目删除超时，可能需要重试: ID=${id}`);
+        }
+
         return false;
       }
     }

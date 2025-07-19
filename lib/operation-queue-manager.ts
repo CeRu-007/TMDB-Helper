@@ -289,18 +289,44 @@ export class OperationQueueManager {
   }
 
   /**
-   * 执行单个操作
+   * 执行单个操作（增强版，支持 AbortError 处理）
    */
   private async executeOperation(operation: QueuedOperation): Promise<boolean> {
-    // 这里会被具体的存储管理器实现
-    // 暂时返回模拟结果
     console.log(`[OperationQueue] 执行操作: ${operation.id} (${operation.type})`);
-    
-    // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // 模拟成功率（实际实现中会调用真实的API）
-    return Math.random() > 0.1; // 90% 成功率
+
+    try {
+      // 这里会被具体的存储管理器实现
+      // 实际实现中会调用真实的API
+
+      // 模拟网络延迟
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // 模拟成功率
+      const success = Math.random() > 0.1; // 90% 成功率
+
+      if (!success) {
+        throw new Error('模拟操作失败');
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`[OperationQueue] 操作执行失败: ${operation.id}`, error);
+
+      // 特殊处理 AbortError 和超时错误
+      if (error instanceof Error) {
+        if (error.message.includes('请求超时') || error.message.includes('请求被中止')) {
+          console.warn(`[OperationQueue] 检测到网络问题，操作将重试: ${operation.id}`);
+          // 对于网络问题，我们认为这是可重试的错误
+          return false;
+        } else if (error.message.includes('API调用失败')) {
+          console.warn(`[OperationQueue] API调用失败，操作将重试: ${operation.id}`);
+          return false;
+        }
+      }
+
+      // 其他错误也返回 false，让重试机制处理
+      return false;
+    }
   }
 
   /**
