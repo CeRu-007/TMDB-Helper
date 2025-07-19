@@ -63,13 +63,7 @@ const nextConfig = {
       config.devtool = 'eval-source-map';
     }
 
-    // 添加模块解析优化
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      // 确保模块路径解析正确
-      '@/lib': require('path').resolve('./lib'),
-      '@/components': require('path').resolve('./components'),
-    };
+    // Next.js 已经通过 tsconfig.json 处理路径别名，这里不需要额外配置
 
     return config;
   },
