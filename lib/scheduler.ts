@@ -4,6 +4,9 @@ import { BrowserInterruptDetector, BrowserInterruptResult } from './browser-inte
 import { DistributedLock } from './distributed-lock';
 import { StorageSyncManager } from './storage-sync-manager';
 import { realtimeSyncManager } from './realtime-sync-manager';
+import { ConflictDetector } from './conflict-detector';
+import { ConflictResolver } from './conflict-resolver';
+import { advancedConfigManager } from './task-scheduler-config';
 
 class TaskScheduler {
   private static instance: TaskScheduler;
@@ -14,7 +17,16 @@ class TaskScheduler {
   private validationTimer: NodeJS.Timeout | null = null; // 定期验证定时器
   private timerValidations: Map<string, NodeJS.Timeout> = new Map(); // 单个定时器验证
 
+  // 冲突检测和解决相关
+  private conflictDetector: ConflictDetector;
+  private conflictResolver: ConflictResolver;
+
   private constructor() {
+    // 初始化冲突检测和解决器
+    const advancedConfig = advancedConfigManager.getConfig();
+    this.conflictDetector = new ConflictDetector(advancedConfig.conflictDetection);
+    this.conflictResolver = new ConflictResolver(advancedConfig.conflictResolution);
+
     // 监听浏览器可见性变化
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
@@ -23,7 +35,7 @@ class TaskScheduler {
           this.validateAllTimers();
         }
       });
-      
+
       // 监听窗口焦点变化
       window.addEventListener('focus', () => {
         console.log('[TaskScheduler] 窗口重新获得焦点，检查定时器状态');
@@ -593,18 +605,40 @@ class TaskScheduler {
       console.log(`[TaskScheduler] 任务 ${task.id} (${task.name}) 已禁用，不设置定时器`);
       return;
     }
-    
+
     // 如果已有定时器，先清除
     if (this.timers.has(task.id)) {
       clearTimeout(this.timers.get(task.id));
       this.timers.delete(task.id);
+      this.conflictDetector.unregisterTask(task.id);
       console.log(`[TaskScheduler] 清除任务 ${task.id} 的现有定时器`);
     }
-    
+
     // 计算下一次执行时间
-    const nextRunTime = this.calculateNextRunTime(task);
-    const delay = nextRunTime.getTime() - Date.now();
-    
+    let nextRunTime = this.calculateNextRunTime(task);
+    let delay = nextRunTime.getTime() - Date.now();
+
+    // 冲突检测和解决
+    const conflicts = this.conflictDetector.detectConflicts(task, nextRunTime);
+    if (conflicts.length > 0) {
+      console.log(`[TaskScheduler] 检测到任务冲突: ${task.name}, 冲突数量: ${conflicts.length}`);
+
+      const resolution = this.conflictResolver.resolveConflicts(task, nextRunTime, conflicts);
+      if (resolution) {
+        if (resolution.strategy === 'queue') {
+          // 队列策略：将任务加入队列而不是设置定时器
+          console.log(`[TaskScheduler] 任务 ${task.name} 采用队列策略，加入执行队列`);
+          this.enqueueTask(task, resolution);
+          return;
+        } else if (resolution.newTime) {
+          // 时间调整策略：使用新的执行时间
+          nextRunTime = resolution.newTime;
+          delay = nextRunTime.getTime() - Date.now();
+          console.log(`[TaskScheduler] 任务 ${task.name} 时间已调整: ${nextRunTime.toLocaleString('zh-CN')}`);
+        }
+      }
+    }
+
     // 如果延迟时间为负数或过小，设置一个最小延迟（10秒）
     const adjustedDelay = delay < 10000 ? 10000 : delay;
     
@@ -653,9 +687,35 @@ class TaskScheduler {
     });
     
     console.log(`[TaskScheduler] 已为任务 ${task.id} 设置定时器，将在 ${nextRunLocale} 执行 (延迟 ${Math.round(adjustedDelay / 1000 / 60)} 分钟)`);
-    
+
+    // 注册任务到冲突检测器
+    this.conflictDetector.registerScheduledTask(task, nextRunTime);
+
     // 设置定时器验证机制 - 每5分钟检查一次定时器是否还存在
     this.scheduleTimerValidation(task.id, adjustedDelay);
+  }
+
+  /**
+   * 将任务加入队列（冲突解决策略）
+   */
+  private async enqueueTask(task: ScheduledTask, resolution: any): Promise<void> {
+    try {
+      // 这里需要集成任务队列系统
+      // 由于现有的taskQueue可能不完全兼容，我们先用简单的延迟执行
+      const delayMs = (resolution.queuePosition || 1) * 60000; // 每个队列位置延迟1分钟
+
+      console.log(`[TaskScheduler] 任务 ${task.name} 将在 ${delayMs / 1000} 秒后执行（队列策略）`);
+
+      setTimeout(async () => {
+        console.log(`[TaskScheduler] 队列任务开始执行: ${task.name}`);
+        await this.executeTaskWithRetry(task);
+      }, delayMs);
+
+    } catch (error) {
+      console.error(`[TaskScheduler] 队列任务处理失败: ${task.name}`, error);
+      // 如果队列失败，回退到普通调度
+      this.scheduleTask(task);
+    }
   }
 
   /**
@@ -2829,6 +2889,44 @@ class TaskScheduler {
         }
       };
     }
+  }
+
+  /**
+   * 获取冲突检测统计信息
+   */
+  public getConflictStats() {
+    return {
+      detector: this.conflictDetector.getConflictStats(),
+      resolver: this.conflictResolver.getResolutionStats()
+    };
+  }
+
+  /**
+   * 更新冲突检测和解决配置
+   */
+  public updateConflictConfig(config: any): void {
+    const advancedConfig = advancedConfigManager.getConfig();
+
+    if (config.conflictDetection) {
+      this.conflictDetector.updateConfig(config.conflictDetection);
+      advancedConfigManager.updateConfig({ conflictDetection: config.conflictDetection });
+    }
+
+    if (config.conflictResolution) {
+      this.conflictResolver.updateConfig(config.conflictResolution);
+      advancedConfigManager.updateConfig({ conflictResolution: config.conflictResolution });
+    }
+
+    console.log('[TaskScheduler] 冲突处理配置已更新');
+  }
+
+  /**
+   * 清理过期的冲突检测数据
+   */
+  public cleanupConflictData(): void {
+    this.conflictDetector.cleanupExpiredTasks();
+    this.conflictResolver.clearResolutionHistory();
+    console.log('[TaskScheduler] 冲突数据已清理');
   }
 }
 
