@@ -148,6 +148,30 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
 
     // 任务操作状�?
     const [isRunningTask, setIsRunningTask] = useState(false)
+
+    // 下拉菜单状态管理
+    const [openDropdownMenus, setOpenDropdownMenus] = useState<Set<string>>(new Set())
+
+    // 下拉菜单状态管理辅助函数
+    const handleDropdownOpenChange = useCallback((taskId: string, open: boolean) => {
+        setOpenDropdownMenus(prev => {
+            const newSet = new Set(prev)
+            if (open) {
+                // 关闭其他所有下拉菜单，只保持当前菜单打开
+                newSet.clear()
+                newSet.add(taskId)
+            } else {
+                newSet.delete(taskId)
+            }
+            return newSet
+        })
+    }, [])
+
+    // 关闭所有下拉菜单
+    const closeAllDropdownMenus = useCallback(() => {
+        setOpenDropdownMenus(new Set())
+    }, [])
+
     const [runningTaskId, setRunningTaskId] = useState<string | null>(null)
     const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
     const [currentTask, setCurrentTask] = useState<ScheduledTask | null>(null)
@@ -541,7 +565,32 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
         const isExpanded = expandedTasks.has(task.id)
 
         return (
-            <Card key={task.id} className={`transition-all ${isSelected ? 'ring-2 ring-primary' : ''}`}>
+            <Card
+                key={task.id}
+                className={`transition-all ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                onClick={(e) => {
+                    // 如果点击的是下拉菜单相关元素，不处理卡片点击
+                    const target = e.target as HTMLElement
+                    if (target.closest('[data-radix-dropdown-menu-trigger]') ||
+                        target.closest('[data-radix-dropdown-menu-content]')) {
+                        return
+                    }
+
+                    // 关闭所有下拉菜单
+                    closeAllDropdownMenus()
+
+                    // 处理卡片展开/收缩
+                    if (!isSelectionMode) {
+                        const newExpanded = new Set(expandedTasks)
+                        if (isExpanded) {
+                            newExpanded.delete(task.id)
+                        } else {
+                            newExpanded.add(task.id)
+                        }
+                        setExpandedTasks(newExpanded)
+                    }
+                }}
+            >
                 <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-3 flex-1">
@@ -619,46 +668,86 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                 </Tooltip>
                             </TooltipProvider>
 
-                            <DropdownMenu>
+                            <DropdownMenu
+                                open={openDropdownMenus.has(task.id)}
+                                onOpenChange={(open) => handleDropdownOpenChange(task.id, open)}
+                            >
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            // 防止事件冒泡到卡片容器
+                                        }}
+                                    >
                                         <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => runTaskNow(task)} disabled={isRunningTask}>
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="w-48"
+                                    style={{ zIndex: 9999 }}
+                                    onCloseAutoFocus={(e) => {
+                                        // 防止自动聚焦导致的问题
+                                        e.preventDefault()
+                                    }}
+                                >
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            runTaskNow(task)
+                                            handleDropdownOpenChange(task.id, false)
+                                        }}
+                                        disabled={isRunningTask}
+                                    >
                                         <Play className="h-4 w-4 mr-2" />
                                         立即执行
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => {
-                                        setCurrentTask(task)
-                                        setIsEditingTask(true)
-                                        setShowTaskForm(true)
-                                    }}>
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setCurrentTask(task)
+                                            setIsEditingTask(true)
+                                            setShowTaskForm(true)
+                                            handleDropdownOpenChange(task.id, false)
+                                        }}
+                                    >
                                         <Edit className="h-4 w-4 mr-2" />
                                         编辑
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => {
-                                        const newTask = {
-                                            ...task,
-                                            id: uuidv4(),
-                                            name: `${task.name} (副本)`,
-                                            enabled: false,
-                                            createdAt: new Date().toISOString(),
-                                            updatedAt: new Date().toISOString(),
-                                            lastRun: undefined,
-                                            lastRunStatus: undefined,
-                                            lastRunError: undefined,
-                                            nextRun: undefined
-                                        }
-                                        setCurrentTask(newTask)
-                                        setIsEditingTask(false)
-                                        setShowTaskForm(true)
-                                    }}>
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            const newTask = {
+                                                ...task,
+                                                id: uuidv4(),
+                                                name: `${task.name} (副本)`,
+                                                enabled: false,
+                                                createdAt: new Date().toISOString(),
+                                                updatedAt: new Date().toISOString(),
+                                                lastRun: undefined,
+                                                lastRunStatus: undefined,
+                                                lastRunError: undefined,
+                                                nextRun: undefined
+                                            }
+                                            setCurrentTask(newTask)
+                                            setIsEditingTask(false)
+                                            setShowTaskForm(true)
+                                            handleDropdownOpenChange(task.id, false)
+                                        }}
+                                    >
                                         <Copy className="h-4 w-4 mr-2" />
                                         复制
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => toggleTaskEnabled(task)}>
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            toggleTaskEnabled(task)
+                                            handleDropdownOpenChange(task.id, false)
+                                        }}
+                                    >
                                         {task.enabled ? (
                                             <>
                                                 <PauseCircle className="h-4 w-4 mr-2" />
@@ -673,9 +762,11 @@ export default function EnhancedScheduledTaskManager({ open, onOpenChange }: Enh
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            e.stopPropagation()
                                             setTaskToDelete(task.id)
                                             setShowDeleteConfirm(true)
+                                            handleDropdownOpenChange(task.id, false)
                                         }}
                                         className="text-red-600"
                                     >

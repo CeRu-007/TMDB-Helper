@@ -143,6 +143,29 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   // 防止重复加载的标志
   const [isLoadingData, setIsLoadingData] = useState(false)
 
+  // 下拉菜单状态管理
+  const [openDropdownMenus, setOpenDropdownMenus] = useState<Set<string>>(new Set())
+
+  // 下拉菜单状态管理辅助函数
+  const handleDropdownOpenChange = useCallback((taskId: string, open: boolean) => {
+    setOpenDropdownMenus(prev => {
+      const newSet = new Set(prev)
+      if (open) {
+        // 关闭其他所有下拉菜单，只保持当前菜单打开
+        newSet.clear()
+        newSet.add(taskId)
+      } else {
+        newSet.delete(taskId)
+      }
+      return newSet
+    })
+  }, [])
+
+  // 关闭所有下拉菜单
+  const closeAllDropdownMenus = useCallback(() => {
+    setOpenDropdownMenus(new Set())
+  }, [])
+
   // 获取正在运行的任务 - 使用更稳定的依赖
   const runningTasks = useMemo(() => {
     return tasks.filter(task => task.isRunning || taskScheduler.isTaskRunning(task.id))
@@ -1557,6 +1580,16 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           isSelected ? 'task-card-selected' : ''
         }`}
         onClick={(e) => {
+          // 如果点击的是下拉菜单相关元素，不处理卡片点击
+          const target = e.target as HTMLElement
+          if (target.closest('[data-radix-dropdown-menu-trigger]') ||
+              target.closest('[data-radix-dropdown-menu-content]')) {
+            return
+          }
+
+          // 关闭所有下拉菜单
+          closeAllDropdownMenus()
+
           // 阻止卡片点击事件冒泡，避免影响菜单
           e.stopPropagation();
         }}
@@ -1665,7 +1698,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
               </span>
             </div>
 
-            <DropdownMenu>
+            <DropdownMenu
+              open={openDropdownMenus.has(task.id)}
+              onOpenChange={(open) => handleDropdownOpenChange(task.id, open)}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -1681,15 +1717,20 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="bg-popover border border-border"
+                className="bg-popover border border-border w-48"
                 sideOffset={5}
                 style={{ zIndex: 9999 }}
+                onCloseAutoFocus={(e) => {
+                  // 防止自动聚焦导致的问题
+                  e.preventDefault()
+                }}
               >
                 <DropdownMenuLabel>任务操作</DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit(task);
+                    handleDropdownOpenChange(task.id, false);
                   }}
                   disabled={isRunning || !relatedItem}
                 >
@@ -1700,6 +1741,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                   onClick={(e) => {
                     e.stopPropagation();
                     onCopy(task);
+                    handleDropdownOpenChange(task.id, false);
                   }}
                 >
                   <Copy className="h-4 w-4 mr-2" />
@@ -1710,6 +1752,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleEnabled(task);
+                    handleDropdownOpenChange(task.id, false);
                   }}
                   disabled={isRunning}
                 >
@@ -1729,6 +1772,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                   onClick={(e) => {
                     e.stopPropagation();
                     onRun(task);
+                    handleDropdownOpenChange(task.id, false);
                   }}
                   disabled={isRunning || !relatedItem}
                 >
@@ -1740,6 +1784,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(task.id);
+                    handleDropdownOpenChange(task.id, false);
                   }}
                   disabled={isRunning}
                   className="text-red-600 dark:text-red-400"
