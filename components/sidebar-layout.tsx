@@ -43,7 +43,7 @@ export interface SidebarLayoutProps {
   totalItems: number
   runningTasks: any[]
   onShowAddDialog: () => void
-  onShowSettingsDialog: () => void
+  onShowSettingsDialog: (section?: string) => void
   onShowTasksDialog: () => void
   onShowExecutionLogs: () => void
   onShowImportDialog: () => void
@@ -306,6 +306,24 @@ export function SidebarLayout({
       setMediaNewsType(submenuId)
     }
   }
+
+  // 动态控制body的overflow属性，防止缩略图页面出现额外滚动条
+  useEffect(() => {
+    const isThumbnailPage = contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop'
+
+    if (isThumbnailPage) {
+      // 缩略图页面：隐藏body滚动条
+      document.body.style.overflow = 'hidden'
+    } else {
+      // 其他页面：恢复默认滚动行为
+      document.body.style.overflow = ''
+    }
+
+    // 清理函数：组件卸载时恢复默认状态
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [contentKey])
 
   // 当菜单选择改变时，更新分类
   useEffect(() => {
@@ -777,19 +795,11 @@ export function SidebarLayout({
 
       case 'thumbnails-extract':
         // 显示缩略图提取内容
-        return (
-          <div className="container mx-auto p-4 max-w-7xl">
-            <VideoThumbnailExtractor />
-          </div>
-        )
+        return <VideoThumbnailExtractor onOpenGlobalSettings={onShowSettingsDialog} />
 
       case 'thumbnails-crop':
         // 显示图片裁切内容
-        return (
-          <div className="container mx-auto p-4 max-w-7xl">
-            <ImageCropper />
-          </div>
-        )
+        return <ImageCropper />
 
       default:
         return (
@@ -903,20 +913,35 @@ export function SidebarLayout({
       </header>
 
       {/* 主体内容 */}
-      <div className="flex h-[calc(100vh-4rem)]">
-        {/* 侧边栏 */}
-        <SidebarNavigation
-          onMenuSelect={handleMenuSelect}
-          activeMenu={activeMenu}
-          activeSubmenu={activeSubmenu}
-          collapsed={sidebarCollapsed}
-        />
-
-        {/* 主内容区域 */}
-        <main className="flex-1 overflow-hidden">
-          <div className="h-full overflow-y-auto">
-            {renderContent()}
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+        {/* 侧边栏 - 固定定位，移动端隐藏 */}
+        <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} flex-shrink-0 relative z-30 ${isMobile ? 'hidden' : ''}`}>
+          <div className="fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white dark:bg-gray-900 border-r dark:border-gray-700 overflow-hidden">
+            <SidebarNavigation
+              onMenuSelect={handleMenuSelect}
+              activeMenu={activeMenu}
+              activeSubmenu={activeSubmenu}
+              collapsed={sidebarCollapsed}
+            />
           </div>
+        </div>
+
+        {/* 主内容区域 - 移动端全宽，桌面端避免被侧边栏遮挡 */}
+        <main className={`flex-1 overflow-hidden ${isMobile ? 'w-full' : ''}`}>
+          {/* 根据页面类型决定是否使用滚动容器 */}
+          {contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' ? (
+            // 缩略图相关页面：提供固定高度容器，让组件内部处理滚动
+            <div className="h-full overflow-hidden">
+              {renderContent()}
+            </div>
+          ) : (
+            // 其他页面（词条维护、影视资讯等）：使用标准滚动容器
+            <div className="h-full overflow-hidden">
+              <div className="h-full overflow-y-auto">
+                {renderContent()}
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

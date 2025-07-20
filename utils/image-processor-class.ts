@@ -1,9 +1,12 @@
 /**
  * ImageProcessor类 - 图像处理工具
  * 使用单例模式实现，确保整个应用中只有一个实例
+ * 集成硅基流动AI模型进行智能帧分析
  */
 
 import { log } from '@/lib/logger'
+import { SiliconFlowAPI, FrameAnalysisResult, createSiliconFlowAPI } from './siliconflow-api'
+import type { SmartSelectionOptions } from './smart-frame-selector'
 
 // 定义Worker类型
 type ImageProcessingWorker = Worker;
@@ -16,6 +19,9 @@ export class ImageProcessor {
   private taskCounter: number = 0;
   private initializationPromise: Promise<void> | null = null;
   private maxRetries: number = 3;
+  private siliconFlowAPI: SiliconFlowAPI | null = null;
+  private aiAnalysisEnabled: boolean = false;
+  private smartFrameSelector: any = null;
 
   /**
    * 私有构造函数，防止直接实例化
@@ -166,6 +172,274 @@ export class ImageProcessor {
     });
     
     return this.initializationPromise;
+  }
+
+  /**
+   * 配置硅基流动API
+   * @param apiKey API密钥
+   * @param options 可选配置
+   */
+  public configureSiliconFlowAPI(apiKey: string, options?: { model?: string; baseUrl?: string }): void {
+    try {
+      this.siliconFlowAPI = createSiliconFlowAPI(apiKey, options);
+      this.aiAnalysisEnabled = true;
+      log.info('ImageProcessor', '硅基流动API配置成功');
+    } catch (error) {
+      log.error('ImageProcessor', '硅基流动API配置失败:', error);
+      this.aiAnalysisEnabled = false;
+    }
+  }
+
+  /**
+   * 禁用AI分析
+   */
+  public disableAIAnalysis(): void {
+    this.aiAnalysisEnabled = false;
+    this.siliconFlowAPI = null;
+    log.info('ImageProcessor', 'AI分析已禁用');
+  }
+
+  /**
+   * 检查AI分析是否可用
+   */
+  public isAIAnalysisEnabled(): boolean {
+    return this.aiAnalysisEnabled && this.siliconFlowAPI !== null;
+  }
+
+  /**
+   * 测试硅基流动API连接
+   */
+  public async testSiliconFlowConnection(): Promise<{ success: boolean; error?: string }> {
+    if (!this.siliconFlowAPI) {
+      return { success: false, error: '硅基流动API未配置' };
+    }
+
+    try {
+      return await this.siliconFlowAPI.testConnection();
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '连接测试失败'
+      };
+    }
+  }
+
+  /**
+   * 智能关键帧检测 - 生成最优时间点
+   */
+  private async detectKeyFrameTimePoints(
+    video: HTMLVideoElement,
+    startTime: number,
+    duration: number,
+    frameCount: number
+  ): Promise<number[]> {
+    console.log('🔍 开始关键帧检测...');
+
+    // 基于视频长度的智能采样策略
+    const timePoints: number[] = [];
+
+    if (duration <= 30) {
+      // 短视频：均匀分布 + 小随机偏移
+      const step = duration / (frameCount + 1);
+      for (let i = 1; i <= frameCount; i++) {
+        const baseTime = startTime + i * step;
+        const randomOffset = (Math.random() - 0.5) * Math.min(step * 0.3, 2);
+        timePoints.push(Math.max(startTime + 1, Math.min(startTime + duration - 1, baseTime + randomOffset)));
+      }
+    } else if (duration <= 300) {
+      // 中等视频：分段采样
+      const segments = Math.min(frameCount, 6);
+      const segmentDuration = duration / segments;
+
+      for (let i = 0; i < segments; i++) {
+        const segmentStart = startTime + i * segmentDuration;
+        const segmentEnd = segmentStart + segmentDuration;
+
+        // 在每个段落中选择1-2个点
+        const pointsInSegment = Math.ceil(frameCount / segments);
+        for (let j = 0; j < pointsInSegment && timePoints.length < frameCount; j++) {
+          const progress = (j + 0.3 + Math.random() * 0.4) / pointsInSegment;
+          const timePoint = segmentStart + progress * segmentDuration;
+          if (timePoint < segmentEnd - 1) {
+            timePoints.push(timePoint);
+          }
+        }
+      }
+    } else {
+      // 长视频：重点采样开头、中间、结尾
+      const sections = [
+        { start: 0.05, end: 0.25, weight: 0.4 }, // 开头部分
+        { start: 0.3, end: 0.7, weight: 0.4 },   // 中间部分
+        { start: 0.75, end: 0.95, weight: 0.2 }  // 结尾部分
+      ];
+
+      sections.forEach(section => {
+        const sectionFrames = Math.ceil(frameCount * section.weight);
+        const sectionStart = startTime + duration * section.start;
+        const sectionDuration = duration * (section.end - section.start);
+
+        for (let i = 0; i < sectionFrames; i++) {
+          const progress = (i + 0.2 + Math.random() * 0.6) / sectionFrames;
+          const timePoint = sectionStart + progress * sectionDuration;
+          timePoints.push(timePoint);
+        }
+      });
+    }
+
+    // 确保时间点不重复且在有效范围内
+    const uniqueTimePoints = Array.from(new Set(
+      timePoints
+        .filter(t => t >= startTime && t <= startTime + duration - 1)
+        .map(t => Math.round(t * 10) / 10) // 保留1位小数
+    )).sort((a, b) => a - b);
+
+    console.log(`🎯 关键帧检测完成，生成${uniqueTimePoints.length}个时间点`);
+    return uniqueTimePoints.slice(0, frameCount);
+  }
+
+  /**
+   * AI预筛选候选帧 - 优化字幕检测版本
+   */
+  private async performAIPrefiltering(
+    candidateFrames: { imageData: ImageData; timePoint: number; aiScore?: number }[],
+    targetCount: number,
+    options: { useMultiModel?: boolean } = {}
+  ): Promise<void> {
+    if (!this.siliconFlowAPI) return;
+
+    const { useMultiModel = false } = options;
+    console.log(`🤖 开始AI预筛选 ${candidateFrames.length} 个候选帧${useMultiModel ? ' (多模型验证)' : ''}...`);
+
+    // 🔧 优化的批量分析策略
+    const batchSize = useMultiModel ? 2 : 3; // 多模型验证时减少并发数
+    let processedCount = 0;
+
+    for (let i = 0; i < candidateFrames.length; i += batchSize) {
+      const batch = candidateFrames.slice(i, i + batchSize);
+
+      const analysisPromises = batch.map(async (frame) => {
+        try {
+          // 🔧 根据配置选择分析方法
+          const result = useMultiModel ?
+            await this.siliconFlowAPI!.analyzeFrameWithMultiModel(frame.imageData) :
+            await this.siliconFlowAPI!.analyzeFrame(frame.imageData);
+
+          // 🔧 优化的评分算法 - 更严格的字幕检测
+          let score = 0.4; // 降低基础分
+
+          // 字幕检测评分 (权重最高)
+          if (!result.hasSubtitles) {
+            score += 0.4; // 无字幕大幅加分
+          } else {
+            // 有字幕时根据详情进行细分
+            if (result.subtitleDetails) {
+              const details = result.subtitleDetails;
+              // 如果是顶部字幕或中间字幕，可能是标题而非对话字幕
+              if (details.position === 'top' || details.position === 'middle') {
+                score += 0.1; // 轻微加分
+              } else {
+                score -= 0.2; // 底部字幕（通常是对话）减分
+              }
+            } else {
+              score -= 0.3; // 确认有字幕但无详情，大幅减分
+            }
+          }
+
+          // 人物检测评分
+          if (result.hasPeople) score += 0.25; // 有人物加分
+
+          // 置信度评分
+          score += (result.confidence || 0.5) * 0.15;
+
+          // 🔧 多模型验证额外加分
+          if (useMultiModel) {
+            score += 0.1; // 多模型验证的结果更可靠
+          }
+
+          frame.aiScore = Math.max(0, Math.min(1.0, score));
+
+          const subtitleInfo = result.subtitleDetails ?
+            `位置=${result.subtitleDetails.position}, 颜色=${result.subtitleDetails.textColor}` :
+            '无详情';
+
+          console.log(`AI分析 ${frame.timePoint.toFixed(1)}s: 字幕=${result.hasSubtitles}${result.hasSubtitles ? `(${subtitleInfo})` : ''}, 人物=${result.hasPeople}, 置信度=${result.confidence.toFixed(2)}, 评分=${frame.aiScore.toFixed(2)}`);
+
+        } catch (error) {
+          console.warn(`AI分析失败 ${frame.timePoint.toFixed(1)}s:`, error);
+          frame.aiScore = 0.2; // 分析失败给更低分
+        }
+      });
+
+      await Promise.all(analysisPromises);
+      processedCount += batch.length;
+      console.log(`AI分析进度: ${processedCount}/${candidateFrames.length} (${((processedCount / candidateFrames.length) * 100).toFixed(1)}%)`);
+    }
+
+    // 按评分排序
+    candidateFrames.sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0));
+    console.log(`🏆 AI预筛选完成，最高评分: ${candidateFrames[0]?.aiScore?.toFixed(2) || 'N/A'}`);
+  }
+
+  /**
+   * 应用多样性过滤，移除相似的帧
+   */
+  private applyDiversityFilter(frames: ImageData[], threshold: number = 0.75): ImageData[] {
+    if (frames.length <= 1) return frames;
+
+    const filteredFrames: ImageData[] = [frames[0]]; // 保留第一帧
+
+    for (let i = 1; i < frames.length; i++) {
+      const currentFrame = frames[i];
+      let isSimilar = false;
+
+      // 检查与已选择帧的相似度
+      for (const selectedFrame of filteredFrames) {
+        if (this.calculateFrameSimilarity(currentFrame, selectedFrame) > threshold) {
+          isSimilar = true;
+          break;
+        }
+      }
+
+      if (!isSimilar) {
+        filteredFrames.push(currentFrame);
+      }
+    }
+
+    return filteredFrames;
+  }
+
+  /**
+   * 计算两帧之间的相似度
+   */
+  private calculateFrameSimilarity(frame1: ImageData, frame2: ImageData): number {
+    if (frame1.width !== frame2.width || frame1.height !== frame2.height) {
+      return 0; // 尺寸不同，认为不相似
+    }
+
+    const data1 = frame1.data;
+    const data2 = frame2.data;
+    const length = Math.min(data1.length, data2.length);
+
+    // 采样计算，提高性能
+    const sampleRate = Math.max(1, Math.floor(length / 10000)); // 最多采样10000个像素
+    let totalDiff = 0;
+    let sampleCount = 0;
+
+    for (let i = 0; i < length; i += 4 * sampleRate) {
+      const r1 = data1[i], g1 = data1[i + 1], b1 = data1[i + 2];
+      const r2 = data2[i], g2 = data2[i + 1], b2 = data2[i + 2];
+
+      // 计算RGB差异
+      const diff = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
+      totalDiff += diff;
+      sampleCount++;
+    }
+
+    const avgDiff = totalDiff / sampleCount;
+    const maxDiff = 255 * 3; // RGB最大差异
+    const similarity = 1 - (avgDiff / maxDiff);
+
+    return Math.max(0, Math.min(1, similarity));
   }
 
   /**
@@ -423,7 +697,7 @@ export class ImageProcessor {
   }
 
   /**
-   * 从视频提取帧
+   * 从视频提取帧 - 优化版本，使用关键帧检测和AI预筛选
    * @param video 视频元素
    * @param options 提取选项
    * @returns 提取的帧数组
@@ -433,28 +707,36 @@ export class ImageProcessor {
     options: {
       startTime?: number;
       frameCount?: number;
-      interval?: 'uniform' | 'random';
-      keepOriginalResolution?: boolean; // 保持原始分辨率
-      enhancedFrameDiversity?: boolean; // 增强帧多样性
+      interval?: 'uniform' | 'random' | 'keyframes'; // 新增关键帧模式
+      keepOriginalResolution?: boolean;
+      enhancedFrameDiversity?: boolean;
+      useAIPrefilter?: boolean; // 新增AI预筛选选项
+      useMultiModelValidation?: boolean; // 新增多模型验证选项
     }
   ): Promise<ImageData[]> {
-    return new Promise<ImageData[]>((resolve, reject) => {
     try {
-        console.log('开始提取视频帧，视频尺寸:', video.videoWidth, 'x', video.videoHeight);
-        
+        console.log('🎬 开始提取视频帧，视频尺寸:', video.videoWidth, 'x', video.videoHeight);
+
         // 获取视频时长和设置
         const duration = video.duration;
-      const startTime = options.startTime || 0;
-        const frameCount = Math.min(options.frameCount || 10, 50); // 允许提取更多帧(30->50)以确保有足够的多样性
-      const interval = options.interval || 'uniform';
+        const startTime = options.startTime || 0;
+        const frameCount = Math.min(options.frameCount || 10, 30); // 优化：减少初始提取数量
+        const interval = options.interval || 'keyframes'; // 默认使用关键帧模式
         const keepOriginalResolution = options.keepOriginalResolution || false;
-        const enhancedFrameDiversity = options.enhancedFrameDiversity !== undefined ? 
-          options.enhancedFrameDiversity : true; // 默认启用增强多样性
-      
-        console.log(`视频长度: ${duration}秒, 开始时间: ${startTime}秒, 提取帧数: ${frameCount}, 间隔模式: ${interval}, 保持原始分辨率: ${keepOriginalResolution}, 增强多样性: ${enhancedFrameDiversity}`);
-        
-        // 创建一个隐藏的canvas用于绘制帧
-      const canvas = document.createElement('canvas');
+        const enhancedFrameDiversity = options.enhancedFrameDiversity !== undefined ?
+          options.enhancedFrameDiversity : true;
+        const useAIPrefilter = options.useAIPrefilter && this.isAIAnalysisEnabled();
+        const useMultiModelValidation = options.useMultiModelValidation || false;
+
+        console.log(`📊 视频参数: 时长=${duration}秒, 开始=${startTime}秒, 帧数=${frameCount}, 模式=${interval}, AI预筛选=${useAIPrefilter}, 多模型验证=${useMultiModelValidation}`);
+
+        // 快速验证视频状态
+        if (duration <= 0 || isNaN(duration)) {
+          throw new Error('无效的视频时长');
+        }
+
+        // 创建canvas用于帧提取
+        const canvas = document.createElement('canvas');
         
         // 设置canvas尺寸
         let scale = 1;
@@ -478,287 +760,366 @@ export class ImageProcessor {
           console.log(`使用缩放分辨率: ${canvas.width} x ${canvas.height}`);
         }
         
-        const context = canvas.getContext('2d', { 
+        const ctx = canvas.getContext('2d', {
           alpha: false,  // 禁用alpha通道以提高性能
           willReadFrequently: true // 提示频繁读取以优化性能
         });
-        
-        if (!context) {
-          reject(new Error('无法创建Canvas上下文'));
-          return;
+
+        if (!ctx) {
+          throw new Error('无法创建Canvas上下文');
         }
         
         // 确保视频可以播放
-      if (video.readyState < 2) {
-          // 如果视频没准备好，监听loadeddata事件
-          const loadHandler = () => {
-            video.removeEventListener('loadeddata', loadHandler);
-            video.removeEventListener('error', errorHandler);
-            
-            // 递归调用，此时视频已准备好
-            this.extractFramesFromVideo(video, options)
-              .then(resolve)
-              .catch(reject);
-          };
-          
-          const errorHandler = () => {
-            video.removeEventListener('loadeddata', loadHandler);
-            video.removeEventListener('error', errorHandler);
-            reject(new Error('视频加载失败'));
-          };
-          
-          video.addEventListener('loadeddata', loadHandler);
-          video.addEventListener('error', errorHandler);
-          return;
-        }
-        
-        // 计算可用的视频时长（排除开始时间）
-        const availableDuration = Math.max(0, duration - startTime);
-        
-        if (availableDuration <= 0 || isNaN(availableDuration)) {
-          reject(new Error('无效的视频时长或开始时间'));
-          return;
-        }
-        
-        // 计算时间点
-        const timePoints: number[] = [];
-        
-        // 增强帧多样性 - 确保最小时间间隔更大，防止提取到相同或相似帧
-        const minTimeGap = enhancedFrameDiversity 
-          ? Math.max(3.0, availableDuration / (frameCount * 1.5)) // 更大的间隔，至少3秒，增强多样性
-          : Math.max(0.5, availableDuration / (frameCount * 3)); // 至少0.5秒间隔，标准模式
-        
-        // 用于记录已选择的场景特征，避免选择相似帧
-        const selectedScenes: {timepoint: number, features?: number[]}[] = [];
-        
-        if (interval === 'uniform') {
-          // 均匀分布 - 添加更大的随机偏移以避免完全一致的间隔
-          const step = availableDuration / (frameCount - 1 || 1);
-          for (let i = 0; i < frameCount; i++) {
-            // 增强随机性，添加最多±30%的随机偏移，但确保不小于minTimeGap
-            const randomOffset = enhancedFrameDiversity
-              ? (Math.random() * 0.6 - 0.3) * step // 更大范围的随机性(30%)
-              : (Math.random() * 0.2 - 0.1) * step;
-            
-            let timePoint = startTime + (i * step) + randomOffset;
-            
-            // 确保不超出视频范围
-            timePoint = Math.max(startTime, Math.min(duration - 0.1, timePoint));
-            
-            // 避免与前一个时间点过于接近
-            if (i > 0 && timePoint - timePoints[timePoints.length - 1] < minTimeGap) {
-              timePoint = timePoints[timePoints.length - 1] + minTimeGap;
-            }
-            
-            // 确保不超出视频范围
-            if (timePoint < duration) {
-              timePoints.push(timePoint);
-              selectedScenes.push({timepoint: timePoint});
-            }
-          }
-        } else if (interval === 'random') {
-          // 随机分布 - 但确保时间点不会太接近
-          // 先将视频分成更多的段落来增加选择的多样性
-          const segments = frameCount * 3; // 创建更多段落以增加多样性(2->3)
-          const segmentSize = availableDuration / segments;
-          
-          // 在每个段落中随机选择一个时间点
-          const segmentIndices = Array.from({ length: segments }, (_, i) => i);
-          
-          // 打乱段落顺序
-          for (let i = segmentIndices.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [segmentIndices[i], segmentIndices[j]] = [segmentIndices[j], segmentIndices[i]];
-          }
-          
-          // 选择前frameCount个段落
-          const selectedSegments = segmentIndices.slice(0, frameCount);
-          
-          // 对选定的段落排序，保持时间顺序
-          selectedSegments.sort((a, b) => a - b);
-          
-          // 在每个段落中选择一个随机时间点
-          for (const segmentIndex of selectedSegments) {
-            const segmentStart = startTime + (segmentIndex * segmentSize);
-            const segmentEnd = segmentStart + segmentSize;
-            
-            // 使用更广的随机范围，但确保时间点不会重叠
-            let timePoint = segmentStart + (Math.random() * 0.85 + 0.10) * segmentSize; // 0.9+0.05 -> 0.85+0.10
-            
-            // 确保不超出视频范围
-            timePoint = Math.min(duration - 0.1, timePoint);
-            
-            // 避免与前一个时间点过于接近
-            if (timePoints.length > 0 && timePoint - timePoints[timePoints.length - 1] < minTimeGap) {
-              timePoint = timePoints[timePoints.length - 1] + minTimeGap;
-            }
-            
-            // 确保不超出视频范围
-            if (timePoint < duration) {
-              timePoints.push(timePoint);
-              selectedScenes.push({timepoint: timePoint});
-            }
-          }
-        }
-        
-        // 确保我们有足够多不同的时间点
-        if (timePoints.length < 2) {
-          // 如果只有一个或没有时间点，添加一些额外的点
-          const step = availableDuration / 4;
-          for (let i = 1; i <= 3; i++) {
-            const timePoint = startTime + (i * step);
-            if (timePoint < duration && !timePoints.includes(timePoint)) {
-              timePoints.push(timePoint);
-            }
-          }
-        }
-        
-        // 打乱时间点顺序以减少连续相似帧
-        if (interval === 'random') {
-          for (let i = timePoints.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [timePoints[i], timePoints[j]] = [timePoints[j], timePoints[i]];
-          }
-        }
-        
-        console.log('提取视频帧的时间点:', timePoints);
-        
-        // 收集的帧
-        const frames: ImageData[] = [];
-        let errorCount = 0;
-        const maxErrors = 3; // 允许的最大错误数
-        
-        // 使用批处理提高性能
-        const batchSize = 3; // 每批处理的帧数
-        
-        // 批量提取帧
-        const extractFrameBatch = async (startIndex: number): Promise<void> => {
-          if (startIndex >= timePoints.length) {
-            // 提取完成
-            if (frames.length === 0) {
-              reject(new Error('未能成功提取任何帧'));
-              return;
-            }
-            resolve(frames);
-            return;
-          }
-          
-          const endIndex = Math.min(startIndex + batchSize, timePoints.length);
-          const currentBatch = timePoints.slice(startIndex, endIndex);
-          const batchPromises: Promise<ImageData | null>[] = [];
-          
-          // 为每个时间点创建提取帧的Promise
-          for (let i = 0; i < currentBatch.length; i++) {
-            batchPromises.push(extractSingleFrame(currentBatch[i]));
-          }
-          
-          try {
-            // 等待当前批次完成
-            const batchResults = await Promise.all(batchPromises);
-            
-            // 添加成功提取的帧
-            batchResults.forEach(frame => {
-              if (frame) frames.push(frame);
-            });
-            
-            // 处理下一批
-            await extractFrameBatch(endIndex);
-          } catch (error) {
-            console.error('批量提取帧失败:', error);
-            errorCount++;
-            
-            if (errorCount > maxErrors) {
-              // 如果已经有足够的帧，即使有错误也继续
-              if (frames.length >= Math.ceil(frameCount / 2)) {
-                console.warn(`提取帧过程中发生错误，但已经提取了${frames.length}帧，继续处理`);
-                resolve(frames);
-              } else {
-                reject(new Error('提取帧过程中发生太多错误'));
-              }
-            } else {
-              // 尝试继续处理下一批
-              await extractFrameBatch(endIndex);
-            }
-          }
-        };
-        
-        // 提取单个时间点的帧
-        const extractSingleFrame = (time: number): Promise<ImageData | null> => {
-          return new Promise((resolveFrame, rejectFrame) => {
-            // 设置超时处理
-              const timeoutId = setTimeout(() => {
-              video.removeEventListener('seeked', seekedHandler);
-                video.removeEventListener('error', errorHandler);
-              console.warn(`提取时间点 ${time} 的帧超时`);
-              resolveFrame(null); // 返回null而不是拒绝，允许继续处理其他帧
-            }, 10000); // 10秒超时
-            
-            // 设置视频当前时间
-            video.currentTime = time;
-            
-            // 等待视频跳转完成
-            const seekedHandler = () => {
-                clearTimeout(timeoutId);
-              video.removeEventListener('seeked', seekedHandler);
+        if (video.readyState < 2) {
+          console.log('⏳ 等待视频加载...');
+          await new Promise<void>((resolve, reject) => {
+            const loadHandler = () => {
+              video.removeEventListener('loadeddata', loadHandler);
               video.removeEventListener('error', errorHandler);
-              
-              try {
-                // 绘制当前帧到canvas
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // 获取图像数据
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                
-                // 如果启用了增强帧多样性，检查与已有帧的相似度
-                if (enhancedFrameDiversity && frames.length > 0) {
-                  // 检查是否与已有帧过于相似
-                  const isTooSimilar = this.checkFrameSimilarity(imageData, frames, 0.75); // 降低阈值(0.8->0.75)更严格判断相似度
-                  if (isTooSimilar) {
-                    console.log(`时间点 ${time} 的帧与已有帧过于相似，尝试调整时间点`);
-                    
-                    // 尝试调整时间点，更大的时间偏移
-                    const adjustedTime = time + (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 3 + 1.5); // 1.5-4.5秒偏移
-                    
-                    // 确保在视频范围内
-                    if (adjustedTime > 0 && adjustedTime < video.duration) {
-                      // 递归尝试新的时间点
-                      video.currentTime = adjustedTime;
-                      return;
-                    }
-                  }
-                }
-                
-                resolveFrame(imageData);
-              } catch (error) {
-                console.error(`处理时间点 ${time} 的帧失败:`, error);
-                resolveFrame(null);
-              }
+              resolve();
             };
-            
+
             const errorHandler = () => {
-              clearTimeout(timeoutId);
-              video.removeEventListener('seeked', seekedHandler);
+              video.removeEventListener('loadeddata', loadHandler);
               video.removeEventListener('error', errorHandler);
-              console.error(`视频跳转到时间点 ${time} 失败`);
-              resolveFrame(null);
+              reject(new Error('视频加载失败'));
             };
-            
-            video.addEventListener('seeked', seekedHandler);
+
+            video.addEventListener('loadeddata', loadHandler);
             video.addEventListener('error', errorHandler);
           });
-        };
+        }
         
-        // 开始批量提取
-        extractFrameBatch(0).catch(error => {
-          console.error('提取帧过程失败:', error);
-          reject(error);
+        // 计算可用的视频时长
+        const availableDuration = Math.max(0, duration - startTime);
+        if (availableDuration <= 0) {
+          throw new Error('无效的视频时长或开始时间');
+        }
+
+        // 🔑 智能时间点计算
+        let timePoints: number[] = [];
+
+        if (interval === 'keyframes') {
+          // 关键帧检测模式 - 使用智能采样
+          timePoints = await this.detectKeyFrameTimePoints(video, startTime, availableDuration, frameCount);
+        } else if (interval === 'uniform') {
+          // 均匀分布模式 - 简化版本
+          const step = availableDuration / (frameCount + 1);
+          for (let i = 1; i <= frameCount; i++) {
+            timePoints.push(startTime + i * step);
+          }
+        } else {
+          // 随机分布模式 - 简化版本
+          const segments = Math.max(frameCount * 2, 10);
+          const segmentSize = availableDuration / segments;
+          const selectedSegments = Array.from({length: segments}, (_, i) => i)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, frameCount)
+            .sort((a, b) => a - b);
+
+          timePoints = selectedSegments.map(seg =>
+            startTime + seg * segmentSize + Math.random() * segmentSize * 0.8
+          );
+        }
+
+        // 确保时间点有效
+        timePoints = timePoints.filter(t => t >= startTime && t < duration - 0.1);
+
+        if (timePoints.length === 0) {
+          throw new Error('未能生成有效的时间点');
+        }
+
+        console.log(`🎯 生成${timePoints.length}个时间点:`, timePoints.map(t => t.toFixed(1)));
+        
+        // 🚀 优化的帧提取逻辑
+        const candidateFrames: { imageData: ImageData; timePoint: number; aiScore?: number }[] = [];
+
+        console.log('⚡ 开始快速帧提取...');
+
+        // 🔧 增强的帧提取逻辑，包含详细错误诊断
+        let successCount = 0;
+        let skipCount = 0;
+        let errorCount = 0;
+        const errors: string[] = [];
+
+        for (let i = 0; i < timePoints.length; i++) {
+          const timePoint = timePoints[i];
+          let retryCount = 0;
+          const maxRetries = 2; // 每个帧最多重试2次
+
+          while (retryCount <= maxRetries) {
+            try {
+              const retryText = retryCount > 0 ? ` (重试${retryCount}/${maxRetries})` : '';
+              console.log(`📸 提取帧 ${i + 1}/${timePoints.length} (${timePoint.toFixed(1)}s)${retryText}`);
+
+              // 验证视频状态
+              if (video.readyState < 2) {
+                throw new Error(`视频未准备好，readyState: ${video.readyState}`);
+              }
+
+              if (video.duration <= 0 || isNaN(video.duration)) {
+                throw new Error(`视频时长无效: ${video.duration}`);
+              }
+
+              if (timePoint >= video.duration) {
+                // 调整时间点到有效范围内
+                const adjustedTime = Math.min(timePoint, video.duration - 0.5);
+                console.warn(`时间点超出范围，调整: ${timePoint.toFixed(1)}s -> ${adjustedTime.toFixed(1)}s`);
+                if (adjustedTime <= 0) {
+                  throw new Error(`调整后的时间点仍然无效: ${adjustedTime}`);
+                }
+                // 使用调整后的时间点继续
+              }
+
+            // 设置视频时间
+            const oldTime = video.currentTime;
+            video.currentTime = timePoint;
+
+            // 等待视频跳转完成
+            await new Promise<void>((resolveSeek, rejectSeek) => {
+              const timeoutId = setTimeout(() => {
+                video.removeEventListener('seeked', seekedHandler);
+                video.removeEventListener('error', errorHandler);
+                rejectSeek(new Error(`Seek超时: ${timePoint.toFixed(1)}s (从 ${oldTime.toFixed(1)}s)`));
+              }, 5000); // 增加到5秒超时
+
+              const seekedHandler = () => {
+                clearTimeout(timeoutId);
+                video.removeEventListener('seeked', seekedHandler);
+                video.removeEventListener('error', errorHandler);
+                console.log(`🎯 成功跳转到 ${video.currentTime.toFixed(1)}s`);
+                resolveSeek();
+              };
+
+              const errorHandler = (e: Event) => {
+                clearTimeout(timeoutId);
+                video.removeEventListener('seeked', seekedHandler);
+                video.removeEventListener('error', errorHandler);
+                rejectSeek(new Error(`Seek失败: ${timePoint.toFixed(1)}s - ${e.type}`));
+              };
+
+              video.addEventListener('seeked', seekedHandler);
+              video.addEventListener('error', errorHandler);
+            });
+
+            // 验证Canvas状态
+            if (!ctx) {
+              throw new Error('Canvas上下文丢失');
+            }
+
+            if (canvas.width <= 0 || canvas.height <= 0) {
+              throw new Error(`Canvas尺寸无效: ${canvas.width}x${canvas.height}`);
+            }
+
+            // 绘制帧到canvas
+            try {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            } catch (drawError) {
+              throw new Error(`绘制视频帧失败: ${drawError instanceof Error ? drawError.message : '未知错误'}`);
+            }
+
+            // 获取图像数据
+            let imageData: ImageData;
+            try {
+              imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            } catch (getDataError) {
+              throw new Error(`获取图像数据失败: ${getDataError instanceof Error ? getDataError.message : '未知错误'}`);
+            }
+
+            // 验证帧有效性
+            if (this.isValidImageData(imageData)) {
+              candidateFrames.push({ imageData, timePoint });
+              successCount++;
+              console.log(`✅ 成功提取帧 ${successCount}/${timePoints.length} (${timePoint.toFixed(1)}s)`);
+              break; // 成功提取，跳出重试循环
+            } else {
+              skipCount++;
+              console.warn(`⚠️ 跳过无效帧 ${timePoint.toFixed(1)}s (第${skipCount}个无效帧)`);
+
+              // 如果是因为帧无效而失败，也跳出重试循环（重试不会改善帧质量）
+              break;
+            }
+
+          } catch (error) {
+            const errorMsg = `提取帧失败 ${timePoint.toFixed(1)}s: ${error instanceof Error ? error.message : '未知错误'}`;
+
+            // 🔧 区分可重试和不可重试的错误
+            const isRetryableError = error instanceof Error && (
+              error.message.includes('Seek超时') ||
+              error.message.includes('Seek失败') ||
+              error.message.includes('绘制视频帧失败')
+            );
+
+            const isFatalError = error instanceof Error && (
+              error.message.includes('Canvas上下文') ||
+              error.message.includes('视频未准备好') ||
+              error.message.includes('视频时长无效')
+            );
+
+            if (isLastRetry || !isRetryableError) {
+              // 最后一次重试失败，或者是不可重试的错误
+              errorCount++;
+              errors.push(errorMsg);
+              console.warn(`❌ ${errorMsg} ${isLastRetry ? '(重试已用尽)' : '(不可重试)'}`);
+
+              // 致命错误立即终止整个提取过程
+              if (isFatalError) {
+                console.error(`遇到致命错误，终止提取: ${errorMsg}`);
+                throw error;
+              }
+
+              break; // 跳出重试循环，继续下一个时间点
+            } else {
+              // 可重试的错误，等待一小段时间后重试
+              console.warn(`⚠️ ${errorMsg} (将重试 ${retryCount}/${maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, 100 * retryCount)); // 递增延迟
+            }
+          }
+        } // 结束重试循环
+
+        // 🔧 优化的错误率检查 - 只在极端情况下终止
+        const currentErrorRate = errorCount / timePoints.length;
+        if (currentErrorRate > 0.95 && errorCount > 5) {
+          console.error(`错误率极高 (${errorCount}/${timePoints.length}, ${(currentErrorRate * 100).toFixed(1)}%)，终止剩余提取`);
+          break;
+        }
+        }
+
+        // 详细的提取结果报告
+        console.log(`📊 帧提取统计:`, {
+          总帧数: timePoints.length,
+          成功: successCount,
+          跳过: skipCount,
+          错误: errorCount,
+          成功率: `${((successCount / timePoints.length) * 100).toFixed(1)}%`,
+          有效帧率: `${(((successCount + skipCount) / timePoints.length) * 100).toFixed(1)}%`
         });
-        
+
+        if (errors.length > 0) {
+          console.warn('提取过程中的错误:', errors.slice(0, 5)); // 只显示前5个错误
+        }
+
+        console.log(`📦 提取完成，获得 ${candidateFrames.length} 个候选帧`);
+
+        // 🔧 增强的错误处理和回退机制
+        if (candidateFrames.length === 0) {
+          // 提供详细的错误诊断信息
+          const diagnosticInfo = {
+            视频信息: {
+              时长: `${duration.toFixed(1)}s`,
+              尺寸: `${video.videoWidth}x${video.videoHeight}`,
+              就绪状态: video.readyState,
+              网络状态: video.networkState,
+              可播放: !video.paused && !video.ended
+            },
+            提取配置: {
+              开始时间: `${startTime.toFixed(1)}s`,
+              帧数量: frameCount,
+              时间点数量: timePoints.length,
+              模式: interval
+            },
+            Canvas信息: {
+              尺寸: `${canvas.width}x${canvas.height}`,
+              上下文: !!ctx
+            },
+            统计信息: {
+              成功: successCount,
+              跳过: skipCount,
+              错误: errorCount,
+              错误率: `${((errorCount / timePoints.length) * 100).toFixed(1)}%`
+            }
+          };
+
+          console.error('📋 帧提取失败诊断信息:', diagnosticInfo);
+
+          // 尝试回退策略
+          if (timePoints.length > 0) {
+            console.log('🔄 尝试回退策略：简化提取...');
+
+            try {
+              // 回退策略1：尝试提取视频中间的一帧
+              const middleTime = duration / 2;
+              video.currentTime = middleTime;
+
+              await new Promise<void>((resolve, reject) => {
+                const timeout = setTimeout(() => reject(new Error('回退策略超时')), 3000);
+                const handler = () => {
+                  clearTimeout(timeout);
+                  video.removeEventListener('seeked', handler);
+                  resolve();
+                };
+                video.addEventListener('seeked', handler);
+              });
+
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const fallbackImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+              // 降低验证标准
+              if (fallbackImageData && fallbackImageData.data && fallbackImageData.data.length > 0) {
+                candidateFrames.push({ imageData: fallbackImageData, timePoint: middleTime });
+                console.log('✅ 回退策略成功，提取到1帧');
+              }
+            } catch (fallbackError) {
+              console.error('回退策略也失败了:', fallbackError);
+            }
+          }
+
+          // 如果回退策略也失败了
+          if (candidateFrames.length === 0) {
+            const errorMessage = `未能提取到任何有效帧。诊断信息：
+- 视频时长: ${duration.toFixed(1)}s，尺寸: ${video.videoWidth}x${video.videoHeight}
+- 尝试提取 ${timePoints.length} 个时间点
+- 成功: ${successCount}，跳过: ${skipCount}，错误: ${errorCount}
+- 主要错误: ${errors.slice(0, 3).join('; ')}
+建议：检查视频文件是否完整，或尝试其他视频格式`;
+
+            throw new Error(errorMessage);
+          }
+        }
+
+        // 🤖 AI预筛选（如果启用且候选帧过多）
+        if (useAIPrefilter && candidateFrames.length > frameCount) {
+          console.log('🧠 开始AI预筛选...');
+          await this.performAIPrefiltering(candidateFrames, frameCount, {
+            useMultiModel: useMultiModelValidation
+          });
+        }
+
+        // 🏆 最终帧选择
+        let finalFrames: ImageData[];
+
+        if (useAIPrefilter && candidateFrames.some(f => f.aiScore !== undefined)) {
+          // 基于AI评分选择
+          finalFrames = candidateFrames
+            .sort((a, b) => (b.aiScore || 0.5) - (a.aiScore || 0.5))
+            .slice(0, frameCount)
+            .map(f => f.imageData);
+
+          console.log('🎯 基于AI评分选择最终帧');
+        } else {
+          // 基于时间分布选择
+          const step = Math.max(1, Math.floor(candidateFrames.length / frameCount));
+          finalFrames = candidateFrames
+            .filter((_, index) => index % step === 0)
+            .slice(0, frameCount)
+            .map(f => f.imageData);
+
+          console.log('📊 基于时间分布选择最终帧');
+        }
+
+        // 应用多样性过滤（如果启用）
+        if (enhancedFrameDiversity && finalFrames.length > 1) {
+          finalFrames = this.applyDiversityFilter(finalFrames, 0.75);
+          console.log(`🎨 多样性过滤后保留 ${finalFrames.length} 帧`);
+        }
+
+        console.log(`🎉 帧提取完成！最终获得 ${finalFrames.length} 帧`);
+        return finalFrames;
+
     } catch (error) {
       console.error('提取视频帧失败:', error);
-        reject(error);
+      throw error;
     }
-    });
   }
 
   /**
@@ -797,12 +1158,93 @@ export class ImageProcessor {
     }>;
   }> {
     try {
-      console.log(`开始分析 ${frames.length} 帧以找到最优 ${count} 帧`);
-      
+      console.log(`🚀 开始智能帧分析 ${frames.length} 帧以找到最优 ${count} 帧`);
+
+      // 🎯 尝试使用新的智能帧选择器
+      try {
+        if (!this.smartFrameSelector) {
+          // 动态导入避免构造函数问题
+          const { SmartFrameSelector } = await import('./smart-frame-selector');
+          this.smartFrameSelector = new SmartFrameSelector();
+          
+          // 如果启用了AI分析，配置AI
+          if (this.isAIAnalysisEnabled() && this.siliconFlowAPI) {
+            // 从siliconFlowAPI获取配置信息
+            const apiKey = (this.siliconFlowAPI as any).config?.apiKey;
+            const model = (this.siliconFlowAPI as any).config?.model;
+            if (apiKey) {
+              this.smartFrameSelector.configureAI(apiKey, model);
+            }
+          }
+        }
+
+        // 构建智能选择选项
+        const selectionOptions: SmartSelectionOptions = {
+          targetCount: count,
+          preferences: {
+            prioritizeStatic: preferences.prioritizeStatic ?? true,
+            avoidSubtitles: preferences.avoidSubtitles ?? true,
+            preferPeople: preferences.preferPeople ?? true,
+            preferFaces: preferences.preferFaces ?? true,
+            enhanceDiversity: true // 启用多样性优化
+          },
+          aiAnalysis: {
+            enabled: this.isAIAnalysisEnabled(),
+            maxAIFrames: Math.min(15, Math.max(count * 2, 10)), // 动态调整AI分析帧数
+            confidenceThreshold: options.subtitleDetectionStrength ?? 0.8
+          },
+          performance: {
+            maxProcessingTime: 180000, // 3分钟超时
+            enableCaching: true,
+            batchSize: 5
+          }
+        };
+
+        // 🎯 执行智能帧选择
+        const smartResult = await this.smartFrameSelector.selectBestFrames(frames, selectionOptions);
+        
+        console.log(`✅ 智能帧选择完成！`);
+        console.log(`📊 统计信息:`, {
+          总帧数: smartResult.statistics.totalFrames,
+          分析帧数: smartResult.statistics.analyzedFrames,
+          AI分析帧数: smartResult.statistics.aiAnalyzedFrames,
+          处理时间: `${smartResult.statistics.processingTime}ms`,
+          选择帧数: smartResult.selectedFrames.length
+        });
+
+        // 转换为原有格式
+        const result = {
+          frames: smartResult.selectedFrames.map(frame => ({
+            index: frame.originalIndex,
+            scores: {
+              staticScore: frame.scores.staticScore,
+              subtitleScore: frame.scores.subtitleScore,
+              peopleScore: frame.scores.peopleScore,
+              emptyFrameScore: frame.scores.qualityScore,
+              diversityScore: frame.scores.diversityScore
+            }
+          }))
+        };
+
+        return result;
+
+      } catch (smartSelectorError) {
+        console.warn('🔄 智能帧选择器失败，回退到传统方法:', smartSelectorError);
+        // 继续执行原有的传统分析逻辑
+      }
+
+      // 检查是否启用AI分析（保留原有逻辑作为回退）
+      const useAIAnalysis = this.isAIAnalysisEnabled();
+      if (useAIAnalysis) {
+        console.log('使用硅基流动AI进行智能帧分析');
+      } else {
+        console.log('使用传统像素分析方法');
+      }
+
       // 如果帧数过多，先进行初步筛选以减轻计算负担
       let framesToAnalyze = frames;
-      const maxFramesToAnalyze = 40; // 增加最大分析帧数(30->40)，以确保更好的选择
-      
+      const maxFramesToAnalyze = useAIAnalysis ? 20 : 40; // AI分析时减少帧数以控制成本
+
       if (frames.length > maxFramesToAnalyze) {
         console.log(`帧数过多 (${frames.length})，进行初步筛选`);
         // 均匀选择帧进行分析
@@ -842,29 +1284,68 @@ export class ImageProcessor {
           // 创建批处理Promise
           const batchPromises = currentBatch.map(async (frame, batchIndex) => {
             const originalIndex = framesToAnalyze.indexOf(frame);
-            
+
             try {
-              // 降低分析采样率以提高性能
-              const effectiveSampleRate = Math.min(options.sampleRate || 2, 3);
-              
-              // 批量分析图像，使用简化的参数
-          const results = await this.batchAnalyzeImage(frame, {
-                sampleRate: effectiveSampleRate,
-            subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
-                staticFrameThreshold: options.staticFrameThreshold || 0.8,
-                simplifiedAnalysis: true // 添加简化分析标志
-          });
-          
-          return {
-                index: frames.indexOf(frame), // 获取原始帧数组中的索引
-                originalIndex: originalIndex, // 保存在筛选后数组中的索引
-            scores: {
-              staticScore: results.staticScore || 0.5,
-              subtitleScore: results.subtitleScore || 0.5,
-              peopleScore: results.peopleScore || 0.5,
+              let scores: any = {};
+
+              if (useAIAnalysis && this.siliconFlowAPI) {
+                // 使用AI分析
+                console.log(`使用AI分析帧 ${originalIndex}`);
+                const aiResult = await this.siliconFlowAPI.analyzeFrame(frame);
+
+                if (!aiResult.error) {
+                  // 将AI结果转换为传统评分格式
+                  scores = {
+                    staticScore: 0.8, // AI分析的帧通常质量较好
+                    subtitleScore: aiResult.hasSubtitles ? 0.9 : 0.1, // 有字幕得分高，无字幕得分低
+                    peopleScore: aiResult.hasPeople ? 0.9 : 0.1, // 有人物得分高，无人物得分低
+                    emptyFrameScore: aiResult.hasPeople ? 0.1 : 0.8, // 有人物时空帧得分低
+                    diversityScore: aiResult.confidence || 0.7 // 使用AI的置信度作为多样性分数
+                  };
+
+                  console.log(`AI分析结果 - 帧${originalIndex}: 字幕=${aiResult.hasSubtitles}, 人物=${aiResult.hasPeople}, 置信度=${aiResult.confidence}`);
+                } else {
+                  console.warn(`AI分析失败，回退到传统方法: ${aiResult.error}`);
+                  // AI分析失败，回退到传统方法
+                  const effectiveSampleRate = Math.min(options.sampleRate || 2, 3);
+                  const results = await this.batchAnalyzeImage(frame, {
+                    sampleRate: effectiveSampleRate,
+                    subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
+                    staticFrameThreshold: options.staticFrameThreshold || 0.8,
+                    simplifiedAnalysis: true
+                  });
+
+                  scores = {
+                    staticScore: results.staticScore || 0.5,
+                    subtitleScore: results.subtitleScore || 0.5,
+                    peopleScore: results.peopleScore || 0.5,
+                    emptyFrameScore: results.emptyFrameScore || 0.5,
+                    diversityScore: results.diversityScore || 0.5
+                  };
+                }
+              } else {
+                // 使用传统像素分析方法
+                const effectiveSampleRate = Math.min(options.sampleRate || 2, 3);
+                const results = await this.batchAnalyzeImage(frame, {
+                  sampleRate: effectiveSampleRate,
+                  subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
+                  staticFrameThreshold: options.staticFrameThreshold || 0.8,
+                  simplifiedAnalysis: true
+                });
+
+                scores = {
+                  staticScore: results.staticScore || 0.5,
+                  subtitleScore: results.subtitleScore || 0.5,
+                  peopleScore: results.peopleScore || 0.5,
                   emptyFrameScore: results.emptyFrameScore || 0.5,
                   diversityScore: results.diversityScore || 0.5
-                }
+                };
+              }
+
+              return {
+                index: frames.indexOf(frame), // 获取原始帧数组中的索引
+                originalIndex: originalIndex, // 保存在筛选后数组中的索引
+                scores: scores
               };
             } catch (error) {
               console.error(`分析帧 ${originalIndex} 失败:`, error);
@@ -1368,6 +1849,91 @@ export class ImageProcessor {
       }
       
       throw error;
+    }
+  }
+
+  /**
+   * 验证 ImageData 是否有效
+   */
+  private isValidImageData(imageData: ImageData): boolean {
+    try {
+      // 基本结构检查
+      if (!imageData || !imageData.data || !imageData.width || !imageData.height) {
+        console.warn('ImageData 基本结构无效');
+        return false;
+      }
+
+      // 尺寸检查
+      if (imageData.width <= 0 || imageData.height <= 0) {
+        console.warn('ImageData 尺寸无效:', imageData.width, 'x', imageData.height);
+        return false;
+      }
+
+      // 数据长度检查
+      const expectedLength = imageData.width * imageData.height * 4;
+      if (imageData.data.length !== expectedLength) {
+        console.warn('ImageData 数据长度不匹配:', imageData.data.length, '期望:', expectedLength);
+        return false;
+      }
+
+      // 🔧 优化的内容检查 - 更宽松的验证标准
+      const data = imageData.data;
+      let hasContent = false;
+      let nonZeroPixels = 0;
+      let totalBrightness = 0;
+      let maxBrightness = 0;
+
+      // 采样检查，避免检查所有像素
+      const sampleRate = Math.max(1, Math.floor(data.length / 8000)); // 最多检查2000个像素
+      let sampleCount = 0;
+
+      for (let i = 0; i < data.length; i += 4 * sampleRate) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+
+        sampleCount++;
+
+        // 检查是否有非透明像素
+        if (a > 0) {
+          nonZeroPixels++;
+
+          // 计算亮度
+          const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+          totalBrightness += brightness;
+          maxBrightness = Math.max(maxBrightness, brightness);
+
+          // 降低阈值，检查是否有任何可见内容
+          if (r > 5 || g > 5 || b > 5) {
+            hasContent = true;
+          }
+        }
+      }
+
+      const avgBrightness = sampleCount > 0 ? totalBrightness / sampleCount : 0;
+      const transparentRatio = nonZeroPixels / sampleCount;
+
+      // 更宽松的验证条件
+      if (transparentRatio < 0.1) {
+        console.warn('ImageData 透明度过高:', `${(transparentRatio * 100).toFixed(1)}%`);
+        return false;
+      }
+
+      if (!hasContent && avgBrightness < 5) {
+        console.warn('ImageData 内容过暗:', `平均亮度 ${avgBrightness.toFixed(1)}`);
+        return false;
+      }
+
+      // 如果有基本的亮度变化，认为是有效的
+      if (maxBrightness > 15) {
+        return true;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('验证 ImageData 时发生错误:', error);
+      return false;
     }
   }
 }

@@ -120,6 +120,7 @@ export default function HomePage() {
   const { userInfo, isInitialized } = useUser()
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
+  const [settingsInitialSection, setSettingsInitialSection] = useState<string | undefined>(undefined)
   const [showTasksDialog, setShowTasksDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
@@ -1813,7 +1814,10 @@ export default function HomePage() {
               </TabsList>
 
               <TabsContent value="extract" className="mt-6">
-                <VideoThumbnailExtractor />
+                <VideoThumbnailExtractor onOpenGlobalSettings={(section) => {
+                  setSettingsInitialSection(section)
+                  setShowSettingsDialog(true)
+                }} />
               </TabsContent>
 
               <TabsContent value="crop" className="mt-6">
@@ -2119,7 +2123,10 @@ export default function HomePage() {
           totalItems={totalItems}
           runningTasks={runningTasks}
           onShowAddDialog={() => setShowAddDialog(true)}
-          onShowSettingsDialog={() => setShowSettingsDialog(true)}
+          onShowSettingsDialog={(section) => {
+            setSettingsInitialSection(section)
+            setShowSettingsDialog(true)
+          }}
           onShowTasksDialog={() => setShowTasksDialog(true)}
           onShowExecutionLogs={() => setShowExecutionLogs(true)}
           onShowImportDialog={() => setShowImportDialog(true)}
@@ -2239,7 +2246,16 @@ export default function HomePage() {
           onOpenChange={setShowAddDialog}
           onAdd={handleAddItem}
         />
-        <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
+        <SettingsDialog 
+          open={showSettingsDialog} 
+          onOpenChange={(open) => {
+            setShowSettingsDialog(open)
+            if (!open) {
+              setSettingsInitialSection(undefined)
+            }
+          }}
+          initialSection={settingsInitialSection}
+        />
         <GlobalScheduledTasksDialog open={showTasksDialog} onOpenChange={setShowTasksDialog} />
         <TaskExecutionLogsDialog
           open={showExecutionLogs}
@@ -2509,7 +2525,16 @@ export default function HomePage() {
         onOpenChange={setShowAddDialog} 
         onAdd={handleAddItem} 
       />
-      <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
+      <SettingsDialog 
+        open={showSettingsDialog} 
+        onOpenChange={(open) => {
+          setShowSettingsDialog(open)
+          if (!open) {
+            setSettingsInitialSection(undefined)
+          }
+        }}
+        initialSection={settingsInitialSection}
+      />
       <GlobalScheduledTasksDialog open={showTasksDialog} onOpenChange={setShowTasksDialog} />
       <TaskExecutionLogsDialog
         open={showExecutionLogs}

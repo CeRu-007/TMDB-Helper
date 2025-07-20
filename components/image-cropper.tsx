@@ -677,28 +677,30 @@ export function ImageCropper() {
 
   // 主渲染
   return (
-    <div className="space-y-6">
-      {/* 隐藏的文件输入 */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept="image/*"
-        onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-        className="hidden"
-      />
+    <div className="h-full overflow-hidden">
+      <div className="h-full overflow-y-auto">
+        <div className="container mx-auto px-4 py-6 space-y-6">
+          {/* 隐藏的文件输入 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+            className="hidden"
+          />
 
-      {/* 头部工具栏 */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Scissors className="h-6 w-6" />
-            分集图片裁切
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            将图片裁切为16:9比例，适用于分集封面图片处理
-          </p>
-        </div>
+          {/* 头部工具栏 */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <Scissors className="h-6 w-6" />
+                分集图片裁切
+              </h2>
+              <p className="text-muted-foreground mt-1">
+                将图片裁切为16:9比例，适用于分集封面图片处理
+              </p>
+            </div>
 
         <div className="flex items-center gap-2">
           <Button
@@ -1357,6 +1359,8 @@ export function ImageCropper() {
           </div>
         </DialogContent>
       </Dialog>
+        </div>
+      </div>
     </div>
   )
 }

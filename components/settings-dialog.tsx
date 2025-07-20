@@ -14,6 +14,8 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/hooks/use-toast"
+import { Slider } from "@/components/ui/slider"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Eye,
   EyeOff,
@@ -35,11 +37,13 @@ import {
   Monitor,
   Sun,
   Moon,
+  Film,
 } from "lucide-react"
 
 interface SettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialSection?: string
 }
 
 interface TMDBConfig {
@@ -72,9 +76,22 @@ interface AppearanceSettings {
   showTooltips: boolean
 }
 
-export default function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+interface VideoThumbnailSettings {
+  startTime: number
+  threadCount: number
+  outputFormat: "jpg" | "png"
+  thumbnailCount: number
+  frameInterval: number
+  keepOriginalResolution: boolean
+  // AI筛选功能
+  enableAIFilter: boolean
+  siliconFlowApiKey: string
+  siliconFlowModel: string
+}
+
+export default function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
   const { toast } = useToast()
-  const [activeSection, setActiveSection] = useState("api")
+  const [activeSection, setActiveSection] = useState(initialSection || "api")
   const [apiKey, setApiKey] = useState("")
   const [showApiKey, setShowApiKey] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle")
@@ -118,6 +135,22 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
     showTooltips: true
   })
 
+  // 视频缩略图设置状态
+  const [videoThumbnailSettings, setVideoThumbnailSettings] = useState<VideoThumbnailSettings>({
+    startTime: 0,
+    threadCount: 2,
+    outputFormat: "jpg",
+    thumbnailCount: 9,
+    frameInterval: 30,
+    keepOriginalResolution: true,
+    // AI筛选功能
+    enableAIFilter: false,
+    siliconFlowApiKey: "",
+    siliconFlowModel: "Qwen/Qwen2.5-VL-32B-Instruct"
+  })
+
+  const [showAdvancedVideoSettings, setShowAdvancedVideoSettings] = useState(false)
+
   useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -154,7 +187,37 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
         console.error('加载外观设置失败:', error)
       }
     }
+
+    // 加载视频缩略图设置
+    const savedVideoThumbnailSettings = localStorage.getItem("video_thumbnail_settings")
+    if (savedVideoThumbnailSettings) {
+      try {
+        const settings = JSON.parse(savedVideoThumbnailSettings)
+        setVideoThumbnailSettings(prev => ({
+          ...prev,
+          ...settings,
+          // 确保数值正确
+          startTime: Number(settings.startTime || prev.startTime),
+          threadCount: Number(settings.threadCount || prev.threadCount),
+          thumbnailCount: Number(settings.thumbnailCount || prev.thumbnailCount),
+          frameInterval: Number(settings.frameInterval || prev.frameInterval),
+          // AI筛选设置
+          enableAIFilter: settings.enableAIFilter || prev.enableAIFilter,
+          siliconFlowApiKey: settings.siliconFlowApiKey || prev.siliconFlowApiKey,
+          siliconFlowModel: settings.siliconFlowModel || prev.siliconFlowModel
+        }))
+      } catch (error) {
+        console.error('加载视频缩略图设置失败:', error)
+      }
+    }
   }, [])
+
+  // 监听initialSection变化，当对话框打开时设置活动页面
+  useEffect(() => {
+    if (open && initialSection) {
+      setActiveSection(initialSection)
+    }
+  }, [open, initialSection])
 
   // 应用主题设置
   const applyThemeSettings = (settings: AppearanceSettings) => {
@@ -231,6 +294,23 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
       toast({
         title: "错误",
         description: "保存外观设置失败",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // 保存视频缩略图设置
+  const saveVideoThumbnailSettings = () => {
+    try {
+      localStorage.setItem("video_thumbnail_settings", JSON.stringify(videoThumbnailSettings))
+      toast({
+        title: "成功",
+        description: "视频缩略图设置已保存",
+      })
+    } catch (error) {
+      toast({
+        title: "错误",
+        description: "保存视频缩略图设置失败",
         variant: "destructive",
       })
     }
@@ -362,6 +442,10 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
           saveAppearanceSettings()
           break
 
+        case "video-thumbnail":
+          saveVideoThumbnailSettings()
+          break
+
         case "tools":
           await saveTmdbConfig()
           break
@@ -448,6 +532,12 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
       label: "工具配置",
       icon: Terminal,
       description: "TMDB-Import工具设置"
+    },
+    {
+      id: "video-thumbnail",
+      label: "缩略图设置",
+      icon: Film,
+      description: "视频缩略图提取设置"
     },
     {
       id: "general",
@@ -545,6 +635,8 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
         return renderApiSettings()
       case "tools":
         return renderToolsSettings()
+      case "video-thumbnail":
+        return renderVideoThumbnailSettings()
       case "general":
         return renderGeneralSettings()
       case "appearance":
@@ -1222,6 +1314,240 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
               </div>
             </div>
           </CardContent>
+        </Card>
+
+        {/* 状态反馈 */}
+        {(validationMessage || saveStatus !== "idle") && (
+          <Card
+            className={`${saveStatus === "success"
+              ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
+              : saveStatus === "error"
+                ? "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950"
+                : "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950"
+              }`}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                {getStatusIcon()}
+                <span className={`text-sm ${getStatusColor()}`}>
+                  {validationMessage || (saveStatus === "saving" ? "正在保存..." : "")}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    )
+  }
+
+  // 视频缩略图设置内容
+  function renderVideoThumbnailSettings() {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">视频缩略图提取设置</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            简单的顺序帧提取，从指定时间开始按帧间隔提取缩略图
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">提取设置</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="startTime">开始提取时间 (秒)</Label>
+              <Input
+                id="startTime"
+                type="number"
+                min="0"
+                step="0.1"
+                value={videoThumbnailSettings.startTime}
+                onChange={(e) =>
+                  setVideoThumbnailSettings(prev => ({ ...prev, startTime: Number(e.target.value) }))
+                }
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                从视频的哪个时间点开始提取缩略图
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="thumbnailCount">缩略图数量</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Slider
+                  value={[videoThumbnailSettings.thumbnailCount]}
+                  min={1}
+                  max={20}
+                  step={1}
+                  onValueChange={([value]) => 
+                    setVideoThumbnailSettings(prev => ({ ...prev, thumbnailCount: value }))
+                  }
+                  className="flex-1"
+                />
+                <span className="font-medium w-8 text-center">{videoThumbnailSettings.thumbnailCount}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                要提取的缩略图数量
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="frameInterval">帧间隔</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Slider
+                  value={[videoThumbnailSettings.frameInterval]}
+                  min={1}
+                  max={300}
+                  step={1}
+                  onValueChange={([value]) => 
+                    setVideoThumbnailSettings(prev => ({ ...prev, frameInterval: value }))
+                  }
+                  className="flex-1"
+                />
+                <span className="font-medium w-12 text-center">{videoThumbnailSettings.frameInterval}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                每隔多少帧提取一次（1=每帧，30=约每秒一次@30fps）
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="threadCount">同时处理视频数量</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Slider
+                  value={[videoThumbnailSettings.threadCount]}
+                  min={1}
+                  max={8}
+                  step={1}
+                  onValueChange={([value]) => 
+                    setVideoThumbnailSettings(prev => ({ ...prev, threadCount: value }))
+                  }
+                  className="flex-1"
+                />
+                <span className="font-medium w-8 text-center">{videoThumbnailSettings.threadCount}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                同时处理的视频数量
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="outputFormat">输出格式</Label>
+              <Select
+                value={videoThumbnailSettings.outputFormat}
+                onValueChange={(value) => 
+                  setVideoThumbnailSettings(prev => ({ ...prev, outputFormat: value as "jpg" | "png" }))
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="选择输出格式" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="jpg">JPG</SelectItem>
+                  <SelectItem value="png">PNG</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                缩略图输出格式
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="keepOriginalResolution"
+                checked={videoThumbnailSettings.keepOriginalResolution}
+                onCheckedChange={(checked) => 
+                  setVideoThumbnailSettings(prev => ({ ...prev, keepOriginalResolution: !!checked }))
+                }
+              />
+              <Label htmlFor="keepOriginalResolution" className="cursor-pointer">
+                保持原始分辨率
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground pl-6">
+              保持视频的原始分辨率，否则将缩放到640x360
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">AI智能筛选</CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  使用硅基流动AI识别有人物无字幕的帧
+                </p>
+              </div>
+              <Switch
+                checked={videoThumbnailSettings.enableAIFilter}
+                onCheckedChange={(checked) =>
+                  setVideoThumbnailSettings(prev => ({ ...prev, enableAIFilter: !!checked }))
+                }
+              />
+            </div>
+          </CardHeader>
+          {videoThumbnailSettings.enableAIFilter && (
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="siliconFlowApiKey">硅基流动API密钥</Label>
+                <Input
+                  id="siliconFlowApiKey"
+                  type="password"
+                  placeholder="请输入硅基流动API密钥"
+                  value={videoThumbnailSettings.siliconFlowApiKey}
+                  onChange={(e) =>
+                    setVideoThumbnailSettings(prev => ({ ...prev, siliconFlowApiKey: e.target.value }))
+                  }
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  在 <a href="https://cloud.siliconflow.cn/account/ak" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">硅基流动官网</a> 获取免费API密钥
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="siliconFlowModel">AI模型</Label>
+                <Select
+                  value={videoThumbnailSettings.siliconFlowModel}
+                  onValueChange={(value) =>
+                    setVideoThumbnailSettings(prev => ({ ...prev, siliconFlowModel: value }))
+                  }
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="选择AI模型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Qwen/Qwen2.5-VL-32B-Instruct">Qwen2.5-VL-32B (推荐)</SelectItem>
+                    <SelectItem value="Qwen/Qwen2.5-VL-72B-Instruct">Qwen2.5-VL-72B (高精度)</SelectItem>
+                    <SelectItem value="deepseek-ai/deepseek-vl2">DeepSeek-VL2 (快速)</SelectItem>
+                    <SelectItem value="THUDM/GLM-4.1V-9B-Thinking">GLM-4.1V-9B-Thinking</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  不同模型的精度和成本不同，推荐使用32B模型
+                </p>
+              </div>
+
+              <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start space-x-2">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium mb-1">AI筛选工作原理：</p>
+                    <ul className="text-xs space-y-1 list-disc list-inside">
+                      <li>程序按帧间隔提取视频帧</li>
+                      <li>每帧都通过AI模型分析是否有人物和字幕</li>
+                      <li>只有包含人物且无字幕的帧才会生成缩略图</li>
+                      <li>这样可以自动筛选出高质量的缩略图</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          )}
         </Card>
 
         {/* 状态反馈 */}

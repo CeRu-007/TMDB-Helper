@@ -194,7 +194,7 @@ export function SidebarNavigation({
   return (
     <div
       className={cn(
-        "bg-white dark:bg-gray-900 border-r dark:border-gray-700 h-full transition-all duration-300 ease-in-out relative",
+        "h-full transition-all duration-300 ease-in-out relative",
         collapsed ? "w-16" : "w-64"
       )}
     >
