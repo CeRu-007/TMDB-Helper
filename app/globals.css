@@ -6,6 +6,7 @@
 @import '../styles/table-styles.css';
 @import '../styles/single-line-table.css';
 @import '../styles/glassmorphism.css';
+@import '../styles/login-animations.css';
 
 @layer base {
   :root {

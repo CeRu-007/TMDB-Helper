@@ -41,3 +41,8 @@ TMDB-Import-master/
 
 # Local data files
 data/
+
+# Prisma generated files
+lib/generated/
+prisma/dev.db
+prisma/migrations/

@@ -203,31 +203,56 @@ export default function HomePage() {
     }
     setUpcomingError(null);
     setIsMissingApiKey(false);
-    
+
+    // 检查signal是否已经被中止
+    if (signal?.aborted) {
+      console.log('[fetchUpcomingItems] 请求已被中止，跳过执行');
+      if (!silent) {
+        setLoadingUpcoming(false);
+      }
+      return;
+    }
+
     try {
       // 从localStorage获取API密钥
       const apiKey = localStorage.getItem("tmdb_api_key");
-      
+
       // 检查API密钥是否存在
       if (!apiKey) {
         setIsMissingApiKey(true);
         throw new Error('TMDB API密钥未配置，请在设置中配置');
       }
-      
-      // 使用传入的signal或创建一个新的AbortController
-      const controller = signal ? undefined : new AbortController();
-      const timeoutId = setTimeout(() => controller?.abort(), 30000); // 30秒超时
-      
+
+      // 优化AbortController使用逻辑
+      let requestSignal: AbortSignal;
+      let timeoutId: NodeJS.Timeout | undefined;
+
+      if (signal) {
+        // 使用外部提供的signal
+        requestSignal = signal;
+      } else {
+        // 创建新的controller并设置超时
+        const controller = new AbortController();
+        requestSignal = controller.signal;
+        timeoutId = setTimeout(() => {
+          console.log('[fetchUpcomingItems] 请求超时，中止请求');
+          controller.abort();
+        }, 30000); // 30秒超时
+      }
+
       const response = await fetch(`/api/tmdb/upcoming?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
-        signal: signal || controller?.signal,
+        signal: requestSignal,
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
       });
-      
-      clearTimeout(timeoutId);
+
+      // 清理超时定时器
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -295,12 +320,21 @@ export default function HomePage() {
         throw new Error(data.error || '获取影视资讯内容失败');
       }
     } catch (error) {
+      // 专门处理AbortError
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('[fetchUpcomingItems] 请求被中止:', error.message);
+        if (!silent) {
+          setLoadingUpcoming(false);
+        }
+        return; // 对于AbortError，直接返回，不进行重试或错误处理
+      }
+
       console.error('获取影视资讯内容失败:', error);
-      
+
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       // 对于TMDB API连接失败，不显示错误，静默处理
-      if (errorMessage.includes('TMDB API连接失败') || 
+      if (errorMessage.includes('TMDB API连接失败') ||
           errorMessage.includes('网络连接异常') ||
           errorMessage.includes('fetch failed')) {
         console.debug('TMDB API连接问题，静默处理:', errorMessage);
@@ -309,14 +343,14 @@ export default function HomePage() {
         }
         return;
       }
-      
+
       setUpcomingError(errorMessage);
-      
+
       // 如果是网络错误或超时，尝试重试（最多5次）
-      if (retryCount < 5 && 
-          (errorMessage.includes('network') || 
-           errorMessage.includes('timeout') || 
-           errorMessage.includes('aborted') ||
+      // 注意：移除了对'aborted'的检查，因为AbortError已经单独处理
+      if (retryCount < 5 &&
+          (errorMessage.includes('network') ||
+           errorMessage.includes('timeout') ||
            error instanceof TypeError)) {
         console.log(`尝试重新获取影视资讯内容，第${retryCount + 1}次重试`);
         
@@ -384,94 +418,128 @@ export default function HomePage() {
   useEffect(() => {
     // 创建一个AbortController
     const abortController = new AbortController();
+    let isMounted = true; // 添加挂载状态标记
 
-    // 首先尝试从localStorage加载缓存数据
-    try {
-      // 检查是否在客户端环境
-      if (typeof window === 'undefined') {
-        console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+    const loadDataAndStartRefresh = async () => {
+      // 首先尝试从localStorage加载缓存数据
+      try {
+        // 检查是否在客户端环境
+        if (typeof window === 'undefined') {
+          console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+          return;
+        }
+
+        // 加载所有区域的缓存数据
+        const newUpcomingItemsByRegion: Record<string, any[]> = {};
+        let hasAnyData = false;
+
+        REGIONS.forEach(region => {
+          try {
+            const cachedItems = localStorage.getItem(`upcomingItems_${region.id}`);
+            if (cachedItems && cachedItems.trim() !== '') {
+              const parsedItems = JSON.parse(cachedItems);
+              if (Array.isArray(parsedItems)) {
+                newUpcomingItemsByRegion[region.id] = parsedItems;
+                hasAnyData = true;
+              }
+            }
+          } catch (parseError) {
+            console.warn(`[HomePage] 解析缓存数据失败 (${region.id}):`, parseError);
+            // 清除损坏的缓存数据
+            try {
+              localStorage.removeItem(`upcomingItems_${region.id}`);
+            } catch (e) {
+              console.warn(`[HomePage] 清除损坏缓存失败:`, e);
+            }
+          }
+        });
+
+        if (hasAnyData && isMounted) {
+          setUpcomingItemsByRegion(newUpcomingItemsByRegion);
+          // 设置当前选中区域的数据
+          if (newUpcomingItemsByRegion[selectedRegion]) {
+            setUpcomingItems(newUpcomingItemsByRegion[selectedRegion]);
+          }
+
+          const cachedLastUpdated = localStorage.getItem('upcomingLastUpdated');
+          if (cachedLastUpdated) {
+            setUpcomingLastUpdated(cachedLastUpdated);
+          }
+        }
+      } catch (e) {
+        console.warn('无法从本地存储加载缓存数据:', e);
+      }
+
+      // 检查组件是否仍然挂载且请求未被中止
+      if (!isMounted || abortController.signal.aborted) {
         return;
       }
 
-      // 加载所有区域的缓存数据
-      const newUpcomingItemsByRegion: Record<string, any[]> = {};
-      let hasAnyData = false;
-
-      REGIONS.forEach(region => {
-        try {
-          const cachedItems = localStorage.getItem(`upcomingItems_${region.id}`);
-          if (cachedItems && cachedItems.trim() !== '') {
-            const parsedItems = JSON.parse(cachedItems);
-            if (Array.isArray(parsedItems)) {
-              newUpcomingItemsByRegion[region.id] = parsedItems;
-              hasAnyData = true;
-            }
-          }
-        } catch (parseError) {
-          console.warn(`[HomePage] 解析缓存数据失败 (${region.id}):`, parseError);
-          // 清除损坏的缓存数据
-          try {
-            localStorage.removeItem(`upcomingItems_${region.id}`);
-          } catch (e) {
-            console.warn(`[HomePage] 清除损坏缓存失败:`, e);
-          }
-        }
-      });
-      
-      if (hasAnyData) {
-        setUpcomingItemsByRegion(newUpcomingItemsByRegion);
-        // 设置当前选中区域的数据
-        if (newUpcomingItemsByRegion[selectedRegion]) {
-          setUpcomingItems(newUpcomingItemsByRegion[selectedRegion]);
-        }
-        
-        const cachedLastUpdated = localStorage.getItem('upcomingLastUpdated');
-        if (cachedLastUpdated) {
-          setUpcomingLastUpdated(cachedLastUpdated);
-        }
+      // 然后获取最新数据 - 默认只获取当前选中的区域
+      try {
+        await fetchUpcomingItems(false, 0, selectedRegion, abortController.signal);
+      } catch (error) {
+        // 错误已在fetchUpcomingItems中处理
+        console.debug('[HomePage] 初始数据获取完成');
       }
-    } catch (e) {
-      console.warn('无法从本地存储加载缓存数据:', e);
-    }
-    
-    // 定义一个安全的fetchData函数，使用外部的AbortController
-    const safeFetchUpcomingItems = (silent = false, retryCount = 0, region = selectedRegion) => {
-      fetchUpcomingItems(silent, retryCount, region, abortController.signal);
     };
-    
-    // 然后获取最新数据 - 默认只获取当前选中的区域
-    safeFetchUpcomingItems(false, 0, selectedRegion);
-    
+
+    // 启动数据加载
+    loadDataAndStartRefresh();
+
     // 每小时刷新一次
     const intervalId = setInterval(() => {
-      safeFetchUpcomingItems(true, 0, selectedRegion); // 静默刷新
+      if (isMounted && !abortController.signal.aborted) {
+        fetchUpcomingItems(true, 0, selectedRegion, abortController.signal); // 静默刷新
+      }
     }, 60 * 60 * 1000); // 1小时
-    
+
     return () => {
+      isMounted = false; // 标记组件已卸载
       clearInterval(intervalId);
       // 组件卸载时中止所有未完成的请求
       abortController.abort();
     };
-  }, []);
+  }, []); // 保持空依赖数组，因为我们不希望这个effect重新运行
   
   // 当选中区域变化时加载对应区域的数据
   useEffect(() => {
     // 为每个区域变化创建单独的AbortController
     const abortController = new AbortController();
-    
-    if (upcomingItemsByRegion[selectedRegion]) {
-      // 如果已经有数据，直接使用
-      setUpcomingItems(upcomingItemsByRegion[selectedRegion]);
-    } else {
-      // 否则请求新数据，传入signal
-      fetchUpcomingItems(false, 0, selectedRegion, abortController.signal);
-    }
-    
+    let isMounted = true;
+
+    const loadRegionData = async () => {
+      // 检查组件是否仍然挂载
+      if (!isMounted) return;
+
+      if (upcomingItemsByRegion[selectedRegion]) {
+        // 如果已经有数据，直接使用
+        setUpcomingItems(upcomingItemsByRegion[selectedRegion]);
+      } else {
+        // 检查请求是否已被中止
+        if (abortController.signal.aborted) {
+          console.log('[HomePage] 区域数据请求已被中止');
+          return;
+        }
+
+        // 否则请求新数据，传入signal
+        try {
+          await fetchUpcomingItems(false, 0, selectedRegion, abortController.signal);
+        } catch (error) {
+          // 错误已在fetchUpcomingItems中处理
+          console.debug(`[HomePage] 区域 ${selectedRegion} 数据获取完成`);
+        }
+      }
+    };
+
+    loadRegionData();
+
     return () => {
+      isMounted = false;
       // 区域变化时中止上一个区域的请求
       abortController.abort();
     };
-  }, [selectedRegion]);
+  }, [selectedRegion, upcomingItemsByRegion]); // 添加upcomingItemsByRegion到依赖数组
 
   // 添加自动修复定时任务的功能
   useEffect(() => {
@@ -1483,9 +1551,9 @@ export default function HomePage() {
                         ? '请按照上方指南配置TMDB API密钥' 
                         : '无法连接到TMDB服务，请检查网络连接或稍后重试'}
                     </p>
-                    <Button 
-                      onClick={() => fetchUpcomingItems()} 
-                      variant="outline" 
+                    <Button
+                      onClick={() => fetchUpcomingItems(false, 0, selectedRegion)}
+                      variant="outline"
                       className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50"
                     >
                       <RefreshCw className="h-4 w-4 mr-2" />
@@ -1655,9 +1723,9 @@ export default function HomePage() {
                             ? '请按照上方指南配置TMDB API密钥' 
                             : '无法连接到TMDB服务，请检查网络连接或稍后重试'}
                         </p>
-                        <Button 
-                          onClick={() => fetchRecentItems()} 
-                          variant="outline" 
+                        <Button
+                          onClick={() => fetchRecentItems(false, 0, selectedRegion)}
+                          variant="outline"
                           className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50"
                         >
                           <RefreshCw className="h-4 w-4 mr-2" />
@@ -1841,11 +1909,17 @@ export default function HomePage() {
   
   // 确保影视资讯页面不会消失
   useEffect(() => {
+    const abortController = new AbortController();
+
     // 如果用户切换到影视资讯标签，但数据为空，尝试重新获取
     if (activeTab === "upcoming" && upcomingItems.length === 0 && !loadingUpcoming && !upcomingError) {
-      fetchUpcomingItems();
+      fetchUpcomingItems(false, 0, selectedRegion, abortController.signal);
     }
-  }, [activeTab, upcomingItems.length, loadingUpcoming, upcomingError]);
+
+    return () => {
+      abortController.abort();
+    };
+  }, [activeTab, upcomingItems.length, loadingUpcoming, upcomingError, selectedRegion]);
 
   // 获取近期开播内容
   const fetchRecentItems = async (silent = false, retryCount = 0, region = selectedRegion, signal?: AbortSignal) => {
@@ -1853,30 +1927,55 @@ export default function HomePage() {
       setLoadingRecent(true);
     }
     setRecentError(null);
-    
+
+    // 检查signal是否已经被中止
+    if (signal?.aborted) {
+      console.log('[fetchRecentItems] 请求已被中止，跳过执行');
+      if (!silent) {
+        setLoadingRecent(false);
+      }
+      return;
+    }
+
     try {
       // 从localStorage获取API密钥
       const apiKey = localStorage.getItem("tmdb_api_key");
-      
+
       // 检查API密钥是否存在
       if (!apiKey) {
         throw new Error('TMDB API密钥未配置，请在设置中配置');
       }
-      
-      // 使用传入的signal或创建一个新的AbortController
-      const controller = signal ? undefined : new AbortController();
-      const timeoutId = setTimeout(() => controller?.abort(), 30000); // 30秒超时
-      
+
+      // 优化AbortController使用逻辑
+      let requestSignal: AbortSignal;
+      let timeoutId: NodeJS.Timeout | undefined;
+
+      if (signal) {
+        // 使用外部提供的signal
+        requestSignal = signal;
+      } else {
+        // 创建新的controller并设置超时
+        const controller = new AbortController();
+        requestSignal = controller.signal;
+        timeoutId = setTimeout(() => {
+          console.log('[fetchRecentItems] 请求超时，中止请求');
+          controller.abort();
+        }, 30000); // 30秒超时
+      }
+
       const response = await fetch(`/api/tmdb/recent?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
-        signal: signal || controller?.signal,
+        signal: requestSignal,
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
       });
-      
-      clearTimeout(timeoutId);
+
+      // 清理超时定时器
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -1933,12 +2032,21 @@ export default function HomePage() {
         throw new Error(data.error || '获取近期开播内容失败');
       }
     } catch (error) {
+      // 专门处理AbortError
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('[fetchRecentItems] 请求被中止:', error.message);
+        if (!silent) {
+          setLoadingRecent(false);
+        }
+        return; // 对于AbortError，直接返回，不进行重试或错误处理
+      }
+
       console.error('获取近期开播内容失败:', error);
-      
+
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       // 对于TMDB API连接失败，不显示错误，静默处理
-      if (errorMessage.includes('TMDB API连接失败') || 
+      if (errorMessage.includes('TMDB API连接失败') ||
           errorMessage.includes('网络连接异常') ||
           errorMessage.includes('fetch failed')) {
         console.debug('TMDB API连接问题，静默处理:', errorMessage);
@@ -1947,14 +2055,14 @@ export default function HomePage() {
         }
         return;
       }
-      
+
       setRecentError(errorMessage);
-      
+
       // 如果是网络错误或超时，尝试重试（最多5次）
-      if (retryCount < 5 && 
-          (errorMessage.includes('network') || 
-           errorMessage.includes('timeout') || 
-           errorMessage.includes('aborted') ||
+      // 注意：移除了对'aborted'的检查，因为AbortError已经单独处理
+      if (retryCount < 5 &&
+          (errorMessage.includes('network') ||
+           errorMessage.includes('timeout') ||
            error instanceof TypeError)) {
         console.log(`尝试重新获取近期开播内容，第${retryCount + 1}次重试`);
         
@@ -2022,96 +2130,124 @@ export default function HomePage() {
 
   // 在媒体类型变更时加载数据
   useEffect(() => {
+    const abortController = new AbortController();
+
     if (mediaNewsType === 'recent' && recentItems.length === 0 && !loadingRecent) {
-      fetchRecentItems();
+      fetchRecentItems(false, 0, selectedRegion, abortController.signal);
     }
-  }, [mediaNewsType]);
+
+    return () => {
+      abortController.abort();
+    };
+  }, [mediaNewsType, recentItems.length, loadingRecent, selectedRegion]);
 
   // 确保影视资讯页面不会消失
   useEffect(() => {
+    // 创建AbortController用于这个effect
+    const abortController = new AbortController();
+
     // 如果用户切换到影视资讯标签，但数据为空，尝试重新获取
     if (activeTab === "upcoming") {
       if (mediaNewsType === 'upcoming' && upcomingItems.length === 0 && !loadingUpcoming && !upcomingError) {
-        fetchUpcomingItems();
+        fetchUpcomingItems(false, 0, selectedRegion, abortController.signal);
       } else if (mediaNewsType === 'recent' && recentItems.length === 0 && !loadingRecent && !recentError) {
-        fetchRecentItems();
+        fetchRecentItems(false, 0, selectedRegion, abortController.signal);
       }
     }
-  }, [activeTab, mediaNewsType]);
+
+    return () => {
+      // 清理时中止请求
+      abortController.abort();
+    };
+  }, [activeTab, mediaNewsType, selectedRegion, upcomingItems.length, loadingUpcoming, upcomingError, recentItems.length, loadingRecent, recentError]);
 
   // 加载近期开播数据和自动刷新
   useEffect(() => {
     // 创建一个AbortController
     const abortController = new AbortController();
+    let isMounted = true; // 添加挂载状态标记
 
-    // 首先尝试从localStorage加载缓存数据
-    try {
-      // 检查是否在客户端环境
-      if (typeof window === 'undefined') {
-        console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+    const loadDataAndStartRefresh = async () => {
+      // 首先尝试从localStorage加载缓存数据
+      try {
+        // 检查是否在客户端环境
+        if (typeof window === 'undefined') {
+          console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+          return;
+        }
+
+        // 加载所有区域的缓存数据
+        const newRecentItemsByRegion: Record<string, any[]> = {};
+        let hasAnyData = false;
+
+        REGIONS.forEach(region => {
+          try {
+            const cachedItems = localStorage.getItem(`recentItems_${region.id}`);
+            if (cachedItems && cachedItems.trim() !== '') {
+              const parsedItems = JSON.parse(cachedItems);
+              if (Array.isArray(parsedItems)) {
+                newRecentItemsByRegion[region.id] = parsedItems;
+                hasAnyData = true;
+              }
+            }
+          } catch (parseError) {
+            console.warn(`[HomePage] 解析近期开播缓存数据失败 (${region.id}):`, parseError);
+            // 清除损坏的缓存数据
+            try {
+              localStorage.removeItem(`recentItems_${region.id}`);
+            } catch (e) {
+              console.warn(`[HomePage] 清除损坏缓存失败:`, e);
+            }
+          }
+        });
+
+        if (hasAnyData && isMounted) {
+          setRecentItemsByRegion(newRecentItemsByRegion);
+          // 设置当前选中区域的数据
+          if (newRecentItemsByRegion[selectedRegion]) {
+            setRecentItems(newRecentItemsByRegion[selectedRegion]);
+          }
+
+          const cachedLastUpdated = localStorage.getItem('recentLastUpdated');
+          if (cachedLastUpdated) {
+            setRecentLastUpdated(cachedLastUpdated);
+          }
+        }
+      } catch (e) {
+        console.warn('无法从本地存储加载缓存数据:', e);
+      }
+
+      // 检查组件是否仍然挂载且请求未被中止
+      if (!isMounted || abortController.signal.aborted) {
         return;
       }
 
-      // 加载所有区域的缓存数据
-      const newRecentItemsByRegion: Record<string, any[]> = {};
-      let hasAnyData = false;
-
-      REGIONS.forEach(region => {
-        try {
-          const cachedItems = localStorage.getItem(`recentItems_${region.id}`);
-          if (cachedItems && cachedItems.trim() !== '') {
-            const parsedItems = JSON.parse(cachedItems);
-            if (Array.isArray(parsedItems)) {
-              newRecentItemsByRegion[region.id] = parsedItems;
-              hasAnyData = true;
-            }
-          }
-        } catch (parseError) {
-          console.warn(`[HomePage] 解析近期开播缓存数据失败 (${region.id}):`, parseError);
-          // 清除损坏的缓存数据
-          try {
-            localStorage.removeItem(`recentItems_${region.id}`);
-          } catch (e) {
-            console.warn(`[HomePage] 清除损坏缓存失败:`, e);
-          }
-        }
-      });
-      
-      if (hasAnyData) {
-        setRecentItemsByRegion(newRecentItemsByRegion);
-        // 设置当前选中区域的数据
-        if (newRecentItemsByRegion[selectedRegion]) {
-          setRecentItems(newRecentItemsByRegion[selectedRegion]);
-        }
-        
-        const cachedLastUpdated = localStorage.getItem('recentLastUpdated');
-        if (cachedLastUpdated) {
-          setRecentLastUpdated(cachedLastUpdated);
-        }
+      // 然后获取最新数据 - 默认只获取当前选中的区域
+      try {
+        await fetchRecentItems(false, 0, selectedRegion, abortController.signal);
+      } catch (error) {
+        // 错误已在fetchRecentItems中处理
+        console.debug('[HomePage] 近期开播初始数据获取完成');
       }
-    } catch (e) {
-      console.warn('无法从本地存储加载缓存数据:', e);
-    }
-    
-    // 定义一个安全的fetchData函数，使用外部的AbortController
-    const safeFetchRecentItems = (silent = false, retryCount = 0, region = selectedRegion) => {
-      fetchRecentItems(silent, retryCount, region, abortController.signal);
     };
-    
-    // 然后获取最新数据 - 默认只获取当前选中的区域
-    safeFetchRecentItems(false, 0, selectedRegion);
-    
+
+    // 启动数据加载
+    loadDataAndStartRefresh();
+
     // 每小时刷新一次
     const intervalId = setInterval(() => {
-      safeFetchRecentItems(true, 0, selectedRegion); // 静默刷新
+      if (isMounted && !abortController.signal.aborted) {
+        fetchRecentItems(true, 0, selectedRegion, abortController.signal); // 静默刷新
+      }
     }, 60 * 60 * 1000); // 1小时
-    
+
     return () => {
+      isMounted = false; // 标记组件已卸载
       clearInterval(intervalId);
       // 组件卸载时中止所有未完成的请求
       abortController.abort();
     };
-  }, []);
+  }, []); // 保持空依赖数组，因为我们不希望这个effect重新运行
 
   // 如果是侧边栏布局，使用SidebarLayout组件
   if (currentLayout === 'sidebar') {

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import ImportDataDialog from "./import-data-dialog"
 import ExportDataDialog from "./export-data-dialog"
 import { UserManager, UserInfo } from "@/lib/user-manager"
+import { useAuth } from "@/components/auth-provider"
 import { useIsClient } from "@/hooks/use-is-client"
 import { useEnhancedData } from "@/components/enhanced-client-data-provider"
 import { useTheme } from "next-themes"
@@ -56,6 +57,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isInitialized, setIsInitialized] = useState(false)
+  const { user: authUser } = useAuth()
   const isClient = useIsClient()
 
   // 初始化用户身份
@@ -63,19 +65,30 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
     if (!isClient) return
 
     setIsLoading(true)
-    
+
     try {
+      // 设置管理员用户ID（用于认证系统）
+      UserManager.setAdminUserId()
+
       // 验证现有会话
       const isValidSession = UserManager.validateSession()
-      
+
       if (isValidSession) {
         // 获取用户信息
         const info = UserManager.getUserInfo()
+        // 如果有认证用户信息，使用认证用户的显示名称
+        if (authUser) {
+          info.displayName = authUser.username
+        }
         setUserInfo(info)
         console.log(`[UserIdentity] 用户会话有效: ${info.userId}`)
       } else {
         // 创建新用户会话
         const info = UserManager.getUserInfo()
+        // 如果有认证用户信息，使用认证用户的显示名称
+        if (authUser) {
+          info.displayName = authUser.username
+        }
         setUserInfo(info)
         console.log(`[UserIdentity] 创建新用户会话: ${info.userId}`)
       }
@@ -86,7 +99,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
           method: 'GET',
           credentials: 'include',
         })
-        
+
         if (response.ok) {
           const data = await response.json()
           console.log(`[UserIdentity] 服务器端用户ID同步: ${data.userId}`)
@@ -219,6 +232,7 @@ export function UserAvatar({
   currentLayout?: LayoutType
 } = {}) {
   const { userInfo, isLoading } = useUser()
+  const { logout } = useAuth()
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -323,6 +337,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
     const { userInfo, updateDisplayName, resetUser } = useUser()
     const { items } = useEnhancedData()
     const { theme, setTheme } = useTheme()
+    const { logout } = useAuth()
     const [showProfileEdit, setShowProfileEdit] = useState(false)
     const [showDataStats, setShowDataStats] = useState(false)
     const [showImportDialog, setShowImportDialog] = useState(false)
@@ -569,39 +584,27 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
           )}
         </div>
 
-        <div className="border-t dark:border-gray-700 py-1">
-          {/* 帮助文档 */}
-          <button
-            onClick={() => {
-              window.open('https://github.com/your-repo/tmdb-helper#readme', '_blank')
-              onClose()
-            }}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <HelpCircle className="w-4 h-4 mr-3" />
-            帮助文档
-          </button>
 
-          {/* 关于应用 */}
-          <button
-            onClick={() => {
-              alert('TMDB维护助手 v1.0\n一个用于管理TMDB数据的实用工具')
-              onClose()
-            }}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Info className="w-4 h-4 mr-3" />
-            关于应用
-          </button>
-        </div>
 
         <div className="border-t dark:border-gray-700 py-1">
+          {/* 登出 */}
+          <button
+            onClick={() => {
+              onClose()
+              logout()
+            }}
+            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <LogOut className="w-4 h-4 mr-3" />
+            登出
+          </button>
+
           {/* 重置数据 */}
           <button
             onClick={handleReset}
             className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
-            <LogOut className="w-4 h-4 mr-3" />
+            <Database className="w-4 h-4 mr-3" />
             重置数据
           </button>
         </div>
@@ -638,6 +641,7 @@ function MobileUserDrawer({ onClose }: { onClose: () => void }) {
   const { userInfo, updateDisplayName, resetUser } = useUser()
   const { items } = useEnhancedData()
   const { theme, setTheme } = useTheme()
+  const { logout } = useAuth()
 
   if (!userInfo) return null
 
@@ -762,34 +766,27 @@ function MobileUserDrawer({ onClose }: { onClose: () => void }) {
               切换主题 ({theme === 'dark' ? '深色' : '浅色'})
             </button>
 
-            <button
-              onClick={() => {
-                window.open('https://github.com/your-repo/tmdb-helper#readme', '_blank')
-                onClose()
-              }}
-              className="w-full flex items-center px-3 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              <HelpCircle className="w-5 h-5 mr-3" />
-              帮助文档
-            </button>
 
-            <button
-              onClick={() => {
-                alert('TMDB维护助手 v1.0\n一个用于管理TMDB数据的实用工具')
-                onClose()
-              }}
-              className="w-full flex items-center px-3 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              <Info className="w-5 h-5 mr-3" />
-              关于应用
-            </button>
 
             <div className="border-t dark:border-gray-700 pt-2 mt-2">
+              {/* 登出 */}
+              <button
+                onClick={() => {
+                  onClose()
+                  logout()
+                }}
+                className="w-full flex items-center px-3 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors mb-2"
+              >
+                <LogOut className="w-5 h-5 mr-3" />
+                登出
+              </button>
+
+              {/* 重置数据 */}
               <button
                 onClick={handleReset}
                 className="w-full flex items-center px-3 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               >
-                <LogOut className="w-5 h-5 mr-3" />
+                <Database className="w-5 h-5 mr-3" />
                 重置数据
               </button>
             </div>

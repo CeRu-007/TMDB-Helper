@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  tmdb-helper:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # 管理员账户配置
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=change_this_password
+      
+      # JWT 密钥（生产环境必须修改）
+      - JWT_SECRET=your_jwt_secret_key_here_change_in_production
+      
+      # 会话有效期（天）
+      - SESSION_EXPIRY_DAYS=7
+      
+      # Next.js 环境
+      - NODE_ENV=production
+      
+    volumes:
+      # 持久化数据目录
+      - tmdb_data:/app/data
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/auth/init"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  tmdb_data:
+    driver: local

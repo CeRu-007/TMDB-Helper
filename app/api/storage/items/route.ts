@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readItems } from '@/lib/server-storage';
 import { readUserItems, migrateExistingData } from '@/lib/user-aware-storage';
-import { getUserIdFromRequest } from '@/app/api/user/route';
+import { AuthMiddleware, getUserIdFromAuthRequest } from '@/lib/auth-middleware';
 
 // GET /api/storage/items - 获取所有项目（用户隔离）
-export async function GET(request: NextRequest) {
+export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
   try {
-    // 获取用户ID
-    const userId = getUserIdFromRequest(request);
+    // 从认证中间件获取用户ID
+    const userId = getUserIdFromAuthRequest(request);
 
     if (!userId) {
       return NextResponse.json(
@@ -46,4 +46,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

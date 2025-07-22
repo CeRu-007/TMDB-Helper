@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addItem, updateItem, deleteItem } from '@/lib/server-storage';
 import { addUserItem, updateUserItem, deleteUserItem } from '@/lib/user-aware-storage';
-import { getUserIdFromRequest } from '@/app/api/user/route';
+import { AuthMiddleware, getUserIdFromAuthRequest } from '@/lib/auth-middleware';
 import { TMDBItem } from '@/lib/storage';
 
 // POST /api/storage/item - 添加新项目（用户隔离）
-export async function POST(request: NextRequest) {
+export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
   try {
     const data = await request.json();
     const item = data.item as TMDBItem;
@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '无效的项目数据' }, { status: 400 });
     }
 
-    // 获取用户ID
-    const userId = getUserIdFromRequest(request);
+    // 从认证中间件获取用户ID
+    const userId = getUserIdFromAuthRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });
@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // PUT /api/storage/item - 更新项目（用户隔离）
-export async function PUT(request: NextRequest) {
+export const PUT = AuthMiddleware.withAuth(async (request: NextRequest) => {
   try {
     const data = await request.json();
     const item = data.item as TMDBItem;
@@ -49,8 +49,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '无效的项目数据' }, { status: 400 });
     }
 
-    // 获取用户ID
-    const userId = getUserIdFromRequest(request);
+    // 从认证中间件获取用户ID
+    const userId = getUserIdFromAuthRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });
@@ -72,10 +72,10 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // DELETE /api/storage/item - 删除项目（用户隔离）
-export async function DELETE(request: NextRequest) {
+export const DELETE = AuthMiddleware.withAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -84,8 +84,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '缺少项目ID' }, { status: 400 });
     }
 
-    // 获取用户ID
-    const userId = getUserIdFromRequest(request);
+    // 从认证中间件获取用户ID
+    const userId = getUserIdFromAuthRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });
@@ -107,4 +107,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

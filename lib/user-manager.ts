@@ -68,6 +68,19 @@ export class UserManager {
   }
 
   /**
+   * 设置管理员用户ID（用于认证系统）
+   */
+  static setAdminUserId(): void {
+    if (!this.isClient()) {
+      return;
+    }
+
+    const adminUserId = 'user_admin_system';
+    localStorage.setItem(this.USER_ID_KEY, adminUserId);
+    this.setCookie(this.SESSION_COOKIE_NAME, adminUserId, 365);
+  }
+
+  /**
    * 获取或创建用户ID
    */
   static getUserId(): string {
@@ -77,7 +90,7 @@ export class UserManager {
 
     // 首先尝试从 localStorage 获取
     let userId = localStorage.getItem(this.USER_ID_KEY);
-    
+
     if (!userId) {
       // 尝试从 cookie 获取
       userId = this.getCookie(this.SESSION_COOKIE_NAME);
@@ -86,7 +99,7 @@ export class UserManager {
     if (!userId) {
       // 生成新的用户ID
       userId = 'user_' + uuidv4().replace(/-/g, '').substring(0, 16);
-      
+
       // 保存到 localStorage 和 cookie
       localStorage.setItem(this.USER_ID_KEY, userId);
       this.setCookie(this.SESSION_COOKIE_NAME, userId, 365); // 保存1年

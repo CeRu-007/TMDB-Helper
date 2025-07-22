@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/components/auth-provider"
 import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -38,6 +39,7 @@ import {
   Sun,
   Moon,
   Film,
+  HelpCircle,
 } from "lucide-react"
 
 interface SettingsDialogProps {
@@ -91,6 +93,7 @@ interface VideoThumbnailSettings {
 
 export default function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
   const { toast } = useToast()
+  const { changePassword } = useAuth()
   const [activeSection, setActiveSection] = useState(initialSection || "api")
   const [apiKey, setApiKey] = useState("")
   const [showApiKey, setShowApiKey] = useState(false)
@@ -113,6 +116,15 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [configLoading, setConfigLoading] = useState(false)
   const [configSaving, setConfigSaving] = useState(false)
   const [showTmdbPassword, setShowTmdbPassword] = useState(false)
+
+  // 密码修改相关状态
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false)
 
   // 通用设置状态
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>({
@@ -512,6 +524,57 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     }
   }
 
+  // 密码修改处理函数
+  const handlePasswordChange = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast({
+        title: "错误",
+        description: "请填写所有密码字段",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "错误",
+        description: "新密码和确认密码不匹配",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "错误",
+        description: "新密码长度至少为6位",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setPasswordChangeLoading(true)
+    try {
+      await changePassword(currentPassword, newPassword)
+      toast({
+        title: "成功",
+        description: "密码修改成功",
+      })
+      // 清空表单
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch (error) {
+      toast({
+        title: "错误",
+        description: error instanceof Error ? error.message : "密码修改失败",
+        variant: "destructive",
+      })
+    } finally {
+      setPasswordChangeLoading(false)
+    }
+  }
+
   // 检查是否有有效的API密钥
   const hasValidApiKey = () => {
     if (typeof window === "undefined") return false
@@ -550,6 +613,18 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       label: "外观设置",
       icon: Palette,
       description: "主题和界面设置"
+    },
+    {
+      id: "security",
+      label: "账户安全",
+      icon: Shield,
+      description: "密码修改和安全设置"
+    },
+    {
+      id: "help",
+      label: "帮助与支持",
+      icon: HelpCircle,
+      description: "帮助文档和应用信息"
     }
   ]
 
@@ -641,6 +716,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         return renderGeneralSettings()
       case "appearance":
         return renderAppearanceSettings()
+      case "security":
+        return renderSecuritySettings()
+      case "help":
+        return renderHelpSettings()
       default:
         return renderApiSettings()
     }
@@ -1570,6 +1649,235 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             </CardContent>
           </Card>
         )}
+      </div>
+    )
+  }
+
+  // 账户安全设置内容
+  function renderSecuritySettings() {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">账户安全</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            修改管理员账户密码，确保账户安全
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              密码修改
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 当前密码 */}
+            <div>
+              <Label htmlFor="currentPassword">当前密码</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="请输入当前密码"
+                  className="pr-10"
+                  disabled={passwordChangeLoading}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  disabled={passwordChangeLoading}
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* 新密码 */}
+            <div>
+              <Label htmlFor="newPassword">新密码</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="请输入新密码（至少6位）"
+                  className="pr-10"
+                  disabled={passwordChangeLoading}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  disabled={passwordChangeLoading}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* 确认新密码 */}
+            <div>
+              <Label htmlFor="confirmPassword">确认新密码</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="请再次输入新密码"
+                  className="pr-10"
+                  disabled={passwordChangeLoading}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={passwordChangeLoading}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* 密码要求提示 */}
+            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+              <p>密码要求：</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>至少6个字符</li>
+                <li>建议包含字母和数字</li>
+                <li>避免使用过于简单的密码</li>
+              </ul>
+            </div>
+
+            {/* 修改按钮 */}
+            <div className="flex justify-end pt-4">
+              <Button
+                onClick={handlePasswordChange}
+                disabled={passwordChangeLoading || !currentPassword || !newPassword || !confirmPassword}
+                className="min-w-[100px]"
+              >
+                {passwordChangeLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    修改中...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    修改密码
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // 帮助与支持设置内容
+  function renderHelpSettings() {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">帮助与支持</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            获取帮助文档和应用信息
+          </p>
+        </div>
+
+        <div className="grid gap-6">
+          {/* 帮助文档 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <HelpCircle className="h-5 w-5 mr-2" />
+                帮助文档
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                查看详细的使用说明和常见问题解答
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  window.open('https://github.com/CeRu-007/TMDB-Helper', '_blank')
+                }}
+                className="w-full sm:w-auto"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                访问GitHub文档
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* 关于应用 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Info className="h-5 w-5 mr-2" />
+                关于应用
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">TMDB Helper</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">版本 1.0.0</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                    一个专业的TMDB数据管理工具，帮助您轻松追踪、维护和管理影视词条信息。
+                    支持数据导入导出、批量处理、智能分析等功能。
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100">主要功能</h5>
+                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    <li>• 影视数据追踪和管理</li>
+                    <li>• TMDB API集成</li>
+                    <li>• 数据导入导出</li>
+                    <li>• 批量处理工具</li>
+                    <li>• 智能数据分析</li>
+                    <li>• 多主题界面</li>
+                  </ul>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    © 2024 TMDB Helper. 基于 TMDB API 构建。
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
