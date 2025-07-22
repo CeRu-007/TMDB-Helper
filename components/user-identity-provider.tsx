@@ -547,7 +547,23 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
         {/* 用户信息头部 */}
         <div className="px-4 py-3 border-b dark:border-gray-700">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-lg font-medium shadow-sm">
+            {userInfo.avatarUrl ? (
+              <img
+                src={userInfo.avatarUrl}
+                alt={userInfo.displayName}
+                className="w-12 h-12 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+                onError={(e) => {
+                  // 如果图片加载失败，显示默认头像
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) {
+                    fallback.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
+            <div className={`w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-lg font-medium shadow-sm ${userInfo.avatarUrl ? 'hidden' : ''}`}>
               {userInfo.displayName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
