@@ -39,6 +39,10 @@ Thumbs.db
 # TMDB-Import directory (external tool)
 TMDB-Import-master/
 
+# AI Assistant directories
+.augment/
+.kiro/
+
 # Local data files
 data/
 
