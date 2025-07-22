@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { displayName, userId: providedUserId } = body;
+    const { displayName, avatarUrl, userId: providedUserId } = body;
 
     let userId = providedUserId || extractUserIdFromRequest(request);
 
@@ -116,16 +116,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 验证头像URL格式（如果提供）
+    if (avatarUrl && avatarUrl.trim()) {
+      try {
+        const url = new URL(avatarUrl.trim());
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+          return NextResponse.json(
+            { success: false, error: '头像URL必须是有效的HTTP或HTTPS地址' },
+            { status: 400 }
+          );
+        }
+      } catch (error) {
+        return NextResponse.json(
+          { success: false, error: '无效的头像URL格式' },
+          { status: 400 }
+        );
+      }
+    }
+
     // 这里可以添加更多的用户信息更新逻辑
     // 目前只是简单的验证和响应
-    
-    const response = NextResponse.json({
+
+    const responseData: any = {
       success: true,
       userId,
-      displayName: displayName || `用户${userId.substring(5, 11)}`,
       updated: true,
       timestamp: new Date().toISOString()
-    });
+    };
+
+    if (displayName !== undefined) {
+      responseData.displayName = displayName || `用户${userId.substring(5, 11)}`;
+    }
+
+    if (avatarUrl !== undefined) {
+      responseData.avatarUrl = avatarUrl;
+    }
+
+    const response = NextResponse.json(responseData);
 
     // 确保cookie是最新的
     response.cookies.set(SESSION_COOKIE_NAME, userId, {

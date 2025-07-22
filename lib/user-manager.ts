@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 export interface UserInfo {
   userId: string;
   displayName: string;
+  avatarUrl?: string; // 用户头像URL（网络地址）
   createdAt: string;
   lastActiveAt: string;
   fingerprint: string;
@@ -176,6 +177,26 @@ export class UserManager {
       return true;
     } catch (error) {
       console.error('更新用户显示名称失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 更新用户头像URL
+   */
+  static updateAvatarUrl(avatarUrl: string): boolean {
+    if (!this.isClient()) {
+      return false;
+    }
+
+    try {
+      const userInfo = this.getUserInfo();
+      userInfo.avatarUrl = avatarUrl;
+      userInfo.lastActiveAt = new Date().toISOString();
+      localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userInfo));
+      return true;
+    } catch (error) {
+      console.error('更新用户头像失败:', error);
       return false;
     }
   }

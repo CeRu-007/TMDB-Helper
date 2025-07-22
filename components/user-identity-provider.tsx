@@ -39,6 +39,7 @@ interface UserContextType {
   isLoading: boolean
   isInitialized: boolean
   updateDisplayName: (name: string) => Promise<boolean>
+  updateAvatarUrl: (avatarUrl: string) => Promise<boolean>
   resetUser: () => void
   refreshUserInfo: () => void
 }
@@ -132,7 +133,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
 
     try {
       const success = UserManager.updateDisplayName(name)
-      
+
       if (success) {
         // 更新本地状态
         const updatedInfo = UserManager.getUserInfo()
@@ -157,10 +158,49 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
 
         return true
       }
-      
+
       return false
     } catch (error) {
       console.error('[UserIdentity] 更新用户显示名称失败:', error)
+      return false
+    }
+  }
+
+  // 更新用户头像URL
+  const updateAvatarUrl = async (avatarUrl: string): Promise<boolean> => {
+    if (!isClient || !userInfo) return false
+
+    try {
+      const success = UserManager.updateAvatarUrl(avatarUrl)
+
+      if (success) {
+        // 更新本地状态
+        const updatedInfo = UserManager.getUserInfo()
+        setUserInfo(updatedInfo)
+
+        // 同步到服务器
+        try {
+          await fetch('/api/user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              avatarUrl: avatarUrl,
+              userId: updatedInfo.userId
+            }),
+          })
+        } catch (apiError) {
+          console.warn('[UserIdentity] 服务器端头像信息同步失败:', apiError)
+        }
+
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error('[UserIdentity] 更新用户头像失败:', error)
       return false
     }
   }
@@ -206,6 +246,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
     isLoading,
     isInitialized,
     updateDisplayName,
+    updateAvatarUrl,
     resetUser,
     refreshUserInfo
   }
@@ -287,7 +328,25 @@ export function UserAvatar({
         aria-expanded={showDropdown}
         aria-haspopup="true"
       >
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium shadow-sm ring-2 ring-white dark:ring-gray-800">
+        {userInfo.avatarUrl ? (
+          <img
+            src={userInfo.avatarUrl}
+            alt={userInfo.displayName}
+            className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+            onError={(e) => {
+              // 如果图片加载失败，显示默认头像
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const fallback = target.nextElementSibling as HTMLElement;
+              if (fallback) {
+                fallback.style.display = 'flex';
+              }
+            }}
+          />
+        ) : null}
+        <div
+          className={`w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium shadow-sm ring-2 ring-white dark:ring-gray-800 ${userInfo.avatarUrl ? 'hidden' : ''}`}
+        >
           {userInfo.displayName.charAt(0).toUpperCase()}
         </div>
         <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
@@ -812,8 +871,12 @@ function ProfileEditSection({
   updateDisplayName: (name: string) => Promise<boolean>
   onClose: () => void
 }) {
+  const { updateAvatarUrl } = useUser()
+  const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [newName, setNewName] = useState(userInfo.displayName)
+  const [isEditingAvatar, setIsEditingAvatar] = useState(false)
+  const [newAvatarUrl, setNewAvatarUrl] = useState(userInfo.avatarUrl || '')
 
   const handleSave = async () => {
     if (newName.trim() && newName !== userInfo.displayName) {
@@ -827,49 +890,187 @@ function ProfileEditSection({
     }
   }
 
+  const handleAvatarSave = async () => {
+    // 验证URL格式
+    if (newAvatarUrl.trim() && !isValidUrl(newAvatarUrl.trim())) {
+      toast({
+        title: "无效的URL",
+        description: "请输入有效的图片网络地址",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const success = await updateAvatarUrl(newAvatarUrl.trim())
+    if (success) {
+      setIsEditingAvatar(false)
+      toast({
+        title: "头像更新成功",
+        description: "您的头像已更新",
+      })
+    } else {
+      toast({
+        title: "头像更新失败",
+        description: "请稍后重试",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const isValidUrl = (string: string) => {
+    try {
+      const url = new URL(string)
+      return url.protocol === 'http:' || url.protocol === 'https:'
+    } catch (_) {
+      return false
+    }
+  }
+
   return (
-    <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-500 mx-4 mb-2 rounded">
-      {isEditing ? (
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-            placeholder="输入显示名称"
-            onKeyPress={(e) => e.key === 'Enter' && handleSave()}
-            autoFocus
-          />
-          <div className="flex space-x-2">
-            <button
-              onClick={handleSave}
-              className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+    <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-500 mx-4 mb-2 rounded">
+      <div className="space-y-3">
+        {/* 头像设置区域 */}
+        <div className="flex items-center space-x-3">
+          <div className="flex-shrink-0">
+            {userInfo.avatarUrl ? (
+              <img
+                src={userInfo.avatarUrl}
+                alt={userInfo.displayName}
+                className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) {
+                    fallback.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
+            <div
+              className={`w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium shadow-sm ring-2 ring-white dark:ring-gray-800 ${userInfo.avatarUrl ? 'hidden' : ''}`}
             >
-              保存
-            </button>
-            <button
-              onClick={() => setIsEditing(false)}
-              className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-            >
-              取消
-            </button>
+              {userInfo.displayName.charAt(0).toUpperCase()}
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            {isEditingAvatar ? (
+              <div className="space-y-2">
+                <input
+                  type="url"
+                  value={newAvatarUrl}
+                  onChange={(e) => setNewAvatarUrl(e.target.value)}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  placeholder="输入头像图片网络地址 (http://... 或 https://...)"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAvatarSave()}
+                />
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleAvatarSave}
+                    className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    保存
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingAvatar(false)
+                      setNewAvatarUrl(userInfo.avatarUrl || '')
+                    }}
+                    className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                  >
+                    取消
+                  </button>
+                  {userInfo.avatarUrl && (
+                    <button
+                      onClick={async () => {
+                        const success = await updateAvatarUrl('')
+                        if (success) {
+                          setIsEditingAvatar(false)
+                          setNewAvatarUrl('')
+                          toast({
+                            title: "头像已移除",
+                            description: "已恢复默认头像",
+                          })
+                        }
+                      }}
+                      className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                      移除
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="text-xs">
+                  <div className="text-gray-600 dark:text-gray-400">头像</div>
+                  <div className="text-gray-500 dark:text-gray-500">
+                    {userInfo.avatarUrl ? '自定义头像' : '默认头像'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsEditingAvatar(true)}
+                  className="text-xs text-blue-500 hover:text-blue-600 flex items-center space-x-1"
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>设置</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        <div className="flex items-center justify-between">
-          <div className="text-xs">
-            <div className="font-medium text-gray-900 dark:text-gray-100">{userInfo.displayName}</div>
-            <div className="text-gray-500 dark:text-gray-400">创建于 {new Date(userInfo.createdAt).toLocaleDateString()}</div>
-          </div>
-          <button
-            onClick={() => setIsEditing(true)}
-            className="text-xs text-blue-500 hover:text-blue-600 flex items-center space-x-1"
-          >
-            <Edit3 className="w-3 h-3" />
-            <span>编辑</span>
-          </button>
+
+        {/* 显示名称设置区域 */}
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+          {isEditing ? (
+            <div className="space-y-2">
+              <label className="text-xs text-gray-600 dark:text-gray-400">显示名称</label>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                placeholder="输入显示名称"
+                onKeyPress={(e) => e.key === 'Enter' && handleSave()}
+                autoFocus
+              />
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleSave}
+                  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  保存
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditing(false)
+                    setNewName(userInfo.displayName)
+                  }}
+                  className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="text-xs">
+                <div className="text-gray-600 dark:text-gray-400">显示名称</div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">{userInfo.displayName}</div>
+                <div className="text-gray-500 dark:text-gray-400">创建于 {new Date(userInfo.createdAt).toLocaleDateString()}</div>
+              </div>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-xs text-blue-500 hover:text-blue-600 flex items-center space-x-1"
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>编辑</span>
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
