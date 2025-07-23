@@ -5,20 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import {
   Download,
   RefreshCw,
   CheckCircle2,
   AlertCircle,
-  Clock,
-  ExternalLink,
-  Folder,
   GitBranch,
   Calendar,
   MessageSquare,
-  Loader2
+  Loader2,
+  Settings,
+  Info
 } from "lucide-react"
 
 interface VersionInfo {
@@ -100,59 +98,69 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
     }
   }
 
-  // 执行更新
+  // 执行自动下载和安装
   const performUpdate = async () => {
     setUpdating(true)
     setProgress(0)
-    
+
     try {
       // 步骤1: 下载
       setCurrentStep('正在下载最新版本...')
       setProgress(25)
-      
+
       const downloadResponse = await fetch('/api/tmdb-import-updater', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'download' })
       })
-      
+
       const downloadResult = await downloadResponse.json()
       if (!downloadResult.success) {
         throw new Error(downloadResult.error)
       }
-      
+
       setProgress(50)
-      
+
       // 步骤2: 安装
-      setCurrentStep('正在安装更新...')
+      setCurrentStep('正在解压和安装...')
       setProgress(75)
-      
+
       const installResponse = await fetch('/api/tmdb-import-updater', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'install' })
       })
-      
+
       const installResult = await installResponse.json()
       if (!installResult.success) {
         throw new Error(installResult.error)
       }
-      
+
       setProgress(100)
-      setCurrentStep('更新完成')
-      
-      toast({
-        title: "更新成功",
-        description: "TMDB-Import 已更新到最新版本",
-      })
-      
+      setCurrentStep('安装完成')
+
+      // 自动设置路径到解压后的目录
+      const installPath = installResult.data?.installPath
+      if (installPath && onPathUpdate) {
+        onPathUpdate(installPath)
+        toast({
+          title: "安装成功",
+          description: "TMDB-Import 已安装并自动配置路径",
+        })
+      } else {
+        toast({
+          title: "安装成功",
+          description: "TMDB-Import 已安装到最新版本",
+        })
+      }
+
       // 刷新状态
       await Promise.all([checkVersion(), getInstallStatus()])
-      
+
     } catch (error) {
-      console.error('更新失败:', error)
+      console.error('安装失败:', error)
       toast({
-        title: "更新失败",
+        title: "安装失败",
         description: error instanceof Error ? error.message : "未知错误",
         variant: "destructive",
       })
@@ -181,204 +189,172 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
   }, [])
 
   return (
-    <div className="space-y-6">
-      {/* 标题和刷新按钮 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">TMDB-Import 自动更新</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            自动管理 TMDB-Import 工具的下载、安装和更新
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => Promise.all([checkVersion(), getInstallStatus()])}
-          disabled={loading}
-        >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          刷新
-        </Button>
-      </div>
-
-      {/* 安装状态卡片 */}
-      {installStatus && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center">
-              <Folder className="h-4 w-4 mr-2" />
-              安装状态
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">工具状态:</span>
-              <Badge variant={installStatus.installed ? "default" : "secondary"}>
-                {installStatus.installed ? "已安装" : "未安装"}
-              </Badge>
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <GitBranch className="h-5 w-5 text-blue-600" />
+            <div>
+              <CardTitle className="text-lg">TMDB-Import 工具管理</CardTitle>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                自动管理 TMDB-Import 工具的下载、安装和更新
+              </p>
             </div>
-            
-            {installStatus.installed && (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">主模块:</span>
-                  <Badge variant={installStatus.hasMainModule ? "default" : "destructive"}>
-                    {installStatus.hasMainModule ? "正常" : "缺失"}
-                  </Badge>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">配置文件:</span>
-                  <Badge variant={installStatus.hasConfigFile ? "default" : "secondary"}>
-                    {installStatus.hasConfigFile ? "存在" : "不存在"}
-                  </Badge>
-                </div>
-                
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  路径: {installStatus.installPath}
-                  <br />
-                  文件数: {installStatus.fileCount}
-                </div>
-              </>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => Promise.all([checkVersion(), getInstallStatus()])}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
             )}
-          </CardContent>
-        </Card>
-      )}
+            刷新
+          </Button>
+        </div>
+      </CardHeader>
 
-      {/* 版本信息卡片 */}
-      {versionInfo && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center justify-between">
-              <div className="flex items-center">
-                <GitBranch className="h-4 w-4 mr-2" />
-                版本信息
-              </div>
-              {versionInfo.needsUpdate && (
-                <Badge variant="destructive">需要更新</Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 远程版本 */}
+      <CardContent className="space-y-4">
+        {/* 状态和版本信息行 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 安装状态 */}
+          {installStatus && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">最新版本 (GitHub)</span>
-                {versionInfo.remote.htmlUrl && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => window.open(versionInfo.remote.htmlUrl, '_blank')}
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                  </Button>
+              <div className="flex items-center space-x-2">
+                <Settings className="h-4 w-4 text-gray-500" />
+                <span className="text-sm font-medium">安装状态</span>
+              </div>
+              <div className="space-y-2 pl-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600 dark:text-gray-400">工具状态:</span>
+                  <Badge variant={installStatus.installed ? "default" : "secondary"} className="text-xs">
+                    {installStatus.installed ? "已安装" : "未安装"}
+                  </Badge>
+                </div>
+                {installStatus.installed && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">主模块:</span>
+                      <Badge variant={installStatus.hasMainModule ? "default" : "destructive"} className="text-xs">
+                        {installStatus.hasMainModule ? "正常" : "缺失"}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                      文件数: {installStatus.fileCount}
+                    </div>
+                  </>
                 )}
               </div>
-              <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg space-y-1">
-                <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {formatDate(versionInfo.remote.commitDate)}
+            </div>
+          )}
+
+          {/* 版本信息 */}
+          {versionInfo && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Info className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium">版本信息</span>
                 </div>
-                <div className="flex items-start text-xs">
-                  <MessageSquare className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-800 dark:text-gray-200">
+                {versionInfo.needsUpdate ? (
+                  <Badge variant="destructive" className="text-xs">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    需要更新
+                  </Badge>
+                ) : (
+                  <Badge variant="default" className="text-xs">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    最新版本
+                  </Badge>
+                )}
+              </div>
+              <div className="space-y-2 pl-6">
+                <div className="text-xs">
+                  <div className="text-gray-600 dark:text-gray-400">最新版本:</div>
+                  <div className="flex items-center space-x-1 mt-1">
+                    <Calendar className="h-3 w-3 text-gray-400" />
+                    <span className="text-gray-800 dark:text-gray-200">
+                      {formatDate(versionInfo.remote.commitDate)}
+                    </span>
+                  </div>
+                  <div className="text-gray-600 dark:text-gray-400 mt-1 truncate">
                     {versionInfo.remote.commitMessage}
-                  </span>
+                  </div>
                 </div>
-                <div className="text-xs font-mono text-gray-500 dark:text-gray-400">
-                  {versionInfo.remote.commitSha.substring(0, 8)}
-                </div>
+                {versionInfo.local?.exists && versionInfo.local.commitDate && (
+                  <div className="text-xs">
+                    <div className="text-gray-600 dark:text-gray-400">本地版本:</div>
+                    <div className="flex items-center space-x-1 mt-1">
+                      <Calendar className="h-3 w-3 text-gray-400" />
+                      <span className="text-gray-800 dark:text-gray-200">
+                        {formatDate(versionInfo.local.commitDate)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+          )}
+        </div>
 
-            {/* 本地版本 */}
-            {versionInfo.local?.exists && (
-              <div className="space-y-2">
-                <span className="text-sm font-medium">当前版本 (本地)</span>
-                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg space-y-1">
-                  {versionInfo.local.commitDate ? (
-                    <>
-                      <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(versionInfo.local.commitDate)}
-                      </div>
-                      <div className="flex items-start text-xs">
-                        <MessageSquare className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-800 dark:text-gray-200">
-                          {versionInfo.local.commitMessage}
-                        </span>
-                      </div>
-                      <div className="text-xs font-mono text-gray-500 dark:text-gray-400">
-                        {versionInfo.local.commitSha?.substring(0, 8)}
-                      </div>
-                    </>
+        {/* 操作区域 */}
+        {versionInfo && (
+          <div className="border-t pt-4">
+            {updating ? (
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm font-medium">{currentStep}</span>
+                </div>
+                <Progress value={progress} className="w-full h-2" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {versionInfo.needsUpdate ? (
+                    <span className="flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1 text-orange-500" />
+                      发现新版本可用，建议更新
+                    </span>
                   ) : (
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                      版本信息不可用（旧版本安装）
-                    </div>
+                    <span className="flex items-center">
+                      <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
+                      当前已是最新版本
+                    </span>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  {versionInfo.needsUpdate ? (
+                    <Button
+                      onClick={performUpdate}
+                      size="sm"
+                      disabled={updating}
+                      className="px-4"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      {installStatus?.installed ? '更新版本' : '下载安装'}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={performUpdate}
+                      size="sm"
+                      disabled={updating}
+                      className="px-4"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      重新安装
+                    </Button>
                   )}
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 更新操作 */}
-      {versionInfo && (
-        <Card>
-          <CardContent className="p-6">
-            {updating ? (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">{currentStep}</span>
-                </div>
-                <Progress value={progress} className="w-full" />
-              </div>
-            ) : versionInfo.needsUpdate ? (
-              <div className="space-y-4">
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    发现新版本可用，建议更新以获得最新功能和修复。
-                  </AlertDescription>
-                </Alert>
-                <Button
-                  onClick={performUpdate}
-                  className="w-full"
-                  disabled={updating}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {installStatus?.installed ? '更新到最新版本' : '下载并安装'}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <Alert>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <AlertDescription>
-                    当前已是最新版本，无需更新。
-                  </AlertDescription>
-                </Alert>
-                <Button
-                  variant="outline"
-                  onClick={performUpdate}
-                  className="w-full"
-                  disabled={updating}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  重新安装
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

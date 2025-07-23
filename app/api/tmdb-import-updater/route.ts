@@ -11,9 +11,9 @@ const GITHUB_REPO = 'fzlins/TMDB-Import'
 const GITHUB_API_BASE = 'https://api.github.com'
 const DOWNLOAD_BASE = 'https://github.com'
 
-// 工具安装目录
-const TOOLS_DIR = path.join(process.cwd(), 'tools')
-const TMDB_IMPORT_DIR = path.join(TOOLS_DIR, 'tmdb-import')
+// 工具安装目录 - 保持解压后的原始目录名
+const TOOLS_DIR = process.cwd()
+const TMDB_IMPORT_DIR = path.join(TOOLS_DIR, 'TMDB-Import-master')
 
 interface GitHubCommit {
   sha: string
@@ -309,20 +309,19 @@ async function installUpdate(): Promise<NextResponse> {
       fs.rmSync(TMDB_IMPORT_DIR, { recursive: true, force: true })
     }
 
-    // 解压缩
+    // 解压缩到项目根目录
     console.log(`[TMDB-Import Updater] 开始解压: ${tempZipPath}`)
-    
+
     const isWindows = process.platform === 'win32'
     const extractCmd = isWindows
       ? `powershell -Command "Expand-Archive -Path '${tempZipPath}' -DestinationPath '${TOOLS_DIR}' -Force"`
       : `unzip -o "${tempZipPath}" -d "${TOOLS_DIR}"`
-    
+
     await execAsync(extractCmd)
-    
-    // 重命名解压后的目录
-    const extractedDir = path.join(TOOLS_DIR, 'TMDB-Import-master')
-    if (fs.existsSync(extractedDir)) {
-      fs.renameSync(extractedDir, TMDB_IMPORT_DIR)
+
+    // 验证解压后的目录是否存在
+    if (!fs.existsSync(TMDB_IMPORT_DIR)) {
+      throw new Error('解压失败，未找到 TMDB-Import-master 目录')
     }
 
     // 获取并保存版本信息

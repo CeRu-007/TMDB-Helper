@@ -841,13 +841,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   function renderToolsSettings() {
     return (
       <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">TMDB-Import工具配置</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-            配置本地TMDB-Import工具路径和相关设置
-          </p>
-        </div>
-
         {/* 自动更新管理 */}
         <TMDBImportUpdater
           onPathUpdate={(path) => {
@@ -856,64 +849,51 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           }}
         />
 
-        {/* 分隔符 */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              或手动配置路径
-            </span>
-          </div>
-        </div>
-
         {/* 手动路径配置 */}
-        <Card>
-          <CardContent className="p-6 space-y-4">
-            <div>
-              <Label htmlFor="tmdbImportPath" className="flex items-center text-sm font-medium">
-                <FolderOpen className="h-4 w-4 mr-2" />
-                手动指定工具路径
-              </Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                如果您已有TMDB-Import安装，可以手动指定路径
-              </p>
-              <div className="flex space-x-2 mt-2">
-                <Input
-                  id="tmdbImportPath"
-                  value={tmdbImportPath}
-                  onChange={(e) => setTmdbImportPath(e.target.value)}
-                  placeholder="D:\tmdb-import"
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const path = prompt("请输入TMDB-Import工具路径:", tmdbImportPath)
-                    if (path) setTmdbImportPath(path)
-                  }}
-                >
-                  <FolderOpen className="h-4 w-4" />
-                </Button>
-              </div>
+        <div className="space-y-4">
+          <div className="border-t pt-4">
+            <h4 className="text-base font-medium mb-2 flex items-center">
+              <FolderOpen className="h-4 w-4 mr-2" />
+              手动路径配置
+            </h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              如果需要使用自定义路径或现有安装，可以手动指定工具路径
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex space-x-2">
+              <Input
+                id="tmdbImportPath"
+                value={tmdbImportPath}
+                onChange={(e) => setTmdbImportPath(e.target.value)}
+                placeholder="例如: D:\TMDB-Import-master 或自定义路径"
+                className="flex-1"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const path = prompt("请输入TMDB-Import工具路径:", tmdbImportPath)
+                  if (path) setTmdbImportPath(path)
+                }}
+              >
+                <FolderOpen className="h-4 w-4" />
+              </Button>
             </div>
 
             {/* 当前状态显示 */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">工具状态:</span>
-                <Badge variant={tmdbImportPath ? "default" : "secondary"}>
-                  {tmdbImportPath ? "已配置" : "未配置"}
-                </Badge>
+            {tmdbImportPath && (
+              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">当前配置:</span>
+                  <Badge variant="default" className="text-xs">已配置</Badge>
+                </div>
+                <code className="text-xs text-gray-600 dark:text-gray-400 break-all">
+                  {tmdbImportPath}
+                </code>
               </div>
-              {tmdbImportPath && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                  {tmdbImportPath.length > 40 ? `...${tmdbImportPath.slice(-40)}` : tmdbImportPath}
-                </span>
-              )}
-            </div>
+            )}
           </CardContent>
         </Card>
 
