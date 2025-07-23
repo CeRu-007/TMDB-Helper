@@ -54,7 +54,7 @@ WORKDIR /app
 # 设置生产环境
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
+ENV PORT=4949
 ENV HOSTNAME="0.0.0.0"
 
 # 创建非root用户
@@ -82,11 +82,11 @@ RUN apk add --no-cache curl
 USER nextjs
 
 # 暴露端口
-EXPOSE 3000
+EXPOSE 4949
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:3000/api/auth/init || exit 1
+  CMD curl -f http://localhost:4949/api/auth/init || exit 1
 
 # 启动应用
 CMD ["node", "server.js"]

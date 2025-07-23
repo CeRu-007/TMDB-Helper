@@ -161,7 +161,7 @@ show_image_info() {
     echo ""
     print_info "使用方法:"
     echo "  docker pull ${image_tag}"
-    echo "  docker run -p 3000:3000 ${image_tag}"
+    echo "  docker run -p 4949:4949 ${image_tag}"
     echo ""
     print_info "Docker Compose 使用:"
     echo "  在 docker-compose.yml 中使用: image: ${image_tag}"

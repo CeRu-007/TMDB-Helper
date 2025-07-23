@@ -62,7 +62,7 @@ docker build -t tmdb-helper .
 
 # 运行容器
 docker run -d \
-  -p 3000:3000 \
+  -p 4949:4949 \
   -v tmdb_data:/app/data \
   -e ADMIN_USERNAME=admin \
   -e ADMIN_PASSWORD=your_password \

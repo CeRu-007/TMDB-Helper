@@ -76,7 +76,7 @@ docker pull ceru007/tmdb-helper:latest
 # 运行容器
 docker run -d \
   --name tmdb-helper \
-  -p 3000:3000 \
+  -p 4949:4949 \
   -v tmdb_data:/app/data \
   -e ADMIN_USERNAME=admin \
   -e ADMIN_PASSWORD=your_secure_password \
@@ -93,7 +93,7 @@ docker run -d \
 | `JWT_SECRET` | `your_jwt_secret_key_here_change_in_production` | JWT 密钥（**生产环境必须修改**） |
 | `SESSION_EXPIRY_DAYS` | `7` | 会话有效期（天） |
 | `NODE_ENV` | `production` | Node.js 环境 |
-| `PORT` | `3000` | 应用端口 |
+| `PORT` | `4949` | 应用端口 |
 | `HOSTNAME` | `0.0.0.0` | 绑定主机 |
 | `TMDB_API_KEY` | - | TMDB API 密钥（可选） |
 
@@ -109,7 +109,7 @@ services:
     image: ceru007/tmdb-helper:latest
     container_name: tmdb-helper
     ports:
-      - "3000:3000"
+      - "4949:4949"
     environment:
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=your_secure_password
@@ -121,7 +121,7 @@ services:
       - tmdb_logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/auth/init"]
+      test: ["CMD", "curl", "-f", "http://localhost:4949/api/auth/init"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -145,7 +145,7 @@ cd TMDB-Helper
 docker build -t tmdb-helper .
 
 # 运行自定义镜像
-docker run -d --name tmdb-helper -p 3000:3000 tmdb-helper
+docker run -d --name tmdb-helper -p 4949:4949 tmdb-helper
 ```
 
 #### 发布脚本
@@ -211,7 +211,7 @@ scripts\docker-build-push.bat v1.0.0
     npm run dev
     # 或 yarn dev / pnpm dev
     ```
-    启动后访问 `http://localhost:3000` 即可使用 Web 版本。
+    启动后访问 `http://localhost:4949` 即可使用 Web 版本。
 
 5.  **构建桌面应用**：
     ```bash

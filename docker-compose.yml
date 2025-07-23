@@ -10,7 +10,7 @@ services:
     container_name: tmdb-helper
 
     ports:
-      - "3000:3000"
+      - "4949:4949"
 
     environment:
       # 管理员账户配置
@@ -28,7 +28,7 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
 
       # 端口和主机配置
-      - PORT=3000
+      - PORT=4949
       - HOSTNAME=0.0.0.0
 
       # TMDB API 配置（可选）
@@ -57,7 +57,7 @@ services:
 
     # 健康检查
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/auth/init"]
+      test: ["CMD", "curl", "-f", "http://localhost:4949/api/auth/init"]
       interval: 30s
       timeout: 10s
       retries: 3
