@@ -631,81 +631,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     }
   ]
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="flex items-center">
-            <Settings className="h-5 w-5 mr-2" />
-            设置
-          </DialogTitle>
-          <DialogDescription>
-            配置应用程序的全局设置和API密钥
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex h-[calc(90vh-120px)]">
-          {/* 左侧导航菜单 */}
-          <div className="w-64 border-r bg-gray-50/50 dark:bg-gray-900/50">
-            <ScrollArea className="h-full">
-              <div className="p-4 space-y-2">
-                {settingsMenuItems.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveSection(item.id)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${activeSection === item.id
-                        ? "bg-blue-100 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 border border-blue-200 dark:border-blue-800"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-                        }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <div className="font-medium text-sm">{item.label}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {item.description}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </ScrollArea>
-          </div>
-
-          {/* 右侧内容区域 */}
-          <div className="flex-1 flex flex-col">
-            <ScrollArea className="flex-1">
-              <div className="p-6">{renderSettingsContent()}</div>
-            </ScrollArea>
-
-            {/* 底部操作按钮 */}
-            <div className="border-t p-4 bg-gray-50/50 dark:bg-gray-900/50">
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={handleCancel} disabled={saveStatus === "saving"}>
-                  取消
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={saveStatus === "saving"}
-                  className={saveStatus === "success" ? "bg-green-600 hover:bg-green-700" : ""}
-                >
-                  {saveStatus === "saving" && (
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-                  )}
-                  {saveStatus === "success" ? "已保存" : saveStatus === "saving" ? "保存中..." : "保存"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-
   // 渲染设置内容的函数
   function renderSettingsContent() {
     switch (activeSection) {
@@ -850,50 +775,52 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         />
 
         {/* 手动路径配置 */}
-        <div className="space-y-4">
-          <div className="border-t pt-4">
-            <h4 className="text-base font-medium mb-2 flex items-center">
-              <FolderOpen className="h-4 w-4 mr-2" />
-              手动路径配置
-            </h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              如果需要使用自定义路径或现有安装，可以手动指定工具路径
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex space-x-2">
-              <Input
-                id="tmdbImportPath"
-                value={tmdbImportPath}
-                onChange={(e) => setTmdbImportPath(e.target.value)}
-                placeholder="例如: D:\TMDB-Import-master 或自定义路径"
-                className="flex-1"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const path = prompt("请输入TMDB-Import工具路径:", tmdbImportPath)
-                  if (path) setTmdbImportPath(path)
-                }}
-              >
-                <FolderOpen className="h-4 w-4" />
-              </Button>
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div className="border-t pt-4">
+              <h4 className="text-base font-medium mb-2 flex items-center">
+                <FolderOpen className="h-4 w-4 mr-2" />
+                手动路径配置
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                如果需要使用自定义路径或现有安装，可以手动指定工具路径
+              </p>
             </div>
 
-            {/* 当前状态显示 */}
-            {tmdbImportPath && (
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">当前配置:</span>
-                  <Badge variant="default" className="text-xs">已配置</Badge>
-                </div>
-                <code className="text-xs text-gray-600 dark:text-gray-400 break-all">
-                  {tmdbImportPath}
-                </code>
+            <div className="space-y-3">
+              <div className="flex space-x-2">
+                <Input
+                  id="tmdbImportPath"
+                  value={tmdbImportPath}
+                  onChange={(e) => setTmdbImportPath(e.target.value)}
+                  placeholder="例如: D:\TMDB-Import-master 或自定义路径"
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const path = prompt("请输入TMDB-Import工具路径:", tmdbImportPath)
+                    if (path) setTmdbImportPath(path)
+                  }}
+                >
+                  <FolderOpen className="h-4 w-4" />
+                </Button>
               </div>
-            )}
+
+              {/* 当前状态显示 */}
+              {tmdbImportPath && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">当前配置:</span>
+                    <Badge variant="default" className="text-xs">已配置</Badge>
+                  </div>
+                  <code className="text-xs text-gray-600 dark:text-gray-400 break-all">
+                    {tmdbImportPath}
+                  </code>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -1889,4 +1816,79 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       </div>
     )
   }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle className="flex items-center">
+            <Settings className="h-5 w-5 mr-2" />
+            设置
+          </DialogTitle>
+          <DialogDescription>
+            配置应用程序的全局设置和API密钥
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex h-[calc(90vh-120px)]">
+          {/* 左侧导航菜单 */}
+          <div className="w-64 border-r bg-gray-50/50 dark:bg-gray-900/50">
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-2">
+                {settingsMenuItems.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveSection(item.id)}
+                      className={`w-full text-left p-3 rounded-lg transition-colors ${activeSection === item.id
+                        ? "bg-blue-100 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 border border-blue-200 dark:border-blue-800"
+                        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-medium text-sm">{item.label}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {item.description}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* 右侧内容区域 */}
+          <div className="flex-1 flex flex-col">
+            <ScrollArea className="flex-1">
+              <div className="p-6">{renderSettingsContent()}</div>
+            </ScrollArea>
+
+            {/* 底部操作按钮 */}
+            <div className="border-t p-4 bg-gray-50/50 dark:bg-gray-900/50">
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={handleCancel} disabled={saveStatus === "saving"}>
+                  取消
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={saveStatus === "saving"}
+                  className={saveStatus === "success" ? "bg-green-600 hover:bg-green-700" : ""}
+                >
+                  {saveStatus === "saving" && (
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                  )}
+                  {saveStatus === "success" ? "已保存" : saveStatus === "saving" ? "保存中..." : "保存"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }
