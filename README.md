@@ -84,6 +84,8 @@ docker run -d \
   ceru007/tmdb-helper:latest
 ```
 
+部署完成后，通过 `http://your-server-ip:4949` 访问应用。
+
 #### 环境变量配置
 
 | 变量名 | 默认值 | 说明 |
