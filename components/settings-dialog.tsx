@@ -40,7 +40,10 @@ import {
   Moon,
   Film,
   HelpCircle,
+  Download,
+  GitBranch,
 } from "lucide-react"
+import TMDBImportUpdater from "./tmdb-import-updater"
 
 interface SettingsDialogProps {
   open: boolean
@@ -845,12 +848,37 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           </p>
         </div>
 
+        {/* 自动更新管理 */}
+        <TMDBImportUpdater
+          onPathUpdate={(path) => {
+            setTmdbImportPath(path)
+            localStorage.setItem("tmdb_import_path", path)
+          }}
+        />
+
+        {/* 分隔符 */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              或手动配置路径
+            </span>
+          </div>
+        </div>
+
+        {/* 手动路径配置 */}
         <Card>
           <CardContent className="p-6 space-y-4">
             <div>
               <Label htmlFor="tmdbImportPath" className="flex items-center text-sm font-medium">
-                工具路径
+                <FolderOpen className="h-4 w-4 mr-2" />
+                手动指定工具路径
               </Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                如果您已有TMDB-Import安装，可以手动指定路径
+              </p>
               <div className="flex space-x-2 mt-2">
                 <Input
                   id="tmdbImportPath"
