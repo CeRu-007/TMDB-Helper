@@ -288,25 +288,26 @@ async function installUpdate(): Promise<NextResponse> {
       throw new Error('未找到下载的压缩包，请先下载')
     }
 
-    // 备份现有安装（如果存在）
+    // 保存现有配置文件（如果存在）
+    let existingConfig: string | null = null
+    const configPath = path.join(TMDB_IMPORT_DIR, 'config.ini')
+
     if (fs.existsSync(TMDB_IMPORT_DIR)) {
-      const backupDir = path.join(TOOLS_DIR, `tmdb-import-backup-${Date.now()}`)
-      console.log(`[TMDB-Import Updater] 备份现有安装到: ${backupDir}`)
-      
-      // 使用系统命令进行备份
-      const isWindows = process.platform === 'win32'
-      const backupCmd = isWindows 
-        ? `xcopy "${TMDB_IMPORT_DIR}" "${backupDir}" /E /I /H /Y`
-        : `cp -r "${TMDB_IMPORT_DIR}" "${backupDir}"`
-      
-      try {
-        await execAsync(backupCmd)
-      } catch (backupError) {
-        console.warn('[TMDB-Import Updater] 备份失败，继续安装:', backupError)
+      console.log(`[TMDB-Import Updater] 准备覆盖安装现有目录: ${TMDB_IMPORT_DIR}`)
+
+      // 备份配置文件内容
+      if (fs.existsSync(configPath)) {
+        try {
+          existingConfig = fs.readFileSync(configPath, 'utf-8')
+          console.log(`[TMDB-Import Updater] 已保存现有配置文件`)
+        } catch (error) {
+          console.warn('[TMDB-Import Updater] 读取配置文件失败:', error)
+        }
       }
-      
-      // 删除现有安装
+
+      // 直接删除现有安装目录
       fs.rmSync(TMDB_IMPORT_DIR, { recursive: true, force: true })
+      console.log(`[TMDB-Import Updater] 已删除现有安装目录`)
     }
 
     // 解压缩到项目根目录
@@ -324,6 +325,17 @@ async function installUpdate(): Promise<NextResponse> {
       throw new Error('解压失败，未找到 TMDB-Import-master 目录')
     }
 
+    // 恢复配置文件（如果之前存在）
+    if (existingConfig) {
+      try {
+        const newConfigPath = path.join(TMDB_IMPORT_DIR, 'config.ini')
+        fs.writeFileSync(newConfigPath, existingConfig, 'utf-8')
+        console.log(`[TMDB-Import Updater] 已恢复配置文件`)
+      } catch (error) {
+        console.warn('[TMDB-Import Updater] 恢复配置文件失败:', error)
+      }
+    }
+
     // 获取并保存版本信息
     const latestCommit = await getLatestCommit()
     const versionFile = path.join(TMDB_IMPORT_DIR, '.version')
@@ -339,12 +351,19 @@ async function installUpdate(): Promise<NextResponse> {
     
     console.log(`[TMDB-Import Updater] 安装完成: ${TMDB_IMPORT_DIR}`)
 
+    // 构建完成消息
+    let message = '安装完成'
+    if (existingConfig) {
+      message += '，配置文件已保留'
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         installPath: TMDB_IMPORT_DIR,
         commitInfo: latestCommit,
-        message: '安装完成'
+        message: message,
+        configPreserved: !!existingConfig
       }
     })
   } catch (error) {

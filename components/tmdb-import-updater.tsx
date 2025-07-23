@@ -141,18 +141,22 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
 
       // 自动设置路径到解压后的目录
       const installPath = installResult.data?.installPath
+      const configPreserved = installResult.data?.configPreserved
+
+      let description = "TMDB-Import 已安装到最新版本"
       if (installPath && onPathUpdate) {
         onPathUpdate(installPath)
-        toast({
-          title: "安装成功",
-          description: "TMDB-Import 已安装并自动配置路径",
-        })
-      } else {
-        toast({
-          title: "安装成功",
-          description: "TMDB-Import 已安装到最新版本",
-        })
+        description = "TMDB-Import 已安装并自动配置路径"
       }
+
+      if (configPreserved) {
+        description += "，配置文件已保留"
+      }
+
+      toast({
+        title: "安装成功",
+        description: description,
+      })
 
       // 刷新状态
       await Promise.all([checkVersion(), getInstallStatus()])
@@ -312,44 +316,59 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                 <Progress value={progress} className="w-full h-2" />
               </div>
             ) : (
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {versionInfo.needsUpdate ? (
-                    <span className="flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-1 text-orange-500" />
-                      发现新版本可用，建议更新
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
-                      当前已是最新版本
-                    </span>
-                  )}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {versionInfo.needsUpdate ? (
+                      <span className="flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-1 text-orange-500" />
+                        发现新版本可用，建议更新
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
+                        当前已是最新版本
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    {versionInfo.needsUpdate ? (
+                      <Button
+                        onClick={performUpdate}
+                        size="sm"
+                        disabled={updating}
+                        className="px-4"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        {installStatus?.installed ? '更新版本' : '下载安装'}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={performUpdate}
+                        size="sm"
+                        disabled={updating}
+                        className="px-4"
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        重新安装
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex space-x-2">
-                  {versionInfo.needsUpdate ? (
-                    <Button
-                      onClick={performUpdate}
-                      size="sm"
-                      disabled={updating}
-                      className="px-4"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      {installStatus?.installed ? '更新版本' : '下载安装'}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={performUpdate}
-                      size="sm"
-                      disabled={updating}
-                      className="px-4"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      重新安装
-                    </Button>
-                  )}
-                </div>
+
+                {/* 配置文件保留说明 */}
+                {installStatus?.installed && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-start space-x-2">
+                      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-blue-800 dark:text-blue-200">
+                        <p className="font-medium">安装说明</p>
+                        <p className="mt-1">重新安装时会直接覆盖现有文件，但会自动保留您的 config.ini 配置文件。</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
