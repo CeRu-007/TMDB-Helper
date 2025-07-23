@@ -288,18 +288,19 @@ async function installUpdate(): Promise<NextResponse> {
       throw new Error('未找到下载的压缩包，请先下载')
     }
 
-    // 保存现有配置文件（如果存在）
-    let existingConfig: string | null = null
+    // 保存现有 TMDB 用户凭据（如果存在）
+    let existingCredentials: { tmdb_username?: string; tmdb_password?: string } = {}
     const configPath = path.join(TMDB_IMPORT_DIR, 'config.ini')
 
     if (fs.existsSync(TMDB_IMPORT_DIR)) {
       console.log(`[TMDB-Import Updater] 准备覆盖安装现有目录: ${TMDB_IMPORT_DIR}`)
 
-      // 备份配置文件内容
+      // 提取 TMDB 用户凭据
       if (fs.existsSync(configPath)) {
         try {
-          existingConfig = fs.readFileSync(configPath, 'utf-8')
-          console.log(`[TMDB-Import Updater] 已保存现有配置文件`)
+          const configContent = fs.readFileSync(configPath, 'utf-8')
+          existingCredentials = extractTMDBCredentials(configContent)
+          console.log(`[TMDB-Import Updater] 已提取 TMDB 用户凭据`)
         } catch (error) {
           console.warn('[TMDB-Import Updater] 读取配置文件失败:', error)
         }
@@ -325,14 +326,14 @@ async function installUpdate(): Promise<NextResponse> {
       throw new Error('解压失败，未找到 TMDB-Import-master 目录')
     }
 
-    // 恢复配置文件（如果之前存在）
-    if (existingConfig) {
+    // 恢复 TMDB 用户凭据到新配置文件（如果之前存在）
+    if (existingCredentials.tmdb_username || existingCredentials.tmdb_password) {
       try {
         const newConfigPath = path.join(TMDB_IMPORT_DIR, 'config.ini')
-        fs.writeFileSync(newConfigPath, existingConfig, 'utf-8')
-        console.log(`[TMDB-Import Updater] 已恢复配置文件`)
+        updateConfigWithCredentials(newConfigPath, existingCredentials)
+        console.log(`[TMDB-Import Updater] 已恢复 TMDB 用户凭据`)
       } catch (error) {
-        console.warn('[TMDB-Import Updater] 恢复配置文件失败:', error)
+        console.warn('[TMDB-Import Updater] 恢复 TMDB 凭据失败:', error)
       }
     }
 
@@ -353,8 +354,9 @@ async function installUpdate(): Promise<NextResponse> {
 
     // 构建完成消息
     let message = '安装完成'
-    if (existingConfig) {
-      message += '，配置文件已保留'
+    const hasCredentials = existingCredentials.tmdb_username || existingCredentials.tmdb_password
+    if (hasCredentials) {
+      message += '，TMDB 用户凭据已保留'
     }
 
     return NextResponse.json({
@@ -363,7 +365,7 @@ async function installUpdate(): Promise<NextResponse> {
         installPath: TMDB_IMPORT_DIR,
         commitInfo: latestCommit,
         message: message,
-        configPreserved: !!existingConfig
+        credentialsPreserved: hasCredentials
       }
     })
   } catch (error) {
@@ -373,5 +375,75 @@ async function installUpdate(): Promise<NextResponse> {
       error: '安装更新失败',
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
+  }
+}
+
+/**
+ * 从配置文件内容中提取 TMDB 用户凭据
+ */
+function extractTMDBCredentials(configContent: string): { tmdb_username?: string; tmdb_password?: string } {
+  const credentials: { tmdb_username?: string; tmdb_password?: string } = {}
+  const lines = configContent.split('\n')
+
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    if (trimmedLine.startsWith('#') || !trimmedLine.includes('=')) {
+      continue
+    }
+
+    const [key, ...valueParts] = trimmedLine.split('=')
+    const value = valueParts.join('=').trim()
+
+    switch (key.trim()) {
+      case 'tmdb_username':
+        if (value) {
+          credentials.tmdb_username = value
+        }
+        break
+      case 'tmdb_password':
+        if (value) {
+          credentials.tmdb_password = value
+        }
+        break
+    }
+  }
+
+  return credentials
+}
+
+/**
+ * 将 TMDB 用户凭据写入新的配置文件
+ */
+function updateConfigWithCredentials(configPath: string, credentials: { tmdb_username?: string; tmdb_password?: string }): void {
+  if (!fs.existsSync(configPath)) {
+    console.warn('[TMDB-Import Updater] 配置文件不存在，无法更新凭据')
+    return
+  }
+
+  try {
+    let configContent = fs.readFileSync(configPath, 'utf-8')
+    const lines = configContent.split('\n')
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+      if (line.startsWith('#') || !line.includes('=')) {
+        continue
+      }
+
+      const [key] = line.split('=')
+      const trimmedKey = key.trim()
+
+      if (trimmedKey === 'tmdb_username' && credentials.tmdb_username) {
+        lines[i] = `tmdb_username = ${credentials.tmdb_username}`
+      } else if (trimmedKey === 'tmdb_password' && credentials.tmdb_password) {
+        lines[i] = `tmdb_password = ${credentials.tmdb_password}`
+      }
+    }
+
+    const updatedContent = lines.join('\n')
+    fs.writeFileSync(configPath, updatedContent, 'utf-8')
+    console.log('[TMDB-Import Updater] 已更新配置文件中的 TMDB 凭据')
+  } catch (error) {
+    console.warn('[TMDB-Import Updater] 更新配置文件凭据失败:', error)
   }
 }

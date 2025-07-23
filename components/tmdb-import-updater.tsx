@@ -141,7 +141,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
 
       // 自动设置路径到解压后的目录
       const installPath = installResult.data?.installPath
-      const configPreserved = installResult.data?.configPreserved
+      const credentialsPreserved = installResult.data?.credentialsPreserved
 
       let description = "TMDB-Import 已安装到最新版本"
       if (installPath && onPathUpdate) {
@@ -149,8 +149,8 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
         description = "TMDB-Import 已安装并自动配置路径"
       }
 
-      if (configPreserved) {
-        description += "，配置文件已保留"
+      if (credentialsPreserved) {
+        description += "，TMDB 用户凭据已保留"
       }
 
       toast({
@@ -357,14 +357,14 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                   </div>
                 </div>
 
-                {/* 配置文件保留说明 */}
+                {/* 凭据保留说明 */}
                 {installStatus?.installed && (
                   <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex items-start space-x-2">
                       <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                       <div className="text-xs text-blue-800 dark:text-blue-200">
                         <p className="font-medium">安装说明</p>
-                        <p className="mt-1">重新安装时会直接覆盖现有文件，但会自动保留您的 config.ini 配置文件。</p>
+                        <p className="mt-1">重新安装时会使用最新版本的默认配置，但会自动保留您的 TMDB 用户名和密码。</p>
                       </div>
                     </div>
                   </div>
