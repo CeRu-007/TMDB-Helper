@@ -5,7 +5,6 @@ import path from 'path'
 interface TMDBConfig {
   encoding?: string
   logging_level?: string
-  browser?: string
   save_user_profile?: boolean
   tmdb_username?: string
   tmdb_password?: string
@@ -121,9 +120,7 @@ function parseConfigFile(content: string): TMDBConfig {
       case 'logging_level':
         config.logging_level = value
         break
-      case 'browser':
-        config.browser = value
-        break
+
       case 'save_user_profile':
         config.save_user_profile = value.toLowerCase() === 'true'
         break
@@ -156,10 +153,9 @@ function generateConfigFile(config: TMDBConfig): string {
     '#ex: DEBUG',
     `logging_level = ${config.logging_level || 'INFO'}`,
     '',
-    '# Selenium',
-    '# only chrome and edge are supported',
-    `browser = ${config.browser || 'edge'}`,
-    '# set to false may casue some errors',
+    '# Playwright Browser Settings',
+    '# Only Chrome/Chromium is supported',
+    '# set to false may cause some errors',
     `save_user_profile = ${config.save_user_profile !== false ? 'true' : 'false'}`,
     '',
     '# TMDB',

@@ -54,7 +54,6 @@ interface SettingsDialogProps {
 interface TMDBConfig {
   encoding?: string
   logging_level?: string
-  browser?: string
   save_user_profile?: boolean
   tmdb_username?: string
   tmdb_password?: string
@@ -109,7 +108,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [tmdbConfig, setTmdbConfig] = useState<TMDBConfig>({
     encoding: 'utf-8-sig',
     logging_level: 'INFO',
-    browser: 'edge',
     save_user_profile: true,
     tmdb_username: '',
     tmdb_password: '',
@@ -344,7 +342,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         setTmdbConfig({
           encoding: data.config.encoding || 'utf-8-sig',
           logging_level: data.config.logging_level || 'INFO',
-          browser: data.config.browser || 'edge',
           save_user_profile: data.config.save_user_profile !== false,
           tmdb_username: data.config.tmdb_username || '',
           tmdb_password: data.config.tmdb_password || '',
@@ -902,21 +899,17 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   </Select>
                 </div>
 
-                {/* 浏览器 */}
-                <div>
-                  <Label className="text-sm font-medium">浏览器</Label>
-                  <Select
-                    value={tmdbConfig.browser}
-                    onValueChange={(value) => setTmdbConfig(prev => ({ ...prev, browser: value }))}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="edge">Edge</SelectItem>
-                      <SelectItem value="chrome">Chrome</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* 浏览器说明 */}
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start space-x-2">
+                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">浏览器设置</p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                        现在使用 Playwright 框架，仅支持 Chrome/Chromium 浏览器。无需手动配置浏览器类型。
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* 保存用户配置文件 */}
