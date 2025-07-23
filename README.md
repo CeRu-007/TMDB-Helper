@@ -53,7 +53,127 @@ TMDB-Helper 是一个功能强大的桌面应用程序，旨在帮助用户高�
 
 ## 安装与运行
 
-### 🚀 快速开始
+### 🐳 Docker 部署（推荐）
+
+#### 快速部署
+
+使用 Docker Compose 一键部署：
+
+```bash
+# 下载 docker-compose.yml 文件
+curl -O https://raw.githubusercontent.com/CeRu-007/TMDB-Helper/main/docker-compose.yml
+
+# 启动服务
+docker-compose up -d
+```
+
+或者直接使用 Docker 运行：
+
+```bash
+# 从 Docker Hub 拉取镜像
+docker pull ceru007/tmdb-helper:latest
+
+# 运行容器
+docker run -d \
+  --name tmdb-helper \
+  -p 3000:3000 \
+  -v tmdb_data:/app/data \
+  -e ADMIN_USERNAME=admin \
+  -e ADMIN_PASSWORD=your_secure_password \
+  -e JWT_SECRET=your_jwt_secret_key \
+  ceru007/tmdb-helper:latest
+```
+
+#### 环境变量配置
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `ADMIN_USERNAME` | `admin` | 管理员用户名 |
+| `ADMIN_PASSWORD` | `change_this_password` | 管理员密码（**生产环境必须修改**） |
+| `JWT_SECRET` | `your_jwt_secret_key_here_change_in_production` | JWT 密钥（**生产环境必须修改**） |
+| `SESSION_EXPIRY_DAYS` | `7` | 会话有效期（天） |
+| `NODE_ENV` | `production` | Node.js 环境 |
+| `PORT` | `3000` | 应用端口 |
+| `HOSTNAME` | `0.0.0.0` | 绑定主机 |
+| `TMDB_API_KEY` | - | TMDB API 密钥（可选） |
+
+#### Docker Compose 配置
+
+创建 `docker-compose.yml` 文件：
+
+```yaml
+version: '3.8'
+
+services:
+  tmdb-helper:
+    image: ceru007/tmdb-helper:latest
+    container_name: tmdb-helper
+    ports:
+      - "3000:3000"
+    environment:
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=your_secure_password
+      - JWT_SECRET=your_jwt_secret_key
+      - SESSION_EXPIRY_DAYS=7
+      - NODE_ENV=production
+    volumes:
+      - tmdb_data:/app/data
+      - tmdb_logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/auth/init"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  tmdb_data:
+  tmdb_logs:
+```
+
+#### 构建自定义镜像
+
+如果需要自定义构建：
+
+```bash
+# 克隆项目
+git clone https://github.com/CeRu-007/TMDB-Helper.git
+cd TMDB-Helper
+
+# 构建镜像
+docker build -t tmdb-helper .
+
+# 运行自定义镜像
+docker run -d --name tmdb-helper -p 3000:3000 tmdb-helper
+```
+
+#### 发布脚本
+
+项目提供了便捷的发布脚本：
+
+**Linux/Mac:**
+```bash
+# 给脚本添加执行权限
+chmod +x scripts/docker-build-push.sh
+
+# 构建并推送 latest 版本
+./scripts/docker-build-push.sh
+
+# 构建并推送指定版本
+./scripts/docker-build-push.sh v1.0.0
+```
+
+**Windows:**
+```cmd
+# 构建并推送 latest 版本
+scripts\docker-build-push.bat
+
+# 构建并推送指定版本
+scripts\docker-build-push.bat v1.0.0
+```
+
+### 🚀 本地开发部署
 
 1.  **获取源码**：
     ```bash
@@ -107,6 +227,8 @@ TMDB-Helper 是一个功能强大的桌面应用程序，旨在帮助用户高�
 -   **API 密钥设置**: 首次运行时，应用会引导您设置 TMDB API 密钥
 -   **数据存储**: 默认使用本地存储，可在设置中配置文件存储路径
 -   **任务调度**: 可在应用内配置自动化任务和定时同步
+-   **Docker 数据持久化**: 使用 Docker 卷确保数据在容器重启后保持
+-   **健康检查**: 内置健康检查确保服务正常运行
 
 
 ## 📖 使用指南

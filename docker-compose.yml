@@ -2,29 +2,60 @@ version: '3.8'
 
 services:
   tmdb-helper:
-    build: .
+    # 使用 Docker Hub 镜像
+    image: ceru007/tmdb-helper:latest
+    # 如果需要本地构建，注释上面一行，取消注释下面一行
+    # build: .
+
+    container_name: tmdb-helper
+
     ports:
       - "3000:3000"
+
     environment:
       # 管理员账户配置
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=change_this_password
-      
+
       # JWT 密钥（生产环境必须修改）
       - JWT_SECRET=your_jwt_secret_key_here_change_in_production
-      
+
       # 会话有效期（天）
       - SESSION_EXPIRY_DAYS=7
-      
+
       # Next.js 环境
       - NODE_ENV=production
-      
+      - NEXT_TELEMETRY_DISABLED=1
+
+      # 端口和主机配置
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+
+      # TMDB API 配置（可选）
+      # - TMDB_API_KEY=your_tmdb_api_key_here
+
+      # 数据库配置（如果需要）
+      # - DATABASE_URL=your_database_url_here
+
     volumes:
       # 持久化数据目录
       - tmdb_data:/app/data
-      
+      # 持久化日志目录
+      - tmdb_logs:/app/logs
+
     restart: unless-stopped
-    
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+    # 健康检查
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/auth/init"]
       interval: 30s
@@ -32,6 +63,36 @@ services:
       retries: 3
       start_period: 40s
 
+    # 网络配置
+    networks:
+      - tmdb-network
+
+    # 依赖关系（如果有数据库等其他服务）
+    # depends_on:
+    #   - database
+
+  # 可选：添加数据库服务
+  # database:
+  #   image: postgres:15-alpine
+  #   container_name: tmdb-postgres
+  #   environment:
+  #     - POSTGRES_DB=tmdb_helper
+  #     - POSTGRES_USER=tmdb_user
+  #     - POSTGRES_PASSWORD=change_this_password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - tmdb-network
+  #   restart: unless-stopped
+
 volumes:
   tmdb_data:
     driver: local
+  tmdb_logs:
+    driver: local
+  # postgres_data:
+  #   driver: local
+
+networks:
+  tmdb-network:
+    driver: bridge
