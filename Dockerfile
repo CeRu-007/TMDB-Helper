@@ -27,9 +27,9 @@ RUN \
   if [ -f pnpm-lock.yaml ]; then \
     npm install -g pnpm && pnpm install --frozen-lockfile; \
   elif [ -f package-lock.json ]; then \
-    npm ci --only=production && npm cache clean --force; \
+    npm ci --legacy-peer-deps && npm cache clean --force; \
   else \
-    npm install --only=production && npm cache clean --force; \
+    npm install --legacy-peer-deps && npm cache clean --force; \
   fi
 
 # 构建应用阶段
