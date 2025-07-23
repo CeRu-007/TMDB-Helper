@@ -7,7 +7,7 @@
 
 import { TMDBItem } from './storage';
 import { StorageManager } from './storage';
-import { optimisticUpdateManager } from './optimistic-update-manager';
+
 
 export interface ConsistencyCheckResult {
   isConsistent: boolean;
@@ -231,13 +231,9 @@ export class DataConsistencyValidator {
    */
   private async getFrontendItems(): Promise<TMDBItem[]> {
     try {
-      // 获取基础数据（不包含乐观更新）
-      const baseItems = await StorageManager.getItems();
-      
-      // 应用乐观更新
-      const optimisticItems = optimisticUpdateManager.applyOptimisticUpdates(baseItems, 'item');
-      
-      return optimisticItems;
+      // 直接获取数据（不再使用乐观更新）
+      const items = await StorageManager.getItems();
+      return items;
     } catch (error) {
       console.error('[DataConsistencyValidator] 获取前端数据失败:', error);
       return [];

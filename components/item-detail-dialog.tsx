@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react"
-import { useEnhancedData } from "@/components/enhanced-client-data-provider"
+import { useData } from "@/components/client-data-provider"
 import { RealtimeStatusIndicator } from "@/components/realtime-status-indicator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -138,7 +138,7 @@ interface ItemDetailDialogProps {
 }
 
 export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, onOpenScheduledTask }: ItemDetailDialogProps) {
-  const { updateItem, isConnected, pendingOperations } = useEnhancedData()
+  const { updateItem, isConnected, pendingOperations } = useData()
   const [editing, setEditing] = useState(false)
   const [editData, setEditData] = useState(item)
   const [localItem, setLocalItem] = useState<TMDBItem>(item)
@@ -317,7 +317,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
   }, [open, item.backdropUrl]);
 
-  const handleEpisodeToggle = (episodeNumber: number, completed: boolean, seasonNumber: number) => {
+  const handleEpisodeToggle = async (episodeNumber: number, completed: boolean, seasonNumber: number) => {
     // 添加视觉反馈
     if (completed) {
       setCopyFeedback(`第${episodeNumber}集已标记为完成`)
@@ -326,7 +326,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
     setTimeout(() => setCopyFeedback(null), 1500)
 
-    // 立即更新状态，不添加延迟
+    // 立即更新本地状态，实现即时UI反馈
     let updatedItem = { ...localItem } // 使用本地状态作为基础
 
     if (updatedItem.seasons && seasonNumber) {
@@ -405,12 +405,60 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     // 先更新本地状态，实现即时UI反馈
     setLocalItem(updatedItem)
-    
-    // 更新本地状态
     setLastClickedEpisode(episodeNumber)
-    
-    // 再通知父组件更新
-    onUpdate(updatedItem)
+
+    try {
+      // 调用API更新数据
+      const episodeNumbers = isShiftPressed && lastClickedEpisode !== null && lastClickedEpisode !== episodeNumber
+        ? Array.from({ length: Math.abs(episodeNumber - lastClickedEpisode) + 1 }, (_, i) =>
+            Math.min(lastClickedEpisode, episodeNumber) + i)
+        : [episodeNumber]
+
+      const requestData = {
+        itemId: updatedItem.id,
+        seasonNumber: seasonNumber,
+        episodeNumbers: episodeNumbers,
+        completed: completed
+      }
+
+      console.log('发送API请求:', requestData)
+
+      const response = await fetch('/api/mark-episodes-completed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API调用失败:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        })
+        throw new Error(`API调用失败: ${response.status} ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      if (!result.success) {
+        console.error('API返回错误:', result)
+        throw new Error(result.error || 'API返回错误')
+      }
+
+      console.log('API调用成功:', result)
+
+      // API成功后，通知父组件更新全局状态
+      onUpdate(updatedItem)
+
+    } catch (error) {
+      console.error('更新集数状态失败:', error)
+      // 如果API调用失败，回滚本地状态
+      setLocalItem(localItem)
+      setCopyFeedback('更新失败，请重试')
+      setTimeout(() => setCopyFeedback(null), 2000)
+    }
   }
 
   // 处理批量切换
@@ -1174,13 +1222,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent 
+        <DialogContent
           className={cn(
             "max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none",
             "transition-opacity duration-300 ease-in-out",
             isContentReady ? "opacity-100" : "opacity-0"
-          )} 
+          )}
           ref={contentRef}
+          showCloseButton={false}
         >
           {/* 加载状态指示器 - 只在真正需要加载时显示 */}
           {isLoading && !isBackdropLoaded && (
@@ -1285,7 +1334,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               </div>
             </div>
             
-            <div className="flex items-center space-x-2 pr-10">
+            <div className="flex items-center space-x-2 pr-2">
               {localItem.tmdbUrl && (
                 <Button
                   variant="outline"
@@ -1318,14 +1367,25 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                   <Save className="h-4 w-4" />
                 </Button>
               )}
+              {editing && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive transition-transform hover:scale-110"
+                  title="删除"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="icon"
-                className="h-8 w-8 text-destructive hover:text-destructive transition-transform hover:scale-110"
-                title="删除"
-                onClick={() => setShowDeleteDialog(true)}
+                className="h-8 w-8 transition-transform hover:scale-110"
+                title="关闭"
+                onClick={() => onOpenChange(false)}
               >
-                <Trash2 className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </DialogHeader>

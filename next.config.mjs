@@ -40,10 +40,10 @@ const nextConfig = {
           chunks: 'all',
           cacheGroups: {
             ...config.optimization.splitChunks?.cacheGroups,
-            // 将新增的乐观更新相关模块打包到一个 chunk 中
-            optimisticUpdate: {
-              name: 'optimistic-update',
-              test: /[\\/]lib[\\/](operation-queue-manager|data-consistency-validator|abort-error-monitor|optimistic-update-manager)\.ts$/,
+            // 将数据管理相关模块打包到一个 chunk 中
+            dataManagement: {
+              name: 'data-management',
+              test: /[\\/]lib[\\/](operation-queue-manager|data-consistency-validator|abort-error-monitor)\.ts$/,
               chunks: 'all',
               priority: 20,
               reuseExistingChunk: true,

@@ -3,11 +3,11 @@
 import { ReactNode, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { ThemeProvider } from "next-themes"
-import { EnhancedDataProvider } from "@/components/enhanced-client-data-provider"
+import { DataProvider } from "@/components/client-data-provider"
 import { UserIdentityProvider } from "@/components/user-identity-provider"
 import { AuthProvider, AuthGuard } from "@/components/auth-provider"
 import { Toaster } from "@/components/ui/toaster"
-import { OptimisticUpdateStatus } from "@/components/ui/optimistic-update-status"
+
 import { suppressRefWarnings } from "@/lib/utils"
 
 export default function MidLayout({
@@ -36,11 +36,10 @@ export default function MidLayout({
           // 主应用：需要认证保护
           <AuthGuard>
             <UserIdentityProvider>
-              <EnhancedDataProvider>
+              <DataProvider>
                 {children}
                 <Toaster />
-                <OptimisticUpdateStatus showOnlyFailed={true} autoHide={true} />
-              </EnhancedDataProvider>
+              </DataProvider>
             </UserIdentityProvider>
           </AuthGuard>
         )}

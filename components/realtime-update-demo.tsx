@@ -20,14 +20,14 @@ import {
   ArrowDown,
   Sparkles
 } from "lucide-react"
-import { useEnhancedData } from "@/components/enhanced-client-data-provider"
+import { useData } from "@/components/client-data-provider"
 
 interface RealtimeUpdateDemoProps {
   className?: string
 }
 
 export function RealtimeUpdateDemo({ className = "" }: RealtimeUpdateDemoProps) {
-  const { items, pendingOperations, isConnected, getOptimisticStats } = useEnhancedData()
+  const { items, pendingOperations, isConnected, getOptimisticStats } = useData()
   const [previousCount, setPreviousCount] = useState(0)
   const [countChange, setCountChange] = useState<'up' | 'down' | null>(null)
   const [animationKey, setAnimationKey] = useState(0)

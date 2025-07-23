@@ -26,6 +26,7 @@ import {
   Popcorn,
   Ticket,
   Sparkles,
+  Wand2,
   Loader2,
   RefreshCw,
   AlertTriangle,
@@ -71,7 +72,7 @@ import { taskScheduler } from "@/lib/scheduler"
 import { useMobile } from "@/hooks/use-mobile"
 import MediaCard from "@/components/media-card"
 import { useIsClient } from "@/hooks/use-is-client"
-import { useEnhancedData } from "@/components/enhanced-client-data-provider"
+import { useData } from "@/components/client-data-provider"
 import { StatCard } from "@/components/ui/stat-card"
 import { StorageManager } from "@/lib/storage"
 import { useRouter } from "next/navigation"
@@ -83,6 +84,7 @@ import { LayoutSwitcher } from "@/components/layout-switcher"
 import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferences"
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
 import { MobileFloatingStatusIndicator } from "@/components/realtime-status-indicator"
+import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
 
 
 
@@ -194,7 +196,7 @@ export default function HomePage() {
     importData: importDataFromJson,
     clearError,
     getOptimisticStats
-  } = useEnhancedData()
+  } = useData()
 
   // 获取即将上线的内容
   const fetchUpcomingItems = async (silent = false, retryCount = 0, region = selectedRegion, signal?: AbortSignal) => {
@@ -1355,7 +1357,7 @@ export default function HomePage() {
 
         {/* 原有的标签页内容 */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 h-12">
+          <TabsList className="grid w-full grid-cols-5 mb-6 h-12">
             <TabsTrigger value="ongoing" className="flex items-center space-x-2 text-sm">
               <Clock className="h-4 w-4" />
               <span>连载中</span>
@@ -1383,6 +1385,10 @@ export default function HomePage() {
                   ).length}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="content-generation" className="flex items-center space-x-2 text-sm">
+              <Wand2 className="h-4 w-4" />
+              <span>内容生成</span>
             </TabsTrigger>
             <TabsTrigger value="thumbnail" className="flex items-center space-x-2 text-sm">
               <Video className="h-4 w-4" />
@@ -1871,6 +1877,17 @@ export default function HomePage() {
                   )}
                 </>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="content-generation">
+            <div className="h-[calc(100vh-200px)]">
+              <SubtitleEpisodeGenerator 
+                onOpenGlobalSettings={(section) => {
+                  setSettingsInitialSection(section)
+                  setShowSettingsDialog(true)
+                }}
+              />
             </div>
           </TabsContent>
 

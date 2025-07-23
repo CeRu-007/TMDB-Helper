@@ -37,14 +37,14 @@ import {
 } from "lucide-react"
 import { performanceMonitor } from "@/lib/performance-monitor"
 import { errorRecoveryManager } from "@/lib/error-recovery-manager"
-import { useEnhancedData } from "@/components/enhanced-client-data-provider"
+import { useData } from "@/components/client-data-provider"
 
 interface SystemHealthMonitorProps {
   className?: string
 }
 
 export function SystemHealthMonitor({ className = "" }: SystemHealthMonitorProps) {
-  const { isConnected, pendingOperations } = useEnhancedData()
+  const { isConnected, pendingOperations } = useData()
   const [healthData, setHealthData] = useState<any>(null)
   const [errorStats, setErrorStats] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StorageManager, TMDBItem } from '@/lib/storage';
+import { AuthMiddleware, getUserIdFromAuthRequest } from '@/lib/auth-middleware';
+import { readUserItems, updateUserItem } from '@/lib/user-aware-storage';
 
 /**
  * POST /api/mark-episodes-completed - 标记集数为已完成
  */
-export async function POST(request: NextRequest) {
+export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
   try {
-    const { itemId, seasonNumber, episodeNumbers } = await request.json();
+    const { itemId, seasonNumber, episodeNumbers, completed = true } = await request.json();
     
     if (!itemId || !Array.isArray(episodeNumbers) || episodeNumbers.length === 0) {
       return NextResponse.json({
@@ -16,10 +18,21 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    console.log(`[API] 标记集数为已完成: itemId=${itemId}, season=${seasonNumber}, episodes=[${episodeNumbers.join(', ')}]`);
-    
-    // 获取项目信息
-    const items = await StorageManager.getItemsWithRetry();
+    console.log(`[API] 标记集数状态: itemId=${itemId}, season=${seasonNumber}, episodes=[${episodeNumbers.join(', ')}], completed=${completed}`);
+
+    // 从认证中间件获取用户ID
+    const userId = getUserIdFromAuthRequest(request);
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: '缺少用户身份信息'
+      }, { status: 401 });
+    }
+
+    console.log(`[API] 用户 ${userId} 请求标记集数状态`);
+
+    // 获取用户的项目信息
+    const items = readUserItems(userId);
     const item = items.find(i => i.id === itemId);
     
     if (!item) {
@@ -62,10 +75,10 @@ export async function POST(request: NextRequest) {
         targetSeason.episodes = [];
       }
       
-      // 标记指定集数为已完成
+      // 标记指定集数状态
       episodeNumbers.forEach(episodeNum => {
         let episode = targetSeason.episodes!.find(e => e.number === episodeNum);
-        
+
         if (!episode) {
           // 如果集数不存在，创建新的集数记录
           episode = {
@@ -76,14 +89,14 @@ export async function POST(request: NextRequest) {
           targetSeason.episodes!.push(episode);
           console.log(`[API] 创建新集数记录: 第${seasonNumber}季第${episodeNum}集`);
         }
-        
-        if (!episode.completed) {
-          episode.completed = true;
+
+        if (episode.completed !== completed) {
+          episode.completed = completed;
           markedCount++;
           markedEpisodes.push(episodeNum);
-          console.log(`[API] ✓ 标记第 ${seasonNumber} 季第 ${episodeNum} 集为已完成`);
+          console.log(`[API] ✓ 标记第 ${seasonNumber} 季第 ${episodeNum} 集为${completed ? '已完成' : '未完成'}`);
         } else {
-          console.log(`[API] - 第 ${seasonNumber} 季第 ${episodeNum} 集已经标记为完成`);
+          console.log(`[API] - 第 ${seasonNumber} 季第 ${episodeNum} 集已经是${completed ? '已完成' : '未完成'}状态`);
         }
       });
       
@@ -96,7 +109,7 @@ export async function POST(request: NextRequest) {
       
       episodeNumbers.forEach(episodeNum => {
         let episode = updatedItem.episodes!.find(e => e.number === episodeNum);
-        
+
         if (!episode) {
           // 如果集数不存在，创建新的集数记录
           episode = {
@@ -106,14 +119,14 @@ export async function POST(request: NextRequest) {
           updatedItem.episodes!.push(episode);
           console.log(`[API] 创建新集数记录: 第${episodeNum}集`);
         }
-        
-        if (!episode.completed) {
-          episode.completed = true;
+
+        if (episode.completed !== completed) {
+          episode.completed = completed;
           markedCount++;
           markedEpisodes.push(episodeNum);
-          console.log(`[API] ✓ 标记第 ${episodeNum} 集为已完成`);
+          console.log(`[API] ✓ 标记第 ${episodeNum} 集为${completed ? '已完成' : '未完成'}`);
         } else {
-          console.log(`[API] - 第 ${episodeNum} 集已经标记为完成`);
+          console.log(`[API] - 第 ${episodeNum} 集已经是${completed ? '已完成' : '未完成'}状态`);
         }
       });
       
@@ -159,7 +172,7 @@ export async function POST(request: NextRequest) {
     
     // 保存更新后的项目
     console.log(`[API] 保存更新后的项目数据...`);
-    const updateSuccess = await StorageManager.updateItem(updatedItem);
+    const updateSuccess = updateUserItem(userId, updatedItem);
     
     if (!updateSuccess) {
       console.error(`[API] 保存项目更新失败`);
@@ -169,16 +182,16 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
-    console.log(`[API] ✓ 成功标记 ${markedCount} 个集数为已完成`);
-    console.log(`[API] 新标记的集数: [${markedEpisodes.join(', ')}]`);
-    
+    console.log(`[API] ✓ 成功更新 ${markedCount} 个集数状态`);
+    console.log(`[API] 更新的集数: [${markedEpisodes.join(', ')}]`);
+
     return NextResponse.json({
       success: true,
       markedCount: markedCount,
       markedEpisodes: markedEpisodes.sort((a, b) => a - b),
       totalEpisodes: episodeNumbers.length,
       allCompleted: allCompleted,
-      message: `成功标记 ${markedCount} 个集数为已完成`,
+      message: `成功更新 ${markedCount} 个集数状态`,
       updatedItem: {
         id: updatedItem.id,
         title: updatedItem.title,
@@ -195,4 +208,4 @@ export async function POST(request: NextRequest) {
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
-}
+});

@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Upload, FileText, AlertCircle, CheckCircle, Info } from "lucide-react"
 import { StorageManager } from "@/lib/storage"
-import { useEnhancedData } from "@/components/enhanced-client-data-provider"
+import { useData } from "@/components/client-data-provider"
 
 interface ImportDataDialogProps {
   open: boolean
@@ -50,7 +50,7 @@ export default function ImportDataDialog({ open, onOpenChange }: ImportDataDialo
     }
   } | null>(null)
 
-  const { importData } = useEnhancedData()
+  const { importData } = useData()
 
   // 处理文件选择
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {

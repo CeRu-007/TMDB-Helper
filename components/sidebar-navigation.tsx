@@ -18,7 +18,9 @@ import {
   Clock,
   Play,
   Download,
-  Scissors
+  Scissors,
+  Wand2,
+  FileText
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -64,6 +66,14 @@ const menuItems: MenuItem[] = [
     submenu: [
       { id: "upcoming", label: "即将上线", icon: <Clock className="h-3 w-3" /> },
       { id: "recent", label: "近期开播", icon: <Play className="h-3 w-3" /> }
+    ]
+  },
+  {
+    id: "content-generation",
+    label: "内容生成",
+    icon: <Wand2 className="h-4 w-4" />,
+    submenu: [
+      { id: "episode-generator", label: "分集简介生成", icon: <FileText className="h-3 w-3" /> }
     ]
   },
   {

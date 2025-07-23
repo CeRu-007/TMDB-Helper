@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Download, FileText, Database, Settings, Info } from "lucide-react"
-import { useEnhancedData } from "@/components/enhanced-client-data-provider"
+import { useData } from "@/components/client-data-provider"
 import { StorageManager, TMDBItem, ScheduledTask } from "@/lib/storage"
 import { useToast } from "@/hooks/use-toast"
 import { dataRecoveryManager } from "@/lib/data-recovery-manager"
@@ -40,7 +40,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
     taskCount: number
   } | null>(null)
 
-  const { items, exportData } = useEnhancedData()
+  const { items, exportData } = useData()
   const { toast } = useToast()
 
   // 加载统计信息

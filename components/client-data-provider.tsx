@@ -4,20 +4,24 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useIsClient } from "@/hooks/use-is-client"
 import { StorageManager, TMDBItem } from "@/lib/storage"
 import { realtimeSyncManager } from "@/lib/realtime-sync-manager"
-import { optimisticUpdateManager } from "@/lib/optimistic-update-manager"
 
 // 创建上下文
 interface DataContextType {
   items: TMDBItem[]
+  baseItems: TMDBItem[]
   loading: boolean
   error: string | null
   initialized: boolean
+  isConnected: boolean
+  pendingOperations: number
   refreshData: () => Promise<void>
   addItem: (item: TMDBItem) => Promise<void>
   updateItem: (item: TMDBItem) => Promise<void>
   deleteItem: (id: string) => Promise<void>
   exportData: () => Promise<void>
   importData: (jsonData: string) => Promise<void>
+  clearError: () => void
+  getOptimisticStats: () => any
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -31,11 +35,12 @@ export function useData() {
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [baseItems, setBaseItems] = useState<TMDBItem[]>([]) // 基础数据
-  const [items, setItems] = useState<TMDBItem[]>([]) // 应用乐观更新后的数据
+  const [items, setItems] = useState<TMDBItem[]>([]) // 项目数据
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [initialized, setInitialized] = useState(false)
+  const [isConnected, setIsConnected] = useState(false)
+  const [pendingOperations, setPendingOperations] = useState(0)
   const isClient = useIsClient()
 
   // 加载数据
@@ -47,7 +52,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     
     try {
       const data = await StorageManager.getItemsWithRetry()
-      setBaseItems(data)
+      setItems(data)
       setInitialized(true)
       console.log('[DataProvider] 加载数据成功:', data.length, '个项目')
     } catch (err) {
@@ -58,25 +63,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // 应用乐观更新到数据
-  const applyOptimisticUpdates = () => {
-    const updatedItems = optimisticUpdateManager.applyOptimisticUpdates(baseItems, 'item')
-    setItems(updatedItems)
-  }
-
-  // 初始化实时同步和乐观更新
+  // 初始化实时同步
   useEffect(() => {
     if (!isClient) return
 
-    console.log('[DataProvider] 初始化实时同步和乐观更新')
+    console.log('[DataProvider] 初始化实时同步')
 
     // 初始化实时同步管理器
-    realtimeSyncManager.initialize()
+    const initializeSync = async () => {
+      try {
+        await realtimeSyncManager.initialize()
+        setIsConnected(realtimeSyncManager.isConnectionActive())
+
+        // 监听连接状态变化
+        const checkConnection = setInterval(() => {
+          setIsConnected(realtimeSyncManager.isConnectionActive())
+        }, 5000)
+
+        return () => clearInterval(checkConnection)
+      } catch (error) {
+        console.error('[DataProvider] 实时同步初始化失败:', error)
+        setIsConnected(false)
+      }
+    }
+
+    initializeSync()
 
     // 监听数据变更事件
     const handleDataChange = (event: any) => {
       console.log('[DataProvider] 收到实时数据变更:', event)
-      
+
       switch (event.type) {
         case 'item_added':
         case 'item_updated':
@@ -88,25 +104,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 监听乐观更新变化
-    const handleOptimisticUpdate = () => {
-      applyOptimisticUpdates()
-    }
-
     realtimeSyncManager.addEventListener('*', handleDataChange)
-    optimisticUpdateManager.addListener(handleOptimisticUpdate)
 
     // 清理函数
     return () => {
       realtimeSyncManager.removeEventListener('*', handleDataChange)
-      optimisticUpdateManager.removeListener(handleOptimisticUpdate)
     }
   }, [isClient])
-
-  // 当基础数据变化时，重新应用乐观更新
-  useEffect(() => {
-    applyOptimisticUpdates()
-  }, [baseItems])
 
   // 当客户端渲染完成后加载数据
   useEffect(() => {
@@ -118,26 +122,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // 添加项目
   const addItem = async (item: TMDBItem) => {
     if (!isClient) return
-    
-    // 乐观更新：立即添加到UI
-    const operationId = optimisticUpdateManager.addOperation({
-      type: 'add',
-      entity: 'item',
-      data: item
-    })
 
     try {
-      console.log('[DataProvider] 乐观添加项目:', item.title)
-      
+      console.log('[DataProvider] 添加项目:', item.title)
+
       // 发送到服务器
       const success = await StorageManager.addItem(item)
       if (!success) {
         throw new Error("添加项目失败")
       }
 
-      // 确认操作成功
-      optimisticUpdateManager.confirmOperation(operationId, item)
-      
+      // 立即更新本地状态
+      setItems(prevItems => [...prevItems, item])
+
       // 通知其他客户端
       await realtimeSyncManager.notifyDataChange({
         type: 'item_added',
@@ -148,39 +145,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("Failed to add item:", err)
       setError("添加项目失败")
-      
-      // 标记操作失败
-      optimisticUpdateManager.failOperation(operationId, err instanceof Error ? err.message : '添加项目失败')
     }
   }
 
   // 更新项目
   const updateItem = async (item: TMDBItem) => {
     if (!isClient) return
-    
-    // 保存原始数据用于回滚
-    const originalItem = baseItems.find(i => i.id === item.id)
-    
-    // 乐观更新：立即更新UI
-    const operationId = optimisticUpdateManager.addOperation({
-      type: 'update',
-      entity: 'item',
-      data: item,
-      originalData: originalItem
-    })
 
     try {
-      console.log('[DataProvider] 乐观更新项目:', item.title)
-      
+      console.log('[DataProvider] 更新项目:', item.title)
+
+      // 立即更新本地状态
+      setItems(prevItems =>
+        prevItems.map(prevItem =>
+          prevItem.id === item.id ? item : prevItem
+        )
+      )
+
       // 发送到服务器
       const success = await StorageManager.updateItem(item)
       if (!success) {
         throw new Error("更新项目失败")
       }
 
-      // 确认操作成功
-      optimisticUpdateManager.confirmOperation(operationId, item)
-      
       // 通知其他客户端
       await realtimeSyncManager.notifyDataChange({
         type: 'item_updated',
@@ -191,43 +178,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("Failed to update item:", err)
       setError("更新项目失败")
-      
-      // 标记操作失败
-      optimisticUpdateManager.failOperation(operationId, err instanceof Error ? err.message : '更新项目失败')
+      // 如果更新失败，重新加载数据以确保一致性
+      loadData()
     }
   }
 
   // 删除项目
   const deleteItem = async (id: string) => {
     if (!isClient) return
-    
-    // 保存原始数据用于回滚
-    const originalItem = baseItems.find(i => i.id === id)
+
+    // 查找要删除的项目
+    const originalItem = items.find(i => i.id === id)
     if (!originalItem) {
       setError("要删除的项目不存在")
       return
     }
-    
-    // 乐观更新：立即从UI移除
-    const operationId = optimisticUpdateManager.addOperation({
-      type: 'delete',
-      entity: 'item',
-      data: { id },
-      originalData: originalItem
-    })
 
     try {
-      console.log('[DataProvider] 乐观删除项目:', originalItem.title)
-      
+      console.log('[DataProvider] 删除项目:', originalItem.title)
+
+      // 立即从本地状态移除
+      setItems(prevItems => prevItems.filter(item => item.id !== id))
+
       // 发送到服务器
       const success = await StorageManager.deleteItem(id)
       if (!success) {
         throw new Error("删除项目失败")
       }
 
-      // 确认操作成功
-      optimisticUpdateManager.confirmOperation(operationId)
-      
       // 通知其他客户端
       await realtimeSyncManager.notifyDataChange({
         type: 'item_deleted',
@@ -238,9 +216,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("Failed to delete item:", err)
       setError("删除项目失败")
-      
-      // 标记操作失败
-      optimisticUpdateManager.failOperation(operationId, err instanceof Error ? err.message : '删除项目失败')
+      // 如果删除失败，重新加载数据以确保一致性
+      loadData()
     }
   }
 
@@ -300,17 +277,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // 清除错误
+  const clearError = () => {
+    setError(null)
+  }
+
+  // 获取乐观更新统计（兼容性函数，返回空数据）
+  const getOptimisticStats = () => {
+    return {
+      total: 0,
+      pending: 0,
+      confirmed: 0,
+      failed: 0,
+      retrying: 0,
+      avgRetryCount: 0
+    }
+  }
+
   const value = {
     items,
+    baseItems: items, // 简化版本中baseItems和items相同
     loading,
     error,
     initialized,
+    isConnected,
+    pendingOperations,
     refreshData: loadData,
     addItem,
     updateItem,
     deleteItem,
     exportData,
-    importData
+    importData,
+    clearError,
+    getOptimisticStats
   }
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

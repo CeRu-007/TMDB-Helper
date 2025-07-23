@@ -162,7 +162,19 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     siliconFlowModel: "Qwen/Qwen2.5-VL-32B-Instruct"
   })
 
+  // 硅基流动API设置状态
+  const [siliconFlowSettings, setSiliconFlowSettings] = useState({
+    apiKey: "",
+    // 分集简介生成模型
+    episodeGeneratorModel: "deepseek-ai/DeepSeek-V2.5",
+    // 缩略图AI筛选模型
+    thumbnailFilterModel: "Qwen/Qwen2.5-VL-32B-Instruct"
+  })
+
   const [showAdvancedVideoSettings, setShowAdvancedVideoSettings] = useState(false)
+  const [showSiliconFlowApiKey, setShowSiliconFlowApiKey] = useState(false)
+  const [apiActiveTab, setApiActiveTab] = useState("tmdb")
+  const [siliconFlowSaving, setSiliconFlowSaving] = useState(false)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -214,13 +226,40 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           threadCount: Number(settings.threadCount || prev.threadCount),
           thumbnailCount: Number(settings.thumbnailCount || prev.thumbnailCount),
           frameInterval: Number(settings.frameInterval || prev.frameInterval),
-          // AI筛选设置
+          // AI筛选设置 - API密钥现在从全局设置中读取
           enableAIFilter: settings.enableAIFilter || prev.enableAIFilter,
-          siliconFlowApiKey: settings.siliconFlowApiKey || prev.siliconFlowApiKey,
+          siliconFlowApiKey: "", // 将从全局设置中读取
           siliconFlowModel: settings.siliconFlowModel || prev.siliconFlowModel
         }))
       } catch (error) {
         console.error('加载视频缩略图设置失败:', error)
+      }
+    }
+
+    // 加载硅基流动API设置
+    const savedSiliconFlowSettings = localStorage.getItem("siliconflow_api_settings")
+    if (savedSiliconFlowSettings) {
+      try {
+        const settings = JSON.parse(savedSiliconFlowSettings)
+        setSiliconFlowSettings(settings)
+      } catch (error) {
+        console.error('加载硅基流动API设置失败:', error)
+      }
+    } else {
+      // 兼容旧的设置，从分集生成器和缩略图设置中迁移
+      const episodeApiKey = localStorage.getItem('siliconflow_api_key')
+      const thumbnailSettings = localStorage.getItem("video_thumbnail_settings")
+      
+      let apiKey = episodeApiKey || ""
+      if (!apiKey && thumbnailSettings) {
+        try {
+          const parsed = JSON.parse(thumbnailSettings)
+          apiKey = parsed.siliconFlowApiKey || ""
+        } catch (e) {}
+      }
+      
+      if (apiKey) {
+        setSiliconFlowSettings(prev => ({ ...prev, apiKey }))
       }
     }
   }, [])
@@ -229,6 +268,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   useEffect(() => {
     if (open && initialSection) {
       setActiveSection(initialSection)
+      // 如果是API配置，自动切换到硅基流动API标签页
+      if (initialSection === "api") {
+        setApiActiveTab("siliconflow")
+      }
     }
   }, [open, initialSection])
 
@@ -655,11 +698,49 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     return (
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-semibold mb-2">TMDB API配置</h3>
+          <h3 className="text-lg font-semibold mb-2">API配置</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-            配置TMDB API密钥以启用电影和电视剧数据获取功能
+            配置各种API密钥以启用相关功能
           </p>
         </div>
+
+        {/* API配置顶部导航 */}
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setApiActiveTab("tmdb")}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                apiActiveTab === "tmdb"
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              TMDB API
+            </button>
+            <button
+              onClick={() => setApiActiveTab("siliconflow")}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                apiActiveTab === "siliconflow"
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              硅基流动 API
+            </button>
+          </nav>
+        </div>
+
+        {/* 根据选中的标签页显示不同内容 */}
+        {apiActiveTab === "tmdb" && renderTMDBApiSettings()}
+        {apiActiveTab === "siliconflow" && renderSiliconFlowApiSettings()}
+      </div>
+    )
+  }
+
+  // TMDB API设置
+  function renderTMDBApiSettings() {
+    return (
+      <div className="space-y-6">
 
         <Card>
           <CardContent className="p-6 space-y-4">
@@ -755,6 +836,263 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             </CardContent>
           </Card>
         )}
+      </div>
+    )
+  }
+
+  // 硅基流动API设置
+  function renderSiliconFlowApiSettings() {
+    const saveSiliconFlowSettings = async () => {
+      setSiliconFlowSaving(true)
+      try {
+        // 模拟异步操作
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        localStorage.setItem("siliconflow_api_settings", JSON.stringify(siliconFlowSettings))
+
+        // 同步更新到分集生成器的本地存储
+        localStorage.setItem('siliconflow_api_key', siliconFlowSettings.apiKey)
+
+        // 同步更新到缩略图设置
+        const savedVideoSettings = localStorage.getItem("video_thumbnail_settings")
+        if (savedVideoSettings) {
+          try {
+            const settings = JSON.parse(savedVideoSettings)
+            settings.siliconFlowApiKey = siliconFlowSettings.apiKey
+            settings.siliconFlowModel = siliconFlowSettings.thumbnailFilterModel
+            localStorage.setItem("video_thumbnail_settings", JSON.stringify(settings))
+          } catch (error) {
+            console.error('同步缩略图设置失败:', error)
+          }
+        }
+
+        // 触发自定义事件，通知其他组件设置已更改
+        window.dispatchEvent(new CustomEvent('siliconflow-settings-changed', {
+          detail: siliconFlowSettings
+        }))
+
+        toast({
+          title: "成功",
+          description: "硅基流动API设置已保存",
+        })
+      } catch (error) {
+        toast({
+          title: "错误",
+          description: "保存硅基流动API设置失败",
+          variant: "destructive",
+        })
+      } finally {
+        setSiliconFlowSaving(false)
+      }
+    }
+
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div>
+              <Label htmlFor="siliconFlowApiKey" className="flex items-center text-sm font-medium">
+                硅基流动 API密钥
+              </Label>
+              <div className="relative mt-2">
+                <Input
+                  id="siliconFlowApiKey"
+                  type={showSiliconFlowApiKey ? "text" : "password"}
+                  value={siliconFlowSettings.apiKey}
+                  onChange={(e) => setSiliconFlowSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                  placeholder="输入您的硅基流动API密钥"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowSiliconFlowApiKey(!showSiliconFlowApiKey)}
+                >
+                  {showSiliconFlowApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* 当前状态显示 */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">API状态:</span>
+                <Badge variant={siliconFlowSettings.apiKey ? "default" : "secondary"}>
+                  {siliconFlowSettings.apiKey ? "已配置" : "未配置"}
+                </Badge>
+              </div>
+              {siliconFlowSettings.apiKey && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                  {siliconFlowSettings.apiKey.substring(0, 8)}...{siliconFlowSettings.apiKey.substring(siliconFlowSettings.apiKey.length - 4)}
+                </span>
+              )}
+            </div>
+
+            {/* API密钥验证提示 */}
+            {siliconFlowSettings.apiKey && siliconFlowSettings.apiKey.length < 20 && (
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                  <span className="text-sm text-yellow-800 dark:text-yellow-200">
+                    API密钥长度似乎不足，请检查是否完整
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* 模型配置 */}
+            <div className="space-y-6">
+              <div>
+                <Label htmlFor="episodeGeneratorModel" className="text-sm font-medium">
+                  分集简介生成模型
+                </Label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">
+                  选择用于生成分集标题和剧情简介的AI模型，推荐使用DeepSeek-V2.5以获得最佳中文效果
+                </p>
+                <Select 
+                  value={siliconFlowSettings.episodeGeneratorModel} 
+                  onValueChange={(value) => setSiliconFlowSettings(prev => ({ ...prev, episodeGeneratorModel: value }))}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="deepseek-ai/DeepSeek-V2.5">
+                      <div className="flex flex-col">
+                        <span className="font-medium">DeepSeek-V2.5 (推荐)</span>
+                        <span className="text-xs text-gray-500">强大的中文理解能力</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Qwen/Qwen2.5-72B-Instruct">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Qwen2.5-72B</span>
+                        <span className="text-xs text-gray-500">阿里通义千问大模型</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="meta-llama/Meta-Llama-3.1-70B-Instruct">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Llama-3.1-70B</span>
+                        <span className="text-xs text-gray-500">Meta开源大模型</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="01-ai/Yi-1.5-34B-Chat">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Yi-1.5-34B</span>
+                        <span className="text-xs text-gray-500">零一万物大模型</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="THUDM/glm-4-9b-chat">
+                      <div className="flex flex-col">
+                        <span className="font-medium">GLM-4-9B</span>
+                        <span className="text-xs text-gray-500">智谱AI大模型</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="thumbnailFilterModel" className="text-sm font-medium">
+                  缩略图AI筛选模型
+                </Label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">
+                  选择用于智能筛选视频缩略图的多模态AI模型，推荐使用Qwen2.5-VL-32B以获得最佳视觉理解效果
+                </p>
+                <Select 
+                  value={siliconFlowSettings.thumbnailFilterModel} 
+                  onValueChange={(value) => setSiliconFlowSettings(prev => ({ ...prev, thumbnailFilterModel: value }))}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Qwen/Qwen2.5-VL-32B-Instruct">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Qwen2.5-VL-32B (推荐)</span>
+                        <span className="text-xs text-gray-500">阿里多模态视觉理解模型</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="deepseek-ai/DeepSeek-VL2">
+                      <div className="flex flex-col">
+                        <span className="font-medium">DeepSeek-VL2</span>
+                        <span className="text-xs text-gray-500">DeepSeek视觉语言模型</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="01-ai/Yi-VL-34B">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Yi-VL-34B</span>
+                        <span className="text-xs text-gray-500">零一万物视觉理解模型</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* 模型使用提示 */}
+            <div className="p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="flex items-start space-x-2">
+                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">模型选择建议</p>
+                  <ul className="text-xs text-amber-700 dark:text-amber-300 mt-1 space-y-1">
+                    <li>• 分集简介生成：DeepSeek-V2.5 在中文理解和创作方面表现优异</li>
+                    <li>• 缩略图筛选：Qwen2.5-VL-32B 在图像理解和分析方面效果最佳</li>
+                    <li>• 不同模型的调用费用可能不同，请根据需要选择</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* 保存按钮 */}
+            <div className="pt-4 border-t">
+              <Button 
+                onClick={saveSiliconFlowSettings} 
+                className="w-full"
+                disabled={siliconFlowSaving}
+              >
+                {siliconFlowSaving ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                    保存中...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    保存硅基流动设置
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* 帮助信息 */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start space-x-3">
+                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="space-y-3">
+                  <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">如何获取硅基流动API密钥？</p>
+                  <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-2 list-decimal list-inside">
+                    <li>访问硅基流动官网并注册账户</li>
+                    <li>进入控制台创建API密钥</li>
+                    <li>复制生成的API密钥到此处</li>
+                    <li>根据需要选择合适的模型</li>
+                  </ol>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open("https://siliconflow.cn", "_blank")}
+                    className="mt-3"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    前往硅基流动官网
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -1499,43 +1837,42 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           </CardHeader>
           {videoThumbnailSettings.enableAIFilter && (
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="siliconFlowApiKey">硅基流动API密钥</Label>
-                <Input
-                  id="siliconFlowApiKey"
-                  type="password"
-                  placeholder="请输入硅基流动API密钥"
-                  value={videoThumbnailSettings.siliconFlowApiKey}
-                  onChange={(e) =>
-                    setVideoThumbnailSettings(prev => ({ ...prev, siliconFlowApiKey: e.target.value }))
-                  }
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  在 <a href="https://cloud.siliconflow.cn/account/ak" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">硅基流动官网</a> 获取免费API密钥
-                </p>
+              {/* API密钥状态显示 */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">硅基流动API:</span>
+                    <Badge variant={siliconFlowSettings.apiKey ? "default" : "destructive"}>
+                      {siliconFlowSettings.apiKey ? "已配置" : "未配置"}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setActiveSection("api")
+                      setApiActiveTab("siliconflow")
+                    }}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    配置API
+                  </Button>
+                </div>
+                {!siliconFlowSettings.apiKey && (
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                    请先在API配置页面设置硅基流动API密钥
+                  </p>
+                )}
               </div>
 
+              {/* 模型选择 - 现在从全局设置中读取 */}
               <div>
-                <Label htmlFor="siliconFlowModel">AI模型</Label>
-                <Select
-                  value={videoThumbnailSettings.siliconFlowModel}
-                  onValueChange={(value) =>
-                    setVideoThumbnailSettings(prev => ({ ...prev, siliconFlowModel: value }))
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="选择AI模型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Qwen/Qwen2.5-VL-32B-Instruct">Qwen2.5-VL-32B (推荐)</SelectItem>
-                    <SelectItem value="Qwen/Qwen2.5-VL-72B-Instruct">Qwen2.5-VL-72B (高精度)</SelectItem>
-                    <SelectItem value="deepseek-ai/deepseek-vl2">DeepSeek-VL2 (快速)</SelectItem>
-                    <SelectItem value="THUDM/GLM-4.1V-9B-Thinking">GLM-4.1V-9B-Thinking</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>当前使用模型</Label>
+                <div className="mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded border text-sm">
+                  {siliconFlowSettings.thumbnailFilterModel || "Qwen/Qwen2.5-VL-32B-Instruct"}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  不同模型的精度和成本不同，推荐使用32B模型
+                  在API配置页面可以更改模型设置
                 </p>
               </div>
 

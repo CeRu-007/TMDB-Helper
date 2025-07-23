@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { LayoutSwitcher } from "@/components/layout-switcher"
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
+import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -364,6 +365,18 @@ export function SidebarLayout({
         return renderMaintenanceContent('short')
       case 'maintenance-movie':
         return renderMaintenanceContent('movie')
+
+      case 'content-generation-episode-generator':
+        // 分集简介生成器
+        return (
+          <div className="h-full">
+            <SubtitleEpisodeGenerator
+              onOpenGlobalSettings={(section) => {
+                onShowSettingsDialog(section)
+              }}
+            />
+          </div>
+        )
 
       case 'news-upcoming':
         // 显示即将上线内容

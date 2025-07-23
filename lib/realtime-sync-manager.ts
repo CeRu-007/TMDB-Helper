@@ -8,12 +8,13 @@ import { performanceMonitor } from './performance-monitor'
 import { errorRecoveryManager } from './error-recovery-manager'
 
 export type DataChangeEvent = {
-    type: 'item_added' | 'item_updated' | 'item_deleted' | 'task_completed' | 'task_status_changed' | 
-          'episode_updated' | 'season_added' | 'season_deleted' | 'progress_updated' | 
+    type: 'item_added' | 'item_updated' | 'item_deleted' | 'task_completed' | 'task_status_changed' |
+          'episode_updated' | 'season_added' | 'season_deleted' | 'progress_updated' |
           'batch_operation' | 'data_imported' | 'data_exported' | 'connection_status'
     data: any
     timestamp: number
     userId?: string
+    sourceConnectionId?: string // 添加操作来源标识
 }
 
 export type SyncEventListener = (event: DataChangeEvent) => void
@@ -26,6 +27,7 @@ class RealtimeSyncManager {
     private maxReconnectAttempts = 5
     private reconnectDelay = 1000
     private isConnected = false
+    private connectionId: string | null = null // 当前连接ID
 
     private constructor() { }
 
@@ -49,6 +51,10 @@ class RealtimeSyncManager {
 
         try {
             console.log('[RealtimeSync] 初始化实时同步连接')
+
+            // 生成唯一连接ID
+            this.connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            console.log('[RealtimeSync] 连接ID:', this.connectionId)
 
             // 创建 Server-Sent Events 连接
             this.eventSource = new EventSource('/api/realtime-sync')
@@ -75,6 +81,14 @@ class RealtimeSyncManager {
                 try {
                     const data: DataChangeEvent = JSON.parse(event.data)
                     console.log('[RealtimeSync] 收到数据变更事件:', data)
+
+                    // 过滤掉自己发出的事件，避免循环处理
+                    if (data.sourceConnectionId && data.sourceConnectionId === this.connectionId) {
+                        console.log('[RealtimeSync] 跳过自己发出的事件:', data.sourceConnectionId)
+                        performanceMonitor.endEvent(messageEventId, true)
+                        return
+                    }
+
                     this.notifyListeners(data.type, data)
                     
                     performanceMonitor.endEvent(messageEventId, true)
@@ -199,11 +213,12 @@ class RealtimeSyncManager {
     /**
      * 发送数据变更事件到服务端
      */
-    public async notifyDataChange(event: Omit<DataChangeEvent, 'timestamp'>): Promise<void> {
+    public async notifyDataChange(event: Omit<DataChangeEvent, 'timestamp' | 'sourceConnectionId'>): Promise<void> {
         try {
             const fullEvent: DataChangeEvent = {
                 ...event,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                sourceConnectionId: this.connectionId // 添加源连接ID
             }
 
             console.log('[RealtimeSync] 发送数据变更通知:', fullEvent)

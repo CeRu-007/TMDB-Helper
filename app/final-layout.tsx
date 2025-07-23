@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { ThemeProvider } from "next-themes"
-import { EnhancedDataProvider } from "@/components/enhanced-client-data-provider"
+import { DataProvider } from "@/components/client-data-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { taskScheduler } from "@/lib/scheduler"
 
@@ -20,10 +20,10 @@ export default function FinalLayout({
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <EnhancedDataProvider>
+      <DataProvider>
         {children}
         <Toaster />
-      </EnhancedDataProvider>
+      </DataProvider>
     </ThemeProvider>
   )
 } 

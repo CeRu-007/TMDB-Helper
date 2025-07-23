@@ -4,7 +4,7 @@
  */
 
 import { realtimeSyncManager } from './realtime-sync-manager'
-import { optimisticUpdateManager } from './optimistic-update-manager'
+
 import { performanceMonitor } from './performance-monitor'
 
 interface ErrorContext {
@@ -235,13 +235,8 @@ class ErrorRecoveryManager {
           return false
 
         case 'optimistic':
-          // 清理失败的乐观更新
-          if (errorContext.context?.operationId) {
-            optimisticUpdateManager.failOperation(
-              errorContext.context.operationId,
-              errorContext.error.message
-            )
-          }
+          // 乐观更新已移除，直接返回成功
+          console.log('[ErrorRecoveryManager] 乐观更新错误恢复已跳过（系统已移除乐观更新）')
           return true
 
         case 'data':
