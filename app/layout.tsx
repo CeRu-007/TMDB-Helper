@@ -10,7 +10,12 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "TMDB维护助手",
   description: "管理和维护TMDB词条的专业工具",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/tmdb-helper-logo.png',
+    shortcut: '/tmdb-helper-logo.png',
+    apple: '/tmdb-helper-logo.png',
+  }
 }
 
 export default function RootLayout({
@@ -20,6 +25,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/tmdb-helper-logo.png" type="image/png" />
+        <link rel="shortcut icon" href="/tmdb-helper-logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/tmdb-helper-logo.png" />
+      </head>
       <body className={inter.className}>
         <ErrorBoundary>
           <MidLayout>{children}</MidLayout>

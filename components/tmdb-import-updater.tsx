@@ -54,40 +54,114 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
   const [updating, setUpdating] = useState(false)
   const [progress, setProgress] = useState(0)
   const [currentStep, setCurrentStep] = useState('')
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const { toast } = useToast()
 
+  // 缓存键
+  const CACHE_KEYS = {
+    VERSION_INFO: 'tmdb_import_version_info',
+    INSTALL_STATUS: 'tmdb_import_install_status',
+    CACHE_TIMESTAMP: 'tmdb_import_cache_timestamp'
+  }
+
+  // 缓存有效期（5分钟）
+  const CACHE_DURATION = 5 * 60 * 1000
+
+  // 从缓存加载数据
+  const loadFromCache = () => {
+    if (typeof window === 'undefined') return false
+
+    try {
+      const timestamp = localStorage.getItem(CACHE_KEYS.CACHE_TIMESTAMP)
+      if (!timestamp) return false
+
+      const cacheAge = Date.now() - parseInt(timestamp)
+      if (cacheAge > CACHE_DURATION) {
+        // 缓存过期，清理
+        clearCache()
+        return false
+      }
+
+      const cachedVersionInfo = localStorage.getItem(CACHE_KEYS.VERSION_INFO)
+      const cachedInstallStatus = localStorage.getItem(CACHE_KEYS.INSTALL_STATUS)
+
+      if (cachedVersionInfo) {
+        setVersionInfo(JSON.parse(cachedVersionInfo))
+      }
+      if (cachedInstallStatus) {
+        setInstallStatus(JSON.parse(cachedInstallStatus))
+      }
+
+      return !!(cachedVersionInfo || cachedInstallStatus)
+    } catch (error) {
+      console.warn('加载缓存失败:', error)
+      clearCache()
+      return false
+    }
+  }
+
+  // 保存到缓存
+  const saveToCache = (versionData?: VersionInfo, statusData?: InstallStatus) => {
+    if (typeof window === 'undefined') return
+
+    try {
+      if (versionData) {
+        localStorage.setItem(CACHE_KEYS.VERSION_INFO, JSON.stringify(versionData))
+      }
+      if (statusData) {
+        localStorage.setItem(CACHE_KEYS.INSTALL_STATUS, JSON.stringify(statusData))
+      }
+      localStorage.setItem(CACHE_KEYS.CACHE_TIMESTAMP, Date.now().toString())
+    } catch (error) {
+      console.warn('保存缓存失败:', error)
+    }
+  }
+
+  // 清理缓存
+  const clearCache = () => {
+    if (typeof window === 'undefined') return
+
+    Object.values(CACHE_KEYS).forEach(key => {
+      localStorage.removeItem(key)
+    })
+  }
+
   // 检查版本信息
-  const checkVersion = async () => {
-    setLoading(true)
+  const checkVersion = async (showLoading = true) => {
+    if (showLoading) setLoading(true)
     try {
       const response = await fetch('/api/tmdb-import-updater?action=check')
       const result = await response.json()
-      
+
       if (result.success) {
         setVersionInfo(result.data)
+        saveToCache(result.data, installStatus)
       } else {
         throw new Error(result.error)
       }
     } catch (error) {
       console.error('检查版本失败:', error)
-      toast({
-        title: "检查版本失败",
-        description: error instanceof Error ? error.message : "未知错误",
-        variant: "destructive",
-      })
+      if (showLoading) {
+        toast({
+          title: "检查版本失败",
+          description: error instanceof Error ? error.message : "未知错误",
+          variant: "destructive",
+        })
+      }
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }
 
   // 获取安装状态
-  const getInstallStatus = async () => {
+  const getInstallStatus = async (showLoading = true) => {
     try {
       const response = await fetch('/api/tmdb-import-updater?action=status')
       const result = await response.json()
-      
+
       if (result.success) {
         setInstallStatus(result.data)
+        saveToCache(versionInfo, result.data)
         // 如果已安装，通知父组件更新路径
         if (result.data.installed && onPathUpdate) {
           onPathUpdate(result.data.installPath)
@@ -95,6 +169,13 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
       }
     } catch (error) {
       console.error('获取安装状态失败:', error)
+      if (showLoading) {
+        toast({
+          title: "获取安装状态失败",
+          description: error instanceof Error ? error.message : "未知错误",
+          variant: "destructive",
+        })
+      }
     }
   }
 
@@ -188,9 +269,34 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
 
   // 初始化
   useEffect(() => {
-    checkVersion()
-    getInstallStatus()
-  }, [])
+    const initializeComponent = async () => {
+      // 首先尝试从缓存加载
+      const hasCachedData = loadFromCache()
+
+      if (hasCachedData) {
+        // 有缓存数据，在后台静默刷新
+        setIsInitialLoad(false)
+        setTimeout(() => {
+          checkVersion(false)
+          getInstallStatus(false)
+        }, 100)
+      } else {
+        // 没有缓存数据，显示加载状态
+        setLoading(true)
+        try {
+          await Promise.all([
+            checkVersion(false),
+            getInstallStatus(false)
+          ])
+        } finally {
+          setLoading(false)
+          setIsInitialLoad(false)
+        }
+      }
+    }
+
+    initializeComponent()
+  }, [onPathUpdate])
 
   return (
     <Card className="w-full">
@@ -208,8 +314,11 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
           <Button
             variant="outline"
             size="sm"
-            onClick={() => Promise.all([checkVersion(), getInstallStatus()])}
-            disabled={loading}
+            onClick={() => {
+              clearCache()
+              Promise.all([checkVersion(true), getInstallStatus(true)])
+            }}
+            disabled={loading || updating}
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -222,10 +331,22 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* 状态和版本信息行 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* 安装状态 */}
-          {installStatus && (
+        {/* 加载状态 */}
+        {isInitialLoad && loading && !versionInfo && !installStatus ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">正在加载工具信息...</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* 状态和版本信息行 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 安装状态 */}
+              {installStatus ? (
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Settings className="h-4 w-4 text-gray-500" />
@@ -253,10 +374,38 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                 )}
               </div>
             </div>
-          )}
+          ) : loading && !installStatus ? (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+              <div className="space-y-2 pl-6">
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
+                <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            </div>
+          ) : loading && !installStatus ? (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+              <div className="space-y-2 pl-6">
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
+                <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            </div>
+          ) : null}
 
           {/* 版本信息 */}
-          {versionInfo && (
+          {versionInfo ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -301,7 +450,22 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                 )}
               </div>
             </div>
-          )}
+          ) : loading && !versionInfo ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
+                <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+              <div className="space-y-2 pl-6">
+                <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* 操作区域 */}
@@ -372,6 +536,8 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
               </div>
             )}
           </div>
+        )}
+          </>
         )}
       </CardContent>
     </Card>
