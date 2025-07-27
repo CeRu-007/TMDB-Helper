@@ -97,6 +97,15 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const { toast } = useToast()
   const { changePassword } = useAuth()
   const [activeSection, setActiveSection] = useState(initialSection || "api")
+
+  // 包装onOpenChange以触发自定义事件
+  const handleOpenChange = (newOpen: boolean) => {
+    onOpenChange(newOpen)
+    // 当对话框关闭时，触发自定义事件
+    if (!newOpen) {
+      window.dispatchEvent(new CustomEvent('global-settings-closed'))
+    }
+  }
   const [apiKey, setApiKey] = useState("")
   const [showApiKey, setShowApiKey] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle")
@@ -165,8 +174,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // 硅基流动API设置状态
   const [siliconFlowSettings, setSiliconFlowSettings] = useState({
     apiKey: "",
-    // 分集简介生成模型
-    episodeGeneratorModel: "deepseek-ai/DeepSeek-V2.5",
     // 缩略图AI筛选模型
     thumbnailFilterModel: "Qwen/Qwen2.5-VL-32B-Instruct"
   })
@@ -249,7 +256,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       // 兼容旧的设置，从分集生成器和缩略图设置中迁移
       const episodeApiKey = localStorage.getItem('siliconflow_api_key')
       const thumbnailSettings = localStorage.getItem("video_thumbnail_settings")
-      
+
       let apiKey = episodeApiKey || ""
       if (!apiKey && thumbnailSettings) {
         try {
@@ -257,7 +264,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           apiKey = parsed.siliconFlowApiKey || ""
         } catch (e) {}
       }
-      
+
       if (apiKey) {
         setSiliconFlowSettings(prev => ({ ...prev, apiKey }))
       }
@@ -520,7 +527,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   }
 
   const handleCancel = () => {
-    onOpenChange(false)
+    handleOpenChange(false)
     setSaveStatus("idle")
     setValidationMessage("")
 
@@ -944,54 +951,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
             {/* 模型配置 */}
             <div className="space-y-6">
-              <div>
-                <Label htmlFor="episodeGeneratorModel" className="text-sm font-medium">
-                  分集简介生成模型
-                </Label>
-                <p className="text-xs text-gray-500 mt-1 mb-2">
-                  选择用于生成分集标题和剧情简介的AI模型，推荐使用DeepSeek-V2.5以获得最佳中文效果
-                </p>
-                <Select 
-                  value={siliconFlowSettings.episodeGeneratorModel} 
-                  onValueChange={(value) => setSiliconFlowSettings(prev => ({ ...prev, episodeGeneratorModel: value }))}
-                >
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="deepseek-ai/DeepSeek-V2.5">
-                      <div className="flex flex-col">
-                        <span className="font-medium">DeepSeek-V2.5 (推荐)</span>
-                        <span className="text-xs text-gray-500">强大的中文理解能力</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Qwen/Qwen2.5-72B-Instruct">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Qwen2.5-72B</span>
-                        <span className="text-xs text-gray-500">阿里通义千问大模型</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="meta-llama/Meta-Llama-3.1-70B-Instruct">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Llama-3.1-70B</span>
-                        <span className="text-xs text-gray-500">Meta开源大模型</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="01-ai/Yi-1.5-34B-Chat">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Yi-1.5-34B</span>
-                        <span className="text-xs text-gray-500">零一万物大模型</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="THUDM/glm-4-9b-chat">
-                      <div className="flex flex-col">
-                        <span className="font-medium">GLM-4-9B</span>
-                        <span className="text-xs text-gray-500">智谱AI大模型</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
 
               <div>
                 <Label htmlFor="thumbnailFilterModel" className="text-sm font-medium">
@@ -2148,7 +2108,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] p-0">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex items-center">

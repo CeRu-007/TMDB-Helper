@@ -175,6 +175,7 @@ export function SubtitleEpisodeGenerator({
   const [generationProgress, setGenerationProgress] = useState(0)
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
+  const [shouldReopenSettingsDialog, setShouldReopenSettingsDialog] = useState(false)
   const [exportConfig, setExportConfig] = useState<ExportConfig>({
     includeTitle: true,
     includeOverview: true,
@@ -255,7 +256,17 @@ export function SubtitleEpisodeGenerator({
             parsedConfig.selectedStyles = []
           }
 
-          return parsedConfig
+          // 移除model字段，因为model应该从全局设置中获取
+          const { model, ...configWithoutModel } = parsedConfig
+
+          // 返回配置时使用默认model，稍后会从全局设置中覆盖
+          return {
+            model: "deepseek-ai/DeepSeek-V2.5", // 默认值，将被全局设置覆盖
+            summaryLength: [20, 30],
+            temperature: 0.7,
+            includeOriginalTitle: true,
+            ...configWithoutModel
+          }
         } catch (e) {
           console.error('Failed to parse saved config:', e)
         }
@@ -272,15 +283,13 @@ export function SubtitleEpisodeGenerator({
     }
   })
 
-  // 从全局设置加载API密钥和模型配置
+  // 从全局设置加载API密钥
   const loadGlobalSettings = React.useCallback(() => {
     const globalSiliconFlowSettings = localStorage.getItem('siliconflow_api_settings')
     if (globalSiliconFlowSettings) {
       try {
         const settings = JSON.parse(globalSiliconFlowSettings)
         setApiKey(settings.apiKey || '')
-        // 使用全局设置中的分集生成模型
-        setConfig(prev => ({ ...prev, model: settings.episodeGeneratorModel || prev.model }))
       } catch (error) {
         console.error('解析全局硅基流动设置失败:', error)
       }
@@ -317,11 +326,26 @@ export function SubtitleEpisodeGenerator({
     }
     window.addEventListener('siliconflow-settings-changed', handleCustomSettingsChange)
 
+    // 监听全局设置对话框关闭事件
+    const handleGlobalSettingsClose = () => {
+      console.log('检测到全局设置对话框关闭')
+      if (shouldReopenSettingsDialog) {
+        console.log('重新打开分集简介生成设置对话框')
+        setShouldReopenSettingsDialog(false)
+        // 延迟一点时间确保全局设置对话框完全关闭
+        setTimeout(() => {
+          setShowSettingsDialog(true)
+        }, 100)
+      }
+    }
+    window.addEventListener('global-settings-closed', handleGlobalSettingsClose)
+
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('siliconflow-settings-changed', handleCustomSettingsChange)
+      window.removeEventListener('global-settings-closed', handleGlobalSettingsClose)
     }
-  }, [loadGlobalSettings])
+  }, [loadGlobalSettings, shouldReopenSettingsDialog])
 
 
 
@@ -1382,6 +1406,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         onConfigChange={setConfig}
         apiConfigured={!!apiKey}
         onOpenGlobalSettings={onOpenGlobalSettings}
+        setShouldReopenSettingsDialog={setShouldReopenSettingsDialog}
       />
 
       {/* 导出配置对话框 */}
@@ -1992,7 +2017,8 @@ function GenerationSettingsDialog({
   config,
   onConfigChange,
   apiConfigured,
-  onOpenGlobalSettings
+  onOpenGlobalSettings,
+  setShouldReopenSettingsDialog
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -2000,6 +2026,7 @@ function GenerationSettingsDialog({
   onConfigChange: (config: GenerationConfig) => void
   apiConfigured: boolean
   onOpenGlobalSettings?: (section: string) => void
+  setShouldReopenSettingsDialog?: (value: boolean) => void
 }) {
   const [activeTab, setActiveTab] = useState("generation")
 
@@ -2011,8 +2038,11 @@ function GenerationSettingsDialog({
       selectedStyles: config.selectedStyles.filter(styleId => validStyleIds.includes(styleId))
     }
 
-    // 保存清理后的配置到本地存储
-    localStorage.setItem('episode_generator_config', JSON.stringify(cleanedConfig))
+    // 不保存model字段到本地配置，因为model应该从全局设置中获取
+    const { model, ...configWithoutModel } = cleanedConfig
+
+    // 保存清理后的配置到本地存储（不包含model）
+    localStorage.setItem('episode_generator_config', JSON.stringify(configWithoutModel))
     onConfigChange(cleanedConfig)
     onOpenChange(false)
   }
@@ -2045,6 +2075,8 @@ function GenerationSettingsDialog({
                 size="sm"
                 onClick={() => {
                   if (onOpenGlobalSettings) {
+                    // 设置标记，表示需要在全局设置关闭后重新打开此对话框
+                    setShouldReopenSettingsDialog?.(true)
                     onOpenGlobalSettings('api')
                     onOpenChange(false)
                   }
@@ -2174,8 +2206,65 @@ function GenerationTab({
   config: GenerationConfig
   onConfigChange: (config: GenerationConfig) => void
 }) {
+  // 模型选择选项
+  const modelOptions = [
+    { value: "deepseek-ai/DeepSeek-V2.5", label: "DeepSeek-V2.5 (推荐)", description: "高质量中文理解，适合内容生成" },
+    { value: "Qwen/Qwen2.5-72B-Instruct", label: "Qwen2.5-72B", description: "强大的推理能力，适合复杂任务" },
+    { value: "meta-llama/Meta-Llama-3.1-70B-Instruct", label: "Llama-3.1-70B", description: "平衡性能与效果" },
+    { value: "meta-llama/Meta-Llama-3.1-8B-Instruct", label: "Llama-3.1-8B", description: "快速响应，成本较低" },
+    { value: "internlm/internlm2_5-7b-chat", label: "InternLM2.5-7B", description: "轻量级模型，适合简单任务" }
+  ]
+
+  // 保存模型配置到本地存储
+  const handleModelChange = (newModel: string) => {
+    // 更新当前配置
+    onConfigChange({
+      ...config,
+      model: newModel
+    })
+
+    // 保存到专门的分集简介生成器配置
+    if (typeof window !== 'undefined') {
+      try {
+        const existingSettings = localStorage.getItem('siliconflow_api_settings')
+        const settings = existingSettings ? JSON.parse(existingSettings) : {}
+
+        // 更新分集简介生成模型配置
+        settings.episodeGenerationModel = newModel
+
+        localStorage.setItem('siliconflow_api_settings', JSON.stringify(settings))
+        console.log('模型配置已保存到全局设置:', newModel)
+      } catch (error) {
+        console.error('保存模型配置失败:', error)
+      }
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {/* 模型选择 */}
+      <div>
+        <Label className="text-sm font-medium">AI模型选择</Label>
+        <p className="text-xs text-gray-500 mt-1 mb-3">
+          选择用于生成分集简介的AI模型，不同模型有不同的特点和效果
+        </p>
+        <Select value={config.model} onValueChange={handleModelChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="选择AI模型" />
+          </SelectTrigger>
+          <SelectContent>
+            {modelOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                <div className="flex flex-col">
+                  <span className="font-medium">{option.label}</span>
+                  <span className="text-xs text-gray-500">{option.description}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* 简介字数范围 */}
       <div>
         <Label className="text-sm font-medium">简介字数范围</Label>
