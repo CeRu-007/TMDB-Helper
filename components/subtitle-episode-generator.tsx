@@ -23,7 +23,10 @@ import {
   X,
   ArrowUp,
   XCircle,
-  Clock
+  Clock,
+  Minus,
+  Plus,
+  ArrowRight
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -1019,6 +1022,162 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
     }
   }
 
+  // 内容增强功能
+  const handleEnhanceContent = async (fileId: string, resultIndex: number, operation: 'polish' | 'shorten' | 'expand' | 'continue') => {
+    const results = generationResults[fileId] || []
+    const result = results[resultIndex]
+    if (!result) return
+
+    try {
+      const prompt = buildEnhancePrompt(result, operation)
+
+      const response = await fetch('/api/siliconflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: config.model,
+          messages: [
+            {
+              role: "system",
+              content: "你是一个专业的内容编辑，擅长优化和改进文本内容。"
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 800,
+          apiKey: apiKey
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`API调用失败: ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.error || '生成失败')
+      }
+
+      const enhancedContent = data.data.content.trim()
+
+      // 解析增强后的内容
+      const lines = enhancedContent.split('\n').filter((line: string) => line.trim())
+      let enhancedTitle = result.generatedTitle
+      let enhancedSummary = enhancedContent
+
+      // 尝试解析标题和简介
+      if (lines.length >= 2) {
+        const titleMatch = lines[0].match(/^(?:标题[:：]?\s*)?(.+)$/)
+        if (titleMatch) {
+          enhancedTitle = titleMatch[1].trim()
+          enhancedSummary = lines.slice(1).join('\n').replace(/^(?:简介[:：]?\s*)?/, '').trim()
+        }
+      }
+
+      // 更新结果
+      handleUpdateResult(fileId, resultIndex, {
+        generatedTitle: enhancedTitle,
+        generatedSummary: enhancedSummary,
+        wordCount: enhancedSummary.length
+      })
+
+    } catch (error) {
+      console.error('内容增强失败:', error)
+      alert(`${getOperationName(operation)}失败：${error instanceof Error ? error.message : '未知错误'}`)
+    }
+  }
+
+  // 构建增强提示词
+  const buildEnhancePrompt = (result: GenerationResult, operation: 'polish' | 'shorten' | 'expand' | 'continue') => {
+    const currentTitle = result.generatedTitle
+    const currentSummary = result.generatedSummary
+
+    switch (operation) {
+      case 'polish':
+        return `请对以下分集标题和简介进行润色优化，使其更加精彩和吸引人：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 保持原意不变，但提升表达质量
+2. 使用更生动、更有吸引力的词汇
+3. 优化句式结构，增强可读性
+4. 保持适当的长度
+
+请按以下格式输出：
+标题：[优化后的标题]
+简介：[优化后的简介]`
+
+      case 'shorten':
+        return `请将以下分集标题和简介进行精简，保留核心信息：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 保留最重要的情节要点
+2. 删除冗余和次要信息
+3. 使内容更加简洁明了
+4. 标题控制在15字以内，简介控制在80字以内
+
+请按以下格式输出：
+标题：[精简后的标题]
+简介：[精简后的简介]`
+
+      case 'expand':
+        return `请将以下分集标题和简介进行扩写，增加更多细节：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 增加更多情节细节和背景信息
+2. 丰富人物关系和情感描述
+3. 增强故事的吸引力和悬念
+4. 保持逻辑连贯性
+
+请按以下格式输出：
+标题：[扩写后的标题]
+简介：[扩写后的简介]`
+
+      case 'continue':
+        return `请在以下分集简介的基础上进行续写，增加后续情节：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 在现有内容基础上自然延续
+2. 增加新的情节发展或转折
+3. 保持故事的连贯性和逻辑性
+4. 增强悬念和吸引力
+
+请按以下格式输出：
+标题：[可能需要调整的标题]
+简介：[续写后的完整简介]`
+
+      default:
+        return currentSummary
+    }
+  }
+
+  // 获取操作名称
+  const getOperationName = (operation: 'polish' | 'shorten' | 'expand' | 'continue') => {
+    switch (operation) {
+      case 'polish': return '润色'
+      case 'shorten': return '缩写'
+      case 'expand': return '扩写'
+      case 'continue': return '续写'
+      default: return '处理'
+    }
+  }
+
   // 批量导出所有结果到TMDB格式
   const handleBatchExportToTMDB = async () => {
     try {
@@ -1391,6 +1550,9 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
               onMoveToTop={(resultIndex) =>
                 handleMoveToTop(selectedFile.id, resultIndex)
               }
+              onEnhanceContent={(resultIndex, operation) =>
+                handleEnhanceContent(selectedFile.id, resultIndex, operation)
+              }
             />
           ) : (
             <EmptyState onUpload={() => fileInputRef.current?.click()} />
@@ -1621,7 +1783,8 @@ function WorkArea({
   apiConfigured,
   onOpenGlobalSettings,
   onUpdateResult,
-  onMoveToTop
+  onMoveToTop,
+  onEnhanceContent
 }: {
   file: SubtitleFile
   results: GenerationResult[] // 这里接收的是当前文件的结果数组
@@ -1632,6 +1795,7 @@ function WorkArea({
   onOpenGlobalSettings?: (section: string) => void
   onUpdateResult?: (resultIndex: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (resultIndex: number) => void
+  onEnhanceContent?: (resultIndex: number, operation: 'polish' | 'shorten' | 'expand' | 'continue') => void
 }) {
   return (
     <div className="h-full flex flex-col">
@@ -1667,7 +1831,7 @@ function WorkArea({
       {/* 结果展示区域 */}
       <div className="flex-1 overflow-hidden">
         {results.length > 0 ? (
-          <ResultsDisplay results={results} onUpdateResult={onUpdateResult} onMoveToTop={onMoveToTop} />
+          <ResultsDisplay results={results} onUpdateResult={onUpdateResult} onMoveToTop={onMoveToTop} onEnhanceContent={onEnhanceContent} />
         ) : !apiConfigured ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
@@ -1710,19 +1874,36 @@ function WorkArea({
 }
 
 // 结果展示组件
-function ResultsDisplay({ results, onUpdateResult, onMoveToTop }: {
+function ResultsDisplay({ results, onUpdateResult, onMoveToTop, onEnhanceContent }: {
   results: GenerationResult[]
   onUpdateResult?: (index: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (index: number) => void
+  onEnhanceContent?: (index: number, operation: 'polish' | 'shorten' | 'expand' | 'continue') => void
 }) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [editingSummary, setEditingSummary] = useState('')
+  const [enhancingIndex, setEnhancingIndex] = useState<number | null>(null)
+  const [enhancingOperation, setEnhancingOperation] = useState<string | null>(null)
 
   const handleStartEdit = (index: number, result: GenerationResult) => {
     setEditingIndex(index)
     setEditingTitle(result.generatedTitle)
     setEditingSummary(result.generatedSummary)
+  }
+
+  const handleEnhance = async (index: number, operation: 'polish' | 'shorten' | 'expand' | 'continue') => {
+    if (enhancingIndex !== null) return // 防止重复操作
+
+    setEnhancingIndex(index)
+    setEnhancingOperation(operation)
+
+    try {
+      await onEnhanceContent?.(index, operation)
+    } finally {
+      setEnhancingIndex(null)
+      setEnhancingOperation(null)
+    }
   }
 
   const handleSaveEdit = (index: number) => {
@@ -1869,9 +2050,94 @@ function ResultsDisplay({ results, onUpdateResult, onMoveToTop }: {
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                  {result.generatedSummary}
-                </p>
+                <div>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {result.generatedSummary}
+                  </p>
+
+                  {/* 内容增强按钮 */}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEnhance(index, 'polish')}
+                      disabled={enhancingIndex === index}
+                      className="text-xs h-7 px-2 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                    >
+                      {enhancingIndex === index && enhancingOperation === 'polish' ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          润色中...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          润色
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEnhance(index, 'shorten')}
+                      disabled={enhancingIndex === index}
+                      className="text-xs h-7 px-2 bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 dark:border-orange-800 dark:text-orange-300"
+                    >
+                      {enhancingIndex === index && enhancingOperation === 'shorten' ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          缩写中...
+                        </>
+                      ) : (
+                        <>
+                          <Minus className="h-3 w-3 mr-1" />
+                          缩写
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEnhance(index, 'expand')}
+                      disabled={enhancingIndex === index}
+                      className="text-xs h-7 px-2 bg-green-50 hover:bg-green-100 border-green-200 text-green-700 dark:bg-green-900/20 dark:hover:bg-green-900/30 dark:border-green-800 dark:text-green-300"
+                    >
+                      {enhancingIndex === index && enhancingOperation === 'expand' ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          扩写中...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-3 w-3 mr-1" />
+                          扩写
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEnhance(index, 'continue')}
+                      disabled={enhancingIndex === index}
+                      className="text-xs h-7 px-2 bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-900/30 dark:border-purple-800 dark:text-purple-300"
+                    >
+                      {enhancingIndex === index && enhancingOperation === 'continue' ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          续写中...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowRight className="h-3 w-3 mr-1" />
+                          续写
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               )}
               <div className="mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                 <div className="flex items-center space-x-4">
