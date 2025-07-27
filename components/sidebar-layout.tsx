@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, Suspense } from "react"
 import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { LayoutSwitcher } from "@/components/layout-switcher"
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
@@ -35,6 +35,7 @@ import { useTheme } from "next-themes"
 import { useMobile } from "@/hooks/use-mobile"
 import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferences"
 import Image from "next/image"
+import StreamingPlatformNav from "@/components/streaming-platforms/streaming-platform-nav"
 
 export interface SidebarLayoutProps {
   children: React.ReactNode
@@ -588,6 +589,16 @@ export function SidebarLayout({
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )
+
+      case 'news-streaming-nav':
+        // 显示流媒体平台导航
+        return (
+          <div className="h-full overflow-y-auto">
+            <div className="min-h-full">
+              <StreamingPlatformNav />
             </div>
           </div>
         )

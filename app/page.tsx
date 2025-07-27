@@ -27,6 +27,7 @@ import {
   Ticket,
   Sparkles,
   Wand2,
+  FileText,
   Loader2,
   RefreshCw,
   AlertTriangle,
@@ -1387,8 +1388,8 @@ export default function HomePage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="content-generation" className="flex items-center space-x-2 text-sm">
-              <Wand2 className="h-4 w-4" />
-              <span>内容生成</span>
+              <FileText className="h-4 w-4" />
+              <span>分集简介</span>
             </TabsTrigger>
             <TabsTrigger value="thumbnail" className="flex items-center space-x-2 text-sm">
               <Video className="h-4 w-4" />
