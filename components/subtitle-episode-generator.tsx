@@ -26,7 +26,15 @@ import {
   Clock,
   Minus,
   Plus,
-  ArrowRight
+  ArrowRight,
+  MessageCircle,
+  Feather,
+  RotateCcw,
+  List,
+  Edit3,
+  EyeOff,
+  Eye,
+  Scale
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -42,6 +50,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 // 硅基流动支持的模型列表
@@ -1023,7 +1037,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
 
   // 内容增强功能
-  const handleEnhanceContent = async (fileId: string, resultIndex: number, operation: 'polish' | 'shorten' | 'expand' | 'continue') => {
+  const handleEnhanceContent = async (fileId: string, resultIndex: number, operation: EnhanceOperation) => {
     const results = generationResults[fileId] || []
     const result = results[resultIndex]
     if (!result) return
@@ -1093,7 +1107,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
 
   // 构建增强提示词
-  const buildEnhancePrompt = (result: GenerationResult, operation: 'polish' | 'shorten' | 'expand' | 'continue') => {
+  const buildEnhancePrompt = (result: GenerationResult, operation: EnhanceOperation) => {
     const currentTitle = result.generatedTitle
     const currentSummary = result.generatedSummary
 
@@ -1162,18 +1176,154 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 标题：[可能需要调整的标题]
 简介：[续写后的完整简介]`
 
+      case 'formalize':
+        return `请将以下分集标题和简介转换为更正式、专业的表达方式：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 使用更正式、规范的词汇和表达
+2. 避免口语化和随意的表达
+3. 保持专业性和权威性
+4. 适合正式平台和官方发布
+
+请按以下格式输出：
+标题：[正式化后的标题]
+简介：[正式化后的简介]`
+
+      case 'colloquialize':
+        return `请将以下分集标题和简介转换为更通俗易懂、亲民的表达方式：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 使用通俗易懂的词汇和表达
+2. 贴近大众的语言习惯
+3. 增加亲和力和可读性
+4. 适合普通观众理解
+
+请按以下格式输出：
+标题：[口语化后的标题]
+简介：[口语化后的简介]`
+
+      case 'literarize':
+        return `请将以下分集标题和简介转换为更具文学色彩和艺术感的表达：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 增加文学修辞手法和艺术表达
+2. 使用更优美、富有诗意的词汇
+3. 提升内容的文化内涵和艺术价值
+4. 适合文艺类作品和高端平台
+
+请按以下格式输出：
+标题：[文艺化后的标题]
+简介：[文艺化后的简介]`
+
+      case 'rewrite':
+        return `请完全重新组织和表达以下分集标题和简介的内容：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 保持核心信息和主要情节不变
+2. 完全改变表达方式和结构组织
+3. 提供全新的视角和叙述角度
+4. 创造不同的阅读体验
+
+请按以下格式输出：
+标题：[重写后的标题]
+简介：[重写后的简介]`
+
+      case 'summarize':
+        return `请将以下分集标题和简介提炼为精简的核心摘要：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 提取最核心的情节要点
+2. 保留最重要的信息
+3. 删除所有次要和装饰性内容
+4. 形成高度浓缩的精华版本
+
+请按以下格式输出：
+标题：[摘要版标题]
+简介：[摘要版简介]`
+
+      case 'rephrase':
+        return `请改写以下分集标题和简介，保持意思不变但改变表达方式：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 保持原有的核心意思和信息
+2. 使用不同的词汇和句式结构
+3. 提供新鲜的表达角度
+4. 避免与原文重复
+
+请按以下格式输出：
+标题：[改写后的标题]
+简介：[改写后的简介]`
+
+      case 'removeSpoilers':
+        return `请移除以下分集标题和简介中的剧透内容，保持神秘感：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 删除关键剧情透露和结局暗示
+2. 保留足够的吸引力和悬念
+3. 维持观看兴趣而不影响体验
+4. 适合预告和推广使用
+
+请按以下格式输出：
+标题：[去剧透后的标题]
+简介：[去剧透后的简介]`
+
+      case 'addSpoilers':
+        return `请在以下分集标题和简介中适度增加更多剧情细节：
+
+当前标题：${currentTitle}
+当前简介：${currentSummary}
+
+要求：
+1. 透露更多具体的剧情发展
+2. 增加关键情节和转折点
+3. 满足深度了解的需求
+4. 适合剧情解析和讨论
+
+请按以下格式输出：
+标题：[增加剧透后的标题]
+简介：[增加剧透后的简介]`
+
       default:
         return currentSummary
     }
   }
 
   // 获取操作名称
-  const getOperationName = (operation: 'polish' | 'shorten' | 'expand' | 'continue') => {
+  const getOperationName = (operation: EnhanceOperation) => {
     switch (operation) {
       case 'polish': return '润色'
       case 'shorten': return '缩写'
       case 'expand': return '扩写'
       case 'continue': return '续写'
+      case 'formalize': return '正式化'
+      case 'colloquialize': return '口语化'
+      case 'literarize': return '文艺化'
+      case 'rewrite': return '重写'
+      case 'summarize': return '总结'
+      case 'rephrase': return '改写'
+      case 'removeSpoilers': return '去剧透'
+      case 'addSpoilers': return '增加剧透'
       default: return '处理'
     }
   }
@@ -1795,7 +1945,7 @@ function WorkArea({
   onOpenGlobalSettings?: (section: string) => void
   onUpdateResult?: (resultIndex: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (resultIndex: number) => void
-  onEnhanceContent?: (resultIndex: number, operation: 'polish' | 'shorten' | 'expand' | 'continue') => void
+  onEnhanceContent?: (resultIndex: number, operation: EnhanceOperation) => void
 }) {
   return (
     <div className="h-full flex flex-col">
@@ -1873,13 +2023,16 @@ function WorkArea({
   )
 }
 
+// 操作类型定义
+type EnhanceOperation = 'polish' | 'shorten' | 'expand' | 'continue' | 'formalize' | 'colloquialize' | 'literarize' | 'rewrite' | 'summarize' | 'rephrase' | 'removeSpoilers' | 'addSpoilers'
+
 // 结果展示组件
-function ResultsDisplay({ results, onUpdateResult, onMoveToTop, onEnhanceContent }: {
+const ResultsDisplay: React.FC<{
   results: GenerationResult[]
   onUpdateResult?: (index: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (index: number) => void
-  onEnhanceContent?: (index: number, operation: 'polish' | 'shorten' | 'expand' | 'continue') => void
-}) {
+  onEnhanceContent?: (index: number, operation: EnhanceOperation) => void
+}> = ({ results, onUpdateResult, onMoveToTop, onEnhanceContent }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [editingSummary, setEditingSummary] = useState('')
@@ -1892,7 +2045,7 @@ function ResultsDisplay({ results, onUpdateResult, onMoveToTop, onEnhanceContent
     setEditingSummary(result.generatedSummary)
   }
 
-  const handleEnhance = async (index: number, operation: 'polish' | 'shorten' | 'expand' | 'continue') => {
+  const handleEnhance = async (index: number, operation: EnhanceOperation) => {
     if (enhancingIndex !== null) return // 防止重复操作
 
     setEnhancingIndex(index)
@@ -1926,7 +2079,7 @@ function ResultsDisplay({ results, onUpdateResult, onMoveToTop, onEnhanceContent
   }
 
   return (
-    <ScrollArea className="h-full">
+    <div className="h-full overflow-auto">
       <div className="p-4 space-y-4">
         {results.map((result, index) => (
           <Card key={`${result.fileName || 'default'}-${result.episodeNumber}-${index}`} className="overflow-hidden">
@@ -2020,7 +2173,6 @@ function ResultsDisplay({ results, onUpdateResult, onMoveToTop, onEnhanceContent
                         onClick={() => {
                           const textToCopy = `标题：${result.generatedTitle}\n\n简介：${result.generatedSummary}`
                           navigator.clipboard.writeText(textToCopy).then(() => {
-                            // 这里可以添加toast提示
                             console.log('已复制到剪贴板')
                           }).catch(err => {
                             console.error('复制失败:', err)
@@ -2056,87 +2208,382 @@ function ResultsDisplay({ results, onUpdateResult, onMoveToTop, onEnhanceContent
                   </p>
 
                   {/* 内容增强按钮 */}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEnhance(index, 'polish')}
-                      disabled={enhancingIndex === index}
-                      className="text-xs h-7 px-2 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
-                    >
-                      {enhancingIndex === index && enhancingOperation === 'polish' ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          润色中...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          润色
-                        </>
-                      )}
-                    </Button>
+                  <TooltipProvider>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'polish')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'polish' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                润色中...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                润色
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">润色优化</div>
+                            <div className="text-xs text-gray-200 mt-1">提升表达质量，使用更生动词汇</div>
+                            <div className="text-xs text-blue-300 mt-1">💡 适用：提升内容吸引力</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEnhance(index, 'shorten')}
-                      disabled={enhancingIndex === index}
-                      className="text-xs h-7 px-2 bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 dark:border-orange-800 dark:text-orange-300"
-                    >
-                      {enhancingIndex === index && enhancingOperation === 'shorten' ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          缩写中...
-                        </>
-                      ) : (
-                        <>
-                          <Minus className="h-3 w-3 mr-1" />
-                          缩写
-                        </>
-                      )}
-                    </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'shorten')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 dark:border-orange-800 dark:text-orange-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'shorten' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                缩写中...
+                              </>
+                            ) : (
+                              <>
+                                <Minus className="h-3 w-3 mr-1" />
+                                缩写
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">精简缩写</div>
+                            <div className="text-xs text-gray-200 mt-1">保留核心信息，删除冗余内容</div>
+                            <div className="text-xs text-orange-300 mt-1">📝 适用：字数限制场景</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEnhance(index, 'expand')}
-                      disabled={enhancingIndex === index}
-                      className="text-xs h-7 px-2 bg-green-50 hover:bg-green-100 border-green-200 text-green-700 dark:bg-green-900/20 dark:hover:bg-green-900/30 dark:border-green-800 dark:text-green-300"
-                    >
-                      {enhancingIndex === index && enhancingOperation === 'expand' ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          扩写中...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="h-3 w-3 mr-1" />
-                          扩写
-                        </>
-                      )}
-                    </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'expand')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-green-50 hover:bg-green-100 border-green-200 text-green-700 dark:bg-green-900/20 dark:hover:bg-green-900/30 dark:border-green-800 dark:text-green-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'expand' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                扩写中...
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-3 w-3 mr-1" />
+                                扩写
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">详细扩写</div>
+                            <div className="text-xs text-gray-200 mt-1">增加情节细节，丰富内容描述</div>
+                            <div className="text-xs text-green-300 mt-1">📖 适用：需要更多细节时</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEnhance(index, 'continue')}
-                      disabled={enhancingIndex === index}
-                      className="text-xs h-7 px-2 bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-900/30 dark:border-purple-800 dark:text-purple-300"
-                    >
-                      {enhancingIndex === index && enhancingOperation === 'continue' ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          续写中...
-                        </>
-                      ) : (
-                        <>
-                          <ArrowRight className="h-3 w-3 mr-1" />
-                          续写
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'continue')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-900/30 dark:border-purple-800 dark:text-purple-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'continue' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                续写中...
+                              </>
+                            ) : (
+                              <>
+                                <ArrowRight className="h-3 w-3 mr-1" />
+                                续写
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">情节续写</div>
+                            <div className="text-xs text-gray-200 mt-1">在现有基础上延续故事情节</div>
+                            <div className="text-xs text-purple-300 mt-1">➡️ 适用：增加后续发展</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {/* 新增的8个功能按钮 */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'formalize')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'formalize' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                正式化中...
+                              </>
+                            ) : (
+                              <>
+                                <FileText className="h-3 w-3 mr-1" />
+                                正式化
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">正式化表达</div>
+                            <div className="text-xs text-gray-200 mt-1">转换为更正式、专业的表达方式</div>
+                            <div className="text-xs text-indigo-300 mt-1">🏢 适用：正式平台发布</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'colloquialize')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-cyan-50 hover:bg-cyan-100 border-cyan-200 text-cyan-700 dark:bg-cyan-900/20 dark:hover:bg-cyan-900/30 dark:border-cyan-800 dark:text-cyan-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'colloquialize' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                口语化中...
+                              </>
+                            ) : (
+                              <>
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                口语化
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">口语化表达</div>
+                            <div className="text-xs text-gray-200 mt-1">转换为通俗易懂、亲民的表达</div>
+                            <div className="text-xs text-cyan-300 mt-1">💬 适用：大众平台推广</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'literarize')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-violet-50 hover:bg-violet-100 border-violet-200 text-violet-700 dark:bg-violet-900/20 dark:hover:bg-violet-900/30 dark:border-violet-800 dark:text-violet-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'literarize' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                文艺化中...
+                              </>
+                            ) : (
+                              <>
+                                <Feather className="h-3 w-3 mr-1" />
+                                文艺化
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">文艺化表达</div>
+                            <div className="text-xs text-gray-200 mt-1">增加文学色彩和艺术感</div>
+                            <div className="text-xs text-violet-300 mt-1">🎭 适用：文艺类作品</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'rewrite')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700 dark:bg-gray-900/20 dark:hover:bg-gray-900/30 dark:border-gray-800 dark:text-gray-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'rewrite' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                重写中...
+                              </>
+                            ) : (
+                              <>
+                                <RotateCcw className="h-3 w-3 mr-1" />
+                                重写
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">完全重写</div>
+                            <div className="text-xs text-gray-200 mt-1">重新组织内容结构和表达</div>
+                            <div className="text-xs text-gray-300 mt-1">🔄 适用：全新视角表达</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'summarize')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-teal-50 hover:bg-teal-100 border-teal-200 text-teal-700 dark:bg-teal-900/20 dark:hover:bg-teal-900/30 dark:border-teal-800 dark:text-teal-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'summarize' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                总结中...
+                              </>
+                            ) : (
+                              <>
+                                <List className="h-3 w-3 mr-1" />
+                                总结
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">核心总结</div>
+                            <div className="text-xs text-gray-200 mt-1">提炼核心要点，形成精简摘要</div>
+                            <div className="text-xs text-teal-300 mt-1">📋 适用：超短版本需求</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'rephrase')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:hover:bg-amber-900/30 dark:border-amber-800 dark:text-amber-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'rephrase' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                改写中...
+                              </>
+                            ) : (
+                              <>
+                                <Edit3 className="h-3 w-3 mr-1" />
+                                改写
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">换种表达</div>
+                            <div className="text-xs text-gray-200 mt-1">保持意思不变但改变表达方式</div>
+                            <div className="text-xs text-amber-300 mt-1">✏️ 适用：避免重复表达</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'removeSpoilers')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-red-50 hover:bg-red-100 border-red-200 text-red-700 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:border-red-800 dark:text-red-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'removeSpoilers' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                去剧透中...
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff className="h-3 w-3 mr-1" />
+                                去剧透
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">移除剧透</div>
+                            <div className="text-xs text-gray-200 mt-1">删除关键剧情透露，保持神秘感</div>
+                            <div className="text-xs text-red-300 mt-1">🙈 适用：预告推广使用</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEnhance(index, 'addSpoilers')}
+                            disabled={enhancingIndex === index}
+                            className="text-xs h-7 px-2 bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 dark:border-orange-800 dark:text-orange-300"
+                          >
+                            {enhancingIndex === index && enhancingOperation === 'addSpoilers' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                增加剧透中...
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="h-3 w-3 mr-1" />
+                                增加剧透
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 border-gray-700 text-white shadow-xl max-w-xs">
+                          <div className="text-sm">
+                            <div className="font-semibold text-white">增加剧透</div>
+                            <div className="text-xs text-gray-200 mt-1">透露更多具体剧情发展</div>
+                            <div className="text-xs text-orange-300 mt-1">👁️ 适用：剧情解析讨论</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TooltipProvider>
                 </div>
               )}
               <div className="mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
@@ -2150,7 +2597,7 @@ function ResultsDisplay({ results, onUpdateResult, onMoveToTop, onEnhanceContent
           </Card>
         ))}
       </div>
-    </ScrollArea>
+    </div>
   )
 }
 
