@@ -25,7 +25,7 @@ export const platforms: Platform[] = [
     url: 'https://www.netflix.com',
     region: '全球',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/netflix-logo-icon.svg' // 用户可自定义Logo地址
   },
   {
     id: 2,
@@ -37,7 +37,7 @@ export const platforms: Platform[] = [
     url: 'https://www.disneyplus.com',
     region: '全球',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/disney-2.svg' // 用户可自定义Logo地址
   },
   {
     id: 3,
@@ -49,7 +49,7 @@ export const platforms: Platform[] = [
     url: 'https://www.primevideo.com',
     region: '全球',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/amazon-prime-video-1.svg' // 用户可自定义Logo地址
   },
   {
     id: 4,
@@ -61,7 +61,7 @@ export const platforms: Platform[] = [
     url: 'https://www.hbomax.com',
     region: '美国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.cookielaw.org/logos/1b21e05d-c206-4e0b-970e-2d73a23e42e8/0197a675-cce2-7363-aa77-c0700565dd28/ab24c856-14e8-485a-ab26-fdc354c49b32/hbomax25_-_min_-_resized.png' // 用户可自定义Logo地址
   },
   {
     id: 5,
@@ -73,7 +73,7 @@ export const platforms: Platform[] = [
     url: 'https://www.youtube.com',
     region: '全球',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/youtube-icon-5.svg' // 用户可自定义Logo地址
   },
   {
     id: 6,
@@ -85,7 +85,7 @@ export const platforms: Platform[] = [
     url: 'https://www.hulu.com',
     region: '美国',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/hulu.svg' // 用户填入Logo地址
   },
   {
     id: 7,
@@ -97,7 +97,7 @@ export const platforms: Platform[] = [
     url: 'https://tv.apple.com',
     region: '全球',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/apple-tv-plus-logo.svg' // 用户填入Logo地址
   },
   {
     id: 8,
@@ -109,7 +109,7 @@ export const platforms: Platform[] = [
     url: 'https://www.paramountplus.com',
     region: '美国',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/paramount-3.svg' // 用户填入Logo地址
   },
   {
     id: 9,
@@ -147,7 +147,7 @@ export const platforms: Platform[] = [
     url: 'https://www.iqiyi.com',
     region: '中国大陆',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: '' // 用户可自定义Logo地址
   },
   {
     id: 12,
@@ -159,7 +159,7 @@ export const platforms: Platform[] = [
     url: 'https://v.qq.com',
     region: '中国大陆',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: '' // 用户可自定义Logo地址
   },
   {
     id: 13,
@@ -171,7 +171,7 @@ export const platforms: Platform[] = [
     url: 'https://www.youku.com',
     region: '中国大陆',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: '' // 用户可自定义Logo地址
   },
   {
     id: 14,
@@ -183,7 +183,7 @@ export const platforms: Platform[] = [
     url: 'https://www.bilibili.com',
     region: '中国大陆',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: '' // 用户可自定义Logo地址
   },
   {
     id: 15,
