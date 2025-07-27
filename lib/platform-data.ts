@@ -470,6 +470,374 @@ export const platforms: Platform[] = [
     region: '新加坡',
     popular: false,
     logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 更多韩国热门平台
+  {
+    id: 38,
+    name: 'Seezn',
+    category: '国际平台',
+    description: 'KT旗下综合OTT平台',
+    rating: 3.8,
+    color: 'from-indigo-500 to-indigo-600',
+    url: 'https://www.seezn.com',
+    region: '韩国',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 39,
+    name: 'Watcha',
+    category: '国际平台',
+    description: '韩国知名影视推荐平台',
+    rating: 4.2,
+    color: 'from-pink-500 to-rose-500',
+    url: 'https://watcha.com',
+    region: '韩国',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 40,
+    name: 'Olleh TV',
+    category: '国际平台',
+    description: 'KT集团IPTV服务',
+    rating: 3.7,
+    color: 'from-cyan-500 to-cyan-600',
+    url: 'https://www.olleh.com',
+    region: '韩国',
+    popular: false,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 41,
+    name: 'U+모바일tv',
+    category: '国际平台',
+    description: 'LG U+移动电视服务',
+    rating: 3.6,
+    color: 'from-purple-600 to-purple-700',
+    url: 'https://www.lguplus.com',
+    region: '韩国',
+    popular: false,
+    logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 更多台湾热门平台
+  {
+    id: 42,
+    name: 'CHOCO TV',
+    category: '国际平台',
+    description: '台湾免费追剧平台',
+    rating: 3.9,
+    color: 'from-amber-500 to-orange-500',
+    url: 'https://www.chocotv.com.tw',
+    region: '台湾',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 43,
+    name: 'Vidol',
+    category: '国际平台',
+    description: '三立电视旗下影音平台',
+    rating: 3.8,
+    color: 'from-teal-500 to-teal-600',
+    url: 'https://www.vidol.tv',
+    region: '台湾',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 44,
+    name: 'Hami Video',
+    category: '国际平台',
+    description: '中华电信影音服务',
+    rating: 3.7,
+    color: 'from-emerald-500 to-emerald-600',
+    url: 'https://hamivideo.hinet.net',
+    region: '台湾',
+    popular: false,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 45,
+    name: 'CatchPlay+',
+    category: '国际平台',
+    description: '威望国际娱乐影音平台',
+    rating: 4.0,
+    color: 'from-violet-500 to-violet-600',
+    url: 'https://www.catchplay.com',
+    region: '台湾',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 46,
+    name: 'GagaOOLala',
+    category: '国际平台',
+    description: '亚洲LGBTQ+影音平台',
+    rating: 3.8,
+    color: 'from-pink-500 to-purple-600',
+    url: 'https://www.gagaoolala.com',
+    region: '台湾',
+    popular: false,
+    logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 马来西亚华人流媒体平台
+  {
+    id: 47,
+    name: 'Astro GO',
+    category: '国际平台',
+    description: '马来西亚Astro集团流媒体服务，提供中文内容',
+    rating: 4.0,
+    color: 'from-blue-500 to-purple-600',
+    url: 'https://www.astro.com.my',
+    region: '马来西亚',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 48,
+    name: 'dimsum',
+    category: '国际平台',
+    description: '马来西亚华语内容流媒体平台',
+    rating: 3.8,
+    color: 'from-red-500 to-orange-500',
+    url: 'https://www.dimsum.my',
+    region: '马来西亚',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 49,
+    name: 'iQIYI马来西亚',
+    category: '国际平台',
+    description: '爱奇艺马来西亚版，提供中文字幕内容',
+    rating: 4.1,
+    color: 'from-green-500 to-green-600',
+    url: 'https://www.iq.com',
+    region: '马来西亚',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 50,
+    name: 'WeTV马来西亚',
+    category: '国际平台',
+    description: '腾讯视频海外版，提供中文内容',
+    rating: 4.0,
+    color: 'from-blue-500 to-blue-600',
+    url: 'https://wetv.vip',
+    region: '马来西亚',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 新加坡华人流媒体平台（补充）
+  {
+    id: 51,
+    name: 'iQIYI新加坡',
+    category: '国际平台',
+    description: '爱奇艺新加坡版，提供中文字幕内容',
+    rating: 4.1,
+    color: 'from-green-500 to-green-600',
+    url: 'https://www.iq.com',
+    region: '新加坡',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 52,
+    name: 'WeTV新加坡',
+    category: '国际平台',
+    description: '腾讯视频海外版，提供中文内容',
+    rating: 4.0,
+    color: 'from-blue-500 to-blue-600',
+    url: 'https://wetv.vip',
+    region: '新加坡',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 动漫专业平台（保留）
+  {
+    id: 53,
+    name: 'Funimation',
+    category: '国际平台',
+    description: '索尼旗下动漫流媒体服务，提供日本动漫',
+    rating: 4.1,
+    color: 'from-purple-600 to-pink-600',
+    url: 'https://www.funimation.com',
+    region: '全球',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 54,
+    name: 'AnimeLab',
+    category: '国际平台',
+    description: '澳洲动漫流媒体平台，提供日本动漫',
+    rating: 4.0,
+    color: 'from-orange-500 to-red-500',
+    url: 'https://www.animelab.com',
+    region: '澳大利亚',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 泰国华人平台
+  {
+    id: 55,
+    name: 'PPTV Thailand',
+    category: '国际平台',
+    description: '泰国PPTV，提供中文字幕泰剧',
+    rating: 3.9,
+    color: 'from-purple-500 to-purple-600',
+    url: 'https://www.pptvhd36.com',
+    region: '泰国',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 56,
+    name: 'GMM 25',
+    category: '国际平台',
+    description: '泰国GMM集团，部分内容提供中文字幕',
+    rating: 3.8,
+    color: 'from-pink-500 to-red-500',
+    url: 'https://www.gmm25.com',
+    region: '泰国',
+    popular: false,
+    logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 印尼华人平台
+  {
+    id: 57,
+    name: 'WeTV印尼',
+    category: '国际平台',
+    description: '腾讯视频印尼版，提供中文内容',
+    rating: 3.9,
+    color: 'from-blue-500 to-blue-600',
+    url: 'https://wetv.vip',
+    region: '印尼',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 58,
+    name: 'iQIYI印尼',
+    category: '国际平台',
+    description: '爱奇艺印尼版，提供中文字幕内容',
+    rating: 3.8,
+    color: 'from-green-500 to-green-600',
+    url: 'https://www.iq.com',
+    region: '印尼',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 菲律宾华人平台
+  {
+    id: 59,
+    name: 'iWantTFC',
+    category: '国际平台',
+    description: '菲律宾ABS-CBN流媒体，部分华语内容',
+    rating: 3.7,
+    color: 'from-blue-600 to-blue-700',
+    url: 'https://iwanttfc.com',
+    region: '菲律宾',
+    popular: false,
+    logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 越南华人平台
+  {
+    id: 60,
+    name: 'WeTV越南',
+    category: '国际平台',
+    description: '腾讯视频越南版，提供中文内容',
+    rating: 3.8,
+    color: 'from-blue-500 to-blue-600',
+    url: 'https://wetv.vip',
+    region: '越南',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+
+  // 更多韩国主要平台
+  {
+    id: 61,
+    name: 'SBS',
+    category: '国际平台',
+    description: '韩国SBS电视台官方流媒体服务',
+    rating: 4.2,
+    color: 'from-red-500 to-red-600',
+    url: 'https://www.sbs.co.kr',
+    region: '韩国',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 62,
+    name: 'MBC',
+    category: '国际平台',
+    description: '韩国MBC电视台官方流媒体服务',
+    rating: 4.1,
+    color: 'from-blue-500 to-blue-600',
+    url: 'https://www.imbc.com',
+    region: '韩国',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 63,
+    name: 'KBS',
+    category: '国际平台',
+    description: '韩国KBS电视台官方流媒体服务',
+    rating: 4.0,
+    color: 'from-green-500 to-green-600',
+    url: 'https://www.kbs.co.kr',
+    region: '韩国',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 64,
+    name: 'JTBC',
+    category: '国际平台',
+    description: '韩国JTBC电视台流媒体服务',
+    rating: 4.1,
+    color: 'from-purple-500 to-purple-600',
+    url: 'https://www.jtbc.co.kr',
+    region: '韩国',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 65,
+    name: 'tvN',
+    category: '国际平台',
+    description: '韩国tvN频道官方流媒体服务',
+    rating: 4.3,
+    color: 'from-indigo-500 to-purple-600',
+    url: 'https://www.tvn.co.kr',
+    region: '韩国',
+    popular: true,
+    logoUrl: '' // 用户填入Logo地址
+  },
+  {
+    id: 66,
+    name: 'OCN',
+    category: '国际平台',
+    description: '韩国OCN频道流媒体服务',
+    rating: 3.9,
+    color: 'from-gray-600 to-gray-700',
+    url: 'https://www.ocn.co.kr',
+    region: '韩国',
+    popular: false,
+    logoUrl: '' // 用户填入Logo地址
   }
 ];
 
