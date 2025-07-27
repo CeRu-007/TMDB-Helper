@@ -1910,7 +1910,8 @@ function FileList({
   hasResults: boolean
 }) {
   return (
-    <div className="h-full flex flex-col">
+    <TooltipProvider>
+      <div className="h-full flex flex-col">
       <div className="p-4 border-b border-blue-100/50 dark:border-blue-900/30">
         <div className="flex items-center justify-between">
           <div>
@@ -1973,7 +1974,7 @@ function FileList({
             <Card
               key={file.id}
               className={cn(
-                "cursor-pointer transition-all duration-200 hover:shadow-md",
+                "group cursor-pointer transition-all duration-200 hover:shadow-md",
                 selectedFile?.id === file.id
                   ? "ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-950/30"
                   : "hover:bg-gray-50/50 dark:hover:bg-gray-800/50"
@@ -1981,15 +1982,24 @@ function FileList({
               onClick={() => onSelectFile(file)}
             >
               <CardContent className="p-3">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 mb-2">
                       <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                      <span className="font-medium text-sm truncate">
-                        {file.name}
-                      </span>
+                      <div className="flex-1 min-w-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="font-medium text-sm truncate block cursor-help">
+                              {file.name}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs break-all">
+                            <p>{file.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                    <div className="mt-2 space-y-1">
+                    <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                         <span>{file.episodes.length} 集</span>
                         <span>{(file.size / 1024).toFixed(1)} KB</span>
@@ -2045,17 +2055,20 @@ function FileList({
                       )}
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onDeleteFile(file.id)
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                  <div className="flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDeleteFile(file.id)
+                      }}
+                      title="删除文件"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -2065,7 +2078,8 @@ function FileList({
           <FileListEmptyState onUpload={onUpload} />
         )}
       </ScrollArea>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }
 
@@ -2100,12 +2114,19 @@ function WorkArea({
       {/* 文件信息和操作栏 */}
       <div className="flex-shrink-0 p-4 border-b border-blue-100/50 dark:border-blue-900/30 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Film className="h-5 w-5 text-blue-500" />
-            <div>
-              <h3 className="font-medium text-gray-800 dark:text-gray-200">
-                {file.name}
-              </h3>
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <Film className="h-5 w-5 text-blue-500 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className="font-medium text-gray-800 dark:text-gray-200 truncate cursor-help">
+                    {file.name}
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs break-all">
+                  <p>{file.name}</p>
+                </TooltipContent>
+              </Tooltip>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {file.episodes.length} 集 · 总字数 {file.episodes.reduce((sum, ep) => sum + ep.wordCount, 0).toLocaleString()}
               </p>
@@ -2240,9 +2261,16 @@ const ResultsDisplay: React.FC<{
                 {/* 标签组 */}
                 <div className="flex items-center space-x-1.5 flex-shrink-0">
                   {result.fileName && (
-                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300">
-                      📁 {result.fileName}
-                    </Badge>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 max-w-[120px] cursor-help">
+                          <span className="truncate">📁 {result.fileName}</span>
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs break-all">
+                        <p>文件：{result.fileName}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                   {result.styleName && (
                     <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300">
