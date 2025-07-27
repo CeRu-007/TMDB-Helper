@@ -130,7 +130,22 @@ const SortablePlatformCard: React.FC<{
 
 const StreamingPlatformNav: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('全部');
-  const [platforms, setPlatforms] = useState<Platform[]>(() => getFilteredPlatforms('全部'));
+  const [platforms, setPlatforms] = useState<Platform[]>(() => {
+    // 从本地存储加载自定义排序
+    const savedOrder = localStorage.getItem('platformOrder');
+    if (savedOrder) {
+      try {
+        const order = JSON.parse(savedOrder);
+        const allPlatforms = getFilteredPlatforms('全部');
+        // 根据保存的顺序重新排序平台
+        return allPlatforms.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+      } catch (e) {
+        console.error('Failed to parse platform order from localStorage', e);
+        return getFilteredPlatforms('全部');
+      }
+    }
+    return getFilteredPlatforms('全部');
+  });
   const [isDragMode, setIsDragMode] = useState(false);
 
   // 拖拽传感器配置
@@ -171,7 +186,13 @@ const StreamingPlatformNav: React.FC = () => {
       setPlatforms((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        
+        // 保存新的排序到本地存储
+        const newOrder = newItems.map(item => item.id);
+        localStorage.setItem('platformOrder', JSON.stringify(newOrder));
+        
+        return newItems;
       });
     }
   };
