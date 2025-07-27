@@ -187,6 +187,55 @@ interface ExportConfig {
   includeRuntime: boolean
 }
 
+// 智能截断文件名函数
+function truncateFileName(fileName: string, maxLength: number = 30): string {
+  if (fileName.length <= maxLength) {
+    return fileName
+  }
+
+  // 提取文件名和扩展名
+  const lastDotIndex = fileName.lastIndexOf('.')
+  const name = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName
+  const extension = lastDotIndex > 0 ? fileName.substring(lastDotIndex) : ''
+
+  // 如果扩展名太长，直接截断
+  if (extension.length > 10) {
+    return fileName.substring(0, maxLength - 3) + '...'
+  }
+
+  // 计算可用于文件名的长度
+  const availableLength = maxLength - extension.length - 3 // 3 for '...'
+
+  if (availableLength <= 0) {
+    return fileName.substring(0, maxLength - 3) + '...'
+  }
+
+  // 智能截断：显示开头和结尾，中间用省略号
+  const startLength = Math.ceil(availableLength * 0.6)
+  const endLength = availableLength - startLength
+
+  if (endLength <= 0) {
+    return name.substring(0, startLength) + '...' + extension
+  }
+
+  return name.substring(0, startLength) + '...' + name.substring(name.length - endLength) + extension
+}
+
+// 获取文件名显示组件
+function FileNameDisplay({
+  fileName,
+  maxLength = 30,
+  className = ""
+}: {
+  fileName: string
+  maxLength?: number
+  className?: string
+}) {
+  const truncatedName = truncateFileName(fileName, maxLength)
+
+  return <span className={className}>{truncatedName}</span>
+}
+
 export function SubtitleEpisodeGenerator({
   onOpenGlobalSettings
 }: {
@@ -1746,15 +1795,16 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
 
   return (
-    <div
-      className={`h-full flex flex-col bg-gradient-to-br from-blue-50/30 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20 relative ${
-        isDragOver ? 'bg-blue-100/50 dark:bg-blue-900/50' : ''
-      }`}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-    >
+    <TooltipProvider>
+      <div
+        className={`h-full flex flex-col bg-gradient-to-br from-blue-50/30 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20 relative ${
+          isDragOver ? 'bg-blue-100/50 dark:bg-blue-900/50' : ''
+        }`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
       {/* 拖拽覆盖层 */}
       {isDragOver && (
         <div className="absolute inset-0 z-50 bg-blue-500/20 dark:bg-blue-600/30 backdrop-blur-sm flex items-center justify-center">
@@ -1809,7 +1859,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
       {/* 主要内容区域 */}
       <div className="flex-1 flex overflow-hidden">
         {/* 左侧文件列表 */}
-        <div className="w-80 border-r border-blue-100/50 dark:border-blue-900/30 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
+        <div className="w-72 border-r border-blue-100/50 dark:border-blue-900/30 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
           <FileList
             files={subtitleFiles}
             selectedFile={selectedFile}
@@ -1877,7 +1927,8 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         onConfigChange={setExportConfig}
         onExport={handleBatchExportToTMDB}
       />
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }
 
@@ -1910,8 +1961,7 @@ function FileList({
   hasResults: boolean
 }) {
   return (
-    <TooltipProvider>
-      <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col">
       <div className="p-4 border-b border-blue-100/50 dark:border-blue-900/30">
         <div className="flex items-center justify-between">
           <div>
@@ -1987,16 +2037,11 @@ function FileList({
                     <div className="flex items-center space-x-2 mb-2">
                       <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="font-medium text-sm truncate block cursor-help">
-                              {file.name}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs break-all">
-                            <p>{file.name}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <FileNameDisplay
+                          fileName={file.name}
+                          maxLength={30}
+                          className="font-medium text-sm block"
+                        />
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -2078,8 +2123,7 @@ function FileList({
           <FileListEmptyState onUpload={onUpload} />
         )}
       </ScrollArea>
-      </div>
-    </TooltipProvider>
+    </div>
   )
 }
 
@@ -2117,16 +2161,13 @@ function WorkArea({
           <div className="flex items-center space-x-3 min-w-0 flex-1">
             <Film className="h-5 w-5 text-blue-500 flex-shrink-0" />
             <div className="min-w-0 flex-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <h3 className="font-medium text-gray-800 dark:text-gray-200 truncate cursor-help">
-                    {file.name}
-                  </h3>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs break-all">
-                  <p>{file.name}</p>
-                </TooltipContent>
-              </Tooltip>
+              <h3 className="font-medium text-gray-800 dark:text-gray-200">
+                <FileNameDisplay
+                  fileName={file.name}
+                  maxLength={50}
+                  className="block"
+                />
+              </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {file.episodes.length} 集 · 总字数 {file.episodes.reduce((sum, ep) => sum + ep.wordCount, 0).toLocaleString()}
               </p>
@@ -2249,7 +2290,23 @@ const ResultsDisplay: React.FC<{
 
   return (
     <div className="h-full overflow-auto">
-      <div className="p-4 space-y-3">
+      {/* 警告提示 */}
+      <div className="p-4 pb-2">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+          <div className="flex items-start space-x-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800 dark:text-amber-200">
+              <p className="font-medium mb-1">⚠️ 重要提醒</p>
+              <p className="leading-relaxed">
+                AI生成的分集简介仅作<strong>辅助作用</strong>，请务必观看对应视频内容审核修改后再使用。
+                <strong className="text-amber-900 dark:text-amber-100">禁止直接上传至TMDB</strong>等数据库平台。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 pb-4 space-y-3">
         {results.map((result, index) => (
           <div
             key={`${result.fileName || 'default'}-${result.episodeNumber}-${index}`}
@@ -2263,11 +2320,11 @@ const ResultsDisplay: React.FC<{
                   {result.fileName && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 max-w-[120px] cursor-help">
-                          <span className="truncate">📁 {result.fileName}</span>
+                        <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 max-w-[140px] cursor-help">
+                          <span className="truncate">📁 {truncateFileName(result.fileName, 15)}</span>
                         </Badge>
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs break-all">
+                      <TooltipContent side="top" className="max-w-sm break-all">
                         <p>文件：{result.fileName}</p>
                       </TooltipContent>
                     </Tooltip>
@@ -2439,41 +2496,56 @@ const ResultsDisplay: React.FC<{
       </div>
     </div>
   )
-
-
 }
 
 // 空状态组件
 function EmptyState({ onUpload }: { onUpload: () => void }) {
   return (
-    <div className="h-full flex items-center justify-center">
-      <div className="text-center max-w-2xl mx-auto px-4">
-        <div className="relative mb-8">
-          {/* 外层光晕效果 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-500 blur-2xl opacity-20 rounded-full scale-150"></div>
-
-          {/* 中层装饰圆环 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full scale-110 opacity-60"></div>
-
-          {/* 主图标容器 */}
-          <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-8 rounded-full text-white shadow-2xl">
-            {/* 内部装饰 */}
-            <div className="absolute inset-2 bg-white/10 rounded-full"></div>
-            <div className="absolute inset-4 bg-white/5 rounded-full"></div>
-
-            {/* 主图标 - 使用更具创意的组合 */}
-            <div className="relative flex items-center justify-center">
-              <Sparkles className="h-8 w-8 absolute -top-1 -left-1 opacity-80" />
-              <Film className="h-12 w-12 relative z-10" />
-              <Wand2 className="h-6 w-6 absolute -bottom-1 -right-1 opacity-90" />
+    <div className="h-full flex flex-col">
+      {/* 警告提示 */}
+      <div className="p-4 pb-2">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+          <div className="flex items-start space-x-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800 dark:text-amber-200">
+              <p className="font-medium mb-1">⚠️ 重要提醒</p>
+              <p className="leading-relaxed">
+                AI生成的分集简介仅作<strong>辅助作用</strong>，请务必观看对应视频内容审核修改后再使用。
+                <strong className="text-amber-900 dark:text-amber-100">禁止直接上传至TMDB</strong>等数据库平台。
+              </p>
             </div>
           </div>
-
-          {/* 浮动装饰元素 */}
-          <div className="absolute -top-4 -right-4 w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-          <div className="absolute -bottom-2 -left-6 w-2 h-2 bg-pink-400 rounded-full animate-bounce delay-300"></div>
-          <div className="absolute top-1/2 -right-8 w-1.5 h-1.5 bg-green-400 rounded-full animate-ping delay-700"></div>
         </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center max-w-2xl mx-auto px-4">
+          <div className="relative mb-8">
+            {/* 外层光晕效果 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-500 blur-2xl opacity-20 rounded-full scale-150"></div>
+
+            {/* 中层装饰圆环 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full scale-110 opacity-60"></div>
+
+            {/* 主图标容器 */}
+            <div className="relative bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 p-8 rounded-full text-white shadow-2xl">
+              {/* 内部装饰 */}
+              <div className="absolute inset-2 bg-white/10 rounded-full"></div>
+              <div className="absolute inset-4 bg-white/5 rounded-full"></div>
+
+              {/* 主图标 - 使用更具创意的组合 */}
+              <div className="relative flex items-center justify-center">
+                <Sparkles className="h-8 w-8 absolute -top-1 -left-1 opacity-80" />
+                <Film className="h-12 w-12 relative z-10" />
+                <Wand2 className="h-6 w-6 absolute -bottom-1 -right-1 opacity-90" />
+              </div>
+            </div>
+
+            {/* 浮动装饰元素 */}
+            <div className="absolute -top-4 -right-4 w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+            <div className="absolute -bottom-2 -left-6 w-2 h-2 bg-pink-400 rounded-full animate-bounce delay-300"></div>
+            <div className="absolute top-1/2 -right-8 w-1.5 h-1.5 bg-green-400 rounded-full animate-ping delay-700"></div>
+          </div>
 
         <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-3">
           开始您的AI创作之旅
@@ -2559,6 +2631,7 @@ function EmptyState({ onUpload }: { onUpload: () => void }) {
               <span>拖拽上传</span>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
