@@ -64,6 +64,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/components/ui/use-toast"
 
 // 硅基流动支持的模型列表
 const SILICONFLOW_MODELS = [
@@ -294,6 +295,21 @@ export function SubtitleEpisodeGenerator({
     // 从本地存储加载配置
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('episode_generator_config')
+      // 从全局设置加载模型配置
+      const globalSettings = localStorage.getItem('siliconflow_api_settings')
+      let episodeGenerationModel = "deepseek-ai/DeepSeek-V2.5" // 默认模型
+      
+      if (globalSettings) {
+        try {
+          const settings = JSON.parse(globalSettings)
+          if (settings.episodeGenerationModel) {
+            episodeGenerationModel = settings.episodeGenerationModel
+          }
+        } catch (e) {
+          console.error('Failed to parse global siliconflow settings:', e)
+        }
+      }
+      
       if (saved) {
         try {
           const parsedConfig = JSON.parse(saved)
@@ -332,9 +348,9 @@ export function SubtitleEpisodeGenerator({
           // 移除model字段，因为model应该从全局设置中获取
           const { model, ...configWithoutModel } = parsedConfig
 
-          // 返回配置时使用默认model，稍后会从全局设置中覆盖
+          // 返回配置时使用从全局设置加载的model或默认model
           return {
-            model: "deepseek-ai/DeepSeek-V2.5", // 默认值，将被全局设置覆盖
+            model: episodeGenerationModel,
             summaryLength: [20, 30],
             temperature: 0.7,
             includeOriginalTitle: true,
@@ -2657,6 +2673,7 @@ function GenerationSettingsDialog({
   setShouldReopenSettingsDialog?: (value: boolean) => void
 }) {
   const [activeTab, setActiveTab] = useState("generation")
+  const { toast } = useToast()
 
   const handleSave = () => {
     // 在保存前再次验证和清理配置
@@ -2672,7 +2689,15 @@ function GenerationSettingsDialog({
     // 保存清理后的配置到本地存储（不包含model）
     localStorage.setItem('episode_generator_config', JSON.stringify(configWithoutModel))
     onConfigChange(cleanedConfig)
-    onOpenChange(false)
+    
+    // 显示保存成功的提示
+    setTimeout(() => {
+      toast({
+        title: "设置已保存",
+        description: "分集简介生成设置已成功保存",
+      })
+      onOpenChange(false)
+    }, 100);
   }
 
   return (
