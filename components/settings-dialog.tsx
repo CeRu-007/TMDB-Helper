@@ -44,6 +44,7 @@ import {
   GitBranch,
 } from "lucide-react"
 import TMDBImportUpdater from "./tmdb-import-updater"
+import DockerVersionManager from "./docker-version-manager"
 
 interface SettingsDialogProps {
   open: boolean
@@ -2060,6 +2061,19 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             </CardContent>
           </Card>
 
+          {/* Docker镜像版本管理 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Download className="h-5 w-5 mr-2" />
+                Docker镜像版本管理
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DockerVersionManager />
+            </CardContent>
+          </Card>
+
           {/* 关于应用 */}
           <Card>
             <CardHeader>
@@ -2072,7 +2086,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-gray-900 dark:text-gray-100">TMDB Helper</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">版本 1.0.0</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">版本 0.2.0</p>
                 </div>
 
                 <div>
@@ -2091,6 +2105,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                     <li>• 批量处理工具</li>
                     <li>• 智能数据分析</li>
                     <li>• 多主题界面</li>
+                    <li>• Docker镜像版本管理</li>
                   </ul>
                 </div>
 
