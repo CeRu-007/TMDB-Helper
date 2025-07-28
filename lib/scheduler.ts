@@ -2424,6 +2424,19 @@ class TaskScheduler {
         console.log(`[TaskScheduler] 新标记的集数: [${markedEpisodes.join(', ')}]`);
         console.log(`[TaskScheduler] 项目完成状态: ${allCompleted ? '已完结' : '进行中'}`);
 
+        // 通知实时同步管理器数据已更新，让主页面能够感知变化
+        try {
+          const { realtimeSyncManager } = await import('@/lib/realtime-sync-manager');
+          await realtimeSyncManager.notifyDataChange({
+            type: 'item_updated',
+            data: updatedItem,
+            source: 'scheduled_task'
+          });
+          console.log(`[TaskScheduler] ✓ 已通知实时同步管理器数据更新`);
+        } catch (syncError) {
+          console.warn(`[TaskScheduler] 通知实时同步失败，但不影响任务执行:`, syncError);
+        }
+
         return {
           success: true,
           markedCount: markedCount,
@@ -2466,7 +2479,24 @@ class TaskScheduler {
         // 强制刷新任务列表
         await StorageManager.forceRefreshScheduledTasks();
 
-        // 可以在这里添加通知逻辑
+        // 通知实时同步管理器任务已完成并删除
+        try {
+          const { realtimeSyncManager } = await import('@/lib/realtime-sync-manager');
+          await realtimeSyncManager.notifyDataChange({
+            type: 'task_completed',
+            data: { 
+              taskId: task.id, 
+              itemId: task.itemId,
+              itemTitle: task.itemTitle,
+              deleted: true 
+            },
+            source: 'scheduled_task'
+          });
+          console.log(`[TaskScheduler] ✓ 已通知实时同步管理器任务完成并删除`);
+        } catch (syncError) {
+          console.warn(`[TaskScheduler] 通知实时同步失败，但不影响任务删除:`, syncError);
+        }
+
         console.log(`[TaskScheduler] 项目 ${task.itemTitle} 已完结，相关定时任务已自动删除`);
       } else {
         console.error(`[TaskScheduler] 删除定时任务失败: ${task.id}`);
