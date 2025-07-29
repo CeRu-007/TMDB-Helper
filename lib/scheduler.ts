@@ -2427,11 +2427,11 @@ class TaskScheduler {
         // 通知实时同步管理器数据已更新，让主页面能够感知变化
         try {
           const { realtimeSyncManager } = await import('@/lib/realtime-sync-manager');
-          await realtimeSyncManager.notifyDataChange({
-            type: 'item_updated',
-            data: updatedItem,
-            source: 'scheduled_task'
-          });
+            await realtimeSyncManager.notifyDataChange({
+                type: 'episode_updated',
+                data: updatedItem,
+                source: 'scheduled_task'
+              });
           console.log(`[TaskScheduler] ✓ 已通知实时同步管理器数据更新`);
         } catch (syncError) {
           console.warn(`[TaskScheduler] 通知实时同步失败，但不影响任务执行:`, syncError);

@@ -95,10 +95,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       switch (event.type) {
         case 'item_added':
+          // 添加新项目时，直接更新状态
+          console.log('[DataProvider] 收到添加项目事件:', event.data)
+          setItems(prevItems => [...prevItems, event.data])
+          break
         case 'item_updated':
+        case 'episode_updated':  // 添加对集数更新事件的处理
+          // 更新项目时，直接更新状态而不是重新加载全部数据
+          console.log('[DataProvider] 收到更新事件:', event.type, event.data)
+          if (event.data && event.data.id) {
+            setItems(prevItems => 
+              prevItems.map(item => 
+                item.id === event.data.id ? event.data : item
+              )
+            )
+          } else {
+            // 如果没有有效数据，则重新加载
+            loadData()
+          }
+          break
         case 'item_deleted':
+          // 删除项目时，直接更新状态
+          console.log('[DataProvider] 收到删除项目事件:', event.data)
+          if (event.data && event.data.id) {
+            setItems(prevItems => prevItems.filter(item => item.id !== event.data.id))
+          } else {
+            loadData()
+          }
+          break
         case 'task_completed':
-          // 重新加载数据以确保一致性
+          // 任务完成时，可能需要重新加载数据
+          console.log('[DataProvider] 收到任务完成事件:', event.data)
           loadData()
           break
       }
