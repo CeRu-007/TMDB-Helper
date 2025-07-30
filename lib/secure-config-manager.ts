@@ -1,7 +1,10 @@
 /**
  * 安全配置管理器
  * 用于管理敏感配置信息，如API密钥等
+ * 支持Docker环境下的文件系统存储
  */
+
+import { DockerConfigManager } from './docker-config-manager';
 
 interface SecureConfig {
   tmdbApiKey?: string;
@@ -107,6 +110,14 @@ export class SecureConfigManager {
    * 获取TMDB API密钥
    */
   static getTmdbApiKey(): string {
+    // 在Docker环境中，优先从Docker配置管理器获取
+    if (DockerConfigManager.isDockerEnvironment()) {
+      const dockerApiKey = DockerConfigManager.getTmdbApiKey();
+      if (dockerApiKey) {
+        return dockerApiKey;
+      }
+    }
+
     const config = this.getConfig();
     
     // 优先使用配置中的密钥，其次使用环境变量
@@ -127,6 +138,12 @@ export class SecureConfigManager {
       throw new Error('API密钥不能为空');
     }
     
+    // 在Docker环境中，保存到Docker配置管理器
+    if (DockerConfigManager.isDockerEnvironment()) {
+      DockerConfigManager.setTmdbApiKey(apiKey.trim());
+      return;
+    }
+
     const config = this.getConfig();
     config.tmdbApiKey = apiKey.trim();
     this.saveConfig(config);
@@ -162,6 +179,14 @@ export class SecureConfigManager {
    * 检查配置是否存在
    */
   static hasConfig(): boolean {
+    // 在Docker环境中，检查Docker配置管理器
+    if (DockerConfigManager.isDockerEnvironment()) {
+      const dockerApiKey = DockerConfigManager.getTmdbApiKey();
+      if (dockerApiKey) {
+        return true;
+      }
+    }
+
     const config = this.getConfig();
     return !!config.tmdbApiKey;
   }

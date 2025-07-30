@@ -189,6 +189,49 @@ function healthCheck() {
   return checks;
 }
 
+// 初始化配置管理
+function initializeConfigManager() {
+  try {
+    // 检查是否存在旧的配置需要迁移
+    const configPath = '/app/data/app-config.json';
+    
+    if (!fs.existsSync(configPath)) {
+      console.log('📋 初始化配置文件...');
+      
+      // 创建默认配置文件
+      const defaultConfig = {
+        lastUpdated: Date.now(),
+        version: '1.0.0'
+      };
+      
+      fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
+      console.log('✅ 配置文件初始化完成');
+    } else {
+      console.log('📁 配置文件已存在');
+    }
+
+    // 检查环境变量中的TMDB_API_KEY
+    if (process.env.TMDB_API_KEY) {
+      console.log('🔑 检测到环境变量中的TMDB_API_KEY');
+      
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (!config.tmdbApiKey) {
+          config.tmdbApiKey = process.env.TMDB_API_KEY;
+          config.lastUpdated = Date.now();
+          fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+          console.log('✅ 已将环境变量中的API密钥保存到配置文件');
+        }
+      } catch (error) {
+        console.error('❌ 保存环境变量API密钥失败:', error.message);
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ 初始化配置管理失败:', error.message);
+  }
+}
+
 // 主函数
 async function main() {
   try {
@@ -208,13 +251,16 @@ async function main() {
     // 3. 创建必要目录
     ensureDirectories();
 
-    // 4. 检查权限
+    // 4. 初始化配置管理
+    initializeConfigManager();
+
+    // 5. 检查权限
     checkPermissions();
 
-    // 5. 生成配置报告
+    // 6. 生成配置报告
     generateConfigReport();
 
-    // 6. 运行健康检查
+    // 7. 运行健康检查
     healthCheck();
 
     console.log('🎉 Docker环境初始化完成!');
@@ -239,6 +285,7 @@ module.exports = {
   ensureDirectories,
   checkPermissions,
   setupEnvironment,
+  initializeConfigManager,
   generateConfigReport,
   healthCheck,
   main
