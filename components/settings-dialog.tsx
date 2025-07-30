@@ -184,6 +184,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [apiActiveTab, setApiActiveTab] = useState("tmdb")
   const [siliconFlowSaving, setSiliconFlowSaving] = useState(false)
   const [isDockerEnv, setIsDockerEnv] = useState(false)
+  const [appInfo, setAppInfo] = useState({ name: 'TMDB Helper', version: '0.3.1' })
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -280,6 +281,21 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       .catch(error => {
         console.warn('Docker环境检测失败:', error)
         setIsDockerEnv(false)
+      })
+
+    // 获取应用信息
+    fetch('/api/app-info')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAppInfo({
+            name: data.data.name || 'TMDB Helper',
+            version: data.data.version || '0.3.1'
+          })
+        }
+      })
+      .catch(error => {
+        console.warn('获取应用信息失败:', error)
       })
 
     // 加载通用设置
@@ -2310,8 +2326,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">TMDB Helper</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">版本 0.2.0</p>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">{appInfo.name}</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">版本 {appInfo.version}</p>
                 </div>
 
                 <div>

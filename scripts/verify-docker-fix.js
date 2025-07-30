@@ -16,6 +16,7 @@ const requiredFiles = [
   'app/api/docker-config/route.ts',
   'scripts/docker-startup.js',
   'scripts/test-all-configs.js',
+  'scripts/test-settings-navigation.js',
   'docs/docker-config-fix.md'
 ];
 
@@ -78,6 +79,7 @@ if (allChecksPass) {
   console.log('  • 支持多种配置类型：API密钥、用户设置、应用配置等');
   console.log('  • 保持向后兼容性，支持非Docker环境');
   console.log('  • 提供完整的配置迁移功能');
+  console.log('  • 修复设置对话框导航问题，确保所有页面可正常访问');
 }
 
 process.exit(allChecksPass ? 0 : 1);
