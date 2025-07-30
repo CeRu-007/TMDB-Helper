@@ -56,6 +56,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=4949
 ENV HOSTNAME="0.0.0.0"
+ENV DOCKER_CONTAINER=true
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 # 创建非root用户
 RUN addgroup --system --gid 1001 nodejs && \
@@ -88,5 +90,5 @@ EXPOSE 4949
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:4949/api/auth/init || exit 1
 
-# 启动应用
-CMD ["node", "server.js"]
+# 启动应用 - 先运行Docker初始化脚本，然后启动服务器
+CMD ["sh", "-c", "node scripts/docker-startup.js && node server.js"]

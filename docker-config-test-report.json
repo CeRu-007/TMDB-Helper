@@ -1,0 +1,148 @@
+{
+  "timestamp": "2025-07-30T02:19:23.895Z",
+  "summary": {
+    "passed": 21,
+    "failed": 0,
+    "warnings": 0,
+    "total": 21,
+    "successRate": 100
+  },
+  "tests": [
+    {
+      "name": "Dockerfile环境变量",
+      "status": "passed",
+      "message": "所有必要的环境变量都已配置",
+      "details": null
+    },
+    {
+      "name": "Dockerfile启动脚本",
+      "status": "passed",
+      "message": "Docker启动脚本已配置",
+      "details": null
+    },
+    {
+      "name": "Dockerfile目录配置",
+      "status": "passed",
+      "message": "数据和日志目录已配置",
+      "details": null
+    },
+    {
+      "name": "Docker Compose环境变量",
+      "status": "passed",
+      "message": "所有Docker优化环境变量都已配置",
+      "details": null
+    },
+    {
+      "name": "Docker Compose卷挂载",
+      "status": "passed",
+      "message": "数据和日志卷挂载已配置",
+      "details": null
+    },
+    {
+      "name": "Docker Compose资源限制",
+      "status": "passed",
+      "message": "资源限制已配置",
+      "details": null
+    },
+    {
+      "name": "文件存在: lib/docker-storage-adapter.ts",
+      "status": "passed",
+      "message": "文件存在",
+      "details": null
+    },
+    {
+      "name": "文件存在: lib/docker-init.ts",
+      "status": "passed",
+      "message": "文件存在",
+      "details": null
+    },
+    {
+      "name": "文件存在: lib/indexed-db-storage.ts",
+      "status": "passed",
+      "message": "文件存在",
+      "details": null
+    },
+    {
+      "name": "文件存在: lib/network-optimizer.ts",
+      "status": "passed",
+      "message": "文件存在",
+      "details": null
+    },
+    {
+      "name": "文件存在: lib/enhanced-storage-manager.ts",
+      "status": "passed",
+      "message": "文件存在",
+      "details": null
+    },
+    {
+      "name": "文件存在: scripts/docker-startup.js",
+      "status": "passed",
+      "message": "文件存在",
+      "details": null
+    },
+    {
+      "name": "Next.js Docker检测",
+      "status": "passed",
+      "message": "Docker环境检测已配置",
+      "details": null
+    },
+    {
+      "name": "Next.js图片优化",
+      "status": "passed",
+      "message": "图片优化已配置",
+      "details": null
+    },
+    {
+      "name": "TypeScript语法: lib/docker-storage-adapter.ts",
+      "status": "passed",
+      "message": "基本语法正确",
+      "details": null
+    },
+    {
+      "name": "Docker适配: lib/docker-storage-adapter.ts",
+      "status": "passed",
+      "message": "Docker适配代码存在",
+      "details": null
+    },
+    {
+      "name": "TypeScript语法: lib/docker-init.ts",
+      "status": "passed",
+      "message": "基本语法正确",
+      "details": null
+    },
+    {
+      "name": "Docker适配: lib/docker-init.ts",
+      "status": "passed",
+      "message": "Docker适配代码存在",
+      "details": null
+    },
+    {
+      "name": "TypeScript语法: lib/indexed-db-storage.ts",
+      "status": "passed",
+      "message": "基本语法正确",
+      "details": null
+    },
+    {
+      "name": "TypeScript语法: lib/network-optimizer.ts",
+      "status": "passed",
+      "message": "基本语法正确",
+      "details": null
+    },
+    {
+      "name": "文档: docs/docker-optimization-guide.md",
+      "status": "passed",
+      "message": "文档内容完整",
+      "details": null
+    }
+  ],
+  "advice": [
+    "✅ 大部分配置正确，Docker优化功能应该能正常工作",
+    "",
+    "📋 配置建议:",
+    "1. 确保Docker Desktop已启动",
+    "2. 运行 docker-compose up -d 启动服务",
+    "3. 访问 http://localhost:4949 测试应用",
+    "4. 查看 docker logs tmdb-helper 检查启动日志",
+    "5. 使用 docker exec tmdb-helper cat /app/logs/docker-startup-report.json 查看详细报告"
+  ]
+}

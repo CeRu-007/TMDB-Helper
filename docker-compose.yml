@@ -27,6 +27,10 @@ services:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
 
+      # Docker 优化配置
+      - DOCKER_CONTAINER=true
+      - NODE_OPTIONS=--max-old-space-size=1024
+
       # 端口和主机配置
       - PORT=4949
       - HOSTNAME=0.0.0.0

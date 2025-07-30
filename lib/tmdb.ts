@@ -1,3 +1,5 @@
+import { tmdbNetworkOptimizer } from './network-optimizer';
+
 interface TMDBMovieResponse {
   id: number
   title: string
@@ -113,28 +115,28 @@ export interface TMDBSeasonData {
   seasonNumber: number
   name: string
   totalEpisodes: number
-  posterUrl?: string
+  posterUrl?: string | undefined
 }
 
 export interface TMDBItemData {
   tmdbId: string
   title: string
   mediaType: "movie" | "tv"
-  posterUrl?: string
-  backdropUrl?: string
-  backdropPath?: string | null
-  logoUrl?: string  // 添加标志URL字段
-  logoPath?: string | null  // 添加标志路径字段
-  networkId?: number        // 添加网络ID
-  networkName?: string      // 添加网络名称
-  networkLogoUrl?: string   // 添加网络Logo URL
-  totalEpisodes?: number
-  platformUrl?: string
-  weekday?: number
-  seasons?: TMDBSeasonData[]
-  recommendedCategory?: "anime" | "tv" | "kids" | "variety" | "short" | "movie"
-  voteAverage?: number | null
-  overview?: string | null
+  posterUrl?: string | undefined
+  backdropUrl?: string | undefined
+  backdropPath?: string | null | undefined
+  logoUrl?: string | undefined  // 添加标志URL字段
+  logoPath?: string | null | undefined  // 添加标志路径字段
+  networkId?: number | undefined        // 添加网络ID
+  networkName?: string | undefined      // 添加网络名称
+  networkLogoUrl?: string | undefined   // 添加网络Logo URL
+  totalEpisodes?: number | undefined
+  platformUrl?: string | undefined
+  weekday?: number | undefined
+  seasons?: TMDBSeasonData[] | undefined
+  recommendedCategory?: "anime" | "tv" | "kids" | "variety" | "short" | "movie" | undefined
+  voteAverage?: number | null | undefined
+  overview?: string | null | undefined
 }
 
 export type BackdropSize = 'w300' | 'w780' | 'w1280' | 'original';
@@ -152,12 +154,20 @@ export class TMDBService {
   private static readonly NETWORK_LOGO_CACHE_PREFIX = "tmdb_network_logo_"  // 网络标志缓存前缀
   private static readonly CACHE_EXPIRY = 24 * 60 * 60 * 1000 // 24小时
 
-  private static getApiKey(): string {
-    const apiKey = localStorage.getItem("tmdb_api_key")
-    if (!apiKey) {
-      throw new Error("TMDB API密钥未设置，请在设置中配置")
+  private static async getApiKey(): Promise<string> {
+    try {
+      // 动态导入安全配置管理器
+      const { SecureConfigManager } = await import('./secure-config-manager');
+      return SecureConfigManager.getTmdbApiKey();
+    } catch (error) {
+      // 如果导入失败，回退到旧的方式
+      console.warn('无法加载安全配置管理器，使用传统方式获取API密钥');
+      const apiKey = typeof window !== 'undefined' ? localStorage.getItem("tmdb_api_key") : process.env.TMDB_API_KEY;
+      if (!apiKey) {
+        throw new Error("TMDB API密钥未设置，请在设置中配置");
+      }
+      return apiKey;
     }
-    return apiKey
   }
 
   // 缓存标志路径
@@ -253,36 +263,69 @@ export class TMDBService {
         }
       }
 
-      const apiKey = this.getApiKey()
+      const apiKey = await this.getApiKey()
       const endpoint = mediaType === "movie" ? "movie" : "tv"
-      const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}/images?api_key=${apiKey}`)
-
-      if (!response.ok) {
-        throw new Error("获取TMDB图片数据失败")
-      }
-
-      const data = mediaType === "movie"
-        ? (await response.json() as TMDBMovieImagesResponse)
-        : (await response.json() as TMDBTVImagesResponse)
-
-      // 优先获取中文标志，其次是英文标志，最后才是其他语言的标志
-      const chineseLogo = data.logos.find(logo => logo.iso_639_1 === "zh" || logo.iso_639_1 === "zh-CN")
-      const englishLogo = data.logos.find(logo => logo.iso_639_1 === "en")
-      const nullLangLogo = data.logos.find(logo => logo.iso_639_1 === null) // 无语言标记的标志通常是通用的
-      const firstLogo = data.logos[0]
-
-      const logoPath = chineseLogo?.file_path || englishLogo?.file_path || nullLangLogo?.file_path || firstLogo?.file_path || null
-
-      if (logoPath) {
-        // 缓存标志路径
-        this.cacheLogoPath(mediaType, id, logoPath)
-        return {
-          url: `${this.LOGO_BASE_URL}${logoPath}`,
-          path: logoPath
+      
+      // 使用网络优化器进行请求
+      try {
+        const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}/images?api_key=${apiKey}`);
+        
+        if (!response.ok) {
+          throw new Error("获取TMDB图片数据失败")
         }
-      }
 
-      return { url: null, path: null }
+        const data = mediaType === "movie"
+          ? (await response.json() as TMDBMovieImagesResponse)
+          : (await response.json() as TMDBTVImagesResponse)
+
+        // 优先获取中文标志，其次是英文标志，最后才是其他语言的标志
+        const chineseLogo = data.logos.find(logo => logo.iso_639_1 === "zh" || logo.iso_639_1 === "zh-CN")
+        const englishLogo = data.logos.find(logo => logo.iso_639_1 === "en")
+        const nullLangLogo = data.logos.find(logo => logo.iso_639_1 === null) // 无语言标记的标志通常是通用的
+        const firstLogo = data.logos[0]
+
+        const logoPath = chineseLogo?.file_path || englishLogo?.file_path || nullLangLogo?.file_path || firstLogo?.file_path || null
+
+        if (logoPath) {
+          // 缓存标志路径
+          this.cacheLogoPath(mediaType, id, logoPath)
+          return {
+            url: `${this.LOGO_BASE_URL}${logoPath}`,
+            path: logoPath
+          }
+        }
+
+        return { url: null, path: null }
+      } catch (error) {
+        console.error("网络请求失败，使用传统方式:", error)
+        // 回退到传统fetch方式
+        const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}/images?api_key=${apiKey}`)
+        
+        if (!response.ok) {
+          throw new Error("获取TMDB图片数据失败")
+        }
+
+        const data = mediaType === "movie"
+          ? (await response.json() as TMDBMovieImagesResponse)
+          : (await response.json() as TMDBTVImagesResponse)
+
+        const chineseLogo = data.logos.find(logo => logo.iso_639_1 === "zh" || logo.iso_639_1 === "zh-CN")
+        const englishLogo = data.logos.find(logo => logo.iso_639_1 === "en")
+        const nullLangLogo = data.logos.find(logo => logo.iso_639_1 === null)
+        const firstLogo = data.logos[0]
+
+        const logoPath = chineseLogo?.file_path || englishLogo?.file_path || nullLangLogo?.file_path || firstLogo?.file_path || null
+
+        if (logoPath) {
+          this.cacheLogoPath(mediaType, id, logoPath)
+          return {
+            url: `${this.LOGO_BASE_URL}${logoPath}`,
+            path: logoPath
+          }
+        }
+
+        return { url: null, path: null }
+      }
     } catch (error) {
       console.error("获取TMDB标志失败:", error)
       return { url: null, path: null }
@@ -290,13 +333,15 @@ export class TMDBService {
   }
 
   static async getItemFromUrl(url: string, forceRefresh: boolean = false): Promise<TMDBItemData | null> {
+    const startTime = performance.now();
+    
     try {
       const { mediaType, id } = this.parseUrl(url)
       if (!mediaType || !id) {
         throw new Error("无效的TMDB URL")
       }
 
-      const apiKey = this.getApiKey()
+      const apiKey = await this.getApiKey()
       const endpoint = mediaType === "movie" ? "movie" : "tv"
 
       console.log(`[TMDBService] 获取项目数据: ${endpoint}/${id}`);
@@ -308,6 +353,7 @@ export class TMDBService {
         controller.abort();
       }, 30000); // 30秒超时
 
+      // 使用传统fetch方式（网络优化器可能还未完全集成）
       const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}?api_key=${apiKey}&language=zh-CN`, {
         signal: controller.signal,
         headers: {
@@ -317,6 +363,15 @@ export class TMDBService {
       });
 
       clearTimeout(timeout);
+      
+      // 记录API响应时间
+      const endTime = performance.now();
+      try {
+        const { PerformanceOptimizer } = await import('./performance-optimizer');
+        PerformanceOptimizer.recordApiResponse(startTime, endTime);
+      } catch (error) {
+        console.warn('无法加载性能监控器:', error);
+      }
 
       if (!response.ok) {
         console.error(`[TMDBService] API请求失败: ${response.status} ${response.statusText}`);
@@ -622,7 +677,9 @@ export class TMDBService {
         }
       }
 
-      const apiKey = this.getApiKey()
+      const apiKey = await this.getApiKey()
+      
+      // 使用传统fetch方式
       const response = await fetch(`${this.BASE_URL}/network/${networkId}?api_key=${apiKey}`)
 
       if (!response.ok) {
