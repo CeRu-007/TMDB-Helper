@@ -191,6 +191,14 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     const loadApiSettings = async () => {
       try {
         const dockerConfigResponse = await fetch('/api/docker-config')
+        
+        // 检查响应是否为JSON格式
+        const contentType = dockerConfigResponse.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          console.warn('Docker配置API返回非JSON响应，回退到localStorage')
+          throw new Error('非JSON响应')
+        }
+        
         const dockerConfigData = await dockerConfigResponse.json()
         
         if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {

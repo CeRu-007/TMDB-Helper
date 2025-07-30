@@ -3,6 +3,20 @@
  * 专门处理Docker环境下的配置持久化问题
  */
 
+// 动态导入Node.js模块，只在服务器端使用
+let fs: any = null;
+let path: any = null;
+
+// 在服务器端初始化模块
+if (typeof window === 'undefined') {
+  try {
+    fs = require('fs');
+    path = require('path');
+  } catch (error) {
+    console.warn('无法加载Node.js模块:', error);
+  }
+}
+
 interface DockerConfig {
     // TMDB相关配置
     tmdbApiKey?: string;
@@ -43,12 +57,14 @@ interface DockerConfig {
 export class DockerConfigManager {
     private static readonly CONFIG_DIR = '/app/data';
     private static readonly CONFIG_FILE = 'app-config.json';
-    private static readonly CONFIG_PATH = path.join(this.CONFIG_DIR, this.CONFIG_FILE);
+    private static readonly CONFIG_PATH = '/app/data/app-config.json';
 
     /**
      * 确保配置目录存在
      */
     private static ensureConfigDir(): void {
+        if (!fs) return;
+        
         try {
             if (!fs.existsSync(this.CONFIG_DIR)) {
                 fs.mkdirSync(this.CONFIG_DIR, { recursive: true });
@@ -62,8 +78,10 @@ export class DockerConfigManager {
      * 检测是否在Docker环境中
      */
     static isDockerEnvironment(): boolean {
+        if (typeof window !== 'undefined') return false; // 客户端环境
+        
         return process.env.DOCKER_CONTAINER === 'true' ||
-            fs.existsSync('/.dockerenv') ||
+            (fs && fs.existsSync('/.dockerenv')) ||
             process.env.NODE_ENV === 'production';
     }
 
@@ -72,7 +90,7 @@ export class DockerConfigManager {
      */
     static getConfig(): DockerConfig {
         try {
-            if (!this.isDockerEnvironment()) {
+            if (!this.isDockerEnvironment() || !fs) {
                 return {};
             }
 
@@ -93,7 +111,7 @@ export class DockerConfigManager {
      */
     static saveConfig(config: DockerConfig): void {
         try {
-            if (!this.isDockerEnvironment()) {
+            if (!this.isDockerEnvironment() || !fs) {
                 return;
             }
 
@@ -276,6 +294,8 @@ export class DockerConfigManager {
      */
     static clearConfig(): void {
         try {
+            if (!fs) return;
+            
             if (fs.existsSync(this.CONFIG_PATH)) {
                 fs.unlinkSync(this.CONFIG_PATH);
                 console.log('Docker配置已清除');

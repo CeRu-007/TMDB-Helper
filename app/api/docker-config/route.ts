@@ -3,6 +3,14 @@ import { DockerConfigManager } from '@/lib/docker-config-manager';
 
 export async function GET() {
   try {
+    // 检查是否在服务器环境中
+    if (typeof window !== 'undefined') {
+      return NextResponse.json(
+        { success: false, error: '此API只能在服务器端调用' },
+        { status: 400 }
+      );
+    }
+
     const config = DockerConfigManager.getConfig();
     
     return NextResponse.json({
@@ -24,7 +32,7 @@ export async function GET() {
   } catch (error) {
     console.error('获取Docker配置失败:', error);
     return NextResponse.json(
-      { success: false, error: '获取配置失败' },
+      { success: false, error: `获取配置失败: ${error instanceof Error ? error.message : '未知错误'}` },
       { status: 500 }
     );
   }
