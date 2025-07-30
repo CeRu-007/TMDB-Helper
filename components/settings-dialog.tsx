@@ -183,6 +183,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [showSiliconFlowApiKey, setShowSiliconFlowApiKey] = useState(false)
   const [apiActiveTab, setApiActiveTab] = useState("tmdb")
   const [siliconFlowSaving, setSiliconFlowSaving] = useState(false)
+  const [isDockerEnv, setIsDockerEnv] = useState(false)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -258,7 +259,28 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       }
     }
 
-    loadApiSettings()
+    loadApiSettings().catch(error => {
+      console.error('初始化API设置失败:', error)
+    })
+
+    // 检查Docker环境
+    fetch('/api/docker-config')
+      .then(res => {
+        const contentType = res.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          return res.json()
+        }
+        throw new Error('非JSON响应')
+      })
+      .then(data => {
+        if (data.success) {
+          setIsDockerEnv(data.config.isDockerEnvironment)
+        }
+      })
+      .catch(error => {
+        console.warn('Docker环境检测失败:', error)
+        setIsDockerEnv(false)
+      })
 
     // 加载通用设置
     const savedGeneralSettings = localStorage.getItem("general_settings")
@@ -912,19 +934,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
   // TMDB API设置
   function renderTMDBApiSettings() {
-    const [isDockerEnv, setIsDockerEnv] = useState(false)
-
-    useEffect(() => {
-      // 检查是否在Docker环境中
-      fetch('/api/docker-config')
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setIsDockerEnv(data.config.isDockerEnvironment)
-          }
-        })
-        .catch(console.error)
-    }, [])
 
     return (
       <div className="space-y-6">
