@@ -3,9 +3,6 @@
  * 专门处理Docker环境下的配置持久化问题
  */
 
-import fs from 'fs';
-import path from 'path';
-
 interface DockerConfig {
     // TMDB相关配置
     tmdbApiKey?: string;
