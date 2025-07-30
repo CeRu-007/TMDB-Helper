@@ -42,6 +42,8 @@ import {
   HelpCircle,
   Download,
   GitBranch,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import TMDBImportUpdater from "./tmdb-import-updater"
 import DockerVersionManager from "./docker-version-manager"
@@ -184,7 +186,16 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [apiActiveTab, setApiActiveTab] = useState("tmdb")
   const [siliconFlowSaving, setSiliconFlowSaving] = useState(false)
   const [isDockerEnv, setIsDockerEnv] = useState(false)
-  const [appInfo, setAppInfo] = useState({ name: 'TMDB Helper', version: '0.3.1' })
+  const [isVersionDescriptionExpanded, setIsVersionDescriptionExpanded] = useState(false)
+  const [appInfo, setAppInfo] = useState({ 
+    name: 'TMDB Helper', 
+    version: '0.3.1',
+    versionInfo: {
+      title: '修复Docker环境配置保存问题',
+      description: '',
+      releaseDate: '2025-07-30'
+    }
+  })
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -290,7 +301,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         if (data.success) {
           setAppInfo({
             name: data.data.name || 'TMDB Helper',
-            version: data.data.version || '0.3.1'
+            version: data.data.version || '0.3.1',
+            versionInfo: data.data.versionInfo || {
+              title: '修复Docker环境配置保存问题',
+              description: '',
+              releaseDate: '2025-07-30'
+            }
           })
         }
       })
@@ -2328,6 +2344,43 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                 <div>
                   <h4 className="font-medium text-gray-900 dark:text-gray-100">{appInfo.name}</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">版本 {appInfo.version}</p>
+                </div>
+
+                {/* 版本描述 */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {appInfo.versionInfo.title}
+                      </h5>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {appInfo.versionInfo.releaseDate}
+                      </span>
+                    </div>
+                    {appInfo.versionInfo.description && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsVersionDescriptionExpanded(!isVersionDescriptionExpanded)}
+                        className="h-8 w-8 p-0 ml-2"
+                      >
+                        {isVersionDescriptionExpanded ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* 可折叠的详细描述 */}
+                  {appInfo.versionInfo.description && isVersionDescriptionExpanded && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
+                        {appInfo.versionInfo.description}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
