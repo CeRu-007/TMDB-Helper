@@ -200,95 +200,107 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    // 加载API设置 - 简化逻辑，优先localStorage
-    const loadApiSettings = async () => {
-      console.log('🔄 开始加载API设置...')
+    console.log('🔄 [TMDB Debug] 开始初始化设置对话框...')
 
-      // 首先从localStorage加载（适用于所有环境）
-      const savedApiKey = localStorage.getItem("tmdb_api_key")
-      const savedTmdbImportPath = localStorage.getItem("tmdb_import_path")
-
-      console.log('📖 从localStorage读取:', {
-        hasApiKey: !!savedApiKey,
-        hasImportPath: !!savedTmdbImportPath,
-        apiKeyPreview: savedApiKey ? `${savedApiKey.substring(0, 8)}...` : 'null'
-      })
-
-      // 设置初始值
-      if (savedApiKey) {
-        setApiKey(savedApiKey)
-        console.log('✅ 设置API密钥从localStorage')
-      }
-      if (savedTmdbImportPath) {
-        setTmdbImportPath(savedTmdbImportPath)
-        console.log('✅ 设置导入路径从localStorage')
-      }
-
-      // 然后检查Docker环境（如果可用）
+    // 简化的配置加载逻辑
+    const initializeSettings = () => {
       try {
-        const dockerConfigResponse = await fetch('/api/docker-config')
+        // 直接从localStorage加载，简单可靠
+        const savedApiKey = localStorage.getItem("tmdb_api_key")
+        const savedTmdbImportPath = localStorage.getItem("tmdb_import_path")
 
-        // 检查响应是否为JSON格式
-        const contentType = dockerConfigResponse.headers.get('content-type')
-        if (!contentType || !contentType.includes('application/json')) {
-          console.warn('Docker配置API返回非JSON响应，使用localStorage配置')
+        console.log('📖 [TMDB Debug] localStorage状态:', {
+          hasApiKey: !!savedApiKey,
+          apiKeyLength: savedApiKey?.length || 0,
+          hasImportPath: !!savedTmdbImportPath,
+          importPath: savedTmdbImportPath
+        })
+
+        // 立即设置状态，不等待异步操作
+        if (savedApiKey) {
+          setApiKey(savedApiKey)
+          console.log('✅ [TMDB Debug] API密钥已设置:', savedApiKey.substring(0, 8) + '...')
+        } else {
+          setApiKey("")
+          console.log('⚠️ [TMDB Debug] 未找到保存的API密钥')
+        }
+
+        if (savedTmdbImportPath) {
+          setTmdbImportPath(savedTmdbImportPath)
+          console.log('✅ [TMDB Debug] 导入路径已设置:', savedTmdbImportPath)
+        } else {
+          setTmdbImportPath("")
+          console.log('⚠️ [TMDB Debug] 未找到保存的导入路径')
+        }
+
+        // 异步检查Docker环境（不阻塞主流程）
+        checkDockerEnvironment(savedApiKey, savedTmdbImportPath)
+
+      } catch (error) {
+        console.error('❌ [TMDB Debug] 初始化设置失败:', error)
+        // 确保至少设置空值
+        setApiKey("")
+        setTmdbImportPath("")
+      }
+    }
+
+    // 异步检查Docker环境
+    const checkDockerEnvironment = async (localApiKey, localImportPath) => {
+      try {
+        console.log('🐳 [TMDB Debug] 检查Docker环境...')
+        const response = await fetch('/api/docker-config')
+        
+        if (!response.ok) {
+          console.log('⚠️ [TMDB Debug] Docker API响应异常:', response.status)
           return
         }
 
-        const dockerConfigData = await dockerConfigResponse.json()
-        console.log('📡 Docker配置API响应:', {
-          success: dockerConfigData.success,
-          isDockerEnv: dockerConfigData.config?.isDockerEnvironment,
-          hasApiKey: dockerConfigData.config?.hasApiKey
-        })
+        const contentType = response.headers.get('content-type')
+        if (!contentType?.includes('application/json')) {
+          console.log('⚠️ [TMDB Debug] Docker API返回非JSON响应')
+          return
+        }
 
-        if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-          console.log('🐳 检测到Docker环境')
-          // Docker环境：从服务器端配置加载
-          if (dockerConfigData.config.hasApiKey) {
-            // 如果Docker配置中有API密钥，显示占位符
+        const data = await response.json()
+        console.log('📡 [TMDB Debug] Docker API响应:', data)
+
+        if (data.success && data.config?.isDockerEnvironment) {
+          console.log('🐳 [TMDB Debug] 检测到Docker环境')
+          
+          if (data.config.hasApiKey) {
+            // Docker环境中已有配置，显示占位符
             setApiKey("***已配置***")
-            console.log('✅ 设置API密钥占位符（Docker环境已配置）')
-          } else if (savedApiKey) {
-            // 如果Docker配置中没有API密钥，但localStorage有，尝试迁移
-            console.log('🔄 尝试迁移localStorage配置到Docker')
-            await fetch('/api/docker-config', {
+            console.log('✅ [TMDB Debug] 显示Docker配置占位符')
+          } else if (localApiKey) {
+            // 尝试迁移本地配置到Docker
+            console.log('🔄 [TMDB Debug] 迁移本地配置到Docker')
+            fetch('/api/docker-config', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 action: 'migrate',
                 localStorageData: {
-                  tmdb_api_key: savedApiKey,
-                  tmdb_import_path: savedTmdbImportPath || ""
+                  tmdb_api_key: localApiKey,
+                  tmdb_import_path: localImportPath || ""
                 }
               })
-            })
-            console.log('✅ 配置迁移完成')
+            }).catch(err => console.warn('⚠️ [TMDB Debug] 迁移失败:', err))
           }
 
-          if (dockerConfigData.config.tmdbImportPath) {
-            setTmdbImportPath(dockerConfigData.config.tmdbImportPath)
-            loadTmdbConfig(dockerConfigData.config.tmdbImportPath)
-            console.log('✅ 设置导入路径从Docker配置')
+          if (data.config.tmdbImportPath) {
+            setTmdbImportPath(data.config.tmdbImportPath)
+            loadTmdbConfig(data.config.tmdbImportPath)
           }
         } else {
-          console.log('💻 非Docker环境，使用localStorage配置')
-          // 非Docker环境：已经从localStorage加载了，无需额外操作
+          console.log('💻 [TMDB Debug] 非Docker环境，使用localStorage')
         }
       } catch (error) {
-        console.error('❌ Docker配置API调用失败:', error)
-        console.log('🔄 回退到localStorage配置')
-        // 已经从localStorage加载了，无需额外操作
+        console.warn('⚠️ [TMDB Debug] Docker环境检查失败:', error)
       }
-
-      console.log('✅ API设置加载完成')
     }
 
-    loadApiSettings().catch(error => {
-      console.error('初始化API设置失败:', error)
-    })
+    // 立即执行初始化
+    initializeSettings()
 
     // 检查Docker环境
     fetch('/api/docker-config')
@@ -656,6 +668,44 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     }
   }
 
+  // 异步同步到Docker配置
+  const syncToDockerConfig = async (apiKey: string, importPath: string) => {
+    try {
+      console.log('🐳 [TMDB Debug] 尝试同步到Docker配置...')
+      const response = await fetch('/api/docker-config')
+      
+      if (!response.ok) {
+        console.log('⚠️ [TMDB Debug] Docker API不可用，跳过同步')
+        return
+      }
+
+      const data = await response.json()
+      if (data.success && data.config?.isDockerEnvironment) {
+        console.log('🐳 [TMDB Debug] 同步到Docker环境')
+        
+        const saveResponse = await fetch('/api/docker-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tmdbApiKey: apiKey,
+            tmdbImportPath: importPath
+          })
+        })
+
+        const saveData = await saveResponse.json()
+        if (saveData.success) {
+          console.log('✅ [TMDB Debug] Docker配置同步成功')
+        } else {
+          console.warn('⚠️ [TMDB Debug] Docker配置同步失败:', saveData.error)
+        }
+      } else {
+        console.log('💻 [TMDB Debug] 非Docker环境，无需同步')
+      }
+    } catch (error) {
+      console.warn('⚠️ [TMDB Debug] Docker配置同步异常:', error)
+    }
+  }
+
   const validateApiKey = (key: string) => {
     // 如果是占位符，跳过验证
     if (key === "***已配置***") {
@@ -748,50 +798,38 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             return
           }
 
-          console.log('✅ API密钥验证通过')
+          console.log('✅ [TMDB Debug] API密钥验证通过')
 
-          // 优先保存到localStorage（适用于所有环境）
-          if (typeof window !== "undefined") {
+          // 立即保存到localStorage（最可靠的方式）
+          try {
             localStorage.setItem("tmdb_api_key", apiKey)
+            console.log('✅ [TMDB Debug] API密钥已保存到localStorage')
+            
             if (tmdbImportPath) {
               localStorage.setItem("tmdb_import_path", tmdbImportPath)
+              console.log('✅ [TMDB Debug] 导入路径已保存到localStorage')
             }
-            console.log('✅ 配置已保存到localStorage')
-          }
 
-          // 然后尝试保存到Docker配置（如果是Docker环境）
-          try {
-            const dockerConfigResponse = await fetch('/api/docker-config')
-            const dockerConfigData = await dockerConfigResponse.json()
-
-            if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-              console.log('🐳 检测到Docker环境，同步保存到Docker配置')
-
-              const saveResponse = await fetch('/api/docker-config', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  tmdbApiKey: apiKey,
-                  tmdbImportPath: tmdbImportPath
-                })
-              })
-
-              const saveData = await saveResponse.json()
-              if (!saveData.success) {
-                console.warn('⚠️ Docker配置保存失败，但localStorage已保存:', saveData.error)
-              } else {
-                console.log('✅ Docker配置保存成功')
-              }
+            // 验证保存是否成功
+            const verifyApiKey = localStorage.getItem("tmdb_api_key")
+            const verifyImportPath = localStorage.getItem("tmdb_import_path")
+            
+            if (verifyApiKey === apiKey) {
+              console.log('✅ [TMDB Debug] localStorage保存验证成功')
             } else {
-              console.log('💻 非Docker环境，仅使用localStorage')
+              console.error('❌ [TMDB Debug] localStorage保存验证失败!')
+              throw new Error('localStorage保存验证失败')
             }
+
           } catch (error) {
-            console.warn('⚠️ Docker配置API调用失败，但localStorage已保存:', error)
+            console.error('❌ [TMDB Debug] localStorage保存失败:', error)
+            throw error // 重新抛出错误，让用户知道保存失败
           }
 
-          // 加载TMDB配置（如果路径改变）
+          // 异步同步到Docker配置（不影响主流程）
+          syncToDockerConfig(apiKey, tmdbImportPath)
+
+          // 处理TMDB配置加载
           if (tmdbImportPath) {
             const oldPath = localStorage.getItem("tmdb_import_path")
             if (oldPath !== tmdbImportPath) {
