@@ -26,7 +26,10 @@ export async function GET() {
         videoThumbnailSettings: config.videoThumbnailSettings,
         generalSettings: config.generalSettings,
         appearanceSettings: config.appearanceSettings,
-        isDockerEnvironment: DockerConfigManager.isDockerEnvironment()
+        isDockerEnvironment: DockerConfigManager.isDockerEnvironment(),
+        // 添加配置状态标识
+        hasApiKey: !!config.tmdbApiKey,
+        hasSiliconFlowApiKey: !!config.siliconFlowApiKey
       }
     });
   } catch (error) {

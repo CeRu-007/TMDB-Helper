@@ -187,8 +187,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [siliconFlowSaving, setSiliconFlowSaving] = useState(false)
   const [isDockerEnv, setIsDockerEnv] = useState(false)
   const [isVersionDescriptionExpanded, setIsVersionDescriptionExpanded] = useState(false)
-  const [appInfo, setAppInfo] = useState({ 
-    name: 'TMDB Helper', 
+  const [appInfo, setAppInfo] = useState({
+    name: 'TMDB Helper',
     version: '0.3.1',
     versionInfo: {
       title: '修复Docker环境配置保存问题',
@@ -204,22 +204,23 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     const loadApiSettings = async () => {
       try {
         const dockerConfigResponse = await fetch('/api/docker-config')
-        
+
         // 检查响应是否为JSON格式
         const contentType = dockerConfigResponse.headers.get('content-type')
         if (!contentType || !contentType.includes('application/json')) {
           console.warn('Docker配置API返回非JSON响应，回退到localStorage')
           throw new Error('非JSON响应')
         }
-        
+
         const dockerConfigData = await dockerConfigResponse.json()
-        
+
         if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
           // Docker环境：从服务器端配置加载
-          if (dockerConfigData.config.tmdbApiKey && dockerConfigData.config.tmdbApiKey !== '***已配置***') {
-            setApiKey(dockerConfigData.config.tmdbApiKey)
+          if (dockerConfigData.config.hasApiKey) {
+            // 如果Docker配置中有API密钥，显示占位符
+            setApiKey("***已配置***")
           } else {
-            // 如果Docker配置中显示已配置，但没有返回实际值，尝试从localStorage迁移
+            // 如果Docker配置中没有API密钥，尝试从localStorage迁移
             const localApiKey = localStorage.getItem("tmdb_api_key")
             if (localApiKey) {
               // 迁移到Docker配置
@@ -237,9 +238,11 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                 })
               })
               setApiKey(localApiKey)
+            } else {
+              setApiKey("")
             }
           }
-          
+
           if (dockerConfigData.config.tmdbImportPath) {
             setTmdbImportPath(dockerConfigData.config.tmdbImportPath)
             loadTmdbConfig(dockerConfigData.config.tmdbImportPath)
@@ -379,7 +382,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         try {
           const parsed = JSON.parse(thumbnailSettings)
           apiKey = parsed.siliconFlowApiKey || ""
-        } catch (e) {}
+        } catch (e) { }
       }
 
       if (apiKey) {
@@ -450,7 +453,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       // 检查是否在Docker环境中
       const dockerConfigResponse = await fetch('/api/docker-config')
       const dockerConfigData = await dockerConfigResponse.json()
-      
+
       if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
         // Docker环境：保存到服务器端文件系统
         const saveResponse = await fetch('/api/docker-config', {
@@ -491,7 +494,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       // 检查是否在Docker环境中
       const dockerConfigResponse = await fetch('/api/docker-config')
       const dockerConfigData = await dockerConfigResponse.json()
-      
+
       if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
         // Docker环境：保存到服务器端文件系统
         const saveResponse = await fetch('/api/docker-config', {
@@ -533,7 +536,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       // 检查是否在Docker环境中
       const dockerConfigResponse = await fetch('/api/docker-config')
       const dockerConfigData = await dockerConfigResponse.json()
-      
+
       if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
         // Docker环境：保存到服务器端文件系统
         const saveResponse = await fetch('/api/docker-config', {
@@ -642,6 +645,11 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   }
 
   const validateApiKey = (key: string) => {
+    // 如果是占位符，跳过验证
+    if (key === "***已配置***") {
+      return { isValid: true, message: "API密钥已配置" }
+    }
+
     if (!key) {
       return { isValid: false, message: "请输入API密钥" }
     }
@@ -665,6 +673,44 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       // 根据当前活动的设置页面保存对应的设置
       switch (activeSection) {
         case "api":
+          // 如果API密钥是占位符，跳过验证和保存
+          if (apiKey === "***已配置***") {
+            // 只保存路径，不保存API密钥
+            const dockerConfigResponse = await fetch('/api/docker-config')
+            const dockerConfigData = await dockerConfigResponse.json()
+
+            if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
+              // Docker环境：只保存路径
+              if (tmdbImportPath) {
+                const saveResponse = await fetch('/api/docker-config', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    tmdbImportPath: tmdbImportPath
+                  })
+                })
+
+                const saveData = await saveResponse.json()
+                if (!saveData.success) {
+                  throw new Error(saveData.error || '保存失败')
+                }
+              }
+            } else {
+              // 非Docker环境：只保存路径
+              if (typeof window !== "undefined" && tmdbImportPath) {
+                const oldPath = localStorage.getItem("tmdb_import_path")
+                localStorage.setItem("tmdb_import_path", tmdbImportPath)
+
+                if (oldPath !== tmdbImportPath) {
+                  loadTmdbConfig(tmdbImportPath)
+                }
+              }
+            }
+            break
+          }
+
           const validation = validateApiKey(apiKey)
           if (!validation.isValid) {
             setSaveStatus("error")
@@ -675,7 +721,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           // 检查是否在Docker环境中
           const dockerConfigResponse = await fetch('/api/docker-config')
           const dockerConfigData = await dockerConfigResponse.json()
-          
+
           if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
             // Docker环境：保存到服务器端文件系统
             const saveResponse = await fetch('/api/docker-config', {
@@ -692,6 +738,14 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             const saveData = await saveResponse.json()
             if (!saveData.success) {
               throw new Error(saveData.error || '保存失败')
+            }
+
+            // 保存成功后，更新localStorage中的备份
+            if (typeof window !== "undefined") {
+              localStorage.setItem("tmdb_api_key", apiKey)
+              if (tmdbImportPath) {
+                localStorage.setItem("tmdb_import_path", tmdbImportPath)
+              }
             }
           } else {
             // 非Docker环境：保存到localStorage
@@ -746,19 +800,64 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
     if (typeof window === "undefined") return
 
-    // 恢复原始值
-    const savedApiKey = localStorage.getItem("tmdb_api_key")
-    const savedTmdbImportPath = localStorage.getItem("tmdb_import_path")
-    if (savedApiKey) {
-      setApiKey(savedApiKey)
-    } else {
-      setApiKey("")
+    // 重新加载API设置，恢复到原始状态
+    const loadApiSettings = async () => {
+      try {
+        const dockerConfigResponse = await fetch('/api/docker-config')
+        const contentType = dockerConfigResponse.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('非JSON响应')
+        }
+
+        const dockerConfigData = await dockerConfigResponse.json()
+
+        if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
+          // Docker环境：检查是否有配置
+          if (dockerConfigData.config.hasApiKey) {
+            setApiKey("***已配置***")
+          } else {
+            setApiKey("")
+          }
+
+          if (dockerConfigData.config.tmdbImportPath) {
+            setTmdbImportPath(dockerConfigData.config.tmdbImportPath)
+          } else {
+            setTmdbImportPath("")
+          }
+        } else {
+          // 非Docker环境：从localStorage恢复
+          const savedApiKey = localStorage.getItem("tmdb_api_key")
+          const savedTmdbImportPath = localStorage.getItem("tmdb_import_path")
+          if (savedApiKey) {
+            setApiKey(savedApiKey)
+          } else {
+            setApiKey("")
+          }
+          if (savedTmdbImportPath) {
+            setTmdbImportPath(savedTmdbImportPath)
+          } else {
+            setTmdbImportPath("")
+          }
+        }
+      } catch (error) {
+        console.error('恢复API设置失败:', error)
+        // 回退到localStorage
+        const savedApiKey = localStorage.getItem("tmdb_api_key")
+        const savedTmdbImportPath = localStorage.getItem("tmdb_import_path")
+        if (savedApiKey) {
+          setApiKey(savedApiKey)
+        } else {
+          setApiKey("")
+        }
+        if (savedTmdbImportPath) {
+          setTmdbImportPath(savedTmdbImportPath)
+        } else {
+          setTmdbImportPath("")
+        }
+      }
     }
-    if (savedTmdbImportPath) {
-      setTmdbImportPath(savedTmdbImportPath)
-    } else {
-      setTmdbImportPath("")
-    }
+
+    loadApiSettings()
   }
 
   const getStatusIcon = () => {
@@ -841,12 +940,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // 检查是否有有效的API密钥
   const hasValidApiKey = () => {
     if (typeof window === "undefined") return false
-    
+
     // 优先检查当前表单中的API密钥
     if (apiKey && apiKey.trim().length > 0) {
       return true
     }
-    
+
     // 其次检查localStorage
     const savedApiKey = localStorage.getItem("tmdb_api_key")
     return savedApiKey && savedApiKey.trim().length > 0
@@ -936,21 +1035,19 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setApiActiveTab("tmdb")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                apiActiveTab === "tmdb"
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${apiActiveTab === "tmdb"
                   ? "border-blue-500 text-blue-600 dark:text-blue-400"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
+                }`}
             >
               TMDB API
             </button>
             <button
               onClick={() => setApiActiveTab("siliconflow")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                apiActiveTab === "siliconflow"
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${apiActiveTab === "siliconflow"
                   ? "border-blue-500 text-blue-600 dark:text-blue-400"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
+                }`}
             >
               硅基流动 API
             </button>
@@ -991,6 +1088,11 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             <div>
               <Label htmlFor="apiKey" className="flex items-center text-sm font-medium">
                 TMDB API密钥
+                {apiKey === "***已配置***" && (
+                  <Badge variant="default" className="ml-2 text-xs">
+                    已配置
+                  </Badge>
+                )}
               </Label>
               <div className="relative mt-2">
                 <Input
@@ -998,35 +1100,61 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   type={showApiKey ? "text" : "password"}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="输入您的TMDB API密钥"
+                  placeholder={apiKey === "***已配置***" ? "API密钥已配置，如需更改请输入新密钥" : "输入您的TMDB API密钥"}
                   className={`pr-10 ${saveStatus === "success"
                     ? "border-green-300 focus:border-green-500"
                     : saveStatus === "error"
                       ? "border-red-300 focus:border-red-500"
-                      : ""
+                      : apiKey === "***已配置***"
+                        ? "border-green-300 bg-green-50 dark:bg-green-950"
+                        : ""
                     }`}
+                  disabled={apiKey === "***已配置***" && !showApiKey}
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3"
-                  onClick={() => setShowApiKey(!showApiKey)}
+                  onClick={() => {
+                    if (apiKey === "***已配置***") {
+                      // 如果是占位符，点击时清空并允许编辑
+                      setApiKey("")
+                      setShowApiKey(true)
+                    } else {
+                      setShowApiKey(!showApiKey)
+                    }
+                  }}
                 >
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {apiKey === "***已配置***" ? (
+                    <Key className="h-4 w-4" />
+                  ) : showApiKey ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
+              {apiKey === "***已配置***" && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  API密钥已安全保存。点击右侧按钮可修改密钥。
+                </p>
+              )}
             </div>
 
             {/* 当前状态显示 */}
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">API状态:</span>
-                <Badge variant={hasValidApiKey() ? "default" : "secondary"}>
-                  {hasValidApiKey() ? "已配置" : "未配置"}
+                <Badge variant={(hasValidApiKey() || apiKey === "***已配置***") ? "default" : "secondary"}>
+                  {(hasValidApiKey() || apiKey === "***已配置***") ? "已配置" : "未配置"}
                 </Badge>
               </div>
-              {hasValidApiKey() && apiKey && (
+              {apiKey === "***已配置***" ? (
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                  安全存储中
+                </span>
+              ) : hasValidApiKey() && apiKey && (
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                   {apiKey.substring(0, 8)}...{apiKey.substring(apiKey.length - 4)}
                 </span>
@@ -1092,7 +1220,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         // 检查是否在Docker环境中
         const dockerConfigResponse = await fetch('/api/docker-config')
         const dockerConfigData = await dockerConfigResponse.json()
-        
+
         if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
           // Docker环境：保存到服务器端文件系统
           const saveResponse = await fetch('/api/docker-config', {
@@ -1218,8 +1346,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                 <p className="text-xs text-gray-500 mt-1 mb-2">
                   选择用于智能筛选视频缩略图的多模态AI模型，推荐使用Qwen2.5-VL-32B以获得最佳视觉理解效果
                 </p>
-                <Select 
-                  value={siliconFlowSettings.thumbnailFilterModel} 
+                <Select
+                  value={siliconFlowSettings.thumbnailFilterModel}
                   onValueChange={(value) => setSiliconFlowSettings(prev => ({ ...prev, thumbnailFilterModel: value }))}
                 >
                   <SelectTrigger className="mt-2">
@@ -1266,8 +1394,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
             {/* 保存按钮 */}
             <div className="pt-4 border-t">
-              <Button 
-                onClick={saveSiliconFlowSettings} 
+              <Button
+                onClick={saveSiliconFlowSettings}
                 className="w-full"
                 disabled={siliconFlowSaving}
               >
@@ -1936,7 +2064,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                 从视频的哪个时间点开始提取缩略图
               </p>
             </div>
-            
+
             <div>
               <Label htmlFor="thumbnailCount">缩略图数量</Label>
               <div className="flex items-center gap-2 mt-1">
@@ -1945,7 +2073,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   min={1}
                   max={20}
                   step={1}
-                  onValueChange={([value]) => 
+                  onValueChange={([value]) =>
                     setVideoThumbnailSettings(prev => ({ ...prev, thumbnailCount: value }))
                   }
                   className="flex-1"
@@ -1965,7 +2093,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   min={1}
                   max={300}
                   step={1}
-                  onValueChange={([value]) => 
+                  onValueChange={([value]) =>
                     setVideoThumbnailSettings(prev => ({ ...prev, frameInterval: value }))
                   }
                   className="flex-1"
@@ -1985,7 +2113,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   min={1}
                   max={8}
                   step={1}
-                  onValueChange={([value]) => 
+                  onValueChange={([value]) =>
                     setVideoThumbnailSettings(prev => ({ ...prev, threadCount: value }))
                   }
                   className="flex-1"
@@ -2001,7 +2129,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               <Label htmlFor="outputFormat">输出格式</Label>
               <Select
                 value={videoThumbnailSettings.outputFormat}
-                onValueChange={(value) => 
+                onValueChange={(value) =>
                   setVideoThumbnailSettings(prev => ({ ...prev, outputFormat: value as "jpg" | "png" }))
                 }
               >
@@ -2017,12 +2145,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                 缩略图输出格式
               </p>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="keepOriginalResolution"
                 checked={videoThumbnailSettings.keepOriginalResolution}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setVideoThumbnailSettings(prev => ({ ...prev, keepOriginalResolution: !!checked }))
                 }
               />
@@ -2372,7 +2500,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                       </Button>
                     )}
                   </div>
-                  
+
                   {/* 可折叠的详细描述 */}
                   {appInfo.versionInfo.description && isVersionDescriptionExpanded && (
                     <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
