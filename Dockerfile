@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     make \
     g++ \
     curl \
+    ffmpeg \
     && ln -sf python3 /usr/bin/python
 
 # 设置工作目录

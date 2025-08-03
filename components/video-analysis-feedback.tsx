@@ -42,9 +42,9 @@ const stepIcons = {
 };
 
 const stepNames = {
-  download: '下载视频',
-  extract: '提取内容',
-  subtitle: '提取字幕',
+  download: '提取音频',
+  extract: '语音识别',
+  subtitle: '信息抽取',
   analyze: 'AI分析',
   generate: '生成简介'
 };
@@ -75,7 +75,7 @@ export function VideoAnalysisFeedback({
             <div className="flex items-center space-x-2">
               <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
               <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                正在分析视频...
+                正在分析音频...
               </span>
             </div>
             <span className="text-xs text-blue-600 dark:text-blue-400">

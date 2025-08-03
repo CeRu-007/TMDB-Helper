@@ -1643,11 +1643,11 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   // 处理视频分析
   const handleVideoAnalysis = async (videoUrl: string) => {
     if (!apiKey) {
-      if (onOpenGlobalSettings) {
-        onOpenGlobalSettings('api')
-      } else {
-        alert('请先配置硅基流动API密钥')
-      }
+      toast({
+        title: "需要配置API密钥",
+        description: "请先在设置中配置硅基流动API密钥",
+        variant: "destructive"
+      })
       return
     }
 
@@ -2618,8 +2618,8 @@ function EmptyState({ onUpload, onVideoAnalysis }: {
 
       // 下载完成，开始提取
       setAnalysisSteps(prev => updateStepStatus(
-        updateStepStatus(prev, 'download', 'completed', '视频下载完成'),
-        'extract', 'running', '正在提取视频帧和音频...'
+        updateStepStatus(prev, 'download', 'completed', '音频提取完成'),
+        'extract', 'running', '正在进行语音识别...'
       ))
       await new Promise(resolve => setTimeout(resolve, 1000))
 
@@ -2811,11 +2811,11 @@ function EmptyState({ onUpload, onVideoAnalysis }: {
                 </div>
                 <div className="flex items-start space-x-2">
                   <span className="text-purple-500 font-medium">2.</span>
-                  <span>AI将自动分析视频画面和音频内容</span>
+                  <span>AI将自动提取音频并进行语音识别分析</span>
                 </div>
                 <div className="flex items-start space-x-2">
                   <span className="text-purple-500 font-medium">3.</span>
-                  <span>基于多模态分析结果生成精彩简介</span>
+                  <span>基于音频内容和关键信息生成精彩简介</span>
                 </div>
                 <div className="flex items-start space-x-2">
                   <span className="text-purple-500 font-medium">4.</span>
@@ -2975,12 +2975,12 @@ function EmptyState({ onUpload, onVideoAnalysis }: {
         {activeTab === 'video' && (
           <div className="mt-6 space-y-2">
             <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-              AI将分析视频画面和音频内容，自动生成分集简介
+              AI将提取音频内容并进行智能分析，自动生成分集简介
             </div>
             <div className="flex items-center justify-center space-x-4 text-xs text-gray-400 dark:text-gray-500">
               <div className="flex items-center space-x-1">
                 <Film className="h-3 w-3" />
-                <span>视频分析</span>
+                <span>音频分析</span>
               </div>
               <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
               <div className="flex items-center space-x-1">

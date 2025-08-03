@@ -47,8 +47,8 @@ interface VideoAnalysisResult {
   progress?: number;
 }
 
-// 临时文件目录
-const TEMP_DIR = path.join(process.cwd(), 'temp', 'video-analysis');
+// 临时文件目录（使用data文件夹）
+const TEMP_DIR = path.join(process.cwd(), 'data', 'temp', 'audio-analysis');
 
 // 确保临时目录存在
 async function ensureTempDir() {
@@ -82,12 +82,29 @@ function validateVideoUrl(url: string): boolean {
 
 // 移除了视频下载和帧提取相关函数，现在只专注于音频处理
 
+// 检查ffmpeg是否可用
+async function checkFFmpegAvailability(): Promise<boolean> {
+  try {
+    await execAsync('ffmpeg -version', { timeout: 5000 });
+    return true;
+  } catch (error) {
+    console.error('ffmpeg不可用:', error);
+    return false;
+  }
+}
+
 // 直接从URL提取音频（不下载视频文件）
 async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise<{
   audioPath: string;
   duration: number;
   title: string;
 }> {
+  // 检查ffmpeg是否可用
+  const ffmpegAvailable = await checkFFmpegAvailability();
+  if (!ffmpegAvailable) {
+    throw new Error('ffmpeg未安装或不可用。在Docker环境中，请确保Dockerfile包含ffmpeg安装指令。');
+  }
+
   const sessionDir = path.join(TEMP_DIR, sessionId);
   await fs.mkdir(sessionDir, { recursive: true });
 
@@ -119,7 +136,20 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
     };
   } catch (error) {
     console.error('音频提取失败:', error);
-    throw new Error(`音频提取失败: ${error instanceof Error ? error.message : '未知错误'}`);
+
+    // 提供更详细的错误信息
+    let errorMessage = '音频提取失败';
+    if (error instanceof Error) {
+      if (error.message.includes('ffmpeg')) {
+        errorMessage = 'ffmpeg执行失败，请检查视频URL是否有效或网络连接是否正常';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = '音频提取超时，视频可能过长或网络较慢';
+      } else {
+        errorMessage = `音频提取失败: ${error.message}`;
+      }
+    }
+
+    throw new Error(errorMessage);
   }
 }
 
@@ -487,12 +517,11 @@ export async function POST(request: NextRequest) {
         combinedSummary
       }
     };
-    
-    // 6. 延迟清理临时文件
-    setTimeout(() => {
-      cleanupTempFiles(sessionId);
-    }, 60000); // 1分钟后清理（音频文件较小，不需要太长时间）
-    
+
+    // 6. 立即清理临时文件（处理完成后不再需要）
+    await cleanupTempFiles(sessionId);
+    console.log('临时音频文件已清理');
+
     return NextResponse.json(result);
     
   } catch (error) {
