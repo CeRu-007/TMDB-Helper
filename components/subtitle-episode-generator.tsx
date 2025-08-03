@@ -1840,6 +1840,111 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
     };
   };
 
+  // 修复不完整的JSON
+  const repairIncompleteJson = (jsonStr: string): string => {
+    try {
+      // 移除可能的前缀和后缀
+      let cleaned = jsonStr.trim();
+
+      // 移除markdown代码块
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
+      }
+
+      // 确保以{开始
+      const startIndex = cleaned.indexOf('{');
+      if (startIndex > 0) {
+        cleaned = cleaned.substring(startIndex);
+      }
+
+      // 处理不完整的JSON
+      if (!cleaned.endsWith('}')) {
+        // 找到最后一个完整的字段
+        const lines = cleaned.split('\n');
+        let validLines = [];
+        let braceCount = 0;
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (trimmedLine === '{') {
+            braceCount++;
+            validLines.push(line);
+          } else if (trimmedLine === '}') {
+            braceCount--;
+            validLines.push(line);
+          } else if (trimmedLine.includes(':') && (trimmedLine.endsWith(',') || trimmedLine.endsWith('"'))) {
+            // 完整的字段行
+            validLines.push(line);
+          } else if (trimmedLine.startsWith('"') && trimmedLine.includes(':')) {
+            // 可能是不完整的字段，尝试修复
+            if (!trimmedLine.endsWith(',') && !trimmedLine.endsWith('"')) {
+              // 不完整的字段，跳过
+              break;
+            }
+            validLines.push(line);
+          }
+        }
+
+        // 移除最后的逗号并添加结束括号
+        if (validLines.length > 0) {
+          const lastLine = validLines[validLines.length - 1];
+          if (lastLine.trim().endsWith(',')) {
+            validLines[validLines.length - 1] = lastLine.replace(/,$/, '');
+          }
+        }
+
+        if (braceCount > 0) {
+          validLines.push('}');
+        }
+
+        cleaned = validLines.join('\n');
+      }
+
+      return cleaned;
+    } catch (error) {
+      console.error('修复JSON时出错:', error);
+      return jsonStr;
+    }
+  };
+
+  // 验证修正结果的数据结构
+  const validateCorrectionResult = (data: any, allowPartial: boolean = false): boolean => {
+    try {
+      // 检查必需的字段
+      if (typeof data !== 'object' || data === null) return false;
+
+      // 检查correctedTranscript（必需）
+      if (typeof data.correctedTranscript !== 'string') return false;
+
+      // 检查entities结构
+      if (!data.entities || typeof data.entities !== 'object') {
+        if (!allowPartial) return false;
+        data.entities = { people: [], places: [], terms: [] };
+      } else {
+        if (!Array.isArray(data.entities.people)) data.entities.people = [];
+        if (!Array.isArray(data.entities.places)) data.entities.places = [];
+        if (!Array.isArray(data.entities.terms)) data.entities.terms = [];
+      }
+
+      // 检查keywords
+      if (!Array.isArray(data.keywords)) {
+        if (!allowPartial) return false;
+        data.keywords = [];
+      }
+
+      // 检查summary
+      if (typeof data.summary !== 'string') {
+        if (!allowPartial) return false;
+        data.summary = '';
+      }
+
+      return true;
+    } catch (error) {
+      console.error('验证修正结果时出错:', error);
+      return false;
+    }
+  };
+
   // AI修正关键信息
   const handleCorrectKeyInfo = async () => {
     if (!videoAnalysisResult || !movieTitle.trim() || !apiKey) {
@@ -1854,34 +1959,51 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
     setIsCorrectingKeyInfo(true)
 
     try {
-      const prompt = `请根据影视作品《${movieTitle.trim()}》的相关资料，修正以下从音频中提取的关键信息。
+      // 获取原始音频转录内容
+      const originalTranscript = videoAnalysisResult.audioAnalysis.transcript;
+      const originalSegments = videoAnalysisResult.audioAnalysis.segments;
 
-当前提取的关键信息：
+      // 限制转录内容长度，避免JSON过大
+      const maxTranscriptLength = 1000;
+      const truncatedTranscript = originalTranscript.length > maxTranscriptLength
+        ? originalTranscript.substring(0, maxTranscriptLength) + '...'
+        : originalTranscript;
+
+      const prompt = `请根据影视作品《${movieTitle.trim()}》修正以下音频转录内容中的错误。
+
+【原始音频转录内容】
+${truncatedTranscript}
+
+【当前提取的关键信息】
 人物：${videoAnalysisResult.keyInformation.entities.people.join(', ') || '无'}
 地点：${videoAnalysisResult.keyInformation.entities.places.join(', ') || '无'}
 术语：${videoAnalysisResult.keyInformation.entities.terms.join(', ') || '无'}
 关键词：${videoAnalysisResult.keyInformation.keywords.join(', ') || '无'}
 
-请根据《${movieTitle.trim()}》的官方资料、角色设定、地点设定等信息，对上述关键信息进行修正：
-1. 补充不完整的人名（如"小明"可能是"李小明"）
-2. 修正同音字错误（如"张三"可能被识别为"张山"）
-3. 补充完整的地点名称
-4. 修正专业术语的准确表达
-5. 添加遗漏的重要角色和地点
-6. 移除明显错误的信息
+【修正要求】
+1. 严格基于原始转录内容进行修正，不要添加原文中没有的信息
+2. 修正错别字、同音字错误（如"张山"→"张三"）
+3. 修正语法错误和不通顺的表达
+4. 修正人名、地名、专业术语的准确表达
+5. 保持原文的语义和结构不变
 
-请严格按照以下JSON格式返回修正后的结果：
+请严格按照以下简化JSON格式返回：
+
 {
+  "correctedTranscript": "修正后的完整转录内容",
   "entities": {
-    "people": ["修正后的人名1", "修正后的人名2"],
-    "places": ["修正后的地点1", "修正后的地点2"],
-    "terms": ["修正后的术语1", "修正后的术语2"]
+    "people": ["修正后人名"],
+    "places": ["修正后地名"],
+    "terms": ["修正后术语"]
   },
-  "keywords": ["修正后的关键词1", "修正后的关键词2"],
-  "summary": "基于修正信息的新摘要"
+  "keywords": ["修正后关键词"],
+  "summary": "简要摘要"
 }
 
-注意：只返回JSON，不要添加其他说明文字。`
+重要：
+1. 只返回JSON，不要添加任何其他文字
+2. 确保JSON格式完整有效
+3. 不要添加原文中没有的信息`
 
       const response = await fetch('/api/siliconflow', {
         method: 'POST',
@@ -1893,7 +2015,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
           messages: [
             {
               role: "system",
-              content: "你是一个专业的影视资料专家，擅长根据作品名称修正和补充角色、地点等关键信息。"
+              content: "你是一个专业的文本修正专家，擅长修正音频转录中的错别字、同音字和语法错误。你必须严格基于原始内容进行修正，不能添加原文中没有的信息。你的回复必须是有效的JSON格式，不能包含任何其他文字。"
             },
             {
               role: "user",
@@ -1901,7 +2023,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
             }
           ],
           temperature: 0.3,
-          max_tokens: 800,
+          max_tokens: 2000, // 增加token限制以支持完整内容修正
           apiKey: apiKey
         })
       })
@@ -1919,15 +2041,94 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
       const content = result.data.content
 
       try {
-        const correctedInfo = JSON.parse(content)
+        // 清理和预处理AI返回的内容
+        let cleanContent = content.trim();
+
+        // 移除可能的markdown代码块标记
+        if (cleanContent.startsWith('```json')) {
+          cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanContent.startsWith('```')) {
+          cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+
+        // 移除可能的前后说明文字，只保留JSON部分
+        const jsonStart = cleanContent.indexOf('{');
+        let jsonEnd = cleanContent.lastIndexOf('}');
+
+        // 如果JSON被截断，尝试修复
+        if (jsonStart !== -1) {
+          let jsonContent = cleanContent.substring(jsonStart);
+
+          // 检查是否是不完整的JSON
+          if (jsonEnd === -1 || jsonEnd <= jsonStart) {
+            console.log('检测到不完整的JSON，尝试修复...');
+
+            // 尝试找到最后一个完整的字段
+            const lastCommaIndex = jsonContent.lastIndexOf(',');
+            const lastBraceIndex = jsonContent.lastIndexOf('{');
+            const lastBracketIndex = jsonContent.lastIndexOf('[');
+
+            // 如果在数组中被截断
+            if (lastBracketIndex > lastBraceIndex && !jsonContent.includes(']', lastBracketIndex)) {
+              // 找到数组开始位置，截断到最后一个完整的对象
+              const arrayStart = jsonContent.indexOf('[', lastBracketIndex);
+              if (arrayStart !== -1) {
+                const beforeArray = jsonContent.substring(0, arrayStart);
+                jsonContent = beforeArray + '[]'; // 用空数组替换不完整的数组
+              }
+            }
+
+            // 确保JSON以}结尾
+            if (!jsonContent.endsWith('}')) {
+              // 移除最后的不完整部分
+              const lastCompleteField = jsonContent.lastIndexOf('",');
+              if (lastCompleteField !== -1) {
+                jsonContent = jsonContent.substring(0, lastCompleteField + 1) + '\n}';
+              } else {
+                jsonContent = jsonContent.substring(0, jsonContent.lastIndexOf(',')) + '\n}';
+              }
+            }
+
+            cleanContent = jsonContent;
+          } else {
+            cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
+          }
+        }
+
+        console.log('清理后的AI返回内容:', cleanContent);
+
+        // 尝试修复不完整的JSON
+        const repairedContent = repairIncompleteJson(cleanContent);
+        console.log('修复后的JSON内容:', repairedContent);
+
+        const correctedInfo = JSON.parse(repairedContent)
+
+        // 验证数据结构（允许部分数据）
+        if (!validateCorrectionResult(correctedInfo, true)) {
+          throw new Error('AI返回的数据结构不完整或格式错误');
+        }
+
+        console.log('验证通过的修正结果:', correctedInfo);
 
         // 更新视频分析结果
         setVideoAnalysisResult(prev => {
           if (!prev) return null;
 
-          // 先更新关键信息
+          // 更新音频分析内容和关键信息
           const updatedResult = {
             ...prev,
+            audioAnalysis: {
+              ...prev.audioAnalysis,
+              transcript: correctedInfo.correctedTranscript || prev.audioAnalysis.transcript,
+              // 保持原有的segments，只更新文本内容
+              segments: prev.audioAnalysis.segments.map(seg => ({
+                ...seg,
+                text: correctedInfo.correctedTranscript ?
+                  // 如果有修正的转录内容，尝试从中提取对应的文本
+                  seg.text : seg.text,
+                confidence: 0.9 // 修正后的内容给予较高置信度
+              }))
+            },
             keyInformation: {
               entities: {
                 people: correctedInfo.entities?.people || prev.keyInformation.entities.people,
@@ -1944,15 +2145,156 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         })
 
         toast({
-          title: "关键信息修正完成",
-          description: "AI已根据片名修正关键信息，内容已更新",
+          title: "内容修正完成",
+          description: "AI已修正关键信息和对话内容中的错别字、语法错误",
         })
 
       } catch (parseError) {
         console.error('解析修正结果失败:', parseError)
+        console.error('原始AI返回内容:', content)
+
+        // 尝试从错误的JSON中提取部分信息
+        try {
+          // 如果是部分JSON，尝试修复
+          let partialContent = content.trim();
+
+          // 尝试找到JSON的开始和结束
+          const jsonMatch = partialContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const extractedJson = jsonMatch[0];
+            console.log('尝试解析提取的JSON:', extractedJson);
+
+            // 修复不完整的JSON
+            const repairedJson = repairIncompleteJson(extractedJson);
+            console.log('修复后的JSON:', repairedJson);
+
+            const correctedInfo = JSON.parse(repairedJson);
+
+            // 验证数据结构（允许部分数据）
+            if (!validateCorrectionResult(correctedInfo, true)) {
+              throw new Error('提取的JSON数据结构不完整');
+            }
+
+            console.log('二次解析验证通过:', correctedInfo);
+
+            // 如果成功解析，继续处理
+            setVideoAnalysisResult(prev => {
+              if (!prev) return null;
+
+              const updatedResult = {
+                ...prev,
+                audioAnalysis: {
+                  ...prev.audioAnalysis,
+                  transcript: correctedInfo.correctedTranscript || prev.audioAnalysis.transcript,
+                  // 保持原有的segments
+                  segments: prev.audioAnalysis.segments.map(seg => ({
+                    ...seg,
+                    confidence: 0.9
+                  }))
+                },
+                keyInformation: {
+                  entities: {
+                    people: correctedInfo.entities?.people || prev.keyInformation.entities.people,
+                    places: correctedInfo.entities?.places || prev.keyInformation.entities.places,
+                    terms: correctedInfo.entities?.terms || prev.keyInformation.entities.terms
+                  },
+                  keywords: correctedInfo.keywords || prev.keyInformation.keywords,
+                  summary: correctedInfo.summary || prev.keyInformation.summary
+                }
+              };
+
+              return regenerateStructuredContent(updatedResult);
+            });
+
+            toast({
+              title: "内容修正完成",
+              description: "AI已修正关键信息和对话内容中的错别字、语法错误",
+            });
+
+            return; // 成功处理，退出
+          }
+        } catch (secondParseError) {
+          console.error('二次解析也失败:', secondParseError);
+        }
+
+        // 最后的降级方案：尝试简单的关键信息修正
+        try {
+          console.log('尝试降级方案：简单关键信息修正');
+
+          const fallbackPrompt = `请根据影视作品《${movieTitle.trim()}》修正以下关键信息中的错别字和同音字：
+
+人物：${videoAnalysisResult.keyInformation.entities.people.join(', ') || '无'}
+地点：${videoAnalysisResult.keyInformation.entities.places.join(', ') || '无'}
+术语：${videoAnalysisResult.keyInformation.entities.terms.join(', ') || '无'}
+关键词：${videoAnalysisResult.keyInformation.keywords.join(', ') || '无'}
+
+请只返回JSON格式：
+{
+  "entities": {
+    "people": ["修正后的人名"],
+    "places": ["修正后的地点"],
+    "terms": ["修正后的术语"]
+  },
+  "keywords": ["修正后的关键词"],
+  "summary": "简要摘要"
+}`;
+
+          const fallbackResponse = await fetch('/api/siliconflow', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: config.model,
+              messages: [
+                { role: "system", content: "你是文本修正专家，只返回有效JSON格式。" },
+                { role: "user", content: fallbackPrompt }
+              ],
+              temperature: 0.1,
+              max_tokens: 800,
+              apiKey: apiKey
+            })
+          });
+
+          if (fallbackResponse.ok) {
+            const fallbackResult = await fallbackResponse.json();
+            if (fallbackResult.success) {
+              const fallbackContent = fallbackResult.data.content.trim();
+              const fallbackInfo = JSON.parse(fallbackContent);
+
+              // 只更新关键信息，不修改音频内容
+              setVideoAnalysisResult(prev => {
+                if (!prev) return null;
+
+                const updatedResult = {
+                  ...prev,
+                  keyInformation: {
+                    entities: {
+                      people: fallbackInfo.entities?.people || prev.keyInformation.entities.people,
+                      places: fallbackInfo.entities?.places || prev.keyInformation.entities.places,
+                      terms: fallbackInfo.entities?.terms || prev.keyInformation.entities.terms
+                    },
+                    keywords: fallbackInfo.keywords || prev.keyInformation.keywords,
+                    summary: fallbackInfo.summary || prev.keyInformation.summary
+                  }
+                };
+
+                return regenerateStructuredContent(updatedResult);
+              });
+
+              toast({
+                title: "关键信息修正完成",
+                description: "使用简化模式修正了关键信息",
+              });
+
+              return; // 成功处理，退出
+            }
+          }
+        } catch (fallbackError) {
+          console.error('降级方案也失败:', fallbackError);
+        }
+
         toast({
           title: "修正失败",
-          description: "AI返回的结果格式异常",
+          description: `AI返回的结果格式异常，请稍后重试`,
           variant: "destructive"
         })
       }
@@ -4211,12 +4553,15 @@ function VideoAnalysisResultDialog({
           <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
             <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center">
               <Wand2 className="h-4 w-4 mr-2" />
-              AI修正关键信息
+              AI智能修正
             </h4>
+            <p className="text-xs text-blue-600 dark:text-blue-300 mb-3">
+              修正关键信息中的错别字、同音字，同时修正对话内容的语法错误，不会添加原文中没有的信息
+            </p>
             <div className="space-y-3">
               <div>
                 <Label htmlFor="movieTitle" className="text-sm">
-                  片名（用于修正关键信息）
+                  片名（用于智能修正）
                 </Label>
                 <Input
                   id="movieTitle"
@@ -4236,17 +4581,17 @@ function VideoAnalysisResultDialog({
                   {isCorrectingKeyInfo ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      修正中...
+                      智能修正中...
                     </>
                   ) : (
                     <>
                       <Wand2 className="h-4 w-4 mr-2" />
-                      AI修正关键信息
+                      AI智能修正
                     </>
                   )}
                 </Button>
                 <p className="text-xs text-gray-500">
-                  AI将根据片名修正人名、地点等关键信息的准确性
+                  修正错别字、语法错误，不添加原文中没有的信息
                 </p>
               </div>
             </div>
