@@ -2068,6 +2068,8 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
             isGenerating={isGenerating}
             apiConfigured={!!apiKey}
             hasResults={Object.values(generationResults).some(results => results.length > 0)}
+            videoAnalysisResult={videoAnalysisResult}
+            onShowAnalysisResult={() => setShowAnalysisResult(true)}
           />
         </div>
 
@@ -2179,7 +2181,9 @@ function FileList({
   onBatchExport,
   isGenerating,
   apiConfigured,
-  hasResults
+  hasResults,
+  videoAnalysisResult,
+  onShowAnalysisResult
 }: {
   files: SubtitleFile[]
   selectedFile: SubtitleFile | null
@@ -2193,6 +2197,8 @@ function FileList({
   isGenerating: boolean
   apiConfigured: boolean
   hasResults: boolean
+  videoAnalysisResult?: VideoAnalysisResult | null
+  onShowAnalysisResult?: () => void
 }) {
   return (
     <div className="h-full flex flex-col">
@@ -2235,6 +2241,20 @@ function FileList({
               </>
             )}
           </Button>
+
+          {/* 视频分析结果按钮 */}
+          {videoAnalysisResult && onShowAnalysisResult && (
+            <Button
+              onClick={onShowAnalysisResult}
+              disabled={isGenerating}
+              variant="outline"
+              className="w-full border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950/30"
+              size="sm"
+            >
+              <Film className="h-4 w-4 mr-2" />
+              查看视频分析结果
+            </Button>
+          )}
 
           {files.length > 0 && hasResults && (
             <Button
@@ -3985,7 +4005,7 @@ function VideoAnalysisResultDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Film className="h-5 w-5" />
@@ -3996,43 +4016,49 @@ function VideoAnalysisResultDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="h-full flex flex-col">
+        <div className="mt-4">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="markdown">Markdown格式</TabsTrigger>
               <TabsTrigger value="srt">SRT字幕</TabsTrigger>
               <TabsTrigger value="text">纯文本</TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 overflow-hidden mt-4">
-              <TabsContent value="markdown" className="h-full">
-                <div className="h-full border rounded-lg p-4 overflow-auto bg-gray-50 dark:bg-gray-900">
-                  <pre className="whitespace-pre-wrap text-sm font-mono">
-                    {result.structuredContent.markdown}
-                  </pre>
+            <div className="mt-4 h-[240px]">
+              <TabsContent value="markdown" className="h-full m-0">
+                <div className="h-full border rounded-lg bg-gray-50 dark:bg-gray-900 overflow-auto">
+                  <div className="p-4">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">
+                      {result.structuredContent.markdown}
+                    </pre>
+                  </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="srt" className="h-full">
-                <div className="h-full border rounded-lg p-4 overflow-auto bg-gray-50 dark:bg-gray-900">
-                  <pre className="whitespace-pre-wrap text-sm font-mono">
-                    {result.structuredContent.srt || '暂无SRT字幕内容'}
-                  </pre>
+              <TabsContent value="srt" className="h-full m-0">
+                <div className="h-full border rounded-lg bg-gray-50 dark:bg-gray-900 overflow-auto">
+                  <div className="p-4">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">
+                      {result.structuredContent.srt || '暂无SRT字幕内容'}
+                    </pre>
+                  </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="text" className="h-full">
-                <div className="h-full border rounded-lg p-4 overflow-auto bg-gray-50 dark:bg-gray-900">
-                  <pre className="whitespace-pre-wrap text-sm">
-                    {result.structuredContent.text}
-                  </pre>
+              <TabsContent value="text" className="h-full m-0">
+                <div className="h-full border rounded-lg bg-gray-50 dark:bg-gray-900 overflow-auto">
+                  <div className="p-4">
+                    <pre className="whitespace-pre-wrap text-sm">
+                      {result.structuredContent.text}
+                    </pre>
+                  </div>
                 </div>
               </TabsContent>
             </div>
           </Tabs>
         </div>
 
-        <div className="border-t pt-4 space-y-4">
+        <div className="border-t pt-4 space-y-4 mt-4">
           {/* 关键信息修正区域 */}
           <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
             <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center">
