@@ -1684,6 +1684,170 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
     }
   }
 
+  // 为视频分析结果生成简介
+  const generateEpisodesForFile = async (file: SubtitleFile) => {
+    try {
+      const results: GenerationResult[] = []
+      const episodes = file.episodes
+      let successCount = 0
+      let failCount = 0
+
+      // 计算总任务数（集数 × 风格数）
+      const totalTasks = episodes.length * config.selectedStyles.length
+      let completedTasks = 0
+
+      for (let i = 0; i < episodes.length; i++) {
+        const episode = episodes[i]
+        try {
+          // 为每个选中的风格生成内容
+          const episodeResults = await generateEpisodeContent(episode)
+
+          // 添加所有风格的结果
+          results.push(...episodeResults)
+
+          // 计算成功和失败的数量
+          const successResults = episodeResults.filter(r => r.confidence > 0)
+          successCount += successResults.length
+          failCount += episodeResults.length - successResults.length
+
+          // 更新进度
+          completedTasks += config.selectedStyles.length
+          setGenerationResults(prev => ({ ...prev, [file.id]: [...results] }))
+          setGenerationProgress((completedTasks / totalTasks) * 100)
+
+          // 避免API限流，添加延迟
+          if (i < episodes.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1500))
+          }
+        } catch (error) {
+          console.error(`第${episode.episodeNumber}集生成失败:`, error)
+          failCount += config.selectedStyles.length
+          completedTasks += config.selectedStyles.length
+
+          // 为每个风格添加失败的结果占位符
+          for (const styleId of config.selectedStyles) {
+            const style = GENERATION_STYLES.find(s => s.id === styleId)
+            results.push({
+              episodeNumber: episode.episodeNumber,
+              generatedTitle: `第${episode.episodeNumber}集（${style?.name || styleId}风格生成失败）`,
+              generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
+              confidence: 0,
+              wordCount: 0,
+              generationTime: Date.now(),
+              model: config.model,
+              styles: [styleId],
+              styleId: styleId,
+              originalTitle: episode.title || `第${episode.episodeNumber}集`,
+              originalContent: episode.content
+            })
+          }
+
+          setGenerationResults(prev => ({ ...prev, [file.id]: [...results] }))
+          setGenerationProgress((completedTasks / totalTasks) * 100)
+        }
+      }
+
+      // 显示完成提示
+      toast({
+        title: "生成完成",
+        description: `成功生成 ${successCount} 个简介，失败 ${failCount} 个`,
+      })
+
+    } catch (error) {
+      console.error('批量生成失败:', error)
+      toast({
+        title: "生成失败",
+        description: error instanceof Error ? error.message : '未知错误',
+        variant: "destructive"
+      })
+    } finally {
+      setIsGenerating(false)
+      setGenerationProgress(0)
+    }
+  }
+
+  // 重新生成结构化内容
+  const regenerateStructuredContent = (updatedResult: VideoAnalysisResult): VideoAnalysisResult => {
+    const audioTranscript = updatedResult.audioAnalysis.transcript;
+    const audioSegments = updatedResult.audioAnalysis.segments;
+    const keyInfo = updatedResult.keyInformation;
+    const videoInfo = updatedResult.videoInfo;
+
+    // 生成Markdown格式
+    const markdownContent = [
+      `# AI音频分析结果`,
+      '',
+      `## 📹 视频信息`,
+      `- **标题**: ${videoInfo.title || '未知标题'}`,
+      `- **时长**: ${Math.floor(videoInfo.duration / 60)}分${Math.floor(videoInfo.duration % 60)}秒`,
+      `- **来源**: ${videoInfo.url}`,
+      '',
+      `## 🎯 关键信息`,
+      `### 👥 人物`,
+      keyInfo.entities.people.length > 0 ? keyInfo.entities.people.map(p => `- ${p}`).join('\n') : '- 暂无识别到的人物',
+      '',
+      `### 📍 地点`,
+      keyInfo.entities.places.length > 0 ? keyInfo.entities.places.map(p => `- ${p}`).join('\n') : '- 暂无识别到的地点',
+      '',
+      `### 🏷️ 专业术语`,
+      keyInfo.entities.terms.length > 0 ? keyInfo.entities.terms.map(t => `- ${t}`).join('\n') : '- 暂无识别到的专业术语',
+      '',
+      `### 🔑 关键词`,
+      keyInfo.keywords.length > 0 ? keyInfo.keywords.map(k => `\`${k}\``).join(' ') : '暂无关键词',
+      '',
+      `## 🎤 音频转录`,
+      audioTranscript || '暂无音频内容',
+      '',
+      `## 📊 内容摘要`,
+      keyInfo.summary || '暂无摘要'
+    ].join('\n');
+
+    // 生成SRT格式
+    const formatSRTTime = (seconds: number): string => {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = Math.floor(seconds % 60);
+      const ms = Math.floor((seconds % 1) * 1000);
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
+    };
+
+    const srtContent = audioSegments.map((segment, index) => {
+      const startTime = formatSRTTime(segment.start);
+      const endTime = formatSRTTime(segment.end);
+      return `${index + 1}\n${startTime} --> ${endTime}\n${segment.text}\n`;
+    }).join('\n');
+
+    // 生成纯文本格式
+    const textContent = [
+      '=== AI音频分析结果 ===',
+      '',
+      `视频标题: ${videoInfo.title || '未知标题'}`,
+      `视频时长: ${Math.floor(videoInfo.duration / 60)}分${Math.floor(videoInfo.duration % 60)}秒`,
+      `视频来源: ${videoInfo.url}`,
+      '',
+      '=== 关键信息 ===',
+      `人物: ${keyInfo.entities.people.join(', ') || '暂无'}`,
+      `地点: ${keyInfo.entities.places.join(', ') || '暂无'}`,
+      `专业术语: ${keyInfo.entities.terms.join(', ') || '暂无'}`,
+      `关键词: ${keyInfo.keywords.join(', ') || '暂无'}`,
+      '',
+      '=== 内容摘要 ===',
+      keyInfo.summary || '暂无摘要',
+      '',
+      '=== 音频转录 ===',
+      audioTranscript || '暂无音频内容'
+    ].join('\n');
+
+    return {
+      ...updatedResult,
+      structuredContent: {
+        markdown: markdownContent,
+        srt: srtContent,
+        text: textContent
+      }
+    };
+  };
+
   // AI修正关键信息
   const handleCorrectKeyInfo = async () => {
     if (!videoAnalysisResult || !movieTitle.trim() || !apiKey) {
@@ -1766,22 +1930,30 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         const correctedInfo = JSON.parse(content)
 
         // 更新视频分析结果
-        setVideoAnalysisResult(prev => prev ? {
-          ...prev,
-          keyInformation: {
-            entities: {
-              people: correctedInfo.entities?.people || prev.keyInformation.entities.people,
-              places: correctedInfo.entities?.places || prev.keyInformation.entities.places,
-              terms: correctedInfo.entities?.terms || prev.keyInformation.entities.terms
-            },
-            keywords: correctedInfo.keywords || prev.keyInformation.keywords,
-            summary: correctedInfo.summary || prev.keyInformation.summary
-          }
-        } : null)
+        setVideoAnalysisResult(prev => {
+          if (!prev) return null;
+
+          // 先更新关键信息
+          const updatedResult = {
+            ...prev,
+            keyInformation: {
+              entities: {
+                people: correctedInfo.entities?.people || prev.keyInformation.entities.people,
+                places: correctedInfo.entities?.places || prev.keyInformation.entities.places,
+                terms: correctedInfo.entities?.terms || prev.keyInformation.entities.terms
+              },
+              keywords: correctedInfo.keywords || prev.keyInformation.keywords,
+              summary: correctedInfo.summary || prev.keyInformation.summary
+            }
+          };
+
+          // 重新生成结构化内容
+          return regenerateStructuredContent(updatedResult);
+        })
 
         toast({
           title: "关键信息修正完成",
-          description: "AI已根据片名修正关键信息",
+          description: "AI已根据片名修正关键信息，内容已更新",
         })
 
       } catch (parseError) {
@@ -2158,7 +2330,15 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
             // 自动开始生成简介
             setTimeout(() => {
-              handleBatchGenerate()
+              // 直接生成简介，不需要检查API密钥（视频分析已经验证过了）
+              if (videoFile.episodes.length > 0) {
+                setIsGenerating(true)
+                setGenerationProgress(0)
+                setGenerationResults(prev => ({ ...prev, [videoFile.id]: [] }))
+
+                // 开始生成简介
+                generateEpisodesForFile(videoFile)
+              }
             }, 1000)
           }
         }}
