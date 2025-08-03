@@ -328,81 +328,69 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
   }
 }
 
-// 生成结构化的音频内容描述（支持Markdown和SRT格式）
+// 生成SRT格式的音频内容（包含关键信息）
 async function generateStructuredContent(
   audioTranscriptResult: { text: string; segments: any[] },
   videoInfo: { title: string; duration: number; url: string },
   keyInfo: any
 ): Promise<{
-  markdown: string;
   srt: string;
-  text: string;
 }> {
-  const audioTranscript = audioTranscriptResult.text;
   const audioSegments = audioTranscriptResult.segments;
 
-  // 生成Markdown格式
-  const markdownContent = [
-    `# AI音频分析结果`,
-    '',
-    `## 📹 视频信息`,
-    `- **标题**: ${videoInfo.title || '未知标题'}`,
-    `- **时长**: ${Math.floor(videoInfo.duration / 60)}分${Math.floor(videoInfo.duration % 60)}秒`,
-    `- **来源**: ${videoInfo.url}`,
-    '',
-    `## 🎯 关键信息`,
-    `### 👥 人物`,
-    keyInfo.entities.people.length > 0 ? keyInfo.entities.people.map(p => `- ${p}`).join('\n') : '- 暂无识别到的人物',
-    '',
-    `### 📍 地点`,
-    keyInfo.entities.places.length > 0 ? keyInfo.entities.places.map(p => `- ${p}`).join('\n') : '- 暂无识别到的地点',
-    '',
-    `### 🏷️ 专业术语`,
-    keyInfo.entities.terms.length > 0 ? keyInfo.entities.terms.map(t => `- ${t}`).join('\n') : '- 暂无识别到的专业术语',
-    '',
-    `### 🔑 关键词`,
-    keyInfo.keywords.length > 0 ? keyInfo.keywords.map(k => `\`${k}\``).join(' ') : '暂无关键词',
-    '',
-    `## 🎤 音频转录`,
-    audioTranscript || '暂无音频内容',
-    '',
-    `## 📊 内容摘要`,
-    keyInfo.summary || '暂无摘要'
-  ].join('\n');
+  // 构建关键信息字符串
+  const keyInfoParts = [];
 
-  // 生成SRT格式（基于音频分段）
-  const srtContent = audioSegments.map((segment, index) => {
+  if (keyInfo.entities.people.length > 0) {
+    keyInfoParts.push(`人物: ${keyInfo.entities.people.join('、')}`);
+  }
+
+  if (keyInfo.entities.places.length > 0) {
+    keyInfoParts.push(`地点: ${keyInfo.entities.places.join('、')}`);
+  }
+
+  if (keyInfo.entities.terms.length > 0) {
+    keyInfoParts.push(`术语: ${keyInfo.entities.terms.join('、')}`);
+  }
+
+  if (keyInfo.keywords.length > 0) {
+    keyInfoParts.push(`关键词: ${keyInfo.keywords.join('、')}`);
+  }
+
+  const keyInfoText = keyInfoParts.length > 0
+    ? `【关键信息】${keyInfoParts.join(' | ')}`
+    : '【关键信息】暂无识别到的关键信息';
+
+  // 生成SRT格式，第一行为关键信息
+  const srtLines = [];
+
+  // 第一行：关键信息（时间从0开始到第一个音频段开始）
+  const firstSegmentStart = audioSegments.length > 0 ? audioSegments[0].start : 5;
+  srtLines.push(
+    '1',
+    `${formatSRTTime(0)} --> ${formatSRTTime(Math.max(firstSegmentStart - 0.1, 2))}`,
+    keyInfoText,
+    ''
+  );
+
+  // 后续行：音频转录内容
+  audioSegments.forEach((segment, index) => {
+    const srtIndex = index + 2; // 从2开始，因为第1行是关键信息
     const startTime = formatSRTTime(segment.start);
     const endTime = formatSRTTime(segment.end);
-    return `${index + 1}\n${startTime} --> ${endTime}\n${segment.text}\n`;
-  }).join('\n');
 
-  // 生成纯文本格式
-  const textContent = [
-    '=== AI音频分析结果 ===',
-    '',
-    `【视频信息】`,
-    `标题: ${videoInfo.title || '未知标题'}`,
-    `时长: ${Math.floor(videoInfo.duration / 60)}分${Math.floor(videoInfo.duration % 60)}秒`,
-    `来源: ${videoInfo.url}`,
-    '',
-    '【关键信息】',
-    `人物: ${keyInfo.entities.people.join(', ') || '无'}`,
-    `地点: ${keyInfo.entities.places.join(', ') || '无'}`,
-    `术语: ${keyInfo.entities.terms.join(', ') || '无'}`,
-    `关键词: ${keyInfo.keywords.join(', ') || '无'}`,
-    '',
-    '【音频转录】',
-    audioTranscript || '暂无音频内容',
-    '',
-    '【内容摘要】',
-    keyInfo.summary || '暂无摘要'
-  ].join('\n');
+    srtLines.push(
+      srtIndex.toString(),
+      `${startTime} --> ${endTime}`,
+      segment.text,
+      ''
+    );
+  });
+
+  const srtContent = srtLines.join('\n');
 
   return {
-    markdown: markdownContent,
-    srt: srtContent,
-    text: textContent
+    srt: srtContent
   };
 }
 
@@ -541,7 +529,11 @@ export async function POST(request: NextRequest) {
           summary: audioTranscript.length > 200 ? audioTranscript.substring(0, 200) + '...' : audioTranscript
         },
         keyInformation: keyInfo,
-        structuredContent: structuredContentResult,
+        structuredContent: {
+          srt: structuredContentResult.srt,
+          markdown: '', // 不再生成
+          text: ''      // 不再生成
+        },
         combinedSummary
       }
     };

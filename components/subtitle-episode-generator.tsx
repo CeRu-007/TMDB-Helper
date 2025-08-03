@@ -1766,41 +1766,33 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
     }
   }
 
-  // 重新生成结构化内容
+  // 重新生成结构化内容（只生成SRT格式）
   const regenerateStructuredContent = (updatedResult: VideoAnalysisResult): VideoAnalysisResult => {
-    const audioTranscript = updatedResult.audioAnalysis.transcript;
     const audioSegments = updatedResult.audioAnalysis.segments;
     const keyInfo = updatedResult.keyInformation;
-    const videoInfo = updatedResult.videoInfo;
 
-    // 生成Markdown格式
-    const markdownContent = [
-      `# AI音频分析结果`,
-      '',
-      `## 📹 视频信息`,
-      `- **标题**: ${videoInfo.title || '未知标题'}`,
-      `- **时长**: ${Math.floor(videoInfo.duration / 60)}分${Math.floor(videoInfo.duration % 60)}秒`,
-      `- **来源**: ${videoInfo.url}`,
-      '',
-      `## 🎯 关键信息`,
-      `### 👥 人物`,
-      keyInfo.entities.people.length > 0 ? keyInfo.entities.people.map(p => `- ${p}`).join('\n') : '- 暂无识别到的人物',
-      '',
-      `### 📍 地点`,
-      keyInfo.entities.places.length > 0 ? keyInfo.entities.places.map(p => `- ${p}`).join('\n') : '- 暂无识别到的地点',
-      '',
-      `### 🏷️ 专业术语`,
-      keyInfo.entities.terms.length > 0 ? keyInfo.entities.terms.map(t => `- ${t}`).join('\n') : '- 暂无识别到的专业术语',
-      '',
-      `### 🔑 关键词`,
-      keyInfo.keywords.length > 0 ? keyInfo.keywords.map(k => `\`${k}\``).join(' ') : '暂无关键词',
-      '',
-      `## 🎤 音频转录`,
-      audioTranscript || '暂无音频内容',
-      '',
-      `## 📊 内容摘要`,
-      keyInfo.summary || '暂无摘要'
-    ].join('\n');
+    // 构建关键信息字符串
+    const keyInfoParts = [];
+
+    if (keyInfo.entities.people.length > 0) {
+      keyInfoParts.push(`人物: ${keyInfo.entities.people.join('、')}`);
+    }
+
+    if (keyInfo.entities.places.length > 0) {
+      keyInfoParts.push(`地点: ${keyInfo.entities.places.join('、')}`);
+    }
+
+    if (keyInfo.entities.terms.length > 0) {
+      keyInfoParts.push(`术语: ${keyInfo.entities.terms.join('、')}`);
+    }
+
+    if (keyInfo.keywords.length > 0) {
+      keyInfoParts.push(`关键词: ${keyInfo.keywords.join('、')}`);
+    }
+
+    const keyInfoText = keyInfoParts.length > 0
+      ? `【关键信息】${keyInfoParts.join(' | ')}`
+      : '【关键信息】暂无识别到的关键信息';
 
     // 生成SRT格式
     const formatSRTTime = (seconds: number): string => {
@@ -1811,39 +1803,39 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
       return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
     };
 
-    const srtContent = audioSegments.map((segment, index) => {
+    const srtLines = [];
+
+    // 第一行：关键信息
+    const firstSegmentStart = audioSegments.length > 0 ? audioSegments[0].start : 5;
+    srtLines.push(
+      '1',
+      `${formatSRTTime(0)} --> ${formatSRTTime(Math.max(firstSegmentStart - 0.1, 2))}`,
+      keyInfoText,
+      ''
+    );
+
+    // 后续行：音频转录内容
+    audioSegments.forEach((segment, index) => {
+      const srtIndex = index + 2;
       const startTime = formatSRTTime(segment.start);
       const endTime = formatSRTTime(segment.end);
-      return `${index + 1}\n${startTime} --> ${endTime}\n${segment.text}\n`;
-    }).join('\n');
 
-    // 生成纯文本格式
-    const textContent = [
-      '=== AI音频分析结果 ===',
-      '',
-      `视频标题: ${videoInfo.title || '未知标题'}`,
-      `视频时长: ${Math.floor(videoInfo.duration / 60)}分${Math.floor(videoInfo.duration % 60)}秒`,
-      `视频来源: ${videoInfo.url}`,
-      '',
-      '=== 关键信息 ===',
-      `人物: ${keyInfo.entities.people.join(', ') || '暂无'}`,
-      `地点: ${keyInfo.entities.places.join(', ') || '暂无'}`,
-      `专业术语: ${keyInfo.entities.terms.join(', ') || '暂无'}`,
-      `关键词: ${keyInfo.keywords.join(', ') || '暂无'}`,
-      '',
-      '=== 内容摘要 ===',
-      keyInfo.summary || '暂无摘要',
-      '',
-      '=== 音频转录 ===',
-      audioTranscript || '暂无音频内容'
-    ].join('\n');
+      srtLines.push(
+        srtIndex.toString(),
+        `${startTime} --> ${endTime}`,
+        segment.text,
+        ''
+      );
+    });
+
+    const srtContent = srtLines.join('\n');
 
     return {
       ...updatedResult,
       structuredContent: {
-        markdown: markdownContent,
         srt: srtContent,
-        text: textContent
+        markdown: '', // 不再生成
+        text: ''      // 不再生成
       }
     };
   };
@@ -4179,8 +4171,6 @@ function VideoAnalysisResultDialog({
   isCorrectingKeyInfo: boolean
   onGenerateEpisode: () => void
 }) {
-  const [activeTab, setActiveTab] = useState<'markdown' | 'srt' | 'text'>('markdown')
-
   if (!result) return null
 
   return (
@@ -4197,45 +4187,23 @@ function VideoAnalysisResultDialog({
         </DialogHeader>
 
         <div className="mt-4">
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="markdown">Markdown格式</TabsTrigger>
-              <TabsTrigger value="srt">SRT字幕</TabsTrigger>
-              <TabsTrigger value="text">纯文本</TabsTrigger>
-            </TabsList>
+          <div className="mb-3">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+              <Film className="h-4 w-4 mr-2" />
+              SRT字幕内容（第一行为关键信息）
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              关键信息显示在第一行，方便确认和修正错别字
+            </p>
+          </div>
 
-            <div className="mt-4 h-[240px]">
-              <TabsContent value="markdown" className="h-full m-0">
-                <div className="h-full border rounded-lg bg-gray-50 dark:bg-gray-900 overflow-auto">
-                  <div className="p-4">
-                    <pre className="whitespace-pre-wrap text-sm font-mono">
-                      {result.structuredContent.markdown}
-                    </pre>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="srt" className="h-full m-0">
-                <div className="h-full border rounded-lg bg-gray-50 dark:bg-gray-900 overflow-auto">
-                  <div className="p-4">
-                    <pre className="whitespace-pre-wrap text-sm font-mono">
-                      {result.structuredContent.srt || '暂无SRT字幕内容'}
-                    </pre>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="text" className="h-full m-0">
-                <div className="h-full border rounded-lg bg-gray-50 dark:bg-gray-900 overflow-auto">
-                  <div className="p-4">
-                    <pre className="whitespace-pre-wrap text-sm">
-                      {result.structuredContent.text}
-                    </pre>
-                  </div>
-                </div>
-              </TabsContent>
+          <div className="h-[240px] border rounded-lg bg-gray-50 dark:bg-gray-900 overflow-auto">
+            <div className="p-4">
+              <pre className="whitespace-pre-wrap text-sm font-mono">
+                {result.structuredContent.srt || '暂无SRT字幕内容'}
+              </pre>
             </div>
-          </Tabs>
+          </div>
         </div>
 
         <div className="border-t pt-4 space-y-4 mt-4">
