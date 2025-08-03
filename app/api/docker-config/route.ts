@@ -20,6 +20,8 @@ export async function GET() {
         tmdbImportPath: config.tmdbImportPath,
         siliconFlowApiKey: config.siliconFlowApiKey ? '***已配置***' : null,
         siliconFlowThumbnailModel: config.siliconFlowThumbnailModel,
+        modelScopeApiKey: config.modelScopeApiKey ? '***已配置***' : null,
+        modelScopeEpisodeModel: config.modelScopeEpisodeModel,
         userSettings: config.userSettings,
         appConfig: config.appConfig,
         taskSchedulerConfig: config.taskSchedulerConfig,
@@ -29,7 +31,8 @@ export async function GET() {
         isDockerEnvironment: DockerConfigManager.isDockerEnvironment(),
         // 添加配置状态标识
         hasApiKey: !!config.tmdbApiKey,
-        hasSiliconFlowApiKey: !!config.siliconFlowApiKey
+        hasSiliconFlowApiKey: !!config.siliconFlowApiKey,
+        hasModelScopeApiKey: !!config.modelScopeApiKey
       }
     });
   } catch (error) {
@@ -44,11 +47,13 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { 
-      tmdbApiKey, 
-      tmdbImportPath, 
+    const {
+      tmdbApiKey,
+      tmdbImportPath,
       siliconFlowApiKey,
       siliconFlowThumbnailModel,
+      modelScopeApiKey,
+      modelScopeEpisodeModel,
       userSettings,
       appConfig,
       taskSchedulerConfig,
@@ -93,6 +98,17 @@ export async function POST(request: NextRequest) {
     if (siliconFlowThumbnailModel) {
       const config = DockerConfigManager.getConfig();
       config.siliconFlowThumbnailModel = siliconFlowThumbnailModel;
+      DockerConfigManager.saveConfig(config);
+    }
+
+    // 保存魔搭社区API配置
+    if (modelScopeApiKey) {
+      DockerConfigManager.setModelScopeApiKey(modelScopeApiKey);
+    }
+
+    if (modelScopeEpisodeModel) {
+      const config = DockerConfigManager.getConfig();
+      config.modelScopeEpisodeModel = modelScopeEpisodeModel;
       DockerConfigManager.saveConfig(config);
     }
 

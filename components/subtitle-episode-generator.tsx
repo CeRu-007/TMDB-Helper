@@ -255,6 +255,11 @@ export function SubtitleEpisodeGenerator({
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [shouldReopenSettingsDialog, setShouldReopenSettingsDialog] = useState(false)
+
+  // API提供商状态
+  const [apiProvider, setApiProvider] = useState<'siliconflow' | 'modelscope'>('siliconflow')
+  const [siliconFlowApiKey, setSiliconFlowApiKey] = useState('')
+  const [modelScopeApiKey, setModelScopeApiKey] = useState('')
   const [exportConfig, setExportConfig] = useState<ExportConfig>({
     includeTitle: true,
     includeOverview: true,
@@ -268,8 +273,6 @@ export function SubtitleEpisodeGenerator({
   const [showAnalysisResult, setShowAnalysisResult] = useState(false)
 
   const [movieTitle, setMovieTitle] = useState('')
-
-  const [apiKey, setApiKey] = useState("")
   const { toast } = useToast()
 
   // 更新生成结果的函数
@@ -308,9 +311,13 @@ export function SubtitleEpisodeGenerator({
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('episode_generator_config')
       // 从全局设置加载模型配置
-      const globalSettings = localStorage.getItem('siliconflow_api_settings')
-      let episodeGenerationModel = "deepseek-ai/DeepSeek-V2.5" // 默认模型
-      
+      const savedProvider = localStorage.getItem('episode_generator_api_provider') || 'siliconflow'
+      const settingsKey = savedProvider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
+      const globalSettings = localStorage.getItem(settingsKey)
+
+      // 根据API提供商设置默认模型
+      let episodeGenerationModel = savedProvider === 'siliconflow' ? "deepseek-ai/DeepSeek-V2.5" : "qwen-plus"
+
       if (globalSettings) {
         try {
           const settings = JSON.parse(globalSettings)
@@ -318,7 +325,7 @@ export function SubtitleEpisodeGenerator({
             episodeGenerationModel = settings.episodeGenerationModel
           }
         } catch (e) {
-          console.error('Failed to parse global siliconflow settings:', e)
+          console.error(`Failed to parse global ${savedProvider} settings:`, e)
         }
       }
       
@@ -374,8 +381,11 @@ export function SubtitleEpisodeGenerator({
       }
     }
     // 默认配置
+    const savedProvider = localStorage.getItem('episode_generator_api_provider') || 'siliconflow'
+    const defaultModel = savedProvider === 'siliconflow' ? "deepseek-ai/DeepSeek-V2.5" : "qwen-plus"
+
     return {
-      model: "deepseek-ai/DeepSeek-V2.5",
+      model: defaultModel,
       summaryLength: [20, 30],
       selectedStyles: [], // 默认不选择任何风格，让用户自主选择
       selectedTitleStyle: "location_skill", // 默认选择地名招式风格
@@ -388,11 +398,12 @@ export function SubtitleEpisodeGenerator({
 
   // 从全局设置加载API密钥
   const loadGlobalSettings = React.useCallback(() => {
+    // 加载硅基流动设置
     const globalSiliconFlowSettings = localStorage.getItem('siliconflow_api_settings')
     if (globalSiliconFlowSettings) {
       try {
         const settings = JSON.parse(globalSiliconFlowSettings)
-        setApiKey(settings.apiKey || '')
+        setSiliconFlowApiKey(settings.apiKey || '')
       } catch (error) {
         console.error('解析全局硅基流动设置失败:', error)
       }
@@ -400,10 +411,62 @@ export function SubtitleEpisodeGenerator({
       // 兼容旧的设置
       const savedApiKey = localStorage.getItem('siliconflow_api_key')
       if (savedApiKey) {
-        setApiKey(savedApiKey)
+        setSiliconFlowApiKey(savedApiKey)
       }
     }
+
+    // 加载魔搭社区设置
+    const globalModelScopeSettings = localStorage.getItem('modelscope_api_settings')
+    if (globalModelScopeSettings) {
+      try {
+        const settings = JSON.parse(globalModelScopeSettings)
+        setModelScopeApiKey(settings.apiKey || '')
+      } catch (error) {
+        console.error('解析全局魔搭社区设置失败:', error)
+      }
+    } else {
+      // 兼容旧的设置
+      const savedApiKey = localStorage.getItem('modelscope_api_key')
+      if (savedApiKey) {
+        setModelScopeApiKey(savedApiKey)
+      }
+    }
+
+    // 加载API提供商偏好设置
+    const savedProvider = localStorage.getItem('episode_generator_api_provider')
+    if (savedProvider && (savedProvider === 'siliconflow' || savedProvider === 'modelscope')) {
+      setApiProvider(savedProvider)
+    }
   }, [])
+
+  // 当API提供商切换时，更新模型配置
+  React.useEffect(() => {
+    const updateModelForProvider = () => {
+      const settingsKey = apiProvider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
+      const globalSettings = localStorage.getItem(settingsKey)
+
+      let newModel = apiProvider === 'siliconflow' ? "deepseek-ai/DeepSeek-V2.5" : "qwen-plus"
+
+      if (globalSettings) {
+        try {
+          const settings = JSON.parse(globalSettings)
+          if (settings.episodeGenerationModel) {
+            newModel = settings.episodeGenerationModel
+          }
+        } catch (e) {
+          console.error(`Failed to parse ${apiProvider} settings:`, e)
+        }
+      }
+
+      // 更新配置中的模型
+      setConfig(prev => ({
+        ...prev,
+        model: newModel
+      }))
+    }
+
+    updateModelForProvider()
+  }, [apiProvider])
 
   // 初始加载配置
   React.useEffect(() => {
@@ -413,8 +476,8 @@ export function SubtitleEpisodeGenerator({
   // 监听全局设置变化
   React.useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'siliconflow_api_settings') {
-        console.log('检测到全局硅基流动设置变化，重新加载配置')
+      if (e.key === 'siliconflow_api_settings' || e.key === 'modelscope_api_settings') {
+        console.log('检测到全局API设置变化，重新加载配置')
         loadGlobalSettings()
       }
     }
@@ -428,6 +491,7 @@ export function SubtitleEpisodeGenerator({
       loadGlobalSettings()
     }
     window.addEventListener('siliconflow-settings-changed', handleCustomSettingsChange)
+    window.addEventListener('modelscope-settings-changed', handleCustomSettingsChange)
 
     // 监听全局设置对话框关闭事件
     const handleGlobalSettingsClose = () => {
@@ -446,6 +510,7 @@ export function SubtitleEpisodeGenerator({
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('siliconflow-settings-changed', handleCustomSettingsChange)
+      window.removeEventListener('modelscope-settings-changed', handleCustomSettingsChange)
       window.removeEventListener('global-settings-closed', handleGlobalSettingsClose)
     }
   }, [loadGlobalSettings, shouldReopenSettingsDialog])
@@ -702,11 +767,19 @@ export function SubtitleEpisodeGenerator({
     return 0
   }
 
-  // 调用硅基流动API生成内容（为单个风格生成）
+  // 调用API生成内容（为单个风格生成）
   const generateEpisodeContentForStyle = async (episode: SubtitleEpisode, styleId: string): Promise<GenerationResult> => {
     const prompt = buildPromptForStyle(episode, config, styleId)
 
-    const response = await fetch('/api/siliconflow', {
+    // 根据API提供商选择不同的端点和API密钥
+    const currentApiKey = apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey
+    const apiEndpoint = apiProvider === 'siliconflow' ? '/api/siliconflow' : '/api/modelscope'
+
+    if (!currentApiKey) {
+      throw new Error(`${apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}API密钥未配置`)
+    }
+
+    const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -725,15 +798,37 @@ export function SubtitleEpisodeGenerator({
         ],
         temperature: config.temperature,
         max_tokens: 800,
-        apiKey: apiKey
+        apiKey: currentApiKey
       })
     })
 
     if (!response.ok) {
       let errorMessage = `API调用失败 (${response.status})`
       try {
-        const errorData = await response.json()
-        errorMessage = errorData.error || errorMessage
+        const responseText = await response.text()
+        console.error('API错误原始响应:', responseText.substring(0, 500))
+
+        // 检查是否是HTML响应
+        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+          errorMessage = 'API端点返回错误页面，请检查API密钥配置'
+          console.error('收到HTML响应:', responseText.substring(0, 200))
+        } else {
+          try {
+            const errorData = JSON.parse(responseText)
+            console.error('API错误详情:', {
+              status: response.status,
+              statusText: response.statusText,
+              errorData,
+              apiProvider,
+              endpoint: apiEndpoint,
+              model: config.model
+            })
+            errorMessage = errorData.error || errorMessage
+          } catch (parseError) {
+            console.error('无法解析错误响应为JSON:', parseError)
+            errorMessage = `API返回非JSON响应: ${responseText.substring(0, 100)}`
+          }
+        }
 
         // 根据错误类型提供更友好的提示
         if (response.status === 401) {
@@ -744,25 +839,55 @@ export function SubtitleEpisodeGenerator({
           errorMessage = '服务器内部错误，请稍后重试'
         }
       } catch (e) {
-        // 无法解析错误响应
+        console.error('处理错误响应时发生异常:', e)
+        errorMessage = `网络错误或响应格式异常: ${e.message}`
       }
       throw new Error(errorMessage)
     }
 
     const result = await response.json()
+    console.log('客户端收到的完整响应:', result)
 
     if (!result.success) {
+      console.error('API调用失败:', result)
       throw new Error(result.error || 'API调用失败')
     }
+
+    console.log('API响应数据结构:', {
+      hasData: !!result.data,
+      dataKeys: result.data ? Object.keys(result.data) : [],
+      content: result.data?.content,
+      contentType: typeof result.data?.content,
+      contentLength: result.data?.content?.length,
+      service: result.data?.service
+    })
 
     const content = result.data.content
 
     if (!content) {
+      console.error('内容为空的详细信息:', {
+        content,
+        contentType: typeof content,
+        isNull: content === null,
+        isUndefined: content === undefined,
+        isEmpty: content === '',
+        fullData: result.data
+      })
       throw new Error('API返回内容为空，请重试')
     }
 
     // 解析生成的内容
-    return parseGeneratedContent(content, episode, config, styleId)
+    console.log('准备解析内容，调用parseGeneratedContent')
+    const parsedResult = parseGeneratedContent(content, episode, config, styleId)
+    console.log('解析完成，结果:', parsedResult)
+
+    // 如果生成的简介太短，标记为低置信度
+    if (parsedResult.generatedSummary.length < 30) {
+      console.warn(`生成的简介太短(${parsedResult.generatedSummary.length}字)，建议重新生成`)
+      parsedResult.confidence = Math.min(parsedResult.confidence, 0.3)
+    }
+
+    return parsedResult
   }
 
   // 为所有选中的风格生成内容
@@ -907,12 +1032,25 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
 - **所有简介必须使用陈述句，确定性地描述剧情内容**
 
 ## 输出格式
-请严格按照以下JSON格式输出：
+**🚨 严格要求：只输出JSON，禁止任何推理过程 🚨**
+
+❌ 错误示例：
+"让我来分析一下这段内容..."
+"首先，我需要理解..."
+"根据字幕内容，我认为..."
+
+✅ 正确示例：
 {
   "title": "分集标题",
   "summary": "分集剧情简介",
   "confidence": 0.85
 }
+
+**⚠️ 特别提醒GLM模型：**
+- 不要输出思考过程
+- 不要输出分析步骤
+- 不要使用"让我"、"首先"、"然后"等词汇
+- 直接输出最终JSON结果
 
 ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
@@ -963,13 +1101,64 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
 ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
 
+  // 清理GLM-4.5的推理内容
+  const cleanGLMReasoningContent = (content: string): string => {
+    console.log('清理GLM推理内容，原始长度:', content.length)
+
+    // 移除常见的推理开头
+    const reasoningPatterns = [
+      /^.*?让我.*?分析.*?[\n\r]/gm,
+      /^.*?首先.*?[\n\r]/gm,
+      /^.*?然后.*?[\n\r]/gm,
+      /^.*?接下来.*?[\n\r]/gm,
+      /^.*?根据.*?内容.*?[\n\r]/gm,
+      /^.*?从.*?可以看出.*?[\n\r]/gm,
+      /^.*?通过.*?分析.*?[\n\r]/gm,
+      /^.*?我需要.*?[\n\r]/gm,
+      /^.*?我来.*?[\n\r]/gm,
+      /^.*?我认为.*?[\n\r]/gm,
+      /^.*?我觉得.*?[\n\r]/gm,
+      /^.*?这段.*?显示.*?[\n\r]/gm,
+      /^.*?这里.*?表明.*?[\n\r]/gm
+    ]
+
+    let cleaned = content
+    for (const pattern of reasoningPatterns) {
+      cleaned = cleaned.replace(pattern, '')
+    }
+
+    // 移除JSON前的所有推理内容
+    const jsonStart = cleaned.indexOf('{')
+    if (jsonStart > 0) {
+      cleaned = cleaned.substring(jsonStart)
+    }
+
+    console.log('清理后长度:', cleaned.length)
+    return cleaned.trim()
+  }
+
   // 解析生成的内容
   const parseGeneratedContent = (content: string, episode: SubtitleEpisode, config: GenerationConfig, styleId?: string): GenerationResult => {
     const style = styleId ? GENERATION_STYLES.find(s => s.id === styleId) : null
     const styleName = style?.name || ''
 
+    // 如果是GLM模型，先清理推理内容
+    if (config.model.includes('GLM')) {
+      content = cleanGLMReasoningContent(content)
+      console.log('GLM模型清理后的内容:', content.substring(0, 200) + '...')
+    }
+
+    console.log('开始解析生成的内容:', {
+      content: content.substring(0, 500) + (content.length > 500 ? '...' : ''),
+      contentLength: content.length,
+      episodeNumber: episode.episodeNumber,
+      styleId,
+      styleName
+    })
+
     try {
       const parsed = JSON.parse(content)
+      console.log('JSON解析成功:', parsed)
       const summary = parsed.summary || '暂无简介'
 
       // 温和的字数检查（仅警告，不截断）
@@ -998,16 +1187,62 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         styleName: styleName
       }
     } catch (error) {
+      console.log('JSON解析失败，尝试文本解析:', error.message)
+      console.log('原始内容:', content)
+
       // 如果不是JSON格式，尝试从文本中提取
       const lines = content.split('\n').filter(line => line.trim())
       let title = `第${episode.episodeNumber}集`
       let summary = '暂无简介'
 
+      console.log('分割后的行:', lines)
+
+      // 尝试多种解析方式
       for (const line of lines) {
-        if (line.includes('标题') || line.includes('title')) {
-          title = line.replace(/.*[:：]\s*/, '').replace(/["""]/g, '').trim()
-        } else if (line.includes('简介') || line.includes('summary')) {
-          summary = line.replace(/.*[:：]\s*/, '').replace(/["""]/g, '').trim()
+        const trimmedLine = line.trim()
+
+        // 检查标题
+        if (trimmedLine.includes('标题') || trimmedLine.includes('title') || trimmedLine.includes('Title')) {
+          title = trimmedLine.replace(/.*[:：]\s*/, '').replace(/["""]/g, '').trim()
+          console.log('提取到标题:', title)
+        }
+        // 检查简介
+        else if (trimmedLine.includes('简介') || trimmedLine.includes('summary') || trimmedLine.includes('Summary')) {
+          summary = trimmedLine.replace(/.*[:：]\s*/, '').replace(/["""]/g, '').trim()
+          console.log('提取到简介:', summary)
+        }
+        // 如果没有明确标识，但内容较长，可能是简介
+        else if (trimmedLine.length > 20 && !trimmedLine.includes('第') && !trimmedLine.includes('集')) {
+          summary = trimmedLine
+          console.log('推测为简介内容:', summary)
+        }
+      }
+
+      // 如果还是没有找到合适的简介，尝试更智能的提取
+      if (summary === '暂无简介' && content.trim().length > 0) {
+        const trimmedContent = content.trim()
+
+        // 尝试提取引号内的长文本
+        const quotedMatch = trimmedContent.match(/"([^"]{20,})"/);
+        if (quotedMatch) {
+          summary = quotedMatch[1]
+          console.log('提取引号内的长文本作为简介:', summary)
+        }
+        // 如果没有引号，但内容较短且看起来像简介，直接使用
+        else if (trimmedContent.length < 200 && !trimmedContent.includes('\n\n')) {
+          summary = trimmedContent
+          console.log('使用完整内容作为简介:', summary)
+        }
+        // 如果内容很长，尝试提取第一段有意义的文本
+        else {
+          const sentences = trimmedContent.split(/[。！？.!?]/).filter(s => s.trim().length > 10)
+          if (sentences.length > 0) {
+            summary = sentences[0].trim() + '。'
+            console.log('提取第一句有意义的文本作为简介:', summary)
+          } else {
+            summary = trimmedContent.substring(0, 100) + '...'
+            console.log('截取前100字符作为简介:', summary)
+          }
         }
       }
 
@@ -1029,11 +1264,12 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
   // 批量生成
   const handleBatchGenerate = async () => {
-    if (!selectedFile || !apiKey) {
+    const currentApiKey = apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey
+    if (!selectedFile || !currentApiKey) {
       if (onOpenGlobalSettings) {
         onOpenGlobalSettings('api')
       } else {
-        alert('请选择字幕文件并配置API密钥')
+        alert(`请选择字幕文件并配置${apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}API密钥`)
       }
       return
     }
@@ -1159,7 +1395,11 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
       // 根据操作类型调整参数
       const operationConfig = getOperationConfig(operation)
 
-      const response = await fetch('/api/siliconflow', {
+      // 根据API提供商选择不同的端点和API密钥
+      const currentApiKey = apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey
+      const apiEndpoint = apiProvider === 'siliconflow' ? '/api/siliconflow' : '/api/modelscope'
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1185,7 +1425,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
           ],
           temperature: operationConfig.temperature,
           max_tokens: operationConfig.maxTokens,
-          apiKey: apiKey
+          apiKey: currentApiKey
         })
       })
 
@@ -1647,10 +1887,10 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
   // 处理视频分析
   const handleVideoAnalysis = async (videoUrl: string) => {
-    if (!apiKey) {
+    if (!siliconFlowApiKey) {
       toast({
         title: "需要配置API密钥",
-        description: "请先在设置中配置硅基流动API密钥",
+        description: "视频分析功能需要硅基流动API密钥，请先在设置中配置",
         variant: "destructive"
       })
       return
@@ -1661,7 +1901,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
     try {
       // 创建视频分析器，传递语音识别模型配置
-      const analyzer = new VideoAnalyzer(apiKey, {
+      const analyzer = new VideoAnalyzer(siliconFlowApiKey, {
         speechRecognitionModel: config.speechRecognitionModel || 'FunAudioLLM/SenseVoiceSmall'
       })
 
@@ -1821,11 +2061,12 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
   // 批量生成所有文件的简介
   const handleBatchGenerateAll = async () => {
-    if (!apiKey) {
+    const currentApiKey = apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey
+    if (!currentApiKey) {
       if (onOpenGlobalSettings) {
         onOpenGlobalSettings('api')
       } else {
-        alert('请先配置API密钥')
+        alert(`请先配置${apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}API密钥`)
       }
       return
     }
@@ -2080,7 +2321,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
             onBatchGenerate={handleBatchGenerateAll}
             onBatchExport={handleExportResults}
             isGenerating={isGenerating}
-            apiConfigured={!!apiKey}
+            apiConfigured={!!(apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey)}
             hasResults={Object.values(generationResults).some(results => results.length > 0)}
             videoAnalysisResult={videoAnalysisResult}
             onShowAnalysisResult={() => setShowAnalysisResult(true)}
@@ -2096,7 +2337,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
               isGenerating={isGenerating}
               progress={generationProgress}
               onGenerate={handleBatchGenerate}
-              apiConfigured={!!apiKey}
+              apiConfigured={!!(apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey)}
               onOpenGlobalSettings={onOpenGlobalSettings}
               onUpdateResult={(resultIndex, updatedResult) =>
                 handleUpdateResult(selectedFile.id, resultIndex, updatedResult)
@@ -2123,9 +2364,16 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         onOpenChange={setShowSettingsDialog}
         config={config}
         onConfigChange={setConfig}
-        apiConfigured={!!apiKey}
+        apiConfigured={!!(apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey)}
         onOpenGlobalSettings={onOpenGlobalSettings}
         setShouldReopenSettingsDialog={setShouldReopenSettingsDialog}
+        apiProvider={apiProvider}
+        onApiProviderChange={(provider) => {
+          setApiProvider(provider)
+          localStorage.setItem('episode_generator_api_provider', provider)
+        }}
+        siliconFlowApiKey={siliconFlowApiKey}
+        modelScopeApiKey={modelScopeApiKey}
       />
 
       {/* 导出配置对话框 */}
@@ -3195,7 +3443,11 @@ function GenerationSettingsDialog({
   onConfigChange,
   apiConfigured,
   onOpenGlobalSettings,
-  setShouldReopenSettingsDialog
+  setShouldReopenSettingsDialog,
+  apiProvider,
+  onApiProviderChange,
+  siliconFlowApiKey,
+  modelScopeApiKey
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -3204,6 +3456,10 @@ function GenerationSettingsDialog({
   apiConfigured: boolean
   onOpenGlobalSettings?: (section: string) => void
   setShouldReopenSettingsDialog?: (value: boolean) => void
+  apiProvider: 'siliconflow' | 'modelscope'
+  onApiProviderChange: (provider: 'siliconflow' | 'modelscope') => void
+  siliconFlowApiKey: string
+  modelScopeApiKey: string
 }) {
   const [activeTab, setActiveTab] = useState("generation")
   const { toast } = useToast()
@@ -3244,11 +3500,37 @@ function GenerationSettingsDialog({
         </DialogHeader>
 
         <div className="flex flex-col flex-1 min-h-0">
-          {/* API状态显示 */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4 flex-shrink-0">
+          {/* API提供商选择和状态显示 */}
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4 flex-shrink-0 space-y-4">
+            {/* API提供商选择 */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">API提供商</Label>
+              <div className="flex space-x-2">
+                <Button
+                  variant={apiProvider === 'siliconflow' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onApiProviderChange('siliconflow')}
+                  className="flex-1"
+                >
+                  硅基流动
+                </Button>
+                <Button
+                  variant={apiProvider === 'modelscope' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onApiProviderChange('modelscope')}
+                  className="flex-1"
+                >
+                  魔搭社区
+                </Button>
+              </div>
+            </div>
+
+            {/* API状态显示 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">硅基流动API:</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}API:
+                </span>
                 <Badge variant={apiConfigured ? "default" : "destructive"}>
                   {apiConfigured ? "已配置" : "未配置"}
                 </Badge>
@@ -3271,6 +3553,18 @@ function GenerationSettingsDialog({
                 <Settings className="h-4 w-4 mr-2" />
                 配置API
               </Button>
+            </div>
+
+            {/* API密钥状态提示 */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex items-center space-x-1">
+                <div className={`w-2 h-2 rounded-full ${siliconFlowApiKey ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span className="text-gray-600 dark:text-gray-400">硅基流动</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className={`w-2 h-2 rounded-full ${modelScopeApiKey ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span className="text-gray-600 dark:text-gray-400">魔搭社区</span>
+              </div>
             </div>
           </div>
 
@@ -3323,7 +3617,7 @@ function GenerationSettingsDialog({
           {/* 标签页内容 - 可滚动区域 */}
           <div className="flex-1 overflow-y-auto min-h-0 pr-2">
             {activeTab === "generation" && (
-              <GenerationTab config={config} onConfigChange={onConfigChange} />
+              <GenerationTab config={config} onConfigChange={onConfigChange} apiProvider={apiProvider} />
             )}
             {activeTab === "titleStyle" && (
               <TitleStyleTab config={config} onConfigChange={onConfigChange} />
@@ -3421,19 +3715,35 @@ function GenerationSettingsDialog({
 // 生成设置标签页
 function GenerationTab({
   config,
-  onConfigChange
+  onConfigChange,
+  apiProvider
 }: {
   config: GenerationConfig
   onConfigChange: (config: GenerationConfig) => void
+  apiProvider: 'siliconflow' | 'modelscope'
 }) {
-  // 模型选择选项
-  const modelOptions = [
+  // 根据API提供商选择不同的模型选项
+  const siliconFlowModelOptions = [
     { value: "deepseek-ai/DeepSeek-V2.5", label: "DeepSeek-V2.5 (推荐)", description: "高质量中文理解，适合内容生成" },
     { value: "Qwen/Qwen2.5-72B-Instruct", label: "Qwen2.5-72B", description: "强大的推理能力，适合复杂任务" },
     { value: "meta-llama/Meta-Llama-3.1-70B-Instruct", label: "Llama-3.1-70B", description: "平衡性能与效果" },
     { value: "meta-llama/Meta-Llama-3.1-8B-Instruct", label: "Llama-3.1-8B", description: "快速响应，成本较低" },
     { value: "internlm/internlm2_5-7b-chat", label: "InternLM2.5-7B", description: "轻量级模型，适合简单任务" }
   ]
+
+  const modelScopeModelOptions = [
+    { value: "qwen-plus", label: "Qwen-Plus (推荐)", description: "通义千问增强版，平衡性能与成本" },
+    { value: "qwen-max", label: "Qwen-Max", description: "通义千问旗舰版，最强性能" },
+    { value: "ZhipuAI/GLM-4.5", label: "GLM-4.5", description: "智谱AI旗舰模型，专为智能体设计" },
+    { value: "Qwen/Qwen3-32B", label: "Qwen3-32B", description: "通义千问3代，32B参数，强大推理能力" },
+    { value: "Qwen/Qwen3-235B-A22B-Thinking-2507", label: "Qwen3-235B-Thinking", description: "通义千问3代思考模式，235B参数，顶级推理" },
+    { value: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B", label: "DeepSeek-R1-Distill-Qwen-32B", description: "DeepSeek R1蒸馏版本，32B参数，高效推理" },
+    { value: "qwen-turbo", label: "Qwen-Turbo", description: "通义千问超快版，适合快速响应" },
+    { value: "qwen2.5-72b-instruct", label: "Qwen2.5-72B-Instruct", description: "开源版本，72B参数" },
+    { value: "qwen2.5-32b-instruct", label: "Qwen2.5-32B-Instruct", description: "开源版本，32B参数" }
+  ]
+
+  const modelOptions = apiProvider === 'siliconflow' ? siliconFlowModelOptions : modelScopeModelOptions
 
   // 保存模型配置到本地存储
   const handleModelChange = (newModel: string) => {
@@ -3443,17 +3753,21 @@ function GenerationTab({
       model: newModel
     })
 
-    // 保存到专门的分集简介生成器配置
+    // 根据API提供商保存到不同的设置中
     if (typeof window !== 'undefined') {
       try {
-        const existingSettings = localStorage.getItem('siliconflow_api_settings')
-        const settings = existingSettings ? JSON.parse(existingSettings) : {}
-
-        // 更新分集简介生成模型配置
-        settings.episodeGenerationModel = newModel
-
-        localStorage.setItem('siliconflow_api_settings', JSON.stringify(settings))
-        console.log('模型配置已保存到全局设置:', newModel)
+        if (apiProvider === 'siliconflow') {
+          const existingSettings = localStorage.getItem('siliconflow_api_settings')
+          const settings = existingSettings ? JSON.parse(existingSettings) : {}
+          settings.episodeGenerationModel = newModel
+          localStorage.setItem('siliconflow_api_settings', JSON.stringify(settings))
+        } else {
+          const existingSettings = localStorage.getItem('modelscope_api_settings')
+          const settings = existingSettings ? JSON.parse(existingSettings) : {}
+          settings.episodeGenerationModel = newModel
+          localStorage.setItem('modelscope_api_settings', JSON.stringify(settings))
+        }
+        console.log(`模型配置已保存到${apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}设置:`, newModel)
       } catch (error) {
         console.error('保存模型配置失败:', error)
       }
@@ -3472,7 +3786,7 @@ function GenerationTab({
           <SelectTrigger className="w-full">
             <SelectValue placeholder="选择AI模型" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-[300px] overflow-y-auto">
             {modelOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 <div className="flex flex-col">
@@ -4159,7 +4473,7 @@ function VideoAnalysisTab({
             <SelectTrigger className="w-full">
               <SelectValue placeholder="选择语音识别模型" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px] overflow-y-auto">
               <SelectItem value="FunAudioLLM/SenseVoiceSmall">
                 <div className="flex flex-col">
                   <span className="font-medium">SenseVoice-Small (推荐)</span>

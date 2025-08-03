@@ -26,6 +26,10 @@ interface DockerConfig {
     siliconFlowApiKey?: string;
     siliconFlowThumbnailModel?: string;
 
+    // 魔搭社区API配置
+    modelScopeApiKey?: string;
+    modelScopeEpisodeModel?: string;
+
     // 用户配置
     userSettings?: {
         displayName?: string;
@@ -184,6 +188,23 @@ export class DockerConfigManager {
     static setSiliconFlowApiKey(apiKey: string): void {
         const config = this.getConfig();
         config.siliconFlowApiKey = apiKey;
+        this.saveConfig(config);
+    }
+
+    /**
+     * 获取魔搭社区API密钥
+     */
+    static getModelScopeApiKey(): string | null {
+        const config = this.getConfig();
+        return config.modelScopeApiKey || null;
+    }
+
+    /**
+     * 设置魔搭社区API密钥
+     */
+    static setModelScopeApiKey(apiKey: string): void {
+        const config = this.getConfig();
+        config.modelScopeApiKey = apiKey;
         this.saveConfig(config);
     }
 

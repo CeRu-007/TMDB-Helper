@@ -185,6 +185,14 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [showSiliconFlowApiKey, setShowSiliconFlowApiKey] = useState(false)
   const [apiActiveTab, setApiActiveTab] = useState("tmdb")
   const [siliconFlowSaving, setSiliconFlowSaving] = useState(false)
+
+  // 魔搭社区API设置状态
+  const [modelScopeSettings, setModelScopeSettings] = useState({
+    apiKey: "",
+    episodeGenerationModel: "qwen-plus"
+  })
+  const [showModelScopeApiKey, setShowModelScopeApiKey] = useState(false)
+  const [modelScopeSaving, setModelScopeSaving] = useState(false)
   const [isDockerEnv, setIsDockerEnv] = useState(false)
   const [isVersionDescriptionExpanded, setIsVersionDescriptionExpanded] = useState(false)
   const [appInfo, setAppInfo] = useState({
@@ -411,6 +419,23 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
       if (apiKey) {
         setSiliconFlowSettings(prev => ({ ...prev, apiKey }))
+      }
+    }
+
+    // 加载魔搭社区API设置
+    const savedModelScopeSettings = localStorage.getItem("modelscope_api_settings")
+    if (savedModelScopeSettings) {
+      try {
+        const settings = JSON.parse(savedModelScopeSettings)
+        setModelScopeSettings(settings)
+      } catch (error) {
+        console.error('加载魔搭社区API设置失败:', error)
+      }
+    } else {
+      // 兼容旧的设置
+      const modelScopeApiKey = localStorage.getItem('modelscope_api_key')
+      if (modelScopeApiKey) {
+        setModelScopeSettings(prev => ({ ...prev, apiKey: modelScopeApiKey }))
       }
     }
   }, [])
@@ -1107,12 +1132,22 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             >
               硅基流动 API
             </button>
+            <button
+              onClick={() => setApiActiveTab("modelscope")}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${apiActiveTab === "modelscope"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+            >
+              魔搭社区 API
+            </button>
           </nav>
         </div>
 
         {/* 根据选中的标签页显示不同内容 */}
         {apiActiveTab === "tmdb" && renderTMDBApiSettings()}
         {apiActiveTab === "siliconflow" && renderSiliconFlowApiSettings()}
+        {apiActiveTab === "modelscope" && renderModelScopeApiSettings()}
       </div>
     )
   }
@@ -1409,7 +1444,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   <SelectTrigger className="mt-2">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
                     <SelectItem value="Qwen/Qwen2.5-VL-32B-Instruct">
                       <div className="flex flex-col">
                         <span className="font-medium">Qwen2.5-VL-32B (推荐)</span>
@@ -1489,6 +1524,324 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     前往硅基流动官网
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // 魔搭社区API设置
+  function renderModelScopeApiSettings() {
+    const saveModelScopeSettings = async () => {
+      setModelScopeSaving(true)
+      try {
+        // 检查是否在Docker环境中
+        const dockerConfigResponse = await fetch('/api/docker-config')
+        const dockerConfigData = await dockerConfigResponse.json()
+
+        if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
+          // Docker环境：保存到服务器端文件系统
+          const saveResponse = await fetch('/api/docker-config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              modelScopeApiKey: modelScopeSettings.apiKey,
+              modelScopeEpisodeModel: modelScopeSettings.episodeGenerationModel
+            })
+          })
+
+          const saveData = await saveResponse.json()
+          if (!saveData.success) {
+            throw new Error(saveData.error || '保存失败')
+          }
+        } else {
+          // 非Docker环境：保存到localStorage
+          localStorage.setItem("modelscope_api_settings", JSON.stringify(modelScopeSettings))
+
+          // 同步更新到分集生成器的本地存储
+          localStorage.setItem('modelscope_api_key', modelScopeSettings.apiKey)
+        }
+
+        // 触发自定义事件，通知其他组件设置已更改
+        window.dispatchEvent(new CustomEvent('modelscope-settings-changed', {
+          detail: modelScopeSettings
+        }))
+
+        toast({
+          title: "成功",
+          description: "魔搭社区API设置已保存",
+        })
+      } catch (error) {
+        toast({
+          title: "错误",
+          description: "保存魔搭社区API设置失败",
+          variant: "destructive",
+        })
+      } finally {
+        setModelScopeSaving(false)
+      }
+    }
+
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            {/* 重要说明 */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-blue-600 dark:text-blue-400">ℹ️</span>
+                <h4 className="font-medium text-blue-800 dark:text-blue-200">魔搭社区API服务</h4>
+              </div>
+              <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                <p><strong>支持魔搭社区ModelScope：</strong></p>
+                <p>• 开源模型推理服务（密钥以ms-开头）</p>
+                <p>• 支持GLM-4.5、Qwen、DeepSeek等模型</p>
+                <p>• 使用OpenAI兼容的API格式</p>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="modelScopeApiKey" className="flex items-center text-sm font-medium">
+                魔搭社区API密钥
+              </Label>
+              <div className="relative mt-2">
+                <Input
+                  id="modelScopeApiKey"
+                  type={showModelScopeApiKey ? "text" : "password"}
+                  value={modelScopeSettings.apiKey}
+                  onChange={(e) => setModelScopeSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                  placeholder="ms-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowModelScopeApiKey(!showModelScopeApiKey)}
+                >
+                  {showModelScopeApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* 当前状态显示 */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">API状态:</span>
+                <Badge variant={modelScopeSettings.apiKey ? "default" : "secondary"}>
+                  {modelScopeSettings.apiKey ? "已配置" : "未配置"}
+                </Badge>
+              </div>
+              {modelScopeSettings.apiKey && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                  {modelScopeSettings.apiKey.substring(0, 8)}...{modelScopeSettings.apiKey.substring(modelScopeSettings.apiKey.length - 4)}
+                </span>
+              )}
+            </div>
+
+            {/* API密钥验证提示 */}
+            {modelScopeSettings.apiKey && modelScopeSettings.apiKey.length < 20 && (
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                  <span className="text-sm text-yellow-800 dark:text-yellow-200">
+                    API密钥长度似乎不足，请检查是否完整
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* 模型配置 */}
+            <div className="space-y-6">
+              <div>
+                <Label htmlFor="episodeGenerationModel" className="text-sm font-medium">
+                  分集简介生成模型
+                </Label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">
+                  选择用于生成分集简介的语言模型，推荐使用Qwen-Plus以获得最佳中文创作效果
+                </p>
+                <Select
+                  value={modelScopeSettings.episodeGenerationModel}
+                  onValueChange={(value) => setModelScopeSettings(prev => ({ ...prev, episodeGenerationModel: value }))}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
+                    <SelectItem value="qwen-plus">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Qwen-Plus (推荐)</span>
+                        <span className="text-xs text-gray-500">通义千问增强版，平衡性能与成本</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="qwen-max">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Qwen-Max</span>
+                        <span className="text-xs text-gray-500">通义千问旗舰版，最强性能</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="ZhipuAI/GLM-4.5">
+                      <div className="flex flex-col">
+                        <span className="font-medium">GLM-4.5</span>
+                        <span className="text-xs text-red-500">⚠️ 可能返回推理过程而非结果</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Qwen/Qwen3-32B">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Qwen3-32B</span>
+                        <span className="text-xs text-gray-500">通义千问3代，32B参数，强大推理能力</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Qwen/Qwen3-235B-A22B-Thinking-2507">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Qwen3-235B-Thinking</span>
+                        <span className="text-xs text-gray-500">通义千问3代思考模式，235B参数，顶级推理</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B">
+                      <div className="flex flex-col">
+                        <span className="font-medium">DeepSeek-R1-Distill-Qwen-32B</span>
+                        <span className="text-xs text-gray-500">DeepSeek R1蒸馏版本，32B参数，高效推理</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="qwen-turbo">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Qwen-Turbo</span>
+                        <span className="text-xs text-gray-500">通义千问超快版，适合快速响应</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="qwen2.5-72b-instruct">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Qwen2.5-72B-Instruct</span>
+                        <span className="text-xs text-green-600">🌟 推荐：稳定输出，适合简介生成</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="qwen2.5-32b-instruct">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Qwen2.5-32B-Instruct</span>
+                        <span className="text-xs text-gray-500">开源版本，32B参数</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* 测试和保存按钮 */}
+            <div className="pt-4 border-t space-y-3">
+              {/* 验证DashScope API密钥按钮 */}
+              {modelScopeSettings.apiKey && (
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/validate-dashscope-key', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          apiKey: modelScopeSettings.apiKey
+                        })
+                      });
+
+                      const result = await response.json();
+
+                      if (result.success) {
+                        toast({
+                          title: "✅ 验证成功",
+                          description: result.message,
+                        });
+                        console.log('DashScope API密钥验证成功:', result);
+                      } else {
+                        toast({
+                          title: "❌ 验证失败",
+                          description: result.error,
+                          variant: "destructive",
+                        });
+                        console.error('DashScope API密钥验证失败:', result);
+
+                        // 显示详细的指导信息
+                        if (result.guidance) {
+                          console.group('🔧 解决方案指导:');
+                          console.log(`步骤 ${result.guidance.step}: ${result.guidance.title}`);
+                          result.guidance.instructions.forEach((instruction: string, index: number) => {
+                            console.log(`${index + 1}. ${instruction}`);
+                          });
+                          console.groupEnd();
+                        }
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "验证失败",
+                        description: "网络错误或服务器异常",
+                        variant: "destructive",
+                      });
+                      console.error('API验证错误:', error);
+                    }
+                  }}
+                  className="w-full"
+                >
+                  <span className="mr-2">🔍</span>
+                  测试API连接
+                </Button>
+              )}
+
+              {/* 保存按钮 */}
+              <Button
+                onClick={saveModelScopeSettings}
+                className="w-full"
+                disabled={modelScopeSaving}
+              >
+                {modelScopeSaving ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                    保存中...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    保存魔搭社区设置
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* 帮助信息 */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start space-x-3">
+                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="space-y-3">
+                  <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">如何获取魔搭社区API密钥？</p>
+
+                  <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-2 list-decimal list-inside">
+                    <li>访问 <a href="https://modelscope.cn/" target="_blank" rel="noopener noreferrer" className="underline">魔搭社区官网</a></li>
+                    <li>注册并登录您的账户</li>
+                    <li>找到API推理服务页面</li>
+                    <li>获取API密钥（格式：ms-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx）</li>
+                    <li>选择支持的模型（如ZhipuAI/GLM-4.5）</li>
+                  </ol>
+
+                  <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
+                    <p className="text-xs text-green-800 dark:text-green-200">
+                      <strong>提示：</strong>魔搭社区提供多种开源模型的在线推理服务，支持OpenAI兼容的API格式。
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open("https://dashscope.console.aliyun.com/", "_blank")}
+                    className="mt-3"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    前往DashScope控制台
                   </Button>
                 </div>
               </div>

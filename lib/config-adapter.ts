@@ -70,6 +70,13 @@ export class ConfigAdapter {
           apiKey: config.siliconFlowApiKey,
           thumbnailFilterModel: config.siliconFlowThumbnailModel || 'Qwen/Qwen2.5-VL-32B-Instruct'
         }) : null;
+      case 'modelscope_api_key':
+        return config.modelScopeApiKey || null;
+      case 'modelscope_api_settings':
+        return config.modelScopeApiKey ? JSON.stringify({
+          apiKey: config.modelScopeApiKey,
+          episodeGenerationModel: config.modelScopeEpisodeModel || 'qwen-plus'
+        }) : null;
       case 'general_settings':
         return config.generalSettings ? JSON.stringify(config.generalSettings) : null;
       case 'appearance_settings':
