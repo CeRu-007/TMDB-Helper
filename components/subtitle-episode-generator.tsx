@@ -264,8 +264,13 @@ export function SubtitleEpisodeGenerator({
   const [dragCounter, setDragCounter] = useState(0)
   const [isVideoAnalyzing, setIsVideoAnalyzing] = useState(false)
   const [videoAnalysisProgress, setVideoAnalysisProgress] = useState(0)
+  const [videoAnalysisResult, setVideoAnalysisResult] = useState<VideoAnalysisResult | null>(null)
+  const [showAnalysisResult, setShowAnalysisResult] = useState(false)
+  const [isCorrectingKeyInfo, setIsCorrectingKeyInfo] = useState(false)
+  const [movieTitle, setMovieTitle] = useState('')
 
   const [apiKey, setApiKey] = useState("")
+  const { toast } = useToast()
 
   // 更新生成结果的函数
   const handleUpdateResult = useCallback((fileId: string, resultIndex: number, updatedResult: Partial<GenerationResult>) => {
@@ -1661,31 +1666,14 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
       // 开始分析
       const result = await analyzer.analyzeVideo(videoUrl)
 
-      // 将视频分析结果转换为字幕文件格式
-      const episodeContent = VideoAnalyzer.convertToEpisodeContent(result)
+      // 保存分析结果并显示
+      setVideoAnalysisResult(result)
+      setShowAnalysisResult(true)
 
-      // 创建虚拟字幕文件
-      const videoFile: SubtitleFile = {
-        id: `video-${Date.now()}`,
-        name: result.videoInfo.title || '视频分析结果',
-        size: episodeContent.length,
-        uploadTime: new Date(),
-        episodes: [{
-          episodeNumber: 1,
-          content: episodeContent,
-          wordCount: episodeContent.length,
-          title: result.videoInfo.title
-        }]
-      }
-
-      // 添加到文件列表
-      setSubtitleFiles(prev => [...prev, videoFile])
-      setSelectedFile(videoFile)
-
-      // 自动开始生成简介
-      setTimeout(() => {
-        handleBatchGenerate()
-      }, 1000)
+      toast({
+        title: "视频分析完成",
+        description: "AI已成功分析视频内容，点击查看详细结果",
+      })
 
     } catch (error) {
       console.error('视频分析失败:', error)
@@ -1693,6 +1681,127 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
     } finally {
       setIsVideoAnalyzing(false)
       setVideoAnalysisProgress(0)
+    }
+  }
+
+  // AI修正关键信息
+  const handleCorrectKeyInfo = async () => {
+    if (!videoAnalysisResult || !movieTitle.trim() || !apiKey) {
+      toast({
+        title: "信息不完整",
+        description: "请确保已完成视频分析并输入片名",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsCorrectingKeyInfo(true)
+
+    try {
+      const prompt = `请根据影视作品《${movieTitle.trim()}》的相关资料，修正以下从音频中提取的关键信息。
+
+当前提取的关键信息：
+人物：${videoAnalysisResult.keyInformation.entities.people.join(', ') || '无'}
+地点：${videoAnalysisResult.keyInformation.entities.places.join(', ') || '无'}
+术语：${videoAnalysisResult.keyInformation.entities.terms.join(', ') || '无'}
+关键词：${videoAnalysisResult.keyInformation.keywords.join(', ') || '无'}
+
+请根据《${movieTitle.trim()}》的官方资料、角色设定、地点设定等信息，对上述关键信息进行修正：
+1. 补充不完整的人名（如"小明"可能是"李小明"）
+2. 修正同音字错误（如"张三"可能被识别为"张山"）
+3. 补充完整的地点名称
+4. 修正专业术语的准确表达
+5. 添加遗漏的重要角色和地点
+6. 移除明显错误的信息
+
+请严格按照以下JSON格式返回修正后的结果：
+{
+  "entities": {
+    "people": ["修正后的人名1", "修正后的人名2"],
+    "places": ["修正后的地点1", "修正后的地点2"],
+    "terms": ["修正后的术语1", "修正后的术语2"]
+  },
+  "keywords": ["修正后的关键词1", "修正后的关键词2"],
+  "summary": "基于修正信息的新摘要"
+}
+
+注意：只返回JSON，不要添加其他说明文字。`
+
+      const response = await fetch('/api/siliconflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: config.model,
+          messages: [
+            {
+              role: "system",
+              content: "你是一个专业的影视资料专家，擅长根据作品名称修正和补充角色、地点等关键信息。"
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 800,
+          apiKey: apiKey
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('API调用失败')
+      }
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || '修正失败')
+      }
+
+      const content = result.data.content
+
+      try {
+        const correctedInfo = JSON.parse(content)
+
+        // 更新视频分析结果
+        setVideoAnalysisResult(prev => prev ? {
+          ...prev,
+          keyInformation: {
+            entities: {
+              people: correctedInfo.entities?.people || prev.keyInformation.entities.people,
+              places: correctedInfo.entities?.places || prev.keyInformation.entities.places,
+              terms: correctedInfo.entities?.terms || prev.keyInformation.entities.terms
+            },
+            keywords: correctedInfo.keywords || prev.keyInformation.keywords,
+            summary: correctedInfo.summary || prev.keyInformation.summary
+          }
+        } : null)
+
+        toast({
+          title: "关键信息修正完成",
+          description: "AI已根据片名修正关键信息",
+        })
+
+      } catch (parseError) {
+        console.error('解析修正结果失败:', parseError)
+        toast({
+          title: "修正失败",
+          description: "AI返回的结果格式异常",
+          variant: "destructive"
+        })
+      }
+
+    } catch (error) {
+      console.error('修正关键信息失败:', error)
+      toast({
+        title: "修正失败",
+        description: error instanceof Error ? error.message : '未知错误',
+        variant: "destructive"
+      })
+    } finally {
+      setIsCorrectingKeyInfo(false)
     }
   }
 
@@ -2010,6 +2119,47 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         config={exportConfig}
         onConfigChange={setExportConfig}
         onExport={handleBatchExportToTMDB}
+      />
+
+      {/* 视频分析结果对话框 */}
+      <VideoAnalysisResultDialog
+        open={showAnalysisResult}
+        onOpenChange={setShowAnalysisResult}
+        result={videoAnalysisResult}
+        movieTitle={movieTitle}
+        onMovieTitleChange={setMovieTitle}
+        onCorrectKeyInfo={handleCorrectKeyInfo}
+        isCorrectingKeyInfo={isCorrectingKeyInfo}
+        onGenerateEpisode={() => {
+          if (videoAnalysisResult) {
+            // 将视频分析结果转换为字幕文件格式
+            const episodeContent = VideoAnalyzer.convertToEpisodeContent(videoAnalysisResult)
+
+            // 创建虚拟字幕文件
+            const videoFile: SubtitleFile = {
+              id: `video-${Date.now()}`,
+              name: videoAnalysisResult.videoInfo.title || '视频分析结果',
+              size: episodeContent.length,
+              uploadTime: new Date(),
+              episodes: [{
+                episodeNumber: 1,
+                content: episodeContent,
+                wordCount: episodeContent.length,
+                title: videoAnalysisResult.videoInfo.title
+              }]
+            }
+
+            // 添加到文件列表
+            setSubtitleFiles(prev => [...prev, videoFile])
+            setSelectedFile(videoFile)
+            setShowAnalysisResult(false)
+
+            // 自动开始生成简介
+            setTimeout(() => {
+              handleBatchGenerate()
+            }, 1000)
+          }
+        }}
       />
       </div>
     </TooltipProvider>
@@ -3806,5 +3956,140 @@ function FileListEmptyState({ onUpload }: { onUpload: () => void }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// 视频分析结果对话框组件
+function VideoAnalysisResultDialog({
+  open,
+  onOpenChange,
+  result,
+  movieTitle,
+  onMovieTitleChange,
+  onCorrectKeyInfo,
+  isCorrectingKeyInfo,
+  onGenerateEpisode
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  result: VideoAnalysisResult | null
+  movieTitle: string
+  onMovieTitleChange: (title: string) => void
+  onCorrectKeyInfo: () => void
+  isCorrectingKeyInfo: boolean
+  onGenerateEpisode: () => void
+}) {
+  const [activeTab, setActiveTab] = useState<'markdown' | 'srt' | 'text'>('markdown')
+
+  if (!result) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <Film className="h-5 w-5" />
+            <span>视频分析结果</span>
+          </DialogTitle>
+          <DialogDescription>
+            AI已完成视频音频分析，您可以查看详细结果并修正关键信息
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="markdown">Markdown格式</TabsTrigger>
+              <TabsTrigger value="srt">SRT字幕</TabsTrigger>
+              <TabsTrigger value="text">纯文本</TabsTrigger>
+            </TabsList>
+
+            <div className="flex-1 overflow-hidden mt-4">
+              <TabsContent value="markdown" className="h-full">
+                <div className="h-full border rounded-lg p-4 overflow-auto bg-gray-50 dark:bg-gray-900">
+                  <pre className="whitespace-pre-wrap text-sm font-mono">
+                    {result.structuredContent.markdown}
+                  </pre>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="srt" className="h-full">
+                <div className="h-full border rounded-lg p-4 overflow-auto bg-gray-50 dark:bg-gray-900">
+                  <pre className="whitespace-pre-wrap text-sm font-mono">
+                    {result.structuredContent.srt || '暂无SRT字幕内容'}
+                  </pre>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="text" className="h-full">
+                <div className="h-full border rounded-lg p-4 overflow-auto bg-gray-50 dark:bg-gray-900">
+                  <pre className="whitespace-pre-wrap text-sm">
+                    {result.structuredContent.text}
+                  </pre>
+                </div>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+
+        <div className="border-t pt-4 space-y-4">
+          {/* 关键信息修正区域 */}
+          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center">
+              <Wand2 className="h-4 w-4 mr-2" />
+              AI修正关键信息
+            </h4>
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="movieTitle" className="text-sm">
+                  片名（用于修正关键信息）
+                </Label>
+                <Input
+                  id="movieTitle"
+                  value={movieTitle}
+                  onChange={(e) => onMovieTitleChange(e.target.value)}
+                  placeholder="请输入完整的影视作品名称"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  onClick={onCorrectKeyInfo}
+                  disabled={!movieTitle.trim() || isCorrectingKeyInfo}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isCorrectingKeyInfo ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      修正中...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      AI修正关键信息
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-gray-500">
+                  AI将根据片名修正人名、地点等关键信息的准确性
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 操作按钮 */}
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              关闭
+            </Button>
+            <Button onClick={onGenerateEpisode} className="bg-green-600 hover:bg-green-700">
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              生成分集简介
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
