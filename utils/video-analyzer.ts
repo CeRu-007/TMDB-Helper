@@ -28,33 +28,28 @@ export interface VideoAnalysisResult {
   videoInfo: {
     title: string;
     duration: number;
-    description?: string;
-    thumbnail?: string;
-  };
-  visualAnalysis: {
-    keyFrames: VideoFrame[];
-    sceneChanges: number[];
-    overallDescription: string;
+    url: string;
   };
   audioAnalysis: {
     transcript: string;
     segments: AudioSegment[];
     summary: string;
   };
-  subtitleAnalysis: {
-    hasSubtitles: boolean;
-    language: string;
-    content: string;
-    segments: Array<{
-      start: number;
-      end: number;
-      text: string;
-      index: number;
-    }>;
-    confidence: number;
+  keyInformation: {
+    entities: {
+      people: string[];
+      places: string[];
+      terms: string[];
+    };
+    keywords: string[];
+    summary: string;
   };
   combinedSummary: string;
-  structuredContent: string; // 用于简介生成的结构化内容
+  structuredContent: {
+    markdown: string;
+    srt: string;
+    text: string;
+  };
 }
 
 export class VideoAnalyzer {
@@ -258,8 +253,20 @@ export class VideoAnalyzer {
   /**
    * 将视频分析结果转换为简介生成所需的格式
    */
-  static convertToEpisodeContent(analysis: VideoAnalysisResult): string {
-    // 直接使用API返回的结构化内容
+  static convertToEpisodeContent(analysis: VideoAnalysisResult, format: 'markdown' | 'srt' | 'text' = 'text'): string {
+    // 根据格式返回相应的结构化内容
+    if (typeof analysis.structuredContent === 'object') {
+      switch (format) {
+        case 'markdown':
+          return analysis.structuredContent.markdown || analysis.combinedSummary;
+        case 'srt':
+          return analysis.structuredContent.srt || '';
+        case 'text':
+        default:
+          return analysis.structuredContent.text || analysis.combinedSummary;
+      }
+    }
+    // 兼容旧格式
     return analysis.structuredContent || analysis.combinedSummary;
   }
 

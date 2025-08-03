@@ -4,28 +4,18 @@ import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { SubtitleExtractor, SubtitleExtractionResult } from '@/utils/subtitle-extractor';
+// 移除字幕提取器导入，现在只专注于音频分析
 
 const execAsync = promisify(exec);
 
-// 视频分析结果接口
+// 视频分析结果接口（简化为音频分析）
 interface VideoAnalysisResult {
   success: boolean;
   data?: {
     videoInfo: {
       title: string;
       duration: number;
-      description?: string;
-    };
-    visualAnalysis: {
-      keyFrames: Array<{
-        timestamp: number;
-        description: string;
-        confidence: number;
-        imageUrl: string;
-      }>;
-      sceneChanges: number[];
-      overallDescription: string;
+      url: string;
     };
     audioAnalysis: {
       transcript: string;
@@ -33,23 +23,25 @@ interface VideoAnalysisResult {
         start: number;
         end: number;
         text: string;
+        confidence?: number;
       }>;
       summary: string;
     };
-    subtitleAnalysis: {
-      hasSubtitles: boolean;
-      language: string;
-      content: string;
-      segments: Array<{
-        start: number;
-        end: number;
-        text: string;
-        index: number;
-      }>;
-      confidence: number;
+    keyInformation: {
+      entities: {
+        people: string[];
+        places: string[];
+        terms: string[];
+      };
+      keywords: string[];
+      summary: string;
+    };
+    structuredContent: {
+      markdown: string;
+      srt: string;
+      text: string;
     };
     combinedSummary: string;
-    structuredContent: string;
   };
   error?: string;
   progress?: number;
@@ -77,378 +69,323 @@ async function cleanupTempFiles(sessionId: string) {
   }
 }
 
-// 验证视频URL
+// 简化的URL验证（只需要基本的URL格式验证）
 function validateVideoUrl(url: string): boolean {
   try {
     const urlObj = new URL(url);
-
     // 只支持HTTP和HTTPS协议
-    if (!['http:', 'https:'].includes(urlObj.protocol)) {
-      return false;
-    }
-
-    // 支持的视频平台域名
-    const supportedDomains = [
-      'youtube.com', 'youtu.be', 'bilibili.com', 'b23.tv',
-      'vimeo.com', 'dailymotion.com'
-    ];
-
-    // 支持的视频文件扩展名
-    const supportedExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.m4v'];
-
-    // 检查是否为支持的平台
-    const isPlatformSupported = supportedDomains.some(domain =>
-      urlObj.hostname.includes(domain)
-    );
-
-    // 检查是否为媒体服务器URL（优先级高于直链检查）
-    const isMediaServerUrl = isMediaServerURL(urlObj);
-
-    // 检查是否为直链视频文件（仅当不是媒体服务器URL时）
-    const isDirectVideoLink = !isMediaServerUrl && supportedExtensions.some(ext =>
-      urlObj.pathname.toLowerCase().includes(ext)
-    );
-
-    return isPlatformSupported || isDirectVideoLink || isMediaServerUrl;
+    return ['http:', 'https:'].includes(urlObj.protocol);
   } catch {
     return false;
   }
 }
 
-// 检查是否为媒体服务器URL
-function isMediaServerURL(urlObj: URL): boolean {
-  const path = urlObj.pathname.toLowerCase();
-  const searchParams = urlObj.searchParams;
+// 移除了视频下载和帧提取相关函数，现在只专注于音频处理
 
-  // Emby/Jellyfin服务器特征
-  if ((path.includes('/emby/') || path.includes('/jellyfin/')) && path.includes('/stream')) {
-    return searchParams.has('api_key') || searchParams.has('ApiKey');
-  }
-
-  // Plex服务器特征
-  if (path.includes('/library/') && path.includes('/parts/')) {
-    return searchParams.has('X-Plex-Token');
-  }
-
-  // 通用媒体服务器特征
-  if (path.includes('stream')) {
-    return searchParams.has('api_key') ||
-           searchParams.has('ApiKey') ||
-           searchParams.has('token') ||
-           searchParams.has('X-Plex-Token');
-  }
-
-  return false;
-}
-
-// 检查是否为直链视频URL
-function isDirectVideoUrl(url: string): boolean {
-  try {
-    const urlObj = new URL(url);
-    const supportedExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.m4v'];
-    return supportedExtensions.some(ext =>
-      urlObj.pathname.toLowerCase().includes(ext)
-    ) || isMediaServerURL(urlObj);
-  } catch {
-    return false;
-  }
-}
-
-// 下载直链视频
-async function downloadDirectVideo(url: string, sessionId: string): Promise<string> {
+// 直接从URL提取音频（不下载视频文件）
+async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise<{
+  audioPath: string;
+  duration: number;
+  title: string;
+}> {
   const sessionDir = path.join(TEMP_DIR, sessionId);
   await fs.mkdir(sessionDir, { recursive: true });
 
+  const audioPath = path.join(sessionDir, 'audio.wav');
+
   try {
-    // 获取文件扩展名
-    const urlObj = new URL(url);
-    let extension = path.extname(urlObj.pathname) || '.mp4';
-    if (!extension.startsWith('.')) {
-      extension = '.mp4';
-    }
-
-    const outputPath = path.join(sessionDir, `video${extension}`);
-
-    // 使用curl下载直链视频（支持各种认证参数）
-    const command = `curl -L -o "${outputPath}" "${url}"`;
+    // 使用ffmpeg直接从URL提取音频，不下载视频文件
+    console.log('开始从URL提取音频...');
+    const command = `ffmpeg -i "${videoUrl}" -vn -acodec pcm_s16le -ar 16000 -ac 1 -t 1800 "${audioPath}"`;
     const { stdout, stderr } = await execAsync(command, {
       timeout: 600000, // 10分钟超时
-      maxBuffer: 1024 * 1024 * 50 // 50MB buffer
-    });
-
-    console.log('直链视频下载完成:', stdout);
-
-    // 检查文件是否存在且有内容
-    const stats = await fs.stat(outputPath);
-    if (stats.size === 0) {
-      throw new Error('下载的视频文件为空');
-    }
-
-    return outputPath;
-  } catch (error) {
-    console.error('直链视频下载失败:', error);
-    throw new Error(`直链视频下载失败: ${error instanceof Error ? error.message : '未知错误'}`);
-  }
-}
-
-// 下载视频（支持平台视频和直链视频）
-async function downloadVideo(url: string, sessionId: string): Promise<string> {
-  const sessionDir = path.join(TEMP_DIR, sessionId);
-  await fs.mkdir(sessionDir, { recursive: true });
-
-  // 检查是否为直链视频
-  if (isDirectVideoUrl(url)) {
-    return await downloadDirectVideo(url, sessionId);
-  }
-
-  // 使用yt-dlp下载平台视频
-  const outputPath = path.join(sessionDir, 'video.%(ext)s');
-
-  try {
-    const command = `yt-dlp -f "best[height<=720]" --extract-flat false -o "${outputPath}" "${url}"`;
-    const { stdout, stderr } = await execAsync(command, {
-      timeout: 300000, // 5分钟超时
       maxBuffer: 1024 * 1024 * 10 // 10MB buffer
     });
 
-    console.log('平台视频下载完成:', stdout);
+    console.log('音频提取完成');
 
-    // 查找下载的文件
-    const files = await fs.readdir(sessionDir);
-    const videoFile = files.find(file =>
-      file.startsWith('video.') &&
-      (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.mkv'))
-    );
+    // 获取音频信息
+    const probeCommand = `ffprobe -v quiet -print_format json -show_format "${audioPath}"`;
+    const { stdout: probeOutput } = await execAsync(probeCommand);
+    const audioInfo = JSON.parse(probeOutput);
 
-    if (!videoFile) {
-      throw new Error('未找到下载的视频文件');
-    }
+    const duration = parseFloat(audioInfo.format.duration) || 0;
+    const title = audioInfo.format.tags?.title || '未知标题';
 
-    return path.join(sessionDir, videoFile);
-  } catch (error) {
-    console.error('平台视频下载失败:', error);
-    throw new Error(`平台视频下载失败: ${error instanceof Error ? error.message : '未知错误'}`);
-  }
-}
-
-// 提取视频信息
-async function extractVideoInfo(videoPath: string): Promise<any> {
-  try {
-    const command = `ffprobe -v quiet -print_format json -show_format -show_streams "${videoPath}"`;
-    const { stdout } = await execAsync(command);
-    return JSON.parse(stdout);
-  } catch (error) {
-    console.error('提取视频信息失败:', error);
-    throw new Error('无法获取视频信息');
-  }
-}
-
-// 提取关键帧
-async function extractKeyFrames(videoPath: string, sessionId: string, duration: number): Promise<string[]> {
-  const sessionDir = path.join(TEMP_DIR, sessionId);
-  const framesDir = path.join(sessionDir, 'frames');
-  await fs.mkdir(framesDir, { recursive: true });
-  
-  // 计算提取间隔（每30秒一帧，最多20帧）
-  const interval = Math.max(30, duration / 20);
-  const frameCount = Math.min(20, Math.floor(duration / interval));
-  
-  const framePaths: string[] = [];
-  
-  for (let i = 0; i < frameCount; i++) {
-    const timestamp = i * interval;
-    const framePath = path.join(framesDir, `frame_${i.toString().padStart(3, '0')}.jpg`);
-    
-    try {
-      const command = `ffmpeg -ss ${timestamp} -i "${videoPath}" -vframes 1 -q:v 2 "${framePath}"`;
-      await execAsync(command);
-      framePaths.push(framePath);
-    } catch (error) {
-      console.warn(`提取第${i}帧失败:`, error);
-    }
-  }
-  
-  return framePaths;
-}
-
-// 提取音频
-async function extractAudio(videoPath: string, sessionId: string): Promise<string> {
-  const sessionDir = path.join(TEMP_DIR, sessionId);
-  const audioPath = path.join(sessionDir, 'audio.wav');
-  
-  try {
-    const command = `ffmpeg -i "${videoPath}" -vn -acodec pcm_s16le -ar 16000 -ac 1 "${audioPath}"`;
-    await execAsync(command);
-    return audioPath;
+    return {
+      audioPath,
+      duration,
+      title
+    };
   } catch (error) {
     console.error('音频提取失败:', error);
-    throw new Error('音频提取失败');
+    throw new Error(`音频提取失败: ${error instanceof Error ? error.message : '未知错误'}`);
   }
 }
 
-// 分析视频帧（使用硅基流动视觉模型）
-async function analyzeFrames(framePaths: string[], apiKey: string): Promise<any[]> {
-  const results = [];
-  
-  for (const framePath of framePaths) {
-    try {
-      // 将图片转换为base64
-      const imageBuffer = await fs.readFile(framePath);
-      const base64Image = imageBuffer.toString('base64');
-      
-      // 调用硅基流动视觉API
-      const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'Qwen/Qwen2.5-VL-72B-Instruct',
-          messages: [{
-            role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                  detail: 'high'
-                }
-              },
-              {
-                type: 'text',
-                text: '请详细描述这个视频帧中的内容，包括：1.场景环境 2.人物动作 3.重要物品 4.整体氛围。请用中文回答，控制在100字以内。'
-              }
-            ]
-          }],
-          temperature: 0.7,
-          max_tokens: 200
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API调用失败: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      const description = data.choices[0]?.message?.content || '无法分析此帧';
-      
-      results.push({
-        framePath,
-        description,
-        confidence: 0.8 // 默认置信度
-      });
-      
-      // 避免API限流
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-    } catch (error) {
-      console.error('帧分析失败:', error);
-      results.push({
-        framePath,
-        description: '分析失败',
-        confidence: 0
-      });
-    }
-  }
-  
-  return results;
-}
+// 移除了视觉分析函数，现在只专注于音频分析
 
-// 语音转文字（使用硅基流动语音识别）
-async function transcribeAudio(audioPath: string, apiKey: string): Promise<string> {
+// 关键信息抽取
+async function extractKeyInformation(text: string, apiKey: string): Promise<{
+  entities: {
+    people: string[];
+    places: string[];
+    terms: string[];
+  };
+  keywords: string[];
+  summary: string;
+}> {
   try {
-    // 注意：这里需要根据硅基流动的实际语音识别API进行调整
-    // 目前硅基流动主要提供文本转语音，语音转文字功能可能需要其他服务
-    
-    // 临时使用文本模拟，实际实现时需要集成真实的语音识别服务
-    return '这是从音频中提取的文字内容的模拟结果。实际实现时需要集成语音识别服务。';
+    const prompt = `请分析以下文本，提取关键信息：
+
+文本内容：
+${text}
+
+请按照以下JSON格式返回结果：
+{
+  "entities": {
+    "people": ["人名1", "人名2"],
+    "places": ["地点1", "地点2"],
+    "terms": ["专业术语1", "专业术语2"]
+  },
+  "keywords": ["关键词1", "关键词2", "关键词3"],
+  "summary": "简要总结"
+}
+
+要求：
+1. 提取所有出现的人名、地点名、专业术语
+2. 识别5-10个最重要的关键词
+3. 生成50字以内的简要总结
+4. 严格按照JSON格式返回，不要添加其他内容`;
+
+    const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'deepseek-ai/DeepSeek-V2.5',
+        messages: [{
+          role: 'user',
+          content: prompt
+        }],
+        temperature: 0.3,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`关键信息抽取API调用失败: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const content = result.choices[0]?.message?.content || '{}';
+
+    try {
+      const parsed = JSON.parse(content);
+      return {
+        entities: {
+          people: parsed.entities?.people || [],
+          places: parsed.entities?.places || [],
+          terms: parsed.entities?.terms || []
+        },
+        keywords: parsed.keywords || [],
+        summary: parsed.summary || '无法生成摘要'
+      };
+    } catch (parseError) {
+      console.warn('解析关键信息抽取结果失败，使用默认值:', parseError);
+      return {
+        entities: { people: [], places: [], terms: [] },
+        keywords: [],
+        summary: '关键信息抽取失败'
+      };
+    }
+  } catch (error) {
+    console.error('关键信息抽取失败:', error);
+    return {
+      entities: { people: [], places: [], terms: [] },
+      keywords: [],
+      summary: '关键信息抽取失败'
+    };
+  }
+}
+
+// 语音转文字（使用硅基流动SenseVoice-Small语音识别）
+async function transcribeAudio(audioPath: string, apiKey: string): Promise<{
+  text: string;
+  segments: Array<{
+    start: number;
+    end: number;
+    text: string;
+    confidence?: number;
+  }>;
+}> {
+  try {
+    // 读取音频文件
+    const audioBuffer = await fs.readFile(audioPath);
+
+    // 创建FormData
+    const formData = new FormData();
+    formData.append('model', 'FunAudioLLM/SenseVoiceSmall');
+    formData.append('file', new Blob([audioBuffer], { type: 'audio/wav' }), 'audio.wav');
+
+    // 调用硅基流动语音识别API
+    const response = await fetch('https://api.siliconflow.cn/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`语音识别API调用失败: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const transcriptText = result.text || '';
+
+    console.log('语音识别结果:', transcriptText);
+
+    // 简单的分段处理（基于句号、问号、感叹号分割）
+    const sentences = transcriptText.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
+    const segments = sentences.map((sentence, index) => ({
+      start: index * 5, // 假设每句话5秒，实际应该根据音频长度计算
+      end: (index + 1) * 5,
+      text: sentence.trim(),
+      confidence: 0.8 // SenseVoice通常有较高的准确率
+    }));
+
+    return {
+      text: transcriptText,
+      segments
+    };
   } catch (error) {
     console.error('语音转文字失败:', error);
-    return '语音转文字失败';
+    return {
+      text: '语音转文字失败: ' + (error instanceof Error ? error.message : '未知错误'),
+      segments: []
+    };
   }
 }
 
-// 生成结构化的视频内容描述（用于后续简介生成）
+// 生成结构化的音频内容描述（支持Markdown和SRT格式）
 async function generateStructuredContent(
-  visualAnalysis: any,
-  audioTranscript: string,
-  subtitleResult: SubtitleExtractionResult,
-  videoInfo: any
-): Promise<string> {
-  // 构建结构化的内容描述，类似字幕文件的格式
-  const content = [
-    '=== AI视频分析结果 ===',
+  audioTranscriptResult: { text: string; segments: any[] },
+  videoInfo: { title: string; duration: number; url: string },
+  keyInfo: any
+): Promise<{
+  markdown: string;
+  srt: string;
+  text: string;
+}> {
+  const audioTranscript = audioTranscriptResult.text;
+  const audioSegments = audioTranscriptResult.segments;
+
+  // 生成Markdown格式
+  const markdownContent = [
+    `# AI音频分析结果`,
+    '',
+    `## 📹 视频信息`,
+    `- **标题**: ${videoInfo.title || '未知标题'}`,
+    `- **时长**: ${Math.floor(videoInfo.duration / 60)}分${Math.floor(videoInfo.duration % 60)}秒`,
+    `- **来源**: ${videoInfo.url}`,
+    '',
+    `## 🎯 关键信息`,
+    `### 👥 人物`,
+    keyInfo.entities.people.length > 0 ? keyInfo.entities.people.map(p => `- ${p}`).join('\n') : '- 暂无识别到的人物',
+    '',
+    `### 📍 地点`,
+    keyInfo.entities.places.length > 0 ? keyInfo.entities.places.map(p => `- ${p}`).join('\n') : '- 暂无识别到的地点',
+    '',
+    `### 🏷️ 专业术语`,
+    keyInfo.entities.terms.length > 0 ? keyInfo.entities.terms.map(t => `- ${t}`).join('\n') : '- 暂无识别到的专业术语',
+    '',
+    `### 🔑 关键词`,
+    keyInfo.keywords.length > 0 ? keyInfo.keywords.map(k => `\`${k}\``).join(' ') : '暂无关键词',
+    '',
+    `## 🎤 音频转录`,
+    audioTranscript || '暂无音频内容',
+    '',
+    `## 📊 内容摘要`,
+    keyInfo.summary || '暂无摘要'
+  ].join('\n');
+
+  // 生成SRT格式（基于音频分段）
+  const srtContent = audioSegments.map((segment, index) => {
+    const startTime = formatSRTTime(segment.start);
+    const endTime = formatSRTTime(segment.end);
+    return `${index + 1}\n${startTime} --> ${endTime}\n${segment.text}\n`;
+  }).join('\n');
+
+  // 生成纯文本格式
+  const textContent = [
+    '=== AI音频分析结果 ===',
     '',
     `【视频信息】`,
     `标题: ${videoInfo.title || '未知标题'}`,
     `时长: ${Math.floor(videoInfo.duration / 60)}分${Math.floor(videoInfo.duration % 60)}秒`,
+    `来源: ${videoInfo.url}`,
     '',
-    '【关键画面分析】',
-    ...visualAnalysis.map((frame: any, index: number) => {
-      const timestamp = index * Math.max(30, videoInfo.duration / 20);
-      const timeStr = `${Math.floor(timestamp / 60)}:${(timestamp % 60).toFixed(0).padStart(2, '0')}`;
-      return `${timeStr} - ${frame.description}`;
-    }),
+    '【关键信息】',
+    `人物: ${keyInfo.entities.people.join(', ') || '无'}`,
+    `地点: ${keyInfo.entities.places.join(', ') || '无'}`,
+    `术语: ${keyInfo.entities.terms.join(', ') || '无'}`,
+    `关键词: ${keyInfo.keywords.join(', ') || '无'}`,
     '',
-    '【音频内容摘要】',
+    '【音频转录】',
     audioTranscript || '暂无音频内容',
     '',
-    '【字幕内容】',
-    subtitleResult.hasSubtitles ?
-      `语言: ${subtitleResult.language}, 置信度: ${(subtitleResult.confidence * 100).toFixed(1)}%` :
-      '未检测到字幕',
-    subtitleResult.extractedContent ?
-      subtitleResult.extractedContent.substring(0, 500) + (subtitleResult.extractedContent.length > 500 ? '...' : '') :
-      '无字幕内容',
-    '',
-    '【场景变化点】',
-    // 简单的场景变化检测
-    ...visualAnalysis.map((frame: any, index: number) => {
-      if (index === 0 || index === Math.floor(visualAnalysis.length / 2) || index === visualAnalysis.length - 1) {
-        const timestamp = index * Math.max(30, videoInfo.duration / 20);
-        const timeStr = `${Math.floor(timestamp / 60)}:${(timestamp % 60).toFixed(0).padStart(2, '0')}`;
-        return `${timeStr} - 关键场景`;
-      }
-      return null;
-    }).filter(Boolean),
-    '',
-    '【整体风格】',
-    '根据画面分析，本集内容丰富，情节紧凑，适合生成引人入胜的简介。',
-    ''
+    '【内容摘要】',
+    keyInfo.summary || '暂无摘要'
   ].join('\n');
 
-  return content;
+  return {
+    markdown: markdownContent,
+    srt: srtContent,
+    text: textContent
+  };
+}
+
+// SRT时间格式化函数
+function formatSRTTime(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds % 1) * 1000);
+
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
 }
 
 // 生成综合总结
 async function generateCombinedSummary(
-  visualAnalysis: any,
   audioTranscript: string,
-  subtitleResult: SubtitleExtractionResult,
+  keyInfo: any,
   apiKey: string
 ): Promise<string> {
   try {
-    const prompt = `基于以下视频分析结果，生成一个简洁的分集简介：
+    const prompt = `基于以下音频分析结果，生成一个简洁的分集简介：
 
-视觉分析结果：
-${visualAnalysis.map((frame: any, index: number) => `帧${index + 1}: ${frame.description}`).join('\n')}
-
-音频内容：
+音频转录内容：
 ${audioTranscript}
 
-字幕内容：
-${subtitleResult.hasSubtitles ?
-  `语言: ${subtitleResult.language}\n内容: ${subtitleResult.extractedContent.substring(0, 300)}${subtitleResult.extractedContent.length > 300 ? '...' : ''}` :
-  '未检测到字幕内容'}
+关键信息：
+人物: ${keyInfo.entities.people.join(', ') || '无'}
+地点: ${keyInfo.entities.places.join(', ') || '无'}
+术语: ${keyInfo.entities.terms.join(', ') || '无'}
+关键词: ${keyInfo.keywords.join(', ') || '无'}
+
+内容摘要：
+${keyInfo.summary}
 
 请生成一个120-200字的分集简介，要求：
-1. 优先使用字幕内容作为主要信息源（如果有的话）
-2. 整合视觉、音频和字幕信息
+1. 基于音频转录内容作为主要信息源
+2. 结合关键信息和摘要
 3. 突出主要情节和看点
 4. 语言生动有趣，符合影视剧简介风格
 5. 避免剧透关键结局
-6. 如果有字幕，重点体现对话和情节发展`;
+6. 重点体现对话和情节发展`;
 
     const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
       method: 'POST',
@@ -509,87 +446,52 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // 1. 下载视频
-    console.log('开始下载视频...');
-    const videoPath = await downloadVideo(videoUrl, sessionId);
-    
-    // 2. 提取视频信息
-    console.log('提取视频信息...');
-    const videoInfo = await extractVideoInfo(videoPath);
-    const duration = parseFloat(videoInfo.format.duration) || 0;
-    
-    // 3. 并行处理：提取帧和音频
-    console.log('提取关键帧和音频...');
-    const [framePaths, audioPath] = await Promise.all([
-      extractKeyFrames(videoPath, sessionId, duration),
-      extractAudio(videoPath, sessionId)
-    ]);
-    
-    // 4. 提取字幕
-    console.log('提取字幕...');
-    const subtitleExtractor = new SubtitleExtractor(sessionDir);
-    const subtitleResult = await subtitleExtractor.extractSubtitles(videoPath);
+    // 1. 直接从URL提取音频
+    console.log('开始从URL提取音频...');
+    const audioInfo = await extractAudioFromUrl(videoUrl, sessionId);
 
-    // 5. 并行分析：视觉分析和语音转文字
-    console.log('进行AI分析...');
-    const [frameAnalysis, audioTranscript] = await Promise.all([
-      analyzeFrames(framePaths, apiKey),
-      transcribeAudio(audioPath, apiKey)
-    ]);
-    
-    // 6. 生成综合总结和结构化内容
+    // 2. 语音转文字
+    console.log('进行语音识别...');
+    const audioTranscriptResult = await transcribeAudio(audioInfo.audioPath, apiKey);
+    const audioTranscript = audioTranscriptResult.text;
+
+    // 3. 关键信息抽取
+    console.log('提取关键信息...');
+    const keyInfo = await extractKeyInformation(audioTranscript, apiKey);
+
+    // 4. 生成综合总结和结构化内容
     console.log('生成综合总结...');
-    const [combinedSummary, structuredContent] = await Promise.all([
-      generateCombinedSummary(frameAnalysis, audioTranscript, subtitleResult, apiKey),
-      generateStructuredContent(frameAnalysis, audioTranscript, subtitleResult, {
-        title: videoInfo.format.tags?.title || '未知标题',
-        duration
-      })
+    const videoInfo = {
+      title: audioInfo.title,
+      duration: audioInfo.duration,
+      url: videoUrl
+    };
+
+    const [combinedSummary, structuredContentResult] = await Promise.all([
+      generateCombinedSummary(audioTranscript, keyInfo, apiKey),
+      generateStructuredContent(audioTranscriptResult, videoInfo, keyInfo)
     ]);
 
-    // 6. 构建返回结果
+    // 5. 构建返回结果
     const result: VideoAnalysisResult = {
       success: true,
       data: {
-        videoInfo: {
-          title: videoInfo.format.tags?.title || '未知标题',
-          duration,
-          description: videoInfo.format.tags?.description
-        },
-        visualAnalysis: {
-          keyFrames: frameAnalysis.map((frame, index) => ({
-            timestamp: index * Math.max(30, duration / 20),
-            description: frame.description,
-            confidence: frame.confidence,
-            imageUrl: `/api/temp-image/${sessionId}/frames/frame_${index.toString().padStart(3, '0')}.jpg`
-          })),
-          sceneChanges: [], // 可以后续实现场景变化检测
-          overallDescription: frameAnalysis.map(f => f.description).join(' ')
-        },
+        videoInfo,
         audioAnalysis: {
           transcript: audioTranscript,
-          segments: [], // 可以后续实现分段
-          summary: audioTranscript.substring(0, 200) + '...'
+          segments: audioTranscriptResult.segments,
+          summary: audioTranscript.length > 200 ? audioTranscript.substring(0, 200) + '...' : audioTranscript
         },
-        subtitleAnalysis: {
-          hasSubtitles: subtitleResult.hasSubtitles,
-          language: subtitleResult.language,
-          content: subtitleResult.extractedContent,
-          segments: subtitleResult.segments,
-          confidence: subtitleResult.confidence
-        },
-        combinedSummary,
-        structuredContent // 添加结构化内容，用于简介生成
+        keyInformation: keyInfo,
+        structuredContent: structuredContentResult,
+        combinedSummary
       }
     };
     
-    // 7. 清理字幕提取器临时文件
-    await subtitleExtractor.cleanup();
-
-    // 8. 延迟清理临时文件（给前端时间显示图片）
+    // 6. 延迟清理临时文件
     setTimeout(() => {
       cleanupTempFiles(sessionId);
-    }, 300000); // 5分钟后清理
+    }, 60000); // 1分钟后清理（音频文件较小，不需要太长时间）
     
     return NextResponse.json(result);
     

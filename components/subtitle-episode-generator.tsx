@@ -181,6 +181,9 @@ interface GenerationConfig {
   customPrompt?: string
   temperature: number
   includeOriginalTitle: boolean
+  // 视频分析配置
+  speechRecognitionModel?: string // 语音识别模型
+  enableVideoAnalysis?: boolean // 是否启用视频分析
 }
 
 // 导出配置
@@ -372,7 +375,9 @@ export function SubtitleEpisodeGenerator({
       selectedStyles: [], // 默认不选择任何风格，让用户自主选择
       selectedTitleStyle: "location_skill", // 默认选择地名招式风格
       temperature: 0.7,
-      includeOriginalTitle: true
+      includeOriginalTitle: true,
+      speechRecognitionModel: "FunAudioLLM/SenseVoiceSmall", // 默认语音识别模型
+      enableVideoAnalysis: false // 默认不启用视频分析
     }
   })
 
@@ -3342,6 +3347,62 @@ function GenerationTab({
             包含原始标题信息
           </Label>
         </div>
+      </div>
+
+      {/* 视频分析配置 */}
+      <div className="space-y-4">
+        <div>
+          <Label className="text-sm font-medium">视频分析配置</Label>
+          <p className="text-xs text-gray-500 mt-1 mb-3">
+            配置AI视频分析功能，用于从视频中提取语音和关键信息
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="enableVideoAnalysis"
+            checked={config.enableVideoAnalysis || false}
+            onCheckedChange={(checked) =>
+              onConfigChange({
+                ...config,
+                enableVideoAnalysis: !!checked
+              })
+            }
+          />
+          <Label htmlFor="enableVideoAnalysis" className="text-sm">
+            启用AI视频分析功能
+          </Label>
+        </div>
+
+        {config.enableVideoAnalysis && (
+          <div>
+            <Label className="text-sm font-medium">语音识别模型</Label>
+            <p className="text-xs text-gray-500 mt-1 mb-3">
+              选择用于语音转文字的AI模型
+            </p>
+            <Select
+              value={config.speechRecognitionModel || "FunAudioLLM/SenseVoiceSmall"}
+              onValueChange={(value) =>
+                onConfigChange({
+                  ...config,
+                  speechRecognitionModel: value
+                })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="选择语音识别模型" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="FunAudioLLM/SenseVoiceSmall">
+                  <div className="flex flex-col">
+                    <span className="font-medium">SenseVoice-Small (推荐)</span>
+                    <span className="text-xs text-gray-500">高精度多语言语音识别，支持中英文</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {/* 自定义提示词 */}
