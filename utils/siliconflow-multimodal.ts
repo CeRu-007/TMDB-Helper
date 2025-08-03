@@ -266,33 +266,106 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
   }
 
   /**
-   * 语音转文字（注意：硅基流动主要提供TTS，ASR需要其他服务）
-   * 这里提供接口定义，实际实现可能需要集成其他语音识别服务
+   * 语音转文字（使用硅基流动语音识别API）
+   * 支持多种语音识别模型
    */
   async transcribeAudio(
     audioBase64: string,
     options: AudioAnalysisOptions = {}
   ): Promise<AudioTranscriptionResult> {
-    // 注意：硅基流动目前主要提供文本转语音(TTS)服务
-    // 语音转文字(ASR)功能可能需要集成其他服务，如：
-    // - 百度语音识别
-    // - 腾讯云语音识别
-    // - 阿里云语音识别
-    // - OpenAI Whisper API
-    
-    console.warn('语音转文字功能需要集成专门的ASR服务');
-    
-    // 临时返回模拟结果
-    return {
-      text: '这是语音转文字的模拟结果。实际实现需要集成专门的语音识别服务。',
-      segments: [{
-        start: 0,
-        end: 10,
-        text: '这是语音转文字的模拟结果。',
-        confidence: 0.5
-      }],
-      confidence: 0.5
-    };
+    const {
+      model = 'FunAudioLLM/SenseVoiceSmall',
+      language = 'auto',
+      format = 'wav'
+    } = options;
+
+    try {
+      // 将base64转换为Blob
+      const audioBlob = this.base64ToBlob(audioBase64, `audio/${format}`);
+
+      // 创建FormData
+      const formData = new FormData();
+      formData.append('model', model);
+      formData.append('file', audioBlob, `audio.${format}`);
+
+      // 根据模型类型添加优化参数
+      if (model.includes('SenseVoice')) {
+        formData.append('language', language);
+        formData.append('timestamp_granularities[]', 'segment');
+      }
+
+      const response = await fetch(`${this.config.baseUrl}/audio/transcriptions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.config.apiKey}`,
+        },
+        body: formData,
+        signal: AbortSignal.timeout(this.config.timeout || 300000)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`语音识别失败: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      const transcriptText = result.text || '';
+
+      // 处理分段信息
+      let segments = [];
+      if (result.segments && Array.isArray(result.segments)) {
+        segments = result.segments.map((segment: any) => ({
+          start: segment.start || 0,
+          end: segment.end || 0,
+          text: segment.text || '',
+          confidence: segment.confidence || 0.8
+        }));
+      } else {
+        // 基于句子的简单分段
+        const sentences = transcriptText.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
+        segments = sentences.map((sentence, index) => ({
+          start: index * 5,
+          end: (index + 1) * 5,
+          text: sentence.trim(),
+          confidence: this.getModelConfidence(model)
+        }));
+      }
+
+      return {
+        text: transcriptText,
+        segments,
+        confidence: segments.length > 0 ? segments.reduce((sum, seg) => sum + (seg.confidence || 0), 0) / segments.length : 0.8
+      };
+    } catch (error) {
+      console.error('语音转文字失败:', error);
+      throw new Error(`语音转文字失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
+  }
+
+  /**
+   * 根据模型获取默认置信度
+   */
+  private getModelConfidence(model: string): number {
+    if (model.includes('SenseVoiceLarge')) return 0.9;
+    if (model.includes('SenseVoiceSmall')) return 0.8;
+    if (model.includes('CosyVoice-300M-SFT')) return 0.85;
+    if (model.includes('CosyVoice-300M-Instruct')) return 0.82;
+    if (model.includes('CosyVoice-300M')) return 0.75;
+    if (model.includes('SpeechT5')) return 0.7;
+    return 0.8;
+  }
+
+  /**
+   * 将base64字符串转换为Blob
+   */
+  private base64ToBlob(base64: string, mimeType: string): Blob {
+    const byteCharacters = atob(base64.split(',')[1] || base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
   }
 
   /**

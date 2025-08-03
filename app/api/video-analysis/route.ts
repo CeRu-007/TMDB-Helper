@@ -147,10 +147,21 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
 
 // 移除了视觉分析函数，现在只专注于音频分析
 
+// 根据模型获取默认置信度
+function getModelConfidence(model: string): number {
+  if (model.includes('SenseVoiceLarge')) return 0.9;
+  if (model.includes('SenseVoiceSmall')) return 0.8;
+  if (model.includes('CosyVoice-300M-SFT')) return 0.85;
+  if (model.includes('CosyVoice-300M-Instruct')) return 0.82;
+  if (model.includes('CosyVoice-300M')) return 0.75;
+  if (model.includes('SpeechT5')) return 0.7;
+  return 0.8; // 默认置信度
+}
 
 
-// 语音转文字（使用硅基流动SenseVoice-Small语音识别）
-async function transcribeAudio(audioPath: string, apiKey: string, audioDuration: number = 0): Promise<{
+
+// 语音转文字（使用硅基流动语音识别模型）
+async function transcribeAudio(audioPath: string, apiKey: string, audioDuration: number = 0, model: string = 'FunAudioLLM/SenseVoiceSmall'): Promise<{
   text: string;
   segments: Array<{
     start: number;
@@ -173,8 +184,17 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
 
     // 创建FormData
     const formData = new FormData();
-    formData.append('model', 'FunAudioLLM/SenseVoiceSmall');
+    formData.append('model', model);
     formData.append('file', new Blob([audioBuffer], { type: 'audio/wav' }), 'audio.wav');
+
+    // 根据模型类型添加优化参数
+    if (model.includes('SenseVoice')) {
+      // SenseVoice模型支持语言检测和时间戳
+      formData.append('language', 'auto'); // 自动检测语言
+      formData.append('timestamp_granularities[]', 'segment'); // 获取分段时间戳
+    }
+
+    console.log(`使用语音识别模型: ${model}，文件大小: ${fileSizeMB.toFixed(2)}MB`);
 
     // 调用硅基流动语音识别API，增加超时时间
     const response = await fetch('https://api.siliconflow.cn/v1/audio/transcriptions', {
@@ -195,18 +215,34 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
     const transcriptText = result.text || '';
 
     console.log(`语音识别完成，文本长度: ${transcriptText.length}字符`);
+    console.log('API响应结构:', Object.keys(result));
 
-    // 改进的分段处理，根据实际音频时长计算时间戳
-    const sentences = transcriptText.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
-    const totalDuration = audioDuration > 0 ? audioDuration : sentences.length * 5; // 如果没有时长信息，估算
-    const avgSentenceDuration = totalDuration / sentences.length;
+    // 处理不同模型的响应格式
+    let segments: Array<{start: number; end: number; text: string; confidence?: number}> = [];
 
-    const segments = sentences.map((sentence, index) => ({
-      start: Math.round(index * avgSentenceDuration * 100) / 100,
-      end: Math.round((index + 1) * avgSentenceDuration * 100) / 100,
-      text: sentence.trim(),
-      confidence: 0.8 // SenseVoice通常有较高的准确率
-    }));
+    // 如果API返回了分段信息，优先使用
+    if (result.segments && Array.isArray(result.segments)) {
+      segments = result.segments.map((segment: any) => ({
+        start: segment.start || 0,
+        end: segment.end || 0,
+        text: segment.text || '',
+        confidence: segment.confidence || 0.8
+      }));
+      console.log(`使用API返回的${segments.length}个分段`);
+    } else {
+      // 回退到基于句子的分段处理
+      const sentences = transcriptText.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
+      const totalDuration = audioDuration > 0 ? audioDuration : sentences.length * 5;
+      const avgSentenceDuration = totalDuration / sentences.length;
+
+      segments = sentences.map((sentence, index) => ({
+        start: Math.round(index * avgSentenceDuration * 100) / 100,
+        end: Math.round((index + 1) * avgSentenceDuration * 100) / 100,
+        text: sentence.trim(),
+        confidence: getModelConfidence(model) // 根据模型设置置信度
+      }));
+      console.log(`生成了${segments.length}个基于句子的分段`);
+    }
 
     return {
       text: transcriptText,
@@ -286,7 +322,7 @@ export async function POST(request: NextRequest) {
     await ensureTempDir();
     
     const body = await request.json();
-    const { videoUrl, apiKey } = body;
+    const { videoUrl, apiKey, speechRecognitionModel } = body;
     
     if (!videoUrl) {
       return NextResponse.json({
@@ -315,7 +351,8 @@ export async function POST(request: NextRequest) {
 
     // 2. 语音转文字
     console.log('进行语音识别...');
-    const audioTranscriptResult = await transcribeAudio(audioInfo.audioPath, apiKey, audioInfo.duration);
+    const selectedModel = speechRecognitionModel || 'FunAudioLLM/SenseVoiceSmall';
+    const audioTranscriptResult = await transcribeAudio(audioInfo.audioPath, apiKey, audioInfo.duration, selectedModel);
     const audioTranscript = audioTranscriptResult.text;
 
     // 3. 生成结构化内容

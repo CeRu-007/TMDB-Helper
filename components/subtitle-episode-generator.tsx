@@ -1660,8 +1660,10 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
     setVideoAnalysisProgress(0)
 
     try {
-      // 创建视频分析器
-      const analyzer = new VideoAnalyzer(apiKey)
+      // 创建视频分析器，传递语音识别模型配置
+      const analyzer = new VideoAnalyzer(apiKey, {
+        speechRecognitionModel: config.speechRecognitionModel || 'FunAudioLLM/SenseVoiceSmall'
+      })
 
       // 开始分析
       const result = await analyzer.analyzeVideo(videoUrl)
@@ -3305,6 +3307,16 @@ function GenerationSettingsDialog({
               >
                 简介风格设置
               </button>
+              <button
+                onClick={() => setActiveTab("videoAnalysis")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "videoAnalysis"
+                    ? "border-purple-500 text-purple-600 dark:text-purple-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                视频分析设置
+              </button>
             </nav>
           </div>
 
@@ -3318,6 +3330,9 @@ function GenerationSettingsDialog({
             )}
             {activeTab === "summaryStyle" && (
               <SummaryStyleTab config={config} onConfigChange={onConfigChange} />
+            )}
+            {activeTab === "videoAnalysis" && (
+              <VideoAnalysisTab config={config} onConfigChange={onConfigChange} />
             )}
           </div>
 
@@ -3362,6 +3377,27 @@ function GenerationSettingsDialog({
                       </span>
                     )
                   })()}
+                </div>
+              )}
+              {activeTab === "videoAnalysis" && (
+                <div className="text-sm">
+                  {config.enableVideoAnalysis ? (
+                    <span className="text-purple-700 dark:text-purple-300">
+                      ✅ 视频分析功能已启用，模型：
+                      {(() => {
+                        const modelName = config.speechRecognitionModel || 'FunAudioLLM/SenseVoiceSmall';
+                        if (modelName.includes('SenseVoiceSmall')) return 'SenseVoice-Small';
+                        if (modelName.includes('SenseVoiceLarge')) return 'SenseVoice-Large';
+                        if (modelName.includes('CosyVoice-300M-SFT')) return 'CosyVoice-300M-SFT';
+                        if (modelName.includes('CosyVoice-300M-Instruct')) return 'CosyVoice-300M-Instruct';
+                        if (modelName.includes('CosyVoice-300M')) return 'CosyVoice-300M';
+                        if (modelName.includes('SpeechT5')) return 'SpeechT5';
+                        return modelName;
+                      })()}
+                    </span>
+                  ) : (
+                    <span className="text-gray-500">视频分析功能未启用</span>
+                  )}
                 </div>
               )}
             </div>
@@ -3538,61 +3574,7 @@ function GenerationTab({
         </div>
       </div>
 
-      {/* 视频分析配置 */}
-      <div className="space-y-4">
-        <div>
-          <Label className="text-sm font-medium">视频分析配置</Label>
-          <p className="text-xs text-gray-500 mt-1 mb-3">
-            配置AI视频分析功能，用于从视频中提取语音和关键信息
-          </p>
-        </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="enableVideoAnalysis"
-            checked={config.enableVideoAnalysis || false}
-            onCheckedChange={(checked) =>
-              onConfigChange({
-                ...config,
-                enableVideoAnalysis: !!checked
-              })
-            }
-          />
-          <Label htmlFor="enableVideoAnalysis" className="text-sm">
-            启用AI视频分析功能
-          </Label>
-        </div>
-
-        {config.enableVideoAnalysis && (
-          <div>
-            <Label className="text-sm font-medium">语音识别模型</Label>
-            <p className="text-xs text-gray-500 mt-1 mb-3">
-              选择用于语音转文字的AI模型
-            </p>
-            <Select
-              value={config.speechRecognitionModel || "FunAudioLLM/SenseVoiceSmall"}
-              onValueChange={(value) =>
-                onConfigChange({
-                  ...config,
-                  speechRecognitionModel: value
-                })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="选择语音识别模型" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="FunAudioLLM/SenseVoiceSmall">
-                  <div className="flex flex-col">
-                    <span className="font-medium">SenseVoice-Small (推荐)</span>
-                    <span className="text-xs text-gray-500">高精度多语言语音识别，支持中英文</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
 
       {/* 自定义提示词 */}
       <div>
@@ -4091,5 +4073,246 @@ function VideoAnalysisResultDialog({
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// 视频分析设置标签页
+function VideoAnalysisTab({
+  config,
+  onConfigChange
+}: {
+  config: GenerationConfig
+  onConfigChange: (config: GenerationConfig) => void
+}) {
+  return (
+    <div className="space-y-6">
+      {/* 功能介绍 */}
+      <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+              <Film className="h-4 w-4 text-white" />
+            </div>
+          </div>
+          <div>
+            <h3 className="font-medium text-purple-900 dark:text-purple-100 mb-2">
+              AI视频分析功能
+            </h3>
+            <p className="text-sm text-purple-800 dark:text-purple-200 leading-relaxed">
+              通过AI技术自动分析视频内容，提取音频进行语音识别，生成高质量的分集简介。
+              支持YouTube、Bilibili等主流视频平台。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 功能开关 */}
+      <div className="space-y-4">
+        <div>
+          <Label className="text-sm font-medium">功能控制</Label>
+          <p className="text-xs text-gray-500 mt-1 mb-3">
+            启用或关闭AI视频分析功能
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <Checkbox
+            id="enableVideoAnalysis"
+            checked={config.enableVideoAnalysis || false}
+            onCheckedChange={(checked) =>
+              onConfigChange({
+                ...config,
+                enableVideoAnalysis: !!checked
+              })
+            }
+          />
+          <div className="flex-1">
+            <Label htmlFor="enableVideoAnalysis" className="text-sm font-medium cursor-pointer">
+              启用AI视频分析功能
+            </Label>
+            <p className="text-xs text-gray-500 mt-1">
+              开启后可以通过视频URL直接生成分集简介
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 语音识别模型配置 */}
+      {config.enableVideoAnalysis && (
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">语音识别模型</Label>
+            <p className="text-xs text-gray-500 mt-1 mb-3">
+              选择用于语音转文字的AI模型。不同模型在精度、速度和适用场景上有所差异
+            </p>
+          </div>
+
+          <Select
+            value={config.speechRecognitionModel || "FunAudioLLM/SenseVoiceSmall"}
+            onValueChange={(value) =>
+              onConfigChange({
+                ...config,
+                speechRecognitionModel: value
+              })
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="选择语音识别模型" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="FunAudioLLM/SenseVoiceSmall">
+                <div className="flex flex-col">
+                  <span className="font-medium">SenseVoice-Small (推荐)</span>
+                  <span className="text-xs text-gray-500">高精度多语言语音识别，支持中英文，速度快</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="FunAudioLLM/SenseVoiceLarge">
+                <div className="flex flex-col">
+                  <span className="font-medium">SenseVoice-Large</span>
+                  <span className="text-xs text-gray-500">更高精度的语音识别，适合复杂音频环境</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="FunAudioLLM/CosyVoice-300M">
+                <div className="flex flex-col">
+                  <span className="font-medium">CosyVoice-300M</span>
+                  <span className="text-xs text-gray-500">轻量级语音识别模型，处理速度极快</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="FunAudioLLM/CosyVoice-300M-SFT">
+                <div className="flex flex-col">
+                  <span className="font-medium">CosyVoice-300M-SFT</span>
+                  <span className="text-xs text-gray-500">经过微调的轻量级模型，平衡速度与精度</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="FunAudioLLM/CosyVoice-300M-Instruct">
+                <div className="flex flex-col">
+                  <span className="font-medium">CosyVoice-300M-Instruct</span>
+                  <span className="text-xs text-gray-500">指令微调模型，适合特定场景语音识别</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="iic/SpeechT5">
+                <div className="flex flex-col">
+                  <span className="font-medium">SpeechT5</span>
+                  <span className="text-xs text-gray-500">通用语音处理模型，支持多种语音任务</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* 模型性能对比 */}
+          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="text-xs text-blue-800 dark:text-blue-200">
+              <p className="font-medium mb-3 flex items-center">
+                <span className="mr-2">💡</span>
+                模型选择建议
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded">
+                  <span className="font-medium">SenseVoice-Small</span>
+                  <span className="text-green-600 dark:text-green-400">推荐首选，平衡精度与速度</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded">
+                  <span className="font-medium">SenseVoice-Large</span>
+                  <span className="text-purple-600 dark:text-purple-400">最高精度，适合复杂音频环境</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded">
+                  <span className="font-medium">CosyVoice系列</span>
+                  <span className="text-blue-600 dark:text-blue-400">轻量快速，适合简单清晰音频</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded">
+                  <span className="font-medium">SpeechT5</span>
+                  <span className="text-gray-600 dark:text-gray-400">通用模型，支持多种语音任务</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 支持的视频平台 */}
+          <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="text-xs text-green-800 dark:text-green-200">
+              <p className="font-medium mb-2 flex items-center">
+                <span className="mr-2">🌐</span>
+                支持的视频平台
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span>YouTube</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span>Bilibili</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                  <span>腾讯视频</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                  <span>爱奇艺</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 使用提示 */}
+          <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="text-xs text-amber-800 dark:text-amber-200">
+              <p className="font-medium mb-2 flex items-center">
+                <span className="mr-2">⚠️</span>
+                使用注意事项
+              </p>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>视频分析功能需要消耗较多API额度，建议合理使用</li>
+                <li>音频质量会影响语音识别准确度，建议选择清晰的视频</li>
+                <li>长视频处理时间较长，请耐心等待分析完成</li>
+                <li>生成的内容仅供参考，请根据实际情况进行调整</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* 快速使用指南 */}
+          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div className="text-xs text-gray-700 dark:text-gray-300">
+              <p className="font-medium mb-3 flex items-center">
+                <span className="mr-2">📖</span>
+                快速使用指南
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-start space-x-2">
+                  <span className="flex-shrink-0 w-5 h-5 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <span>在主界面选择"视频分析"选项卡</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="flex-shrink-0 w-5 h-5 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <span>粘贴视频URL（支持YouTube、Bilibili等平台）</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="flex-shrink-0 w-5 h-5 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <span>点击"开始分析"，AI将自动提取音频并进行语音识别</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="flex-shrink-0 w-5 h-5 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                  <span>查看分析结果，生成精彩的分集简介</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 功能未启用时的提示 */}
+      {!config.enableVideoAnalysis && (
+        <div className="text-center py-8">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Film className="h-8 w-8 text-gray-400" />
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 mb-2">视频分析功能未启用</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            启用后可以通过视频URL直接生成分集简介
+          </p>
+        </div>
+      )}
+    </div>
   )
 }

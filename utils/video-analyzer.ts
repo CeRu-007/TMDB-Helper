@@ -8,6 +8,7 @@ export interface VideoAnalysisOptions {
   maxDuration?: number; // 最大视频时长（秒）
   maxFrames?: number; // 最大提取帧数
   frameInterval?: number; // 帧提取间隔（秒）
+  speechRecognitionModel?: string; // 语音识别模型
 }
 
 export interface VideoFrame {
@@ -69,6 +70,7 @@ export class VideoAnalyzer {
         body: JSON.stringify({
           videoUrl,
           apiKey: this.apiKey,
+          speechRecognitionModel: this.options.speechRecognitionModel,
           options: this.options
         })
       });
