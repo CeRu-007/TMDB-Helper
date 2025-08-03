@@ -27,21 +27,11 @@ interface VideoAnalysisResult {
       }>;
       summary: string;
     };
-    keyInformation: {
-      entities: {
-        people: string[];
-        places: string[];
-        terms: string[];
-      };
-      keywords: string[];
-      summary: string;
-    };
     structuredContent: {
       markdown: string;
       srt: string;
       text: string;
     };
-    combinedSummary: string;
   };
   error?: string;
   progress?: number;
@@ -157,91 +147,7 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
 
 // 移除了视觉分析函数，现在只专注于音频分析
 
-// 关键信息抽取
-async function extractKeyInformation(text: string, apiKey: string): Promise<{
-  entities: {
-    people: string[];
-    places: string[];
-    terms: string[];
-  };
-  keywords: string[];
-  summary: string;
-}> {
-  try {
-    const prompt = `请分析以下文本，提取关键信息：
 
-文本内容：
-${text}
-
-请按照以下JSON格式返回结果：
-{
-  "entities": {
-    "people": ["人名1", "人名2"],
-    "places": ["地点1", "地点2"],
-    "terms": ["专业术语1", "专业术语2"]
-  },
-  "keywords": ["关键词1", "关键词2", "关键词3"],
-  "summary": "简要总结"
-}
-
-要求：
-1. 提取所有出现的人名、地点名、专业术语
-2. 识别5-10个最重要的关键词
-3. 生成50字以内的简要总结
-4. 严格按照JSON格式返回，不要添加其他内容`;
-
-    const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'deepseek-ai/DeepSeek-V2.5',
-        messages: [{
-          role: 'user',
-          content: prompt
-        }],
-        temperature: 0.3,
-        max_tokens: 500
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`关键信息抽取API调用失败: ${response.status}`);
-    }
-
-    const result = await response.json();
-    const content = result.choices[0]?.message?.content || '{}';
-
-    try {
-      const parsed = JSON.parse(content);
-      return {
-        entities: {
-          people: parsed.entities?.people || [],
-          places: parsed.entities?.places || [],
-          terms: parsed.entities?.terms || []
-        },
-        keywords: parsed.keywords || [],
-        summary: parsed.summary || '无法生成摘要'
-      };
-    } catch (parseError) {
-      console.warn('解析关键信息抽取结果失败，使用默认值:', parseError);
-      return {
-        entities: { people: [], places: [], terms: [] },
-        keywords: [],
-        summary: '关键信息抽取失败'
-      };
-    }
-  } catch (error) {
-    console.error('关键信息抽取失败:', error);
-    return {
-      entities: { people: [], places: [], terms: [] },
-      keywords: [],
-      summary: '关键信息抽取失败'
-    };
-  }
-}
 
 // 语音转文字（使用硅基流动SenseVoice-Small语音识别）
 async function transcribeAudio(audioPath: string, apiKey: string, audioDuration: number = 0): Promise<{
@@ -328,54 +234,21 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
   }
 }
 
-// 生成SRT格式的音频内容（包含关键信息）
+// 生成SRT格式的音频内容
 async function generateStructuredContent(
   audioTranscriptResult: { text: string; segments: any[] },
-  videoInfo: { title: string; duration: number; url: string },
-  keyInfo: any
+  videoInfo: { title: string; duration: number; url: string }
 ): Promise<{
   srt: string;
 }> {
   const audioSegments = audioTranscriptResult.segments;
 
-  // 构建关键信息字符串
-  const keyInfoParts = [];
-
-  if (keyInfo.entities.people.length > 0) {
-    keyInfoParts.push(`人物: ${keyInfo.entities.people.join('、')}`);
-  }
-
-  if (keyInfo.entities.places.length > 0) {
-    keyInfoParts.push(`地点: ${keyInfo.entities.places.join('、')}`);
-  }
-
-  if (keyInfo.entities.terms.length > 0) {
-    keyInfoParts.push(`术语: ${keyInfo.entities.terms.join('、')}`);
-  }
-
-  if (keyInfo.keywords.length > 0) {
-    keyInfoParts.push(`关键词: ${keyInfo.keywords.join('、')}`);
-  }
-
-  const keyInfoText = keyInfoParts.length > 0
-    ? `【关键信息】${keyInfoParts.join(' | ')}`
-    : '【关键信息】暂无识别到的关键信息';
-
-  // 生成SRT格式，第一行为关键信息
+  // 生成SRT格式，直接从音频转录内容开始
   const srtLines = [];
 
-  // 第一行：关键信息（时间从0开始到第一个音频段开始）
-  const firstSegmentStart = audioSegments.length > 0 ? audioSegments[0].start : 5;
-  srtLines.push(
-    '1',
-    `${formatSRTTime(0)} --> ${formatSRTTime(Math.max(firstSegmentStart - 0.1, 2))}`,
-    keyInfoText,
-    ''
-  );
-
-  // 后续行：音频转录内容
+  // 音频转录内容
   audioSegments.forEach((segment, index) => {
-    const srtIndex = index + 2; // 从2开始，因为第1行是关键信息
+    const srtIndex = index + 1; // 从1开始
     const startTime = formatSRTTime(segment.start);
     const endTime = formatSRTTime(segment.end);
 
@@ -404,63 +277,7 @@ function formatSRTTime(seconds: number): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
 }
 
-// 生成综合总结
-async function generateCombinedSummary(
-  audioTranscript: string,
-  keyInfo: any,
-  apiKey: string
-): Promise<string> {
-  try {
-    const prompt = `基于以下音频分析结果，生成一个简洁的分集简介：
 
-音频转录内容：
-${audioTranscript}
-
-关键信息：
-人物: ${keyInfo.entities.people.join(', ') || '无'}
-地点: ${keyInfo.entities.places.join(', ') || '无'}
-术语: ${keyInfo.entities.terms.join(', ') || '无'}
-关键词: ${keyInfo.keywords.join(', ') || '无'}
-
-内容摘要：
-${keyInfo.summary}
-
-请生成一个120-200字的分集简介，要求：
-1. 基于音频转录内容作为主要信息源
-2. 结合关键信息和摘要
-3. 突出主要情节和看点
-4. 语言生动有趣，符合影视剧简介风格
-5. 避免剧透关键结局
-6. 重点体现对话和情节发展`;
-
-    const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'deepseek-ai/DeepSeek-V2.5',
-        messages: [{
-          role: 'user',
-          content: prompt
-        }],
-        temperature: 0.7,
-        max_tokens: 300
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`API调用失败: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content || '生成简介失败';
-  } catch (error) {
-    console.error('生成综合总结失败:', error);
-    return '生成综合总结失败';
-  }
-}
 
 export async function POST(request: NextRequest) {
   const sessionId = uuidv4();
@@ -501,24 +318,17 @@ export async function POST(request: NextRequest) {
     const audioTranscriptResult = await transcribeAudio(audioInfo.audioPath, apiKey, audioInfo.duration);
     const audioTranscript = audioTranscriptResult.text;
 
-    // 3. 关键信息抽取
-    console.log('提取关键信息...');
-    const keyInfo = await extractKeyInformation(audioTranscript, apiKey);
-
-    // 4. 生成综合总结和结构化内容
-    console.log('生成综合总结...');
+    // 3. 生成结构化内容
+    console.log('生成结构化内容...');
     const videoInfo = {
       title: audioInfo.title,
       duration: audioInfo.duration,
       url: videoUrl
     };
 
-    const [combinedSummary, structuredContentResult] = await Promise.all([
-      generateCombinedSummary(audioTranscript, keyInfo, apiKey),
-      generateStructuredContent(audioTranscriptResult, videoInfo, keyInfo)
-    ]);
+    const structuredContentResult = await generateStructuredContent(audioTranscriptResult, videoInfo);
 
-    // 5. 构建返回结果
+    // 4. 构建返回结果
     const result: VideoAnalysisResult = {
       success: true,
       data: {
@@ -528,17 +338,15 @@ export async function POST(request: NextRequest) {
           segments: audioTranscriptResult.segments,
           summary: audioTranscript.length > 200 ? audioTranscript.substring(0, 200) + '...' : audioTranscript
         },
-        keyInformation: keyInfo,
         structuredContent: {
           srt: structuredContentResult.srt,
           markdown: '', // 不再生成
           text: ''      // 不再生成
-        },
-        combinedSummary
+        }
       }
     };
 
-    // 6. 立即清理临时文件（处理完成后不再需要）
+    // 5. 立即清理临时文件（处理完成后不再需要）
     await cleanupTempFiles(sessionId);
     console.log('临时音频文件已清理');
 

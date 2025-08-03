@@ -35,16 +35,6 @@ export interface VideoAnalysisResult {
     segments: AudioSegment[];
     summary: string;
   };
-  keyInformation: {
-    entities: {
-      people: string[];
-      places: string[];
-      terms: string[];
-    };
-    keywords: string[];
-    summary: string;
-  };
-  combinedSummary: string;
   structuredContent: {
     markdown: string;
     srt: string;
@@ -258,16 +248,16 @@ export class VideoAnalyzer {
     if (typeof analysis.structuredContent === 'object') {
       switch (format) {
         case 'markdown':
-          return analysis.structuredContent.markdown || analysis.combinedSummary;
+          return analysis.structuredContent.markdown || analysis.audioAnalysis.transcript;
         case 'srt':
           return analysis.structuredContent.srt || '';
         case 'text':
         default:
-          return analysis.structuredContent.text || analysis.combinedSummary;
+          return analysis.structuredContent.text || analysis.audioAnalysis.transcript;
       }
     }
     // 兼容旧格式
-    return analysis.structuredContent || analysis.combinedSummary;
+    return analysis.structuredContent || analysis.audioAnalysis.transcript;
   }
 
   /**
