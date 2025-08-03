@@ -113,10 +113,10 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
   try {
     // 使用ffmpeg直接从URL提取音频，不下载视频文件
     console.log('开始从URL提取音频...');
-    const command = `ffmpeg -i "${videoUrl}" -vn -acodec pcm_s16le -ar 16000 -ac 1 -t 1800 "${audioPath}"`;
+    const command = `ffmpeg -i "${videoUrl}" -vn -acodec pcm_s16le -ar 16000 -ac 1 "${audioPath}"`;
     const { stdout, stderr } = await execAsync(command, {
-      timeout: 600000, // 10分钟超时
-      maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+      timeout: 1800000, // 30分钟超时，支持长视频
+      maxBuffer: 1024 * 1024 * 50 // 50MB buffer，支持更大的音频文件
     });
 
     console.log('音频提取完成');
@@ -128,6 +128,8 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
 
     const duration = parseFloat(audioInfo.format.duration) || 0;
     const title = audioInfo.format.tags?.title || '未知标题';
+
+    console.log(`音频提取成功 - 时长: ${duration.toFixed(2)}秒 (${Math.floor(duration/60)}分${Math.floor(duration%60)}秒)`);
 
     return {
       audioPath,
@@ -242,7 +244,7 @@ ${text}
 }
 
 // 语音转文字（使用硅基流动SenseVoice-Small语音识别）
-async function transcribeAudio(audioPath: string, apiKey: string): Promise<{
+async function transcribeAudio(audioPath: string, apiKey: string, audioDuration: number = 0): Promise<{
   text: string;
   segments: Array<{
     start: number;
@@ -254,35 +256,48 @@ async function transcribeAudio(audioPath: string, apiKey: string): Promise<{
   try {
     // 读取音频文件
     const audioBuffer = await fs.readFile(audioPath);
+    const fileSizeMB = audioBuffer.length / (1024 * 1024);
+
+    console.log(`音频文件大小: ${fileSizeMB.toFixed(2)}MB, 时长: ${audioDuration.toFixed(2)}秒`);
+
+    // 检查文件大小限制（硅基流动API通常有25MB限制）
+    if (fileSizeMB > 25) {
+      console.warn(`音频文件过大 (${fileSizeMB.toFixed(2)}MB)，可能需要分段处理`);
+    }
 
     // 创建FormData
     const formData = new FormData();
     formData.append('model', 'FunAudioLLM/SenseVoiceSmall');
     formData.append('file', new Blob([audioBuffer], { type: 'audio/wav' }), 'audio.wav');
 
-    // 调用硅基流动语音识别API
+    // 调用硅基流动语音识别API，增加超时时间
     const response = await fetch('https://api.siliconflow.cn/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: formData
+      body: formData,
+      signal: AbortSignal.timeout(300000) // 5分钟超时
     });
 
     if (!response.ok) {
-      throw new Error(`语音识别API调用失败: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`语音识别API调用失败: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const result = await response.json();
     const transcriptText = result.text || '';
 
-    console.log('语音识别结果:', transcriptText);
+    console.log(`语音识别完成，文本长度: ${transcriptText.length}字符`);
 
-    // 简单的分段处理（基于句号、问号、感叹号分割）
+    // 改进的分段处理，根据实际音频时长计算时间戳
     const sentences = transcriptText.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
+    const totalDuration = audioDuration > 0 ? audioDuration : sentences.length * 5; // 如果没有时长信息，估算
+    const avgSentenceDuration = totalDuration / sentences.length;
+
     const segments = sentences.map((sentence, index) => ({
-      start: index * 5, // 假设每句话5秒，实际应该根据音频长度计算
-      end: (index + 1) * 5,
+      start: Math.round(index * avgSentenceDuration * 100) / 100,
+      end: Math.round((index + 1) * avgSentenceDuration * 100) / 100,
       text: sentence.trim(),
       confidence: 0.8 // SenseVoice通常有较高的准确率
     }));
@@ -293,8 +308,21 @@ async function transcribeAudio(audioPath: string, apiKey: string): Promise<{
     };
   } catch (error) {
     console.error('语音转文字失败:', error);
+
+    // 提供更详细的错误信息
+    let errorMessage = '语音转文字失败';
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        errorMessage = '语音识别超时，音频文件可能过长或网络较慢';
+      } else if (error.message.includes('413') || error.message.includes('too large')) {
+        errorMessage = '音频文件过大，请尝试较短的视频片段';
+      } else {
+        errorMessage = `语音转文字失败: ${error.message}`;
+      }
+    }
+
     return {
-      text: '语音转文字失败: ' + (error instanceof Error ? error.message : '未知错误'),
+      text: errorMessage,
       segments: []
     };
   }
@@ -482,7 +510,7 @@ export async function POST(request: NextRequest) {
 
     // 2. 语音转文字
     console.log('进行语音识别...');
-    const audioTranscriptResult = await transcribeAudio(audioInfo.audioPath, apiKey);
+    const audioTranscriptResult = await transcribeAudio(audioInfo.audioPath, apiKey, audioInfo.duration);
     const audioTranscript = audioTranscriptResult.text;
 
     // 3. 关键信息抽取
