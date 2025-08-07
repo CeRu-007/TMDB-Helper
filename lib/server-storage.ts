@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { TMDBItem } from './storage';
+import { stringifyAuto } from './readable-compact-json';
 
 // 数据文件存储路径 - 修改为项目根目录下的data文件夹
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -41,7 +42,8 @@ export function writeItems(items: TMDBItem[]): boolean {
   ensureDataDir();
   
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2), 'utf-8');
+    // 使用可读紧凑格式保存，既节省空间又便于阅读
+    fs.writeFileSync(DATA_FILE, stringifyAuto(items, 'tmdb'), 'utf-8');
     return true;
   } catch (error) {
     console.error('写入数据文件失败:', error);

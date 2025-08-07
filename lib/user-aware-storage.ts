@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { TMDBItem, ScheduledTask } from './storage';
+import { stringifyAuto } from './readable-compact-json';
 
 /**
  * 用户感知的存储管理器
@@ -89,7 +90,8 @@ export function writeUserItems(userId: string, items: TMDBItem[]): boolean {
   const filePath = getUserDataFilePath(userId);
   
   try {
-    fs.writeFileSync(filePath, JSON.stringify(items, null, 2), 'utf-8');
+    // 使用可读紧凑格式保存，既节省空间又便于阅读
+    fs.writeFileSync(filePath, stringifyAuto(items, 'tmdb'), 'utf-8');
     console.log(`成功写入用户 ${userId} 的 ${items.length} 个项目`);
     return true;
   } catch (error) {
@@ -217,7 +219,8 @@ export function writeUserTasks(userId: string, tasks: ScheduledTask[]): boolean 
   const filePath = getUserTaskFilePath(userId);
   
   try {
-    fs.writeFileSync(filePath, JSON.stringify(tasks, null, 2), 'utf-8');
+    // 使用可读紧凑格式保存定时任务
+    fs.writeFileSync(filePath, stringifyAuto(tasks, 'tasks'), 'utf-8');
     return true;
   } catch (error) {
     console.error(`写入用户 ${userId} 任务文件失败:`, error);
@@ -357,7 +360,8 @@ export function setUserConfig(userId: string, key: string, value: string): boole
 
     configData[key] = value;
 
-    fs.writeFileSync(configFile, JSON.stringify(configData, null, 2), 'utf-8');
+    // 使用可读紧凑格式保存配置
+    fs.writeFileSync(configFile, stringifyAuto(configData, 'config'), 'utf-8');
     return true;
   } catch (error) {
     console.error(`设置用户 ${userId} 配置 ${key} 失败:`, error);

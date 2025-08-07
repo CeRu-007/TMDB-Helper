@@ -14,13 +14,17 @@ export async function POST(request: NextRequest) {
   try {
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: '缺少用户身份信息' },
         { status: 400 }
       );
     }
+
+    const { action } = await request.json();
+
+    // 移除了tmdb_items优化功能，现在使用自动紧凑格式保存
 
     console.log(`[API] 开始为用户 ${userId} 执行数据迁移`);
 

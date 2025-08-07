@@ -1079,12 +1079,26 @@ export class StorageManager {
         const normalizedTasks = tasks.map(task => this.normalizeTask(task));
 
         try {
-          localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(normalizedTasks));
-          tasksImported = normalizedTasks.length;
-          console.log(`${tasksImported} 个任务保存到localStorage成功`);
+          // 使用服务端API批量导入任务
+          for (const task of normalizedTasks) {
+            const response = await fetch('/api/scheduled-tasks', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(task),
+            });
+
+            if (response.ok) {
+              tasksImported++;
+            } else {
+              console.error(`导入任务失败: ${task.name}`, await response.text());
+            }
+          }
+          console.log(`${tasksImported} 个任务导入到服务端成功`);
         } catch (error) {
-          console.error("保存任务到localStorage失败:", error);
-          // 任务导入失败不应该影响整个导入过�?
+          console.error("导入任务到服务端失败:", error);
+          // 任务导入失败不应该影响整个导入过程
         }
       }
 
@@ -1111,66 +1125,29 @@ export class StorageManager {
    * 获取所有定时任务（增强版，包含详细错误处理）
    */
   static async getScheduledTasks(): Promise<ScheduledTask[]> {
-    // 环境检查
-    if (!this.isClient()) {
-      console.warn("[StorageManager] getScheduledTasks: 不在客户端环境中");
-      return [];
-    }
-
-    if (!this.isStorageAvailable()) {
-      console.error("[StorageManager] getScheduledTasks: localStorage不可用");
-      throw new Error("localStorage不可用，无法读取定时任务数据");
-    }
-
     try {
-      console.log(`[StorageManager] 开始读取定时任务，存储键: ${this.SCHEDULED_TASKS_KEY}`);
+      console.log(`[StorageManager] 开始从服务端读取定时任务`);
 
-      const data = localStorage.getItem(this.SCHEDULED_TASKS_KEY);
-      let tasks: ScheduledTask[] = [];
-
-      if (data === null) {
-        console.log("[StorageManager] 定时任务数据为空，返回空数组");
-        return [];
+      const response = await fetch('/api/scheduled-tasks');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      if (data === '') {
-        console.warn("[StorageManager] 定时任务数据为空字符串，返回空数组");
-        return [];
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || '获取定时任务失败');
       }
 
-      try {
-        tasks = JSON.parse(data);
+      const tasks: ScheduledTask[] = result.tasks || [];
 
-        // 验证数据格式
-        if (!Array.isArray(tasks)) {
-          console.error("[StorageManager] 定时任务数据格式错误：不是数组", typeof tasks);
-          throw new Error("定时任务数据格式错误：期望数组格式");
-        }
-
-        console.log(`[StorageManager] 成功解析定时任务: 找到 ${tasks.length} 个任务`);
-      } catch (parseError) {
-        console.error("[StorageManager] 解析定时任务数据失败:", parseError);
-        console.error("[StorageManager] 原始数据:", data.substring(0, 200) + (data.length > 200 ? '...' : ''));
-
-        // 尝试修复损坏的数据
-        try {
-          // 备份损坏的数据
-          const backupKey = `${this.SCHEDULED_TASKS_KEY}_corrupted_${Date.now()}`;
-          localStorage.setItem(backupKey, data);
-          console.log(`[StorageManager] 已备份损坏的数据到: ${backupKey}`);
-
-          // 清除损坏的数据
-          localStorage.removeItem(this.SCHEDULED_TASKS_KEY);
-          console.log("[StorageManager] 已清除损坏的定时任务数据");
-
-          throw new Error(`定时任务数据损坏，已备份并清除。原始错误: ${parseError instanceof Error ? parseError.message : '未知错误'}`);
-        } catch (backupError) {
-          console.error("[StorageManager] 备份损坏数据失败:", backupError);
-          throw new Error("定时任务数据损坏且无法备份");
-        }
+      // 验证数据格式
+      if (!Array.isArray(tasks)) {
+        console.error("[StorageManager] 定时任务数据格式错误：不是数组", typeof tasks);
+        throw new Error("定时任务数据格式错误：期望数组格式");
       }
 
-      // 确保所有任务都有必要的字段
+      console.log(`[StorageManager] 成功从服务端获取定时任务: 找到 ${tasks.length} 个任务`);
+
       // 验证和规范化任务数据
       const normalizedTasks: ScheduledTask[] = [];
       const invalidTasks: any[] = [];
@@ -1203,23 +1180,6 @@ export class StorageManager {
       // 报告无效任务
       if (invalidTasks.length > 0) {
         console.warn(`[StorageManager] 发现 ${invalidTasks.length} 个无效任务:`, invalidTasks);
-      }
-
-      // 检查是否需要自动修复
-      const needsAutoFix = normalizedTasks.length !== tasks.length ||
-                          JSON.stringify(normalizedTasks) !== JSON.stringify(tasks);
-
-      if (needsAutoFix) {
-        console.log(`[StorageManager] 检测到任务数据需要修复，正在自动修复...`);
-        console.log(`[StorageManager] 原始任务数: ${tasks.length}, 有效任务数: ${normalizedTasks.length}`);
-
-        try {
-          localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(normalizedTasks));
-          console.log(`[StorageManager] 任务数据修复完成`);
-        } catch (saveError) {
-          console.error("[StorageManager] 保存修复后的任务数据失败:", saveError);
-          // 不抛出错误，继续返回数据
-        }
       }
 
       console.log(`[StorageManager] 成功获取 ${normalizedTasks.length} 个有效定时任务`);
@@ -1298,16 +1258,11 @@ export class StorageManager {
   }
 
   /**
-   * 添加定时任务，自动关联项目属�?
+   * 添加定时任务，自动关联项目属性
    */
   static async addScheduledTask(task: ScheduledTask): Promise<boolean> {
-    if (!this.isClient() || !this.isStorageAvailable()) {
-      console.error("Cannot add scheduled task: localStorage is not available");
-      return false;
-    }
-    
     try {
-      // 验证任务的必要字�?
+      // 验证任务的必要字段
       if (!task.id) {
         console.error("添加定时任务失败: 缺少必要字段 id");
         return false;
@@ -1336,29 +1291,26 @@ export class StorageManager {
         console.log(`[StorageManager] 任务已包含完整项目信�? ${normalizedTask.itemTitle} (ID: ${normalizedTask.itemId})`);
       }
       
-      const tasks = await this.getScheduledTasks();
-      
-      // 检查是否已存在相同ID的任�?
-      const taskExists = tasks.some(t => t.id === normalizedTask.id);
-      if (taskExists) {
-        console.warn(`[StorageManager] 添加定时任务警告: ID�?${normalizedTask.id} 的任务已存在，将更新现有任务`);
-        return this.updateScheduledTask(normalizedTask);
+      // 调用服务端API添加任务
+      const response = await fetch('/api/scheduled-tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(normalizedTask),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
-      tasks.push(normalizedTask);
-      localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(tasks));
-      
-      // 验证任务是否已成功保�?
-      const savedTasks = await this.getScheduledTasks();
-      const taskSaved = savedTasks.some(t => t.id === normalizedTask.id);
-      
-      if (taskSaved) {
-        console.log(`[StorageManager] 定时任务保存成功: ID=${normalizedTask.id}`);
-        return true;
-      } else {
-        console.error(`[StorageManager] 定时任务保存失败: ID=${normalizedTask.id}, 任务未在存储中找到`);
-        return false;
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || '添加定时任务失败');
       }
+
+      console.log(`[StorageManager] 定时任务保存成功: ID=${normalizedTask.id}`);
+      return true;
     } catch (error) {
       console.error("[StorageManager] Failed to add scheduled task:", error);
       return false;
@@ -1366,16 +1318,11 @@ export class StorageManager {
   }
 
   /**
-   * 更新定时任务，自动更新项目关联属�?
+   * 更新定时任务，自动更新项目关联属性
    */
   static async updateScheduledTask(updatedTask: ScheduledTask): Promise<boolean> {
-    if (!this.isClient() || !this.isStorageAvailable()) {
-      console.error("Cannot update scheduled task: localStorage is not available");
-      return false;
-    }
-    
     try {
-      // 验证任务的必要字�?
+      // 验证任务的必要字段
       if (!updatedTask.id) {
         console.error("更新定时任务失败: 缺少必要字段 id");
         return false;
@@ -1406,34 +1353,27 @@ export class StorageManager {
       
       // 更新updatedAt字段
       normalizedTask.updatedAt = new Date().toISOString();
-      
-      const tasks = await this.getScheduledTasks();
-      
-      // 检查任务是否存�?
-      const taskExists = tasks.some(t => t.id === normalizedTask.id);
-      if (!taskExists) {
-        console.warn(`[StorageManager] 更新定时任务警告: ID�?${normalizedTask.id} 的任务不存在，将添加新任务`);
-        return this.addScheduledTask(normalizedTask);
+
+      // 调用服务端API更新任务
+      const response = await fetch('/api/scheduled-tasks', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(normalizedTask),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
-      const updatedTasks = tasks.map(task => 
-        task.id === normalizedTask.id ? normalizedTask : task
-      );
-      localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(updatedTasks));
-      
-      // 验证任务是否已成功更�?
-      const savedTasks = await this.getScheduledTasks();
-      const taskUpdated = savedTasks.some(t => 
-        t.id === normalizedTask.id && t.updatedAt === normalizedTask.updatedAt
-      );
-      
-      if (taskUpdated) {
-        console.log(`[StorageManager] 定时任务更新成功: ID=${normalizedTask.id}`);
-        return true;
-      } else {
-        console.error(`[StorageManager] 定时任务更新失败: ID=${normalizedTask.id}, 任务未在存储中更新`);
-        return false;
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || '更新定时任务失败');
       }
+
+      console.log(`[StorageManager] 定时任务更新成功: ID=${normalizedTask.id}`);
+      return true;
     } catch (error) {
       console.error("[StorageManager] Failed to update scheduled task:", error);
       return false;
@@ -1444,28 +1384,25 @@ export class StorageManager {
    * 删除定时任务
    */
   static async deleteScheduledTask(id: string): Promise<boolean> {
-    if (!this.isClient() || !this.isStorageAvailable()) {
-      console.error("[StorageManager] Cannot delete scheduled task: localStorage is not available");
-      return false;
-    }
-    
     try {
       console.log(`[StorageManager] 删除定时任务: ID=${id}`);
-      const tasks = await this.getScheduledTasks();
-      const filteredTasks = tasks.filter(task => task.id !== id);
-      localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(filteredTasks));
-      
-      // 验证任务是否已成功删�?
-      const savedTasks = await this.getScheduledTasks();
-      const taskDeleted = !savedTasks.some(t => t.id === id);
-      
-      if (taskDeleted) {
-        console.log(`[StorageManager] 定时任务删除成功: ID=${id}`);
-        return true;
-      } else {
-        console.error(`[StorageManager] 定时任务删除失败: ID=${id}, 任务仍在存储中`);
-        return false;
+
+      // 调用服务端API删除任务
+      const response = await fetch(`/api/scheduled-tasks?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || '删除定时任务失败');
+      }
+
+      console.log(`[StorageManager] 定时任务删除成功: ID=${id}`);
+      return true;
     } catch (error) {
       console.error("[StorageManager] Failed to delete scheduled task:", error);
       return false;
@@ -1573,10 +1510,17 @@ export class StorageManager {
         return task;
       });
       
-      // 如果有任务被修改，保存更新后的任务列�?
+      // 如果有任务被修改，通过API更新任务
       if (changed) {
-        localStorage.setItem(this.SCHEDULED_TASKS_KEY, JSON.stringify(fixedTasks));
-        console.log(`[StorageManager] 已保存修复后的任务列表，�?${fixedTasks.length} 个任务`);
+        console.log(`[StorageManager] 检测到任务需要修复，正在更新...`);
+        for (const task of fixedTasks) {
+          try {
+            await this.updateScheduledTask(task);
+          } catch (error) {
+            console.error(`[StorageManager] 修复任务失败: ${task.id}`, error);
+          }
+        }
+        console.log(`[StorageManager] 已修复任务列表，共${fixedTasks.length} 个任务`);
       } else {
         console.log(`[StorageManager] 所有任务都有效，无需修复`);
       }

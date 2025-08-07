@@ -1,32 +1,42 @@
 import fs from 'fs';
 import path from 'path';
 import { ScheduledTask } from './storage';
+import { stringifyAuto } from './readable-compact-json';
 
-const TASKS_FILE_PATH = path.join(process.cwd(), 'data', 'scheduled-tasks.json');
+// 获取用户数据目录
+function getUserDataDir(userId: string = 'user_admin_system'): string {
+  return path.join(process.cwd(), 'data', 'users', userId);
+}
+
+// 获取定时任务文件路径
+function getTasksFilePath(userId: string = 'user_admin_system'): string {
+  return path.join(getUserDataDir(userId), 'scheduled_tasks.json');
+}
 
 /**
- * 确保数据目录存在
+ * 确保用户数据目录存在
  */
-function ensureDataDirectory(): void {
-  const dataDir = path.dirname(TASKS_FILE_PATH);
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+function ensureUserDataDirectory(userId: string = 'user_admin_system'): void {
+  const userDataDir = getUserDataDir(userId);
+  if (!fs.existsSync(userDataDir)) {
+    fs.mkdirSync(userDataDir, { recursive: true });
   }
 }
 
 /**
  * 从服务端文件读取定时任务
  */
-export function readScheduledTasks(): ScheduledTask[] {
+export function readScheduledTasks(userId: string = 'user_admin_system'): ScheduledTask[] {
   try {
-    ensureDataDirectory();
-    
-    if (!fs.existsSync(TASKS_FILE_PATH)) {
+    ensureUserDataDirectory(userId);
+
+    const tasksFilePath = getTasksFilePath(userId);
+    if (!fs.existsSync(tasksFilePath)) {
       console.log('[ServerScheduledTasks] 定时任务文件不存在，返回空数组');
       return [];
     }
 
-    const data = fs.readFileSync(TASKS_FILE_PATH, 'utf-8');
+    const data = fs.readFileSync(tasksFilePath, 'utf-8');
     const tasks = JSON.parse(data) as ScheduledTask[];
     
     console.log(`[ServerScheduledTasks] 从服务端文件读取到 ${tasks.length} 个定时任务`);
@@ -40,12 +50,14 @@ export function readScheduledTasks(): ScheduledTask[] {
 /**
  * 将定时任务写入服务端文件
  */
-export function writeScheduledTasks(tasks: ScheduledTask[]): boolean {
+export function writeScheduledTasks(tasks: ScheduledTask[], userId: string = 'user_admin_system'): boolean {
   try {
-    ensureDataDirectory();
-    
-    const data = JSON.stringify(tasks, null, 2);
-    fs.writeFileSync(TASKS_FILE_PATH, data, 'utf-8');
+    ensureUserDataDirectory(userId);
+
+    const tasksFilePath = getTasksFilePath(userId);
+    // 使用可读紧凑格式保存定时任务
+    const data = stringifyAuto(tasks, 'tasks');
+    fs.writeFileSync(tasksFilePath, data, 'utf-8');
     
     console.log(`[ServerScheduledTasks] 成功写入 ${tasks.length} 个定时任务到服务端文件`);
     return true;
@@ -58,9 +70,9 @@ export function writeScheduledTasks(tasks: ScheduledTask[]): boolean {
 /**
  * 添加定时任务到服务端文件
  */
-export function addScheduledTask(task: ScheduledTask): boolean {
+export function addScheduledTask(task: ScheduledTask, userId: string = 'user_admin_system'): boolean {
   try {
-    const tasks = readScheduledTasks();
+    const tasks = readScheduledTasks(userId);
     
     // 检查是否已存在相同ID的任务
     const existingIndex = tasks.findIndex(t => t.id === task.id);
@@ -74,7 +86,7 @@ export function addScheduledTask(task: ScheduledTask): boolean {
       console.log(`[ServerScheduledTasks] 添加新任务: ${task.name} (${task.id})`);
     }
     
-    return writeScheduledTasks(tasks);
+    return writeScheduledTasks(tasks, userId);
   } catch (error) {
     console.error('[ServerScheduledTasks] 添加定时任务失败:', error);
     return false;
@@ -84,20 +96,20 @@ export function addScheduledTask(task: ScheduledTask): boolean {
 /**
  * 更新定时任务
  */
-export function updateScheduledTask(updatedTask: ScheduledTask): boolean {
+export function updateScheduledTask(updatedTask: ScheduledTask, userId: string = 'user_admin_system'): boolean {
   try {
-    const tasks = readScheduledTasks();
+    const tasks = readScheduledTasks(userId);
     const taskIndex = tasks.findIndex(t => t.id === updatedTask.id);
-    
+
     if (taskIndex === -1) {
       console.warn(`[ServerScheduledTasks] 要更新的任务不存在: ${updatedTask.id}`);
-      return addScheduledTask(updatedTask);
+      return addScheduledTask(updatedTask, userId);
     }
-    
+
     tasks[taskIndex] = updatedTask;
     console.log(`[ServerScheduledTasks] 更新任务: ${updatedTask.name} (${updatedTask.id})`);
-    
-    return writeScheduledTasks(tasks);
+
+    return writeScheduledTasks(tasks, userId);
   } catch (error) {
     console.error('[ServerScheduledTasks] 更新定时任务失败:', error);
     return false;
@@ -107,18 +119,18 @@ export function updateScheduledTask(updatedTask: ScheduledTask): boolean {
 /**
  * 删除定时任务
  */
-export function deleteScheduledTask(taskId: string): boolean {
+export function deleteScheduledTask(taskId: string, userId: string = 'user_admin_system'): boolean {
   try {
-    const tasks = readScheduledTasks();
+    const tasks = readScheduledTasks(userId);
     const filteredTasks = tasks.filter(t => t.id !== taskId);
-    
+
     if (filteredTasks.length === tasks.length) {
       console.warn(`[ServerScheduledTasks] 要删除的任务不存在: ${taskId}`);
       return false;
     }
-    
+
     console.log(`[ServerScheduledTasks] 删除任务: ${taskId}`);
-    return writeScheduledTasks(filteredTasks);
+    return writeScheduledTasks(filteredTasks, userId);
   } catch (error) {
     console.error('[ServerScheduledTasks] 删除定时任务失败:', error);
     return false;
@@ -128,8 +140,8 @@ export function deleteScheduledTask(taskId: string): boolean {
 /**
  * 获取指定项目的定时任务
  */
-export function getItemScheduledTasks(itemId: string): ScheduledTask[] {
-  const allTasks = readScheduledTasks();
+export function getItemScheduledTasks(itemId: string, userId: string = 'user_admin_system'): ScheduledTask[] {
+  const allTasks = readScheduledTasks(userId);
   return allTasks.filter(task => task.itemId === itemId);
 }
 
