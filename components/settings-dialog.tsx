@@ -211,9 +211,43 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     console.log('🔄 [TMDB Debug] 开始初始化设置对话框...')
 
     // 简化的配置加载逻辑
-    const initializeSettings = () => {
+    const initializeSettings = async () => {
       try {
-        // 直接从localStorage加载，简单可靠
+        // 首先尝试从服务器端加载配置
+        try {
+          const dockerConfigResponse = await fetch('/api/docker-config')
+          const dockerConfigData = await dockerConfigResponse.json()
+
+          if (dockerConfigData.success && dockerConfigData.config.shouldUseFileSystem) {
+            // 服务器环境：从服务器端配置加载
+            console.log('📖 [TMDB Debug] 从服务器端加载配置')
+            const config = dockerConfigData.config
+
+            if (config.tmdbApiKey && config.tmdbApiKey !== '***已配置***') {
+              setApiKey(config.tmdbApiKey)
+              console.log('✅ [TMDB Debug] 从服务器端加载API密钥成功')
+            } else if (config.hasApiKey) {
+              setApiKey('***已配置***')
+              console.log('✅ [TMDB Debug] 服务器端已配置API密钥（显示占位符）')
+            } else {
+              setApiKey("")
+              console.log('⚠️ [TMDB Debug] 服务器端未找到API密钥')
+            }
+
+            if (config.tmdbImportPath) {
+              setTmdbImportPath(config.tmdbImportPath)
+              console.log('✅ [TMDB Debug] 从服务器端加载导入路径:', config.tmdbImportPath)
+            } else {
+              setTmdbImportPath("")
+              console.log('⚠️ [TMDB Debug] 服务器端未找到导入路径')
+            }
+            return
+          }
+        } catch (serverError) {
+          console.warn('⚠️ [TMDB Debug] 服务器端配置加载失败，回退到localStorage:', serverError)
+        }
+
+        // 回退到localStorage加载
         const savedApiKey = localStorage.getItem("tmdb_api_key")
         const savedTmdbImportPath = localStorage.getItem("tmdb_import_path")
 
@@ -224,25 +258,21 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           importPath: savedTmdbImportPath
         })
 
-        // 立即设置状态，不等待异步操作
         if (savedApiKey) {
           setApiKey(savedApiKey)
-          console.log('✅ [TMDB Debug] API密钥已设置:', savedApiKey.substring(0, 8) + '...')
+          console.log('✅ [TMDB Debug] 从localStorage加载API密钥成功')
         } else {
           setApiKey("")
-          console.log('⚠️ [TMDB Debug] 未找到保存的API密钥')
+          console.log('⚠️ [TMDB Debug] localStorage未找到API密钥')
         }
 
         if (savedTmdbImportPath) {
           setTmdbImportPath(savedTmdbImportPath)
-          console.log('✅ [TMDB Debug] 导入路径已设置:', savedTmdbImportPath)
+          console.log('✅ [TMDB Debug] 从localStorage加载导入路径:', savedTmdbImportPath)
         } else {
           setTmdbImportPath("")
-          console.log('⚠️ [TMDB Debug] 未找到保存的导入路径')
+          console.log('⚠️ [TMDB Debug] localStorage未找到导入路径')
         }
-
-        // 异步检查Docker环境（不阻塞主流程）
-        checkDockerEnvironment(savedApiKey, savedTmdbImportPath)
 
       } catch (error) {
         console.error('❌ [TMDB Debug] 初始化设置失败:', error)
@@ -300,7 +330,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             loadTmdbConfig(data.config.tmdbImportPath)
           }
         } else {
-          console.log('💻 [TMDB Debug] 非Docker环境，使用localStorage')
+          console.log('💻 [TMDB Debug] 浏览器环境，使用localStorage')
         }
       } catch (error) {
         console.warn('⚠️ [TMDB Debug] Docker环境检查失败:', error)
@@ -308,7 +338,9 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     }
 
     // 立即执行初始化
-    initializeSettings()
+    initializeSettings().catch(error => {
+      console.error('❌ [TMDB Debug] 初始化失败:', error)
+    })
 
     // 检查Docker环境
     fetch('/api/docker-config')
@@ -322,6 +354,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       .then(data => {
         if (data.success) {
           setIsDockerEnv(data.config.isDockerEnvironment)
+          // 记录环境信息
+          console.log(`🌍 环境检测结果: ${data.config.environmentType}, 使用文件系统: ${data.config.shouldUseFileSystem}`)
         }
       })
       .catch(error => {
@@ -503,8 +537,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       const dockerConfigResponse = await fetch('/api/docker-config')
       const dockerConfigData = await dockerConfigResponse.json()
 
-      if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-        // Docker环境：保存到服务器端文件系统
+      if (dockerConfigData.success && dockerConfigData.config.shouldUseFileSystem) {
+        // 服务器环境（开发或Docker）：保存到服务器端文件系统
         const saveResponse = await fetch('/api/docker-config', {
           method: 'POST',
           headers: {
@@ -520,7 +554,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           throw new Error(saveData.error || '保存失败')
         }
       } else {
-        // 非Docker环境：保存到localStorage
+        // 浏览器环境：保存到localStorage
         localStorage.setItem("general_settings", JSON.stringify(generalSettings))
       }
 
@@ -544,8 +578,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       const dockerConfigResponse = await fetch('/api/docker-config')
       const dockerConfigData = await dockerConfigResponse.json()
 
-      if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-        // Docker环境：保存到服务器端文件系统
+      if (dockerConfigData.success && dockerConfigData.config.shouldUseFileSystem) {
+        // 服务器环境（开发或Docker）：保存到服务器端文件系统
         const saveResponse = await fetch('/api/docker-config', {
           method: 'POST',
           headers: {
@@ -561,7 +595,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           throw new Error(saveData.error || '保存失败')
         }
       } else {
-        // 非Docker环境：保存到localStorage
+        // 浏览器环境：保存到localStorage
         localStorage.setItem("appearance_settings", JSON.stringify(appearanceSettings))
       }
 
@@ -586,8 +620,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       const dockerConfigResponse = await fetch('/api/docker-config')
       const dockerConfigData = await dockerConfigResponse.json()
 
-      if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-        // Docker环境：保存到服务器端文件系统
+      if (dockerConfigData.success && dockerConfigData.config.shouldUseFileSystem) {
+        // 服务器环境（开发或Docker）：保存到服务器端文件系统
         const saveResponse = await fetch('/api/docker-config', {
           method: 'POST',
           headers: {
@@ -603,7 +637,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           throw new Error(saveData.error || '保存失败')
         }
       } else {
-        // 非Docker环境：保存到localStorage
+        // 浏览器环境：保存到localStorage
         localStorage.setItem("video_thumbnail_settings", JSON.stringify(videoThumbnailSettings))
       }
 
@@ -724,7 +758,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           console.warn('⚠️ [TMDB Debug] Docker配置同步失败:', saveData.error)
         }
       } else {
-        console.log('💻 [TMDB Debug] 非Docker环境，无需同步')
+        console.log('💻 [TMDB Debug] 浏览器环境，无需同步')
       }
     } catch (error) {
       console.warn('⚠️ [TMDB Debug] Docker配置同步异常:', error)
@@ -773,8 +807,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               const dockerConfigResponse = await fetch('/api/docker-config')
               const dockerConfigData = await dockerConfigResponse.json()
 
-              if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-                // Docker环境：只保存路径
+              if (dockerConfigData.success && dockerConfigData.config.shouldUseFileSystem) {
+                // 服务器环境（开发或Docker）：只保存路径
                 if (tmdbImportPath) {
                   const saveResponse = await fetch('/api/docker-config', {
                     method: 'POST',
@@ -793,7 +827,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   console.log('✅ Docker环境路径保存成功')
                 }
               } else {
-                // 非Docker环境：只保存路径
+                // 浏览器环境：只保存路径
                 if (typeof window !== "undefined" && tmdbImportPath) {
                   const oldPath = localStorage.getItem("tmdb_import_path")
                   localStorage.setItem("tmdb_import_path", tmdbImportPath)
@@ -825,41 +859,49 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
           console.log('✅ [TMDB Debug] API密钥验证通过')
 
-          // 立即保存到localStorage（最可靠的方式）
+          // 检查环境并保存API密钥
           try {
-            localStorage.setItem("tmdb_api_key", apiKey)
-            console.log('✅ [TMDB Debug] API密钥已保存到localStorage')
-            
-            if (tmdbImportPath) {
-              localStorage.setItem("tmdb_import_path", tmdbImportPath)
-              console.log('✅ [TMDB Debug] 导入路径已保存到localStorage')
-            }
+            const dockerConfigResponse = await fetch('/api/docker-config')
+            const dockerConfigData = await dockerConfigResponse.json()
 
-            // 验证保存是否成功
-            const verifyApiKey = localStorage.getItem("tmdb_api_key")
-            const verifyImportPath = localStorage.getItem("tmdb_import_path")
-            
-            if (verifyApiKey === apiKey) {
-              console.log('✅ [TMDB Debug] localStorage保存验证成功')
+            if (dockerConfigData.success && dockerConfigData.config.shouldUseFileSystem) {
+              // 服务器环境（开发或Docker）：保存到服务器端文件系统
+              console.log('💾 [TMDB Debug] 保存到服务器端文件系统')
+              const saveResponse = await fetch('/api/docker-config', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  tmdbApiKey: apiKey,
+                  tmdbImportPath: tmdbImportPath
+                })
+              })
+
+              const saveData = await saveResponse.json()
+              if (!saveData.success) {
+                throw new Error(saveData.error || '保存失败')
+              }
+              console.log('✅ [TMDB Debug] 服务器端保存成功')
             } else {
-              console.error('❌ [TMDB Debug] localStorage保存验证失败!')
-              throw new Error('localStorage保存验证失败')
+              // 浏览器环境：保存到localStorage
+              console.log('💾 [TMDB Debug] 保存到localStorage')
+              localStorage.setItem("tmdb_api_key", apiKey)
+
+              if (tmdbImportPath) {
+                localStorage.setItem("tmdb_import_path", tmdbImportPath)
+              }
+              console.log('✅ [TMDB Debug] localStorage保存成功')
             }
 
           } catch (error) {
-            console.error('❌ [TMDB Debug] localStorage保存失败:', error)
+            console.error('❌ [TMDB Debug] 保存失败:', error)
             throw error // 重新抛出错误，让用户知道保存失败
           }
 
-          // 异步同步到Docker配置（不影响主流程）
-          syncToDockerConfig(apiKey, tmdbImportPath)
-
           // 处理TMDB配置加载
           if (tmdbImportPath) {
-            const oldPath = localStorage.getItem("tmdb_import_path")
-            if (oldPath !== tmdbImportPath) {
-              loadTmdbConfig(tmdbImportPath)
-            }
+            loadTmdbConfig(tmdbImportPath)
           }
           break
 
@@ -1312,8 +1354,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         const dockerConfigResponse = await fetch('/api/docker-config')
         const dockerConfigData = await dockerConfigResponse.json()
 
-        if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-          // Docker环境：保存到服务器端文件系统
+        if (dockerConfigData.success && dockerConfigData.config.shouldUseFileSystem) {
+          // 服务器环境（开发或Docker）：保存到服务器端文件系统
           const saveResponse = await fetch('/api/docker-config', {
             method: 'POST',
             headers: {
@@ -1330,7 +1372,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             throw new Error(saveData.error || '保存失败')
           }
         } else {
-          // 非Docker环境：保存到localStorage
+          // 浏览器环境：保存到localStorage
           localStorage.setItem("siliconflow_api_settings", JSON.stringify(siliconFlowSettings))
 
           // 同步更新到分集生成器的本地存储
@@ -1543,8 +1585,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         const dockerConfigResponse = await fetch('/api/docker-config')
         const dockerConfigData = await dockerConfigResponse.json()
 
-        if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-          // Docker环境：保存到服务器端文件系统
+        if (dockerConfigData.success && dockerConfigData.config.shouldUseFileSystem) {
+          // 服务器环境（开发或Docker）：保存到服务器端文件系统
           const saveResponse = await fetch('/api/docker-config', {
             method: 'POST',
             headers: {
@@ -1561,7 +1603,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             throw new Error(saveData.error || '保存失败')
           }
         } else {
-          // 非Docker环境：保存到localStorage
+          // 浏览器环境：保存到localStorage
           localStorage.setItem("modelscope_api_settings", JSON.stringify(modelScopeSettings))
 
           // 同步更新到分集生成器的本地存储

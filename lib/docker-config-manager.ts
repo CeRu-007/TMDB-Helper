@@ -1,6 +1,6 @@
 /**
- * Docker环境配置管理器
- * 专门处理Docker环境下的配置持久化问题
+ * 环境配置管理器
+ * 支持开发环境和Docker环境的配置管理
  */
 
 // 动态导入Node.js模块，只在服务器端使用
@@ -12,9 +12,17 @@ if (typeof window === 'undefined') {
   try {
     fs = require('fs');
     path = require('path');
+    console.log('✅ DockerConfigManager: Node.js模块加载成功');
   } catch (error) {
-    console.warn('无法加载Node.js模块:', error);
+    console.error('❌ DockerConfigManager: 无法加载Node.js模块:', error);
   }
+}
+
+// 环境类型枚举
+export enum EnvironmentType {
+    CLIENT = 'client',           // 浏览器环境
+    DEVELOPMENT = 'development', // 开发服务器环境
+    DOCKER = 'docker'           // Docker容器环境
 }
 
 interface DockerConfig {
@@ -59,19 +67,66 @@ interface DockerConfig {
 }
 
 export class DockerConfigManager {
-    private static readonly CONFIG_DIR = '/app/data';
+    private static readonly DOCKER_CONFIG_DIR = '/app/data';
     private static readonly CONFIG_FILE = 'app-config.json';
-    private static readonly CONFIG_PATH = '/app/data/app-config.json';
+
+    /**
+     * 获取开发环境配置目录
+     */
+    private static getDevConfigDir(): string {
+        if (path) {
+            return path.join(process.cwd(), 'data');
+        } else {
+            // 回退方案：使用字符串拼接
+            const cwd = process.cwd();
+            return `${cwd}/data`.replace(/\\/g, '/'); // 统一使用正斜杠
+        }
+    }
+
+    /**
+     * 获取环境类型
+     */
+    static getEnvironmentType(): EnvironmentType {
+        if (typeof window !== 'undefined') {
+            return EnvironmentType.CLIENT; // 浏览器环境
+        }
+
+        // 检测Docker环境
+        if (process.env.DOCKER_CONTAINER === 'true' ||
+            (fs && fs.existsSync('/.dockerenv'))) {
+            return EnvironmentType.DOCKER;
+        }
+
+        return EnvironmentType.DEVELOPMENT; // 开发服务器环境
+    }
+
+    /**
+     * 获取配置目录路径
+     */
+    private static getConfigDir(): string {
+        const envType = this.getEnvironmentType();
+        return envType === EnvironmentType.DOCKER ? this.DOCKER_CONFIG_DIR : this.getDevConfigDir();
+    }
+
+    /**
+     * 获取配置文件路径
+     */
+    private static getConfigPath(): string {
+        const configDir = this.getConfigDir();
+        return path ? path.join(configDir, this.CONFIG_FILE) : `${configDir}/${this.CONFIG_FILE}`;
+    }
 
     /**
      * 确保配置目录存在
      */
     private static ensureConfigDir(): void {
         if (!fs) return;
-        
+
         try {
-            if (!fs.existsSync(this.CONFIG_DIR)) {
-                fs.mkdirSync(this.CONFIG_DIR, { recursive: true });
+            const configDir = this.getConfigDir();
+            if (!fs.existsSync(configDir)) {
+                fs.mkdirSync(configDir, { recursive: true });
+                console.log(`已创建配置目录: ${configDir}`);
             }
         } catch (error) {
             console.error('创建配置目录失败:', error);
@@ -79,14 +134,18 @@ export class DockerConfigManager {
     }
 
     /**
-     * 检测是否在Docker环境中
+     * 检测是否在Docker环境中 (保持向后兼容)
      */
     static isDockerEnvironment(): boolean {
-        if (typeof window !== 'undefined') return false; // 客户端环境
-        
-        return process.env.DOCKER_CONTAINER === 'true' ||
-            (fs && fs.existsSync('/.dockerenv')) ||
-            process.env.NODE_ENV === 'production';
+        return this.getEnvironmentType() === EnvironmentType.DOCKER;
+    }
+
+    /**
+     * 检测是否应该使用文件系统存储
+     */
+    static shouldUseFileSystem(): boolean {
+        const envType = this.getEnvironmentType();
+        return envType === EnvironmentType.DOCKER || envType === EnvironmentType.DEVELOPMENT;
     }
 
     /**
@@ -94,18 +153,35 @@ export class DockerConfigManager {
      */
     static getConfig(): DockerConfig {
         try {
-            if (!this.isDockerEnvironment() || !fs) {
+            const envType = this.getEnvironmentType();
+            const shouldUse = this.shouldUseFileSystem();
+            const hasFs = !!fs;
+
+            console.log(`📖 DockerConfigManager.getConfig 调试信息:`, {
+                envType,
+                shouldUseFileSystem: shouldUse,
+                hasFs
+            });
+
+            if (!shouldUse || !fs) {
+                console.log('❌ 不在服务器环境或fs模块不可用，返回空配置');
                 return {};
             }
 
-            if (!fs.existsSync(this.CONFIG_PATH)) {
+            const configPath = this.getConfigPath();
+            console.log(`📂 检查配置文件: ${configPath}`);
+
+            if (!fs.existsSync(configPath)) {
+                console.log('⚠️ 配置文件不存在，返回空配置');
                 return {};
             }
 
-            const configData = fs.readFileSync(this.CONFIG_PATH, 'utf8');
-            return JSON.parse(configData) as DockerConfig;
+            const configData = fs.readFileSync(configPath, 'utf8');
+            const config = JSON.parse(configData) as DockerConfig;
+            console.log(`✅ 成功读取配置，包含 ${Object.keys(config).length} 个键`);
+            return config;
         } catch (error) {
-            console.error('读取Docker配置失败:', error);
+            console.error('❌ 读取配置失败:', error);
             return {};
         }
     }
@@ -115,7 +191,19 @@ export class DockerConfigManager {
      */
     static saveConfig(config: DockerConfig): void {
         try {
-            if (!this.isDockerEnvironment() || !fs) {
+            const envType = this.getEnvironmentType();
+            const shouldUse = this.shouldUseFileSystem();
+            const hasFs = !!fs;
+
+            console.log(`🔧 DockerConfigManager.saveConfig 调试信息:`, {
+                envType,
+                shouldUseFileSystem: shouldUse,
+                hasFs,
+                configKeys: Object.keys(config)
+            });
+
+            if (!shouldUse || !fs) {
+                console.log('❌ 不在服务器环境或fs模块不可用，跳过文件保存');
                 return;
             }
 
@@ -126,11 +214,37 @@ export class DockerConfigManager {
                 lastUpdated: Date.now()
             };
 
-            fs.writeFileSync(this.CONFIG_PATH, JSON.stringify(configWithTimestamp, null, 2));
-            console.log('Docker配置已保存到:', this.CONFIG_PATH);
+            const configPath = this.getConfigPath();
+            console.log(`📝 准备保存配置到: ${configPath}`);
+
+            // 增强的错误处理和验证
+            try {
+                // 先备份现有配置（如果存在）
+                if (fs.existsSync(configPath)) {
+                    const backupPath = `${configPath}.backup`;
+                    fs.copyFileSync(configPath, backupPath);
+                    console.log(`📋 已备份现有配置到: ${backupPath}`);
+                }
+
+                // 写入新配置
+                fs.writeFileSync(configPath, JSON.stringify(configWithTimestamp, null, 2), 'utf8');
+
+                // 验证写入结果
+                if (fs.existsSync(configPath)) {
+                    const writtenData = fs.readFileSync(configPath, 'utf8');
+                    const parsedData = JSON.parse(writtenData);
+                    console.log(`✅ ${envType}环境配置已保存并验证成功: ${configPath}`);
+                    console.log(`📊 保存的配置包含 ${Object.keys(parsedData).length} 个键`);
+                } else {
+                    throw new Error('配置文件写入后不存在');
+                }
+            } catch (writeError) {
+                console.error('❌ 配置文件写入失败:', writeError);
+                throw new Error(`配置文件写入失败: ${writeError.message}`);
+            }
         } catch (error) {
-            console.error('保存Docker配置失败:', error);
-            throw new Error('配置保存失败');
+            console.error('❌ 保存配置失败:', error);
+            throw new Error(`配置保存失败: ${error.message}`);
         }
     }
 
@@ -316,13 +430,15 @@ export class DockerConfigManager {
     static clearConfig(): void {
         try {
             if (!fs) return;
-            
-            if (fs.existsSync(this.CONFIG_PATH)) {
-                fs.unlinkSync(this.CONFIG_PATH);
-                console.log('Docker配置已清除');
+
+            const configPath = this.getConfigPath();
+            if (fs.existsSync(configPath)) {
+                fs.unlinkSync(configPath);
+                const envType = this.getEnvironmentType();
+                console.log(`${envType}环境配置已清除`);
             }
         } catch (error) {
-            console.error('清除Docker配置失败:', error);
+            console.error('清除配置失败:', error);
         }
     }
 

@@ -110,8 +110,8 @@ export class SecureConfigManager {
    * 获取TMDB API密钥
    */
   static getTmdbApiKey(): string {
-    // 在Docker环境中，优先从Docker配置管理器获取
-    if (DockerConfigManager.isDockerEnvironment()) {
+    // 在服务器环境中（开发或Docker），优先从Docker配置管理器获取
+    if (DockerConfigManager.shouldUseFileSystem()) {
       const dockerApiKey = DockerConfigManager.getTmdbApiKey();
       if (dockerApiKey) {
         return dockerApiKey;
@@ -119,14 +119,14 @@ export class SecureConfigManager {
     }
 
     const config = this.getConfig();
-    
+
     // 优先使用配置中的密钥，其次使用环境变量
     const apiKey = config.tmdbApiKey || process.env.TMDB_API_KEY;
-    
+
     if (!apiKey) {
       throw new Error('TMDB API密钥未配置，请在设置中配置或设置环境变量TMDB_API_KEY');
     }
-    
+
     return apiKey;
   }
   
@@ -137,9 +137,9 @@ export class SecureConfigManager {
     if (!apiKey || apiKey.trim().length === 0) {
       throw new Error('API密钥不能为空');
     }
-    
-    // 在Docker环境中，保存到Docker配置管理器
-    if (DockerConfigManager.isDockerEnvironment()) {
+
+    // 在服务器环境中（开发或Docker），保存到Docker配置管理器
+    if (DockerConfigManager.shouldUseFileSystem()) {
       DockerConfigManager.setTmdbApiKey(apiKey.trim());
       return;
     }

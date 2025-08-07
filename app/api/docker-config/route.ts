@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DockerConfigManager } from '@/lib/docker-config-manager';
+import { DockerConfigManager, EnvironmentType } from '@/lib/docker-config-manager';
 
 export async function GET() {
   try {
@@ -29,6 +29,8 @@ export async function GET() {
         generalSettings: config.generalSettings,
         appearanceSettings: config.appearanceSettings,
         isDockerEnvironment: DockerConfigManager.isDockerEnvironment(),
+        environmentType: DockerConfigManager.getEnvironmentType(),
+        shouldUseFileSystem: DockerConfigManager.shouldUseFileSystem(),
         // 添加配置状态标识
         hasApiKey: !!config.tmdbApiKey,
         hasSiliconFlowApiKey: !!config.siliconFlowApiKey,
@@ -76,14 +78,27 @@ export async function POST(request: NextRequest) {
 
     // 保存TMDB配置
     if (tmdbApiKey) {
+      console.log(`🔑 接收到TMDB API密钥保存请求: ${tmdbApiKey.substring(0, 8)}...`);
+
       // 验证API密钥格式
       if (!/^[a-f0-9]{32}$/i.test(tmdbApiKey)) {
+        console.log(`❌ API密钥格式验证失败: ${tmdbApiKey}`);
         return NextResponse.json(
-          { success: false, error: 'TMDB API密钥格式不正确' },
+          { success: false, error: 'TMDB API密钥格式不正确，应为32位十六进制字符串' },
           { status: 400 }
         );
       }
-      DockerConfigManager.setTmdbApiKey(tmdbApiKey);
+
+      try {
+        DockerConfigManager.setTmdbApiKey(tmdbApiKey);
+        console.log(`✅ TMDB API密钥保存成功`);
+      } catch (error) {
+        console.error(`❌ TMDB API密钥保存失败:`, error);
+        return NextResponse.json(
+          { success: false, error: `API密钥保存失败: ${error.message}` },
+          { status: 500 }
+        );
+      }
     }
 
     if (tmdbImportPath) {

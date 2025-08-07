@@ -31,10 +31,10 @@ export class DockerStorageAdapter {
    */
   private detectEnvironment(): DockerEnvironment {
     const isDocker = this.isRunningInDocker();
-    
+
     return {
       isDocker,
-      hasWritePermission: this.checkWritePermission(),
+      hasWritePermission: this.checkWritePermission(isDocker),
       dataPath: isDocker ? '/app/data' : './data',
       tempPath: isDocker ? '/tmp' : './tmp',
       logPath: isDocker ? '/app/logs' : './logs'
@@ -90,7 +90,7 @@ export class DockerStorageAdapter {
   /**
    * 检查写入权限
    */
-  private checkWritePermission(): boolean {
+  private checkWritePermission(isDocker: boolean): boolean {
     if (typeof window !== 'undefined') {
       // 浏览器环境，检查localStorage
       try {
@@ -106,12 +106,20 @@ export class DockerStorageAdapter {
       try {
         const fs = require('fs');
         const path = require('path');
-        
-        const testPath = path.join(this.environment.dataPath, '.write_test');
+
+        const dataPath = isDocker ? '/app/data' : './data';
+
+        // 确保目录存在
+        if (!fs.existsSync(dataPath)) {
+          fs.mkdirSync(dataPath, { recursive: true });
+        }
+
+        const testPath = path.join(dataPath, '.write_test');
         fs.writeFileSync(testPath, 'test');
         fs.unlinkSync(testPath);
         return true;
       } catch (error) {
+        console.warn('文件系统写入权限检查失败:', error);
         return false;
       }
     }
