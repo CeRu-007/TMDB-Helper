@@ -143,7 +143,8 @@ export type BackdropSize = 'w300' | 'w780' | 'w1280' | 'original';
 export type LogoSize = 'w45' | 'w92' | 'w154' | 'w185' | 'w300' | 'w500' | 'original';
 
 export class TMDBService {
-  private static readonly BASE_URL = "https://api.themoviedb.org/3"
+  // 使用备用域名以解决某些网络环境的连接问题
+  private static readonly BASE_URL = "https://api.tmdb.org/3"
   private static readonly IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
   private static readonly BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
   private static readonly BACKDROP_ORIGINAL_URL = "https://image.tmdb.org/t/p/original"
@@ -154,19 +155,38 @@ export class TMDBService {
   private static readonly NETWORK_LOGO_CACHE_PREFIX = "tmdb_network_logo_"  // 网络标志缓存前缀
   private static readonly CACHE_EXPIRY = 24 * 60 * 60 * 1000 // 24小时
 
+  // 客户端版本 - 只在浏览器环境中使用
+  private static async getApiKeyClient(): Promise<string> {
+    const { ClientConfigManager } = await import('./client-config-manager');
+    const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
+    if (!apiKey) {
+      throw new Error("TMDB API密钥未设置，请在设置中配置");
+    }
+    return apiKey;
+  }
+
+  // 服务端版本 - 只在Node.js环境中使用
+  private static async getApiKeyServer(): Promise<string> {
+    const { ServerConfigManager } = await import('./server-config-manager');
+    const config = ServerConfigManager.getConfig();
+    const apiKey = config.tmdbApiKey || process.env.TMDB_API_KEY;
+    if (!apiKey) {
+      throw new Error("TMDB API密钥未设置，请在设置中配置");
+    }
+    return apiKey;
+  }
+
+  // 主方法 - 根据环境选择合适的实现
   private static async getApiKey(): Promise<string> {
     try {
-      // 动态导入安全配置管理器
-      const { SecureConfigManager } = await import('./secure-config-manager');
-      return SecureConfigManager.getTmdbApiKey();
-    } catch (error) {
-      // 如果导入失败，回退到旧的方式
-      console.warn('无法加载安全配置管理器，使用传统方式获取API密钥');
-      const apiKey = typeof window !== 'undefined' ? localStorage.getItem("tmdb_api_key") : process.env.TMDB_API_KEY;
-      if (!apiKey) {
-        throw new Error("TMDB API密钥未设置，请在设置中配置");
+      if (typeof window !== 'undefined') {
+        return await this.getApiKeyClient();
+      } else {
+        return await this.getApiKeyServer();
       }
-      return apiKey;
+    } catch (error) {
+      console.error('获取TMDB API密钥失败:', error);
+      throw new Error("TMDB API密钥未设置，请在设置中配置");
     }
   }
 
@@ -329,6 +349,32 @@ export class TMDBService {
     } catch (error) {
       console.error("获取TMDB标志失败:", error)
       return { url: null, path: null }
+    }
+  }
+
+  /**
+   * 搜索电影和电视剧
+   */
+  static async search(query: string, page: number = 1): Promise<any> {
+    try {
+      const apiKey = await this.getApiKey()
+      const url = `${this.BASE_URL}/search/multi?api_key=${apiKey}&language=zh-CN&query=${encodeURIComponent(query)}&page=${page}`
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'TMDB-Helper/1.0',
+          'Accept': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`TMDB搜索请求失败: ${response.status} ${response.statusText}`)
+      }
+
+      return response.json()
+    } catch (error) {
+      console.error('TMDB搜索失败:', error)
+      throw error
     }
   }
 

@@ -9,6 +9,7 @@ import { AuthProvider, AuthGuard } from "@/components/auth-provider"
 import { Toaster } from "@/components/ui/toaster"
 
 import { suppressRefWarnings } from "@/lib/utils"
+import { ConfigMigration } from "@/lib/config-migration"
 
 export default function MidLayout({
   children,
@@ -18,9 +19,14 @@ export default function MidLayout({
   const pathname = usePathname()
   const isLoginPage = pathname === '/login'
 
-  // 应用启动时抑制React ref警告
+  // 应用启动时抑制React ref警告和执行配置迁移
   useEffect(() => {
     suppressRefWarnings();
+
+    // 执行配置迁移
+    ConfigMigration.autoMigrate().catch(error => {
+      console.error('自动配置迁移失败:', error);
+    });
   }, []);
 
   return (

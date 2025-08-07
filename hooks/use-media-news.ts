@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { log } from '@/lib/logger'
 import { handleError, retryOperation } from '@/lib/error-handler'
 import { perf } from '@/lib/performance-manager'
+import { ClientConfigManager } from '@/lib/client-config-manager'
 
 interface MediaNewsItem {
   id: string
@@ -131,7 +132,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
     setIsMissingApiKey(false)
 
     try {
-      const apiKey = localStorage.getItem("tmdb_api_key")
+      const apiKey = await ClientConfigManager.getItem("tmdb_api_key")
       if (!apiKey) {
         setIsMissingApiKey(true)
         throw new Error('TMDB API密钥未配置，请在设置中配置')
@@ -213,7 +214,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
     setRecentError(null)
 
     try {
-      const apiKey = localStorage.getItem("tmdb_api_key")
+      const apiKey = await ClientConfigManager.getItem("tmdb_api_key")
       if (!apiKey) {
         throw new Error('TMDB API密钥未配置，请在设置中配置')
       }

@@ -89,6 +89,20 @@ docker run -d \
 
 部署完成后，通过 `http://your-server-ip:4949` 访问应用。
 
+#### 配置存储说明
+
+**配置文件位置：**
+- **容器内**: `/app/data/server-config.json`
+- **开发环境**: `D:\.background\tmdb-helper\data\server-config.json`
+- **Docker绑定挂载**: `./data/server-config.json`（相对于docker-compose.yml）
+
+**存储方式：**
+1. **Docker命名卷**（推荐）：由Docker管理，自动处理权限
+2. **绑定挂载**：直接映射到宿主机目录，便于访问配置文件
+
+**自动迁移：**
+应用启动时会自动从localStorage迁移配置到服务端存储，确保升级平滑。
+
 #### 环境变量配置
 
 | 变量名 | 默认值 | 说明 |

@@ -104,7 +104,7 @@ import type { TMDBItem, Season, Episode } from "@/lib/storage"
 import { useMobile } from "@/hooks/use-mobile"
 import TMDBImportIntegrationDialog from "@/components/tmdb-import-integration-dialog"
 import ScheduledTaskDialog from "@/components/scheduled-task-dialog"
-import { TMDBService, TMDBSeasonData, BackdropSize } from "@/lib/tmdb"
+import type { TMDBSeasonData, BackdropSize } from "@/lib/tmdb-types"
 import FixTMDBImportBugDialog from "@/components/fix-tmdb-import-bug-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { StorageManager } from "@/lib/storage"
@@ -972,8 +972,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 构建TMDB URL
       const tmdbUrl = `https://www.themoviedb.org/${editData.mediaType}/${editData.tmdbId}`;
       
-      // 使用TMDBService获取最新数据，强制刷新标志
-      const tmdbData = await TMDBService.getItemFromUrl(tmdbUrl, true);
+      // 使用API获取最新数据，强制刷新标志
+      const response = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`)
+      const result = await response.json()
+      const tmdbData = result.success ? result.data : null
       
       if (!tmdbData) {
         throw new Error("未能从TMDB获取到有效数据");
@@ -1213,9 +1215,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     if (!backdropPath) return;
     
     // 预加载不同尺寸的背景图
-    const sizes: BackdropSize[] = ['w780', 'w1280', 'original'];
+    // 预加载背景图片（简化版本）
+    const sizes = ['w780', 'w1280', 'original'];
     sizes.forEach(size => {
-      TMDBService.preloadBackdrop(backdropPath, size);
+      const img = new Image();
+      img.src = `https://image.tmdb.org/t/p/${size}${backdropPath}`;
     });
   };
 

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-// TMDB API配置
-const BASE_URL = 'https://api.themoviedb.org/3';
+// TMDB API配置 - 使用备用域名以解决网络连接问题
+const BASE_URL = 'https://api.tmdb.org/3';
 // 备用代理服务器
 const PROXY_URLS = [
-  'https://api.themoviedb.org/3', // 直连
-  'https://api.tmdb.org/3', // 官方备用域名
+  'https://api.tmdb.org/3', // 官方备用域名（主要）
+  'https://api.themoviedb.org/3', // 原域名（备用）
 ];
 
 // 添加超时处理的fetch函数

@@ -199,15 +199,16 @@ export class TMDBApiClient {
     this.loadApiKey()
   }
 
-  private loadApiKey(): void {
+  private async loadApiKey(): Promise<void> {
     if (typeof window !== 'undefined') {
-      this.apiKey = localStorage.getItem('tmdb_api_key')
+      const { ClientConfigManager } = await import('./client-config-manager');
+      this.apiKey = await ClientConfigManager.getItem('tmdb_api_key');
     }
   }
 
-  private getAuthParams(): Record<string, string> {
+  private async getAuthParams(): Promise<Record<string, string>> {
     if (!this.apiKey) {
-      this.loadApiKey()
+      await this.loadApiKey()
     }
     return this.apiKey ? { api_key: this.apiKey } : {}
   }

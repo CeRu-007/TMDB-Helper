@@ -192,43 +192,66 @@ function healthCheck() {
 // 初始化配置管理
 function initializeConfigManager() {
   try {
-    // 检查是否存在旧的配置需要迁移
-    const configPath = '/app/data/app-config.json';
-    
-    if (!fs.existsSync(configPath)) {
-      console.log('📋 初始化配置文件...');
-      
-      // 创建默认配置文件
-      const defaultConfig = {
-        lastUpdated: Date.now(),
-        version: '1.0.0'
-      };
-      
-      fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
-      console.log('✅ 配置文件初始化完成');
-    } else {
-      console.log('📁 配置文件已存在');
+    console.log('🔧 [Docker Startup] 初始化配置管理...');
+
+    // 调用专门的配置初始化脚本
+    const { execSync } = require('child_process');
+    try {
+      execSync('node /app/scripts/docker-init-config.js', { stdio: 'inherit' });
+      console.log('✅ [Docker Startup] 配置初始化脚本执行完成');
+    } catch (error) {
+      console.error('❌ [Docker Startup] 配置初始化脚本执行失败:', error.message);
     }
 
-    // 检查环境变量中的TMDB_API_KEY
-    if (process.env.TMDB_API_KEY) {
-      console.log('🔑 检测到环境变量中的TMDB_API_KEY');
-      
+    // 检查是否存在旧的配置需要迁移
+    const oldConfigPath = '/app/data/app-config.json';
+    const newConfigPath = '/app/data/server-config.json';
+
+    // 如果存在旧配置但没有新配置，进行迁移
+    if (fs.existsSync(oldConfigPath) && !fs.existsSync(newConfigPath)) {
+      console.log('🔄 [Docker Startup] 检测到旧配置，开始迁移...');
+
       try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        const oldConfig = JSON.parse(fs.readFileSync(oldConfigPath, 'utf8'));
+        const newConfig = {
+          version: '1.0.0',
+          lastUpdated: Date.now(),
+          siliconFlowThumbnailModel: 'Qwen/Qwen2.5-VL-32B-Instruct',
+          modelScopeEpisodeModel: 'qwen-plus',
+          ...oldConfig
+        };
+
+        fs.writeFileSync(newConfigPath, JSON.stringify(newConfig, null, 2));
+        console.log('✅ [Docker Startup] 配置迁移完成');
+
+        // 备份旧配置
+        fs.copyFileSync(oldConfigPath, `${oldConfigPath}.backup`);
+        console.log('📦 [Docker Startup] 旧配置已备份');
+      } catch (error) {
+        console.error('❌ [Docker Startup] 配置迁移失败:', error.message);
+      }
+    }
+
+    // 检查环境变量中的API密钥
+    const serverConfigPath = '/app/data/server-config.json';
+    if (process.env.TMDB_API_KEY && fs.existsSync(serverConfigPath)) {
+      console.log('🔑 [Docker Startup] 检测到环境变量中的TMDB_API_KEY');
+
+      try {
+        const config = JSON.parse(fs.readFileSync(serverConfigPath, 'utf8'));
         if (!config.tmdbApiKey) {
           config.tmdbApiKey = process.env.TMDB_API_KEY;
           config.lastUpdated = Date.now();
-          fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-          console.log('✅ 已将环境变量中的API密钥保存到配置文件');
+          fs.writeFileSync(serverConfigPath, JSON.stringify(config, null, 2));
+          console.log('✅ [Docker Startup] 已将环境变量中的API密钥保存到配置文件');
         }
       } catch (error) {
-        console.error('❌ 保存环境变量API密钥失败:', error.message);
+        console.error('❌ [Docker Startup] 保存环境变量API密钥失败:', error.message);
       }
     }
 
   } catch (error) {
-    console.error('❌ 初始化配置管理失败:', error.message);
+    console.error('❌ [Docker Startup] 初始化配置管理失败:', error.message);
   }
 }
 

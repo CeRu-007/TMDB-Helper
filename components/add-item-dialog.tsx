@@ -31,10 +31,10 @@ import {
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/storage"
 import { StorageManager } from "@/lib/storage"
-import { TMDBService } from "@/lib/tmdb"
 import { cn } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
+import { ClientConfigManager } from "@/lib/client-config-manager"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六"]
 
@@ -118,7 +118,9 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       setShowPreviewCard(true)
 
       // 获取详细信息
-      const tmdbData = await TMDBService.getItemFromUrl(tmdbUrl)
+      const response = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}`)
+      const result = await response.json()
+      const tmdbData = result.success ? result.data : null
 
       if (tmdbData) {
         // 更新表单数据
@@ -191,8 +193,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
           const tmdbUrl = `https://www.themoviedb.org/${mockResult.media_type}/${mockResult.id}`;
           setDetailLoading(true);
           
-          TMDBService.getItemFromUrl(tmdbUrl)
-            .then(tmdbData => {
+          fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}`)
+            .then(response => response.json())
+            .then(result => {
+              const tmdbData = result.success ? result.data : null
               if (tmdbData) {
                 // 更新表单数据
                 setFormData(prev => ({
@@ -262,13 +266,13 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
     setLoading(true)
     try {
-      const apiKey = localStorage.getItem("tmdb_api_key")
+      const apiKey = await ClientConfigManager.getItem("tmdb_api_key")
       if (!apiKey) {
         throw new Error("请先在设置中配置TMDB API密钥")
       }
 
       const response = await fetch(
-        `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&language=zh-CN&query=${encodeURIComponent(query)}&page=1`,
+        `https://api.tmdb.org/3/search/multi?api_key=${apiKey}&language=zh-CN&query=${encodeURIComponent(query)}&page=1`,
       )
 
       if (!response.ok) {
@@ -406,7 +410,9 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
     try {
       const tmdbUrl = `https://www.themoviedb.org/${selectedResult.media_type}/${selectedResult.id}`
-      const tmdbData = await TMDBService.getItemFromUrl(tmdbUrl)
+      const response = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}`)
+      const result = await response.json()
+      const tmdbData = result.success ? result.data : null
       
       if (!tmdbData) {
         throw new Error("无法获取词条详细信息")

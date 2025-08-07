@@ -78,6 +78,7 @@ import { StatCard } from "@/components/ui/stat-card"
 import { StorageManager } from "@/lib/storage"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { ClientConfigManager } from "@/lib/client-config-manager"
 import ImportDataDialog from "@/components/import-data-dialog"
 import ExportDataDialog from "@/components/export-data-dialog"
 import { SidebarLayout } from "@/components/sidebar-layout"
@@ -217,8 +218,8 @@ export default function HomePage() {
     }
 
     try {
-      // 从localStorage获取API密钥
-      const apiKey = localStorage.getItem("tmdb_api_key");
+      // 从配置管理器获取API密钥
+      const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
 
       // 检查API密钥是否存在
       if (!apiKey) {
@@ -1919,10 +1920,16 @@ export default function HomePage() {
   // 在组件加载时，确保activeTab有效
   useEffect(() => {
     // 如果当前标签是"upcoming"，但没有API密钥，自动切换到"ongoing"
-    if (activeTab === "upcoming" && !localStorage.getItem("tmdb_api_key")) {
-      setActiveTab("ongoing");
-      setShowSettingsDialog(true); // 显示设置对话框
-    }
+    const checkApiKey = async () => {
+      if (activeTab === "upcoming") {
+        const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
+        if (!apiKey) {
+          setActiveTab("ongoing");
+          setShowSettingsDialog(true); // 显示设置对话框
+        }
+      }
+    };
+    checkApiKey();
   }, [activeTab]);
   
   // 确保影视资讯页面不会消失
@@ -1956,8 +1963,8 @@ export default function HomePage() {
     }
 
     try {
-      // 从localStorage获取API密钥
-      const apiKey = localStorage.getItem("tmdb_api_key");
+      // 从配置管理器获取API密钥
+      const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
 
       // 检查API密钥是否存在
       if (!apiKey) {

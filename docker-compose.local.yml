@@ -1,3 +1,6 @@
+# Docker Compose 配置 - 本地开发版本
+# 使用绑定挂载，便于开发和调试
+
 version: '3.8'
 
 services:
@@ -7,7 +10,7 @@ services:
     # 如果需要本地构建，注释上面一行，取消注释下面一行
     # build: .
 
-    container_name: tmdb-helper
+    container_name: tmdb-helper-local
 
     ports:
       - "4949:4949"
@@ -38,19 +41,13 @@ services:
       # TMDB API 配置（可选）
       # - TMDB_API_KEY=your_tmdb_api_key_here
 
-      # 数据库配置（如果需要）
-      # - DATABASE_URL=your_database_url_here
-
     volumes:
-      # 持久化数据目录 - 使用命名卷（推荐）
-      - tmdb_data:/app/data
-      # 持久化日志目录
-      - tmdb_logs:/app/logs
-
-      # 可选：绑定挂载到宿主机目录（取消注释以使用）
-      # 注意：使用绑定挂载时，请确保宿主机目录存在且有正确的权限
-      # - ./data:/app/data
-      # - ./logs:/app/logs
+      # 绑定挂载到宿主机目录 
+      - ./data:/app/data
+      - ./logs:/app/logs
+      
+      # 可选：挂载TMDB-Import工具目录
+      # - ./TMDB-Import-master:/app/TMDB-Import-master
 
     restart: unless-stopped
 
@@ -76,32 +73,17 @@ services:
     networks:
       - tmdb-network
 
-    # 依赖关系（如果有数据库等其他服务）
-    # depends_on:
-    #   - database
-
-  # 可选：添加数据库服务
-  # database:
-  #   image: postgres:15-alpine
-  #   container_name: tmdb-postgres
-  #   environment:
-  #     - POSTGRES_DB=tmdb_helper
-  #     - POSTGRES_USER=tmdb_user
-  #     - POSTGRES_PASSWORD=change_this_password
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - tmdb-network
-  #   restart: unless-stopped
-
-volumes:
-  tmdb_data:
-    driver: local
-  tmdb_logs:
-    driver: local
-  # postgres_data:
-  #   driver: local
-
 networks:
   tmdb-network:
     driver: bridge
+
+# 注意：此配置文件使用绑定挂载
+# 启动前请确保以下目录存在：
+# - ./data
+# - ./logs
+# 
+# 在Linux/macOS上，可能需要设置正确的权限：
+# sudo chown -R 1001:1001 ./data ./logs
+#
+# 使用方法：
+# docker-compose -f docker-compose.local.yml up -d

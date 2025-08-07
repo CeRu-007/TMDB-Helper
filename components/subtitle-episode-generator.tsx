@@ -67,6 +67,7 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
 import { VideoAnalyzer, VideoAnalysisResult } from "@/utils/video-analyzer"
 import { VideoAnalysisFeedback, VideoAnalysisStep, createDefaultAnalysisSteps, updateStepStatus } from "@/components/video-analysis-feedback"
+import { ClientConfigManager } from '@/lib/client-config-manager'
 
 // 硅基流动支持的模型列表
 const SILICONFLOW_MODELS = [
@@ -397,9 +398,9 @@ export function SubtitleEpisodeGenerator({
   })
 
   // 从全局设置加载API密钥
-  const loadGlobalSettings = React.useCallback(() => {
+  const loadGlobalSettings = React.useCallback(async () => {
     // 加载硅基流动设置
-    const globalSiliconFlowSettings = localStorage.getItem('siliconflow_api_settings')
+    const globalSiliconFlowSettings = await ClientConfigManager.getItem('siliconflow_api_settings')
     if (globalSiliconFlowSettings) {
       try {
         const settings = JSON.parse(globalSiliconFlowSettings)
@@ -409,14 +410,14 @@ export function SubtitleEpisodeGenerator({
       }
     } else {
       // 兼容旧的设置
-      const savedApiKey = localStorage.getItem('siliconflow_api_key')
+      const savedApiKey = await ClientConfigManager.getItem('siliconflow_api_key')
       if (savedApiKey) {
         setSiliconFlowApiKey(savedApiKey)
       }
     }
 
     // 加载魔搭社区设置
-    const globalModelScopeSettings = localStorage.getItem('modelscope_api_settings')
+    const globalModelScopeSettings = await ClientConfigManager.getItem('modelscope_api_settings')
     if (globalModelScopeSettings) {
       try {
         const settings = JSON.parse(globalModelScopeSettings)
@@ -426,14 +427,14 @@ export function SubtitleEpisodeGenerator({
       }
     } else {
       // 兼容旧的设置
-      const savedApiKey = localStorage.getItem('modelscope_api_key')
+      const savedApiKey = await ClientConfigManager.getItem('modelscope_api_key')
       if (savedApiKey) {
         setModelScopeApiKey(savedApiKey)
       }
     }
 
     // 加载API提供商偏好设置
-    const savedProvider = localStorage.getItem('episode_generator_api_provider')
+    const savedProvider = await ClientConfigManager.getItem('episode_generator_api_provider')
     if (savedProvider && (savedProvider === 'siliconflow' || savedProvider === 'modelscope')) {
       setApiProvider(savedProvider)
     }
@@ -2368,9 +2369,9 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         onOpenGlobalSettings={onOpenGlobalSettings}
         setShouldReopenSettingsDialog={setShouldReopenSettingsDialog}
         apiProvider={apiProvider}
-        onApiProviderChange={(provider) => {
+        onApiProviderChange={async (provider) => {
           setApiProvider(provider)
-          localStorage.setItem('episode_generator_api_provider', provider)
+          await ClientConfigManager.setItem('episode_generator_api_provider', provider)
         }}
         siliconFlowApiKey={siliconFlowApiKey}
         modelScopeApiKey={modelScopeApiKey}
