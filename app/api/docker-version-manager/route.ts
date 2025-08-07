@@ -22,11 +22,11 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 // 重试机制的fetch函数
-async function fetchWithRetry(url: string, options: any = {}, retries = 3): Promise<Response> {
+async function fetchWithRetry(url: string, options: any = {}, retries = 5): Promise<Response> {
   for (let i = 0; i < retries; i++) {
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), options.timeout || 15000)
+      const timeoutId = setTimeout(() => controller.abort(), options.timeout || 30000)
 
       const response = await fetch(url, {
         ...options,
@@ -52,11 +52,17 @@ async function fetchWithRetry(url: string, options: any = {}, retries = 3): Prom
 
       // 对于网络错误，进行重试
       if (error.name === 'AbortError' ||
+          error.name === 'TimeoutError' ||
           error.code === 'ECONNRESET' ||
+          error.code === 'ECONNREFUSED' ||
+          error.code === 'ETIMEDOUT' ||
           error.message?.includes('fetch failed') ||
           error.message?.includes('network error') ||
+          error.message?.includes('signal timed out') ||
+          error.message?.includes('timeout') ||
           error.message?.includes('ENOTFOUND')) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
+        console.log(`[Docker Version Manager] 网络错误重试 ${i + 1}/${retries}: ${error.message}`);
+        await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1))) // 增加重试间隔
         continue
       }
 
@@ -64,6 +70,34 @@ async function fetchWithRetry(url: string, options: any = {}, retries = 3): Prom
     }
   }
   throw new Error('Max retries exceeded')
+}
+
+// 带备用端点的Docker Hub API请求函数
+async function fetchDockerHubAPI(endpoint: string, options: any = {}): Promise<Response> {
+  const apiEndpoints = [DOCKER_HUB_API_BASE, DOCKER_HUB_API_BACKUP];
+
+  for (let i = 0; i < apiEndpoints.length; i++) {
+    try {
+      const url = `${apiEndpoints[i]}/${DOCKER_HUB_REPO}${endpoint}`;
+      console.log(`[Docker Version Manager] 尝试API端点 ${i + 1}/${apiEndpoints.length}: ${url}`);
+
+      const response = await fetchWithRetry(url, options);
+      console.log(`[Docker Version Manager] API端点 ${i + 1} 成功响应`);
+      return response;
+    } catch (error) {
+      console.log(`[Docker Version Manager] API端点 ${i + 1} 失败: ${error.message}`);
+
+      // 如果是最后一个端点，抛出错误
+      if (i === apiEndpoints.length - 1) {
+        throw error;
+      }
+
+      // 等待一段时间后尝试下一个端点
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  throw new Error('所有API端点都失败');
 }
 
 // 记录操作日志 - 使用内存日志管理器
@@ -74,6 +108,8 @@ function logOperation(operation: string, details: any, success: boolean = true, 
 // Docker Hub API配置
 const DOCKER_HUB_REPO = 'ceru007/tmdb-helper'
 const DOCKER_HUB_API_BASE = 'https://hub.docker.com/v2/repositories'
+// 备用API端点
+const DOCKER_HUB_API_BACKUP = 'https://registry.hub.docker.com/v2/repositories'
 
 interface DockerHubTag {
   name: string
@@ -177,6 +213,31 @@ export async function POST(request: NextRequest) {
  */
 async function checkVersion(request?: NextRequest): Promise<NextResponse> {
   try {
+    // 首先检查是否在Docker环境中
+    const isDocker = await detectDockerEnvironment()
+
+    if (!isDocker) {
+      logOperation('非Docker环境，跳过版本检查', { environment: 'development' })
+
+      // 在非Docker环境下返回模拟的版本信息
+      return NextResponse.json({
+        success: true,
+        data: {
+          local: {
+            exists: true,
+            version: 'dev-mode',
+            lastUpdated: new Date().toISOString()
+          },
+          remote: {
+            version: 'dev-mode',
+            lastUpdated: new Date().toISOString(),
+            source: 'development'
+          },
+          needsUpdate: false
+        }
+      })
+    }
+
     // 获取远程最新版本信息，传递请求对象以获取registry参数
     const remoteInfo = await getLatestVersion(request)
 
@@ -371,13 +432,13 @@ async function getLatestVersion(request?: NextRequest) {
     }
   }
 
-  // 构建API URL - 始终使用Docker Hub官方API获取版本信息
-  const url = `${DOCKER_HUB_API_BASE}/${DOCKER_HUB_REPO}/tags?page_size=10&page=1`
+  // 使用备用端点获取版本信息
+  const endpoint = '/tags?page_size=10&page=1';
 
-  logOperation('获取最新版本', { registry: dockerHubRegistry, url })
+  logOperation('获取最新版本', { registry: dockerHubRegistry, url: `${DOCKER_HUB_API_BASE}/${DOCKER_HUB_REPO}${endpoint}` })
 
   try {
-    const response = await fetchWithRetry(url, { timeout: 15000 })
+    const response = await fetchDockerHubAPI(endpoint, { timeout: 30000 })
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -547,6 +608,19 @@ async function getLocalVersion() {
  */
 async function downloadLatest(): Promise<NextResponse> {
   try {
+    // 首先检查是否在Docker环境中
+    const isDocker = await detectDockerEnvironment()
+
+    if (!isDocker) {
+      logOperation('非Docker环境，无法下载镜像', { environment: 'development' })
+
+      return NextResponse.json({
+        success: false,
+        error: '当前不在Docker环境中，无法下载镜像',
+        details: '此功能仅在Docker容器中可用'
+      }, { status: 400 })
+    }
+
     // 获取最新版本信息
     const latestVersion = await getLatestVersion()
 
@@ -931,9 +1005,27 @@ async function updateConfig(request: NextRequest): Promise<NextResponse> {
  */
 async function getVersionHistory(): Promise<NextResponse> {
   try {
+    // 首先检查是否在Docker环境中
+    const isDocker = await detectDockerEnvironment()
+
+    if (!isDocker) {
+      logOperation('非Docker环境，返回模拟版本历史', { environment: 'development' })
+
+      // 在非Docker环境下返回模拟的版本历史
+      const mockHistory = [
+        {
+          version: 'dev-mode',
+          releaseDate: new Date().toLocaleDateString('zh-CN'),
+          changelog: ['开发模式 - 无需版本管理']
+        }
+      ]
+
+      return NextResponse.json(mockHistory)
+    }
+
     // 获取所有版本标签
-    const url = `${DOCKER_HUB_API_BASE}/${DOCKER_HUB_REPO}/tags?page_size=20&page=1`
-    const response = await fetchWithRetry(url, { timeout: 15000 })
+    const endpoint = '/tags?page_size=20&page=1';
+    const response = await fetchDockerHubAPI(endpoint, { timeout: 30000 })
 
     if (!response.ok) {
       throw new Error(`获取版本历史失败: ${response.status}`)

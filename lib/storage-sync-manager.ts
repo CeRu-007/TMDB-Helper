@@ -3,7 +3,7 @@
  * 处理客户端和服务端数据同步，防止数据冲突
  */
 
-import { TMDBItem, ScheduledTask } from './storage';
+import { TMDBItem, ScheduledTask, StorageManager } from './storage';
 import { DistributedLock } from './distributed-lock';
 
 export interface SyncStatus {

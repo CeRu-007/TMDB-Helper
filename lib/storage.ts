@@ -271,6 +271,10 @@ export class StorageManager {
         return [];
       }
     }
+
+    // 如果不使用文件存储，返回空数组（localStorage已移除）
+    console.warn('[StorageManager] 不使用文件存储，返回空数组');
+    return [];
   }
 
   /**
