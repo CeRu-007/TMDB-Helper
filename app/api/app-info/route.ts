@@ -6,12 +6,23 @@ export async function GET() {
     // 获取版本描述信息
     const getVersionDescription = (version: string) => {
       switch (version) {
+        case '0.3.2':
+          return {
+            title: '分集简介新增通过视频URL进行分析生成字幕',
+            description: `主要更新：
+• 新增魔搭社区ModelScope API支持
+• 新增应用信息API端点，从package.json动态获取版本
+• 更新设置对话框，显示实时的应用名称和版本号
+• 修复TMDB API密钥无法正常保存的问题
+• 修复Docker环境api配置保存问题`,
+            releaseDate: '2025-08-07'
+          };
         case '0.3.1':
           return {
             title: '修复Docker环境配置保存问题',
             description: `主要更新：
 • 新增Docker配置管理器，支持文件系统持久化存储
-• 新增配置适配器，统一配置访问接口  
+• 新增配置适配器，统一配置访问接口
 • 新增API端点处理所有Docker环境配置
 • 更新设置页面，自动检测并适配Docker环境
 • 更新启动脚本，确保配置目录和权限正确
