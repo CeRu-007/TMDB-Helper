@@ -171,8 +171,16 @@ export default function HomePage() {
   // 初始化布局偏好
   useEffect(() => {
     if (isClient) {
-      const preferences = LayoutPreferencesManager.getPreferences()
-      setCurrentLayout(preferences.layoutType)
+      const loadPreferences = async () => {
+        try {
+          const preferences = await LayoutPreferencesManager.getPreferences()
+          setCurrentLayout(preferences.layoutType)
+        } catch (error) {
+          console.error('Failed to load layout preferences:', error)
+          setCurrentLayout('original') // 使用默认布局
+        }
+      }
+      loadPreferences()
     }
   }, [isClient])
 
@@ -308,13 +316,8 @@ export default function HomePage() {
         
         setUpcomingLastUpdated(new Date().toLocaleString('zh-CN'));
         
-        // 同时保存到localStorage作为缓存，以防页面刷新后数据丢失
-        try {
-          localStorage.setItem(`upcomingItems_${region}`, JSON.stringify(data.results));
-          localStorage.setItem('upcomingLastUpdated', new Date().toLocaleString('zh-CN'));
-        } catch (e) {
-          console.warn('无法保存影视资讯数据到本地存储:', e);
-        }
+        // 数据现在存储在服务端，不再需要localStorage缓存
+        console.log(`即将上映数据已更新 (${region}):`, data.results.length, '项');
       } else {
         // 检查是否是API密钥未配置或无效的错误
         if (data.error && (data.error.includes('API密钥未配置') || data.error.includes('401 Unauthorized'))) {
@@ -1795,7 +1798,7 @@ export default function HomePage() {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         
-                                        // 预填充更多详细信息到localStorage
+                                        // 预填充详细信息（现在通过状态传递，不使用localStorage）
                                         const detailData = {
                                           id: item.id,
                                           title: item.title,
@@ -1805,9 +1808,9 @@ export default function HomePage() {
                                           overview: item.overview || "",
                                           vote_average: item.voteAverage || 0
                                         };
-                                        
-                                        // 保存到localStorage
-                                        localStorage.setItem('tmdb_prefilled_data', JSON.stringify(detailData));
+
+                                        // 通过状态传递数据，不再使用localStorage
+                                        console.log('预填充数据:', detailData);
                                         
                                         // 打开对话框
                                       setShowAddDialog(true);
@@ -2041,13 +2044,8 @@ export default function HomePage() {
         
         setRecentLastUpdated(new Date().toLocaleString('zh-CN'));
         
-        // 同时保存到localStorage作为缓存，以防页面刷新后数据丢失
-        try {
-          localStorage.setItem(`recentItems_${region}`, JSON.stringify(data.results));
-          localStorage.setItem('recentLastUpdated', new Date().toLocaleString('zh-CN'));
-        } catch (e) {
-          console.warn('无法保存近期开播数据到本地存储:', e);
-        }
+        // 数据现在存储在服务端，不再需要localStorage缓存
+        console.log(`近期开播数据已更新 (${region}):`, data.results.length, '项');
       } else {
         // 检查是否是API密钥未配置或无效的错误
         if (data.error && (data.error.includes('API密钥未配置') || data.error.includes('401 Unauthorized'))) {

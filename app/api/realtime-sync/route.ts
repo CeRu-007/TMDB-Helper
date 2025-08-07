@@ -30,7 +30,7 @@ setInterval(() => {
  * GET /api/realtime-sync - 建立Server-Sent Events连接
  */
 export async function GET(request: NextRequest) {
-  const userId = getUserIdFromRequest(request)
+  const userId = await getUserIdFromRequest(request)
   
   if (!userId) {
     return NextResponse.json({ error: '缺少用户身份信息' }, { status: 401 })
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const userId = getUserIdFromRequest(request)
+    const userId = await getUserIdFromRequest(request)
     
     if (!userId) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 401 })

@@ -24,7 +24,17 @@ class TaskScheduler {
   private constructor() {
     // 初始化冲突检测和解决器
     const advancedConfig = advancedConfigManager.getConfig();
-    this.conflictDetector = new ConflictDetector(advancedConfig.conflictDetection);
+
+    // 转换配置格式以匹配ConflictDetectionConfig接口
+    const conflictDetectionConfig = {
+      enabled: advancedConfig.conflictDetection.enabled,
+      detectionWindowMs: advancedConfig.conflictDetection.conflictWindowMs,
+      strictMode: advancedConfig.conflictDetection.strictMode,
+      considerPriority: advancedConfig.conflictDetection.considerPriority,
+      considerTaskType: advancedConfig.conflictDetection.considerTaskType
+    };
+
+    this.conflictDetector = new ConflictDetector(conflictDetectionConfig);
     this.conflictResolver = new ConflictResolver(advancedConfig.conflictResolution);
 
     // 监听浏览器可见性变化
@@ -2938,8 +2948,29 @@ class TaskScheduler {
     const advancedConfig = advancedConfigManager.getConfig();
 
     if (config.conflictDetection) {
-      this.conflictDetector.updateConfig(config.conflictDetection);
-      advancedConfigManager.updateConfig({ conflictDetection: config.conflictDetection });
+      // 转换配置格式以匹配ConflictDetectionConfig接口
+      const conflictDetectionConfig = {
+        enabled: config.conflictDetection.enabled ?? advancedConfig.conflictDetection.enabled,
+        detectionWindowMs: config.conflictDetection.conflictWindowMs ?? config.conflictDetection.detectionWindowMs ?? advancedConfig.conflictDetection.conflictWindowMs,
+        strictMode: config.conflictDetection.strictMode ?? advancedConfig.conflictDetection.strictMode,
+        considerPriority: config.conflictDetection.considerPriority ?? advancedConfig.conflictDetection.considerPriority,
+        considerTaskType: config.conflictDetection.considerTaskType ?? advancedConfig.conflictDetection.considerTaskType
+      };
+
+      this.conflictDetector.updateConfig(conflictDetectionConfig);
+
+      // 更新advancedConfigManager时使用原始格式
+      const advancedConfigUpdate = {
+        enabled: conflictDetectionConfig.enabled,
+        conflictWindowMs: conflictDetectionConfig.detectionWindowMs,
+        strictMode: conflictDetectionConfig.strictMode,
+        considerPriority: conflictDetectionConfig.considerPriority,
+        considerTaskType: conflictDetectionConfig.considerTaskType,
+        maxAdjustments: config.conflictDetection.maxAdjustments ?? advancedConfig.conflictDetection.maxAdjustments,
+        adjustmentIntervalMs: config.conflictDetection.adjustmentIntervalMs ?? advancedConfig.conflictDetection.adjustmentIntervalMs
+      };
+
+      advancedConfigManager.updateConfig({ conflictDetection: advancedConfigUpdate });
     }
 
     if (config.conflictResolution) {

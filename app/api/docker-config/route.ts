@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (action === 'migrate') {
-      // 迁移localStorage数据到Docker配置
-      const localStorageData = body.localStorageData || {};
-      DockerConfigManager.migrateFromLocalStorage(localStorageData);
+      // 迁移配置数据到Docker配置
+      const configData = body.configData || body.localStorageData || {};
+      DockerConfigManager.migrateFromLocalStorage(configData);
       
       return NextResponse.json({
         success: true,

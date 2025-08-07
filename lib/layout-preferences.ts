@@ -26,31 +26,34 @@ export class LayoutPreferencesManager {
    * 检查当前环境是否为客户端
    */
   static isClient(): boolean {
-    return typeof window !== 'undefined' && typeof localStorage !== 'undefined'
+    return typeof window !== 'undefined'
   }
 
   /**
-   * 获取布局偏好设置
+   * 获取布局偏好设置（现在使用服务端存储）
    */
-  static getPreferences(): LayoutPreferences {
+  static async getPreferences(): Promise<LayoutPreferences> {
     if (!this.isClient()) {
       return this.getDefaultPreferences()
     }
 
     try {
-      const data = localStorage.getItem(this.STORAGE_KEY)
-      if (!data) {
-        return this.getDefaultPreferences()
+      const response = await fetch('/api/config?key=layout_preferences');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.value) {
+          const preferences = JSON.parse(data.value) as LayoutPreferences;
+
+          // 验证数据完整性
+          if (!preferences.layoutType || !preferences.lastUpdated) {
+            return this.getDefaultPreferences()
+          }
+
+          return preferences;
+        }
       }
 
-      const preferences = JSON.parse(data) as LayoutPreferences
-      
-      // 验证数据完整性
-      if (!preferences.layoutType || !preferences.lastUpdated) {
-        return this.getDefaultPreferences()
-      }
-
-      return preferences
+      return this.getDefaultPreferences()
     } catch (error) {
       console.error("Failed to load layout preferences:", error)
       return this.getDefaultPreferences()
@@ -60,22 +63,33 @@ export class LayoutPreferencesManager {
   /**
    * 保存布局偏好设置
    */
-  static savePreferences(preferences: Partial<LayoutPreferences>): boolean {
+  static async savePreferences(preferences: Partial<LayoutPreferences>): Promise<boolean> {
     if (!this.isClient()) {
       console.warn("Cannot save layout preferences: not in client environment")
       return false
     }
 
     try {
-      const currentPreferences = this.getPreferences()
+      const currentPreferences = await this.getPreferences()
       const updatedPreferences: LayoutPreferences = {
         ...currentPreferences,
         ...preferences,
         lastUpdated: new Date().toISOString()
       }
 
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedPreferences))
-      return true
+      const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'set',
+          key: 'layout_preferences',
+          value: JSON.stringify(updatedPreferences)
+        })
+      });
+
+      return response.ok;
     } catch (error) {
       console.error("Failed to save layout preferences:", error)
       return false
@@ -97,32 +111,43 @@ export class LayoutPreferencesManager {
   /**
    * 切换布局类型
    */
-  static toggleLayout(): LayoutType {
-    const currentPreferences = this.getPreferences()
+  static async toggleLayout(): Promise<LayoutType> {
+    const currentPreferences = await this.getPreferences()
     const newLayoutType: LayoutType = currentPreferences.layoutType === 'original' ? 'sidebar' : 'original'
-    
-    this.savePreferences({ layoutType: newLayoutType })
+
+    await this.savePreferences({ layoutType: newLayoutType })
     return newLayoutType
   }
 
   /**
    * 设置侧边栏折叠状态
    */
-  static setSidebarCollapsed(collapsed: boolean): boolean {
-    return this.savePreferences({ sidebarCollapsed: collapsed })
+  static async setSidebarCollapsed(collapsed: boolean): Promise<boolean> {
+    return await this.savePreferences({ sidebarCollapsed: collapsed })
   }
 
   /**
    * 重置为默认设置
    */
-  static resetToDefault(): boolean {
+  static async resetToDefault(): Promise<boolean> {
     if (!this.isClient()) {
       return false
     }
 
     try {
-      localStorage.removeItem(this.STORAGE_KEY)
-      return true
+      const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'set',
+          key: 'layout_preferences',
+          value: JSON.stringify(this.getDefaultPreferences())
+        })
+      });
+
+      return response.ok;
     } catch (error) {
       console.error("Failed to reset layout preferences:", error)
       return false

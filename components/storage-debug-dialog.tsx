@@ -43,14 +43,20 @@ export function StorageDebugDialog({ open, onOpenChange }: StorageDebugDialogPro
       const status = await StorageManager.getStorageStatus();
       setStorageStatus(status);
 
-      // 获取原始localStorage数据
-      if (typeof window !== 'undefined' && localStorage) {
-        const itemsData = localStorage.getItem('tmdb_helper_items');
-        const tasksData = localStorage.getItem('tmdb_helper_scheduled_tasks');
-        
+      // 获取服务端存储数据
+      try {
+        const items = await StorageManager.getItemsWithRetry();
+        const tasks = await StorageManager.getScheduledTasks();
+
         setRawData(JSON.stringify({
-          items: itemsData ? JSON.parse(itemsData) : null,
-          tasks: tasksData ? JSON.parse(tasksData) : null
+          items: items || null,
+          tasks: tasks || null,
+          note: "数据现在存储在服务端data文件夹中"
+        }, null, 2));
+      } catch (error) {
+        setRawData(JSON.stringify({
+          error: "无法获取服务端数据",
+          message: error instanceof Error ? error.message : "未知错误"
         }, null, 2));
       }
     } catch (error) {
@@ -60,16 +66,29 @@ export function StorageDebugDialog({ open, onOpenChange }: StorageDebugDialogPro
     }
   };
 
-  const clearStorage = () => {
-    if (typeof window !== 'undefined' && localStorage) {
-      localStorage.removeItem('tmdb_helper_items');
-      localStorage.removeItem('tmdb_helper_scheduled_tasks');
-      checkStorageStatus();
+  const clearStorage = async () => {
+    try {
+      // 清空服务端存储
+      const response = await fetch('/api/storage/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        console.log('服务端存储已清空');
+        checkStorageStatus();
+      } else {
+        console.error('清空服务端存储失败');
+      }
+    } catch (error) {
+      console.error('清空存储失败:', error);
     }
   };
 
-  const initializeStorage = () => {
-    if (typeof window !== 'undefined' && localStorage) {
+  const initializeStorage = async () => {
+    try {
       // 创建一个示例项目
       const sampleItem = {
         id: Date.now().toString(),
@@ -83,14 +102,21 @@ export function StorageDebugDialog({ open, onOpenChange }: StorageDebugDialogPro
         updatedAt: new Date().toISOString()
       };
 
-      localStorage.setItem('tmdb_helper_items', JSON.stringify([sampleItem]));
-      checkStorageStatus();
+      const success = await StorageManager.addItem(sampleItem);
+      if (success) {
+        console.log('示例项目已添加到服务端存储');
+        checkStorageStatus();
+      } else {
+        console.error('添加示例项目失败');
+      }
+    } catch (error) {
+      console.error('初始化存储失败:', error);
     }
   };
 
   const migrateToFileStorage = async () => {
     setMigrating(true);
-    setMigrationResult(null);
+    setMigrationResult('迁移功能已移除，数据现在统一存储在服务端');
 
     try {
       if (typeof window !== 'undefined' && localStorage) {

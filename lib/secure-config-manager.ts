@@ -39,22 +39,27 @@ export class SecureConfigManager {
   }
   
   /**
-   * 保存配置到安全存储
+   * 保存配置到安全存储（现在使用服务端存储）
    */
-  static saveConfig(config: SecureConfig): void {
+  static async saveConfig(config: SecureConfig): Promise<void> {
     try {
-      const configData: EncryptedData = {
-        data: this.encrypt(JSON.stringify(config)),
-        timestamp: Date.now(),
-        version: this.VERSION
-      };
-      
-      // 优先使用sessionStorage，其次localStorage
-      const storage = typeof window !== 'undefined' ? 
-        (window.sessionStorage || window.localStorage) : null;
-      
-      if (storage) {
-        storage.setItem(this.STORAGE_KEY, JSON.stringify(configData));
+      // 将配置保存到服务端
+      for (const [key, value] of Object.entries(config)) {
+        const response = await fetch('/api/config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'set',
+            key: `secure_${key}`,
+            value: this.encrypt(JSON.stringify(value))
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`保存配置项 ${key} 失败`);
+        }
       }
     } catch (error) {
       console.error('保存配置失败:', error);
@@ -63,31 +68,32 @@ export class SecureConfigManager {
   }
   
   /**
-   * 从安全存储读取配置
+   * 从安全存储读取配置（现在使用服务端存储）
    */
-  static getConfig(): SecureConfig {
+  static async getConfig(): Promise<SecureConfig> {
     try {
-      if (typeof window === 'undefined') {
-        return this.getServerConfig();
+      const config: SecureConfig = {};
+
+      // 从服务端获取所有secure_开头的配置
+      const response = await fetch('/api/config');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.config) {
+          for (const [key, value] of Object.entries(data.config)) {
+            if (typeof key === 'string' && key.startsWith('secure_')) {
+              try {
+                const configKey = key.replace('secure_', '');
+                const decryptedValue = this.decrypt(value as string);
+                config[configKey] = JSON.parse(decryptedValue);
+              } catch (decryptError) {
+                console.warn(`解密配置项 ${key} 失败:`, decryptError);
+              }
+            }
+          }
+        }
       }
-      
-      const storage = window.sessionStorage || window.localStorage;
-      const storedData = storage.getItem(this.STORAGE_KEY);
-      
-      if (!storedData) {
-        return {};
-      }
-      
-      const encryptedData: EncryptedData = JSON.parse(storedData);
-      
-      // 检查数据是否过期
-      if (Date.now() - encryptedData.timestamp > this.CACHE_EXPIRY) {
-        this.clearConfig();
-        return {};
-      }
-      
-      const decryptedData = this.decrypt(encryptedData.data);
-      return JSON.parse(decryptedData) as SecureConfig;
+
+      return config;
     } catch (error) {
       console.error('读取配置失败:', error);
       return {};

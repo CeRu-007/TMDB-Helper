@@ -193,6 +193,10 @@ export class TMDBService {
   // 缓存标志路径
   private static cacheLogoPath(mediaType: "movie" | "tv", id: string, logoPath: string): void {
     try {
+      // 检查是否在浏览器环境中
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return;
+      }
       const cacheKey = `${this.LOGO_CACHE_PREFIX}${mediaType}_${id}`
       const cacheData = {
         path: logoPath,
@@ -208,9 +212,13 @@ export class TMDBService {
   // 获取缓存的标志路径
   private static getCachedLogoPath(mediaType: "movie" | "tv", id: string): string | null {
     try {
+      // 检查是否在浏览器环境中
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return null;
+      }
       const cacheKey = `${this.LOGO_CACHE_PREFIX}${mediaType}_${id}`
       const cachedData = localStorage.getItem(cacheKey)
-      
+
       if (!cachedData) {
         return null
       }
@@ -219,7 +227,9 @@ export class TMDBService {
       
       // 检查缓存是否过期
       if (Date.now() - timestamp > this.CACHE_EXPIRY) {
-        localStorage.removeItem(cacheKey)
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+          localStorage.removeItem(cacheKey)
+        }
         return null
       }
       
@@ -233,6 +243,10 @@ export class TMDBService {
   // 缓存网络logo路径
   private static cacheNetworkLogoPath(networkId: number, logoPath: string): void {
     try {
+      // 检查是否在浏览器环境中
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return;
+      }
       const cacheKey = `${this.NETWORK_LOGO_CACHE_PREFIX}${networkId}`
       const cacheData = {
         path: logoPath,
@@ -247,6 +261,10 @@ export class TMDBService {
   // 获取缓存的网络logo路径
   private static getCachedNetworkLogoPath(networkId: number): string | null {
     try {
+      // 检查是否在浏览器环境中
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return null;
+      }
       const cacheKey = `${this.NETWORK_LOGO_CACHE_PREFIX}${networkId}`
       const cachedData = localStorage.getItem(cacheKey)
       
@@ -258,7 +276,9 @@ export class TMDBService {
       
       // 检查缓存是否过期
       if (Date.now() - timestamp > this.CACHE_EXPIRY) {
-        localStorage.removeItem(cacheKey)
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+          localStorage.removeItem(cacheKey)
+        }
         return null
       }
       
@@ -636,6 +656,10 @@ export class TMDBService {
   // 缓存背景图路径
   private static cacheBackdropPath(id: string, backdropPath: string): void {
     try {
+      // 检查是否在浏览器环境中
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return;
+      }
       const cacheKey = `${this.CACHE_PREFIX}${id}`;
       const cacheData = {
         path: backdropPath,
@@ -650,6 +674,10 @@ export class TMDBService {
   // 从缓存获取背景图路径
   static getCachedBackdropPath(id: string): string | null {
     try {
+      // 检查是否在浏览器环境中
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return null;
+      }
       const cacheKey = `${this.CACHE_PREFIX}${id}`;
       const cacheData = localStorage.getItem(cacheKey);
       
@@ -659,7 +687,9 @@ export class TMDBService {
       
       // 检查缓存是否过期
       if (Date.now() - timestamp > this.CACHE_EXPIRY) {
-        localStorage.removeItem(cacheKey);
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+          localStorage.removeItem(cacheKey);
+        }
         return null;
       }
       

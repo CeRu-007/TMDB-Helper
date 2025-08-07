@@ -131,19 +131,32 @@ export class ConfigManager {
   }
 
   /**
-   * 保存配置
+   * 保存配置（现在使用服务端存储）
    */
-  private saveConfig(): void {
+  private async saveConfig(): Promise<void> {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const configData = {
-          version: ConfigManager.CONFIG_VERSION,
-          config: this.config,
-          updatedAt: new Date().toISOString()
-        };
+      const configData = {
+        version: ConfigManager.CONFIG_VERSION,
+        config: this.config,
+        updatedAt: new Date().toISOString()
+      };
 
-        localStorage.setItem(ConfigManager.CONFIG_KEY, JSON.stringify(configData));
-        console.log('[ConfigManager] 配置已保存');
+      const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'set',
+          key: 'task_scheduler_config',
+          value: JSON.stringify(configData)
+        })
+      });
+
+      if (response.ok) {
+        console.log('[ConfigManager] 配置已保存到服务端');
+      } else {
+        console.error('[ConfigManager] 保存配置到服务端失败');
       }
     } catch (error) {
       console.error('[ConfigManager] 保存配置失败:', error);

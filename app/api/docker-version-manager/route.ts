@@ -51,7 +51,11 @@ async function fetchWithRetry(url: string, options: any = {}, retries = 3): Prom
       if (i === retries - 1) throw error
 
       // 对于网络错误，进行重试
-      if (error.name === 'AbortError' || error.code === 'ECONNRESET') {
+      if (error.name === 'AbortError' ||
+          error.code === 'ECONNRESET' ||
+          error.message?.includes('fetch failed') ||
+          error.message?.includes('network error') ||
+          error.message?.includes('ENOTFOUND')) {
         await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
         continue
       }
@@ -409,10 +413,14 @@ async function getLatestVersion(request?: NextRequest) {
     // 提供更友好的错误信息
     if (error.name === 'AbortError') {
       throw new Error('连接Docker Hub超时，请检查网络连接或稍后重试')
-    } else if (errorMessage.includes('ENOTFOUND')) {
+    } else if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('getaddrinfo ENOTFOUND')) {
       throw new Error('无法解析Docker Hub域名，请检查网络连接')
     } else if (errorMessage.includes('ECONNREFUSED')) {
       throw new Error('连接被拒绝，请检查防火墙设置')
+    } else if (errorMessage.includes('fetch failed') || errorMessage.includes('network error')) {
+      throw new Error('网络连接失败，请检查网络连接或稍后重试')
+    } else if (errorMessage.includes('ECONNRESET')) {
+      throw new Error('连接被重置，请稍后重试')
     }
 
     throw new Error(`获取版本信息失败: ${errorMessage}`)

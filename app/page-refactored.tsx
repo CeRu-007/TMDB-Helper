@@ -33,9 +33,17 @@ export default function HomePage() {
   // 初始化布局偏好
   useEffect(() => {
     if (isClient) {
-      const preferences = LayoutPreferencesManager.getPreferences()
-      setCurrentLayout(preferences.layoutType)
-      log.info('HomePage', '布局偏好已加载', { layout: preferences.layoutType })
+      const loadPreferences = async () => {
+        try {
+          const preferences = await LayoutPreferencesManager.getPreferences()
+          setCurrentLayout(preferences.layoutType)
+          log.info('HomePage', '布局偏好已加载', { layout: preferences.layoutType })
+        } catch (error) {
+          console.error('Failed to load layout preferences:', error)
+          setCurrentLayout('original') // 使用默认布局
+        }
+      }
+      loadPreferences()
     }
   }, [isClient])
 

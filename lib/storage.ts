@@ -112,14 +112,14 @@ export class StorageManager {
   private static readonly SCHEDULED_TASKS_KEY = "tmdb_helper_scheduled_tasks" // 添加定时任务存储�?
   private static readonly MAX_RETRIES = 3
   private static readonly RETRY_DELAY = 300 // 毫秒
-  private static readonly USE_FILE_STORAGE = true // 控制是否使用文件存储
+  private static readonly USE_FILE_STORAGE = true // 始终使用文件存储
   private static readonly API_BASE_URL = "/api/storage"
 
   /**
    * 检查当前环境是否为客户�?
    */
   static isClient(): boolean {
-    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+    return typeof window !== 'undefined';
   }
 
   /**
@@ -139,22 +139,10 @@ export class StorageManager {
   }
 
   /**
-   * 检查localStorage是否可用
+   * 检查存储是否可用（现在总是返回true，因为使用服务端存储）
    */
   static isStorageAvailable(): boolean {
-    if (!this.isClient()) {
-      return false;
-    }
-
-    try {
-      const testKey = "__storage_test__";
-      localStorage.setItem(testKey, testKey);
-      const result = localStorage.getItem(testKey) === testKey;
-      localStorage.removeItem(testKey);
-      return result;
-    } catch (e) {
-      return false;
-    }
+    return true; // 服务端存储总是可用
   }
 
   /**
@@ -240,38 +228,8 @@ export class StorageManager {
    * 降级到localStorage的方�?
    */
   private static fallbackToLocalStorage(): TMDBItem[] {
-    console.log('[StorageManager] 尝试从localStorage获取数据作为降级方案');
-
-    if (!this.isClient()) {
-      console.warn("[StorageManager] 不在客户端环境，无法访问localStorage");
-      return [];
-    }
-
-    try {
-      if (!this.isStorageAvailable()) {
-        console.warn("[StorageManager] localStorage不可用");
-        return [];
-      }
-
-      const data = localStorage.getItem(this.STORAGE_KEY);
-      if (!data) {
-        console.log('[StorageManager] localStorage中没有数据');
-        return [];
-      }
-
-      try {
-        const parsedData = JSON.parse(data);
-        const items = Array.isArray(parsedData) ? parsedData : [];
-        console.log(`[StorageManager] 从localStorage成功获取 ${items.length} 个项目`);
-        return items;
-      } catch (parseError) {
-        console.error("[StorageManager] 解析localStorage数据失败:", parseError);
-        return [];
-      }
-    } catch (error) {
-      console.error("[StorageManager] 从localStorage获取数据失败:", error);
-      return [];
-    }
+    console.warn("[StorageManager] localStorage降级方法已移除，现在完全使用服务端存储");
+    return [];
   }
 
   /**
@@ -308,87 +266,23 @@ export class StorageManager {
           return this.getItemsWithRetry(retries - 1);
         }
 
-        // 所有重试都失败后，尝试降级到localStorage
-        console.warn('[StorageManager] API获取失败，尝试降级到localStorage');
-        return this.fallbackToLocalStorage();
-      }
-    }
-    
-    // 使用原始的localStorage方法
-    if (!this.isClient()) {
-      console.warn("Not in client environment, cannot access localStorage");
-      await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
-      if (retries > 0) {
-        return this.getItemsWithRetry(retries - 1);
-      }
-      return [];
-    }
-
-    try {
-      // 如果localStorage不可用，等待一段时间后重试
-      if (!this.isStorageAvailable()) {
-        if (retries > 0) {
-          console.log(`Storage not available, retrying... (${retries} attempts left)`);
-          await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
-          return this.getItemsWithRetry(retries - 1);
-        } else {
-          console.error("Storage is not available after multiple attempts");
-          return [];
-        }
-      }
-
-      const data = localStorage.getItem(this.STORAGE_KEY);
-      if (!data) return [];
-      
-      try {
-        const parsedData = JSON.parse(data);
-        return Array.isArray(parsedData) ? parsedData : [];
-      } catch (parseError) {
-        console.error("Failed to parse storage data:", parseError);
+        // 所有重试都失败后，返回空数组
+        console.error('[StorageManager] API获取失败，无法获取数据');
         return [];
       }
-    } catch (error) {
-      console.error("Failed to load items from storage:", error);
-      if (retries > 0) {
-        console.log(`Error loading data, retrying... (${retries} attempts left)`);
-        await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
-        return this.getItemsWithRetry(retries - 1);
-      }
-      return [];
     }
   }
 
   /**
-   * 同步获取所有项�?
+   * 同步获取所有项目
    */
   static getItems(): TMDBItem[] {
-    // 如果使用文件存储但在客户端调用同步方法，返回空数组并警告
-    if (this.USE_FILE_STORAGE) {
-      console.warn("使用文件存储时，请使用异步getItemsWithRetry方法获取数据");
-      return [];
-    }
-    
-    if (!this.isClient()) {
-      console.warn("Not in client environment, cannot access localStorage");
-      return [];
-    }
-    
-    try {
-      if (!this.isStorageAvailable()) {
-        console.warn("localStorage is not available");
-        return [];
-      }
-      
-      const data = localStorage.getItem(this.STORAGE_KEY)
-      return data ? JSON.parse(data) : []
-    } catch (error) {
-      console.error("Failed to load items from storage:", error)
-      return []
-    }
+    console.warn("同步获取方法已废弃，请使用异步getItemsWithRetry方法获取数据");
+    return [];
   }
 
   /**
-   * 添加新项�?
+   * 添加新项目
    */
   static async addItem(item: TMDBItem): Promise<boolean> {
     // 使用文件存储
@@ -410,21 +304,9 @@ export class StorageManager {
       }
     }
     
-    // 使用原始的localStorage方法
-    if (!this.isClient() || !this.isStorageAvailable()) {
-      console.error("Cannot add item: localStorage is not available");
-      return false;
-    }
-    
-    try {
-      const items = this.getItems()
-      items.push(item)
-      this.saveItems(items)
-      return true;
-    } catch (error) {
-      console.error("Failed to add item:", error);
-      return false;
-    }
+    // 不再使用localStorage，只使用服务端存储
+    console.error("Cannot add item: 请使用服务端存储API");
+    return false;
   }
 
   /**
@@ -527,22 +409,9 @@ export class StorageManager {
       }
     }
 
-    // 使用原始的localStorage方法
-    if (!this.isClient() || !this.isStorageAvailable()) {
-      console.error("Cannot delete item: localStorage is not available");
-      return false;
-    }
-
-    try {
-      const items = this.getItems()
-      const filteredItems = items.filter((item) => item.id !== id)
-      this.saveItems(filteredItems)
-      console.log(`[StorageManager] 项目删除成功: ID=${id}`);
-      return true;
-    } catch (error) {
-      console.error("Failed to delete item:", error);
-      return false;
-    }
+    // 不再使用localStorage，只使用服务端存储
+    console.error("Cannot delete item: 请使用服务端存储API");
+    return false;
   }
 
   /**
@@ -946,19 +815,10 @@ export class StorageManager {
   }
 
   /**
-   * 保存项目到localStorage
+   * 保存项目方法已移除（现在使用服务端存储）
    */
   private static saveItems(items: TMDBItem[]): void {
-    if (!this.isClient() || !this.isStorageAvailable()) {
-      console.error("Cannot save items: localStorage is not available");
-      return;
-    }
-    
-    try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(items))
-    } catch (error) {
-      console.error("Failed to save items to storage:", error)
-    }
+    console.warn("saveItems方法已移除，请使用服务端存储API");
   }
 
   /**
@@ -1763,11 +1623,8 @@ export class StorageManager {
         // 如果没有项目，尝试调试存储状态
         console.warn("[StorageManager] 系统中没有项目，检查存储状态");
 
-        // 检查localStorage是否可用
-        if (this.isClient() && this.isStorageAvailable()) {
-          const rawData = localStorage.getItem(this.STORAGE_KEY);
-          console.log(`[StorageManager] localStorage原始数据:`, rawData ? rawData.substring(0, 200) + '...' : 'null');
-        }
+        // localStorage已移除，现在只使用服务端存储
+        console.log(`[StorageManager] 使用服务端存储，localStorage已移除`);
 
         // 如果使用文件存储，尝试调用调试API
         if (this.USE_FILE_STORAGE) {
@@ -1796,7 +1653,7 @@ export class StorageManager {
   static async getStorageStatus(): Promise<{
     hasItems: boolean;
     itemCount: number;
-    storageType: 'localStorage' | 'fileStorage';
+    storageType: 'fileStorage';
     isClientEnvironment: boolean;
     isStorageAvailable: boolean;
     lastError?: string;
@@ -1807,7 +1664,7 @@ export class StorageManager {
       return {
         hasItems: items.length > 0,
         itemCount: items.length,
-        storageType: this.USE_FILE_STORAGE ? 'fileStorage' : 'localStorage',
+        storageType: 'fileStorage',
         isClientEnvironment: this.isClient(),
         isStorageAvailable: this.isStorageAvailable(),
       };

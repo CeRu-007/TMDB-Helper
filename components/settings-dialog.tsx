@@ -300,7 +300,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 action: 'migrate',
-                localStorageData: {
+                configData: {
                   tmdb_api_key: localApiKey,
                   tmdb_import_path: localImportPath || ""
                 }
@@ -313,7 +313,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             loadTmdbConfig(data.config.tmdbImportPath)
           }
         } else {
-          console.log('💻 [TMDB Debug] 非Docker环境，使用localStorage')
+          console.log('💻 [TMDB Debug] 非Docker环境，使用服务端存储')
         }
       } catch (error) {
         console.warn('⚠️ [TMDB Debug] Docker环境检查失败:', error)

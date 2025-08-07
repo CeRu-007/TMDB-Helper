@@ -466,17 +466,14 @@ export class StorageSyncManager {
   }
 
   /**
-   * 获取客户端项目数据
+   * 获取客户端项目数据（现在使用服务端存储）
    */
   private static async getClientItems(): Promise<TMDBItem[]> {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const data = localStorage.getItem('tmdb_helper_items');
-        return data ? JSON.parse(data) : [];
-      }
-      return [];
+      // 现在直接从服务端获取数据
+      return await StorageManager.getItemsWithRetry();
     } catch (error) {
-      console.error('[StorageSyncManager] 获取客户端项目数据失败:', error);
+      console.error('[StorageSyncManager] 获取项目数据失败:', error);
       return [];
     }
   }
@@ -532,31 +529,17 @@ export class StorageSyncManager {
   }
 
   /**
-   * 保存客户端项目数据
+   * 保存客户端项目数据（已移除localStorage，现在使用服务端存储）
    */
   private static async saveClientItems(items: TMDBItem[]): Promise<void> {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('tmdb_helper_items', JSON.stringify(items));
-      }
-    } catch (error) {
-      console.error('[StorageSyncManager] 保存客户端项目数据失败:', error);
-      throw error;
-    }
+    console.warn('[StorageSyncManager] saveClientItems方法已废弃，数据现在直接存储在服务端');
   }
 
   /**
-   * 保存客户端任务数据
+   * 保存客户端任务数据（已移除localStorage，现在使用服务端存储）
    */
   private static async saveClientTasks(tasks: ScheduledTask[]): Promise<void> {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('tmdb_helper_scheduled_tasks', JSON.stringify(tasks));
-      }
-    } catch (error) {
-      console.error('[StorageSyncManager] 保存客户端任务数据失败:', error);
-      throw error;
-    }
+    console.warn('[StorageSyncManager] saveClientTasks方法已废弃，数据现在直接存储在服务端');
   }
 
   /**
@@ -564,10 +547,12 @@ export class StorageSyncManager {
    */
   static async getSyncStatus(): Promise<SyncStatus> {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const data = localStorage.getItem(this.SYNC_STATUS_KEY);
-        if (data) {
-          return JSON.parse(data);
+      // 从服务端获取同步状态
+      const response = await fetch('/api/config?key=sync_status');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.value) {
+          return JSON.parse(data.value);
         }
       }
 
@@ -599,8 +584,21 @@ export class StorageSyncManager {
       const currentStatus = await this.getSyncStatus();
       const newStatus = { ...currentStatus, ...updates };
 
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem(this.SYNC_STATUS_KEY, JSON.stringify(newStatus));
+      // 现在使用服务端存储同步状态
+      const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'set',
+          key: 'sync_status',
+          value: JSON.stringify(newStatus)
+        })
+      });
+
+      if (!response.ok) {
+        console.warn('[StorageSyncManager] 保存同步状态到服务端失败');
       }
     } catch (error) {
       console.error('[StorageSyncManager] 更新同步状态失败:', error);

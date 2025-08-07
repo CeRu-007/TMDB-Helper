@@ -148,15 +148,30 @@ export function SidebarLayout({
 
   // 加载侧边栏折叠状态
   useEffect(() => {
-    const preferences = LayoutPreferencesManager.getPreferences()
-    setSidebarCollapsed(preferences.sidebarCollapsed || false)
+    const loadPreferences = async () => {
+      try {
+        const preferences = await LayoutPreferencesManager.getPreferences()
+        setSidebarCollapsed(preferences.sidebarCollapsed || false)
+      } catch (error) {
+        console.error('Failed to load sidebar preferences:', error)
+        setSidebarCollapsed(false) // 使用默认状态
+      }
+    }
+    loadPreferences()
   }, [])
 
   // 处理侧边栏折叠切换
-  const handleSidebarToggle = () => {
+  const handleSidebarToggle = async () => {
     const newCollapsed = !sidebarCollapsed
     setSidebarCollapsed(newCollapsed)
-    LayoutPreferencesManager.setSidebarCollapsed(newCollapsed)
+
+    try {
+      await LayoutPreferencesManager.setSidebarCollapsed(newCollapsed)
+    } catch (error) {
+      console.error('Failed to save sidebar state:', error)
+      // 如果保存失败，恢复原状态
+      setSidebarCollapsed(sidebarCollapsed)
+    }
   }
 
   // 定义与原始布局完全一致的区域常量

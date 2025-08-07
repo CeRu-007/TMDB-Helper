@@ -76,7 +76,20 @@ export class TaskSchedulerAdvancedConfigManager {
   private configKey = 'tmdb_helper_advanced_scheduler_config';
 
   private constructor() {
-    this.config = this.loadConfig();
+    this.config = this.getDefaultConfig();
+    this.initializeConfig();
+  }
+
+  /**
+   * 异步初始化配置
+   */
+  private async initializeConfig(): Promise<void> {
+    try {
+      this.config = await this.loadConfig();
+    } catch (error) {
+      console.error('[TaskSchedulerAdvancedConfig] 初始化配置失败:', error);
+      this.config = this.getDefaultConfig();
+    }
   }
 
   public static getInstance(): TaskSchedulerAdvancedConfigManager {
@@ -161,14 +174,21 @@ export class TaskSchedulerAdvancedConfigManager {
   }
 
   /**
-   * 加载配置
+   * 加载配置（现在使用服务端存储）
    */
-  private loadConfig(): TaskSchedulerAdvancedConfig {
+  private async loadConfig(): Promise<TaskSchedulerAdvancedConfig> {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const stored = localStorage.getItem(this.configKey);
-        if (stored) {
-          const parsedConfig = JSON.parse(stored);
+      // 检查是否在浏览器环境中
+      if (typeof window === 'undefined') {
+        // 服务端环境，返回默认配置
+        return this.getDefaultConfig();
+      }
+
+      const response = await fetch(`/api/config?key=${this.configKey}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.value) {
+          const parsedConfig = JSON.parse(data.value);
           // 合并默认配置以确保新字段存在
           return this.mergeWithDefaults(parsedConfig);
         }
@@ -176,7 +196,7 @@ export class TaskSchedulerAdvancedConfigManager {
     } catch (error) {
       console.error('[TaskSchedulerAdvancedConfig] 加载配置失败:', error);
     }
-    
+
     return this.getDefaultConfig();
   }
 

@@ -283,18 +283,104 @@ export function migrateExistingData(defaultUserId: string = 'default_user'): boo
  */
 export function getAllUsers(): string[] {
   ensureUserDataDir();
-  
+
   try {
     if (!fs.existsSync(USERS_DIR)) {
       return [];
     }
-    
+
     return fs.readdirSync(USERS_DIR, { withFileTypes: true })
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
   } catch (error) {
     console.error('获取用户列表失败:', error);
     return [];
+  }
+}
+
+/**
+ * 清空用户数据
+ */
+export function clearUserData(userId: string): boolean {
+  try {
+    const userDir = path.join(USERS_DIR, userId);
+
+    if (fs.existsSync(userDir)) {
+      // 删除用户目录及其所有内容
+      fs.rmSync(userDir, { recursive: true, force: true });
+      console.log(`用户 ${userId} 的数据已清空`);
+      return true;
+    } else {
+      console.log(`用户 ${userId} 的数据目录不存在`);
+      return true; // 目录不存在也算成功
+    }
+  } catch (error) {
+    console.error(`清空用户 ${userId} 数据失败:`, error);
+    return false;
+  }
+}
+
+/**
+ * 获取用户配置
+ */
+export function getUserConfig(userId: string, key: string): string | null {
+  try {
+    const userDir = path.join(USERS_DIR, userId);
+    const configFile = path.join(userDir, 'config.json');
+
+    if (!fs.existsSync(configFile)) {
+      return null;
+    }
+
+    const configData = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+    return configData[key] || null;
+  } catch (error) {
+    console.error(`获取用户 ${userId} 配置 ${key} 失败:`, error);
+    return null;
+  }
+}
+
+/**
+ * 设置用户配置
+ */
+export function setUserConfig(userId: string, key: string, value: string): boolean {
+  try {
+    const userDir = path.join(USERS_DIR, userId);
+    ensureUserDir(userId);
+
+    const configFile = path.join(userDir, 'config.json');
+
+    let configData = {};
+    if (fs.existsSync(configFile)) {
+      configData = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+    }
+
+    configData[key] = value;
+
+    fs.writeFileSync(configFile, JSON.stringify(configData, null, 2), 'utf-8');
+    return true;
+  } catch (error) {
+    console.error(`设置用户 ${userId} 配置 ${key} 失败:`, error);
+    return false;
+  }
+}
+
+/**
+ * 获取用户所有配置
+ */
+export function getAllUserConfig(userId: string): Record<string, any> {
+  try {
+    const userDir = path.join(USERS_DIR, userId);
+    const configFile = path.join(userDir, 'config.json');
+
+    if (!fs.existsSync(configFile)) {
+      return {};
+    }
+
+    return JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+  } catch (error) {
+    console.error(`获取用户 ${userId} 所有配置失败:`, error);
+    return {};
   }
 }
 

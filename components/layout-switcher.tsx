@@ -24,7 +24,7 @@ export function LayoutSwitcher({ onLayoutChange, currentLayout }: LayoutSwitcher
 
     try {
       // 保存布局偏好
-      const success = LayoutPreferencesManager.savePreferences({
+      const success = await LayoutPreferencesManager.savePreferences({
         layoutType: targetLayout
       })
 

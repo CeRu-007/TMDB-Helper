@@ -214,12 +214,17 @@ export class DistributedLock {
         return memoryLock;
       }
 
-      // 从localStorage获取锁信息
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const lockData = localStorage.getItem(fullLockKey);
-        if (lockData) {
-          return JSON.parse(lockData);
+      // 从服务端获取锁信息
+      try {
+        const response = await fetch(`/api/config?key=lock_${fullLockKey}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.value) {
+            return JSON.parse(data.value);
+          }
         }
+      } catch (error) {
+        console.warn(`获取锁信息失败: ${fullLockKey}`, error);
       }
 
       return null;

@@ -148,7 +148,10 @@ export class PerformanceOptimizer {
         metrics.splice(0, metrics.length - this.MAX_METRICS_COUNT);
       }
 
-      localStorage.setItem(this.METRICS_KEY, JSON.stringify(metrics));
+      // 检查是否在浏览器环境中
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.METRICS_KEY, JSON.stringify(metrics));
+      }
     } catch (error) {
       console.error('记录性能指标失败:', error);
     }
@@ -159,6 +162,10 @@ export class PerformanceOptimizer {
    */
   static getMetrics(): PerformanceMetrics[] {
     try {
+      // 检查是否在浏览器环境中
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return [];
+      }
       const stored = localStorage.getItem(this.METRICS_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {

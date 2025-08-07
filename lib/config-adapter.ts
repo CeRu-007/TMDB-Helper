@@ -8,33 +8,47 @@ import { DockerConfigManager } from './docker-config-manager';
 export class ConfigAdapter {
   /**
    * 获取配置项
-   * 在Docker环境中从文件系统读取，否则从localStorage读取
+   * 现在统一从服务端配置系统读取
    */
-  static getItem(key: string): string | null {
-    if (DockerConfigManager.isDockerEnvironment()) {
-      return this.getFromDockerConfig(key);
+  static async getItem(key: string): Promise<string | null> {
+    try {
+      const response = await fetch(`/api/config?key=${encodeURIComponent(key)}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.success ? data.value : null;
+      }
+    } catch (error) {
+      console.error('获取配置失败:', error);
     }
-    
-    if (typeof window !== 'undefined' && window.localStorage) {
-      return localStorage.getItem(key);
-    }
-    
     return null;
   }
 
   /**
    * 设置配置项
-   * 在Docker环境中保存到文件系统，否则保存到localStorage
+   * 现在统一保存到服务端配置系统
    */
-  static setItem(key: string, value: string): void {
-    if (DockerConfigManager.isDockerEnvironment()) {
-      this.setToDockerConfig(key, value);
-      return;
+  static async setItem(key: string, value: string): Promise<boolean> {
+    try {
+      const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'set',
+          key,
+          value
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.success;
+      }
+    } catch (error) {
+      console.error('设置配置失败:', error);
     }
-    
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem(key, value);
-    }
+    return false;
   }
 
   /**
@@ -203,20 +217,7 @@ export class ConfigAdapter {
    * 检查是否支持存储
    */
   static isStorageAvailable(): boolean {
-    if (DockerConfigManager.isDockerEnvironment()) {
-      return true; // Docker环境总是支持文件系统存储
-    }
-    
-    try {
-      if (typeof window === 'undefined') return false;
-      const testKey = "__storage_test__";
-      localStorage.setItem(testKey, testKey);
-      const result = localStorage.getItem(testKey) === testKey;
-      localStorage.removeItem(testKey);
-      return result;
-    } catch (e) {
-      return false;
-    }
+    return true; // 服务端存储总是可用
   }
 
   /**

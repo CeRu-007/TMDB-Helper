@@ -13,9 +13,9 @@ const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 1年
 /**
  * 从请求中提取用户ID
  */
-function extractUserIdFromRequest(request: NextRequest): string | null {
+async function extractUserIdFromRequest(request: NextRequest): Promise<string | null> {
   // 1. 尝试从cookie获取
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
   if (sessionCookie?.value) {
     return sessionCookie.value;
@@ -56,7 +56,7 @@ function isValidUserId(userId: string): boolean {
  */
 export async function GET(request: NextRequest) {
   try {
-    let userId = extractUserIdFromRequest(request);
+    let userId = await extractUserIdFromRequest(request);
     let isNewUser = false;
 
     // 如果没有用户ID或格式无效，创建新的
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { displayName, avatarUrl, userId: providedUserId } = body;
 
-    let userId = providedUserId || extractUserIdFromRequest(request);
+    let userId = providedUserId || await extractUserIdFromRequest(request);
 
     if (!userId || !isValidUserId(userId)) {
       return NextResponse.json(
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = extractUserIdFromRequest(request);
+    const userId = await extractUserIdFromRequest(request);
 
     if (!userId || !isValidUserId(userId)) {
       return NextResponse.json(
@@ -219,19 +219,19 @@ export async function DELETE(request: NextRequest) {
 /**
  * 从请求中获取用户ID的辅助函数（供其他API使用）
  */
-export function getUserIdFromRequest(request: NextRequest): string | null {
-  return extractUserIdFromRequest(request);
+export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
+  return await extractUserIdFromRequest(request);
 }
 
 /**
  * 验证请求中的用户ID（供其他API使用）
  */
-export function validateUserIdFromRequest(request: NextRequest): { 
-  isValid: boolean; 
-  userId: string | null; 
-  error?: string 
-} {
-  const userId = extractUserIdFromRequest(request);
+export async function validateUserIdFromRequest(request: NextRequest): Promise<{
+  isValid: boolean;
+  userId: string | null;
+  error?: string
+}> {
+  const userId = await extractUserIdFromRequest(request);
   
   if (!userId) {
     return {

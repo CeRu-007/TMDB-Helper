@@ -413,29 +413,15 @@ export class DataConsistencyValidator {
   }
 
   /**
-   * 同步到前端
+   * 同步到前端（现在使用服务端存储，不再需要localStorage）
    */
   private async syncToFrontend(item: TMDBItem): Promise<boolean> {
     try {
-      // 直接更新本地存储
-      const items = await StorageManager.getItems();
-      const index = items.findIndex(i => i.id === item.id);
-      
-      if (index !== -1) {
-        items[index] = item;
-      } else {
-        items.push(item);
-      }
-      
-      // 保存到本地存储
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('tmdb_helper_items', JSON.stringify(items));
-      }
-      
-      console.log(`[DataConsistencyValidator] 已同步到前端: ${item.id}`);
+      // 数据现在直接存储在服务端，不需要手动同步到前端
+      console.log(`[DataConsistencyValidator] 数据已在服务端更新: ${item.id}`);
       return true;
     } catch (error) {
-      console.error(`[DataConsistencyValidator] 同步到前端失败: ${item.id}`, error);
+      console.error(`[DataConsistencyValidator] 同步失败: ${item.id}`, error);
       return false;
     }
   }
