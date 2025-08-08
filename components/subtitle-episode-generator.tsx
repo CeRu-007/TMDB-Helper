@@ -4493,7 +4493,9 @@ function GenerationTab({
     { value: "ZhipuAI/GLM-4.5", label: "GLM-4.5", description: "智谱AI旗舰模型，专为智能体设计" },
     { value: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B", label: "DeepSeek-R1-Distill-Qwen-32B", description: "DeepSeek R1蒸馏版本，32B参数，高效推理" },
     { value: "Qwen/Qwen2.5-72B-Instruct", label: "Qwen2.5-72B-Instruct", description: "开源版本，72B参数" },
-    { value: "Qwen/Qwen2.5-32B-Instruct", label: "Qwen2.5-32B-Instruct", description: "开源版本，32B参数" }
+
+    { value: "moonshotai/Kimi-K2-Instruct", label: "Kimi-K2-Instruct", description: "月之暗面Kimi大模型，支持长文本理解" },
+    { value: "deepseek-ai/DeepSeek-R1-0528", label: "DeepSeek-R1-0528", description: "DeepSeek R1思考模型，具备强大的推理能力" }
   ]
 
   const modelOptions = apiProvider === 'siliconflow' ? siliconFlowModelOptions : modelScopeModelOptions

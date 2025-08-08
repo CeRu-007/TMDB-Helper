@@ -1753,10 +1753,17 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                         <span className="text-xs text-gray-500">开源版本，72B参数</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="Qwen/Qwen2.5-32B-Instruct">
+
+                    <SelectItem value="moonshotai/Kimi-K2-Instruct">
                       <div className="flex flex-col">
-                        <span className="font-medium">Qwen2.5-32B-Instruct</span>
-                        <span className="text-xs text-gray-500">开源版本，32B参数</span>
+                        <span className="font-medium">Kimi-K2-Instruct</span>
+                        <span className="text-xs text-gray-500">月之暗面Kimi大模型，支持长文本理解</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="deepseek-ai/DeepSeek-R1-0528">
+                      <div className="flex flex-col">
+                        <span className="font-medium">DeepSeek-R1-0528</span>
+                        <span className="text-xs text-gray-500">DeepSeek R1思考模型，具备强大的推理能力</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
