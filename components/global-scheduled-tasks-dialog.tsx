@@ -249,7 +249,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         toast({
           title: "注意",
           description: "系统中没有可用项目，定时任务将无法执行",
-          variant: "destructive"
+          variant: "warning",
+          icon: <AlarmClock className="h-4 w-4" />
         });
       }
       
@@ -624,7 +625,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           toast({
             title: "执行失败",
             description: "找不到任务关联的项目，无法执行任务",
-            variant: "destructive"
+            variant: "destructive",
+            icon: <AlarmClock className="h-4 w-4" />
           });
           setIsRunningTask(false);
           setRunningTaskId(null);
@@ -637,7 +639,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         toast({
           title: "执行失败",
           description: `项目 ${relatedItem.title} 没有设置平台URL，无法执行任务`,
-          variant: "destructive"
+          variant: "destructive",
+          icon: <AlarmClock className="h-4 w-4" />
         });
         setIsRunningTask(false);
         setRunningTaskId(null);
@@ -675,7 +678,9 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         toast({
           title: "任务执行成功",
           description: successMessage,
-          duration: 5000
+          duration: 5000,
+          variant: 'success',
+          icon: <AlarmClock className="h-4 w-4" />
         });
       } catch (executionError: any) {
         console.error("[GlobalScheduledTasksDialog] 调度器执行任务失败:", executionError);
@@ -718,13 +723,15 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           title: "无法执行任务",
           description: `系统中没有可用项目，请先添加至少一个项目后再试。当前存储: ${storageStatus.storageType}，项目数: ${storageStatus.itemCount}`,
           variant: "destructive",
-          duration: 8000
+          duration: 8000,
+          icon: <AlarmClock className="h-4 w-4" />
         });
       } else if (error.message && (error.message.includes("找不到") && error.message.includes("项目"))) {
         toast({
           title: "项目关联问题",
           description: "任务关联的项目可能已被删除，请使用重新关联功能",
           variant: "destructive",
+          icon: <AlarmClock className="h-4 w-4" />,
           action: (
             <ToastAction altText="重新关联" onClick={() => {
               setTaskToRelink(task);

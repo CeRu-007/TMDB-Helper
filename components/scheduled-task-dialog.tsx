@@ -514,6 +514,8 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         toast({
           title: "执行成功",
           description: successMessage,
+          variant: 'success',
+          icon: <AlarmClock className="h-4 w-4" />
         });
       } catch (fetchError: any) {
         // 清除超时计时器
