@@ -86,7 +86,7 @@ export function BackgroundImage({
       
       if (width <= 640) {
         size = 'w780'
-      } else if (width <= 1024) {
+      } else if (width <= 1600) {
         size = 'w1280'
       } else {
         size = 'original'
@@ -186,21 +186,22 @@ export function BackgroundImage({
         <>
           {/* 低质量图片作为预加载 */}
           {lowQualityLoaded && !loaded && (
-            <img 
-              src={lowQualityImageSrc} 
+            <img
+              src={lowQualityImageSrc}
               alt={`${alt} 预览`}
               className={cn(
                 "w-full h-full object-cover absolute inset-0 transition-all duration-300",
                 loaded ? "opacity-0 scale-105" : "opacity-100 scale-100"
               )}
               style={{ objectPosition, filter: 'blur(10px)' }}
+              decoding="async"
             />
           )}
           
           {/* 高质量图片 */}
-          <img 
-            src={imageSrc} 
-            alt={alt} 
+          <img
+            src={imageSrc}
+            alt={alt}
             className={cn(
               "w-full h-full object-cover transition-all duration-300",
               loaded ? "opacity-100 scale-100" : "opacity-0 scale-105"
@@ -208,6 +209,7 @@ export function BackgroundImage({
             style={{ objectPosition }}
             loading="eager"
             fetchPriority="high"
+            decoding="async"
             onLoad={() => {
               setLoaded(true);
               imageCache.set(imageSrc, true);
@@ -217,7 +219,7 @@ export function BackgroundImage({
             }}
           />
           
-          <div 
+          <div
             className={cn(
               "absolute inset-0",
               blur ? cn(

@@ -83,6 +83,9 @@ interface AppearanceSettings {
   fontSize: 'small' | 'medium' | 'large'
   showAnimations: boolean
   showTooltips: boolean
+  // 新增：词条详情背景毛玻璃效果设置
+  detailBackdropBlurEnabled?: boolean
+  detailBackdropBlurIntensity?: 'light' | 'medium' | 'heavy'
 }
 
 interface VideoThumbnailSettings {
@@ -159,7 +162,9 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     compactMode: false,
     fontSize: 'medium',
     showAnimations: true,
-    showTooltips: true
+    showTooltips: true,
+    detailBackdropBlurEnabled: true,
+    detailBackdropBlurIntensity: 'medium',
   })
 
   // 视频缩略图设置状态
@@ -272,7 +277,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       try {
         console.log('🐳 [TMDB Debug] 检查Docker环境...')
         const response = await fetch('/api/docker-config')
-        
+
         if (!response.ok) {
           console.log('⚠️ [TMDB Debug] Docker API响应异常:', response.status)
           return
@@ -289,7 +294,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
         if (data.success && data.config?.isDockerEnvironment) {
           console.log('🐳 [TMDB Debug] 检测到Docker环境')
-          
+
           if (data.config.hasApiKey) {
             // Docker环境中已有配置，显示占位符
             setApiKey("***已配置***")
@@ -381,10 +386,24 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         const savedAppearanceSettings = await ClientConfigManager.getItem("appearance_settings")
         if (savedAppearanceSettings) {
           try {
-            const settings = JSON.parse(savedAppearanceSettings)
-            setAppearanceSettings(settings)
+            const saved = JSON.parse(savedAppearanceSettings)
+            // 移除已废弃字段
+            if ('detailBackdropOverlayOpacity' in saved) delete saved.detailBackdropOverlayOpacity
+            // 兼容旧配置：与默认值合并
+            const merged: AppearanceSettings = {
+              theme: 'system',
+              primaryColor: 'blue',
+              compactMode: false,
+              fontSize: 'medium',
+              showAnimations: true,
+              showTooltips: true,
+              detailBackdropBlurEnabled: true,
+              detailBackdropBlurIntensity: 'medium',
+              ...saved,
+            }
+            setAppearanceSettings(merged)
             // 应用主题设置
-            applyThemeSettings(settings)
+            applyThemeSettings(merged)
           } catch (error) {
             console.error('加载外观设置失败:', error)
           }
@@ -722,7 +741,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     try {
       console.log('🐳 [TMDB Debug] 尝试同步到Docker配置...')
       const response = await fetch('/api/docker-config')
-      
+
       if (!response.ok) {
         console.log('⚠️ [TMDB Debug] Docker API不可用，跳过同步')
         return
@@ -731,7 +750,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       const data = await response.json()
       if (data.success && data.config?.isDockerEnvironment) {
         console.log('🐳 [TMDB Debug] 同步到Docker环境')
-        
+
         const saveResponse = await fetch('/api/docker-config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2446,6 +2465,49 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                 onCheckedChange={(checked) => setAppearanceSettings(prev => ({ ...prev, showTooltips: checked }))}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 词条详情背景效果 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center">
+              <Palette className="h-4 w-4 mr-2" />
+              词条详情背景效果
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium">启用毛玻璃</Label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">控制词条详情页背景的毛玻璃模糊</p>
+              </div>
+              <Switch
+                checked={appearanceSettings.detailBackdropBlurEnabled ?? true}
+                onCheckedChange={(checked) => setAppearanceSettings(prev => ({ ...prev, detailBackdropBlurEnabled: checked }))}
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">模糊强度</Label>
+              <Select
+                value={appearanceSettings.detailBackdropBlurIntensity ?? 'medium'}
+                onValueChange={(value: 'light' | 'medium' | 'heavy') =>
+                  setAppearanceSettings(prev => ({ ...prev, detailBackdropBlurIntensity: value }))
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">轻度</SelectItem>
+                  <SelectItem value="medium">中等</SelectItem>
+                  <SelectItem value="heavy">重度</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+
           </CardContent>
         </Card>
 

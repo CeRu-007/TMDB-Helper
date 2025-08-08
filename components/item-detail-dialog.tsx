@@ -184,6 +184,12 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [isLoading, setIsLoading] = useState(true);
   const [isBackdropLoaded, setIsBackdropLoaded] = useState(false);
   const [isContentReady, setIsContentReady] = useState(false);
+  // 全局外观设置（仅取本页需要的字段）
+  const [appearanceSettings, setAppearanceSettings] = useState<{
+    detailBackdropBlurEnabled?: boolean
+    detailBackdropBlurIntensity?: 'light' | 'medium' | 'heavy'
+    detailBackdropOverlayOpacity?: number
+  } | null>(null);
 
   useEffect(() => {
     // 确保所有属性都被正确初始化，包括isDailyUpdate
@@ -221,6 +227,34 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       const img = new Image();
       img.src = item.backdropUrl;
     }
+
+    // 读取全局外观设置
+    (async () => {
+      try {
+        const savedAppearanceSettings = await ClientConfigManager.getItem("appearance_settings")
+        if (savedAppearanceSettings) {
+          const saved = JSON.parse(savedAppearanceSettings)
+          setAppearanceSettings({
+            detailBackdropBlurEnabled: saved.detailBackdropBlurEnabled ?? true,
+            detailBackdropBlurIntensity: saved.detailBackdropBlurIntensity ?? 'medium',
+            detailBackdropOverlayOpacity: saved.detailBackdropOverlayOpacity ?? 0.25,
+          })
+        } else {
+          setAppearanceSettings({
+            detailBackdropBlurEnabled: true,
+            detailBackdropBlurIntensity: 'medium',
+            detailBackdropOverlayOpacity: 0.25,
+          })
+        }
+      } catch (e) {
+        console.warn('读取appearance_settings失败', e)
+        setAppearanceSettings({
+          detailBackdropBlurEnabled: true,
+          detailBackdropBlurIntensity: 'medium',
+          detailBackdropOverlayOpacity: 0.25,
+        })
+      }
+    })()
   }, [item])
 
   // 监听季数变化，更新TMDB命令
@@ -273,9 +307,16 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   useEffect(() => {
     if (!open || !contentRef.current) return
 
+    let ticking = false
     const handleScroll = () => {
-      if (contentRef.current) {
-        setScrollPosition(contentRef.current.scrollTop)
+      if (!contentRef.current) return
+      const top = contentRef.current.scrollTop
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrollPosition(top)
+          ticking = false
+        })
+        ticking = true
       }
     }
 
@@ -1266,8 +1307,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               isBackdropLoaded || !localItem.backdropUrl ? "opacity-100" : "opacity-0"
             )}
             objectPosition={`center ${20 + scrollPosition * 0.05}%`} // 添加视差滚动效果
-            blur={true}
-            blurIntensity={localItem.blurIntensity || 'medium'}
+            blur={appearanceSettings?.detailBackdropBlurEnabled ?? true}
+            blurIntensity={appearanceSettings?.detailBackdropBlurIntensity || localItem.blurIntensity || 'medium'}
             overlayClassName="bg-gradient-to-b from-background/30 via-background/25 to-background/35"
             refreshKey={backgroundRefreshKey}
             fallbackSrc={localItem.posterUrl || "/placeholder.jpg"} // 使用海报作为备用
@@ -1292,6 +1333,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                       alt={localItem.title}
                       className="max-h-full object-contain"
                       loading="eager"
+                      decoding="async"
                       onError={(e) => {
                         // 如果标志加载失败，显示文字标题
                         e.currentTarget.style.display = 'none';
@@ -1419,7 +1461,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         src={localItem.posterUrl}
                         alt={localItem.title}
                         className="w-full h-full object-cover"
-                        loading="eager"
+                        loading="lazy"
+                          decoding="async"
                       />
                     ) : (
                       <div className="text-center p-4">
@@ -1727,7 +1770,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           src={localItem.posterUrl}
                           alt={localItem.title}
                           className="w-full h-full object-cover"
-                          loading="eager"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="text-center p-4">
@@ -1762,6 +1806,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                   alt={localItem.networkName || '播出网络'}
                                   className="max-w-full max-h-full object-contain hover:scale-110 transition-all duration-300"
                                   loading="eager"
+                                  decoding="async"
                                   onError={(e) => {
                                     // 如果官方logo加载失败，隐藏图片元素
                                     e.currentTarget.style.display = 'none';

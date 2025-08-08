@@ -36,6 +36,8 @@ const PlatformLogo: React.FC<PlatformLogoProps> = ({
         src={logoUrl}
         alt={`${name} Logo`}
         className={cn('object-contain', sizeClasses[size], className)}
+        loading="lazy"
+        decoding="async"
         onError={() => setImageError(true)}
       />
     );
