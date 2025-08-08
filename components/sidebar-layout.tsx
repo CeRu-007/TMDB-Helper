@@ -860,9 +860,9 @@ export function SidebarLayout({
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
       <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm border-b dark:border-gray-700 sticky top-0 z-40">
-        <div className="flex items-center h-16">
-          {/* 左侧：侧边栏切换按钮和Logo */}
-          <div className="flex items-center pl-4">
+        <div className="relative h-16">
+          {/* 左侧：侧边栏切换按钮和Logo（保留原位置） */}
+          <div className="flex items-center h-full pl-4">
             {/* 侧边栏切换按钮 */}
             <Button
               variant="ghost"
@@ -890,61 +890,58 @@ export function SidebarLayout({
             </div>
           </div>
 
-          {/* 右侧操作按钮 - 与主内容区域对齐 */}
-          <div className="flex-1 flex justify-end">
-            <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-end space-x-2">
+          {/* 右侧操作按钮——严格对齐到主内容容器的右侧边缘 */}
+          <div className={`absolute inset-y-0 right-0 ${isMobile ? 'left-0' : (sidebarCollapsed ? 'left-16' : 'left-64')} pointer-events-none`}>
+            <div className="h-full max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pr-5 lg:pr-9 flex items-center justify-end pointer-events-auto">
+              {/* 桌面版操作按钮 */}
+              <div className="hidden md:flex md:items-center md:space-x-2">
+                {runningTasks.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onShowExecutionLogs}
+                    className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                  >
+                    <BarChart2 className="h-4 w-4 mr-2" />
+                    执行日志 ({runningTasks.length})
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={onShowTasksDialog}>
+                  <AlarmClock className="h-4 w-4 mr-2" />
+                  定时任务
+                </Button>
 
-            {/* 桌面版操作按钮 */}
-            <div className="hidden md:flex md:items-center md:space-x-2">
-              <Button variant="outline" size="sm" onClick={onShowTasksDialog}>
-                <AlarmClock className="h-4 w-4 mr-2" />
-                定时任务
-              </Button>
-              {runningTasks.length > 0 && (
+                <Button variant="outline" size="sm" onClick={onShowSettingsDialog}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  设置
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onShowExecutionLogs}
-                  className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 >
-                  <BarChart2 className="h-4 w-4 mr-2" />
-                  执行日志 ({runningTasks.length})
+                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
-              )}
+              </div>
 
-              <Button variant="outline" size="sm" onClick={onShowSettingsDialog}>
-                <Settings className="h-4 w-4 mr-2" />
-                设置
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-            </div>
+              {/* 用户头像 - 在侧边栏布局中的显示入口 */}
+              <div className="flex items-center space-x-2">
+                <UserAvatar
+                  onShowImportDialog={onShowImportDialog}
+                  onShowExportDialog={onShowExportDialog}
+                  onLayoutChange={onLayoutChange}
+                  currentLayout={currentLayout}
+                />
 
-            {/* 用户头像 - 在侧边栏布局中的显示入口 */}
-            <div className="flex items-center space-x-2">
-              <UserAvatar
-                onShowImportDialog={onShowImportDialog}
-                onShowExportDialog={onShowExportDialog}
-                onLayoutChange={onLayoutChange}
-                currentLayout={currentLayout}
-              />
-
-              <Button
-                onClick={onShowAddDialog}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                size={isMobile ? "sm" : "default"}
-              >
-                <Plus className="h-4 w-4 mr-1 md:mr-2" />
-                <span className="hidden sm:inline">添加词条</span>
-                <span className="sm:hidden">添加</span>
-              </Button>
-            </div>
+                <Button
+                  onClick={onShowAddDialog}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  size={isMobile ? "sm" : "default"}
+                >
+                  <Plus className="h-4 w-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">添加词条</span>
+                  <span className="sm:hidden">添加</span>
+                </Button>
               </div>
             </div>
           </div>
