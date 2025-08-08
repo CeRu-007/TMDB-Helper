@@ -1,6 +1,87 @@
 "use client"
 
 import React, { useState, useCallback, useRef } from "react"
+
+// 超强浏览器菜单禁用样式
+const rewriteModeStyles = `
+  /* 全局禁用改写模式下的所有选择和菜单 */
+  body.rewrite-mode-active,
+  body.rewrite-mode-active * {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-drag: none !important;
+    -khtml-user-drag: none !important;
+    -moz-user-drag: none !important;
+    -o-user-drag: none !important;
+    user-drag: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  /* 禁用所有选择高亮 */
+  body.rewrite-mode-active *::selection,
+  body.rewrite-mode-active *::-moz-selection,
+  body.rewrite-mode-active *::-webkit-selection {
+    background: transparent !important;
+    color: inherit !important;
+  }
+
+  /* 只允许在指定区域选择文字 */
+  body.rewrite-mode-active .text-selectable {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+  }
+
+  body.rewrite-mode-active .text-selectable::selection {
+    background: #3b82f6 !important;
+    color: white !important;
+  }
+
+  body.rewrite-mode-active .text-selectable::-moz-selection {
+    background: #3b82f6 !important;
+    color: white !important;
+  }
+
+  /* 隐藏所有可能的浏览器UI元素 */
+  body.rewrite-mode-active [role="menu"],
+  body.rewrite-mode-active [role="menuitem"],
+  body.rewrite-mode-active [role="tooltip"],
+  body.rewrite-mode-active .context-menu,
+  body.rewrite-mode-active .selection-menu,
+  body.rewrite-mode-active .copy-menu,
+  body.rewrite-mode-active [data-testid*="menu"],
+  body.rewrite-mode-active [class*="menu"],
+  body.rewrite-mode-active [class*="context"],
+  body.rewrite-mode-active [class*="selection"],
+  body.rewrite-mode-active [class*="copy"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* 禁用浏览器扩展可能添加的元素 */
+  body.rewrite-mode-active [data-extension],
+  body.rewrite-mode-active [data-copilot],
+  body.rewrite-mode-active [data-grammarly],
+  body.rewrite-mode-active [data-translate] {
+    display: none !important;
+  }
+`
+
+// 注入样式
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style')
+  styleElement.textContent = rewriteModeStyles
+  if (!document.head.querySelector('style[data-rewrite-mode]')) {
+    styleElement.setAttribute('data-rewrite-mode', 'true')
+    document.head.appendChild(styleElement)
+  }
+}
 import {
   Upload,
   FileText,
@@ -1355,13 +1436,50 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
 
   // 内容增强功能
-  const handleEnhanceContent = async (fileId: string, resultIndex: number, operation: EnhanceOperation) => {
+  const handleEnhanceContent = async (fileId: string, resultIndex: number, operation: EnhanceOperation, selectedTextInfo?: {text: string, start: number, end: number}) => {
     const results = generationResults[fileId] || []
     const result = results[resultIndex]
     if (!result) return
 
     try {
-      const prompt = buildEnhancePrompt(result, operation)
+      let prompt: string
+      let systemContent: string
+
+      // 如果是改写操作且有选中文字信息，使用特殊的处理逻辑
+      if (operation === 'rewrite' && selectedTextInfo) {
+        console.log('改写API调用信息:', {
+          operation,
+          selectedTextInfo,
+          originalSummary: result.generatedSummary
+        })
+
+        prompt = `请对以下文字进行改写，保持原意但使用不同的表达方式：
+
+【需要改写的文字】
+${selectedTextInfo.text}
+
+【改写要求】
+1. 保持原文的核心意思和信息
+2. 使用不同的词汇和句式表达
+3. 让表达更加生动自然
+4. 保持与上下文的连贯性
+5. 字数与原文相近
+
+请直接输出改写后的文字，不要包含其他说明：`
+
+        systemContent = "你是一位专业的文字编辑专家，擅长改写和优化文字表达。请严格按照用户要求进行改写，保持原意的同时提升表达质量。"
+      } else {
+        // 使用原有的增强逻辑
+        prompt = buildEnhancePrompt(result, operation)
+        systemContent = `你是一位资深的影视内容编辑专家，专门负责优化电视剧、电影等影视作品的分集标题和剧情简介。你具备以下专业能力：
+
+1. **深度理解影视叙事**：熟悉各种影视类型的叙事特点和观众心理
+2. **精准语言表达**：能够根据不同平台和受众调整语言风格
+3. **内容质量把控**：确保每次优化都能显著提升内容的吸引力和专业度
+4. **剧透控制能力**：精确掌握信息透露的分寸，平衡悬念与吸引力
+
+请严格按照用户要求进行内容优化，确保输出格式规范、内容质量上乘。`
+      }
 
       // 根据操作类型调整参数
       const operationConfig = getOperationConfig(operation)
@@ -1380,14 +1498,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
           messages: [
             {
               role: "system",
-              content: `你是一位资深的影视内容编辑专家，专门负责优化电视剧、电影等影视作品的分集标题和剧情简介。你具备以下专业能力：
-
-1. **深度理解影视叙事**：熟悉各种影视类型的叙事特点和观众心理
-2. **精准语言表达**：能够根据不同平台和受众调整语言风格
-3. **内容质量把控**：确保每次优化都能显著提升内容的吸引力和专业度
-4. **剧透控制能力**：精确掌握信息透露的分寸，平衡悬念与吸引力
-
-请严格按照用户要求进行内容优化，确保输出格式规范、内容质量上乘。`
+              content: systemContent
             },
             {
               role: "user",
@@ -1411,32 +1522,57 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
       const enhancedContent = data.data.content.trim()
 
-      // 解析增强后的内容
-      const lines = enhancedContent.split('\n').filter((line: string) => line.trim())
-      let enhancedTitle = result.generatedTitle
-      let enhancedSummary = enhancedContent
+      // 如果是改写操作且有选中文字信息，进行部分替换
+      if (operation === 'rewrite' && selectedTextInfo) {
+        const originalSummary = result.generatedSummary
+        const newSummary = originalSummary.substring(0, selectedTextInfo.start) +
+                          enhancedContent +
+                          originalSummary.substring(selectedTextInfo.end)
 
-      // 尝试解析标题和简介
-      if (lines.length >= 2) {
-        const titleMatch = lines[0].match(/^(?:标题[:：]?\s*)?(.+)$/)
-        if (titleMatch) {
-          enhancedTitle = titleMatch[1].trim()
-          enhancedSummary = lines.slice(1).join('\n').replace(/^(?:简介[:：]?\s*)?/, '').trim()
+        console.log('改写结果处理:', {
+          originalSummary,
+          selectedText: selectedTextInfo.text,
+          rewrittenText: enhancedContent,
+          newSummary,
+          start: selectedTextInfo.start,
+          end: selectedTextInfo.end
+        })
+
+        // 更新结果
+        handleUpdateResult(fileId, resultIndex, {
+          generatedSummary: newSummary,
+          wordCount: newSummary.length
+        })
+      } else {
+        // 原有的增强逻辑
+        const lines = enhancedContent.split('\n').filter((line: string) => line.trim())
+        let enhancedTitle = result.generatedTitle
+        let enhancedSummary = enhancedContent
+
+        // 尝试解析标题和简介
+        if (lines.length >= 2) {
+          const titleMatch = lines[0].match(/^(?:标题[:：]?\s*)?(.+)$/)
+          if (titleMatch) {
+            enhancedTitle = titleMatch[1].trim()
+            enhancedSummary = lines.slice(1).join('\n').replace(/^(?:简介[:：]?\s*)?/, '').trim()
+          }
         }
-      }
 
-      // 更新结果
-      handleUpdateResult(fileId, resultIndex, {
-        generatedTitle: enhancedTitle,
-        generatedSummary: enhancedSummary,
-        wordCount: enhancedSummary.length
-      })
+        // 更新结果
+        handleUpdateResult(fileId, resultIndex, {
+          generatedTitle: enhancedTitle,
+          generatedSummary: enhancedSummary,
+          wordCount: enhancedSummary.length
+        })
+      }
 
     } catch (error) {
       console.error('内容增强失败:', error)
       alert(`${getOperationName(operation)}失败：${error instanceof Error ? error.message : '未知错误'}`)
     }
   }
+
+
 
   // 构建增强提示词
   const buildEnhancePrompt = (result: GenerationResult, operation: EnhanceOperation) => {
@@ -2316,8 +2452,8 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
               onMoveToTop={(resultIndex) =>
                 handleMoveToTop(selectedFile.id, resultIndex)
               }
-              onEnhanceContent={(resultIndex, operation) =>
-                handleEnhanceContent(selectedFile.id, resultIndex, operation)
+              onEnhanceContent={(resultIndex, operation, selectedTextInfo) =>
+                handleEnhanceContent(selectedFile.id, resultIndex, operation, selectedTextInfo)
               }
             />
           ) : (
@@ -2645,7 +2781,7 @@ function WorkArea({
   onOpenGlobalSettings?: (section: string) => void
   onUpdateResult?: (resultIndex: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (resultIndex: number) => void
-  onEnhanceContent?: (resultIndex: number, operation: EnhanceOperation) => void
+  onEnhanceContent?: (resultIndex: number, operation: EnhanceOperation, selectedTextInfo?: {text: string, start: number, end: number}) => void
 }) {
   return (
     <div className="h-full flex flex-col">
@@ -2685,7 +2821,12 @@ function WorkArea({
       {/* 结果展示区域 */}
       <div className="flex-1 overflow-hidden">
         {results.length > 0 ? (
-          <ResultsDisplay results={results} onUpdateResult={onUpdateResult} onMoveToTop={onMoveToTop} onEnhanceContent={onEnhanceContent} />
+          <ResultsDisplay
+            results={results}
+            onUpdateResult={onUpdateResult}
+            onMoveToTop={onMoveToTop}
+            onEnhanceContent={onEnhanceContent}
+          />
         ) : !apiConfigured ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
@@ -2735,13 +2876,25 @@ const ResultsDisplay: React.FC<{
   results: GenerationResult[]
   onUpdateResult?: (index: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (index: number) => void
-  onEnhanceContent?: (index: number, operation: EnhanceOperation) => void
+  onEnhanceContent?: (index: number, operation: EnhanceOperation, selectedTextInfo?: {text: string, start: number, end: number}) => void
 }> = ({ results, onUpdateResult, onMoveToTop, onEnhanceContent }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [editingSummary, setEditingSummary] = useState('')
   const [enhancingIndex, setEnhancingIndex] = useState<number | null>(null)
   const [enhancingOperation, setEnhancingOperation] = useState<string | null>(null)
+
+  // 改写相关状态
+  const [rewritingIndex, setRewritingIndex] = useState<number | null>(null)
+  const [selectedText, setSelectedText] = useState<string>('')
+  const [selectionStart, setSelectionStart] = useState<number>(0)
+  const [selectionEnd, setSelectionEnd] = useState<number>(0)
+  const [isRewritingText, setIsRewritingText] = useState<boolean>(false)
+
+  // 自定义选择实现相关状态
+  const [isSelecting, setIsSelecting] = useState(false)
+  const [selectionHighlight, setSelectionHighlight] = useState<{start: number, end: number} | null>(null)
+  const textContainerRef = useRef<HTMLDivElement>(null)
 
   const handleStartEdit = (index: number, result: GenerationResult) => {
     setEditingIndex(index)
@@ -2763,6 +2916,371 @@ const ResultsDisplay: React.FC<{
     }
   }
 
+  // 自定义文字选择实现
+  const getTextNodeAtPosition = (container: Element, offset: number): {node: Text, offset: number} | null => {
+    let currentOffset = 0
+    const walker = document.createTreeWalker(
+      container,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    )
+
+    let node = walker.nextNode() as Text
+    while (node) {
+      const nodeLength = node.textContent?.length || 0
+      if (currentOffset + nodeLength >= offset) {
+        return { node, offset: offset - currentOffset }
+      }
+      currentOffset += nodeLength
+      node = walker.nextNode() as Text
+    }
+
+    return null
+  }
+
+  const getOffsetFromTextNode = (container: Element, targetNode: Node, targetOffset: number): number => {
+    let offset = 0
+
+    try {
+      const walker = document.createTreeWalker(
+        container,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      )
+
+      let node = walker.nextNode()
+      while (node) {
+        if (node === targetNode) {
+          return offset + targetOffset
+        }
+        offset += node.textContent?.length || 0
+        node = walker.nextNode()
+      }
+
+      // 如果没找到目标节点，尝试查找父节点
+      if (targetNode.nodeType === Node.TEXT_NODE) {
+        return offset + targetOffset
+      } else {
+        // 如果是元素节点，计算到该元素的偏移
+        const textContent = container.textContent || ''
+        const nodeText = targetNode.textContent || ''
+        const nodeIndex = textContent.indexOf(nodeText)
+        return nodeIndex >= 0 ? nodeIndex + targetOffset : offset
+      }
+    } catch (error) {
+      console.log('getOffsetFromTextNode 错误:', error)
+      return 0
+    }
+  }
+
+  const handleCustomMouseDown = (e: React.MouseEvent, index: number) => {
+    if (rewritingIndex !== index) return
+
+    e.preventDefault()
+    e.stopPropagation()
+
+    console.log('开始自定义选择')
+
+    setIsSelecting(true)
+    setSelectionHighlight(null)
+    setSelectedText('')
+
+    // 完全禁用浏览器的选择
+    if (window.getSelection) {
+      window.getSelection()?.removeAllRanges()
+    }
+
+    const container = textContainerRef.current
+    if (!container) return
+
+    const startX = e.clientX
+    const startY = e.clientY
+    let startOffset = 0
+
+    // 计算起始位置
+    try {
+      if (document.caretRangeFromPoint) {
+        const startRange = document.caretRangeFromPoint(startX, startY)
+        if (startRange && container.contains(startRange.startContainer)) {
+          startOffset = getOffsetFromTextNode(container, startRange.startContainer, startRange.startOffset)
+        }
+      } else {
+        // 备用方法：简单的基于位置的估算
+        const rect = container.getBoundingClientRect()
+        const relativeX = startX - rect.left
+        const relativeY = startY - rect.top
+        const fullText = container.textContent || ''
+
+        // 简单估算：基于相对位置计算大概的字符位置
+        const lineHeight = 20 // 估算行高
+        const charWidth = 8   // 估算字符宽度
+        const lineIndex = Math.floor(relativeY / lineHeight)
+        const charIndex = Math.floor(relativeX / charWidth)
+
+        startOffset = Math.min(lineIndex * 50 + charIndex, fullText.length)
+      }
+    } catch (error) {
+      console.log('计算起始位置失败:', error)
+      startOffset = 0
+    }
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      moveEvent.preventDefault()
+      moveEvent.stopPropagation()
+
+      let endOffset = startOffset
+
+      // 计算结束位置
+      try {
+        if (document.caretRangeFromPoint) {
+          const endRange = document.caretRangeFromPoint(moveEvent.clientX, moveEvent.clientY)
+          if (endRange && container.contains(endRange.startContainer)) {
+            endOffset = getOffsetFromTextNode(container, endRange.startContainer, endRange.startOffset)
+          }
+        } else {
+          // 备用方法：简单的基于位置的估算
+          const rect = container.getBoundingClientRect()
+          const relativeX = moveEvent.clientX - rect.left
+          const relativeY = moveEvent.clientY - rect.top
+          const fullText = container.textContent || ''
+
+          const lineHeight = 20
+          const charWidth = 8
+          const lineIndex = Math.floor(relativeY / lineHeight)
+          const charIndex = Math.floor(relativeX / charWidth)
+
+          endOffset = Math.min(lineIndex * 50 + charIndex, fullText.length)
+        }
+      } catch (error) {
+        console.log('计算结束位置失败:', error)
+        endOffset = startOffset
+      }
+
+      const start = Math.min(startOffset, endOffset)
+      const end = Math.max(startOffset, endOffset)
+
+      if (end > start) {
+        const fullText = container.textContent || ''
+        const selectedText = fullText.substring(start, end)
+
+        console.log('选择范围:', { start, end, selectedText })
+
+        setSelectionHighlight({ start, end })
+        setSelectedText(selectedText)
+        setSelectionStart(start)
+        setSelectionEnd(end)
+      }
+    }
+
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      upEvent.preventDefault()
+      upEvent.stopPropagation()
+
+      console.log('结束选择')
+
+      setIsSelecting(false)
+      document.removeEventListener('mousemove', handleMouseMove, { capture: true })
+      document.removeEventListener('mouseup', handleMouseUp, { capture: true })
+
+      // 确保浏览器选择被清除
+      setTimeout(() => {
+        if (window.getSelection) {
+          window.getSelection()?.removeAllRanges()
+        }
+      }, 0)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove, { capture: true, passive: false })
+    document.addEventListener('mouseup', handleMouseUp, { capture: true, passive: false })
+  }
+
+  // 简单的单词选择功能（备用方案）
+  const handleWordClick = (e: React.MouseEvent, text: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const target = e.target as HTMLElement
+    const clickedText = target.textContent || ''
+
+    if (clickedText.trim()) {
+      const fullText = text
+      const startIndex = fullText.indexOf(clickedText.trim())
+
+      if (startIndex !== -1) {
+        const endIndex = startIndex + clickedText.trim().length
+
+        setSelectedText(clickedText.trim())
+        setSelectionStart(startIndex)
+        setSelectionEnd(endIndex)
+        setSelectionHighlight({ start: startIndex, end: endIndex })
+
+        console.log('单词选择:', { text: clickedText.trim(), start: startIndex, end: endIndex })
+      }
+    }
+  }
+
+  // 渲染带高亮的文字
+  const renderTextWithHighlight = (text: string, highlight: {start: number, end: number} | null) => {
+    if (!highlight) {
+      // 将文字分割成单词，便于点击选择
+      const words = text.split(/(\s+)/)
+      return (
+        <span>
+          {words.map((word, index) => (
+            <span
+              key={index}
+              className={word.trim() ? "hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer px-0.5 rounded" : ""}
+              onClick={word.trim() ? (e) => handleWordClick(e, text) : undefined}
+            >
+              {word}
+            </span>
+          ))}
+        </span>
+      )
+    }
+
+    const before = text.substring(0, highlight.start)
+    const selected = text.substring(highlight.start, highlight.end)
+    const after = text.substring(highlight.end)
+
+    return (
+      <span>
+        {before}
+        <span className="bg-blue-500 text-white px-1 rounded">{selected}</span>
+        {after}
+      </span>
+    )
+  }
+
+  // 改写相关处理函数
+  const handleStartRewrite = (index: number) => {
+    setRewritingIndex(index)
+    setSelectedText('')
+    setSelectionStart(0)
+    setSelectionEnd(0)
+    setSelectionHighlight(null)
+    setIsSelecting(false)
+
+    // 添加全局CSS类来禁用选择
+    document.body.classList.add('rewrite-mode-active')
+  }
+
+  // 自定义选择模式下的超强浏览器行为控制系统
+  React.useEffect(() => {
+    if (rewritingIndex === null) return
+
+    // 完全禁用浏览器的文字选择功能
+    const globalEventBlocker = (event: Event) => {
+      const target = event.target as Element
+
+      // 检查是否在自定义选择容器内
+      if (target && textContainerRef.current && textContainerRef.current.contains(target)) {
+        // 在自定义选择区域内，也要阻止浏览器默认行为
+        if (event.type === 'selectstart' || event.type === 'contextmenu') {
+          event.preventDefault()
+          event.stopPropagation()
+          event.stopImmediatePropagation()
+          return false
+        }
+      } else {
+        // 在其他区域，完全阻止所有选择相关事件
+        if (event.type === 'selectstart' ||
+            event.type === 'contextmenu' ||
+            event.type === 'copy' ||
+            event.type === 'cut' ||
+            event.type === 'mousedown' ||
+            event.type === 'mouseup') {
+          event.preventDefault()
+          event.stopPropagation()
+          event.stopImmediatePropagation()
+          return false
+        }
+      }
+    }
+
+    // 注册全局事件阻止器 - 更激进的阻止
+    const eventTypes = ['selectstart', 'contextmenu', 'copy', 'cut', 'mouseup', 'mousedown', 'dragstart', 'drag']
+    eventTypes.forEach(eventType => {
+      document.addEventListener(eventType, globalEventBlocker, {
+        capture: true,
+        passive: false
+      })
+      window.addEventListener(eventType, globalEventBlocker, {
+        capture: true,
+        passive: false
+      })
+    })
+
+    // 持续清除浏览器选择
+    const clearSelectionInterval = setInterval(() => {
+      if (window.getSelection) {
+        const selection = window.getSelection()
+        if (selection && selection.rangeCount > 0) {
+          selection.removeAllRanges()
+        }
+      }
+    }, 50)
+
+    // 清理函数
+    const cleanup = () => {
+      eventTypes.forEach(eventType => {
+        document.removeEventListener(eventType, globalEventBlocker, { capture: true })
+        window.removeEventListener(eventType, globalEventBlocker, { capture: true })
+      })
+      clearInterval(clearSelectionInterval)
+    }
+
+    return cleanup
+
+    // ESC键处理
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && rewritingIndex !== null) {
+        handleCancelRewrite()
+        return
+      }
+    }
+
+    // 键盘事件监听
+    document.addEventListener('keydown', handleKeyDown, { capture: true, passive: false })
+
+    // 清理函数
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, { capture: true })
+
+      // 最终清理
+      try {
+        window.getSelection()?.removeAllRanges()
+      } catch {}
+    }
+  }, [rewritingIndex])
+
+
+
+  const handleCancelRewrite = () => {
+    setRewritingIndex(null)
+    setSelectedText('')
+    setSelectionStart(0)
+    setSelectionEnd(0)
+    setSelectionHighlight(null)
+    setIsSelecting(false)
+
+    // 移除全局CSS类
+    document.body.classList.remove('rewrite-mode-active')
+
+    // 清除文字选择
+    if (window.getSelection) {
+      window.getSelection()?.removeAllRanges()
+    }
+  }
+
+  const handleTextSelection = (index: number) => {
+    // 在自定义选择模式下，这个函数不再需要处理浏览器的选择
+    // 选择逻辑已经在 handleCustomMouseDown 中处理
+    return
+  }
+
   const handleSaveEdit = (index: number) => {
     if (onUpdateResult) {
       onUpdateResult(index, {
@@ -2775,6 +3293,43 @@ const ResultsDisplay: React.FC<{
     setEditingTitle('')
     setEditingSummary('')
   }
+
+  const handleConfirmRewrite = async (index: number) => {
+    if (!selectedText.trim()) {
+      alert('请先选择需要改写的文字')
+      return
+    }
+
+    if (isRewritingText) return // 防止重复操作
+
+    console.log('改写调试信息:', {
+      selectedText,
+      selectionStart,
+      selectionEnd,
+      originalText: results[index]?.generatedSummary
+    })
+
+    setIsRewritingText(true)
+
+    try {
+      // 调用现有的 onEnhanceContent 函数，传递选中文字信息
+      if (onEnhanceContent) {
+        await onEnhanceContent(index, 'rewrite', {
+          text: selectedText,
+          start: selectionStart,
+          end: selectionEnd
+        })
+      }
+    } catch (error) {
+      console.error('改写失败:', error)
+      alert(`改写失败：${error instanceof Error ? error.message : '未知错误'}`)
+    } finally {
+      setIsRewritingText(false)
+      handleCancelRewrite()
+    }
+  }
+
+
 
   const handleCancelEdit = () => {
     setEditingIndex(null)
@@ -2945,6 +3500,10 @@ const ResultsDisplay: React.FC<{
                           <Plus className="h-3 w-3 mr-2" />
                           扩写
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStartRewrite(index)}>
+                          <Edit className="h-3 w-3 mr-2" />
+                          改写
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -2961,6 +3520,66 @@ const ResultsDisplay: React.FC<{
                   rows={4}
                   placeholder="编辑简介内容..."
                 />
+              ) : rewritingIndex === index ? (
+                <div className="relative rewrite-mode-container">
+                  <div className="mb-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                    💡 请拖拽选择文字或点击单词来选择需要改写的内容 (按ESC键取消)
+                  </div>
+                  <div
+                    ref={textContainerRef}
+                    className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed p-2 rounded border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 cursor-text select-none"
+                    onMouseDown={(e) => handleCustomMouseDown(e, index)}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      return false
+                    }}
+                    style={{
+                      WebkitUserSelect: 'none',
+                      MozUserSelect: 'none',
+                      msUserSelect: 'none',
+                      userSelect: 'none',
+                      WebkitTouchCallout: 'none',
+                      minHeight: '60px',
+                      width: '100%'
+                    }}
+                  >
+                    {renderTextWithHighlight(result.generatedSummary, selectionHighlight)}
+                  </div>
+                  {selectedText && (
+                    <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-xs">
+                      <div className="text-yellow-800 dark:text-yellow-200 font-medium mb-1">已选择文字：</div>
+                      <div className="text-yellow-700 dark:text-yellow-300 italic">"{selectedText}"</div>
+                    </div>
+                  )}
+                  <div className="flex items-center space-x-2 mt-3">
+                    <button
+                      onClick={() => handleConfirmRewrite(index)}
+                      disabled={!selectedText || isRewritingText}
+                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-1"
+                    >
+                      {isRewritingText ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>改写中...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-3 w-3" />
+                          <span>确认改写</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleCancelRewrite}
+                      disabled={isRewritingText}
+                      className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-1"
+                    >
+                      <X className="h-3 w-3" />
+                      <span>取消</span>
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                   {result.generatedSummary}
@@ -2982,6 +3601,12 @@ const ResultsDisplay: React.FC<{
                     {enhancingOperation === 'shorten' && '缩写中...'}
                     {enhancingOperation === 'expand' && '扩写中...'}
                   </span>
+                </div>
+              )}
+              {rewritingIndex === index && !isRewritingText && (
+                <div className="flex items-center space-x-1">
+                  <Edit className="h-3 w-3 text-blue-500" />
+                  <span className="text-xs text-blue-600 dark:text-blue-400">改写模式</span>
                 </div>
               )}
             </div>
