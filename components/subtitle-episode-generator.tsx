@@ -1430,6 +1430,8 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         return { temperature: 0.7, maxTokens: 1000 } // 平衡创造性和准确性
       case 'removeSpoilers':
         return { temperature: 0.5, maxTokens: 800 } // 需要谨慎处理
+      case 'proofread':
+        return { temperature: 0.3, maxTokens: 1000 } // 需要精确的语法纠正
       default:
         return { temperature: 0.7, maxTokens: 800 }
     }
@@ -1878,6 +1880,36 @@ ${selectedTextInfo.text}
 标题：[增加剧透后的标题]
 简介：[增加剧透后的简介]`
 
+      case 'proofread':
+        return `请对以下影视剧集标题和简介进行语法纠错和语句优化，使其更加通顺流畅：
+
+【原始内容】
+标题：${currentTitle}
+简介：${currentSummary}
+
+【纠错优化要求】
+1. **语法纠正**：修正语法错误、标点符号使用不当等问题
+2. **语句通顺**：优化句式结构，使表达更加流畅自然
+3. **用词准确**：选择更准确、恰当的词汇表达
+4. **逻辑清晰**：确保句子间逻辑关系清楚，表达连贯
+5. **风格统一**：保持整体语言风格的一致性
+
+【纠错原则】
+- 保持原意不变，只优化表达方式
+- 修正明显的语法和用词错误
+- 提升语言的准确性和流畅度
+- 保持内容的完整性和可读性
+- 适合正式的影视介绍场合
+
+【注意事项】
+- 不改变核心内容和信息量
+- 保持原有的语言风格特色
+- 确保修改后的内容更加专业和准确
+
+请严格按照以下格式输出：
+标题：[纠错后的标题]
+简介：[纠错后的简介]`
+
       default:
         return currentSummary
     }
@@ -1898,6 +1930,7 @@ ${selectedTextInfo.text}
       case 'rephrase': return '改写'
       case 'removeSpoilers': return '去剧透'
       case 'addSpoilers': return '增加剧透'
+      case 'proofread': return '纠错'
       default: return '处理'
     }
   }
@@ -2869,7 +2902,7 @@ function WorkArea({
 }
 
 // 操作类型定义
-type EnhanceOperation = 'polish' | 'shorten' | 'expand' | 'continue' | 'formalize' | 'colloquialize' | 'literarize' | 'rewrite' | 'summarize' | 'rephrase' | 'removeSpoilers' | 'addSpoilers'
+type EnhanceOperation = 'polish' | 'shorten' | 'expand' | 'continue' | 'formalize' | 'colloquialize' | 'literarize' | 'rewrite' | 'summarize' | 'rephrase' | 'removeSpoilers' | 'addSpoilers' | 'proofread'
 
 // 结果展示组件
 const ResultsDisplay: React.FC<{
@@ -3500,6 +3533,10 @@ const ResultsDisplay: React.FC<{
                           <Plus className="h-3 w-3 mr-2" />
                           扩写
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEnhance(index, 'proofread')}>
+                          <CheckCircle className="h-3 w-3 mr-2" />
+                          纠错
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleStartRewrite(index)}>
                           <Edit className="h-3 w-3 mr-2" />
                           改写
@@ -3600,6 +3637,7 @@ const ResultsDisplay: React.FC<{
                     {enhancingOperation === 'polish' && '润色中...'}
                     {enhancingOperation === 'shorten' && '缩写中...'}
                     {enhancingOperation === 'expand' && '扩写中...'}
+                    {enhancingOperation === 'proofread' && '纠错中...'}
                   </span>
                 </div>
               )}
