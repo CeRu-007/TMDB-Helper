@@ -254,6 +254,7 @@ interface GenerationResult {
   fileName?: string // 添加文件名字段，用于批量生成时标识来源文件
   styleId?: string // 单个风格ID，用于标识该结果对应的风格
   styleName?: string // 风格名称，用于显示
+  error?: string // 错误类型，如 'INSUFFICIENT_BALANCE'
 }
 
 // 生成配置
@@ -358,6 +359,28 @@ export function SubtitleEpisodeGenerator({
 
   const [movieTitle, setMovieTitle] = useState('')
   const { toast } = useToast()
+
+  // 余额不足弹窗状态
+  const [showInsufficientBalanceDialog, setShowInsufficientBalanceDialog] = useState(false)
+
+  // 检测是否是余额不足错误
+  const isInsufficientBalanceError = (error: any): boolean => {
+    if (typeof error === 'string') {
+      return error.includes('account balance is insufficient') ||
+             error.includes('余额已用完') ||
+             error.includes('余额不足')
+    }
+
+    if (error && typeof error === 'object') {
+      const errorStr = JSON.stringify(error).toLowerCase()
+      return errorStr.includes('30001') ||
+             errorStr.includes('account balance is insufficient') ||
+             errorStr.includes('insufficient_balance') ||
+             error.errorType === 'INSUFFICIENT_BALANCE'
+    }
+
+    return false
+  }
 
   // 更新生成结果的函数
   const handleUpdateResult = useCallback((fileId: string, resultIndex: number, updatedResult: Partial<GenerationResult>) => {
@@ -865,8 +888,9 @@ export function SubtitleEpisodeGenerator({
           errorMessage = 'API端点返回错误页面，请检查API密钥配置'
           console.error('收到HTML响应:', responseText.substring(0, 200))
         } else {
+          let errorData = null
           try {
-            const errorData = JSON.parse(responseText)
+            errorData = JSON.parse(responseText)
             console.error('API错误详情:', {
               status: response.status,
               statusText: response.statusText,
@@ -880,15 +904,38 @@ export function SubtitleEpisodeGenerator({
             console.error('无法解析错误响应为JSON:', parseError)
             errorMessage = `API返回非JSON响应: ${responseText.substring(0, 100)}`
           }
-        }
 
-        // 根据错误类型提供更友好的提示
-        if (response.status === 401) {
-          errorMessage = 'API密钥无效，请检查配置'
-        } else if (response.status === 429) {
-          errorMessage = 'API调用频率过高，请稍后重试'
-        } else if (response.status === 500) {
-          errorMessage = '服务器内部错误，请稍后重试'
+          // 根据错误类型提供更友好的提示
+          if (response.status === 401) {
+            errorMessage = 'API密钥无效，请检查配置'
+          } else if (response.status === 429) {
+            errorMessage = 'API调用频率过高，请稍后重试'
+          } else if (response.status === 500) {
+            errorMessage = '服务器内部错误，请稍后重试'
+          } else if (response.status === 403) {
+            // 检查是否是余额不足错误
+            if (isInsufficientBalanceError(errorData) || isInsufficientBalanceError(responseText)) {
+              // 显示余额不足弹窗，不抛出错误
+              setShowInsufficientBalanceDialog(true)
+              // 返回一个特殊的结果，表示余额不足
+              return {
+                episodeNumber: episode.episodeNumber,
+                originalTitle: episode.title || `第${episode.episodeNumber}集`,
+                generatedTitle: `第${episode.episodeNumber}集`,
+                generatedSummary: '余额不足，无法生成内容',
+                confidence: 0,
+                wordCount: 0,
+                generationTime: Date.now(),
+                model: config.model,
+                styles: styleId ? [styleId] : config.selectedStyles,
+                styleId: styleId,
+                styleName: styleName,
+                error: 'INSUFFICIENT_BALANCE'
+              }
+            } else {
+              errorMessage = '访问权限不足，请检查API密钥'
+            }
+          }
         }
       } catch (e) {
         console.error('处理错误响应时发生异常:', e)
@@ -965,6 +1012,14 @@ export function SubtitleEpisodeGenerator({
     for (const styleId of validSelectedStyles) {
       try {
         const result = await generateEpisodeContentForStyle(episode, styleId)
+
+        // 检查是否是余额不足的结果
+        if (result.error === 'INSUFFICIENT_BALANCE') {
+          // 余额不足时，直接返回已有结果，不继续生成其他风格
+          results.push(result)
+          break
+        }
+
         results.push(result)
 
         // 避免API限流，在风格之间添加短暂延迟
@@ -973,10 +1028,33 @@ export function SubtitleEpisodeGenerator({
         }
       } catch (error) {
         console.error(`风格 ${styleId} 生成失败:`, error)
+
+        // 检查是否是余额不足错误
+        if (isInsufficientBalanceError(error)) {
+          // 余额不足时，添加特殊的结果并停止生成
+          const style = GENERATION_STYLES.find(s => s.id === styleId)
+          results.push({
+            episodeNumber: episode.episodeNumber,
+            originalTitle: episode.title || `第${episode.episodeNumber}集`,
+            generatedTitle: `第${episode.episodeNumber}集`,
+            generatedSummary: '余额不足，无法生成内容',
+            confidence: 0,
+            wordCount: 0,
+            generationTime: Date.now(),
+            model: config.model,
+            styles: [styleId],
+            styleId: styleId,
+            styleName: style?.name || styleId,
+            error: 'INSUFFICIENT_BALANCE'
+          })
+          break
+        }
+
         // 添加失败的结果占位符
         const style = GENERATION_STYLES.find(s => s.id === styleId)
         results.push({
           episodeNumber: episode.episodeNumber,
+          originalTitle: episode.title || `第${episode.episodeNumber}集`,
           generatedTitle: `第${episode.episodeNumber}集（${style?.name || styleId}风格生成失败）`,
           generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
           confidence: 0,
@@ -984,7 +1062,8 @@ export function SubtitleEpisodeGenerator({
           generationTime: Date.now(),
           model: config.model,
           styles: [styleId],
-          styleId: styleId
+          styleId: styleId,
+          styleName: style?.name || styleId
         })
       }
     }
@@ -1403,7 +1482,14 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
       }
     } catch (error) {
       console.error('批量生成失败:', error)
-      alert(`生成失败：${error instanceof Error ? error.message : '未知错误'}`)
+
+      // 检查是否是余额不足错误
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalanceDialog(true)
+        // 不显示额外的错误提示
+      } else {
+        alert(`生成失败：${error instanceof Error ? error.message : '未知错误'}`)
+      }
     } finally {
       setIsGenerating(false)
       setGenerationProgress(0)
@@ -1570,7 +1656,14 @@ ${selectedTextInfo.text}
 
     } catch (error) {
       console.error('内容增强失败:', error)
-      alert(`${getOperationName(operation)}失败：${error instanceof Error ? error.message : '未知错误'}`)
+
+      // 检查是否是余额不足错误
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalanceDialog(true)
+        return // 直接返回，不显示错误提示
+      } else {
+        alert(`${getOperationName(operation)}失败：${error instanceof Error ? error.message : '未知错误'}`)
+      }
     }
   }
 
@@ -2137,11 +2230,18 @@ ${selectedTextInfo.text}
 
     } catch (error) {
       console.error('批量生成失败:', error)
-      toast({
-        title: "生成失败",
-        description: error instanceof Error ? error.message : '未知错误',
-        variant: "destructive"
-      })
+
+      // 检查是否是余额不足错误
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalanceDialog(true)
+        // 不显示额外的错误提示
+      } else {
+        toast({
+          title: "生成失败",
+          description: error instanceof Error ? error.message : '未知错误',
+          variant: "destructive"
+        })
+      }
     } finally {
       setIsGenerating(false)
       setGenerationProgress(0)
@@ -2372,7 +2472,14 @@ ${selectedTextInfo.text}
       }
     } catch (error) {
       console.error('批量生成失败:', error)
-      alert(`批量生成失败：${error instanceof Error ? error.message : '未知错误'}`)
+
+      // 检查是否是余额不足错误
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalanceDialog(true)
+        // 不显示额外的错误提示
+      } else {
+        alert(`批量生成失败：${error instanceof Error ? error.message : '未知错误'}`)
+      }
     } finally {
       setIsGenerating(false)
       setGenerationProgress(0)
@@ -2488,6 +2595,8 @@ ${selectedTextInfo.text}
               onEnhanceContent={(resultIndex, operation, selectedTextInfo) =>
                 handleEnhanceContent(selectedFile.id, resultIndex, operation, selectedTextInfo)
               }
+              isInsufficientBalanceError={isInsufficientBalanceError}
+              setShowInsufficientBalanceDialog={setShowInsufficientBalanceDialog}
             />
           ) : (
             <EmptyState
@@ -2572,6 +2681,51 @@ ${selectedTextInfo.text}
           }
         }}
       />
+
+      {/* 余额不足弹窗 */}
+      <Dialog open={showInsufficientBalanceDialog} onOpenChange={setShowInsufficientBalanceDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              余额不足
+            </DialogTitle>
+            <DialogDescription>
+              您的硅基流动余额已用完，无法继续使用AI生成功能。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              <p>请前往硅基流动官网充值后继续使用：</p>
+              <a
+                href="https://cloud.siliconflow.cn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:text-blue-600 underline"
+              >
+                https://cloud.siliconflow.cn
+              </a>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowInsufficientBalanceDialog(false)}
+              >
+                知道了
+              </Button>
+              <Button
+                onClick={() => {
+                  window.open('https://cloud.siliconflow.cn', '_blank')
+                  setShowInsufficientBalanceDialog(false)
+                }}
+                className="bg-blue-500 hover:bg-blue-600"
+              >
+                前往充值
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       </div>
     </TooltipProvider>
   )
@@ -2803,7 +2957,9 @@ function WorkArea({
   onOpenGlobalSettings,
   onUpdateResult,
   onMoveToTop,
-  onEnhanceContent
+  onEnhanceContent,
+  isInsufficientBalanceError,
+  setShowInsufficientBalanceDialog
 }: {
   file: SubtitleFile
   results: GenerationResult[] // 这里接收的是当前文件的结果数组
@@ -2815,6 +2971,8 @@ function WorkArea({
   onUpdateResult?: (resultIndex: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (resultIndex: number) => void
   onEnhanceContent?: (resultIndex: number, operation: EnhanceOperation, selectedTextInfo?: {text: string, start: number, end: number}) => void
+  isInsufficientBalanceError?: (error: any) => boolean
+  setShowInsufficientBalanceDialog?: (show: boolean) => void
 }) {
   return (
     <div className="h-full flex flex-col">
@@ -2859,6 +3017,8 @@ function WorkArea({
             onUpdateResult={onUpdateResult}
             onMoveToTop={onMoveToTop}
             onEnhanceContent={onEnhanceContent}
+            isInsufficientBalanceError={isInsufficientBalanceError}
+            setShowInsufficientBalanceDialog={setShowInsufficientBalanceDialog}
           />
         ) : !apiConfigured ? (
           <div className="h-full flex items-center justify-center">
@@ -2910,7 +3070,9 @@ const ResultsDisplay: React.FC<{
   onUpdateResult?: (index: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (index: number) => void
   onEnhanceContent?: (index: number, operation: EnhanceOperation, selectedTextInfo?: {text: string, start: number, end: number}) => void
-}> = ({ results, onUpdateResult, onMoveToTop, onEnhanceContent }) => {
+  isInsufficientBalanceError?: (error: any) => boolean
+  setShowInsufficientBalanceDialog?: (show: boolean) => void
+}> = ({ results, onUpdateResult, onMoveToTop, onEnhanceContent, isInsufficientBalanceError, setShowInsufficientBalanceDialog }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [editingSummary, setEditingSummary] = useState('')
