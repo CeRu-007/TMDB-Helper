@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import {
   Download,
   RotateCcw,
@@ -68,11 +70,14 @@ export default function DockerVersionManager() {
     message: ''
   })
   const [isDockerEnvironment, setIsDockerEnvironment] = useState(true)
-  const [dockerHubRegistry, setDockerHubRegistry] = useState('https://hub.docker.com')
+  const [dockerHubRegistry, setDockerHubRegistry] = useState('https://hub.docker.com') // 选择项（可为 'custom'）
+  const [customRegistry, setCustomRegistry] = useState('') // 自定义地址实际值
   const [dockerValidation, setDockerValidation] = useState<DockerValidation[]>([])
   const [registrySpeeds, setRegistrySpeeds] = useState<RegistrySpeed[]>([])
   const [containerInfo, setContainerInfo] = useState<any>(null)
   const [lastError, setLastError] = useState<string | null>(null)
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false)
+  const [hasSavedRegistry, setHasSavedRegistry] = useState(false)
   
   // 测试镜像源速度
   const testRegistrySpeed = async (registry: string): Promise<number> => {
@@ -136,7 +141,8 @@ export default function DockerVersionManager() {
       setLastError(null)
       
       // 调用API获取版本信息，传递当前选择的镜像源参数
-      const registryParam = dockerHubRegistry === 'https://hub.docker.com' ? '' : `&registry=${encodeURIComponent(dockerHubRegistry)}`
+      const effectiveRegistry = dockerHubRegistry === 'custom' ? customRegistry : dockerHubRegistry
+      const registryParam = !effectiveRegistry || effectiveRegistry === 'https://hub.docker.com' ? '' : `&registry=${encodeURIComponent(effectiveRegistry)}`
       const url = `/api/docker-version-manager?action=check${registryParam}`
       
       const response = await fetch(url, {
@@ -197,85 +203,62 @@ export default function DockerVersionManager() {
     }
   }
   
-  // 执行更新
+  // 拉取最新镜像（推荐）：避免容器自停导致请求中断，仅下载新镜像，后续手动重启生效
   const performUpdate = async () => {
     try {
       setIsUpdating(true)
       setUpdateStatus({
-        phase: 'checking',
-        progress: 10,
-        message: '正在进行预检查...'
+        phase: 'downloading',
+        progress: 20,
+        message: '正在拉取最新镜像...'
       })
-      
-      // 调用API执行更新
+
       const response = await fetch('/api/docker-version-manager', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'install' }),
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || data.details || 'Failed to initiate update')
-      }
-      
-      if (data.success) {
-        // 模拟更新进度
-        const phases = [
-          { phase: 'downloading' as const, progress: 30, message: '正在下载新镜像...' },
-          { phase: 'installing' as const, progress: 60, message: '正在安装更新...' },
-          { phase: 'verifying' as const, progress: 90, message: '正在验证更新...' },
-          { phase: 'completed' as const, progress: 100, message: '更新完成！' }
-        ]
-        
-        for (const phaseInfo of phases) {
-          setUpdateStatus(phaseInfo)
-          await new Promise(resolve => setTimeout(resolve, 1000))
-        }
-        
-        // 更新完成后刷新版本信息
-        await fetchVersionInfo(false)
-        
-        toast({
-          title: "更新成功",
-          description: data.rolledBack ? 
-            "更新失败，已自动回滚到之前版本" : 
-            `Docker镜像已更新到 ${data.data?.versionInfo?.version || '最新版本'}`
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'download',
+          registry: dockerHubRegistry === 'custom' ? customRegistry : dockerHubRegistry
         })
-      } else {
-        throw new Error(data.error || 'Update failed')
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.details || data.error || '拉取镜像失败')
       }
+
+      // 模拟下载进度
+      const phases = [
+        { phase: 'downloading' as const, progress: 40, message: '镜像下载中...' },
+        { phase: 'downloading' as const, progress: 80, message: '即将完成...' },
+        { phase: 'completed' as const, progress: 100, message: '镜像已下载，是否立即重启容器？' }
+      ]
+      for (const p of phases) {
+        setUpdateStatus(p)
+        await new Promise(r => setTimeout(r, 800))
+      }
+
+      // 拉取后刷新版本信息（只更新远端最新，不会改变当前版本）
+      await fetchVersionInfo(false)
+
+      setShowRestartConfirm(true)
+
+      toast({
+        title: '镜像拉取完成',
+        description: `已拉取版本 ${data.data?.versionInfo?.version || '最新'}，可选择立即重启容器`
+      })
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error('[DockerVersionManager] Error performing update:', error)
-      
-      setUpdateStatus({
-        phase: 'failed',
-        progress: 0,
-        message: '更新失败',
-        error: errorMessage
-      })
-      
+      console.error('[DockerVersionManager] Error downloading image:', error)
+      setUpdateStatus({ phase: 'failed', progress: 0, message: '拉取失败', error: errorMessage })
       toast({
-        title: "更新失败",
-        description: errorMessage.includes('回滚') ? 
-          errorMessage : 
-          "更新过程中出现错误，请查看详细信息或重试",
-        variant: "destructive"
+        title: '拉取失败',
+        description: errorMessage.includes('timeout') ? '请求超时，请检查网络或镜像源' : (errorMessage || '未知错误'),
+        variant: 'destructive'
       })
     } finally {
       setIsUpdating(false)
-      // 3秒后重置状态
-      setTimeout(() => {
-        setUpdateStatus({
-          phase: 'idle',
-          progress: 0,
-          message: ''
-        })
-      }, 3000)
     }
   }
   
@@ -309,12 +292,54 @@ export default function DockerVersionManager() {
     checkDockerEnvironment()
   }, [])
 
-  // 当镜像源改变时，重新获取版本信息
+  // 初始化：从服务端读取镜像源配置
   useEffect(() => {
-    if (isDockerEnvironment && dockerHubRegistry) {
+    const loadServerRegistry = async () => {
+      try {
+        const res = await fetch('/api/docker-version-manager?action=config')
+        if (res.ok) {
+          const data = await res.json()
+          const cfg = data?.data
+          const reg = cfg?.registry || cfg?.preferredRegistry
+          if (reg) {
+            if (reg.startsWith('http')) {
+              setDockerHubRegistry('custom')
+              setCustomRegistry(reg)
+            } else {
+              setDockerHubRegistry(reg)
+            }
+          }
+        }
+      } catch {}
+    }
+    loadServerRegistry()
+  }, [])
+
+  // 当镜像源改变时，保存至服务端并重新获取版本信息
+  useEffect(() => {
+    if (!isDockerEnvironment) return
+
+    const saveServerRegistry = async () => {
+      try {
+        const effective = dockerHubRegistry === 'custom' ? customRegistry : dockerHubRegistry
+        if (!effective) return
+        const config = { registry: effective }
+        await fetch('/api/docker-version-manager', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'config', config })
+        })
+        setHasSavedRegistry(true)
+      } catch {}
+    }
+
+    saveServerRegistry()
+
+    // 拉取信息
+    if (dockerHubRegistry === 'custom' ? !!customRegistry : !!dockerHubRegistry) {
       fetchVersionInfo(false)
     }
-  }, [dockerHubRegistry])
+  }, [dockerHubRegistry, customRegistry, isDockerEnvironment])
   
   if (isLoading) {
     return (
@@ -364,20 +389,38 @@ export default function DockerVersionManager() {
         <CardContent>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Docker Hub 镜像源</label>
-              <select 
-                className="w-full p-2 border rounded-md"
-                value={dockerHubRegistry}
-                onChange={(e) => setDockerHubRegistry(e.target.value)}
-                disabled={isLoading || isUpdating}
-              >
-                <option value="https://hub.docker.com">官方源 (https://hub.docker.com)</option>
-                <option value="https://docker.mirrors.ustc.edu.cn">中科大镜像源 (https://docker.mirrors.ustc.edu.cn)</option>
-                <option value="https://registry.cn-hangzhou.aliyuncs.com">阿里云镜像源 (https://registry.cn-hangzhou.aliyuncs.com)</option>
-                <option value="https://mirror.ccs.tencentyun.com">腾讯云镜像源 (https://mirror.ccs.tencentyun.com)</option>
-              </select>
+              <label className="block text-sm font-medium mb-2">Docker 镜像源</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <select
+                  className="w-full p-2 border rounded-md"
+                  value={dockerHubRegistry === 'custom' ? 'custom' : dockerHubRegistry}
+                  onChange={(e) => setDockerHubRegistry(e.target.value)}
+                  disabled={isLoading || isUpdating}
+                >
+                  <option value="https://hub.docker.com">官方源 (hub.docker.com)</option>
+                  <option value="https://docker.mirrors.ustc.edu.cn">中科大 (docker.mirrors.ustc.edu.cn)</option>
+                  <option value="https://registry.cn-hangzhou.aliyuncs.com">阿里云 (registry.cn-hangzhou.aliyuncs.com)</option>
+                  <option value="https://mirror.ccs.tencentyun.com">腾讯云 (mirror.ccs.tencentyun.com)</option>
+                  <option value="https://registry-1.docker.io">Docker官方镜像服务 (registry-1.docker.io)</option>
+                  <option value="https://dockerproxy.com">DockerProxy (dockerproxy.com)</option>
+                  {/* 追加服务端保存的历史自定义源 */}
+                  {Array.isArray(containerInfo?.registryHistory) && containerInfo.registryHistory.map((u: string) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                  <option value="custom">自定义...</option>
+                </select>
+
+                {/* 自定义镜像源输入 */}
+                <Input
+                  type="text"
+                  placeholder="输入自定义镜像源，如 https://my-registry.example.com"
+                  value={customRegistry}
+                  onChange={(e) => setCustomRegistry(e.target.value.trim())}
+                  disabled={isLoading || isUpdating || dockerHubRegistry !== 'custom'}
+                />
+              </div>
             </div>
-            
+
             {/* 镜像源速度测试结果 */}
             {registrySpeeds.length > 0 && (
               <div className="space-y-2">
@@ -385,11 +428,8 @@ export default function DockerVersionManager() {
                 <div className="grid grid-cols-1 gap-2">
                   {registrySpeeds.map((speed) => (
                     <div key={speed.registry} className="flex items-center justify-between p-2 border rounded text-sm">
-                      <span className="truncate">
-                        {speed.registry.includes('ustc') ? '中科大' : 
-                         speed.registry.includes('aliyun') ? '阿里云' : 
-                         speed.registry.includes('tencentyun') ? '腾讯云' : 
-                         '官方源'}
+                      <span className="truncate" title={speed.registry}>
+                        {speed.registry}
                       </span>
                       <div className="flex items-center">
                         {speed.status === 'testing' && (
@@ -408,9 +448,9 @@ export default function DockerVersionManager() {
                     </div>
                   ))}
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={testAllRegistrySpeeds}
                   disabled={isLoading || isUpdating}
                 >
@@ -419,10 +459,9 @@ export default function DockerVersionManager() {
                 </Button>
               </div>
             )}
-            
+
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              为了改善在中国大陆的访问速度，您可以选择使用国内镜像源。
-              系统会自动测试各镜像源的响应时间，并推荐最快的源。
+              选择用于拉取的镜像源，可直接选择预设或输入自定义地址（请求中会传递给后端用于拉取）。
             </p>
           </div>
         </CardContent>
@@ -597,12 +636,12 @@ export default function DockerVersionManager() {
                             {isUpdating ? (
                               <>
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                {updateStatus.message || '更新中...'}
+                                {updateStatus.message || '拉取中...'}
                               </>
                             ) : (
                               <>
                                 <Download className="h-4 w-4 mr-2" />
-                                一键更新
+                                拉取最新镜像
                               </>
                             )}
                           </Button>
@@ -621,9 +660,9 @@ export default function DockerVersionManager() {
                               </p>
                             )}
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {updateStatus.phase === 'completed' ? 
-                                '更新完成，容器将自动重启' : 
-                                '正在更新Docker镜像，请勿关闭应用...'}
+                              {updateStatus.phase === 'completed' ?
+                                '镜像已下载完成，请按下面说明重启容器以生效' :
+                                '正在拉取Docker镜像，请勿关闭页面...'}
                             </p>
                           </div>
                         )}
@@ -684,8 +723,8 @@ export default function DockerVersionManager() {
               <Info className="h-4 w-4 mr-2" />
               查看日志
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={fetchVersionInfo}
               disabled={isLoading || isUpdating}
             >
@@ -693,9 +732,42 @@ export default function DockerVersionManager() {
               重新检查
             </Button>
           </div>
+
+
         </CardContent>
       </Card>
-      
+
+      {/* 重启确认对话框 */}
+      <AlertDialog open={showRestartConfirm} onOpenChange={setShowRestartConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>是否重启容器以应用新镜像？</AlertDialogTitle>
+            <AlertDialogDescription>
+              镜像已成功拉取。重启容器将中断当前会话并短暂不可用，请确认。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>稍后</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                try {
+                  // 使用 docker 重启当前容器（容器内执行可能需要权限；这里提供调用端指示）
+                  await fetch('/api/docker-version-manager', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'install' })
+                  })
+                } catch (e) {
+                  // 忽略，后端会处理错误
+                }
+              }}
+            >
+              立即重启
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* 版本历史记录 */}
       <Card>
         <CardHeader>

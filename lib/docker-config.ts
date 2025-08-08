@@ -6,7 +6,10 @@ import fs from 'fs'
 import path from 'path'
 
 export interface DockerConfig {
+  // 当前用于拉取的镜像源（可为完整URL或预设标识）
   registry: string
+  // 历史自定义镜像源列表（便于下拉快捷选择）
+  registryHistory?: string[]
   autoUpdate: boolean
   updateSchedule?: string
   backupRetention: number

@@ -183,11 +183,12 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { action } = await request.json()
+    const body = await request.json()
+    const { action, registry } = body
 
     switch (action) {
       case 'download':
-        return await downloadLatest()
+        return await downloadLatest(registry)
       case 'install':
         return await installUpdate()
       case 'config':
@@ -371,6 +372,9 @@ async function getStatus(): Promise<NextResponse> {
       }
     }
 
+    // 附加服务端保存的配置
+    const serverConfig = getDockerConfig()
+
     const statusData = {
       installed: isDocker,
       isDockerEnvironment: isDocker,
@@ -378,6 +382,8 @@ async function getStatus(): Promise<NextResponse> {
       containerName,
       containerInfo,
       dockerValidation,
+      registryHistory: serverConfig.registryHistory || [],
+      currentRegistry: serverConfig.registry,
       timestamp: new Date().toISOString()
     }
 
@@ -606,7 +612,7 @@ async function getLocalVersion() {
 /**
  * 下载最新版本
  */
-async function downloadLatest(): Promise<NextResponse> {
+async function downloadLatest(preferredRegistry?: string): Promise<NextResponse> {
   try {
     // 首先检查是否在Docker环境中
     const isDocker = await detectDockerEnvironment()
@@ -624,19 +630,37 @@ async function downloadLatest(): Promise<NextResponse> {
     // 获取最新版本信息
     const latestVersion = await getLatestVersion()
 
-    console.log(`[Docker Version Manager] 准备拉取镜像: ${DOCKER_HUB_REPO}:${latestVersion.version}`)
+    const repo = DOCKER_HUB_REPO
+    const tag = latestVersion.version
 
-    // 拉取最新的Docker镜像
-    const pullCmd = `docker pull ${DOCKER_HUB_REPO}:${latestVersion.version}`
-    await execAsync(pullCmd)
+    const candidates = [preferredRegistry, 'https://hub.docker.com'].filter(Boolean) as string[]
 
-    console.log(`[Docker Version Manager] 镜像拉取完成: ${DOCKER_HUB_REPO}:${latestVersion.version}`)
+    let pulled = false
+    let lastError: any = null
+
+    for (const reg of candidates) {
+      try {
+        const imageRef = reg && reg !== 'https://hub.docker.com' ? `${reg.replace(/^https?:\/\//, '')}/${repo}:${tag}` : `${repo}:${tag}`
+        console.log(`[Docker Version Manager] 尝试拉取: ${imageRef}`)
+        await execAsync(`docker pull ${imageRef}`)
+        pulled = true
+        logOperation('镜像拉取成功', { image: imageRef })
+        break
+      } catch (err) {
+        lastError = err
+        logOperation('镜像拉取失败', { registry: reg, error: err instanceof Error ? err.message : String(err) }, false)
+      }
+    }
+
+    if (!pulled) {
+      throw new Error(`无法从任何镜像源拉取镜像: ${lastError?.message || '未知错误'}`)
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         versionInfo: latestVersion,
-        message: '镜像拉取完成，准备安装'
+        message: '镜像拉取完成'
       }
     })
   } catch (error) {
@@ -978,8 +1002,14 @@ async function updateConfig(request: NextRequest): Promise<NextResponse> {
       }, { status: 400 })
     }
 
-    // 保存配置
-    const updatedConfig = { ...getDockerConfig(), ...config }
+    // 保存配置（合并并维护registryHistory）
+    const current = getDockerConfig()
+    const nextRegistry = (config?.registry || current.registry || '').trim()
+    const history = new Set([...(current.registryHistory || [])])
+    if (nextRegistry && nextRegistry.startsWith('http')) {
+      history.add(nextRegistry)
+    }
+    const updatedConfig = { ...current, ...config, registryHistory: Array.from(history).slice(-10) }
     saveDockerConfig(updatedConfig)
 
     logOperation('更新配置', { config: updatedConfig })
