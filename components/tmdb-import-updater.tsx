@@ -67,64 +67,14 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
   // 缓存有效期（5分钟）
   const CACHE_DURATION = 5 * 60 * 1000
 
-  // 从缓存加载数据
-  const loadFromCache = () => {
-    if (typeof window === 'undefined') return false
+  // 从缓存加载数据（已禁用本地缓存，直接返回false）
+  const loadFromCache = () => false
 
-    try {
-      const timestamp = localStorage.getItem(CACHE_KEYS.CACHE_TIMESTAMP)
-      if (!timestamp) return false
+  // 保存到缓存（禁用）
+  const saveToCache = (versionData?: VersionInfo, statusData?: InstallStatus) => {}
 
-      const cacheAge = Date.now() - parseInt(timestamp)
-      if (cacheAge > CACHE_DURATION) {
-        // 缓存过期，清理
-        clearCache()
-        return false
-      }
-
-      const cachedVersionInfo = localStorage.getItem(CACHE_KEYS.VERSION_INFO)
-      const cachedInstallStatus = localStorage.getItem(CACHE_KEYS.INSTALL_STATUS)
-
-      if (cachedVersionInfo) {
-        setVersionInfo(JSON.parse(cachedVersionInfo))
-      }
-      if (cachedInstallStatus) {
-        setInstallStatus(JSON.parse(cachedInstallStatus))
-      }
-
-      return !!(cachedVersionInfo || cachedInstallStatus)
-    } catch (error) {
-      console.warn('加载缓存失败:', error)
-      clearCache()
-      return false
-    }
-  }
-
-  // 保存到缓存
-  const saveToCache = (versionData?: VersionInfo, statusData?: InstallStatus) => {
-    if (typeof window === 'undefined') return
-
-    try {
-      if (versionData) {
-        localStorage.setItem(CACHE_KEYS.VERSION_INFO, JSON.stringify(versionData))
-      }
-      if (statusData) {
-        localStorage.setItem(CACHE_KEYS.INSTALL_STATUS, JSON.stringify(statusData))
-      }
-      localStorage.setItem(CACHE_KEYS.CACHE_TIMESTAMP, Date.now().toString())
-    } catch (error) {
-      console.warn('保存缓存失败:', error)
-    }
-  }
-
-  // 清理缓存
-  const clearCache = () => {
-    if (typeof window === 'undefined') return
-
-    Object.values(CACHE_KEYS).forEach(key => {
-      localStorage.removeItem(key)
-    })
-  }
+  // 清理缓存（禁用）
+  const clearCache = () => {}
 
   // 检查版本信息
   const checkVersion = async (showLoading = true) => {

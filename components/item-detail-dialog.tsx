@@ -114,6 +114,8 @@ import { PlatformLogo } from "@/components/ui/platform-icon"
 import { Skeleton } from "./ui/skeleton"
 import { cn } from "@/lib/utils"
 
+import { ClientConfigManager } from "@/lib/client-config-manager"
+
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
 // 定义分类列表
@@ -138,6 +140,15 @@ interface ItemDetailDialogProps {
 }
 
 export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, onOpenScheduledTask }: ItemDetailDialogProps) {
+  const [pythonCmd, setPythonCmd] = useState<string>(process.platform === 'win32' ? 'python' : 'python3')
+  useEffect(() => {
+    (async () => {
+      try {
+        const v = await ClientConfigManager.getItem('python_command')
+        if (v && v.trim()) setPythonCmd(v)
+      } catch {}
+    })()
+  }, [])
   const { updateItem, isConnected, pendingOperations } = useData()
   const [editing, setEditing] = useState(false)
   const [editData, setEditData] = useState(item)
@@ -182,10 +193,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
     setEditData(initialEditData)
     setLocalItem(item)
-    
+
     // 使用稳定标识符更新背景刷新键，避免不必要的重新加载
     setBackgroundRefreshKey(item.tmdbId || item.id || '0')
-    
+
     // 每次item变化时强制选择季数，确保始终有默认选中的季节
     if (item.seasons && item.seasons.length > 0) {
       try {
@@ -222,16 +233,16 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     const handleKeyDown = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Shift") {
         setIsShiftPressed(true)
-        
+
         // 为body添加类，防止文本选择
         document.body.classList.add('shift-select-mode')
       }
     }
-    
+
     const handleKeyUp = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Shift") {
         setIsShiftPressed(false)
-        
+
         // 移除防止文本选择的类
         document.body.classList.remove('shift-select-mode')
       }
@@ -239,11 +250,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     window.addEventListener("keydown", handleKeyDown)
     window.addEventListener("keyup", handleKeyUp)
-    
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
       window.removeEventListener("keyup", handleKeyUp)
-      
+
       // 确保在组件卸载时移除类
       document.body.classList.remove('shift-select-mode')
     }
@@ -270,7 +281,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     const contentElement = contentRef.current
     contentElement?.addEventListener('scroll', handleScroll)
-    
+
     return () => {
       contentElement?.removeEventListener('scroll', handleScroll)
     }
@@ -283,15 +294,15 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setIsLoading(true);
       setIsBackdropLoaded(false);
       setIsContentReady(false);
-      
+
       // 立即设置内容准备好，避免闪烁
       setIsContentReady(true);
-      
+
       // 如果有背景图，预加载它
       if (item.backdropUrl) {
         // 检查图片是否已经在浏览器缓存中
         const cachedImage = new Image();
-        
+
         // 如果图片已在缓存中，complete属性会立即为true
         if (cachedImage.complete) {
           setIsBackdropLoaded(true);
@@ -306,7 +317,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             setIsLoading(false);
           };
         }
-        
+
         // 设置src必须放在最后，因为它可能会立即触发onload事件
         cachedImage.src = item.backdropUrl;
       } else {
@@ -518,7 +529,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     // 先更新本地状态
     setLocalItem(updatedItem)
-    
+
     // 再通知父组件
     onUpdate(updatedItem)
   }
@@ -530,10 +541,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       status: completed ? ("completed" as const) : ("ongoing" as const),
       updatedAt: new Date().toISOString(),
     }
-    
+
     // 先更新本地状态
     setLocalItem(updatedItem)
-    
+
     // 再通知父组件
     onUpdate(updatedItem)
   }
@@ -573,7 +584,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
   const updateEpisodeCount = (newTotal: number) => {
     const updatedEditData = { ...editData }
-    
+
     // 检查是否有多季数据
     if (updatedEditData.seasons && selectedSeason) {
       // 更新指定季的集数
@@ -582,7 +593,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           // 添加安全检查
           const seasonEpisodes = season.episodes || [];
           const episodesToRemove = seasonEpisodes.filter((ep) => ep.number > newTotal && ep.completed);
-          
+
           // 如果有已完成的集数将被删除，弹出确认对话框
           if (episodesToRemove.length > 0) {
             setEpisodeChangeData({
@@ -593,7 +604,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             setShowEpisodeChangeDialog(true)
             return season // 不立即更新，等待用户确认
           }
-          
+
           // 创建新的集数数组
           const newEpisodes =
             newTotal > seasonEpisodes.length
@@ -609,7 +620,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 ]
               : // 减少集数
                 seasonEpisodes.filter((ep) => ep.number <= newTotal)
-          
+
           return {
             ...season,
             totalEpisodes: newTotal,
@@ -618,7 +629,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         }
         return season
       })
-      
+
       setEditData({
         ...updatedEditData,
         seasons: updatedSeasons,
@@ -628,7 +639,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 添加安全检查
       const currentEpisodes = updatedEditData.episodes || [];
       const episodesToRemove = currentEpisodes.filter((ep) => ep.number > newTotal && ep.completed);
-      
+
       // 如果有已完成的集数将被删除，弹出确认对话框
       if (episodesToRemove.length > 0) {
         setEpisodeChangeData({
@@ -639,7 +650,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         setShowEpisodeChangeDialog(true)
         return
       }
-      
+
       // 创建新的集数数组
       const newEpisodes =
         newTotal > currentEpisodes.length
@@ -654,7 +665,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             ]
           : // 减少集数
             currentEpisodes.filter((ep) => ep.number <= newTotal)
-      
+
       setEditData({
         ...updatedEditData,
         totalEpisodes: newTotal,
@@ -685,12 +696,12 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 确保每日更新设置被保存
       isDailyUpdate: editData.isDailyUpdate
     }
-    
+
     // 只有在背景图或标志发生变化时才强制刷新背景图（使用带时间戳的刷新键）
     if (localItem.backdropUrl !== editData.backdropUrl || localItem.logoUrl !== editData.logoUrl) {
       setBackgroundRefreshKey(`${updatedItem.tmdbId || updatedItem.id}_${Date.now()}`);
     }
-    
+
     try {
       // 使用增强数据提供者进行乐观更新
       await updateItem(updatedItem)
@@ -717,22 +728,22 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     if (item.mediaType === "movie") {
       return { completed: item.completed ? 1 : 0, total: 1 };
     }
-    
+
     // 多季电视剧
     if (item.seasons && item.seasons.length > 0) {
       const total = item.seasons.reduce((sum, season) => sum + season.totalEpisodes, 0);
       const completed = item.seasons.reduce(
         (sum, season) => {
           // 添加安全检查确保episodes存在
-          return sum + (season.episodes && season.episodes.length > 0 
-            ? season.episodes.filter(ep => ep.completed).length 
+          return sum + (season.episodes && season.episodes.length > 0
+            ? season.episodes.filter(ep => ep.completed).length
             : 0);
         },
         0
       );
       return { completed, total };
     }
-    
+
     // 单季电视剧
     const completed = item.episodes?.filter((ep) => ep.completed).length || 0;
     const total = item.totalEpisodes || 0;
@@ -745,7 +756,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     // 播出平台抓取命令
     if (item.platformUrl) {
-      const platformCommand = `python -m tmdb-import "${item.platformUrl}"`
+      const platformCommand = `${pythonCmd} -m tmdb-import "${item.platformUrl}"`
       commands.push({
         type: "platform",
         title: "播出平台抓取",
@@ -759,7 +770,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     if (item.tmdbId) {
       const language = "zh-CN"
       if (item.mediaType === "tv") {
-        const tmdbCommand = `python -m tmdb-import "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${language}"`
+        const tmdbCommand = `${pythonCmd} -m tmdb-import "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${language}"`
         commands.push({
           type: "tmdb",
           title: `上传至TMDB第${customSeasonNumber}季`,
@@ -768,7 +779,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           icon: <Terminal className="h-4 w-4" />,
         })
       } else if (item.mediaType === "movie") {
-        const tmdbCommand = `python -m tmdb-import "https://www.themoviedb.org/movie/${item.tmdbId}?language=${language}"`
+        const tmdbCommand = `${pythonCmd} -m tmdb-import "https://www.themoviedb.org/movie/${item.tmdbId}?language=${language}"`
         commands.push({
           type: "tmdb",
           title: `上传至TMDB电影`,
@@ -785,18 +796,18 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   // 添加新季函数
   const handleAddSeason = (seasonNumber: number, episodeCount: number) => {
     if (seasonNumber < 1 || episodeCount < 1) return
-    
+
     // 检查季是否已存在
-    const seasonExists = localItem.seasons?.some(season => 
+    const seasonExists = localItem.seasons?.some(season =>
       season.seasonNumber === seasonNumber
     )
-    
+
     if (seasonExists) {
       setCopyFeedback(`第${seasonNumber}季已存在`)
       setTimeout(() => setCopyFeedback(null), 2000)
       return
     }
-    
+
     // 创建新季数据
     const newSeason = {
       seasonNumber,
@@ -808,22 +819,22 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         seasonNumber
       }))
     }
-    
+
     // 更新seasons和episodes
     const updatedSeasons = [
       ...(localItem.seasons || []),
       newSeason
     ]
-    
+
     // 创建所有扁平化的集数
     const updatedEpisodes = [
       ...(localItem.episodes || []),
       ...newSeason.episodes
     ]
-    
+
     // 更新总集数
     const updatedTotalEpisodes = (localItem.totalEpisodes || 0) + episodeCount
-    
+
     // 创建更新后的对象
     const updatedItem = {
       ...localItem,
@@ -832,10 +843,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       totalEpisodes: updatedTotalEpisodes,
       updatedAt: new Date().toISOString()
     }
-    
+
     // 更新状态
     setLocalItem(updatedItem)
-    
+
     // 如果在编辑模式，同时更新editData
     if (editing) {
       setEditData({
@@ -845,14 +856,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         totalEpisodes: updatedTotalEpisodes
       })
     }
-    
+
     // 通知父组件
     onUpdate(updatedItem)
-    
+
     // 选中新添加的季
     setSelectedSeason(seasonNumber)
     setCustomSeasonNumber(seasonNumber)
-    
+
     // 显示反馈
     setCopyFeedback(`已添加第${seasonNumber}季，共${episodeCount}集`)
     setTimeout(() => setCopyFeedback(null), 2000)
@@ -904,18 +915,18 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   // 添加确认删除季数的函数
   const confirmDeleteSeason = () => {
     if (seasonToDelete === null || !localItem.seasons) return;
-    
+
     // 过滤掉要删除的季
     const updatedSeasons = localItem.seasons.filter(season => season.seasonNumber !== seasonToDelete);
-    
+
     // 更新扁平化的episodes数组，移除该季的所有集数
     const updatedEpisodes = localItem.episodes?.filter(
       episode => !episode.seasonNumber || episode.seasonNumber !== seasonToDelete
     ) || [];
-    
+
     // 重新计算总集数
     const newTotalEpisodes = updatedEpisodes.length;
-    
+
     // 创建更新后的item对象
     const updatedItem = {
       ...localItem,
@@ -924,10 +935,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       totalEpisodes: newTotalEpisodes,
       updatedAt: new Date().toISOString()
     };
-    
+
     // 更新localItem状态
     setLocalItem(updatedItem);
-    
+
     // 同时更新editData (如果在编辑模式)
     if (editing) {
       setEditData({
@@ -937,14 +948,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         totalEpisodes: newTotalEpisodes
       });
     }
-    
+
     // 通知父组件更新
     onUpdate(updatedItem);
-    
+
     // 重置状态
     setSeasonToDelete(null);
     setShowDeleteSeasonDialog(false);
-    
+
     // 如果删除的是当前选中的季，则重置选中的季
     if (selectedSeason === seasonToDelete) {
       // 找出新的可用季节，如果没有则设置为undefined
@@ -952,7 +963,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setSelectedSeason(newSelectedSeason);
       setCustomSeasonNumber(newSelectedSeason || 1);
     }
-    
+
     // 显示删除成功提示
     setCopyFeedback(`第${seasonToDelete}季已删除`);
     setTimeout(() => setCopyFeedback(null), 2000);
@@ -964,27 +975,27 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setRefreshError("该词条没有关联TMDB ID");
       return;
     }
-    
+
     setIsRefreshingTMDBData(true);
     setRefreshError(null);
-    
+
     try {
       // 构建TMDB URL
       const tmdbUrl = `https://www.themoviedb.org/${editData.mediaType}/${editData.tmdbId}`;
-      
+
       // 使用API获取最新数据，强制刷新标志
       const response = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`)
       const result = await response.json()
       const tmdbData = result.success ? result.data : null
-      
+
       if (!tmdbData) {
         throw new Error("未能从TMDB获取到有效数据");
       }
-      
+
       // 更新背景图
       let updatedData = { ...editData };
       let hasNewBackdrop = false;
-      
+
       // 如果有背景图数据，更新背景图URL
       if (tmdbData.backdropUrl && tmdbData.backdropUrl !== updatedData.backdropUrl) {
         hasNewBackdrop = true;
@@ -993,11 +1004,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           backdropUrl: tmdbData.backdropUrl,
           backdropPath: tmdbData.backdropPath || undefined
         };
-        
+
         // 预加载背景图，提高加载速度
         preloadBackdrop(tmdbData.backdropPath);
       }
-      
+
       // 更新TMDB评分和简介
       if (tmdbData.voteAverage !== undefined) {
         updatedData = {
@@ -1005,14 +1016,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           voteAverage: tmdbData.voteAverage === null ? undefined : tmdbData.voteAverage
         };
       }
-      
+
       if (tmdbData.overview !== undefined) {
         updatedData = {
           ...updatedData,
           overview: tmdbData.overview === null ? undefined : tmdbData.overview
         };
       }
-      
+
       // 更新TMDB标志
       let hasNewLogo = false;
       if (tmdbData.logoUrl && tmdbData.logoUrl !== updatedData.logoUrl) {
@@ -1022,7 +1033,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           logoUrl: tmdbData.logoUrl
         };
       }
-      
+
       // 更新网络相关信息 - 第一处添加
       if (editData.mediaType === "tv") {
         // 检查是否有网络信息
@@ -1032,7 +1043,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             networkName: tmdbData.networkName,
             networkLogoUrl: tmdbData.networkLogoUrl,
           });
-          
+
           updatedData = {
             ...updatedData,
             networkId: tmdbData.networkId,
@@ -1041,7 +1052,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           };
         }
       }
-      
+
       // 对于电视剧，更新季数据
       if (editData.mediaType === "tv" && tmdbData.seasons) {
         // 将TMDB的季数据与现有数据合并
@@ -1050,7 +1061,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           const existingSeason = editData.seasons?.find(
             s => s.seasonNumber === newSeason.seasonNumber
           );
-          
+
           if (existingSeason) {
             // 如果存在，保留完成状态，更新总集数
             return {
@@ -1083,18 +1094,18 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             };
           }
         });
-        
+
         // 更新扁平化的episodes数组
-        const allEpisodes = updatedSeasons.flatMap((season: Season) => 
+        const allEpisodes = updatedSeasons.flatMap((season: Season) =>
           season.episodes.map((ep: Episode) => ({
             ...ep,
             seasonNumber: season.seasonNumber
           }))
         );
-        
+
         // 更新总集数
         const newTotalEpisodes = allEpisodes.length;
-        
+
         // 更新editData状态
         updatedData = {
           ...updatedData,
@@ -1103,64 +1114,64 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           totalEpisodes: newTotalEpisodes
         };
       }
-      
+
       // 更新状态
       setEditData(updatedData);
-      
+
       // 将更新的数据应用到localItem，使背景图和其他数据立即生效
       const newLocalItem = {
         ...localItem,
         backdropUrl: tmdbData.backdropUrl || localItem.backdropUrl,
         backdropPath: tmdbData.backdropPath || localItem.backdropPath
       };
-      
+
       // 更新评分和简介
       if (tmdbData.voteAverage !== undefined) {
         newLocalItem.voteAverage = tmdbData.voteAverage === null ? undefined : tmdbData.voteAverage;
       }
-      
+
       if (tmdbData.overview !== undefined) {
         newLocalItem.overview = tmdbData.overview === null ? undefined : tmdbData.overview;
       }
-      
+
       // 更新标志
       if (tmdbData.logoUrl) {
         newLocalItem.logoUrl = tmdbData.logoUrl;
       }
-      
+
       // 更新网络相关信息 - 第二处添加
       if (editData.mediaType === "tv") {
         if (tmdbData.networkId !== undefined) {
           newLocalItem.networkId = tmdbData.networkId;
         }
-        
+
         if (tmdbData.networkName) {
           newLocalItem.networkName = tmdbData.networkName;
         }
-        
+
         if (tmdbData.networkLogoUrl) {
           newLocalItem.networkLogoUrl = tmdbData.networkLogoUrl;
           console.log("已更新网络logo URL:", tmdbData.networkLogoUrl);
         }
       }
-      
+
       // 如果是电视剧且有季数据更新，也更新这部分
       if (editData.mediaType === "tv" && updatedData.seasons) {
         newLocalItem.seasons = updatedData.seasons;
         newLocalItem.episodes = updatedData.episodes;
         newLocalItem.totalEpisodes = updatedData.totalEpisodes;
       }
-      
+
       setLocalItem(newLocalItem);
-      
+
       // 通知父组件更新
       onUpdate(newLocalItem);
-      
+
       // 只有在背景图或标志发生变化时才强制刷新背景图（使用带时间戳的刷新键）
       if (hasNewBackdrop || hasNewLogo) {
         setBackgroundRefreshKey(`${item.tmdbId || item.id}_${Date.now()}`);
       }
-      
+
       // 显示成功信息
       if (hasNewBackdrop) {
         if (editData.mediaType === "tv") {
@@ -1171,9 +1182,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       } else {
         setCopyFeedback("TMDB数据、标志、评分和简介已成功刷新");
       }
-      
+
       setTimeout(() => setCopyFeedback(null), 2000);
-      
+
     } catch (error) {
       console.error("刷新TMDB数据失败:", error);
       setRefreshError(error instanceof Error ? error.message : "刷新TMDB数据失败，请稍后再试");
@@ -1207,13 +1218,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   }
 
   // 判断是否每日更新
-  const isDailyUpdate = localItem.isDailyUpdate === true || 
+  const isDailyUpdate = localItem.isDailyUpdate === true ||
     (localItem.isDailyUpdate === undefined && (localItem.category === "tv" || localItem.category === "short"));
 
   // 添加预加载背景图的函数
   const preloadBackdrop = (backdropPath: string | null | undefined) => {
     if (!backdropPath) return;
-    
+
     // 预加载不同尺寸的背景图
     // 预加载背景图片（简化版本）
     const sizes = ['w780', 'w1280', 'original'];
@@ -1244,10 +1255,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               </div>
             </div>
           )}
-          
+
           {/* 使用优化后的BackgroundImage组件 */}
-          <BackgroundImage 
-            src={localItem.backdropUrl} 
+          <BackgroundImage
+            src={localItem.backdropUrl}
             alt={localItem.title + " 背景图"}
             className={cn(
               "absolute inset-0 z-0",
@@ -1261,7 +1272,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             refreshKey={backgroundRefreshKey}
             fallbackSrc={localItem.posterUrl || "/placeholder.jpg"} // 使用海报作为备用
           />
-          
+
           {/* 内容层 - 添加相对定位和z-index确保内容在背景图上方 */}
           <div className="relative z-10 h-full overflow-auto">
           <DialogHeader className="p-6 pb-2 flex flex-row items-start justify-between">
@@ -1276,9 +1287,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 {/* 使用TMDB标志替代文字标题 */}
                 {localItem.logoUrl ? (
                   <div className="h-10 max-w-[200px] flex items-center">
-                    <img 
-                      src={localItem.logoUrl} 
-                      alt={localItem.title} 
+                    <img
+                      src={localItem.logoUrl}
+                      alt={localItem.title}
                       className="max-h-full object-contain"
                       loading="eager"
                       onError={(e) => {
@@ -1318,8 +1329,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                   </Badge>
                 )}
                 {/* 添加第二播出日标签 */}
-                {typeof localItem.secondWeekday === 'number' && 
-                 localItem.secondWeekday >= 0 && 
+                {typeof localItem.secondWeekday === 'number' &&
+                 localItem.secondWeekday >= 0 &&
                  !isDailyUpdate && (
                   <Badge className="bg-blue-500 text-white">
                     {getAirTime(localItem.secondWeekday)}
@@ -1337,7 +1348,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 )}
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-2 pr-2">
               {localItem.tmdbUrl && (
                 <Button
@@ -1404,9 +1415,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                   {/* 海报区域 - 使用固定高度比例 */}
                   <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
                     {localItem.posterUrl ? (
-                      <img 
-                        src={localItem.posterUrl} 
-                        alt={localItem.title} 
+                      <img
+                        src={localItem.posterUrl}
+                        alt={localItem.title}
                         className="w-full h-full object-cover"
                         loading="eager"
                       />
@@ -1417,7 +1428,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                       </div>
                     )}
                   </div>
-                  
+
                   {/* 编辑模式下的表单区域 - 添加圆角和固定容器 */}
                   <div className="w-full rounded-lg backdrop-blur-md bg-background/30 p-2 flex-1 overflow-hidden transition-all duration-300 hover:shadow-lg">
                     <ScrollArea className="h-full">
@@ -1428,22 +1439,22 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             词条编辑
                           </h3>
                         </div>
-                        
+
                         <div className="space-y-0.5">
                           <Label htmlFor="edit-title" className="text-xs text-muted-foreground">标题</Label>
-                          <Input 
-                            id="edit-title" 
-                            value={editData.title} 
+                          <Input
+                            id="edit-title"
+                            value={editData.title}
                             onChange={(e) => setEditData({...editData, title: e.target.value})}
                             className="h-8"
                           />
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-0.5">
                             <Label htmlFor="edit-category" className="text-xs text-muted-foreground">分类</Label>
-                            <Select 
-                              value={editData.category || "none"} 
+                            <Select
+                              value={editData.category || "none"}
                               onValueChange={(value) => setEditData({...editData, category: value === "none" ? undefined : value as CategoryType})}
                             >
                               <SelectTrigger className="h-8">
@@ -1462,11 +1473,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                               </SelectContent>
                             </Select>
                           </div>
-                          
+
                           <div className="space-y-0.5">
                             <Label htmlFor="edit-status" className="text-xs text-muted-foreground">状态</Label>
-                            <Select 
-                              value={editData.status || "ongoing"} 
+                            <Select
+                              value={editData.status || "ongoing"}
                               onValueChange={(value) => setEditData({...editData, status: value as "ongoing" | "completed"})}
                             >
                               <SelectTrigger className="w-full h-8">
@@ -1479,23 +1490,23 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             </Select>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-0.5 mt-0.5">
                           <div className="flex items-center justify-between">
                             <Label htmlFor="edit-daily-update" className="flex items-center cursor-pointer text-xs text-muted-foreground">
                               <Zap className="h-3.5 w-3.5 mr-1" />
                               每日更新
                             </Label>
-                            <Checkbox 
+                            <Checkbox
                               id="edit-daily-update"
                               checked={editData.isDailyUpdate === true}
-                              onCheckedChange={(checked) => 
+                              onCheckedChange={(checked) =>
                                 setEditData({...editData, isDailyUpdate: checked === true})
                               }
                             />
                           </div>
                         </div>
-                        
+
                         {/* 添加播出平台URL输入字段 */}
                         <div className="space-y-0.5 mt-1">
                           <Label htmlFor="edit-platform-url" className="flex items-center text-xs text-muted-foreground">
@@ -1503,9 +1514,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             播出平台URL
                           </Label>
                           <div className="flex items-center space-x-2">
-                            <Input 
-                              id="edit-platform-url" 
-                              value={editData.platformUrl || ""} 
+                            <Input
+                              id="edit-platform-url"
+                              value={editData.platformUrl || ""}
                               onChange={(e) => setEditData({...editData, platformUrl: e.target.value})}
                               placeholder="https://www.example.com/watch/..."
                               className="flex-1 h-8"
@@ -1526,8 +1537,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                               <div className="w-4 h-4 mr-1 flex-shrink-0">
                                 {(() => {
                                   const platformInfo = getPlatformInfo(editData.platformUrl);
-                                  return platformInfo ? 
-                                    <PlatformLogo platform={platformInfo.name} size={16} /> : 
+                                  return platformInfo ?
+                                    <PlatformLogo platform={platformInfo.name} size={16} /> :
                                     <FrameIcon className="w-4 h-4" />;
                                 })()}
                               </div>
@@ -1538,7 +1549,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             </div>
                           )}
                         </div>
-                        
+
                         {/* 添加简介编辑区域 */}
                         <div className="space-y-0.5 flex-grow mt-1">
                           <Label htmlFor="edit-overview" className="flex items-center text-xs text-muted-foreground">
@@ -1559,14 +1570,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             </ScrollArea>
                           </div>
                         </div>
-                        
+
                         {/* 添加剧集设置区域 */}
                         <div className="space-y-1 mt-4 pt-1 border-t border-border/30">
                           <h3 className="text-xs font-medium flex items-center pb-1 text-muted-foreground">
                             <Tv className="h-3.5 w-3.5 mr-1" />
                             剧集设置
                           </h3>
-                          
+
                           {/* 播出时间设置 */}
                           <div className="grid grid-cols-2 gap-2">
                             <div className="space-y-0.5">
@@ -1574,8 +1585,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                 <Calendar className="h-3.5 w-3.5 mr-1" />
                                 播出日
                               </Label>
-                              <Select 
-                                  value={editData.weekday?.toString() || "1"} 
+                              <Select
+                                  value={editData.weekday?.toString() || "1"}
                                   onValueChange={(value) => setEditData({...editData, weekday: parseInt(value)})}
                                 >
                                   <SelectTrigger className="w-full h-7 text-xs">
@@ -1592,35 +1603,35 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                   </SelectContent>
                                 </Select>
                             </div>
-                            
+
                             <div className="space-y-0.5">
                               <Label htmlFor="edit-air-time" className="flex items-center text-xs text-muted-foreground">
                                 <Clock className="h-3.5 w-3.5 mr-1" />
                                 播出时间
                               </Label>
-                              <Input 
-                                id="edit-air-time" 
-                                value={editData.airTime || ""} 
+                              <Input
+                                id="edit-air-time"
+                                value={editData.airTime || ""}
                                 onChange={(e) => setEditData({...editData, airTime: e.target.value})}
                                 placeholder="例如: 23:00"
                                 className="h-7 text-xs"
                               />
                             </div>
                           </div>
-                          
+
                           {/* 第二播出日设置 */}
                           <div className="space-y-0.5 mt-2">
                             <Label htmlFor="edit-second-weekday" className="flex items-center text-xs text-muted-foreground">
                               <CalendarDays className="h-3.5 w-3.5 mr-1" />
                               第二播出日 <span className="text-xs text-muted-foreground ml-1">(可选)</span>
                             </Label>
-                            <Select 
-                              value={editData.secondWeekday !== undefined ? 
-                                editData.secondWeekday.toString() : 
+                            <Select
+                              value={editData.secondWeekday !== undefined ?
+                                editData.secondWeekday.toString() :
                                 "none"
-                              } 
+                              }
                               onValueChange={(value) => setEditData({
-                                ...editData, 
+                                ...editData,
                                 secondWeekday: value === "none" ? undefined : parseInt(value)
                               })}
                             >
@@ -1654,7 +1665,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                               className="h-7 text-xs"
                             />
                           </div>
-                          
+
                           {/* 刷新TMDB数据按钮 */}
                           {editData.tmdbId && (
                             <div className="mt-1">
@@ -1675,7 +1686,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             </div>
                           )}
                         </div>
-                        
+
                         {/* 仅显示创建和更新时间信息 */}
                         <div className="mt-3 pt-1 border-t border-border/30">
                           {/* 创建和更新时间 */}
@@ -1689,7 +1700,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                 {new Date(editData.createdAt).toLocaleString()}
                               </div>
                             </div>
-                            
+
                             <div className="space-y-1">
                               <Label className="flex items-center text-xs text-muted-foreground">
                                 <CalendarClock className="h-3.5 w-3.5 mr-1.5" />
@@ -1712,9 +1723,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                     {/* 海报区域 */}
                     <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 transition-all duration-300 hover:shadow-lg">
                       {localItem.posterUrl ? (
-                        <img 
-                          src={localItem.posterUrl} 
-                          alt={localItem.title} 
+                        <img
+                          src={localItem.posterUrl}
+                          alt={localItem.title}
                           className="w-full h-full object-cover"
                           loading="eager"
                         />
@@ -1725,7 +1736,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         </div>
                       )}
                     </div>
-                    
+
                     {/* 查看模式下的功能区 */}
                     <div className="mt-2 w-full rounded-md backdrop-blur-md bg-background/30 p-3 transition-all duration-300 hover:shadow-lg">
                       <div className="space-y-1 flex-1 flex flex-col">
@@ -1741,14 +1752,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           <div className="flex items-center justify-start w-full">
                             {localItem.networkLogoUrl ? (
                               // 显示TMDB官方网络logo
-                              <div 
+                              <div
                                 className="w-full h-12 flex items-center justify-start cursor-pointer"
                                 onClick={() => localItem.platformUrl && window.open(localItem.platformUrl, '_blank')}
                                 title={localItem.networkName || '播出网络'}
                               >
-                                <img 
-                                  src={localItem.networkLogoUrl} 
-                                  alt={localItem.networkName || '播出网络'} 
+                                <img
+                                  src={localItem.networkLogoUrl}
+                                  alt={localItem.networkName || '播出网络'}
                                   className="max-w-full max-h-full object-contain hover:scale-110 transition-all duration-300"
                                   loading="eager"
                                   onError={(e) => {
@@ -1769,14 +1780,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                               (() => {
                                 const platformInfo = getPlatformInfo(localItem.platformUrl);
                                 return (
-                                  <div 
+                                  <div
                                     className="w-full h-12 flex items-center justify-start cursor-pointer"
                                     onClick={() => platformInfo && window.open(platformInfo.url, '_blank')}
                                     title={platformInfo?.name || '播出平台'}
                                   >
                                     {platformInfo ? (
-                                      <PlatformLogo 
-                                        platform={platformInfo.name} 
+                                      <PlatformLogo
+                                        platform={platformInfo.name}
                                         size={32}
                                         className="hover:scale-110 transition-transform duration-300"
                                       />
@@ -1794,7 +1805,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             )}
                           </div>
                         </div>
-                        
+
                         {/* TMDB简介区域 */}
                         <div className="pb-0.5 mb-1 mt-3">
                           <h3 className="text-sm font-medium flex items-center">
@@ -1819,7 +1830,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 </div>
               )}
             </div>
-            
+
             {/* 右侧：内容区域 */}
             <div className="md:col-span-3">
               {/* 操作按钮 */}
@@ -1839,7 +1850,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                   定时任务
                 </Button>
               </div>
-              
+
               {/* 标签页切换 */}
               <Tabs value={detailTab} onValueChange={setDetailTab}>
                 <TabsList className="grid w-full grid-cols-2">
@@ -1852,7 +1863,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                     集成工具
                   </TabsTrigger>
                 </TabsList>
-                
+
                 {/* 详情标签内容 */}
                 <TabsContent value="details" className="transition-opacity duration-300 ease-in-out">
                   <ScrollArea className="h-[calc(95vh-300px)]">
@@ -1887,7 +1898,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                               </Button>
                             </CardContent>
                           </Card>
-                          
+
                           {/* 为电影添加TMDB刷新按钮 */}
                           <Card variant="frosted">
                             <CardHeader>
@@ -1898,7 +1909,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                             </CardHeader>
                             <CardContent>
                               <div className="flex flex-wrap items-center gap-2">
-                                <Button 
+                                <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={refreshSeasonFromTMDB}
@@ -1949,7 +1960,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                               </CardContent>
                             </Card>
                           )}
-                          
+
                           {/* 季数操作 */}
                           {selectedSeason !== undefined && (
                             <Card variant="frosted">
@@ -1996,7 +2007,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     删除季
                                   </Button>
-                                  <Button 
+                                  <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={refreshSeasonFromTMDB}
@@ -2011,7 +2022,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     )}
                                     刷新TMDB数据、标志、评分和简介
                                   </Button>
-                                  
+
                                   {/* 只在编辑模式下显示添加新季区域 */}
                                   {editing && (
                                     <div className="w-full mt-3 border-t pt-3 border-border/30">
@@ -2060,7 +2071,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                               </CardContent>
                             </Card>
                           )}
-                          
+
                           {/* 显示刷新错误 */}
                           {refreshError && (
                             <div className="bg-red-500/20 backdrop-blur-md text-red-200 p-3 rounded-md mb-4 flex items-center border-none shadow-sm">
@@ -2110,11 +2121,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     <div className="mb-2 text-xs text-muted-foreground">
                                       提示: 按住Shift键可以批量选择剧集
                                     </div>
-                                    
+
                                     {/* 快速批量操作 */}
                                     <div className="mb-3 flex flex-wrap gap-2">
-                                      <Button 
-                                        variant="outline" 
+                                      <Button
+                                        variant="outline"
                                         size="sm"
                                         onClick={() => {
                                           if (currentSeason) {
@@ -2131,8 +2142,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                         <Plus className="h-3 w-3 mr-1" />
                                         标记下一集
                                       </Button>
-                                      <Button 
-                                        variant="outline" 
+                                      <Button
+                                        variant="outline"
                                         size="sm"
                                         onClick={() => {
                                           if (currentSeason) {
@@ -2151,7 +2162,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                         标记前10集
                                       </Button>
                                     </div>
-                                    
+
                                     {/* 剧集网格 */}
                                     {currentSeason && currentSeason.episodes && currentSeason.episodes.length > 0 ? (
                                       <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
@@ -2207,7 +2218,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                             />
                                           </div>
                                         </div>
-                                        <Button 
+                                        <Button
                                           variant="outline"
                                           size="sm"
                                           onClick={() => {
@@ -2228,12 +2239,12 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           )}
                         </>
                       )}
-                      
+
                       {/* 状态信息卡片已移除 */}
                     </div>
                   </ScrollArea>
                 </TabsContent>
-                
+
                 {/* 集成工具标签内容 */}
                 <TabsContent value="integration" className="transition-opacity duration-300 ease-in-out">
                   <ScrollArea className="h-[calc(95vh-300px)]">
@@ -2286,7 +2297,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          
+
           <AlertDialogNoOverlay open={showDeleteSeasonDialog} onOpenChange={setShowDeleteSeasonDialog}>
             <AlertDialogNoOverlayContent>
               <AlertDialogHeader>

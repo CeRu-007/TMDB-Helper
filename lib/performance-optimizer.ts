@@ -270,30 +270,9 @@ export class PerformanceOptimizer {
       let cleanedCount = 0;
       const keysToRemove: string[] = [];
 
-      // 遍历localStorage查找过期的缓存项
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('tmdb_')) {
-          try {
-            const item = localStorage.getItem(key);
-            if (item) {
-              const data = JSON.parse(item);
-              if (data.timestamp && now - data.timestamp > 24 * 60 * 60 * 1000) {
-                keysToRemove.push(key);
-              }
-            }
-          } catch (error) {
-            // 如果解析失败，也标记为需要清理
-            keysToRemove.push(key);
-          }
-        }
-      }
-
-      // 删除过期项
-      keysToRemove.forEach(key => {
-        localStorage.removeItem(key);
-        cleanedCount++;
-      });
+      // 已切换到服务端存储，跳过本地缓存清理
+      const keysToRemove: string[] = []
+      // no-op
 
       // 更新清理时间
       stats.lastCleanup = now;

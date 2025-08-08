@@ -38,6 +38,8 @@ import {
   MoreHorizontal
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { EpisodeConfigClient } from "@/lib/episode-config-client"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
@@ -307,95 +309,62 @@ export function SubtitleEpisodeGenerator({
       }
     })
   }, [])
-  const [config, setConfig] = useState<GenerationConfig>(() => {
-    // 从本地存储加载配置
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('episode_generator_config')
-      // 从全局设置加载模型配置
-      const savedProvider = localStorage.getItem('episode_generator_api_provider') || 'siliconflow'
-      const settingsKey = savedProvider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
-      const globalSettings = localStorage.getItem(settingsKey)
-
-      // 根据API提供商设置默认模型
-      let episodeGenerationModel = savedProvider === 'siliconflow' ? "deepseek-ai/DeepSeek-V2.5" : "qwen-plus"
-
-      if (globalSettings) {
-        try {
-          const settings = JSON.parse(globalSettings)
-          if (settings.episodeGenerationModel) {
-            episodeGenerationModel = settings.episodeGenerationModel
-          }
-        } catch (e) {
-          console.error(`Failed to parse global ${savedProvider} settings:`, e)
-        }
-      }
-      
-      if (saved) {
-        try {
-          const parsedConfig = JSON.parse(saved)
-          // 兼容性处理：从旧的数组格式迁移到新的单选格式
-          if (parsedConfig.selectedTitleStyles && Array.isArray(parsedConfig.selectedTitleStyles)) {
-            // 迁移：取第一个选中的风格作为单选值
-            parsedConfig.selectedTitleStyle = parsedConfig.selectedTitleStyles[0] || "location_skill"
-            delete parsedConfig.selectedTitleStyles
-          } else if (!parsedConfig.selectedTitleStyle) {
-            // 如果没有标题风格设置，使用默认值
-            parsedConfig.selectedTitleStyle = "location_skill"
-          }
-
-          // 验证和清理简介风格选择：确保所有选中的风格ID都是有效的
-          if (parsedConfig.selectedStyles && Array.isArray(parsedConfig.selectedStyles)) {
-            const validStyleIds = GENERATION_STYLES.map(s => s.id)
-            const originalStyles = [...parsedConfig.selectedStyles]
-            parsedConfig.selectedStyles = parsedConfig.selectedStyles.filter(styleId =>
-              validStyleIds.includes(styleId)
-            )
-
-            // 如果有无效的风格被过滤掉，记录日志并保存清理后的配置
-            const removedStyles = originalStyles.filter(styleId => !validStyleIds.includes(styleId))
-            if (removedStyles.length > 0) {
-              console.warn(`清理了无效的风格ID: ${removedStyles.join(', ')}`)
-              // 立即保存清理后的配置
-              setTimeout(() => {
-                localStorage.setItem('episode_generator_config', JSON.stringify(parsedConfig))
-              }, 100)
-            }
-          } else {
-            // 如果没有简介风格设置或格式不正确，使用空数组
-            parsedConfig.selectedStyles = []
-          }
-
-          // 移除model字段，因为model应该从全局设置中获取
-          const { model, ...configWithoutModel } = parsedConfig
-
-          // 返回配置时使用从全局设置加载的model或默认model
-          return {
-            model: episodeGenerationModel,
-            summaryLength: [20, 30],
-            temperature: 0.7,
-            includeOriginalTitle: true,
-            ...configWithoutModel
-          }
-        } catch (e) {
-          console.error('Failed to parse saved config:', e)
-        }
-      }
-    }
-    // 默认配置
-    const savedProvider = localStorage.getItem('episode_generator_api_provider') || 'siliconflow'
-    const defaultModel = savedProvider === 'siliconflow' ? "deepseek-ai/DeepSeek-V2.5" : "qwen-plus"
-
-    return {
-      model: defaultModel,
-      summaryLength: [20, 30],
-      selectedStyles: [], // 默认不选择任何风格，让用户自主选择
-      selectedTitleStyle: "location_skill", // 默认选择地名招式风格
-      temperature: 0.7,
-      includeOriginalTitle: true,
-      speechRecognitionModel: "FunAudioLLM/SenseVoiceSmall", // 默认语音识别模型
-      enableVideoAnalysis: false // 默认不启用视频分析
-    }
+  const [config, setConfig] = useState<GenerationConfig>({
+    model: "deepseek-ai/DeepSeek-V2.5",
+    summaryLength: [20, 30],
+    selectedStyles: [],
+    selectedTitleStyle: "location_skill",
+    temperature: 0.7,
+    includeOriginalTitle: true,
+    speechRecognitionModel: "FunAudioLLM/SenseVoiceSmall",
+    enableVideoAnalysis: false
   })
+
+  // 首次从服务端加载分集生成配置与模型
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const provider = (await ClientConfigManager.getItem('episode_generator_api_provider')) || 'siliconflow'
+        const settingsKey = provider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
+        const settingsText = await ClientConfigManager.getItem(settingsKey)
+        let episodeGenerationModel = provider === 'siliconflow' ? 'deepseek-ai/DeepSeek-V2.5' : 'qwen-plus'
+        if (settingsText) {
+          try { const s = JSON.parse(settingsText); if (s.episodeGenerationModel) episodeGenerationModel = s.episodeGenerationModel } catch {}
+        }
+        const saved = await ClientConfigManager.getItem('episode_generator_config')
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved)
+            if (parsed.selectedTitleStyles && Array.isArray(parsed.selectedTitleStyles)) {
+              parsed.selectedTitleStyle = parsed.selectedTitleStyles[0] || 'location_skill'
+              delete parsed.selectedTitleStyles
+            } else if (!parsed.selectedTitleStyle) {
+              parsed.selectedTitleStyle = 'location_skill'
+            }
+            if (parsed.selectedStyles && Array.isArray(parsed.selectedStyles)) {
+              const validStyleIds = (typeof GENERATION_STYLES !== 'undefined' ? GENERATION_STYLES.map((s:any)=>s.id) : [])
+              parsed.selectedStyles = parsed.selectedStyles.filter((id:string)=> validStyleIds.length ? validStyleIds.includes(id) : true)
+            } else {
+              parsed.selectedStyles = []
+            }
+            const { model: _omitModel, ...configWithoutModel } = parsed
+            setConfig(prev => ({
+              ...prev,
+              ...configWithoutModel,
+              model: episodeGenerationModel,
+            }))
+          } catch (e) {
+            console.error('Failed to parse saved episode_generator_config:', e)
+            setConfig(prev => ({ ...prev, model: episodeGenerationModel }))
+          }
+        } else {
+          setConfig(prev => ({ ...prev, model: episodeGenerationModel }))
+        }
+      } catch (e) {
+        console.error('加载服务端分集生成配置失败:', e)
+      }
+    })()
+  }, [])
 
   // 从全局设置加载API密钥
   const loadGlobalSettings = React.useCallback(async () => {
@@ -444,20 +413,22 @@ export function SubtitleEpisodeGenerator({
   React.useEffect(() => {
     const updateModelForProvider = () => {
       const settingsKey = apiProvider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
-      const globalSettings = localStorage.getItem(settingsKey)
-
       let newModel = apiProvider === 'siliconflow' ? "deepseek-ai/DeepSeek-V2.5" : "qwen-plus"
 
-      if (globalSettings) {
+      (async () => {
         try {
-          const settings = JSON.parse(globalSettings)
-          if (settings.episodeGenerationModel) {
-            newModel = settings.episodeGenerationModel
+          const globalSettings = await ClientConfigManager.getItem(settingsKey)
+          if (globalSettings) {
+            const settings = JSON.parse(globalSettings)
+            if (settings.episodeGenerationModel) {
+              newModel = settings.episodeGenerationModel
+            }
           }
         } catch (e) {
           console.error(`Failed to parse ${apiProvider} settings:`, e)
         }
-      }
+        setConfig(prev => ({ ...prev, model: newModel }))
+      })()
 
       // 更新配置中的模型
       setConfig(prev => ({
@@ -483,8 +454,7 @@ export function SubtitleEpisodeGenerator({
       }
     }
 
-    // 监听localStorage变化
-    window.addEventListener('storage', handleStorageChange)
+    // 服务端存储不触发 storage 事件，这里仅保留自定义事件监听
 
     // 监听自定义事件（用于同一页面内的设置变化）
     const handleCustomSettingsChange = () => {
@@ -3464,7 +3434,6 @@ function GenerationSettingsDialog({
 }) {
   const [activeTab, setActiveTab] = useState("generation")
   const { toast } = useToast()
-
   const handleSave = () => {
     // 在保存前再次验证和清理配置
     const validStyleIds = GENERATION_STYLES.map(s => s.id)
@@ -3476,10 +3445,10 @@ function GenerationSettingsDialog({
     // 不保存model字段到本地配置，因为model应该从全局设置中获取
     const { model, ...configWithoutModel } = cleanedConfig
 
-    // 保存清理后的配置到本地存储（不包含model）
-    localStorage.setItem('episode_generator_config', JSON.stringify(configWithoutModel))
+    // 保存清理后的配置到服务端（不包含model）
+    void EpisodeConfigClient.saveConfig(JSON.stringify(configWithoutModel))
     onConfigChange(cleanedConfig)
-    
+
     // 显示保存成功的提示
     setTimeout(() => {
       toast({
@@ -3755,24 +3724,19 @@ function GenerationTab({
     })
 
     // 根据API提供商保存到不同的设置中
-    if (typeof window !== 'undefined') {
+    // 保存到服务端配置
+    (async () => {
       try {
-        if (apiProvider === 'siliconflow') {
-          const existingSettings = localStorage.getItem('siliconflow_api_settings')
-          const settings = existingSettings ? JSON.parse(existingSettings) : {}
-          settings.episodeGenerationModel = newModel
-          localStorage.setItem('siliconflow_api_settings', JSON.stringify(settings))
-        } else {
-          const existingSettings = localStorage.getItem('modelscope_api_settings')
-          const settings = existingSettings ? JSON.parse(existingSettings) : {}
-          settings.episodeGenerationModel = newModel
-          localStorage.setItem('modelscope_api_settings', JSON.stringify(settings))
-        }
-        console.log(`模型配置已保存到${apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}设置:`, newModel)
+        const key = apiProvider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
+        const existing = await ClientConfigManager.getItem(key)
+        const settings = existing ? JSON.parse(existing) : {}
+        settings.episodeGenerationModel = newModel
+        await ClientConfigManager.setItem(key, JSON.stringify(settings))
+        console.log(`模型配置已保存到服务端${apiProvider === 'siliconflow' ? '（硅基流动）' : '（魔搭社区）'}设置:`, newModel)
       } catch (error) {
         console.error('保存模型配置失败:', error)
       }
-    }
+    })()
   }
 
   return (

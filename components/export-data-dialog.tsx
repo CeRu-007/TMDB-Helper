@@ -203,18 +203,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
         console.error('[Export] 获取定时任务失败:', taskError)
         exportTasks = []
 
-        // 尝试直接从localStorage读取
-        try {
-          if (typeof window !== 'undefined' && window.localStorage) {
-            const tasksData = localStorage.getItem('tmdb_helper_scheduled_tasks')
-            if (tasksData) {
-              exportTasks = JSON.parse(tasksData)
-              console.log(`[Export] 从localStorage直接获取 ${exportTasks.length} 个定时任务`)
-            }
-          }
-        } catch (localStorageError) {
-          console.error('[Export] localStorage读取也失败:', localStorageError)
-        }
+        // 已切换到服务端存储，此兜底逻辑不再需要
       }
 
       // 验证数据

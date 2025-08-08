@@ -38,6 +38,7 @@ import { StorageManager, TMDBItem } from "@/lib/storage"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import TMDBImportIntegrationDialog from "./tmdb-import-integration-dialog"
+import { ClientConfigManager } from "@/lib/client-config-manager"
 
 interface GlobalTMDBImportDialogProps {
   open: boolean
@@ -58,9 +59,11 @@ export default function GlobalTMDBImportDialog({ open, onOpenChange }: GlobalTMD
   useEffect(() => {
     if (open) {
       loadItems()
-      // 获取TMDB-Import路径
-      const savedPath = localStorage.getItem("tmdb_import_path")
-      setTmdbImportPath(savedPath)
+      // 从服务端配置读取路径
+      (async () => {
+        const savedPath = await ClientConfigManager.getItem("tmdb_import_path")
+        setTmdbImportPath(savedPath)
+      })()
     }
   }, [open])
 
@@ -257,8 +260,8 @@ export default function GlobalTMDBImportDialog({ open, onOpenChange }: GlobalTMD
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          localStorage.removeItem("tmdb_import_path")
+                        onClick={async () => {
+                          await ClientConfigManager.setItem("tmdb_import_path", "")
                           setTmdbImportPath(null)
                           toast({
                             title: "已清除",

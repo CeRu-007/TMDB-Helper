@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFileSync } from 'fs'
 import { join } from 'path'
+import { ServerConfigManager } from '@/lib/server-config-manager'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,9 +14,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TMDB-Import工具的路径
-    const tmdbImportPath = 'D:\\.background\\tmdb-helper\\TMDB-Import-master\\import.csv'
-    
+    // TMDB-Import 工具的 import.csv 路径（从服务端配置读取）
+    const configuredPath = ServerConfigManager.getConfigItem('tmdbImportPath') as string | undefined
+    const tmdbDir = configuredPath ?? join(process.cwd(), 'TMDB-Import-master')
+    const tmdbImportPath = join(tmdbDir, 'import.csv')
+
     // 写入文件
     writeFileSync(tmdbImportPath, content, 'utf-8')
     

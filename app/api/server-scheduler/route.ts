@@ -14,6 +14,8 @@ interface ServerSchedulerStatus {
   lastCheck: string;
   nextCheck: string;
   processedTasks: number;
+import { ServerConfigManager } from '@/lib/server-config-manager'
+
   failedTasks: number;
   uptime: number;
   version: string;
@@ -183,7 +185,7 @@ class ServerScheduler {
 
     } catch (error) {
       console.error(`[ServerScheduler] 任务执行失败: ${task.name}`, error);
-      
+
       result.error = error instanceof Error ? error.message : String(error);
       this.failedTasks++;
 
@@ -202,17 +204,18 @@ class ServerScheduler {
    * 执行TMDB-Import命令
    */
   private async executeTMDBImport(task: ScheduledTask, item: TMDBItem): Promise<string> {
-    const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
-    
+    const configuredPath = ServerConfigManager.getConfigItem('tmdbImportPath') as string | undefined
+    const tmdbImportDir = configuredPath ? configuredPath : path.resolve(process.cwd(), 'TMDB-Import-master');
+
     if (!fs.existsSync(tmdbImportDir)) {
       throw new Error('找不到TMDB-Import目录');
     }
 
     // 构建导出命令
     const extractCommand = `python -m tmdb-import.extractor -u "${item.platformUrl}" -s ${task.action.seasonNumber}`;
-    
+
     console.log(`[ServerScheduler] 执行命令: ${extractCommand}`);
-    
+
     const { stdout, stderr } = await execAsync(extractCommand, {
       cwd: tmdbImportDir,
       timeout: 3 * 60 * 1000 // 3分钟超时
@@ -229,14 +232,14 @@ class ServerScheduler {
    * 更新任务执行后的状态
    */
   private async updateTaskAfterExecution(
-    task: ScheduledTask, 
-    success: boolean, 
+    task: ScheduledTask,
+    success: boolean,
     error?: string
   ): Promise<void> {
     try {
       const tasks = readScheduledTasks();
       const taskIndex = tasks.findIndex(t => t.id === task.id);
-      
+
       if (taskIndex === -1) {
         console.warn(`[ServerScheduler] 找不到要更新的任务: ${task.id}`);
         return;
@@ -380,7 +383,7 @@ const serverScheduler = ServerScheduler.getInstance();
 export async function GET(request: NextRequest) {
   try {
     const status = serverScheduler.getStatus();
-    
+
     return NextResponse.json({
       success: true,
       status,

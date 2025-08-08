@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs'
 import { BrowserInterruptDetector } from '@/lib/browser-interrupt-detector';
 
+import { ServerConfigManager } from '@/lib/server-config-manager'
+
 /**
  * 读取CSV文件内容
  */
@@ -166,7 +168,7 @@ export async function POST(request: NextRequest) {
       removeRuntimeColumn = false,
       removeBackdropColumn = false
     } = requestBody;
-    
+
     if (!csvPath) {
       return NextResponse.json({
         success: false,
@@ -187,7 +189,7 @@ export async function POST(request: NextRequest) {
         error: '缺少季数参数'
       }, { status: 400 });
     }
-    
+
     console.log(`[API] 执行TMDB导入: CSV=${csvPath}, Season=${seasonNumber}, TMDB ID=${tmdbId}, Item ID=${itemId}`);
     console.log(`[API] 列删除选项: removeAirDateColumn=${removeAirDateColumn}, removeRuntimeColumn=${removeRuntimeColumn}, removeBackdropColumn=${removeBackdropColumn}`);
 
@@ -305,9 +307,10 @@ export async function POST(request: NextRequest) {
     } else {
       console.log(`[API] 未启用列删除选项，跳过CSV修改`);
     }
-    
-    // 查找TMDB-Import目录
-    const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
+
+    // 查找TMDB-Import目录（从服务端配置读取）
+    const configuredPath = ServerConfigManager.getConfigItem('tmdbImportPath') as string | undefined
+    const tmdbImportDir = configuredPath ? configuredPath : path.resolve(process.cwd(), 'TMDB-Import-master')
     console.log(`[API] 检查TMDB-Import目录: ${tmdbImportDir}`);
 
     try {
@@ -340,12 +343,15 @@ export async function POST(request: NextRequest) {
         details: { error: dirError instanceof Error ? dirError.message : String(dirError) }
       }, { status: 500 });
     }
-    
+
     // 构建TMDB导入命令
     const tmdbUrl = `https://www.themoviedb.org/tv/${tmdbId}/season/${seasonNumber}?language=zh-CN`;
 
     console.log(`[API] 执行TMDB导入命令: python -m tmdb-import "${tmdbUrl}"`);
     console.log(`[API] 工作目录: ${tmdbImportDir}`);
+    if (!configuredPath) {
+      console.warn('[API] 未在服务端配置 tmdbImportPath，已回退到项目默认 TMDB-Import-master 路径')
+    }
     console.log(`[API] 冲突处理选项: ${conflictAction}`);
 
     try {
@@ -472,7 +478,7 @@ export async function POST(request: NextRequest) {
         }
       }, { status: 500 });
     }
-    
+
   } catch (error) {
     console.error('[API] TMDB导入API顶层错误:', error);
     console.error('[API] 错误类型:', typeof error);
@@ -672,9 +678,9 @@ async function executeTMDBImportWithInteraction(
  */
 function parseImportedEpisodes(output: string): number[] {
   const importedEpisodes: number[] = [];
-  
+
   console.log(`[API] 解析导入的集数，输出内容:`, output);
-  
+
   // 尝试多种模式来匹配导入的集数
   const patterns = [
     // 匹配 "Episode 1", "Episode 2" 等
@@ -692,7 +698,7 @@ function parseImportedEpisodes(output: string): number[] {
     // 匹配 "成功导入 1", "成功导入 2" 等
     /成功导入\s*(\d+)/g
   ];
-  
+
   for (const pattern of patterns) {
     let match;
     while ((match = pattern.exec(output)) !== null) {
@@ -702,11 +708,11 @@ function parseImportedEpisodes(output: string): number[] {
       }
     }
   }
-  
+
   // 如果没有找到具体的集数，尝试从CSV文件中推断
   if (importedEpisodes.length === 0) {
     console.log(`[API] 无法从输出解析集数，尝试其他方法`);
-    
+
     // 查找输出中的数字，可能是集数
     const numbers = output.match(/\b\d+\b/g);
     if (numbers) {
@@ -721,11 +727,11 @@ function parseImportedEpisodes(output: string): number[] {
       }
     }
   }
-  
+
   // 排序并去重
   const uniqueEpisodes = [...new Set(importedEpisodes)].sort((a, b) => a - b);
-  
+
   console.log(`[API] 解析到的导入集数: ${uniqueEpisodes.join(', ')}`);
-  
+
   return uniqueEpisodes;
 }

@@ -5,6 +5,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
+import { ServerConfigManager } from '@/lib/server-config-manager'
 
 const execAsync = promisify(exec);
 
@@ -13,6 +14,8 @@ interface ExecuteTaskRequest {
     taskId: string;
     itemId: string;
     action: {
+import { ServerConfigManager } from '@/lib/server-config-manager'
+
         seasonNumber: number;
         autoUpload: boolean;
         autoRemoveMarked: boolean;
@@ -246,7 +249,7 @@ function formatCSVField(value: string): string {
     }
     return value;
 }/**
- 
+
 * 自动删除已标记完成的集数（改进版：范围删除）
  */
 function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][] }, item: TMDBItem, isYoukuPlatform: boolean = false): { headers: string[], rows: string[][] } {
@@ -532,7 +535,7 @@ async function markEpisodesAsCompleted(item: TMDBItem, seasonNumber: number, epi
 
     return null; // 没有更改
 }/**
- 
+
 * POST 处理程序
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -690,12 +693,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             }
         }
 
-        // 查找TMDB-Import目录
-        const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
+        // 查找TMDB-Import目录（从服务端配置读取，未配置时回退）
+        const configuredPath = ServerConfigManager.getConfigItem('tmdbImportPath') as string | undefined
+        const tmdbImportDir = configuredPath ? configuredPath : path.resolve(process.cwd(), 'TMDB-Import-master');
         if (!fs.existsSync(tmdbImportDir)) {
             return NextResponse.json({
                 error: '找不到TMDB-Import目录',
-                suggestion: '请确保TMDB-Import-master目录存在于项目根目录中'
+                suggestion: configuredPath ? `请检查配置的路径是否存在: ${configuredPath}` : '请在设置中配置 TMDB-Import 路径或确保 TMDB-Import-master 目录存在'
             }, { status: 500 });
         }
 
