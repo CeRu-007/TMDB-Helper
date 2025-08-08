@@ -165,8 +165,23 @@ export default function HomePage() {
   const [recentLastUpdated, setRecentLastUpdated] = useState<string | null>(null);
   const [recentItemsByRegion, setRecentItemsByRegion] = useState<Record<string, any[]>>({});
 
-  // 布局状态管理
-  const [currentLayout, setCurrentLayout] = useState<LayoutType>('original')
+  // 布局状态管理（使用本地缓存作为首屏渲染的同步来源，避免闪烁）
+  const [currentLayout, setCurrentLayout] = useState<LayoutType>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem('tmdb_helper_layout_preferences')
+        if (cached) {
+          const pref = JSON.parse(cached)
+          if (pref?.layoutType === 'sidebar' || pref?.layoutType === 'original') {
+            return pref.layoutType as LayoutType
+          }
+        }
+      }
+    } catch (e) {
+      // 忽略本地解析错误，回退默认
+    }
+    return 'original'
+  })
 
   // 初始化布局偏好
   useEffect(() => {
@@ -175,9 +190,13 @@ export default function HomePage() {
         try {
           const preferences = await LayoutPreferencesManager.getPreferences()
           setCurrentLayout(preferences.layoutType)
+          // 将当前偏好写入本地缓存，供下次首屏同步读取，避免刷新闪烁
+          try {
+            localStorage.setItem('tmdb_helper_layout_preferences', JSON.stringify(preferences))
+          } catch {}
         } catch (error) {
           console.error('Failed to load layout preferences:', error)
-          setCurrentLayout('original') // 使用默认布局
+          // 读取失败则保持现有状态（可能来自本地缓存），避免强制抖动
         }
       }
       loadPreferences()

@@ -37,6 +37,7 @@ export class LayoutPreferencesManager {
       return this.getDefaultPreferences()
     }
 
+    // 优先以服务端为准；失败时再回退本地缓存
     try {
       const response = await fetch('/api/config?key=layout_preferences');
       if (response.ok) {
@@ -45,19 +46,31 @@ export class LayoutPreferencesManager {
           const preferences = JSON.parse(data.value) as LayoutPreferences;
 
           // 验证数据完整性
-          if (!preferences.layoutType || !preferences.lastUpdated) {
-            return this.getDefaultPreferences()
+          if (preferences?.layoutType && preferences?.lastUpdated) {
+            try {
+              localStorage.setItem(this.STORAGE_KEY, JSON.stringify(preferences))
+            } catch {}
+            return preferences;
           }
-
-          return preferences;
         }
       }
-
-      return this.getDefaultPreferences()
     } catch (error) {
-      console.error("Failed to load layout preferences:", error)
-      return this.getDefaultPreferences()
+      console.error("Failed to fetch layout preferences from server:", error)
     }
+
+    // 回退：尝试本地缓存
+    try {
+      const cached = localStorage.getItem(this.STORAGE_KEY)
+      if (cached) {
+        const pref = JSON.parse(cached) as LayoutPreferences
+        if (pref?.layoutType && pref?.lastUpdated) {
+          return pref
+        }
+      }
+    } catch {}
+
+    // 最终回退默认
+    return this.getDefaultPreferences()
   }
 
   /**
@@ -89,7 +102,14 @@ export class LayoutPreferencesManager {
         })
       });
 
-      return response.ok;
+      if (response.ok) {
+        // 成功后同步更新本地缓存，确保刷新首屏读取到最新布局
+        try {
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedPreferences))
+        } catch {}
+        return true
+      }
+      return false;
     } catch (error) {
       console.error("Failed to save layout preferences:", error)
       return false

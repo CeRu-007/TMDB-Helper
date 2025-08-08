@@ -19,7 +19,20 @@ import { useIsClient } from "@/hooks/use-is-client"
 
 export default function HomePage() {
   const isClient = useIsClient()
-  const [currentLayout, setCurrentLayout] = useState<LayoutType>('original')
+  const [currentLayout, setCurrentLayout] = useState<LayoutType>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem('tmdb_helper_layout_preferences')
+        if (cached) {
+          const pref = JSON.parse(cached)
+          if (pref?.layoutType === 'sidebar' || pref?.layoutType === 'original') {
+            return pref.layoutType as LayoutType
+          }
+        }
+      }
+    } catch {}
+    return 'original'
+  })
   
   // 使用自定义Hook管理主页状态
   const homeState = useHomeState()
@@ -38,9 +51,12 @@ export default function HomePage() {
           const preferences = await LayoutPreferencesManager.getPreferences()
           setCurrentLayout(preferences.layoutType)
           log.info('HomePage', '布局偏好已加载', { layout: preferences.layoutType })
+          try {
+            localStorage.setItem('tmdb_helper_layout_preferences', JSON.stringify(preferences))
+          } catch {}
         } catch (error) {
           console.error('Failed to load layout preferences:', error)
-          setCurrentLayout('original') // 使用默认布局
+          // 失败时保持当前状态，避免闪烁
         }
       }
       loadPreferences()
