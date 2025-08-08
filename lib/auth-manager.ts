@@ -79,7 +79,23 @@ export class AuthManager {
 
     try {
       const data = fs.readFileSync(AuthManager.AUTH_FILE, 'utf-8');
-      return JSON.parse(data) as AdminUser;
+      const user = JSON.parse(data) as Partial<AdminUser>;
+      // 兼容旧数据：补全或修正 sessionExpiryDays
+      if (!user.sessionExpiryDays || isNaN(Number(user.sessionExpiryDays)) || Number(user.sessionExpiryDays) <= 0) {
+        // 使用默认会话天数
+        const fixed: AdminUser = {
+          id: (user.id as string) || AuthManager.ADMIN_USER_ID,
+          username: (user.username as string) || 'admin',
+          passwordHash: (user.passwordHash as string) || '',
+          createdAt: (user.createdAt as string) || new Date().toISOString(),
+          lastLoginAt: user.lastLoginAt,
+          sessionExpiryDays: AuthManager.getSessionExpiryDays(),
+        }
+        // 立即回写修复后的用户数据
+        AuthManager.saveAdminUser(fixed)
+        return fixed
+      }
+      return user as AdminUser;
     } catch (error) {
       console.error('读取管理员用户信息失败:', error);
       return null;
@@ -87,13 +103,26 @@ export class AuthManager {
   }
 
   /**
-   * 保存管理员用户信息
+   * 保存管理员用户信息（同步）
    */
   private static saveAdminUser(user: AdminUser): boolean {
     AuthManager.ensureAuthDir();
-    
     try {
       fs.writeFileSync(AuthManager.AUTH_FILE, JSON.stringify(user, null, 2), 'utf-8');
+      return true;
+    } catch (error) {
+      console.error('保存管理员用户信息失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 保存管理员用户信息（异步，非阻塞）
+   */
+  private static async saveAdminUserAsync(user: AdminUser): Promise<boolean> {
+    AuthManager.ensureAuthDir();
+    try {
+      await fs.promises.writeFile(AuthManager.AUTH_FILE, JSON.stringify(user, null, 2), 'utf-8')
       return true;
     } catch (error) {
       console.error('保存管理员用户信息失败:', error);
@@ -140,9 +169,9 @@ export class AuthManager {
     try {
       const isValid = await bcrypt.compare(password, adminUser.passwordHash);
       if (isValid) {
-        // 更新最后登录时间
+        // 更新最后登录时间（异步写盘，避免阻塞）
         adminUser.lastLoginAt = new Date().toISOString();
-        AuthManager.saveAdminUser(adminUser);
+        void AuthManager.saveAdminUserAsync(adminUser);
         return adminUser;
       }
     } catch (error) {
@@ -202,16 +231,57 @@ export class AuthManager {
 
   /**
    * 初始化管理员用户（从环境变量）
+   * 行为：
+   * - 若不存在管理员用户：优先用环境变量创建，否则创建默认 admin/admin
+   * - 若已存在管理员用户且提供了环境变量：
+   *   - 如 ADMIN_FORCE_OVERRIDE=true，或用户名不同，或密码不同，则用环境变量覆盖并保存
    */
   static async initializeFromEnv(): Promise<boolean> {
-    // 如果已存在管理员用户，跳过初始化
-    if (AuthManager.hasAdminUser()) {
-      return true;
-    }
-
     const envUsername = process.env.ADMIN_USERNAME;
     const envPassword = process.env.ADMIN_PASSWORD;
+    const forceOverride = (process.env.ADMIN_FORCE_OVERRIDE || '').toLowerCase() === 'true'
 
+    // 已存在用户时，根据环境变量决定是否覆盖
+    if (AuthManager.hasAdminUser()) {
+      if (envUsername || envPassword) {
+        const current = AuthManager.readAdminUser()
+        if (current) {
+          let needOverride = forceOverride
+          let nextUsername = current.username
+          let nextPasswordHash = current.passwordHash
+
+          if (!needOverride) {
+            try {
+              const usernameDiffers = !!envUsername && current.username !== envUsername
+              const passwordDiffers = !!envPassword && !(await bcrypt.compare(envPassword, current.passwordHash))
+              needOverride = usernameDiffers || passwordDiffers
+            } catch {
+              needOverride = true
+            }
+          }
+
+          if (needOverride) {
+            console.log('[Auth] 根据环境变量覆盖管理员账号信息...')
+            if (envUsername) nextUsername = envUsername
+            if (envPassword) nextPasswordHash = await bcrypt.hash(envPassword, 12)
+
+            const updated: AdminUser = {
+              ...current,
+              id: AuthManager.ADMIN_USER_ID,
+              username: nextUsername,
+              passwordHash: nextPasswordHash,
+              sessionExpiryDays: current.sessionExpiryDays && current.sessionExpiryDays > 0
+                ? current.sessionExpiryDays
+                : AuthManager.getSessionExpiryDays(),
+            }
+            void AuthManager.saveAdminUserAsync(updated)
+          }
+        }
+      }
+      return true
+    }
+
+    // 不存在用户：优先用环境变量创建
     if (envUsername && envPassword) {
       console.log('从环境变量初始化管理员用户...');
       return await AuthManager.createAdminUser(envUsername, envPassword);

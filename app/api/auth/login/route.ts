@@ -41,9 +41,11 @@ export async function POST(request: NextRequest) {
     });
 
     // 设置httpOnly cookie
-    const maxAge = rememberMe 
-      ? user.sessionExpiryDays * 2 * 24 * 60 * 60 // 记住我：双倍有效期
-      : user.sessionExpiryDays * 24 * 60 * 60;     // 正常：默认有效期
+    // 记住我：将有效期延长（默认天数*2），否则按默认天数
+    const sessionDays = user.sessionExpiryDays && user.sessionExpiryDays > 0
+      ? user.sessionExpiryDays
+      : 7;
+    const maxAge = (rememberMe ? sessionDays * 2 : sessionDays) * 24 * 60 * 60;
 
     response.cookies.set('auth-token', token, {
       httpOnly: true,

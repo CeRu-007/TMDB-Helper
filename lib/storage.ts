@@ -176,6 +176,7 @@ export class StorageManager {
         ...options,
         signal: controller.signal,
         cache: 'no-cache',
+        credentials: 'include',
         headers,
       });
 

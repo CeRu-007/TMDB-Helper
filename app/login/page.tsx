@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
+import { ClientConfigManager } from '@/lib/client-config-manager'
+import { saveRemember, loadRemember, clearRemember } from '@/lib/secure-remember'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,6 +30,32 @@ import {
  */
 export default function LoginPage() {
   const [username, setUsername] = useState('')
+  // 记住我：记录最近一次登录的用户名
+  useEffect(() => {
+    (async () => {
+      const savedUser = await ClientConfigManager.getItem('last_login_username')
+      if (savedUser) setUsername(savedUser)
+    })()
+  }, [])
+  // 恢复“记住我”勾选状态
+  useEffect(() => {
+    (async () => {
+      const remember = await ClientConfigManager.getItem('last_login_remember_me')
+      if (remember === '1') setRememberMe(true)
+    })()
+  }, [])
+
+  // 从本地安全存储恢复用户名/密码/勾选
+  useEffect(() => {
+    (async () => {
+      const r = await loadRemember()
+      if (r.username) setUsername(r.username)
+      if (r.remember && r.password) setPassword(r.password)
+      if (r.remember) setRememberMe(true)
+    })()
+  }, [])
+
+
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -35,7 +63,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [isInitializing, setIsInitializing] = useState(true)
 
-  const { login, isAuthenticated } = useAuth()
+  const { login, isAuthenticated, checkAuth } = useAuth()
   const router = useRouter()
 
   /**
@@ -46,7 +74,7 @@ export default function LoginPage() {
       try {
         const response = await fetch('/api/auth/init')
         const data = await response.json()
-        
+
         if (!data.initialized) {
           // 自动初始化认证系统
           await fetch('/api/auth/init', { method: 'POST' })
@@ -80,9 +108,17 @@ export default function LoginPage() {
 
     try {
       const success = await login(username, password, rememberMe)
-      
+
       if (success) {
-        router.push('/')
+        // 成功后按勾选状态记录/清除本地加密密码（不阻塞登录流程）
+        try {
+          if (rememberMe) {
+            void saveRemember(username, password, true)
+          } else {
+            clearRemember()
+          }
+        } catch {}
+        router.replace('/')
       } else {
         setError('用户名或密码错误')
       }
@@ -311,7 +347,15 @@ export default function LoginPage() {
                       <Checkbox
                         id="rememberMe"
                         checked={rememberMe}
-                        onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                        onCheckedChange={async (checked) => {
+                          const v = Boolean(checked)
+                          setRememberMe(v)
+                          // 同步记录用户偏好
+                          await ClientConfigManager.setItem('last_login_remember_me', v ? '1' : '0')
+                          if (!v) {
+                            clearRemember()
+                          }
+                        }}
                         disabled={isLoading}
                         className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />

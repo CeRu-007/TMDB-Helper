@@ -108,6 +108,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json()
 
       if (response.ok && data.success) {
+        // 异步记录最近一次成功登录的用户名（仅用户名；密码只在本地安全存储）
+        try {
+          void fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', key: 'last_login_username', value: username }) })
+        } catch {}
         setAuthState({
           user: data.user,
           isLoading: false,
