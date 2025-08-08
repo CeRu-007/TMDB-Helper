@@ -119,8 +119,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
       // 获取详细信息
       const response = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}`)
-      const result = await response.json()
-      const tmdbData = result.success ? result.data : null
+      const data = await response.json()
+      const tmdbData = data.success ? data.data : null
 
       if (tmdbData) {
         // 更新表单数据

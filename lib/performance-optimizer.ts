@@ -271,7 +271,6 @@ export class PerformanceOptimizer {
       const keysToRemove: string[] = [];
 
       // 已切换到服务端存储，跳过本地缓存清理
-      const keysToRemove: string[] = []
       // no-op
 
       // 更新清理时间

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readScheduledTasks, writeScheduledTasks, addScheduledTask, updateScheduledTask, deleteScheduledTask } from '@/lib/server-scheduled-tasks'
-import { ScheduledTask } from '@/lib/storage'
+import type { ScheduledTask } from '@/lib/storage'
+
+// Ensure Node.js runtime for fs/path usage
+export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
