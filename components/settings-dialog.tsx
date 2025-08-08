@@ -198,7 +198,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // 魔搭社区API设置状态
   const [modelScopeSettings, setModelScopeSettings] = useState({
     apiKey: "",
-    episodeGenerationModel: "qwen-plus"
+    episodeGenerationModel: "Qwen/Qwen3-32B"
   })
   const [showModelScopeApiKey, setShowModelScopeApiKey] = useState(false)
   const [modelScopeSaving, setModelScopeSaving] = useState(false)
@@ -1718,7 +1718,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   分集简介生成模型
                 </Label>
                 <p className="text-xs text-gray-500 mt-1 mb-2">
-                  选择用于生成分集简介的语言模型，推荐使用Qwen-Plus以获得最佳中文创作效果
+                  选择用于生成分集简介的语言模型，推荐使用Qwen3-32B以获得最佳中文创作效果
                 </p>
                 <Select
                   value={modelScopeSettings.episodeGenerationModel}
@@ -1728,55 +1728,32 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px] overflow-y-auto">
-                    <SelectItem value="qwen-plus">
+                    <SelectItem value="Qwen/Qwen3-32B">
                       <div className="flex flex-col">
-                        <span className="font-medium">Qwen-Plus (推荐)</span>
-                        <span className="text-xs text-gray-500">通义千问增强版，平衡性能与成本</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="qwen-max">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Qwen-Max</span>
-                        <span className="text-xs text-gray-500">通义千问旗舰版，最强性能</span>
+                        <span className="font-medium">Qwen3-32B (推荐)</span>
+                        <span className="text-xs text-gray-500">通义千问3代，32B参数，强大推理能力</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="ZhipuAI/GLM-4.5">
                       <div className="flex flex-col">
                         <span className="font-medium">GLM-4.5</span>
-                        <span className="text-xs text-red-500">⚠️ 可能返回推理过程而非结果</span>
+                        <span className="text-xs text-gray-500">智谱AI旗舰模型，专为智能体设计</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="Qwen/Qwen3-32B">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Qwen3-32B</span>
-                        <span className="text-xs text-gray-500">通义千问3代，32B参数，强大推理能力</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Qwen/Qwen3-235B-A22B-Thinking-2507">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Qwen3-235B-Thinking</span>
-                        <span className="text-xs text-gray-500">通义千问3代思考模式，235B参数，顶级推理</span>
-                      </div>
-                    </SelectItem>
+
                     <SelectItem value="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B">
                       <div className="flex flex-col">
                         <span className="font-medium">DeepSeek-R1-Distill-Qwen-32B</span>
                         <span className="text-xs text-gray-500">DeepSeek R1蒸馏版本，32B参数，高效推理</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="qwen-turbo">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Qwen-Turbo</span>
-                        <span className="text-xs text-gray-500">通义千问超快版，适合快速响应</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="qwen2.5-72b-instruct">
+                    <SelectItem value="Qwen/Qwen2.5-72B-Instruct">
                       <div className="flex flex-col">
                         <span className="font-medium">Qwen2.5-72B-Instruct</span>
-                        <span className="text-xs text-green-600">🌟 推荐：稳定输出，适合简介生成</span>
+                        <span className="text-xs text-gray-500">开源版本，72B参数</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="qwen2.5-32b-instruct">
+                    <SelectItem value="Qwen/Qwen2.5-32B-Instruct">
                       <div className="flex flex-col">
                         <span className="font-medium">Qwen2.5-32B-Instruct</span>
                         <span className="text-xs text-gray-500">开源版本，32B参数</span>

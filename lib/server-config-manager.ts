@@ -67,7 +67,7 @@ export class ServerConfigManager {
       version: this.CONFIG_VERSION,
       lastUpdated: Date.now(),
       siliconFlowThumbnailModel: 'Qwen/Qwen2.5-VL-32B-Instruct',
-      modelScopeEpisodeModel: 'qwen-plus'
+      modelScopeEpisodeModel: 'Qwen/Qwen3-32B'
     }
   }
 

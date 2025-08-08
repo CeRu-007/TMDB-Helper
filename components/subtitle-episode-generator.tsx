@@ -431,7 +431,7 @@ export function SubtitleEpisodeGenerator({
         const provider = (await ClientConfigManager.getItem('episode_generator_api_provider')) || 'siliconflow'
         const settingsKey = provider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
         const settingsText = await ClientConfigManager.getItem(settingsKey)
-        let episodeGenerationModel = provider === 'siliconflow' ? 'deepseek-ai/DeepSeek-V2.5' : 'qwen-plus'
+        let episodeGenerationModel = provider === 'siliconflow' ? 'deepseek-ai/DeepSeek-V2.5' : 'Qwen/Qwen3-32B'
         if (settingsText) {
           try { const s = JSON.parse(settingsText); if (s.episodeGenerationModel) episodeGenerationModel = s.episodeGenerationModel } catch {}
         }
@@ -517,7 +517,7 @@ export function SubtitleEpisodeGenerator({
   React.useEffect(() => {
     const updateModelForProvider = () => {
       const settingsKey = apiProvider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
-      let newModel = apiProvider === 'siliconflow' ? "deepseek-ai/DeepSeek-V2.5" : "qwen-plus"
+      let newModel = apiProvider === 'siliconflow' ? 'deepseek-ai/DeepSeek-V2.5' : 'Qwen/Qwen3-32B';
 
       (async () => {
         try {
@@ -1177,11 +1177,7 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
   "confidence": 0.85
 }
 
-**⚠️ 特别提醒GLM模型：**
-- 不要输出思考过程
-- 不要输出分析步骤
-- 不要使用"让我"、"首先"、"然后"等词汇
-- 直接输出最终JSON结果
+
 
 ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
@@ -1232,52 +1228,14 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
 ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
 
-  // 清理GLM-4.5的推理内容
-  const cleanGLMReasoningContent = (content: string): string => {
-    console.log('清理GLM推理内容，原始长度:', content.length)
 
-    // 移除常见的推理开头
-    const reasoningPatterns = [
-      /^.*?让我.*?分析.*?[\n\r]/gm,
-      /^.*?首先.*?[\n\r]/gm,
-      /^.*?然后.*?[\n\r]/gm,
-      /^.*?接下来.*?[\n\r]/gm,
-      /^.*?根据.*?内容.*?[\n\r]/gm,
-      /^.*?从.*?可以看出.*?[\n\r]/gm,
-      /^.*?通过.*?分析.*?[\n\r]/gm,
-      /^.*?我需要.*?[\n\r]/gm,
-      /^.*?我来.*?[\n\r]/gm,
-      /^.*?我认为.*?[\n\r]/gm,
-      /^.*?我觉得.*?[\n\r]/gm,
-      /^.*?这段.*?显示.*?[\n\r]/gm,
-      /^.*?这里.*?表明.*?[\n\r]/gm
-    ]
-
-    let cleaned = content
-    for (const pattern of reasoningPatterns) {
-      cleaned = cleaned.replace(pattern, '')
-    }
-
-    // 移除JSON前的所有推理内容
-    const jsonStart = cleaned.indexOf('{')
-    if (jsonStart > 0) {
-      cleaned = cleaned.substring(jsonStart)
-    }
-
-    console.log('清理后长度:', cleaned.length)
-    return cleaned.trim()
-  }
 
   // 解析生成的内容
   const parseGeneratedContent = (content: string, episode: SubtitleEpisode, config: GenerationConfig, styleId?: string): GenerationResult => {
     const style = styleId ? GENERATION_STYLES.find(s => s.id === styleId) : null
     const styleName = style?.name || ''
 
-    // 如果是GLM模型，先清理推理内容
-    if (config.model.includes('GLM')) {
-      content = cleanGLMReasoningContent(content)
-      console.log('GLM模型清理后的内容:', content.substring(0, 200) + '...')
-    }
+
 
     console.log('开始解析生成的内容:', {
       content: content.substring(0, 500) + (content.length > 500 ? '...' : ''),
@@ -4272,7 +4230,11 @@ function GenerationSettingsDialog({
 
     // 保存清理后的配置到服务端（不包含model）
     void EpisodeConfigClient.saveConfig(JSON.stringify(configWithoutModel))
-    onConfigChange(cleanedConfig)
+
+    // 检查 onConfigChange 是否为函数
+    if (typeof onConfigChange === 'function') {
+      onConfigChange(cleanedConfig)
+    }
 
     // 显示保存成功的提示
     setTimeout(() => {
@@ -4527,26 +4489,33 @@ function GenerationTab({
   ]
 
   const modelScopeModelOptions = [
-    { value: "qwen-plus", label: "Qwen-Plus (推荐)", description: "通义千问增强版，平衡性能与成本" },
-    { value: "qwen-max", label: "Qwen-Max", description: "通义千问旗舰版，最强性能" },
+    { value: "Qwen/Qwen3-32B", label: "Qwen3-32B (推荐)", description: "通义千问3代，32B参数，强大推理能力" },
     { value: "ZhipuAI/GLM-4.5", label: "GLM-4.5", description: "智谱AI旗舰模型，专为智能体设计" },
-    { value: "Qwen/Qwen3-32B", label: "Qwen3-32B", description: "通义千问3代，32B参数，强大推理能力" },
-    { value: "Qwen/Qwen3-235B-A22B-Thinking-2507", label: "Qwen3-235B-Thinking", description: "通义千问3代思考模式，235B参数，顶级推理" },
     { value: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B", label: "DeepSeek-R1-Distill-Qwen-32B", description: "DeepSeek R1蒸馏版本，32B参数，高效推理" },
-    { value: "qwen-turbo", label: "Qwen-Turbo", description: "通义千问超快版，适合快速响应" },
-    { value: "qwen2.5-72b-instruct", label: "Qwen2.5-72B-Instruct", description: "开源版本，72B参数" },
-    { value: "qwen2.5-32b-instruct", label: "Qwen2.5-32B-Instruct", description: "开源版本，32B参数" }
+    { value: "Qwen/Qwen2.5-72B-Instruct", label: "Qwen2.5-72B-Instruct", description: "开源版本，72B参数" },
+    { value: "Qwen/Qwen2.5-32B-Instruct", label: "Qwen2.5-32B-Instruct", description: "开源版本，32B参数" }
   ]
 
   const modelOptions = apiProvider === 'siliconflow' ? siliconFlowModelOptions : modelScopeModelOptions
 
   // 保存模型配置到本地存储
   const handleModelChange = (newModel: string) => {
+    // 检查 onConfigChange 是否为函数
+    if (typeof onConfigChange !== 'function') {
+      console.error('onConfigChange is not a function:', onConfigChange)
+      return
+    }
+
     // 更新当前配置
-    onConfigChange({
-      ...config,
-      model: newModel
-    })
+    try {
+      onConfigChange({
+        ...config,
+        model: newModel
+      })
+    } catch (error) {
+      console.error('Error calling onConfigChange:', error)
+      return
+    }
 
     // 根据API提供商保存到不同的设置中
     // 保存到服务端配置
@@ -4600,12 +4569,14 @@ function GenerationTab({
             <span className="text-sm text-gray-600 dark:text-gray-400 w-12">最少:</span>
             <Slider
               value={[config.summaryLength[0]]}
-              onValueChange={(value) =>
-                onConfigChange({
-                  ...config,
-                  summaryLength: [value[0], config.summaryLength[1]]
-                })
-              }
+              onValueChange={(value) => {
+                if (typeof onConfigChange === 'function' && value[0] !== undefined) {
+                  onConfigChange({
+                    ...config,
+                    summaryLength: [value[0], config.summaryLength[1]]
+                  })
+                }
+              }}
               max={300}
               min={20}
               step={5}
@@ -4617,12 +4588,14 @@ function GenerationTab({
             <span className="text-sm text-gray-600 dark:text-gray-400 w-12">最多:</span>
             <Slider
               value={[config.summaryLength[1]]}
-              onValueChange={(value) =>
-                onConfigChange({
-                  ...config,
-                  summaryLength: [config.summaryLength[0], value[0]]
-                })
-              }
+              onValueChange={(value) => {
+                if (typeof onConfigChange === 'function' && value[0] !== undefined) {
+                  onConfigChange({
+                    ...config,
+                    summaryLength: [config.summaryLength[0], value[0]]
+                  })
+                }
+              }}
               max={400}
               min={config.summaryLength[0] + 10}
               step={5}
@@ -4643,12 +4616,14 @@ function GenerationTab({
           <span className="text-sm text-gray-600 dark:text-gray-400 w-12">保守</span>
           <Slider
             value={[config.temperature]}
-            onValueChange={(value) =>
-              onConfigChange({
-                ...config,
-                temperature: value[0]
-              })
-            }
+            onValueChange={(value) => {
+              if (typeof onConfigChange === 'function' && value[0] !== undefined) {
+                onConfigChange({
+                  ...config,
+                  temperature: value[0]
+                })
+              }
+            }}
             max={1.0}
             min={0.1}
             step={0.1}
@@ -4665,12 +4640,14 @@ function GenerationTab({
           <Checkbox
             id="includeOriginalTitle"
             checked={config.includeOriginalTitle}
-            onCheckedChange={(checked) =>
-              onConfigChange({
-                ...config,
-                includeOriginalTitle: !!checked
-              })
-            }
+            onCheckedChange={(checked) => {
+              if (typeof onConfigChange === 'function') {
+                onConfigChange({
+                  ...config,
+                  includeOriginalTitle: !!checked
+                })
+              }
+            }}
           />
           <Label htmlFor="includeOriginalTitle" className="text-sm">
             包含原始标题信息
@@ -4691,12 +4668,14 @@ function GenerationTab({
         <Textarea
           id="customPrompt"
           value={config.customPrompt || ""}
-          onChange={(e) =>
-            onConfigChange({
-              ...config,
-              customPrompt: e.target.value
-            })
-          }
+          onChange={(e) => {
+            if (typeof onConfigChange === 'function') {
+              onConfigChange({
+                ...config,
+                customPrompt: e.target.value
+              })
+            }
+          }}
           placeholder="例如：注重情感描述，突出角色关系..."
           className="h-20 resize-none"
         />
@@ -4714,6 +4693,12 @@ function TitleStyleTab({
   onConfigChange: (config: GenerationConfig) => void
 }) {
   const handleTitleStyleToggle = (styleId: string) => {
+    // 检查 onConfigChange 是否为函数
+    if (typeof onConfigChange !== 'function') {
+      console.error('onConfigChange is not a function:', onConfigChange)
+      return
+    }
+
     // 单选模式：如果点击的是当前选中的风格，则取消选择；否则选择新风格
     const newStyle = config.selectedTitleStyle === styleId ? "" : styleId
 
@@ -4803,6 +4788,12 @@ function SummaryStyleTab({
   onConfigChange: (config: GenerationConfig) => void
 }) {
   const handleStyleToggle = (styleId: string) => {
+    // 检查 onConfigChange 是否为函数
+    if (typeof onConfigChange !== 'function') {
+      console.error('onConfigChange is not a function:', onConfigChange)
+      return
+    }
+
     let newStyles: string[]
 
     if (config.selectedStyles.includes(styleId)) {
@@ -4950,9 +4941,11 @@ function ExportConfigDialog({
                   <Checkbox
                     id="includeTitle"
                     checked={config.includeTitle}
-                    onCheckedChange={(checked) =>
-                      onConfigChange({ ...config, includeTitle: !!checked })
-                    }
+                    onCheckedChange={(checked) => {
+                      if (typeof onConfigChange === 'function') {
+                        onConfigChange({ ...config, includeTitle: !!checked })
+                      }
+                    }}
                   />
                   <Label htmlFor="includeTitle" className="text-sm">
                     包含标题 (name列)
@@ -4963,9 +4956,11 @@ function ExportConfigDialog({
                   <Checkbox
                     id="includeOverview"
                     checked={config.includeOverview}
-                    onCheckedChange={(checked) =>
-                      onConfigChange({ ...config, includeOverview: !!checked })
-                    }
+                    onCheckedChange={(checked) => {
+                      if (typeof onConfigChange === 'function') {
+                        onConfigChange({ ...config, includeOverview: !!checked })
+                      }
+                    }}
                   />
                   <Label htmlFor="includeOverview" className="text-sm">
                     包含简介 (overview列)
@@ -4976,9 +4971,11 @@ function ExportConfigDialog({
                   <Checkbox
                     id="includeRuntime"
                     checked={config.includeRuntime}
-                    onCheckedChange={(checked) =>
-                      onConfigChange({ ...config, includeRuntime: !!checked })
-                    }
+                    onCheckedChange={(checked) => {
+                      if (typeof onConfigChange === 'function') {
+                        onConfigChange({ ...config, includeRuntime: !!checked })
+                      }
+                    }}
                   />
                   <Label htmlFor="includeRuntime" className="text-sm">
                     包含分钟数 (runtime列)
@@ -5223,12 +5220,14 @@ function VideoAnalysisTab({
           <Checkbox
             id="enableVideoAnalysis"
             checked={config.enableVideoAnalysis || false}
-            onCheckedChange={(checked) =>
-              onConfigChange({
-                ...config,
-                enableVideoAnalysis: !!checked
-              })
-            }
+            onCheckedChange={(checked) => {
+              if (typeof onConfigChange === 'function') {
+                onConfigChange({
+                  ...config,
+                  enableVideoAnalysis: !!checked
+                })
+              }
+            }}
           />
           <div className="flex-1">
             <Label htmlFor="enableVideoAnalysis" className="text-sm font-medium cursor-pointer">
@@ -5253,12 +5252,14 @@ function VideoAnalysisTab({
 
           <Select
             value={config.speechRecognitionModel || "FunAudioLLM/SenseVoiceSmall"}
-            onValueChange={(value) =>
-              onConfigChange({
-                ...config,
-                speechRecognitionModel: value
-              })
-            }
+            onValueChange={(value) => {
+              if (typeof onConfigChange === 'function') {
+                onConfigChange({
+                  ...config,
+                  speechRecognitionModel: value
+                })
+              }
+            }}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="选择语音识别模型" />

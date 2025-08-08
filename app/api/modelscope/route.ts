@@ -5,14 +5,94 @@ import { NextRequest, NextResponse } from 'next/server';
 // 这是独立的开源模型推理服务，与阿里云无关
 const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1';
 
+// 处理流式响应的函数（用于思考模型）
+async function handleStreamResponse(response: Response, serviceType: string) {
+  try {
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('无法获取响应流');
+    }
+
+    let thinkingContent = '';
+    let answerContent = '';
+    let done_thinking = false;
+
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta;
+
+            if (delta) {
+              const thinking_chunk = delta.reasoning_content || '';
+              const answer_chunk = delta.content || '';
+
+              if (thinking_chunk) {
+                thinkingContent += thinking_chunk;
+              } else if (answer_chunk) {
+                if (!done_thinking) {
+                  done_thinking = true;
+                }
+                answerContent += answer_chunk;
+              }
+            }
+          } catch (e) {
+            // 忽略解析错误的行
+            continue;
+          }
+        }
+      }
+    }
+
+    console.log('流式响应处理完成:', {
+      thinkingLength: thinkingContent.length,
+      answerLength: answerContent.length,
+      service: serviceType
+    });
+
+    // 返回最终答案内容
+    return NextResponse.json({
+      success: true,
+      data: {
+        content: answerContent || thinkingContent, // 如果没有答案内容，使用思考内容
+        thinking: thinkingContent,
+        answer: answerContent,
+        service: serviceType
+      }
+    });
+
+  } catch (error: any) {
+    console.error('处理流式响应失败:', error);
+    return NextResponse.json(
+      {
+        error: '处理流式响应失败',
+        details: error?.message || '未知错误',
+        service: serviceType
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
       model,
       messages,
-      temperature = 0.7,
-      max_tokens = 800,
       apiKey
     } = body;
 
@@ -72,18 +152,90 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const serviceType = 'ModelScope';
+
+    // 验证消息格式
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return NextResponse.json(
+        {
+          error: '消息格式错误',
+          details: 'messages 必须是非空数组',
+          service: serviceType
+        },
+        { status: 400 }
+      );
+    }
+
+    // 验证每个消息的格式
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i];
+      if (!message.role || !message.content) {
+        return NextResponse.json(
+          {
+            error: '消息格式错误',
+            details: `第${i + 1}个消息缺少 role 或 content 字段`,
+            service: serviceType,
+            debug: { messageIndex: i, message }
+          },
+          { status: 400 }
+        );
+      }
+      if (!['system', 'user', 'assistant'].includes(message.role)) {
+        return NextResponse.json(
+          {
+            error: '消息格式错误',
+            details: `第${i + 1}个消息的 role 必须是 system, user 或 assistant`,
+            service: serviceType,
+            debug: { messageIndex: i, invalidRole: message.role }
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // 魔搭社区API调用
     console.log('使用魔搭社区ModelScope API:', {
       model,
       messagesCount: messages.length,
-      temperature,
-      max_tokens,
       apiKeyPrefix: apiKey.substring(0, 10) + '...',
       service: 'ModelScope'
     });
 
-    const serviceType = 'ModelScope';
     const apiEndpoint = `${MODELSCOPE_API_BASE}/chat/completions`;
+
+    // 检查是否是需要特殊处理的思考模型（仅 Qwen3-32B 和 DeepSeek-R1）
+    const isThinkingModel = model.includes('Qwen3-32B') || model.includes('DeepSeek-R1');
+
+    console.log('模型类型检测:', {
+      model,
+      isThinkingModel,
+      willUseStream: isThinkingModel
+    });
+
+    // 构建请求体
+    const requestBody: any = {
+      model,
+      messages,
+      stream: isThinkingModel // 只有思考模型使用流式响应
+    };
+
+    // 为思考模型添加 extra_body 参数
+    if (isThinkingModel) {
+      requestBody.extra_body = {
+        enable_thinking: true,
+        thinking_budget: 4096
+      };
+    }
+
+    console.log('发送到魔搭社区的请求体:', JSON.stringify(requestBody, null, 2));
+    console.log('请求详情:', {
+      url: apiEndpoint,
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
+        'Content-Type': 'application/json'
+      }
+    });
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
@@ -91,20 +243,13 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature,
-        max_tokens,
-        stream: false, // 确保不使用流式响应
-        // 尝试添加参数来控制GLM-4.5的输出格式
-        response_format: { type: "json_object" },
-        // 降低温度以获得更确定性的输出
-        top_p: 0.8
-      })
+      body: JSON.stringify(requestBody)
     });
 
-
+    // 处理流式响应（思考模型）
+    if (isThinkingModel) {
+      return await handleStreamResponse(response, serviceType);
+    }
 
     if (!response.ok) {
       const errorData = await response.text();
@@ -113,22 +258,42 @@ export async function POST(request: NextRequest) {
         url: apiEndpoint,
         method: 'POST',
         service: serviceType,
+        model: model,
+        requestBody: JSON.stringify(requestBody, null, 2),
         headers: {
           'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
           'Content-Type': 'application/json'
         }
       });
 
+      // 尝试解析错误响应
+      let errorDetails = errorData;
+      try {
+        const errorJson = JSON.parse(errorData);
+        errorDetails = errorJson.error?.message || errorJson.message || errorData;
+        console.error('解析的错误详情:', errorJson);
+      } catch (e) {
+        console.error('无法解析错误响应为JSON:', errorData);
+      }
+
       return NextResponse.json(
         {
           error: `${serviceType} API调用失败: ${response.status} ${response.statusText}`,
-          details: errorData,
+          details: errorDetails,
           service: serviceType,
-          endpoint: apiEndpoint
+          endpoint: apiEndpoint,
+          debug: {
+            model,
+            requestBody,
+            responseStatus: response.status,
+            responseStatusText: response.statusText
+          }
         },
         { status: response.status }
       );
     }
+
+
 
     // 安全地解析JSON响应
     let data;
@@ -151,12 +316,12 @@ export async function POST(request: NextRequest) {
 
       data = JSON.parse(responseText);
       console.log(`${serviceType} API解析后响应:`, { service: serviceType, data });
-    } catch (parseError) {
+    } catch (parseError: any) {
       console.error('解析API响应失败:', parseError);
       return NextResponse.json(
         {
           error: 'API响应格式错误，无法解析JSON',
-          details: parseError.message,
+          details: parseError?.message || '未知解析错误',
           service: serviceType
         },
         { status: 500 }
@@ -165,6 +330,15 @@ export async function POST(request: NextRequest) {
 
     // 解析魔搭社区API响应 (OpenAI兼容格式)
     console.log('魔搭社区API完整响应数据:', JSON.stringify(data, null, 2));
+
+    // 详细检查响应结构
+    console.log('响应结构分析:', {
+      hasChoices: !!data.choices,
+      choicesLength: data.choices?.length,
+      firstChoice: data.choices?.[0],
+      message: data.choices?.[0]?.message,
+      messageKeys: data.choices?.[0]?.message ? Object.keys(data.choices[0].message) : []
+    });
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error('响应格式验证失败:', {
@@ -191,98 +365,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // GLM-4.5等模型可能将内容放在reasoning_content中
+    // 处理响应内容
     const message = data.choices[0].message;
     let messageContent = message.content;
 
-    // 如果content为空，尝试使用reasoning_content
+    // 如果 content 为空，尝试使用 reasoning_content 作为回退
     if (!messageContent && message.reasoning_content) {
       messageContent = message.reasoning_content;
-      console.log('使用reasoning_content作为响应内容');
-
-      // 尝试多种方式提取JSON
-      let extractedJson = null;
-
-      // 方法1: 提取最后一个完整的JSON对象
-      const jsonMatches = messageContent.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g);
-      if (jsonMatches && jsonMatches.length > 0) {
-        extractedJson = jsonMatches[jsonMatches.length - 1];
-        console.log('方法1: 提取到最后一个JSON:', extractedJson);
-      }
-
-      // 方法2: 如果方法1失败，尝试提取任何包含title和summary的JSON片段
-      if (!extractedJson) {
-        const titleMatch = messageContent.match(/"title"\s*:\s*"([^"]+)"/);
-        const summaryMatch = messageContent.match(/"summary"\s*:\s*"([^"]+)"/);
-        const confidenceMatch = messageContent.match(/"confidence"\s*:\s*([\d.]+)/);
-
-        if (titleMatch && summaryMatch) {
-          extractedJson = JSON.stringify({
-            title: titleMatch[1],
-            summary: summaryMatch[1],
-            confidence: confidenceMatch ? parseFloat(confidenceMatch[1]) : 0.8
-          });
-          console.log('方法2: 重构JSON:', extractedJson);
-        }
-      }
-
-      // 方法3: 专门处理GLM-4.5的推理内容
-      if (!extractedJson) {
-        // 尝试提取"简介："或"内容："后的文本
-        const summaryPatterns = [
-          /简介[：:]\s*[""]?([^""]+)[""]?/,
-          /内容[：:]\s*[""]?([^""]+)[""]?/,
-          /故事[：:]\s*[""]?([^""]+)[""]?/,
-          /剧情[：:]\s*[""]?([^""]+)[""]?/,
-          /概述[：:]\s*[""]?([^""]+)[""]?/
-        ];
-
-        for (const pattern of summaryPatterns) {
-          const match = messageContent.match(pattern);
-          if (match && match[1].length > 20) {
-            extractedJson = JSON.stringify({
-              title: "第集",
-              summary: match[1].trim(),
-              confidence: 0.7
-            });
-            console.log('方法3: 提取标签后内容:', extractedJson);
-            break;
-          }
-        }
-      }
-
-      // 方法4: 如果还是没有，尝试提取引号内的内容作为简介
-      if (!extractedJson && messageContent.includes('"')) {
-        const quotedContent = messageContent.match(/"([^"]{20,})"/);
-        if (quotedContent) {
-          extractedJson = JSON.stringify({
-            title: "第集",
-            summary: quotedContent[1],
-            confidence: 0.6
-          });
-          console.log('方法4: 提取引号内容:', extractedJson);
-        }
-      }
-
-      // 方法5: 最后尝试提取最后一段有意义的文本
-      if (!extractedJson) {
-        const sentences = messageContent.split(/[。！？.!?]/).filter(s => s.trim().length > 15);
-        if (sentences.length > 0) {
-          const lastSentence = sentences[sentences.length - 1].trim();
-          if (lastSentence.length > 20) {
-            extractedJson = JSON.stringify({
-              title: "第集",
-              summary: lastSentence + '。',
-              confidence: 0.5
-            });
-            console.log('方法5: 提取最后一句:', extractedJson);
-          }
-        }
-      }
-
-      if (extractedJson) {
-        messageContent = extractedJson;
-      }
+      console.log('content 为空，使用 reasoning_content 作为回退');
     }
 
     console.log('提取的消息内容:', {
@@ -293,6 +383,29 @@ export async function POST(request: NextRequest) {
       hasReasoningContent: !!message.reasoning_content,
       reasoningContentLength: message.reasoning_content?.length
     });
+
+    // 检查最终内容是否为空
+    if (!messageContent) {
+      console.error('最终提取的内容为空:', {
+        originalContent: message.content,
+        reasoningContent: message.reasoning_content,
+        fullMessage: message
+      });
+
+      return NextResponse.json(
+        {
+          error: '模型返回内容为空',
+          details: '模型没有返回有效的内容，请检查提示词或重试',
+          service: serviceType,
+          debug: {
+            hasContent: !!message.content,
+            hasReasoningContent: !!message.reasoning_content,
+            messageKeys: Object.keys(message)
+          }
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -333,21 +446,6 @@ export async function GET(request: NextRequest) {
     // 魔搭社区支持的模型列表（手动维护，因为API可能不提供模型列表接口）
     const models = [
       {
-        id: 'qwen-turbo',
-        name: 'Qwen-Turbo',
-        description: '通义千问超快版，适合快速响应场景'
-      },
-      {
-        id: 'qwen-plus',
-        name: 'Qwen-Plus',
-        description: '通义千问增强版，平衡性能与成本'
-      },
-      {
-        id: 'qwen-max',
-        name: 'Qwen-Max',
-        description: '通义千问旗舰版，最强性能'
-      },
-      {
         id: 'ZhipuAI/GLM-4.5',
         name: 'GLM-4.5',
         description: '智谱AI旗舰模型，专为智能体设计'
@@ -357,35 +455,31 @@ export async function GET(request: NextRequest) {
         name: 'Qwen3-32B',
         description: '通义千问3代，32B参数，强大推理能力'
       },
-      {
-        id: 'Qwen/Qwen3-235B-A22B-Thinking-2507',
-        name: 'Qwen3-235B-Thinking',
-        description: '通义千问3代思考模式，235B参数，顶级推理'
-      },
+
       {
         id: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B',
         name: 'DeepSeek-R1-Distill-Qwen-32B',
         description: 'DeepSeek R1蒸馏版本，32B参数，高效推理'
       },
       {
-        id: 'qwen2.5-72b-instruct',
+        id: 'Qwen/Qwen2.5-72B-Instruct',
         name: 'Qwen2.5-72B-Instruct',
-        description: '通义千问2.5开源版本，72B参数'
+        description: '开源版本，72B参数'
       },
       {
-        id: 'qwen2.5-32b-instruct',
+        id: 'Qwen/Qwen2.5-32B-Instruct',
         name: 'Qwen2.5-32B-Instruct',
-        description: '通义千问2.5开源版本，32B参数'
+        description: '开源版本，32B参数'
       },
       {
-        id: 'qwen2.5-14b-instruct',
+        id: 'Qwen/Qwen2.5-14B-Instruct',
         name: 'Qwen2.5-14B-Instruct',
-        description: '通义千问2.5开源版本，14B参数'
+        description: '开源版本，14B参数'
       },
       {
-        id: 'qwen2.5-7b-instruct',
+        id: 'Qwen/Qwen2.5-7B-Instruct',
         name: 'Qwen2.5-7B-Instruct',
-        description: '通义千问2.5开源版本，7B参数'
+        description: '开源版本，7B参数'
       }
     ];
     

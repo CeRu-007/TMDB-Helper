@@ -89,7 +89,7 @@ export class ConfigAdapter {
       case 'modelscope_api_settings':
         return config.modelScopeApiKey ? JSON.stringify({
           apiKey: config.modelScopeApiKey,
-          episodeGenerationModel: config.modelScopeEpisodeModel || 'qwen-plus'
+          episodeGenerationModel: config.modelScopeEpisodeModel || 'Qwen/Qwen3-32B'
         }) : null;
       case 'general_settings':
         return config.generalSettings ? JSON.stringify(config.generalSettings) : null;

@@ -217,7 +217,7 @@ function initializeConfigManager() {
           version: '1.0.0',
           lastUpdated: Date.now(),
           siliconFlowThumbnailModel: 'Qwen/Qwen2.5-VL-32B-Instruct',
-          modelScopeEpisodeModel: 'qwen-plus',
+          modelScopeEpisodeModel: 'Qwen/Qwen3-32B',
           ...oldConfig
         };
 
