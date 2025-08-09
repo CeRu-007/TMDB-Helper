@@ -266,21 +266,21 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
     setLoading(true)
     try {
-      const apiKey = await ClientConfigManager.getItem("tmdb_api_key")
-      if (!apiKey) {
-        throw new Error("请先在设置中配置TMDB API密钥")
-      }
-
       const response = await fetch(
-        `https://api.tmdb.org/3/search/multi?api_key=${apiKey}&language=zh-CN&query=${encodeURIComponent(query)}&page=1`,
+        `/api/tmdb?action=search&query=${encodeURIComponent(query)}&page=1`
       )
 
       if (!response.ok) {
-        throw new Error("搜索失败，请检查API密钥是否正确")
+        throw new Error("搜索失败，请检查网络连接")
       }
 
-      const data = await response.json()
-      const results = data.results
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || "搜索失败")
+      }
+
+      const results = result.data.results
         .filter((item: any) => item.media_type === "movie" || item.media_type === "tv")
         .slice(0, 10) // 限制显示10个结果
 

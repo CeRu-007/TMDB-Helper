@@ -1645,19 +1645,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       <div className="space-y-6">
         <Card>
           <CardContent className="p-6 space-y-4">
-            {/* 重要说明 */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
-              <div className="flex items-center space-x-2">
-                <span className="text-blue-600 dark:text-blue-400">ℹ️</span>
-                <h4 className="font-medium text-blue-800 dark:text-blue-200">魔搭社区API服务</h4>
-              </div>
-              <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                <p><strong>支持魔搭社区ModelScope：</strong></p>
-                <p>• 开源模型推理服务（密钥以ms-开头）</p>
-                <p>• 支持GLM-4.5、Qwen、DeepSeek等模型</p>
-                <p>• 使用OpenAI兼容的API格式</p>
-              </div>
-            </div>
 
             <div>
               <Label htmlFor="modelScopeApiKey" className="flex items-center text-sm font-medium">
