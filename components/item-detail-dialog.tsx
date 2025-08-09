@@ -108,7 +108,7 @@ import type { TMDBSeasonData, BackdropSize } from "@/lib/tmdb-types"
 import FixTMDBImportBugDialog from "@/components/fix-tmdb-import-bug-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { StorageManager } from "@/lib/storage"
-import { BackgroundImage } from "@/components/ui/background-image"
+
 import { getPlatformInfo } from "@/lib/utils"
 import { PlatformLogo } from "@/components/ui/platform-icon"
 import { Skeleton } from "./ui/skeleton"
@@ -176,14 +176,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [tmdbCommands, setTmdbCommands] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState("episodes")
   const [detailTab, setDetailTab] = useState("details")
-  const [backdropLoaded, setBackdropLoaded] = useState(false)
-  const [backdropError, setBackdropError] = useState(false)
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
   const [backgroundRefreshKey, setBackgroundRefreshKey] = useState<string | number>(item.tmdbId || item.id || '0')
-  const [isLoading, setIsLoading] = useState(true);
-  const [isBackdropLoaded, setIsBackdropLoaded] = useState(false);
-  const [isContentReady, setIsContentReady] = useState(false);
   // 全局外观设置（仅取本页需要的字段）
   const [appearanceSettings, setAppearanceSettings] = useState<{
     detailBackdropBlurEnabled?: boolean
@@ -223,9 +218,16 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
 
     // 预加载背景图，确保打开对话框时立即显示
+    // 使用缓存避免重复预加载
     if (item.backdropUrl) {
-      const img = new Image();
-      img.src = item.backdropUrl;
+      const cacheKey = `preload_${item.tmdbId || item.id}`;
+      if (!window.sessionStorage.getItem(cacheKey)) {
+        const img = new Image();
+        img.onload = () => {
+          window.sessionStorage.setItem(cacheKey, 'loaded');
+        };
+        img.src = item.backdropUrl;
+      }
     }
 
     // 读取全局外观设置
@@ -294,14 +296,15 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
   }, [])
 
-  // 不再重置背景图状态，保持背景图的持续显示
+  // 只在item真正变化时更新refreshKey，避免每次打开都重新加载
   useEffect(() => {
-    if (open && item.backdropUrl) {
-      // 使用稳定的唯一标识符作为刷新键
-      // 仅在id或tmdbId变化时才更新key
-      setBackgroundRefreshKey(item.tmdbId || item.id || '0')
+    // 使用稳定的唯一标识符作为刷新键
+    // 仅在id或tmdbId变化时才更新key，不依赖open状态
+    const newKey = item.tmdbId || item.id || '0';
+    if (newKey !== backgroundRefreshKey) {
+      setBackgroundRefreshKey(newKey);
     }
-  }, [open, item.backdropUrl, item.id, item.tmdbId])
+  }, [item.backdropUrl, item.id, item.tmdbId, backgroundRefreshKey])
 
   // 监听滚动事件，实现视差效果
   useEffect(() => {
@@ -328,46 +331,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
   }, [open, contentRef.current])
 
-  // 添加新状态用于控制加载和动画
-  useEffect(() => {
-    if (open) {
-      // 重置加载状态
-      setIsLoading(true);
-      setIsBackdropLoaded(false);
-      setIsContentReady(false);
 
-      // 立即设置内容准备好，避免闪烁
-      setIsContentReady(true);
-
-      // 如果有背景图，预加载它
-      if (item.backdropUrl) {
-        // 检查图片是否已经在浏览器缓存中
-        const cachedImage = new Image();
-
-        // 如果图片已在缓存中，complete属性会立即为true
-        if (cachedImage.complete) {
-          setIsBackdropLoaded(true);
-          setIsLoading(false);
-        } else {
-          cachedImage.onload = () => {
-            setIsBackdropLoaded(true);
-            setIsLoading(false);
-          };
-          cachedImage.onerror = () => {
-            setIsBackdropLoaded(false);
-            setIsLoading(false);
-          };
-        }
-
-        // 设置src必须放在最后，因为它可能会立即触发onload事件
-        cachedImage.src = item.backdropUrl;
-      } else {
-        // 如果没有背景图，直接标记为加载完成
-        setIsBackdropLoaded(true);
-        setIsLoading(false);
-      }
-    }
-  }, [open, item.backdropUrl]);
 
   const handleEpisodeToggle = async (episodeNumber: number, completed: boolean, seasonNumber: number) => {
     // 添加视觉反馈
@@ -1033,6 +997,18 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         throw new Error("未能从TMDB获取到有效数据");
       }
 
+      // 调试日志：检查刷新获取到的数据
+      console.log("🔄 [刷新TMDB] 获取到的数据:", {
+        title: tmdbData.title,
+        hasBackdrop: !!tmdbData.backdropUrl,
+        hasLogo: !!tmdbData.logoUrl,
+        hasNetworkLogo: !!tmdbData.networkLogoUrl,
+        backdropUrl: tmdbData.backdropUrl,
+        logoUrl: tmdbData.logoUrl,
+        networkLogoUrl: tmdbData.networkLogoUrl,
+        networkName: tmdbData.networkName
+      });
+
       // 更新背景图
       let updatedData = { ...editData };
       let hasNewBackdrop = false;
@@ -1050,13 +1026,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         preloadBackdrop(tmdbData.backdropPath);
       }
 
-      // 更新TMDB评分和简介
-      if (tmdbData.voteAverage !== undefined) {
-        updatedData = {
-          ...updatedData,
-          voteAverage: tmdbData.voteAverage === null ? undefined : tmdbData.voteAverage
-        };
-      }
+      // 更新TMDB简介
 
       if (tmdbData.overview !== undefined) {
         updatedData = {
@@ -1166,10 +1136,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         backdropPath: tmdbData.backdropPath || localItem.backdropPath
       };
 
-      // 更新评分和简介
-      if (tmdbData.voteAverage !== undefined) {
-        newLocalItem.voteAverage = tmdbData.voteAverage === null ? undefined : tmdbData.voteAverage;
-      }
+      // 更新简介
 
       if (tmdbData.overview !== undefined) {
         newLocalItem.overview = tmdbData.overview === null ? undefined : tmdbData.overview;
@@ -1216,12 +1183,16 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 显示成功信息
       if (hasNewBackdrop) {
         if (editData.mediaType === "tv") {
-          setCopyFeedback("TMDB数据、背景图、标志、评分和简介已成功刷新");
+          setCopyFeedback("TMDB数据、背景图、标志、网络logo和简介已成功刷新");
         } else {
-          setCopyFeedback("TMDB数据、背景图、标志、评分和简介已成功刷新");
+          setCopyFeedback("TMDB数据、背景图、标志和简介已成功刷新");
         }
       } else {
-        setCopyFeedback("TMDB数据、标志、评分和简介已成功刷新");
+        if (editData.mediaType === "tv") {
+          setCopyFeedback("TMDB数据、标志、网络logo和简介已成功刷新");
+        } else {
+          setCopyFeedback("TMDB数据、标志和简介已成功刷新");
+        }
       }
 
       setTimeout(() => setCopyFeedback(null), 2000);
@@ -1280,39 +1251,37 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           className={cn(
-            "max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none",
-            "transition-opacity duration-300 ease-in-out",
-            isContentReady ? "opacity-100" : "opacity-0"
+            "max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none"
           )}
           ref={contentRef}
           showCloseButton={false}
         >
-          {/* 加载状态指示器 - 只在真正需要加载时显示 */}
-          {isLoading && !isBackdropLoaded && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
-              <div className="flex flex-col items-center space-y-4">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">正在加载词条信息...</p>
-              </div>
-            </div>
-          )}
 
-          {/* 使用优化后的BackgroundImage组件 */}
-          <BackgroundImage
-            src={localItem.backdropUrl}
-            alt={localItem.title + " 背景图"}
-            className={cn(
-              "absolute inset-0 z-0",
-              "transition-opacity duration-500 ease-in-out",
-              isBackdropLoaded || !localItem.backdropUrl ? "opacity-100" : "opacity-0"
-            )}
-            objectPosition={`center ${20 + scrollPosition * 0.05}%`} // 添加视差滚动效果
-            blur={appearanceSettings?.detailBackdropBlurEnabled ?? true}
-            blurIntensity={appearanceSettings?.detailBackdropBlurIntensity || localItem.blurIntensity || 'medium'}
-            overlayClassName="bg-gradient-to-b from-background/30 via-background/25 to-background/35"
-            refreshKey={backgroundRefreshKey}
-            fallbackSrc={localItem.posterUrl || "/placeholder.jpg"} // 使用海报作为备用
-          />
+
+          {/* 背景图 - 直接显示，无加载动画 */}
+          {localItem.backdropUrl && (
+            <>
+              <img
+                src={localItem.backdropUrl}
+                alt={localItem.title + " 背景图"}
+                className="absolute inset-0 z-0 w-full h-full object-cover"
+                style={{ objectPosition: `center ${20 + scrollPosition * 0.05}%` }}
+                loading="eager"
+                decoding="async"
+              />
+              {/* 背景图遮罩层 */}
+              <div
+                className={cn(
+                  "absolute inset-0 z-0",
+                  appearanceSettings?.detailBackdropBlurEnabled ?? true ? cn(
+                    appearanceSettings?.detailBackdropBlurIntensity === 'light' ? 'backdrop-blur-sm' :
+                    appearanceSettings?.detailBackdropBlurIntensity === 'heavy' ? 'backdrop-blur-xl' : 'backdrop-blur-md',
+                    "bg-gradient-to-b from-background/30 via-background/25 to-background/35"
+                  ) : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"
+                )}
+              />
+            </>
+          )}
 
           {/* 内容层 - 添加相对定位和z-index确保内容在背景图上方 */}
           <div className="relative z-10 h-full overflow-auto">
@@ -1794,7 +1763,17 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         <div className="flex items-center justify-start mb-1">
                           {/* 平台Logo区域 - 优先使用TMDB网络logo */}
                           <div className="flex items-center justify-start w-full">
-                            {localItem.networkLogoUrl ? (
+                            {(() => {
+                              // 调试日志：检查网络logo数据
+                              console.log("🔍 [词条详情] 网络logo检查:", {
+                                hasNetworkLogoUrl: !!localItem.networkLogoUrl,
+                                networkLogoUrl: localItem.networkLogoUrl,
+                                networkName: localItem.networkName,
+                                hasPlatformUrl: !!localItem.platformUrl,
+                                platformUrl: localItem.platformUrl
+                              });
+                              return localItem.networkLogoUrl;
+                            })() ? (
                               // 显示TMDB官方网络logo
                               <div
                                 className="w-full h-12 flex items-center justify-start cursor-pointer"
@@ -1959,7 +1938,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                   size="sm"
                                   onClick={refreshSeasonFromTMDB}
                                   disabled={isRefreshingTMDBData || !editData.tmdbId}
-                                  title="刷新TMDB数据、背景图、标志、评分和简介"
+                                  title="刷新TMDB数据、背景图、标志、网络logo和简介"
                                   className="w-full"
                                 >
                                   {isRefreshingTMDBData ? (
@@ -1967,7 +1946,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                   ) : (
                                     <RefreshCw className="h-4 w-4 mr-2" />
                                   )}
-                                  刷新TMDB数据、标志、评分和简介
+                                  刷新TMDB数据、标志、网络logo和简介
                                 </Button>
                               </div>
                             </CardContent>
@@ -2057,7 +2036,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     size="sm"
                                     onClick={refreshSeasonFromTMDB}
                                     disabled={isRefreshingTMDBData || !editData.tmdbId}
-                                    title="刷新TMDB数据、背景图、标志、评分和简介"
+                                    title="刷新TMDB数据、背景图、标志、网络logo和简介"
                                     className="w-full"
                                   >
                                     {isRefreshingTMDBData ? (
@@ -2065,7 +2044,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     ) : (
                                       <RefreshCw className="h-4 w-4 mr-2" />
                                     )}
-                                    刷新TMDB数据、标志、评分和简介
+                                    刷新TMDB数据、标志、网络logo和简介
                                   </Button>
 
                                   {/* 只在编辑模式下显示添加新季区域 */}

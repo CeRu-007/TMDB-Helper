@@ -145,11 +145,12 @@ export type LogoSize = 'w45' | 'w92' | 'w154' | 'w185' | 'w300' | 'w500' | 'orig
 export class TMDBService {
   // 使用备用域名以解决某些网络环境的连接问题
   private static readonly BASE_URL = "https://api.tmdb.org/3"
-  private static readonly IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
-  private static readonly BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
-  private static readonly BACKDROP_ORIGINAL_URL = "https://image.tmdb.org/t/p/original"
-  private static readonly LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300"  // 添加标志基础URL
-  private static readonly NETWORK_LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300" // 网络Logo基础URL
+  // 使用代理URL以解决VPN环境下的图片加载问题
+  private static readonly IMAGE_BASE_URL = "/api/tmdb-image?size=w500&path="
+  private static readonly BACKDROP_BASE_URL = "/api/tmdb-image?size=w1280&path="
+  private static readonly BACKDROP_ORIGINAL_URL = "/api/tmdb-image?size=original&path="
+  private static readonly LOGO_BASE_URL = "/api/tmdb-image?size=w300&path="  // 添加标志基础URL
+  private static readonly NETWORK_LOGO_BASE_URL = "/api/tmdb-image?size=w300&path=" // 网络Logo基础URL
   private static readonly CACHE_PREFIX = "tmdb_backdrop_"
   private static readonly LOGO_CACHE_PREFIX = "tmdb_logo_"  // 标志缓存前缀
   private static readonly NETWORK_LOGO_CACHE_PREFIX = "tmdb_network_logo_"  // 网络标志缓存前缀
@@ -297,7 +298,7 @@ export class TMDBService {
         const cachedLogoPath = this.getCachedLogoPath(mediaType, id)
         if (cachedLogoPath) {
           return {
-            url: `${this.LOGO_BASE_URL}${cachedLogoPath}`,
+            url: null, // 不再返回完整URL，由调用方构建
             path: cachedLogoPath
           }
         }
@@ -330,7 +331,7 @@ export class TMDBService {
           // 缓存标志路径
           this.cacheLogoPath(mediaType, id, logoPath)
           return {
-            url: `${this.LOGO_BASE_URL}${logoPath}`,
+            url: null, // 不再返回完整URL，由调用方构建
             path: logoPath
           }
         }
@@ -359,7 +360,7 @@ export class TMDBService {
         if (logoPath) {
           this.cacheLogoPath(mediaType, id, logoPath)
           return {
-            url: `${this.LOGO_BASE_URL}${logoPath}`,
+            url: null, // 不再返回完整URL，由调用方构建
             path: logoPath
           }
         }
@@ -509,7 +510,7 @@ export class TMDBService {
             posterUrl: movieData.poster_path ? `${this.IMAGE_BASE_URL}${movieData.poster_path}` : undefined,
             backdropUrl: movieData.backdrop_path ? `${this.BACKDROP_BASE_URL}${movieData.backdrop_path}` : undefined,
             backdropPath: movieData.backdrop_path,
-            logoUrl: logoData.url || undefined,  // 添加标志URL
+            logoUrl: logoData.path ? `${this.LOGO_BASE_URL}${logoData.path}` : undefined,  // 添加标志URL
             logoPath: logoData.path || undefined,  // 添加标志路径
             platformUrl,
             weekday,
@@ -613,7 +614,7 @@ export class TMDBService {
             posterUrl: tvData.poster_path ? `${this.IMAGE_BASE_URL}${tvData.poster_path}` : undefined,
             backdropUrl: tvData.backdrop_path ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}` : undefined,
             backdropPath: tvData.backdrop_path,
-            logoUrl: logoData.url || undefined,
+            logoUrl: logoData.path ? `${this.LOGO_BASE_URL}${logoData.path}` : undefined,
             logoPath: logoData.path || undefined,
             networkId: networkId,
             networkName: networkName,

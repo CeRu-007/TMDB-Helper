@@ -17,8 +17,23 @@ interface BackgroundImageProps {
   refreshKey?: string | number
 }
 
-// 图片缓存管理
+// 图片缓存管理 - 基于图片路径而不是完整URL
 const imageCache = new Map<string, boolean>();
+
+// 从URL中提取缓存键
+function getCacheKey(src: string): string {
+  if (src.includes('/api/tmdb-image')) {
+    // 对于代理URL，使用路径作为缓存键
+    const urlParams = new URLSearchParams(src.split('?')[1] || '');
+    const path = urlParams.get('path') || '';
+    return `tmdb:${path}`;
+  } else if (src.includes('image.tmdb.org')) {
+    // 对于直接TMDB URL，提取路径
+    const pathMatch = src.match(/\/t\/p\/[^/]+(.+)$/);
+    return pathMatch ? `tmdb:${pathMatch[1]}` : src;
+  }
+  return src;
+}
 
 /**
  * 背景图组件，支持懒加载、渐变效果和错误处理
@@ -62,28 +77,31 @@ export function BackgroundImage({
 
     // 检查refreshKey是否包含时间戳信息（用于判断是否需要强制刷新）
     const shouldForceRefresh = forceRefresh || (refreshKey && String(refreshKey).includes('_') && String(refreshKey).split('_')[1]?.length > 8)
-    
-    // 如果图片已经在缓存中且不需要强制刷新，直接使用缓存的图片
-    if (imageCache.has(src) && !shouldForceRefresh) {
+
+    // 使用缓存键检查图片是否已经在缓存中
+    const cacheKey = getCacheKey(src);
+    if (imageCache.has(cacheKey) && !shouldForceRefresh) {
       setImageSrc(src);
       setLoaded(true);
       return;
     }
 
-    // 检查是否是TMDB图片URL
-    if (src.includes('image.tmdb.org')) {
-      const baseUrl = src.split('/w1280').shift() || 'https://image.tmdb.org/t/p'
-      let path = src.split('/w1280').pop() || ''
-      
+    // 检查是否是TMDB代理图片URL
+    if (src.includes('/api/tmdb-image')) {
+      // 解析代理URL中的路径参数
+      const urlParams = new URLSearchParams(src.split('?')[1] || '');
+      const path = urlParams.get('path') || '';
+
       // 只有在强制刷新时才添加时间戳参数
-      if (shouldForceRefresh && !path.includes('?t=')) {
-        path = `${path}?t=${Date.now()}`
+      let finalPath = path;
+      if (shouldForceRefresh && !path.includes('&t=')) {
+        finalPath = `${path}&t=${Date.now()}`;
       }
-      
+
       // 根据屏幕宽度选择合适的尺寸
       const width = window.innerWidth
       let size = 'w1280'
-      
+
       if (width <= 640) {
         size = 'w780'
       } else if (width <= 1600) {
@@ -91,10 +109,37 @@ export function BackgroundImage({
       } else {
         size = 'original'
       }
-      
+
+      const fullSrc = `/api/tmdb-image?size=${size}&path=${encodeURIComponent(finalPath)}`;
+      setImageSrc(fullSrc);
+
+      // 同时设置低质量图像源，用于快速加载预览
+      setLowQualityImageSrc(`/api/tmdb-image?size=w300&path=${encodeURIComponent(finalPath)}`);
+    } else if (src.includes('image.tmdb.org')) {
+      // 处理旧的直接TMDB URL（向后兼容）
+      const baseUrl = src.split('/w1280').shift() || 'https://image.tmdb.org/t/p'
+      let path = src.split('/w1280').pop() || ''
+
+      // 只有在强制刷新时才添加时间戳参数
+      if (shouldForceRefresh && !path.includes('?t=')) {
+        path = `${path}?t=${Date.now()}`
+      }
+
+      // 根据屏幕宽度选择合适的尺寸
+      const width = window.innerWidth
+      let size = 'w1280'
+
+      if (width <= 640) {
+        size = 'w780'
+      } else if (width <= 1600) {
+        size = 'w1280'
+      } else {
+        size = 'original'
+      }
+
       const fullSrc = `${baseUrl}/${size}${path}`;
       setImageSrc(fullSrc);
-      
+
       // 同时设置低质量图像源，用于快速加载预览
       setLowQualityImageSrc(`${baseUrl}/w300${path}`);
     } else {
@@ -141,29 +186,31 @@ export function BackgroundImage({
   // 预加载高质量图片
   useEffect(() => {
     if (!imageSrc) return;
-    
+
+    const cacheKey = getCacheKey(imageSrc);
+
     // 检查图片是否已在缓存中
     const img = new Image();
-    
+
     // 如果图片已在缓存中，complete属性会立即为true
     if (img.complete) {
       setLoaded(true);
-      imageCache.set(imageSrc, true);
+      imageCache.set(cacheKey, true);
     } else {
       img.onload = () => {
         if (isMounted.current) {
           setLoaded(true);
-          imageCache.set(imageSrc, true);
+          imageCache.set(cacheKey, true);
         }
       };
-      
+
       img.onerror = () => {
         if (isMounted.current) {
           setError(true);
         }
       };
     }
-    
+
     img.src = imageSrc;
   }, [imageSrc]);
 
@@ -212,7 +259,8 @@ export function BackgroundImage({
             decoding="async"
             onLoad={() => {
               setLoaded(true);
-              imageCache.set(imageSrc, true);
+              const cacheKey = getCacheKey(imageSrc);
+              imageCache.set(cacheKey, true);
             }}
             onError={() => {
               setError(true);

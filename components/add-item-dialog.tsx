@@ -417,7 +417,57 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       if (!tmdbData) {
         throw new Error("无法获取词条详细信息")
       }
-      
+
+      // 调试日志：检查获取到的数据
+      console.log("🎬 [添加词条] 获取到的TMDB数据:", {
+        title: tmdbData.title,
+        hasBackdrop: !!tmdbData.backdropUrl,
+        hasLogo: !!tmdbData.logoUrl,
+        hasNetworkLogo: !!tmdbData.networkLogoUrl,
+        backdropUrl: tmdbData.backdropUrl,
+        logoUrl: tmdbData.logoUrl,
+        networkLogoUrl: tmdbData.networkLogoUrl
+      });
+
+      // 如果缺少关键图片信息，尝试强制刷新获取
+      const missingImages = [];
+      if (!tmdbData.logoUrl) missingImages.push("logo");
+      if (!tmdbData.backdropUrl) missingImages.push("backdrop");
+      if (!tmdbData.networkLogoUrl && selectedResult.media_type === "tv") missingImages.push("networkLogo");
+
+      if (missingImages.length > 0) {
+        console.log(`🔄 [添加词条] 缺少图片信息: ${missingImages.join(", ")}，尝试强制刷新获取...`);
+        try {
+          const refreshResponse = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`);
+          const refreshResult = await refreshResponse.json();
+          const refreshedData = refreshResult.success ? refreshResult.data : null;
+
+          if (refreshedData) {
+            // 更新缺失的图片信息
+            if (!tmdbData.logoUrl && refreshedData.logoUrl) {
+              console.log("✅ [添加词条] 强制刷新后获取到logo:", refreshedData.logoUrl);
+              tmdbData.logoUrl = refreshedData.logoUrl;
+              tmdbData.logoPath = refreshedData.logoPath;
+            }
+
+            if (!tmdbData.backdropUrl && refreshedData.backdropUrl) {
+              console.log("✅ [添加词条] 强制刷新后获取到背景图:", refreshedData.backdropUrl);
+              tmdbData.backdropUrl = refreshedData.backdropUrl;
+              tmdbData.backdropPath = refreshedData.backdropPath;
+            }
+
+            if (!tmdbData.networkLogoUrl && refreshedData.networkLogoUrl) {
+              console.log("✅ [添加词条] 强制刷新后获取到网络logo:", refreshedData.networkLogoUrl);
+              tmdbData.networkLogoUrl = refreshedData.networkLogoUrl;
+              tmdbData.networkId = refreshedData.networkId;
+              tmdbData.networkName = refreshedData.networkName;
+            }
+          }
+        } catch (error) {
+          console.warn("⚠️ [添加词条] 强制刷新获取图片失败:", error);
+        }
+      }
+
       // 构建季数据
       let seasons: Season[] = []
       let episodes: Episode[] = []
@@ -496,6 +546,17 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
+
+      // 调试日志：检查最终创建的词条数据
+      console.log("📝 [添加词条] 最终创建的词条数据:", {
+        title: newItem.title,
+        hasBackdrop: !!newItem.backdropUrl,
+        hasLogo: !!newItem.logoUrl,
+        hasNetworkLogo: !!newItem.networkLogoUrl,
+        backdropUrl: newItem.backdropUrl,
+        logoUrl: newItem.logoUrl,
+        networkLogoUrl: newItem.networkLogoUrl
+      });
 
       // 检查重复项目
       const existingItems = await StorageManager.getItemsWithRetry();
