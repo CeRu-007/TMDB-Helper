@@ -1006,7 +1006,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         backdropUrl: tmdbData.backdropUrl,
         logoUrl: tmdbData.logoUrl,
         networkLogoUrl: tmdbData.networkLogoUrl,
-        networkName: tmdbData.networkName
+        networkName: tmdbData.networkName,
+        willUsePosterAsBackground: !tmdbData.backdropUrl && !!editData.posterUrl
       });
 
       // 更新背景图
@@ -1258,30 +1259,52 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         >
 
 
-          {/* 背景图 - 直接显示，无加载动画 */}
-          {localItem.backdropUrl && (
-            <>
-              <img
-                src={localItem.backdropUrl}
-                alt={localItem.title + " 背景图"}
-                className="absolute inset-0 z-0 w-full h-full object-cover"
-                style={{ objectPosition: `center ${20 + scrollPosition * 0.05}%` }}
-                loading="eager"
-                decoding="async"
-              />
-              {/* 背景图遮罩层 */}
-              <div
-                className={cn(
-                  "absolute inset-0 z-0",
-                  appearanceSettings?.detailBackdropBlurEnabled ?? true ? cn(
-                    appearanceSettings?.detailBackdropBlurIntensity === 'light' ? 'backdrop-blur-sm' :
-                    appearanceSettings?.detailBackdropBlurIntensity === 'heavy' ? 'backdrop-blur-xl' : 'backdrop-blur-md',
-                    "bg-gradient-to-b from-background/30 via-background/25 to-background/35"
-                  ) : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"
-                )}
-              />
-            </>
-          )}
+          {/* 背景图 - 直接显示，无加载动画，如果没有背景图则使用海报 */}
+          {(() => {
+            const backgroundImageUrl = localItem.backdropUrl || localItem.posterUrl;
+            const isUsingPoster = !localItem.backdropUrl && localItem.posterUrl;
+
+            // 调试日志：显示背景图使用情况
+            if (backgroundImageUrl) {
+              console.log("🖼️ [词条详情] 背景图信息:", {
+                title: localItem.title,
+                hasBackdrop: !!localItem.backdropUrl,
+                hasPoster: !!localItem.posterUrl,
+                isUsingPoster,
+                backgroundImageUrl: backgroundImageUrl.substring(0, 50) + "..."
+              });
+            }
+
+            return backgroundImageUrl ? (
+              <>
+                <img
+                  src={backgroundImageUrl}
+                  alt={localItem.title + (isUsingPoster ? " 海报背景" : " 背景图")}
+                  className="absolute inset-0 z-0 w-full h-full object-cover"
+                  style={{ objectPosition: `center ${20 + scrollPosition * 0.05}%` }}
+                  loading="eager"
+                  decoding="async"
+                />
+                {/* 背景图遮罩层 - 如果使用海报作为背景，增加更强的遮罩 */}
+                <div
+                  className={cn(
+                    "absolute inset-0 z-0",
+                    appearanceSettings?.detailBackdropBlurEnabled ?? true ? cn(
+                      appearanceSettings?.detailBackdropBlurIntensity === 'light' ? 'backdrop-blur-sm' :
+                      appearanceSettings?.detailBackdropBlurIntensity === 'heavy' ? 'backdrop-blur-xl' : 'backdrop-blur-md',
+                      isUsingPoster
+                        ? "bg-gradient-to-b from-background/50 via-background/45 to-background/55" // 海报背景使用更强遮罩
+                        : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"  // 正常背景图遮罩
+                    ) : (
+                      isUsingPoster
+                        ? "bg-gradient-to-b from-background/50 via-background/45 to-background/55" // 海报背景使用更强遮罩
+                        : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"  // 正常背景图遮罩
+                    )
+                  )}
+                />
+              </>
+            ) : null;
+          })()}
 
           {/* 内容层 - 添加相对定位和z-index确保内容在背景图上方 */}
           <div className="relative z-10 h-full overflow-auto">
