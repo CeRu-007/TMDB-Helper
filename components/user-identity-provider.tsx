@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { LayoutPreferencesManager, type LayoutType, LAYOUT_NAMES } from "@/lib/layout-preferences"
 import { useToast } from "@/hooks/use-toast"
+import { UserAvatarImage } from "@/components/ui/smart-avatar"
 
 /**
  * 用户身份提供者组件
@@ -328,27 +329,11 @@ export function UserAvatar({
         aria-expanded={showDropdown}
         aria-haspopup="true"
       >
-        {userInfo.avatarUrl ? (
-          <img
-            src={userInfo.avatarUrl}
-            alt={userInfo.displayName}
-            className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
-            onError={(e) => {
-              // 如果图片加载失败，显示默认头像
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const fallback = target.nextElementSibling as HTMLElement;
-              if (fallback) {
-                fallback.style.display = 'flex';
-              }
-            }}
-          />
-        ) : null}
-        <div
-          className={`w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium shadow-sm ring-2 ring-white dark:ring-gray-800 ${userInfo.avatarUrl ? 'hidden' : ''}`}
-        >
-          {userInfo.displayName.charAt(0).toUpperCase()}
-        </div>
+        <UserAvatarImage
+          src={userInfo.avatarUrl}
+          displayName={userInfo.displayName}
+          className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+        />
         <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
           {userInfo.displayName}
         </span>
@@ -547,25 +532,12 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
         {/* 用户信息头部 */}
         <div className="px-4 py-3 border-b dark:border-gray-700">
           <div className="flex items-center space-x-3">
-            {userInfo.avatarUrl ? (
-              <img
-                src={userInfo.avatarUrl}
-                alt={userInfo.displayName}
-                className="w-12 h-12 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
-                onError={(e) => {
-                  // 如果图片加载失败，显示默认头像
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const fallback = target.nextElementSibling as HTMLElement;
-                  if (fallback) {
-                    fallback.style.display = 'flex';
-                  }
-                }}
-              />
-            ) : null}
-            <div className={`w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-lg font-medium shadow-sm ${userInfo.avatarUrl ? 'hidden' : ''}`}>
-              {userInfo.displayName.charAt(0).toUpperCase()}
-            </div>
+            <UserAvatarImage
+              src={userInfo.avatarUrl}
+              displayName={userInfo.displayName}
+              className="w-12 h-12 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+              fallbackClassName="text-lg font-medium shadow-sm"
+            />
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                 {userInfo.displayName}
@@ -948,26 +920,12 @@ function ProfileEditSection({
         {/* 头像设置区域 */}
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
-            {userInfo.avatarUrl ? (
-              <img
-                src={userInfo.avatarUrl}
-                alt={userInfo.displayName}
-                className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const fallback = target.nextElementSibling as HTMLElement;
-                  if (fallback) {
-                    fallback.style.display = 'flex';
-                  }
-                }}
-              />
-            ) : null}
-            <div
-              className={`w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium shadow-sm ring-2 ring-white dark:ring-gray-800 ${userInfo.avatarUrl ? 'hidden' : ''}`}
-            >
-              {userInfo.displayName.charAt(0).toUpperCase()}
-            </div>
+            <UserAvatarImage
+              src={userInfo.avatarUrl}
+              displayName={userInfo.displayName}
+              className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+              fallbackClassName="text-sm font-medium shadow-sm ring-2 ring-white dark:ring-gray-800"
+            />
           </div>
 
           <div className="flex-1 min-w-0">
