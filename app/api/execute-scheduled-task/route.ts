@@ -14,8 +14,6 @@ interface ExecuteTaskRequest {
     taskId: string;
     itemId: string;
     action: {
-import { ServerConfigManager } from '@/lib/server-config-manager'
-
         seasonNumber: number;
         autoUpload: boolean;
         autoRemoveMarked: boolean;

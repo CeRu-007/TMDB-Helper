@@ -14,8 +14,6 @@ interface ServerSchedulerStatus {
   lastCheck: string;
   nextCheck: string;
   processedTasks: number;
-import { ServerConfigManager } from '@/lib/server-config-manager'
-
   failedTasks: number;
   uptime: number;
   version: string;
