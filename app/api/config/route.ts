@@ -25,7 +25,7 @@ function mapKeyName(key: string): keyof ServerConfig {
 }
 
 /**
- * GET /api/config - 获取配置
+ * GET /api/config - 获取配置（管理员单用户）
  * 支持查询参数:
  * - key: 获取特定配置项
  * - info: 获取配置文件信息
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const key = searchParams.get('key')
     const info = searchParams.get('info')
-    
+
     if (info === 'true') {
       // 返回配置文件信息
       const configInfo = ServerConfigManager.getConfigInfo()
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         info: configInfo
       })
     }
-    
+
     if (key) {
       // 获取映射后的键名
       const mappedKey = mapKeyName(key)
@@ -57,10 +57,10 @@ export async function GET(request: NextRequest) {
         value
       })
     }
-    
+
     // 获取完整配置
     const config = ServerConfigManager.getConfig()
-    
+
     // 移除敏感信息的显示（但保留功能）
     const safeConfig = {
       ...config,
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       siliconFlowApiKey: config.siliconFlowApiKey ? `${config.siliconFlowApiKey.substring(0, 8)}...` : undefined,
       modelScopeApiKey: config.modelScopeApiKey ? `${config.modelScopeApiKey.substring(0, 8)}...` : undefined
     }
-    
+
     return NextResponse.json({
       success: true,
       config: safeConfig,
@@ -85,18 +85,19 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/config - 更新配置
+ * POST /api/config - 更新配置（管理员单用户）
  * 支持操作:
  * - update: 更新配置项
  * - reset: 重置为默认配置
  * - import: 导入配置
  * - export: 导出配置
+ * - set: 设置单个配置项
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { action, ...data } = body
-    
+
     switch (action) {
       case 'update': {
         // 更新配置
@@ -107,16 +108,16 @@ export async function POST(request: NextRequest) {
             error: '缺少更新数据'
           }, { status: 400 })
         }
-        
+
         const newConfig = ServerConfigManager.updateConfig(updates)
-        
+
         return NextResponse.json({
           success: true,
           message: '配置更新成功',
           config: newConfig
         })
       }
-      
+
       case 'set': {
         // 设置单个配置项
         const { key, value } = data
@@ -156,11 +157,11 @@ export async function POST(request: NextRequest) {
           message: `配置项 ${key} 删除成功`
         })
       }
-      
+
       case 'reset': {
         // 重置为默认配置
         const defaultConfig = ServerConfigManager.resetToDefault()
-        
+
         return NextResponse.json({
           success: true,
           message: '配置已重置为默认值',
@@ -177,16 +178,16 @@ export async function POST(request: NextRequest) {
             error: '缺少配置数据'
           }, { status: 400 })
         }
-        
+
         const importedConfig = ServerConfigManager.importConfig(configJson)
-        
+
         return NextResponse.json({
           success: true,
           message: '配置导入成功',
           config: importedConfig
         })
       }
-      
+
       case 'export': {
         // 导出配置
         const configJson = ServerConfigManager.exportConfig()
@@ -227,16 +228,16 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const config = await request.json() as ServerConfig
-    
+
     if (!config || typeof config !== 'object') {
       return NextResponse.json({
         success: false,
         error: '无效的配置数据'
       }, { status: 400 })
     }
-    
+
     ServerConfigManager.saveConfig(config)
-    
+
     return NextResponse.json({
       success: true,
       message: '配置替换成功',
@@ -258,7 +259,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const key = searchParams.get('key')
-    
+
     if (key) {
       // 删除特定配置项
       ServerConfigManager.removeConfigItem(key as keyof ServerConfig)
@@ -267,10 +268,10 @@ export async function DELETE(request: NextRequest) {
         message: `配置项 ${key} 删除成功`
       })
     }
-    
+
     // 重置为默认配置（相当于删除自定义配置）
     const defaultConfig = ServerConfigManager.resetToDefault()
-    
+
     return NextResponse.json({
       success: true,
       message: '配置已重置为默认值',

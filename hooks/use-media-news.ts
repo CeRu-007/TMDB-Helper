@@ -132,14 +132,8 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
     setIsMissingApiKey(false)
 
     try {
-      const apiKey = await ClientConfigManager.getItem("tmdb_api_key")
-      if (!apiKey) {
-        setIsMissingApiKey(true)
-        throw new Error('TMDB API密钥未配置，请在设置中配置')
-      }
-
       const response = await retryOperation(
-        () => fetch(`/api/tmdb/upcoming?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
+        () => fetch(`/api/tmdb/upcoming?region=${region}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
@@ -153,9 +147,13 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
 
       if (!response.ok) {
         const errorText = await response.text()
-        if (errorText.includes('API密钥未配置') || errorText.includes('401 Unauthorized')) {
+        if (response.status === 400 && (errorText.includes('API密钥未配置') || errorText.includes('API密钥未配置'))) {
           setIsMissingApiKey(true)
-          throw new Error('TMDB API密钥无效，请在设置中重新配置')
+          throw new Error('TMDB API密钥未配置，请在设置中配置')
+        }
+        if (response.status === 401) {
+          setIsMissingApiKey(true)
+          throw new Error('用户身份验证失败，请刷新页面重试')
         }
         throw new Error(`获取即将上线内容失败 (${response.status})`)
       }
@@ -214,13 +212,8 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
     setRecentError(null)
 
     try {
-      const apiKey = await ClientConfigManager.getItem("tmdb_api_key")
-      if (!apiKey) {
-        throw new Error('TMDB API密钥未配置，请在设置中配置')
-      }
-
       const response = await retryOperation(
-        () => fetch(`/api/tmdb/recent?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
+        () => fetch(`/api/tmdb/recent?region=${region}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',

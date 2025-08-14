@@ -1,38 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readItems } from '@/lib/server-storage';
 import { readUserItems, migrateExistingData } from '@/lib/user-aware-storage';
-import { AuthMiddleware, getUserIdFromAuthRequest } from '@/lib/auth-middleware';
 
-// GET /api/storage/items - 获取所有项目（用户隔离）
-export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
+const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
+
+// GET /api/storage/items - 获取所有项目（管理员用户）
+export async function GET(request: NextRequest) {
   try {
-    // 从认证中间件获取用户ID
-    const userId = getUserIdFromAuthRequest(request);
+    console.log(`[API] 获取管理员的项目数据`);
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: '缺少用户身份信息', items: [] },
-        { status: 400 }
-      );
+    // 首次访问时尝试迁移现有数据到admin用户
+    try {
+      migrateExistingData(ADMIN_USER_ID);
+    } catch (migrationError) {
+      console.warn('数据迁移失败，但不影响正常功能:', migrationError);
     }
 
-    console.log(`[API] 获取用户 ${userId} 的项目数据`);
-
-    // 首次访问时尝试迁移现有数据
-    if (userId && !userId.startsWith('anonymous')) {
-      try {
-        migrateExistingData(userId);
-      } catch (migrationError) {
-        console.warn('数据迁移失败，但不影响正常功能:', migrationError);
-      }
-    }
-
-    // 读取用户专属数据
-    const items = readUserItems(userId);
+    // 读取管理员的项目数据
+    const items = readUserItems(ADMIN_USER_ID);
 
     return NextResponse.json({
       items,
-      userId,
+      userId: ADMIN_USER_ID,
       count: items.length
     }, { status: 200 });
   } catch (error) {
@@ -46,4 +35,4 @@ export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+}

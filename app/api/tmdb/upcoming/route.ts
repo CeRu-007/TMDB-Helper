@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { ServerConfigManager } from '@/lib/server-config-manager';
 
 // TMDB API配置 - 使用备用域名以解决网络连接问题
 const BASE_URL = 'https://api.tmdb.org/3';
@@ -74,22 +75,24 @@ const fetchTMDB = async (endpoint: string, params: Record<string, string> = {}, 
   }
 };
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    // 从请求头中获取API密钥和区域参数
-    const url = new URL(request.url);
-    const apiKey = url.searchParams.get('api_key');
-    const region = url.searchParams.get('region') || 'CN';
-    const language = url.searchParams.get('language') || 'zh-CN';
-    const type = url.searchParams.get('type') || 'upcoming'; // upcoming 或 recent
-    
-    // 如果没有API密钥，返回错误
+    // 从服务端配置中获取API密钥
+    const config = ServerConfigManager.getConfig();
+    const apiKey = config.tmdbApiKey;
+
     if (!apiKey) {
       return NextResponse.json(
-        { success: false, error: 'TMDB API密钥未提供，请在设置中配置并保存' },
+        { success: false, error: 'TMDB API密钥未配置，请在设置中配置并保存' },
         { status: 400 }
       );
     }
+
+    // 从请求头中获取区域参数
+    const url = new URL(request.url);
+    const region = url.searchParams.get('region') || 'CN';
+    const language = url.searchParams.get('language') || 'zh-CN';
+    const type = url.searchParams.get('type') || 'upcoming'; // upcoming 或 recent
     
     // 获取当前日期
     const today = new Date();

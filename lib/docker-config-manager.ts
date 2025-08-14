@@ -172,8 +172,10 @@ export class DockerConfigManager {
             console.log(`📂 检查配置文件: ${configPath}`);
 
             if (!fs.existsSync(configPath)) {
-                console.log('⚠️ 配置文件不存在，返回空配置');
-                return {};
+                console.log('⚠️ 配置文件不存在，创建默认配置');
+                const defaultConfig = this.getDefaultConfig();
+                this.saveConfig(defaultConfig);
+                return defaultConfig;
             }
 
             const configData = fs.readFileSync(configPath, 'utf8');
@@ -184,6 +186,50 @@ export class DockerConfigManager {
             console.error('❌ 读取配置失败:', error);
             return {};
         }
+    }
+
+    /**
+     * 获取默认配置
+     */
+    static getDefaultConfig(): DockerConfig {
+        return {
+            tmdb_api_key: '',
+            tmdb_import_path: '',
+            siliconflow_api_key: '',
+            siliconflow_thumbnail_model: 'stabilityai/stable-diffusion-3-5-large',
+            modelscope_api_key: '',
+            modelscope_episode_model: 'qwen/qwen-2.5-72b-instruct',
+            general_settings: JSON.stringify({
+                theme: 'dark',
+                language: 'zh-CN',
+                autoRefresh: true,
+                refreshInterval: 300000
+            }),
+            appearance_settings: JSON.stringify({
+                compactMode: false,
+                showThumbnails: true,
+                gridColumns: 'auto'
+            }),
+            video_thumbnail_settings: JSON.stringify({
+                enabled: false,
+                provider: 'siliconflow',
+                quality: 'medium'
+            }),
+            siliconflow_api_settings: JSON.stringify({
+                baseUrl: 'https://api.siliconflow.cn/v1',
+                timeout: 30000
+            }),
+            modelscope_api_settings: JSON.stringify({
+                baseUrl: 'https://dashscope.aliyuncs.com/api/v1',
+                timeout: 30000
+            }),
+            episode_generator_api_provider: 'modelscope',
+            task_scheduler_config: JSON.stringify({
+                enabled: true,
+                maxConcurrent: 3,
+                retryAttempts: 3
+            })
+        };
     }
 
     /**

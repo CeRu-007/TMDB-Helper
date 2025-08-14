@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readUserItems } from '@/lib/user-aware-storage';
-import { AuthMiddleware, getUserIdFromAuthRequest } from '@/lib/auth-middleware';
+import { getUserIdFromRequest } from '@/app/api/user/route';
 import { TMDBItem } from '@/lib/storage';
 
 /**
  * GET /api/items - 获取项目数据（专门用于数据一致性验证）
  * 支持 force=true 参数强制获取最新数据
  */
-export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const force = searchParams.get('force') === 'true';
 
     console.log(`[API] 获取项目数据请求 (force=${force})`);
 
-    // 从认证中间件获取用户ID
-    const userId = getUserIdFromAuthRequest(request);
+    // 获取用户ID
+    const userId = await getUserIdFromRequest(request);
 
     if (!userId) {
       console.warn('[API] 缺少用户身份信息，返回空数据');
@@ -64,12 +64,12 @@ export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
       items: []
     }, { status: 500 });
   }
-});
+}
 
 /**
  * POST /api/items - 批量操作项目数据
  */
-export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
+export async function POST(request: NextRequest) {
   try {
     const { action, items } = await request.json();
 
@@ -80,14 +80,14 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
       }, { status: 400 });
     }
 
-    // 从认证中间件获取用户ID
-    const userId = getUserIdFromAuthRequest(request);
+    // 获取用户ID
+    const userId = await getUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json({
         success: false,
         error: '缺少用户身份信息'
-      }, { status: 400 });
+      }, { status: 401 });
     }
 
     console.log(`[API] 用户 ${userId} 执行批量操作: ${action}`);
@@ -155,4 +155,4 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
-});
+}

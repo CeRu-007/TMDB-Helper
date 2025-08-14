@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StorageManager, TMDBItem } from '@/lib/storage';
-import { AuthMiddleware, getUserIdFromAuthRequest } from '@/lib/auth-middleware';
+import { getUserIdFromRequest } from '@/app/api/user/route';
 import { readUserItems, updateUserItem } from '@/lib/user-aware-storage';
 
 /**
  * POST /api/mark-episodes-completed - 标记集数为已完成
  */
-export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
+export async function POST(request: NextRequest) {
   try {
     const { itemId, seasonNumber, episodeNumbers, completed = true } = await request.json();
-    
+
     if (!itemId || !Array.isArray(episodeNumbers) || episodeNumbers.length === 0) {
       return NextResponse.json({
         success: false,
@@ -17,11 +17,11 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
         details: { itemId, seasonNumber, episodeNumbers }
       }, { status: 400 });
     }
-    
+
     console.log(`[API] 标记集数状态: itemId=${itemId}, season=${seasonNumber}, episodes=[${episodeNumbers.join(', ')}], completed=${completed}`);
 
-    // 从认证中间件获取用户ID
-    const userId = getUserIdFromAuthRequest(request);
+    // 获取用户ID
+    const userId = await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({
         success: false,
@@ -208,4 +208,4 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
-});
+}

@@ -1,110 +1,111 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addItem, updateItem, deleteItem } from '@/lib/server-storage';
 import { addUserItem, updateUserItem, deleteUserItem } from '@/lib/user-aware-storage';
-import { AuthMiddleware, getUserIdFromAuthRequest } from '@/lib/auth-middleware';
 import { TMDBItem } from '@/lib/storage';
 
-// POST /api/storage/item - 添加新项目（用户隔离）
-export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
+const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
+
+// POST /api/storage/item - 添加新项目（管理员用户）
+export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
     const item = data.item as TMDBItem;
 
     if (!item || !item.id) {
-      return NextResponse.json({ error: '无效的项目数据' }, { status: 400 });
+      return NextResponse.json({
+        error: '无效的项目数据',
+        success: false
+      }, { status: 400 });
     }
 
-    // 从认证中间件获取用户ID
-    const userId = getUserIdFromAuthRequest(request);
+    console.log(`[API] 管理员添加项目: ${item.title}`);
 
-    if (!userId) {
-      return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });
-    }
-
-    console.log(`[API] 用户 ${userId} 添加项目: ${item.title}`);
-
-    const success = addUserItem(userId, item);
+    const success = addUserItem(ADMIN_USER_ID, item);
 
     if (success) {
-      return NextResponse.json({ success: true, item, userId }, { status: 201 });
+      return NextResponse.json({ success: true, item, userId: ADMIN_USER_ID }, { status: 201 });
     } else {
-      return NextResponse.json({ error: '添加项目失败' }, { status: 500 });
+      return NextResponse.json({
+        error: '添加项目失败',
+        success: false
+      }, { status: 500 });
     }
   } catch (error) {
-    console.error('添加项目失败:', error);
-    return NextResponse.json(
-      { error: '添加项目失败', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    );
+    console.error('[API] 添加项目失败:', error);
+    return NextResponse.json({
+      error: '服务器内部错误',
+      success: false,
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
-});
+}
 
-// PUT /api/storage/item - 更新项目（用户隔离）
-export const PUT = AuthMiddleware.withAuth(async (request: NextRequest) => {
+// PUT /api/storage/item - 更新项目（管理员用户）
+export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
     const item = data.item as TMDBItem;
 
     if (!item || !item.id) {
-      return NextResponse.json({ error: '无效的项目数据' }, { status: 400 });
+      return NextResponse.json({
+        error: '无效的项目数据',
+        success: false
+      }, { status: 400 });
     }
 
-    // 从认证中间件获取用户ID
-    const userId = getUserIdFromAuthRequest(request);
+    console.log(`[API] 管理员更新项目: ${item.title}`);
 
-    if (!userId) {
-      return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });
-    }
-
-    console.log(`[API] 用户 ${userId} 更新项目: ${item.title}`);
-
-    const success = updateUserItem(userId, item);
+    const success = updateUserItem(ADMIN_USER_ID, item);
 
     if (success) {
-      return NextResponse.json({ success: true, item, userId }, { status: 200 });
+      return NextResponse.json({ success: true, item, userId: ADMIN_USER_ID }, { status: 200 });
     } else {
-      return NextResponse.json({ error: '更新项目失败，项目可能不存在' }, { status: 404 });
+      return NextResponse.json({
+        error: '更新项目失败，项目可能不存在',
+        success: false
+      }, { status: 404 });
     }
   } catch (error) {
-    console.error('更新项目失败:', error);
-    return NextResponse.json(
-      { error: '更新项目失败', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    );
+    console.error('[API] 更新项目失败:', error);
+    return NextResponse.json({
+      error: '服务器内部错误',
+      success: false,
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
-});
+}
 
-// DELETE /api/storage/item - 删除项目（用户隔离）
-export const DELETE = AuthMiddleware.withAuth(async (request: NextRequest) => {
+// DELETE /api/storage/item - 删除项目（管理员用户）
+export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: '缺少项目ID' }, { status: 400 });
+      return NextResponse.json({
+        error: '缺少项目ID',
+        success: false
+      }, { status: 400 });
     }
 
-    // 从认证中间件获取用户ID
-    const userId = getUserIdFromAuthRequest(request);
+    console.log(`[API] 管理员删除项目: ${id}`);
 
-    if (!userId) {
-      return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });
-    }
-
-    console.log(`[API] 用户 ${userId} 删除项目: ${id}`);
-
-    const success = deleteUserItem(userId, id);
+    const success = deleteUserItem(ADMIN_USER_ID, id);
 
     if (success) {
-      return NextResponse.json({ success: true, userId }, { status: 200 });
+      return NextResponse.json({ success: true, userId: ADMIN_USER_ID }, { status: 200 });
     } else {
-      return NextResponse.json({ error: '删除项目失败，项目可能不存在' }, { status: 404 });
+      return NextResponse.json({
+        error: '删除项目失败，项目可能不存在',
+        success: false
+      }, { status: 404 });
     }
   } catch (error) {
-    console.error('删除项目失败:', error);
-    return NextResponse.json(
-      { error: '删除项目失败', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    );
+    console.error('[API] 删除项目失败:', error);
+    return NextResponse.json({
+      error: '服务器内部错误',
+      success: false,
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
-});
+}

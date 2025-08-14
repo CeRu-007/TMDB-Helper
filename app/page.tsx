@@ -245,14 +245,6 @@ export default function HomePage() {
     }
 
     try {
-      // 从配置管理器获取API密钥
-      const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
-
-      // 检查API密钥是否存在
-      if (!apiKey) {
-        setIsMissingApiKey(true);
-        throw new Error('TMDB API密钥未配置，请在设置中配置');
-      }
 
       // 优化AbortController使用逻辑
       let requestSignal: AbortSignal;
@@ -271,7 +263,7 @@ export default function HomePage() {
         }, 30000); // 30秒超时
       }
 
-      const response = await fetch(`/api/tmdb/upcoming?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
+      const response = await fetch(`/api/tmdb/upcoming?region=${region}`, {
         signal: requestSignal,
         cache: 'no-store',
         headers: {
@@ -289,10 +281,14 @@ export default function HomePage() {
         const errorText = await response.text();
         console.error('服务器响应错误:', errorText);
         
-        // 检查是否是API密钥未配置或无效的错误
-        if (errorText.includes('API密钥未配置') || errorText.includes('401 Unauthorized')) {
+        // 检查是否是API密钥未配置或用户身份验证失败的错误
+        if (response.status === 400 && errorText.includes('API密钥未配置')) {
           setIsMissingApiKey(true);
-          throw new Error('TMDB API密钥无效，请在设置中重新配置');
+          throw new Error('TMDB API密钥未配置，请在设置中配置');
+        }
+        if (response.status === 401) {
+          setIsMissingApiKey(true);
+          throw new Error('用户身份验证失败，请刷新页面重试');
         }
         
         // 根据HTTP状态码提供更详细的错误信息
@@ -338,10 +334,10 @@ export default function HomePage() {
         // 数据现在存储在服务端，不再需要localStorage缓存
         console.log(`即将上映数据已更新 (${region}):`, data.results.length, '项');
       } else {
-        // 检查是否是API密钥未配置或无效的错误
-        if (data.error && (data.error.includes('API密钥未配置') || data.error.includes('401 Unauthorized'))) {
+        // 检查是否是API密钥未配置的错误
+        if (data.error && data.error.includes('API密钥未配置')) {
           setIsMissingApiKey(true);
-          throw new Error('TMDB API密钥无效，请在设置中重新配置');
+          throw new Error('TMDB API密钥未配置，请在设置中配置');
         }
         throw new Error(data.error || '获取影视资讯内容失败');
       }
@@ -1941,18 +1937,12 @@ export default function HomePage() {
 
   // 在组件加载时，确保activeTab有效
   useEffect(() => {
-    // 如果当前标签是"upcoming"，但没有API密钥，自动切换到"ongoing"
-    const checkApiKey = async () => {
-      if (activeTab === "upcoming") {
-        const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
-        if (!apiKey) {
-          setActiveTab("ongoing");
-          setShowSettingsDialog(true); // 显示设置对话框
-        }
-      }
-    };
-    checkApiKey();
-  }, [activeTab]);
+    // 如果当前标签是"upcoming"，但出现API密钥缺失错误，自动切换到"ongoing"
+    if (activeTab === "upcoming" && isMissingApiKey) {
+      setActiveTab("ongoing");
+      setShowSettingsDialog(true); // 显示设置对话框
+    }
+  }, [activeTab, isMissingApiKey]);
   
   // 确保影视资讯页面不会消失
   useEffect(() => {
@@ -1985,14 +1975,6 @@ export default function HomePage() {
     }
 
     try {
-      // 从配置管理器获取API密钥
-      const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
-
-      // 检查API密钥是否存在
-      if (!apiKey) {
-        throw new Error('TMDB API密钥未配置，请在设置中配置');
-      }
-
       // 优化AbortController使用逻辑
       let requestSignal: AbortSignal;
       let timeoutId: NodeJS.Timeout | undefined;
@@ -2010,7 +1992,7 @@ export default function HomePage() {
         }, 30000); // 30秒超时
       }
 
-      const response = await fetch(`/api/tmdb/recent?api_key=${encodeURIComponent(apiKey)}&region=${region}`, {
+      const response = await fetch(`/api/tmdb/recent?region=${region}`, {
         signal: requestSignal,
         cache: 'no-store',
         headers: {
@@ -2028,10 +2010,14 @@ export default function HomePage() {
         const errorText = await response.text();
         console.error('服务器响应错误:', errorText);
         
-        // 检查是否是API密钥未配置或无效的错误
-        if (errorText.includes('API密钥未配置') || errorText.includes('401 Unauthorized')) {
+        // 检查是否是API密钥未配置或用户身份验证失败的错误
+        if (response.status === 400 && errorText.includes('API密钥未配置')) {
           setIsMissingApiKey(true);
-          throw new Error('TMDB API密钥无效，请在设置中重新配置');
+          throw new Error('TMDB API密钥未配置，请在设置中配置');
+        }
+        if (response.status === 401) {
+          setIsMissingApiKey(true);
+          throw new Error('用户身份验证失败，请刷新页面重试');
         }
         
         // 根据HTTP状态码提供更详细的错误信息
@@ -2066,10 +2052,10 @@ export default function HomePage() {
         // 数据现在存储在服务端，不再需要localStorage缓存
         console.log(`近期开播数据已更新 (${region}):`, data.results.length, '项');
       } else {
-        // 检查是否是API密钥未配置或无效的错误
-        if (data.error && (data.error.includes('API密钥未配置') || data.error.includes('401 Unauthorized'))) {
+        // 检查是否是API密钥未配置的错误
+        if (data.error && data.error.includes('API密钥未配置')) {
           setIsMissingApiKey(true);
-          throw new Error('TMDB API密钥无效，请在设置中重新配置');
+          throw new Error('TMDB API密钥未配置，请在设置中配置');
         }
         throw new Error(data.error || '获取近期开播内容失败');
       }

@@ -192,51 +192,31 @@ export const apiClient = ApiClient.getInstance()
 // TMDB API 专用客户端
 export class TMDBApiClient {
   private client: ApiClient
-  private apiKey: string | null = null
 
   constructor() {
     this.client = ApiClient.getInstance()
-    this.loadApiKey()
-  }
-
-  private async loadApiKey(): Promise<void> {
-    if (typeof window !== 'undefined') {
-      const { ClientConfigManager } = await import('./client-config-manager');
-      this.apiKey = await ClientConfigManager.getItem('tmdb_api_key');
-    }
-  }
-
-  private async getAuthParams(): Promise<Record<string, string>> {
-    if (!this.apiKey) {
-      await this.loadApiKey()
-    }
-    return this.apiKey ? { api_key: this.apiKey } : {}
   }
 
   async getUpcoming(region: string = 'CN'): Promise<ApiResponse<any[]>> {
     return this.client.get('/api/tmdb/upcoming', {
-      ...this.getAuthParams(),
       region
     })
   }
 
   async getRecent(region: string = 'CN'): Promise<ApiResponse<any[]>> {
     return this.client.get('/api/tmdb/recent', {
-      ...this.getAuthParams(),
       region
     })
   }
 
   async searchMovie(query: string): Promise<ApiResponse<any[]>> {
     return this.client.get('/api/tmdb/search/movie', {
-      ...this.getAuthParams(),
       query
     })
   }
 
   async searchTV(query: string): Promise<ApiResponse<any[]>> {
     return this.client.get('/api/tmdb/search/tv', {
-      ...this.getAuthParams(),
       query
     })
   }

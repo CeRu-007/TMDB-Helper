@@ -4,44 +4,26 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * 用户身份识别API
- * 处理用户ID的获取和验证
+ * 单用户（管理员）模式 - 始终返回admin用户
  */
 
 const SESSION_COOKIE_NAME = 'tmdb_helper_session';
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 1年
+const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
 
 /**
- * 从请求中提取用户ID
+ * 从请求中提取用户ID（单用户模式 - 始终返回admin）
  */
 async function extractUserIdFromRequest(request: NextRequest): Promise<string | null> {
-  // 1. 尝试从cookie获取
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-  if (sessionCookie?.value) {
-    return sessionCookie.value;
-  }
-
-  // 2. 尝试从请求头获取
-  const authHeader = request.headers.get('x-user-id');
-  if (authHeader) {
-    return authHeader;
-  }
-
-  // 3. 尝试从查询参数获取
-  const { searchParams } = new URL(request.url);
-  const userIdParam = searchParams.get('userId');
-  if (userIdParam) {
-    return userIdParam;
-  }
-
-  return null;
+  // 在单用户模式下，始终返回admin用户ID
+  return ADMIN_USER_ID;
 }
 
 /**
- * 生成新的用户ID
+ * 生成新的用户ID（单用户模式 - 始终返回admin）
  */
 function generateUserId(): string {
-  return 'user_' + uuidv4().replace(/-/g, '').substring(0, 16);
+  return ADMIN_USER_ID;
 }
 
 /**
