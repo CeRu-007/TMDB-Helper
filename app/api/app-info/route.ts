@@ -6,6 +6,20 @@ export async function GET() {
     // 获取版本描述信息
     const getVersionDescription = (version: string) => {
       switch (version) {
+        case '0.3.7':
+          return {
+            title: '优化系统性能和用户体验',
+            description: `主要更新：
+• 延长会话有效期并优化监控频率，提升系统稳定性
+• 移除浏览器限制实现定时任务后台执行，大幅减少API调用
+• 重构头像加载机制，提供流畅的加载体验和丰富的选择选项
+
+技术改进：
+• 优化系统性能，提升响应速度
+• 增强用户体验，减少操作延迟
+• 改进后台任务处理机制`,
+            releaseDate: '2025-08-14'
+          };
         case '0.3.6':
           return {
             title: '修复Docker环境中无法从服务端读取数据的问题',
