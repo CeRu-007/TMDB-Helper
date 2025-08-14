@@ -21,7 +21,7 @@ services:
       - JWT_SECRET=your_jwt_secret_key_here_change_in_production
 
       # 会话有效期（天）
-      - SESSION_EXPIRY_DAYS=7
+      - SESSION_EXPIRY_DAYS=15
 
       # Next.js 环境
       - NODE_ENV=production
@@ -59,10 +59,10 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '0.5'
+          cpus: '0.3'
         reservations:
           memory: 512M
-          cpus: '0.25'
+          cpus: '0.15'
 
     # 健康检查
     healthcheck:

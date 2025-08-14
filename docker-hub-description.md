@@ -91,7 +91,7 @@ volumes:
 | `ADMIN_USERNAME` | `admin` | 管理员用户名 |
 | `ADMIN_PASSWORD` | `change_this_password` | 管理员密码 |
 | `JWT_SECRET` | `your_jwt_secret_key` | JWT密钥 |
-| `SESSION_EXPIRY_DAYS` | `7` | 会话有效期（天） |
+| `SESSION_EXPIRY_DAYS` | `15` | 会话有效期（天） |
 | `PORT` | `4949` | 应用端口 |
 | `TMDB_API_KEY` | - | TMDB API密钥（可选） |
 

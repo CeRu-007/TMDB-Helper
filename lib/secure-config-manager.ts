@@ -107,8 +107,8 @@ export class SecureConfigManager {
     return {
       tmdbApiKey: process.env.TMDB_API_KEY,
       jwtSecret: process.env.JWT_SECRET,
-      sessionExpiryDays: process.env.SESSION_EXPIRY_DAYS ? 
-        parseInt(process.env.SESSION_EXPIRY_DAYS) : 7
+      sessionExpiryDays: process.env.SESSION_EXPIRY_DAYS ?
+        parseInt(process.env.SESSION_EXPIRY_DAYS) : 15
     };
   }
   

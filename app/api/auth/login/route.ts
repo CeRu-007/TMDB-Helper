@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     // 记住我：将有效期延长（默认天数*2），否则按默认天数
     const sessionDays = user.sessionExpiryDays && user.sessionExpiryDays > 0
       ? user.sessionExpiryDays
-      : 7;
+      : 15;
     const maxAge = (rememberMe ? sessionDays * 2 : sessionDays) * 24 * 60 * 60;
 
     response.cookies.set('auth-token', token, {

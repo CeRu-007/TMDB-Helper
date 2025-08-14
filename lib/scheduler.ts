@@ -144,7 +144,7 @@ class TaskScheduler {
       // 启动性能监控
       const config = configManager.getConfig();
       if (config.enablePerformanceMonitoring) {
-        performanceMonitor.startMonitoring(30000); // 30秒间隔
+        performanceMonitor.startMonitoring(300000); // 5分钟间隔
       }
 
       // 清除所有现有的定时器

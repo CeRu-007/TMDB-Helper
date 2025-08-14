@@ -41,7 +41,7 @@ export class AuthManager {
   private static readonly AUTH_DIR = path.join(process.cwd(), 'data', 'auth');
   private static readonly AUTH_FILE = path.join(AuthManager.AUTH_DIR, 'admin.json');
   private static readonly JWT_SECRET = process.env.JWT_SECRET || 'tmdb-helper-default-secret-change-in-production';
-  private static readonly DEFAULT_SESSION_EXPIRY_DAYS = 7;
+  private static readonly DEFAULT_SESSION_EXPIRY_DAYS = 15;
   private static readonly ADMIN_USER_ID = 'admin';
 
   /**
