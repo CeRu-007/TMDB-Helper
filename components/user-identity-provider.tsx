@@ -919,30 +919,76 @@ function ProfileEditSection({
       <div className="space-y-3">
         {/* 头像设置区域 */}
         <div className="flex items-center space-x-3">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 relative">
             <UserAvatarImage
-              src={userInfo.avatarUrl}
+              src={isEditingAvatar && newAvatarUrl ? newAvatarUrl : userInfo.avatarUrl}
               displayName={userInfo.displayName}
-              className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+              className="w-10 h-10 rounded-full shadow-sm ring-2 ring-white dark:ring-gray-800"
               fallbackClassName="text-sm font-medium shadow-sm ring-2 ring-white dark:ring-gray-800"
+              onError={() => {
+                if (isEditingAvatar) {
+                  setAvatarSaveError('头像URL无效或无法加载')
+                }
+              }}
+              onLoad={() => {
+                if (isEditingAvatar) {
+                  setAvatarSaveError('')
+                }
+              }}
             />
+            {/* 加载指示器 */}
+            {isEditingAvatar && newAvatarUrl && newAvatarUrl !== userInfo.avatarUrl && (
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 min-w-0">
             {isEditingAvatar ? (
               <div className="space-y-2">
-                <input
-                  type="url"
-                  value={newAvatarUrl}
-                  onChange={(e) => setNewAvatarUrl(e.target.value)}
-                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                  placeholder="输入头像图片网络地址 (http://... 或 https://...)"
-                  onKeyPress={(e) => e.key === 'Enter' && handleAvatarSave()}
-                />
+                <div className="space-y-1">
+                  <input
+                    type="url"
+                    value={newAvatarUrl}
+                    onChange={(e) => setNewAvatarUrl(e.target.value)}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    placeholder="输入头像图片网络地址 (http://... 或 https://...)"
+                    onKeyPress={(e) => e.key === 'Enter' && handleAvatarSave()}
+                  />
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    支持 jpg、png、gif 等格式，建议尺寸 200x200 像素
+                  </div>
+                  {/* 预设头像选择 */}
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 w-full mb-1">快速选择：</div>
+                    {[
+                      'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+                      'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
+                      'https://api.dicebear.com/7.x/avataaars/svg?seed=Garland',
+                      'https://api.dicebear.com/7.x/bottts/svg?seed=Fluffy',
+                      'https://api.dicebear.com/7.x/identicon/svg?seed=Midnight'
+                    ].map((presetUrl, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setNewAvatarUrl(presetUrl)}
+                        className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600 hover:border-blue-500 transition-colors overflow-hidden"
+                        title="点击使用此头像"
+                      >
+                        <img
+                          src={presetUrl}
+                          alt={`预设头像 ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex space-x-2">
                   <button
                     onClick={handleAvatarSave}
-                    className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                    disabled={!newAvatarUrl || newAvatarUrl === userInfo.avatarUrl}
+                    className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     保存
                   </button>
@@ -950,6 +996,8 @@ function ProfileEditSection({
                     onClick={() => {
                       setIsEditingAvatar(false)
                       setNewAvatarUrl(userInfo.avatarUrl || '')
+                      setAvatarSaveError('')
+                      setAvatarSaveSuccess(false)
                     }}
                     className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
                   >
@@ -969,11 +1017,24 @@ function ProfileEditSection({
                         }
                       }}
                       className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                      title="移除头像"
                     >
                       移除
                     </button>
                   )}
                 </div>
+                {avatarSaveError && (
+                  <div className="text-xs text-red-500 mt-1 flex items-center space-x-1">
+                    <span>⚠️</span>
+                    <span>{avatarSaveError}</span>
+                  </div>
+                )}
+                {avatarSaveSuccess && (
+                  <div className="text-xs text-green-500 mt-1 flex items-center space-x-1">
+                    <span>✅</span>
+                    <span>头像更新成功！</span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-between">
@@ -984,7 +1045,12 @@ function ProfileEditSection({
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsEditingAvatar(true)}
+                  onClick={() => {
+                    setIsEditingAvatar(true)
+                    setNewAvatarUrl(userInfo.avatarUrl || '')
+                    setAvatarSaveError('')
+                    setAvatarSaveSuccess(false)
+                  }}
                   className="text-xs text-blue-500 hover:text-blue-600 flex items-center space-x-1"
                 >
                   <Edit3 className="w-3 h-3" />
