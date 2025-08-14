@@ -113,6 +113,8 @@ import { getPlatformInfo } from "@/lib/utils"
 import { PlatformLogo } from "@/components/ui/platform-icon"
 import { Skeleton } from "./ui/skeleton"
 import { cn } from "@/lib/utils"
+import { BackgroundImage } from "@/components/ui/background-image"
+import { CachedImage } from "@/components/ui/cached-image"
 
 import { ClientConfigManager } from "@/lib/client-config-manager"
 
@@ -178,7 +180,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [detailTab, setDetailTab] = useState("details")
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
-  const [backgroundRefreshKey, setBackgroundRefreshKey] = useState<string | number>(item.tmdbId || item.id || '0')
   // 全局外观设置（仅取本页需要的字段）
   const [appearanceSettings, setAppearanceSettings] = useState<{
     detailBackdropBlurEnabled?: boolean
@@ -194,9 +195,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
     setEditData(initialEditData)
     setLocalItem(item)
-
-    // 使用稳定标识符更新背景刷新键，避免不必要的重新加载
-    setBackgroundRefreshKey(item.tmdbId || item.id || '0')
 
     // 每次item变化时强制选择季数，确保始终有默认选中的季节
     if (item.seasons && item.seasons.length > 0) {
@@ -296,15 +294,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
   }, [])
 
-  // 只在item真正变化时更新refreshKey，避免每次打开都重新加载
-  useEffect(() => {
-    // 使用稳定的唯一标识符作为刷新键
-    // 仅在id或tmdbId变化时才更新key，不依赖open状态
-    const newKey = item.tmdbId || item.id || '0';
-    if (newKey !== backgroundRefreshKey) {
-      setBackgroundRefreshKey(newKey);
-    }
-  }, [item.backdropUrl, item.id, item.tmdbId, backgroundRefreshKey])
+
 
   // 监听滚动事件，实现视差效果
   useEffect(() => {
@@ -702,10 +692,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       isDailyUpdate: editData.isDailyUpdate
     }
 
-    // 只有在背景图或标志发生变化时才强制刷新背景图（使用带时间戳的刷新键）
-    if (localItem.backdropUrl !== editData.backdropUrl || localItem.logoUrl !== editData.logoUrl) {
-      setBackgroundRefreshKey(`${updatedItem.tmdbId || updatedItem.id}_${Date.now()}`);
-    }
+
 
     try {
       // 使用增强数据提供者进行乐观更新
@@ -1176,10 +1163,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 通知父组件更新
       onUpdate(newLocalItem);
 
-      // 只有在背景图或标志发生变化时才强制刷新背景图（使用带时间戳的刷新键）
-      if (hasNewBackdrop || hasNewLogo) {
-        setBackgroundRefreshKey(`${item.tmdbId || item.id}_${Date.now()}`);
-      }
+
 
       // 显示成功信息
       if (hasNewBackdrop) {
@@ -1259,7 +1243,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         >
 
 
-          {/* 背景图 - 直接显示，无加载动画，如果没有背景图则使用海报 */}
+          {/* 背景图 - 使用BackgroundImage组件，支持缓存避免重复加载 */}
           {(() => {
             const backgroundImageUrl = localItem.backdropUrl || localItem.posterUrl;
             const isUsingPoster = !localItem.backdropUrl && localItem.posterUrl;
@@ -1276,33 +1260,19 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             }
 
             return backgroundImageUrl ? (
-              <>
-                <img
-                  src={backgroundImageUrl}
-                  alt={localItem.title + (isUsingPoster ? " 海报背景" : " 背景图")}
-                  className="absolute inset-0 z-0 w-full h-full object-cover"
-                  style={{ objectPosition: `center ${20 + scrollPosition * 0.05}%` }}
-                  loading="eager"
-                  decoding="async"
-                />
-                {/* 背景图遮罩层 - 如果使用海报作为背景，增加更强的遮罩 */}
-                <div
-                  className={cn(
-                    "absolute inset-0 z-0",
-                    appearanceSettings?.detailBackdropBlurEnabled ?? true ? cn(
-                      appearanceSettings?.detailBackdropBlurIntensity === 'light' ? 'backdrop-blur-sm' :
-                      appearanceSettings?.detailBackdropBlurIntensity === 'heavy' ? 'backdrop-blur-xl' : 'backdrop-blur-md',
-                      isUsingPoster
-                        ? "bg-gradient-to-b from-background/50 via-background/45 to-background/55" // 海报背景使用更强遮罩
-                        : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"  // 正常背景图遮罩
-                    ) : (
-                      isUsingPoster
-                        ? "bg-gradient-to-b from-background/50 via-background/45 to-background/55" // 海报背景使用更强遮罩
-                        : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"  // 正常背景图遮罩
-                    )
-                  )}
-                />
-              </>
+              <BackgroundImage
+                src={backgroundImageUrl}
+                alt={localItem.title + (isUsingPoster ? " 海报背景" : " 背景图")}
+                className="absolute inset-0 z-0"
+                objectPosition={`center ${20 + scrollPosition * 0.05}%`}
+                blur={appearanceSettings?.detailBackdropBlurEnabled ?? true}
+                blurIntensity={appearanceSettings?.detailBackdropBlurIntensity || 'medium'}
+                overlayClassName={cn(
+                  isUsingPoster
+                    ? "bg-gradient-to-b from-background/50 via-background/45 to-background/55" // 海报背景使用更强遮罩
+                    : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"  // 正常背景图遮罩
+                )}
+              />
             ) : null;
           })()}
 
@@ -1320,7 +1290,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 {/* 使用TMDB标志替代文字标题 */}
                 {localItem.logoUrl ? (
                   <div className="h-10 max-w-[200px] flex items-center">
-                    <img
+                    <CachedImage
                       src={localItem.logoUrl}
                       alt={localItem.title}
                       className="max-h-full object-contain"
@@ -1449,12 +1419,12 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                   {/* 海报区域 - 使用固定高度比例 */}
                   <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
                     {localItem.posterUrl ? (
-                      <img
+                      <CachedImage
                         src={localItem.posterUrl}
                         alt={localItem.title}
                         className="w-full h-full object-cover"
                         loading="lazy"
-                          decoding="async"
+                        decoding="async"
                       />
                     ) : (
                       <div className="text-center p-4">
@@ -1758,7 +1728,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                     {/* 海报区域 */}
                     <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 transition-all duration-300 hover:shadow-lg">
                       {localItem.posterUrl ? (
-                        <img
+                        <CachedImage
                           src={localItem.posterUrl}
                           alt={localItem.title}
                           className="w-full h-full object-cover"
@@ -1803,7 +1773,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                 onClick={() => localItem.platformUrl && window.open(localItem.platformUrl, '_blank')}
                                 title={localItem.networkName || '播出网络'}
                               >
-                                <img
+                                <CachedImage
                                   src={localItem.networkLogoUrl}
                                   alt={localItem.networkName || '播出网络'}
                                   className="max-w-full max-h-full object-contain hover:scale-110 transition-all duration-300"

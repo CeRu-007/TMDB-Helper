@@ -1,6 +1,8 @@
 {
   "name": "tmdb-helper",
   "version": "0.3.5",
+  "description": "Docker化的TMDB媒体管理助手 - 专为容器化部署设计的Next.js应用",
+  "keywords": ["tmdb", "docker", "nextjs", "media-management", "containerized"],
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +10,12 @@
     "start": "next start",
     "lint": "next lint",
     "task-daemon": "node scripts/task-scheduler-daemon.js",
-    "task-daemon:dev": "node scripts/task-scheduler-daemon.js --port=4949 --interval=300"
+    "task-daemon:dev": "node scripts/task-scheduler-daemon.js --port=4949 --interval=300",
+    "docker:build": "docker build -t tmdb-helper .",
+    "docker:run": "docker run -p 3000:3000 -v ./data:/app/data -v ./logs:/app/logs tmdb-helper",
+    "docker:dev": "docker-compose up --build",
+    "docker:logs": "docker logs tmdb-helper",
+    "docker:shell": "docker exec -it tmdb-helper bash"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
