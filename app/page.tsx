@@ -621,8 +621,8 @@ export default function HomePage() {
     // 初始加载
     updateRunningTasks();
 
-    // 每2秒检查一次正在运行的任务
-    const interval = setInterval(updateRunningTasks, 2000);
+    // 每30秒检查一次正在运行的任务（减少频率，但保持监控）
+    const interval = setInterval(updateRunningTasks, 30000);
 
     return () => clearInterval(interval);
   }, [isClientEnv]);

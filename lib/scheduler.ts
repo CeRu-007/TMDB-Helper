@@ -8,6 +8,11 @@ import { ConflictDetector } from './conflict-detector';
 import { ConflictResolver } from './conflict-resolver';
 import { advancedConfigManager } from './task-scheduler-config';
 
+/**
+ * 定时任务调度器
+ * 负责管理和执行定时任务
+ * 已移除浏览器环境限制，支持后台执行
+ */
 class TaskScheduler {
   private static instance: TaskScheduler;
   private timers: Map<string, NodeJS.Timeout> = new Map();
@@ -37,21 +42,8 @@ class TaskScheduler {
     this.conflictDetector = new ConflictDetector(conflictDetectionConfig);
     this.conflictResolver = new ConflictResolver(advancedConfig.conflictResolution);
 
-    // 监听浏览器可见性变化
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-          console.log('[TaskScheduler] 浏览器标签页重新激活，检查定时器状态');
-          this.validateAllTimers();
-        }
-      });
-
-      // 监听窗口焦点变化
-      window.addEventListener('focus', () => {
-        console.log('[TaskScheduler] 窗口重新获得焦点，检查定时器状态');
-        this.validateAllTimers();
-      });
-    }
+    // 移除浏览器环境限制，定时器将在后台正常运行
+    // 定时器验证通过定期检查机制进行，不依赖页面可见性
   }
 
   public static getInstance(): TaskScheduler {
@@ -655,18 +647,10 @@ class TaskScheduler {
     // 更新任务的下一次执行时间
     this.updateTaskNextRunTime(task.id, nextRunTime.toISOString());
     
-    // 设置定时器 - 增强版本，支持浏览器环境检测和自动重试
+    // 设置定时器 - 无浏览器环境限制，确保后台执行
     const timer = setTimeout(async () => {
       console.log(`[TaskScheduler] 定时器触发: ${task.id} (${task.name}) 在 ${new Date().toLocaleString('zh-CN')}`);
-      
-      // 检查浏览器环境状态
-      if (typeof window !== 'undefined' && document.hidden) {
-        console.warn(`[TaskScheduler] 浏览器标签页不活跃，延迟执行任务: ${task.name}`);
-        // 延迟30秒后重试
-        setTimeout(() => this.executeTaskWithRetry(task), 30000);
-        return;
-      }
-      
+
       // 在执行时获取最新的任务状态
       try {
         const tasks = await StorageManager.getScheduledTasks();

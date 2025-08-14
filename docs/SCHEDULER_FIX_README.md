@@ -4,7 +4,7 @@
 
 原有的定时任务系统存在以下问题导致任务到时间不执行：
 
-1. **浏览器环境依赖**：定时器依赖浏览器的 `setTimeout`，当标签页不活跃时会被暂停
+1. **浏览器环境依赖**：定时器依赖浏览器的 `setTimeout`，当标签页不活跃时会被暂停（已修复）
 2. **定时器丢失**：在某些情况下定时器被意外清除但没有重新设置
 3. **时间计算不准确**：下次执行时间计算存在边界条件问题
 4. **缺乏监控机制**：没有有效的定时器状态监控和自动恢复机制
@@ -114,15 +114,11 @@ private scheduleTimerValidation(taskId: string, originalDelay: number): void {
 }
 ```
 
-### 2. 浏览器环境监听
+### 2. 移除浏览器环境限制
 
 ```typescript
-// 监听浏览器可见性变化
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
-    this.validateAllTimers();
-  }
-});
+// 已移除浏览器可见性检查，定时器在后台正常运行
+// 定时器验证通过定期检查机制进行，不依赖页面状态
 ```
 
 ### 3. 重试机制

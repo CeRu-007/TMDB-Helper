@@ -51,14 +51,7 @@ export class StorageSyncManager {
       // 启动定期同步
       this.startPeriodicSync();
       
-      // 页面可见性变化时触发同步
-      if (typeof document !== 'undefined') {
-        document.addEventListener('visibilitychange', () => {
-          if (!document.hidden) {
-            this.triggerSync();
-          }
-        });
-      }
+      // 移除页面可见性依赖，同步将通过定期机制进行
 
       // 页面卸载前进行最后一次同步
       if (typeof window !== 'undefined') {

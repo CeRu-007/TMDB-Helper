@@ -68,22 +68,22 @@ export function useScheduledTasks(): UseScheduledTasksReturn {
     // 初始加载
     refreshTasks()
 
-    // 每2秒检查一次正在运行的任务
+    // 减少轮询频率：每30秒检查一次正在运行的任务（而不是2秒）
     const intervalId = perf.setInterval(() => {
       updateRunningTasks()
-    }, 2000, 'scheduledTasksUpdate')
+    }, 30000, 'scheduledTasksUpdate')
 
-    // 自动修复定时任务
+    // 自动修复定时任务 - 延迟到10秒后执行，避免启动时的频繁调用
     const fixTimeoutId = perf.setTimeout(async () => {
       try {
         log.info('useScheduledTasks', '开始自动修复定时任务')
-        await StorageManager.forceRefreshScheduledTasks()
+        await StorageManager.fixScheduledTaskAssociations()
         await updateRunningTasks()
         log.info('useScheduledTasks', '定时任务自动修复完成')
       } catch (error) {
         log.error('useScheduledTasks', '自动修复定时任务失败', error)
       }
-    }, 3000)
+    }, 10000)
 
     return () => {
       perf.cleanup(intervalId)

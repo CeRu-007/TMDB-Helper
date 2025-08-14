@@ -235,9 +235,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
 
       // 并行加载任务和项目，只在必要时强制刷新
       const [allTasks, allItems] = await Promise.all([
-        forceRefresh
-          ? StorageManager.forceRefreshScheduledTasks()
-          : StorageManager.getScheduledTasks(),
+        StorageManager.getScheduledTasks(forceRefresh),
         StorageManager.getItemsWithRetry()
       ]);
 
