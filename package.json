@@ -1,6 +1,6 @@
 {
   "name": "tmdb-helper",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Docker化的TMDB媒体管理助手 - 专为容器化部署设计的Next.js应用",
   "keywords": ["tmdb", "docker", "nextjs", "media-management", "containerized"],
   "private": true,

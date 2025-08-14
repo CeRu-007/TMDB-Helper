@@ -6,6 +6,19 @@ export async function GET() {
     // 获取版本描述信息
     const getVersionDescription = (version: string) => {
       switch (version) {
+        case '0.3.6':
+          return {
+            title: '修复Docker环境中无法从服务端读取数据的问题',
+            description: `主要更新：
+• 修复Docker环境中无法从服务端读取数据的问题
+• 优化词条详情页面图片加载逻辑，避免二次加载
+
+技术改进：
+• 增强Docker环境下的数据读取稳定性
+• 优化图片加载性能，减少不必要的网络请求
+• 提升用户体验，减少页面加载时间`,
+            releaseDate: '2025-08-14'
+          };
         case '0.3.5':
           return {
             title: '将存储系统从localStorage迁移到服务端存储',
