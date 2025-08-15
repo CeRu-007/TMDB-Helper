@@ -2,7 +2,7 @@
 # 多阶段构建，支持 Node.js 和 Python 环境
 FROM node:18-alpine AS base
 
-# 安装系统依赖和 Python 支持
+# 安装系统依赖、Python 支持和 pnpm
 RUN apk add --no-cache \
     libc6-compat \
     python3 \
@@ -11,7 +11,8 @@ RUN apk add --no-cache \
     g++ \
     curl \
     ffmpeg \
-    && ln -sf python3 /usr/bin/python
+    && ln -sf python3 /usr/bin/python \
+    && npm install -g pnpm
 
 # 设置工作目录
 WORKDIR /app
@@ -20,18 +21,11 @@ WORKDIR /app
 FROM base AS deps
 WORKDIR /app
 
-# 复制包管理文件
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
+# 复制包管理文件（只复制pnpm相关文件）
+COPY package.json pnpm-lock.yaml ./
 
 # 安装 Node.js 依赖
-RUN \
-  if [ -f pnpm-lock.yaml ]; then \
-    npm install -g pnpm && pnpm install --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then \
-    npm ci --legacy-peer-deps && npm cache clean --force; \
-  else \
-    npm install --legacy-peer-deps && npm cache clean --force; \
-  fi
+RUN pnpm install --frozen-lockfile
 
 # 构建应用阶段
 FROM base AS builder

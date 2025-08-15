@@ -199,10 +199,9 @@ temp/
 .env.example
 .env.sample
 
-# Package manager files
+# Package manager files (保留pnpm-lock.yaml用于Docker构建)
 package-lock.json
 yarn.lock
-pnpm-lock.yaml
 
 # Release files
 releases/
