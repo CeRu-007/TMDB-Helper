@@ -10,7 +10,22 @@ export class AuthMiddleware {
    */
   static async verifyRequest(request: NextRequest): Promise<{ success: boolean; userId?: string; error?: string }> {
     try {
-      // 从cookie获取token
+      // 检查是否是桌面应用环境
+      const userAgent = request.headers.get('user-agent') || '';
+      const isElectron = userAgent.includes('Electron') ||
+                        userAgent.includes('TMDB-Helper-Electron') ||
+                        process.env.ELECTRON_BUILD === 'true';
+
+      // 如果是桌面应用，直接返回认证成功
+      if (isElectron) {
+        console.log('[AuthMiddleware] 桌面应用跳过认证检查');
+        return {
+          success: true,
+          userId: AuthManager.getSystemUserId()
+        };
+      }
+
+      // 非桌面应用的正常认证流程
       const token = request.cookies.get('auth-token')?.value;
 
       if (!token) {

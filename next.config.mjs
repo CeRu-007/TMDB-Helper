@@ -1,7 +1,24 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Docker 部署支持
-  output: 'standalone',
+  // 支持 Docker 和 Electron 部署
+  // Electron 构建时使用默认模式，避免构建问题
+  output: process.env.ELECTRON_BUILD === 'true' ? undefined :
+          (process.env.NODE_ENV === 'production' && process.platform !== 'win32' ? 'standalone' : undefined),
+
+  // Electron 桌面应用支持
+  trailingSlash: process.env.ELECTRON_BUILD === 'true',
+
+  // 禁用实验性功能以避免构建问题
+  experimental: {},
+
+  // Electron 环境下的特殊配置
+  ...(process.env.ELECTRON_BUILD === 'true' && {
+    assetPrefix: '',
+    basePath: '',
+    images: {
+      unoptimized: true
+    }
+  }),
 
   eslint: {
     ignoreDuringBuilds: true,
@@ -36,13 +53,41 @@ const nextConfig = {
 
   // 增强的 webpack 配置来处理 ChunkLoadError 和模块加载问题
   webpack: (config, { isServer, dev }) => {
+    // Electron 构建时使用简化配置
+    if (process.env.ELECTRON_BUILD === 'true') {
+      console.log('🖥️ 检测到 Electron 构建，使用简化配置');
+
+      // 简化的优化配置，避免模块缺失问题
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              priority: -10,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+
+      return config;
+    }
+
     // Docker环境检测和优化
-    const isDocker = process.env.DOCKER_CONTAINER === 'true' || 
+    const isDocker = process.env.DOCKER_CONTAINER === 'true' ||
                      process.env.NODE_ENV === 'production';
-    
+
     if (isDocker) {
       console.log('🐳 检测到Docker环境，应用Docker优化配置');
-      
+
       // Docker环境下的内存优化
       config.optimization = {
         ...config.optimization,

@@ -6,7 +6,42 @@ import { AuthManager } from '@/lib/auth-manager';
  */
 export async function GET(request: NextRequest) {
   try {
-    // 从cookie获取token
+    // 检查是否是桌面应用环境
+    const userAgent = request.headers.get('user-agent') || '';
+    const isElectron = userAgent.includes('Electron') ||
+                      userAgent.includes('TMDB-Helper-Electron') ||
+                      process.env.ELECTRON_BUILD === 'true';
+
+    console.log('[Auth] User-Agent:', userAgent);
+    console.log('[Auth] 是否为桌面应用:', isElectron);
+
+    // 如果是桌面应用，直接返回认证成功
+    if (isElectron) {
+      console.log('[Auth] 桌面应用跳过认证检查');
+
+      // 确保管理员用户存在
+      if (!AuthManager.hasAdminUser()) {
+        console.log('[Auth] 初始化管理员用户...');
+        await AuthManager.initializeFromEnv();
+      }
+
+      const adminUser = AuthManager.getAdminUser();
+      const response = NextResponse.json({
+        success: true,
+        user: {
+          id: adminUser?.id || 'admin',
+          username: adminUser?.username || 'admin',
+          lastLoginAt: adminUser?.lastLoginAt || new Date().toISOString()
+        },
+        systemUserId: AuthManager.getSystemUserId(),
+        isElectron: true
+      });
+
+      console.log('[Auth] 桌面应用认证成功');
+      return response;
+    }
+
+    // 非桌面应用的正常认证流程
     const token = request.cookies.get('auth-token')?.value;
 
     if (!token) {
