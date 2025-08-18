@@ -50,3 +50,34 @@ data/
 lib/generated/
 prisma/dev.db
 prisma/migrations/
+
+# Electron build outputs
+/dist/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.msi
+*.pkg
+*.tar.gz
+
+# Electron cache and temporary files
+.electron-builder/
+electron-builder-cache/
+.electron/
+electron-dist/
+
+# Platform specific build files
+build/Release/
+build/Debug/
+build/win-unpacked/
+build/mac/
+build/linux-unpacked/
+
+# Code signing certificates (if any)
+*.p12
+*.cer
+*.crt
+*.pem
