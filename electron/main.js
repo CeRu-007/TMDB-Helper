@@ -29,11 +29,22 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      devTools: isDev, // 只在开发环境启用
+      webSecurity: !isDev, // 生产环境启用web安全
+      backgroundThrottling: false, // 禁用后台节流以提高性能
+      spellcheck: false, // 禁用拼写检查
+      enableWebSQL: false, // 禁用WebSQL
+      experimentalFeatures: false, // 禁用实验性功能
+      v8CacheOptions: 'code', // 启用V8代码缓存
+      sandbox: false // 生产环境可考虑启用沙盒
     },
     icon: path.join(__dirname, '../public/images/tmdb-helper-logo-new.png'),
     show: false,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default'
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    // 性能优化选项
+    useContentSize: true,
+    enableLargerThanScreen: false
   });
 
   // 设置 User-Agent 以标识为 Electron 应用
@@ -46,8 +57,23 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
 
-    // 打开开发者工具以便调试
-    mainWindow.webContents.openDevTools();
+    // 只在开发环境下打开开发者工具
+    if (isDev) {
+      mainWindow.webContents.openDevTools();
+    }
+
+    // 生产环境性能优化
+    if (!isDev) {
+      // 禁用不必要的功能以节省资源
+      mainWindow.webContents.setAudioMuted(true); // 如果不需要音频
+
+      // 优化内存使用
+      setInterval(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.session.clearCache();
+        }
+      }, 300000); // 每5分钟清理一次缓存
+    }
   });
 
   // 添加页面加载事件监听
@@ -64,23 +90,64 @@ function createWindow() {
   });
 
   // 加载应用
-  const startUrl = `http://localhost:${port}`;
-  console.log('🔗 加载 URL:', startUrl);
-
   const loadApp = async () => {
     try {
-      await mainWindow.loadURL(startUrl);
+      if (isDev) {
+        // 开发环境使用本地服务器
+        const startUrl = `http://localhost:${port}`;
+        console.log('🔗 开发环境加载 URL:', startUrl);
+        await mainWindow.loadURL(startUrl);
+      } else {
+        // 生产环境尝试使用本地服务器，如果失败则使用静态文件
+        try {
+          const startUrl = `http://localhost:${port}`;
+          console.log('🔗 尝试加载本地服务器:', startUrl);
+          await mainWindow.loadURL(startUrl);
+        } catch (serverError) {
+          console.log('⚠️ 本地服务器启动失败，尝试加载静态文件');
+
+          // 查找静态HTML文件
+          const appPath = app.getAppPath();
+          const possiblePaths = [
+            path.join(appPath, '.next', 'server', 'pages', 'index.html'),
+            path.join(appPath, '.next', 'static', 'index.html'),
+            path.join(appPath, 'out', 'index.html'),
+            path.join(appPath, 'public', 'index.html')
+          ];
+
+          let htmlPath = null;
+          for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+              htmlPath = p;
+              break;
+            }
+          }
+
+          if (htmlPath) {
+            console.log('📄 加载静态文件:', htmlPath);
+            await mainWindow.loadFile(htmlPath);
+          } else {
+            throw new Error('无法找到应用文件');
+          }
+        }
+      }
       console.log('✅ 应用加载成功');
     } catch (error) {
       console.error('❌ 应用加载失败:', error);
 
-      // 如果是生产环境，尝试重新加载
-      if (!isDev) {
-        console.log('🔄 3秒后重试加载...');
-        setTimeout(() => {
-          loadApp();
-        }, 3000);
-      }
+      // 显示错误页面
+      const errorHtml = `
+        <html>
+          <head><title>启动错误</title></head>
+          <body style="font-family: Arial; padding: 20px; text-align: center;">
+            <h1>应用启动失败</h1>
+            <p>错误信息: ${error.message}</p>
+            <p>请检查应用是否正确构建</p>
+            <button onclick="location.reload()">重试</button>
+          </body>
+        </html>
+      `;
+      await mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorHtml)}`);
     }
   };
 
@@ -119,14 +186,32 @@ function startNextServer() {
 
       // 获取正确的应用路径
       const appPath = app.getAppPath();
-      const nextDir = path.join(appPath, '.next');
+      let nextDir = path.join(appPath, '.next');
+
+      // 在打包后的应用中，.next 可能在不同位置
+      if (!fs.existsSync(nextDir)) {
+        // 尝试在 resources/app.asar/.next
+        nextDir = path.join(appPath, '.next');
+        if (!fs.existsSync(nextDir)) {
+          // 尝试在 resources/.next
+          nextDir = path.join(path.dirname(appPath), '.next');
+          if (!fs.existsSync(nextDir)) {
+            // 尝试在应用根目录
+            nextDir = path.join(process.cwd(), '.next');
+          }
+        }
+      }
 
       console.log('📁 应用路径:', appPath);
       console.log('📁 Next.js 构建目录:', nextDir);
+      console.log('📁 .next 目录存在:', fs.existsSync(nextDir));
 
       // 检查 .next 目录是否存在
       if (!fs.existsSync(nextDir)) {
-        console.error('❌ .next 目录不存在:', nextDir);
+        console.error('❌ .next 目录不存在，尝试的路径:');
+        console.error('  -', path.join(appPath, '.next'));
+        console.error('  -', path.join(path.dirname(appPath), '.next'));
+        console.error('  -', path.join(process.cwd(), '.next'));
         reject(new Error(`Next.js 构建目录不存在: ${nextDir}`));
         return;
       }
@@ -138,9 +223,9 @@ function startNextServer() {
 
       const nextApp = next({
         dev: false,
-        dir: appPath,
+        dir: path.dirname(nextDir), // 使用 .next 目录的父目录作为应用目录
         conf: {
-          distDir: '.next'
+          distDir: path.basename(nextDir) // 使用相对路径
         }
       });
 
@@ -231,10 +316,12 @@ function createMenu() {
     {
       label: '视图',
       submenu: [
-        { label: '重新加载', accelerator: 'CmdOrCtrl+R', role: 'reload' },
-        { label: '强制重新加载', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
-        { label: '开发者工具', accelerator: 'F12', role: 'toggleDevTools' },
-        { type: 'separator' },
+        ...(process.env.NODE_ENV === 'development' ? [
+          { label: '重新加载', accelerator: 'CmdOrCtrl+R', role: 'reload' },
+          { label: '强制重新加载', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
+          { label: '开发者工具', accelerator: 'F12', role: 'toggleDevTools' },
+          { type: 'separator' }
+        ] : []),
         { label: '实际大小', accelerator: 'CmdOrCtrl+0', role: 'resetZoom' },
         { label: '放大', accelerator: 'CmdOrCtrl+Plus', role: 'zoomIn' },
         { label: '缩小', accelerator: 'CmdOrCtrl+-', role: 'zoomOut' },
@@ -285,6 +372,21 @@ function createMenu() {
 // 应用事件处理
 app.whenReady().then(async () => {
   try {
+    // 生产环境性能优化
+    if (!isDev) {
+      // 禁用硬件加速（如果遇到GPU问题）
+      // app.disableHardwareAcceleration();
+
+      // 限制子进程数量
+      app.commandLine.appendSwitch('max_old_space_size', '512'); // 限制V8内存
+      app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512');
+
+      // 禁用不必要的功能
+      app.commandLine.appendSwitch('disable-background-timer-throttling');
+      app.commandLine.appendSwitch('disable-renderer-backgrounding');
+      app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+    }
+
     console.log('🚀 开始启动 TMDB Helper 桌面应用');
     console.log('📁 应用路径:', app.getAppPath());
     console.log('📁 用户数据路径:', app.getPath('userData'));

@@ -1,7 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 静态导出配置（用于修复构建问题）
+  output: process.env.STATIC_EXPORT === 'true' ? 'export' : undefined,
+  trailingSlash: process.env.STATIC_EXPORT === 'true' ? true : (process.env.ELECTRON_BUILD === 'true'),
+  images: {
+    unoptimized: process.env.STATIC_EXPORT === 'true' ? true : (process.env.ELECTRON_BUILD === 'true')
+  },
   // 支持 Docker 和 Electron 部署
-  // Electron 构建时使用默认模式，避免构建问题
+  // Electron 构建时不使用 standalone 模式，避免Windows权限问题
   output: process.env.ELECTRON_BUILD === 'true' ? undefined :
           (process.env.NODE_ENV === 'production' && process.platform !== 'win32' ? 'standalone' : undefined),
 
@@ -186,6 +192,27 @@ const nextConfig = {
     compress: true,
     poweredByHeader: false,
     generateEtags: false,
+  }),
+
+  // Electron 构建优化
+  ...(process.env.ELECTRON_BUILD === 'true' && {
+    compress: true,
+    poweredByHeader: false,
+    generateEtags: false,
+    compiler: {
+      removeConsole: {
+        exclude: ['error', 'warn'],
+      },
+    },
+    // 额外的性能优化
+    modularizeImports: {
+      // 优化lodash等库的导入
+      'lodash': {
+        transform: 'lodash/{{member}}',
+      },
+    },
+    // 减少运行时开销
+    reactStrictMode: false, // 生产环境禁用严格模式
   }),
 }
 
