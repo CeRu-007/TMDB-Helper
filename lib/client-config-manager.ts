@@ -40,30 +40,56 @@ export class ClientConfigManager {
    */
   static async setItem(key: string, value: string): Promise<boolean> {
     try {
+      console.log('🔧 [ClientConfigManager] 开始设置配置项:', { key, valueLength: value?.length, valuePreview: value ? `${value.substring(0, 8)}...` : '空' })
+      
+      const requestBody = {
+        action: 'set',
+        key,
+        value
+      }
+      console.log('📤 [ClientConfigManager] 发送请求体:', requestBody)
+      
       const response = await fetch('/api/config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          action: 'set',
-          key,
-          value
-        })
+        body: JSON.stringify(requestBody)
       })
 
+      console.log('📥 [ClientConfigManager] 收到响应:', { 
+        status: response.status, 
+        ok: response.ok,
+        statusText: response.statusText,
+        url: response.url
+      })
+      
+      if (!response.ok) {
+        console.error('❌ [ClientConfigManager] HTTP响应不成功:', response.status, response.statusText)
+        return false
+      }
+      
       const data = await response.json()
+      console.log('📋 [ClientConfigManager] 响应数据:', data)
 
       if (data.success) {
         // 更新缓存
         this.updateCache(key, value)
+        console.log('✅ [ClientConfigManager] 配置项设置成功:', key)
         return true
       }
 
-      console.error('设置配置项失败:', data.error)
+      console.error('❌ [ClientConfigManager] 设置配置项失败:', data.error)
       return false
     } catch (error) {
-      console.error('设置配置项失败:', error)
+      console.error('❌ [ClientConfigManager] 设置配置项异常:', error)
+      if (error instanceof Error) {
+        console.error('❌ [ClientConfigManager] 异常详情:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        })
+      }
       return false
     }
   }

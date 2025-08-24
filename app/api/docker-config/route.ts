@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DockerConfigManager, EnvironmentType } from '@/lib/docker-config-manager';
+import { ServerConfigManager, ServerConfig } from '@/lib/server-config-manager';
 
 export async function GET() {
   try {
@@ -11,7 +11,7 @@ export async function GET() {
       );
     }
 
-    const config = DockerConfigManager.getConfig();
+    const config = ServerConfigManager.getConfig();
     
     return NextResponse.json({
       success: true,
@@ -22,15 +22,10 @@ export async function GET() {
         siliconFlowThumbnailModel: config.siliconFlowThumbnailModel,
         modelScopeApiKey: config.modelScopeApiKey ? '***已配置***' : null,
         modelScopeEpisodeModel: config.modelScopeEpisodeModel,
-        userSettings: config.userSettings,
-        appConfig: config.appConfig,
-        taskSchedulerConfig: config.taskSchedulerConfig,
-        videoThumbnailSettings: config.videoThumbnailSettings,
         generalSettings: config.generalSettings,
         appearanceSettings: config.appearanceSettings,
-        isDockerEnvironment: DockerConfigManager.isDockerEnvironment(),
-        environmentType: DockerConfigManager.getEnvironmentType(),
-        shouldUseFileSystem: DockerConfigManager.shouldUseFileSystem(),
+        videoThumbnailSettings: config.videoThumbnailSettings,
+        taskSchedulerConfig: config.taskSchedulerConfig,
         // 添加配置状态标识
         hasApiKey: !!config.tmdbApiKey,
         hasSiliconFlowApiKey: !!config.siliconFlowApiKey,
@@ -56,8 +51,6 @@ export async function POST(request: NextRequest) {
       siliconFlowThumbnailModel,
       modelScopeApiKey,
       modelScopeEpisodeModel,
-      userSettings,
-      appConfig,
       taskSchedulerConfig,
       videoThumbnailSettings,
       generalSettings,
@@ -65,91 +58,60 @@ export async function POST(request: NextRequest) {
       action 
     } = body;
 
-    if (action === 'migrate') {
-      // 迁移配置数据到Docker配置
-      const configData = body.configData || body.localStorageData || {};
-      DockerConfigManager.migrateFromLocalStorage(configData);
-      
-      return NextResponse.json({
-        success: true,
-        message: '配置迁移成功'
-      });
-    }
 
     // 保存TMDB配置
     if (tmdbApiKey) {
       console.log(`🔑 接收到TMDB API密钥保存请求: ${tmdbApiKey.substring(0, 8)}...`);
 
-      // 验证API密钥格式
-      if (!/^[a-f0-9]{32}$/i.test(tmdbApiKey)) {
-        console.log(`❌ API密钥格式验证失败: ${tmdbApiKey}`);
-        return NextResponse.json(
-          { success: false, error: 'TMDB API密钥格式不正确，应为32位十六进制字符串' },
-          { status: 400 }
-        );
-      }
-
       try {
-        DockerConfigManager.setTmdbApiKey(tmdbApiKey);
+        ServerConfigManager.setConfigItem('tmdbApiKey', tmdbApiKey);
         console.log(`✅ TMDB API密钥保存成功`);
       } catch (error) {
         console.error(`❌ TMDB API密钥保存失败:`, error);
         return NextResponse.json(
-          { success: false, error: `API密钥保存失败: ${error.message}` },
+          { success: false, error: `API密钥保存失败: ${error instanceof Error ? error.message : '未知错误'}` },
           { status: 500 }
         );
       }
     }
 
     if (tmdbImportPath) {
-      DockerConfigManager.setTmdbImportPath(tmdbImportPath);
+      ServerConfigManager.setConfigItem('tmdbImportPath', tmdbImportPath);
     }
 
     // 保存硅基流动API配置
     if (siliconFlowApiKey) {
-      DockerConfigManager.setSiliconFlowApiKey(siliconFlowApiKey);
+      ServerConfigManager.setConfigItem('siliconFlowApiKey', siliconFlowApiKey);
     }
 
     if (siliconFlowThumbnailModel) {
-      const config = DockerConfigManager.getConfig();
-      config.siliconFlowThumbnailModel = siliconFlowThumbnailModel;
-      DockerConfigManager.saveConfig(config);
+      ServerConfigManager.setConfigItem('siliconFlowThumbnailModel', siliconFlowThumbnailModel);
     }
 
     // 保存魔搭社区API配置
     if (modelScopeApiKey) {
-      DockerConfigManager.setModelScopeApiKey(modelScopeApiKey);
+      ServerConfigManager.setConfigItem('modelScopeApiKey', modelScopeApiKey);
     }
 
     if (modelScopeEpisodeModel) {
-      const config = DockerConfigManager.getConfig();
-      config.modelScopeEpisodeModel = modelScopeEpisodeModel;
-      DockerConfigManager.saveConfig(config);
+      ServerConfigManager.setConfigItem('modelScopeEpisodeModel', modelScopeEpisodeModel);
     }
 
     // 保存其他配置
-    if (userSettings) {
-      DockerConfigManager.setUserSettings(userSettings);
-    }
-
-    if (appConfig) {
-      DockerConfigManager.setAppConfig(appConfig);
-    }
-
-    if (taskSchedulerConfig) {
-      DockerConfigManager.setTaskSchedulerConfig(taskSchedulerConfig);
-    }
-
-    if (videoThumbnailSettings) {
-      DockerConfigManager.setVideoThumbnailSettings(videoThumbnailSettings);
-    }
-
     if (generalSettings) {
-      DockerConfigManager.setGeneralSettings(generalSettings);
+      ServerConfigManager.setConfigItem('generalSettings', generalSettings);
     }
 
     if (appearanceSettings) {
-      DockerConfigManager.setAppearanceSettings(appearanceSettings);
+      ServerConfigManager.setConfigItem('appearanceSettings', appearanceSettings);
+    }
+
+    if (videoThumbnailSettings) {
+      ServerConfigManager.setConfigItem('videoThumbnailSettings', videoThumbnailSettings);
+    }
+
+    if (taskSchedulerConfig) {
+      ServerConfigManager.setConfigItem('taskSchedulerConfig', taskSchedulerConfig);
     }
 
     return NextResponse.json({
@@ -167,16 +129,17 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE() {
   try {
-    DockerConfigManager.clearConfig();
+    // 重置为默认配置
+    ServerConfigManager.resetToDefault();
     
     return NextResponse.json({
       success: true,
-      message: '配置清除成功'
+      message: '配置已重置为默认值'
     });
   } catch (error) {
-    console.error('清除Docker配置失败:', error);
+    console.error('重置配置失败:', error);
     return NextResponse.json(
-      { success: false, error: '清除配置失败' },
+      { success: false, error: `重置配置失败: ${error instanceof Error ? error.message : '未知错误'}` },
       { status: 500 }
     );
   }

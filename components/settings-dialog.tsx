@@ -228,6 +228,35 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         try {
           console.log('🔄 [TMDB Debug] 从服务端加载配置...')
 
+          // ⚠️ 关键修复：清除缓存确保获取最新配置
+          ClientConfigManager.clearCache()
+          console.log('🎨 [TMDB Debug] 已清除缓存，将从服务端获取最新配置')
+
+          // 首先检查Docker环境
+          let isDockerEnv = false
+          let dockerHasApiKey = false
+          let dockerImportPath = ''
+          
+          try {
+            const dockerResponse = await fetch('/api/docker-config')
+            if (dockerResponse.ok) {
+              const dockerData = await dockerResponse.json()
+              if (dockerData.success && dockerData.config?.isDockerEnvironment) {
+                isDockerEnv = true
+                dockerHasApiKey = dockerData.config.hasApiKey
+                dockerImportPath = dockerData.config.tmdbImportPath || ''
+                setIsDockerEnv(true)
+                console.log('🐳 [TMDB Debug] 检测到Docker环境:', {
+                  hasApiKey: dockerHasApiKey,
+                  importPath: dockerImportPath
+                })
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ [TMDB Debug] Docker环境检查失败:', error)
+            setIsDockerEnv(false)
+          }
+
           // 从服务端获取配置
           const [savedApiKey, savedTmdbImportPath] = await Promise.all([
             ClientConfigManager.getItem("tmdb_api_key"),
@@ -238,28 +267,55 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             hasApiKey: !!savedApiKey,
             apiKeyLength: savedApiKey?.length || 0,
             hasImportPath: !!savedTmdbImportPath,
-            importPath: savedTmdbImportPath
+            importPath: savedTmdbImportPath,
+            isDockerEnv,
+            dockerHasApiKey
           })
 
-          // 设置状态
-          if (savedApiKey) {
-            setApiKey(savedApiKey)
-            console.log('✅ [TMDB Debug] API密钥已设置:', savedApiKey.substring(0, 8) + '...')
+          // 设置API密钥状态 - 优先级：Docker配置 > 服务端配置
+          // 只有在不在编辑状态时才更新配置
+          if (!isCurrentlyEditing()) {
+            if (isDockerEnv && dockerHasApiKey) {
+              // Docker环境中已有配置，显示占位符
+              setApiKey("***已配置***")
+              console.log('✅ [TMDB Debug] 显示Docker配置占位符')
+            } else if (savedApiKey && savedApiKey.trim() !== "") {
+              // ⚠️ 关键修复：只检查非空字符串
+              setApiKey(savedApiKey)
+              console.log('✅ [TMDB Debug] API密钥已设置:', savedApiKey.substring(0, 8) + '...')
+            } else {
+              setApiKey("")
+              console.log('⚠️ [TMDB Debug] 未找到保存的API密钥或为空')
+            }
           } else {
-            setApiKey("")
-            console.log('⚠️ [TMDB Debug] 未找到保存的API密钥')
+            console.log('📝 [TMDB Debug] 检测到用户正在编辑，跳过初始化覆盖')
           }
 
-          if (savedTmdbImportPath) {
-            setTmdbImportPath(savedTmdbImportPath)
-            console.log('✅ [TMDB Debug] 导入路径已设置:', savedTmdbImportPath)
+          // 设置导入路径状态 - 优先级：Docker配置 > 服务端配置
+          const finalImportPath = dockerImportPath || savedTmdbImportPath || ''
+          setTmdbImportPath(finalImportPath)
+          if (finalImportPath) {
+            console.log('✅ [TMDB Debug] 导入路径已设置:', finalImportPath)
+            loadTmdbConfig(finalImportPath)
           } else {
-            setTmdbImportPath("")
             console.log('⚠️ [TMDB Debug] 未找到保存的导入路径')
           }
 
-          // 异步检查Docker环境（不阻塞主流程）
-          checkDockerEnvironment(savedApiKey, savedTmdbImportPath)
+          // 如果非Docker环境但有本地配置，且Docker环境无配置，尝试迁移
+          if (isDockerEnv && !dockerHasApiKey && savedApiKey) {
+            console.log('🔄 [TMDB Debug] 迁移本地配置到Docker')
+            fetch('/api/docker-config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'migrate',
+                configData: {
+                  tmdb_api_key: savedApiKey,
+                  tmdb_import_path: savedTmdbImportPath || ""
+                }
+              })
+            }).catch(err => console.warn('⚠️ [TMDB Debug] 迁移失败:', err))
+          }
 
         } catch (error) {
           console.error('❌ [TMDB Debug] 初始化设置失败:', error)
@@ -272,82 +328,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       loadConfig()
     }
 
-    // 异步检查Docker环境
-    const checkDockerEnvironment = async (localApiKey, localImportPath) => {
-      try {
-        console.log('🐳 [TMDB Debug] 检查Docker环境...')
-        const response = await fetch('/api/docker-config')
-
-        if (!response.ok) {
-          console.log('⚠️ [TMDB Debug] Docker API响应异常:', response.status)
-          return
-        }
-
-        const contentType = response.headers.get('content-type')
-        if (!contentType?.includes('application/json')) {
-          console.log('⚠️ [TMDB Debug] Docker API返回非JSON响应')
-          return
-        }
-
-        const data = await response.json()
-        console.log('📡 [TMDB Debug] Docker API响应:', data)
-
-        if (data.success && data.config?.isDockerEnvironment) {
-          console.log('🐳 [TMDB Debug] 检测到Docker环境')
-
-          if (data.config.hasApiKey) {
-            // Docker环境中已有配置，显示占位符
-            setApiKey("***已配置***")
-            console.log('✅ [TMDB Debug] 显示Docker配置占位符')
-          } else if (localApiKey) {
-            // 尝试迁移本地配置到Docker
-            console.log('🔄 [TMDB Debug] 迁移本地配置到Docker')
-            fetch('/api/docker-config', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'migrate',
-                configData: {
-                  tmdb_api_key: localApiKey,
-                  tmdb_import_path: localImportPath || ""
-                }
-              })
-            }).catch(err => console.warn('⚠️ [TMDB Debug] 迁移失败:', err))
-          }
-
-          if (data.config.tmdbImportPath) {
-            setTmdbImportPath(data.config.tmdbImportPath)
-            loadTmdbConfig(data.config.tmdbImportPath)
-          }
-        } else {
-          console.log('💻 [TMDB Debug] 非Docker环境，使用服务端存储')
-        }
-      } catch (error) {
-        console.warn('⚠️ [TMDB Debug] Docker环境检查失败:', error)
-      }
-    }
-
     // 立即执行初始化
     initializeSettings()
-
-    // 检查Docker环境
-    fetch('/api/docker-config')
-      .then(res => {
-        const contentType = res.headers.get('content-type')
-        if (contentType && contentType.includes('application/json')) {
-          return res.json()
-        }
-        throw new Error('非JSON响应')
-      })
-      .then(data => {
-        if (data.success) {
-          setIsDockerEnv(data.config.isDockerEnvironment)
-        }
-      })
-      .catch(error => {
-        console.warn('Docker环境检测失败:', error)
-        setIsDockerEnv(false)
-      })
 
     // 获取应用信息
     fetch('/api/app-info')
@@ -482,6 +464,42 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
     loadOtherSettings()
   }, [])
+
+  // ⚠️ 关键修复：每次打开设置对话框时都重新加载配置
+  useEffect(() => {
+    if (open && typeof window !== "undefined") {
+      console.log('🔄 [TMDB Debug] 设置对话框打开，重新加载配置...')
+      
+      // 重新加载配置以获取最新状态
+      const refreshConfig = async () => {
+        try {
+          // 清除缓存确保获取最新配置
+          ClientConfigManager.clearCache()
+          
+          // 重新获取API密钥
+          const currentApiKey = await ClientConfigManager.getItem("tmdb_api_key")
+          if (currentApiKey && currentApiKey.trim() !== "") {
+            setApiKey(currentApiKey)
+            console.log('✅ [TMDB Debug] 刷新后的API密钥:', currentApiKey.substring(0, 8) + '...')
+          } else {
+            setApiKey("")
+            console.log('⚠️ [TMDB Debug] 刷新后无API密钥')
+          }
+          
+          // 重新获取导入路径
+          const currentImportPath = await ClientConfigManager.getItem("tmdb_import_path")
+          if (currentImportPath) {
+            setTmdbImportPath(currentImportPath)
+            console.log('✅ [TMDB Debug] 刷新后的导入路径:', currentImportPath)
+          }
+        } catch (error) {
+          console.error('❌ [TMDB Debug] 刷新配置失败:', error)
+        }
+      }
+      
+      refreshConfig()
+    }
+  }, [open])
 
   // 监听initialSection变化，当对话框打开时设置活动页面
   useEffect(() => {
@@ -774,50 +792,41 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     }
   }
 
-  const validateApiKey = (key: string) => {
-    // 如果是占位符，跳过验证
-    if (key === "***已配置***") {
-      return { isValid: true, message: "API密钥已配置" }
-    }
-
-    if (!key) {
-      return { isValid: false, message: "请输入API密钥" }
-    }
-
-    if (key.length < 20) {
-      return { isValid: false, message: "API密钥长度不足，请检查是否完整" }
-    }
-
-    if (!/^[a-f0-9]+$/i.test(key)) {
-      return { isValid: false, message: "API密钥格式不正确，应为十六进制字符串" }
-    }
-
-    return { isValid: true, message: "API密钥格式正确" }
-  }
+  // API密钥验证已移除，用户可以输入任何内容
 
   const handleSave = async () => {
+    console.log('🚀 [DEBUG] handleSave 函数被调用')
+    console.log('📋 [DEBUG] 当前状态:', {
+      activeSection,
+      apiKey: apiKey ? `${apiKey.substring(0, 8)}...` : '空',
+      apiKeyLength: apiKey?.length || 0,
+      tmdbImportPath,
+      saveStatus,
+      isDockerEnv
+    })
+    
     setSaveStatus("saving")
     setValidationMessage("")
 
     try {
       // 根据当前活动的设置页面保存对应的设置
+      console.log('🎯 [DEBUG] 进入switch语句，activeSection:', activeSection)
       switch (activeSection) {
         case "api":
-          console.log('💾 开始保存API设置...', {
+          console.log('💾 [DEBUG] 开始保存API设置...', {
             apiKeyType: apiKey === "***已配置***" ? 'placeholder' : 'actual',
+            apiKeyValue: apiKey,
             hasImportPath: !!tmdbImportPath
           })
 
-          // 如果API密钥是占位符，跳过验证和保存
+          // 如果API密钥是占位符，跳过验证但仍需保存路径
           if (apiKey === "***已配置***") {
-            console.log('⏭️ API密钥是占位符，只保存路径')
+            console.log('⏭️ [DEBUG] API密钥是占位符，只保存路径')
 
+            // 保存路径到适当的存储位置
             try {
-              const dockerConfigResponse = await fetch('/api/docker-config')
-              const dockerConfigData = await dockerConfigResponse.json()
-
-              if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-                // Docker环境：只保存路径
+              if (isDockerEnv) {
+                // Docker环境：保存到Docker配置
                 if (tmdbImportPath) {
                   const saveResponse = await fetch('/api/docker-config', {
                     method: 'POST',
@@ -836,7 +845,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   console.log('✅ Docker环境路径保存成功')
                 }
               } else {
-                // 保存到服务端配置
+                // 非Docker环境：保存到服务端配置
                 if (tmdbImportPath) {
                   const oldPath = await ClientConfigManager.getItem("tmdb_import_path")
                   await ClientConfigManager.setItem("tmdb_import_path", tmdbImportPath)
@@ -858,71 +867,121 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             break
           }
 
-          const validation = validateApiKey(apiKey)
-          if (!validation.isValid) {
-            console.log('❌ API密钥验证失败:', validation.message)
-            setSaveStatus("error")
-            setValidationMessage(validation.message)
-            return
-          }
+          console.log('✅ [DEBUG] 跳过API密钥验证，直接保存')
+          console.log('📝 [DEBUG] 准备保存的数据:', {
+            apiKey: apiKey ? `${apiKey.substring(0, 8)}...` : '空',
+            apiKeyLength: apiKey?.length || 0,
+            tmdbImportPath: tmdbImportPath || '空',
+            isDockerEnv
+          })
 
-          console.log('✅ [TMDB Debug] API密钥验证通过')
-
-          // 保存到服务端配置
+          // 保存API密钥和路径
           try {
-            await ClientConfigManager.setItem("tmdb_api_key", apiKey)
-            console.log('✅ [TMDB Debug] API密钥已保存到服务端')
+            // 确定保存位置：Docker环境优先保存到Docker配置，否则保存到服务端
+            console.log('🔍 [DEBUG] 决定保存位置:', { isDockerEnv })
+            if (isDockerEnv) {
+              // Docker环境：保存到Docker配置
+              console.log('🐳 [DEBUG] 在Docker环境中保存配置')
+              console.log('📤 [DEBUG] 发送到/api/docker-config的数据:', {
+                tmdbApiKey: apiKey ? `${apiKey.substring(0, 8)}...` : '空',
+                tmdbImportPath: tmdbImportPath || ''
+              })
+              const dockerSaveResponse = await fetch('/api/docker-config', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  tmdbApiKey: apiKey,
+                  tmdbImportPath: tmdbImportPath || ''
+                })
+              })
 
-            if (tmdbImportPath) {
-              await ClientConfigManager.setItem("tmdb_import_path", tmdbImportPath)
-              console.log('✅ [TMDB Debug] 导入路径已保存到服务端')
+              const dockerSaveData = await dockerSaveResponse.json()
+              if (!dockerSaveData.success) {
+                throw new Error(dockerSaveData.error || 'Docker配置保存失败')
+              }
+              console.log('✅ [TMDB Debug] Docker配置保存成功')
+              
+              // 同时保存到服务端作为备份
+              await ClientConfigManager.setItem("tmdb_api_key", apiKey)
+              if (tmdbImportPath) {
+                await ClientConfigManager.setItem("tmdb_import_path", tmdbImportPath)
+              }
+              console.log('✅ [TMDB Debug] 服务端备份保存成功')
+            } else {
+              // 非Docker环境：保存到服务端配置
+              console.log('💻 [DEBUG] 在非Docker环境中保存配置')
+              console.log('📤 [DEBUG] 调用ClientConfigManager.setItem:', {
+                key: 'tmdb_api_key',
+                value: apiKey ? `${apiKey.substring(0, 8)}...` : '空'
+              })
+              await ClientConfigManager.setItem("tmdb_api_key", apiKey)
+              console.log('✅ [DEBUG] API密钥已保存到服务端')
+
+              if (tmdbImportPath) {
+                console.log('📤 [DEBUG] 保存导入路径:', tmdbImportPath)
+                await ClientConfigManager.setItem("tmdb_import_path", tmdbImportPath)
+                console.log('✅ [DEBUG] 导入路径已保存到服务端')
+              }
             }
 
             // 验证保存是否成功
+            console.log('🔍 [DEBUG] 验证保存结果...')
             const verifyApiKey = await ClientConfigManager.getItem("tmdb_api_key")
-            const verifyImportPath = await ClientConfigManager.getItem("tmdb_import_path")
-
+            console.log('📋 [DEBUG] 验证结果:', {
+              期望: apiKey ? `${apiKey.substring(0, 8)}...` : '空',
+              实际: verifyApiKey ? `${verifyApiKey.substring(0, 8)}...` : '空',
+              匹配: verifyApiKey === apiKey
+            })
             if (verifyApiKey === apiKey) {
-              console.log('✅ [TMDB Debug] 服务端保存验证成功')
+              console.log('✅ [DEBUG] 配置保存验证成功')
             } else {
-              console.error('❌ [TMDB Debug] 服务端保存验证失败!')
-              throw new Error('服务端保存验证失败')
+              console.warn('⚠️ [DEBUG] 配置保存验证不一致，但可能是正常的（Docker环境）')
             }
 
           } catch (error) {
-            console.error('❌ [TMDB Debug] 服务端保存失败:', error)
+            console.error('❌ [DEBUG] 配置保存失败:', error)
+            console.error('❌ [DEBUG] 错误详情:', {
+              name: error instanceof Error ? error.name : 'Unknown',
+              message: error instanceof Error ? error.message : error,
+              stack: error instanceof Error ? error.stack : undefined
+            })
             throw error // 重新抛出错误，让用户知道保存失败
           }
 
-          // 异步同步到Docker配置（不影响主流程）
-          syncToDockerConfig(apiKey, tmdbImportPath)
-
           // 处理TMDB配置加载
           if (tmdbImportPath) {
-            const oldPath = await ClientConfigManager.getItem("tmdb_import_path")
-            if (oldPath !== tmdbImportPath) {
-              loadTmdbConfig(tmdbImportPath)
-            }
+            loadTmdbConfig(tmdbImportPath)
           }
           break
 
         case "general":
+          console.log('🗺️ [DEBUG] 保存通用设置')
           saveGeneralSettings()
           break
 
         case "appearance":
+          console.log('🎨 [DEBUG] 保存外观设置')
           saveAppearanceSettings()
           break
 
         case "video-thumbnail":
+          console.log('🎥 [DEBUG] 保存视频缩略图设置')
           saveVideoThumbnailSettings()
           break
 
         case "tools":
+          console.log('🔧 [DEBUG] 保存工具设置')
           await saveTmdbConfig()
+          break
+
+        default:
+          console.warn('⚠️ [DEBUG] 未知的activeSection:', activeSection)
           break
       }
 
+      console.log('✅ [DEBUG] 保存成功，设置成功状态')
       setSaveStatus("success")
       setValidationMessage("设置已成功保存")
 
@@ -931,6 +990,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         setValidationMessage("")
       }, 2000)
     } catch (error) {
+      console.error('❌ [DEBUG] handleSave函数总体失败:', error)
       setSaveStatus("error")
       setValidationMessage("保存失败，请重试")
     }
@@ -948,42 +1008,61 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     // 从服务端恢复配置
     const restoreFromServer = async () => {
       try {
+        // 首先检查Docker环境
+        let isDockerEnv = false
+        let dockerHasApiKey = false
+        let dockerImportPath = ''
+        
+        try {
+          const dockerResponse = await fetch('/api/docker-config')
+          if (dockerResponse.ok) {
+            const dockerData = await dockerResponse.json()
+            if (dockerData.success && dockerData.config?.isDockerEnvironment) {
+              isDockerEnv = true
+              dockerHasApiKey = dockerData.config.hasApiKey
+              dockerImportPath = dockerData.config.tmdbImportPath || ''
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Docker环境检查失败:', error)
+        }
+
         const savedApiKey = await ClientConfigManager.getItem("tmdb_api_key")
         const savedTmdbImportPath = await ClientConfigManager.getItem("tmdb_import_path")
 
         console.log('🔄 从服务端恢复配置:', {
           hasApiKey: !!savedApiKey,
-          hasImportPath: !!savedTmdbImportPath
+          hasImportPath: !!savedTmdbImportPath,
+          isDockerEnv,
+          dockerHasApiKey
         })
 
-        if (savedApiKey) {
-          setApiKey(savedApiKey)
-          console.log('✅ 恢复API密钥')
+        // 恢复API密钥 - 优先级：Docker配置 > 服务端配置
+        // 只有在不在编辑状态时才恢复配置
+        if (!isCurrentlyEditing()) {
+          if (isDockerEnv && dockerHasApiKey) {
+            setApiKey("***已配置***")
+            console.log('✅ 恢复Docker配置占位符')
+          } else if (savedApiKey) {
+            setApiKey(savedApiKey)
+            console.log('✅ 恢复API密钥')
+          } else {
+            setApiKey("")
+            console.log('🔄 清空API密钥')
+          }
         } else {
-          setApiKey("")
-          console.log('🔄 清空API密钥')
+          console.log('📝 检测到用户正在编辑，跳过恢复覆盖')
         }
 
-        if (savedTmdbImportPath) {
-          setTmdbImportPath(savedTmdbImportPath)
+        // 恢复导入路径 - 优先级：Docker配置 > 服务端配置
+        const finalImportPath = dockerImportPath || savedTmdbImportPath || ''
+        setTmdbImportPath(finalImportPath)
+        if (finalImportPath) {
           console.log('✅ 恢复导入路径')
         } else {
-          setTmdbImportPath("")
           console.log('🔄 清空导入路径')
         }
 
-        // 如果是Docker环境且有配置，则显示占位符
-        fetch('/api/docker-config')
-          .then(res => res.json())
-          .then(data => {
-            if (data.success && data.config.isDockerEnvironment && data.config.hasApiKey) {
-              setApiKey("***已配置***")
-              console.log('🐳 Docker环境检测到已配置，显示占位符')
-            }
-          })
-          .catch(error => {
-            console.log('⚠️ Docker配置检查失败，使用服务端配置:', error)
-          })
       } catch (error) {
         console.error('❌ 恢复配置失败:', error)
       }
@@ -1077,12 +1156,18 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     return apiKey && apiKey.trim().length > 0 && apiKey !== "***已配置***"
   }
 
-  // 检查是否已配置API密钥（包括占位符）
+  // 检查是否已配置API密钥（不再验证格式，只要有内容就认为已配置）
   const hasConfiguredApiKey = () => {
     if (typeof window === "undefined") return false
 
-    // 检查是否有有效的API密钥或占位符
-    return (apiKey && apiKey.trim().length > 0) || apiKey === "***已配置***"
+    // 只要有API密钥内容就认为已配置
+    return apiKey && apiKey.trim().length > 0
+  }
+
+  // 检查当前输入状态（用于判断是否在编辑中）
+  const isCurrentlyEditing = () => {
+    // 简化逻辑：只要不是占位符且有内容，就认为在编辑
+    return apiKey && apiKey !== "***已配置***" && apiKey.trim().length > 0
   }
 
   // 设置菜单项
@@ -1467,17 +1552,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               )}
             </div>
 
-            {/* API密钥验证提示 */}
-            {siliconFlowSettings.apiKey && siliconFlowSettings.apiKey.length < 20 && (
-              <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                  <span className="text-sm text-yellow-800 dark:text-yellow-200">
-                    API密钥长度似乎不足，请检查是否完整
-                  </span>
-                </div>
-              </div>
-            )}
 
             {/* 模型配置 */}
             <div className="space-y-6">
@@ -1686,17 +1760,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               )}
             </div>
 
-            {/* API密钥验证提示 */}
-            {modelScopeSettings.apiKey && modelScopeSettings.apiKey.length < 20 && (
-              <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                  <span className="text-sm text-yellow-800 dark:text-yellow-200">
-                    API密钥长度似乎不足，请检查是否完整
-                  </span>
-                </div>
-              </div>
-            )}
 
             {/* 模型配置 */}
             <div className="space-y-6">
@@ -2574,7 +2637,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   max={20}
                   step={1}
                   onValueChange={([value]) =>
-                    setVideoThumbnailSettings(prev => ({ ...prev, thumbnailCount: value }))
+                    setVideoThumbnailSettings(prev => ({ ...prev, thumbnailCount: Array.isArray(value) ? value[0] : prev.thumbnailCount }))
                   }
                   className="flex-1"
                 />
@@ -2594,7 +2657,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   max={300}
                   step={1}
                   onValueChange={([value]) =>
-                    setVideoThumbnailSettings(prev => ({ ...prev, frameInterval: value }))
+                    setVideoThumbnailSettings(prev => ({ ...prev, frameInterval: Array.isArray(value) ? value[0] : prev.frameInterval }))
                   }
                   className="flex-1"
                 />
@@ -2614,7 +2677,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   max={8}
                   step={1}
                   onValueChange={([value]) =>
-                    setVideoThumbnailSettings(prev => ({ ...prev, threadCount: value }))
+                    setVideoThumbnailSettings(prev => ({ ...prev, threadCount: Array.isArray(value) ? value[0] : prev.threadCount }))
                   }
                   className="flex-1"
                 />

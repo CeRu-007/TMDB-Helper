@@ -121,7 +121,10 @@ export async function POST(request: NextRequest) {
       case 'set': {
         // 设置单个配置项
         const { key, value } = data
+        console.log('🔧 [API Route] 开始设置配置项:', { key, valueType: typeof value, valueLength: value?.length })
+        
         if (!key) {
+          console.error('❌ [API Route] 缺少配置键名')
           return NextResponse.json({
             success: false,
             error: '缺少配置键名'
@@ -130,7 +133,15 @@ export async function POST(request: NextRequest) {
 
         // 获取映射后的键名
         const mappedKey = mapKeyName(key)
-        ServerConfigManager.setConfigItem(mappedKey, value)
+        console.log('🔄 [API Route] 键名映射:', { originalKey: key, mappedKey })
+        
+        try {
+          ServerConfigManager.setConfigItem(mappedKey, value)
+          console.log('✅ [API Route] 配置项设置成功:', { key, mappedKey })
+        } catch (error) {
+          console.error('❌ [API Route] ServerConfigManager.setConfigItem 失败:', error)
+          throw error
+        }
 
         return NextResponse.json({
           success: true,

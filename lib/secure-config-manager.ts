@@ -4,7 +4,7 @@
  * 支持Docker环境下的文件系统存储
  */
 
-import { DockerConfigManager } from './docker-config-manager';
+import { ServerConfigManager } from './server-config-manager';
 
 interface SecureConfig {
   tmdbApiKey?: string;
@@ -115,19 +115,19 @@ export class SecureConfigManager {
   /**
    * 获取TMDB API密钥
    */
-  static getTmdbApiKey(): string {
-    // 在服务器环境中（开发或Docker），优先从Docker配置管理器获取
-    if (DockerConfigManager.shouldUseFileSystem()) {
-      const dockerApiKey = DockerConfigManager.getTmdbApiKey();
-      if (dockerApiKey) {
-        return dockerApiKey;
+  static async getTmdbApiKey(): Promise<string> {
+    // 优先从服务端配置获取
+    try {
+      const config = await this.getConfig();
+      if (config.tmdbApiKey) {
+        return config.tmdbApiKey;
       }
+    } catch (error) {
+      console.warn('获取服务端配置失败:', error);
     }
 
-    const config = this.getConfig();
-
-    // 优先使用配置中的密钥，其次使用环境变量
-    const apiKey = config.tmdbApiKey || process.env.TMDB_API_KEY;
+    // 其次使用环境变量
+    const apiKey = process.env.TMDB_API_KEY;
 
     if (!apiKey) {
       throw new Error('TMDB API密钥未配置，请在设置中配置或设置环境变量TMDB_API_KEY');
@@ -139,29 +139,21 @@ export class SecureConfigManager {
   /**
    * 设置TMDB API密钥
    */
-  static setTmdbApiKey(apiKey: string): void {
+  static async setTmdbApiKey(apiKey: string): Promise<void> {
     if (!apiKey || apiKey.trim().length === 0) {
       throw new Error('API密钥不能为空');
     }
 
-    // 在服务器环境中（开发或Docker），保存到Docker配置管理器
-    if (DockerConfigManager.shouldUseFileSystem()) {
-      DockerConfigManager.setTmdbApiKey(apiKey.trim());
-      return;
-    }
-
-    const config = this.getConfig();
-    config.tmdbApiKey = apiKey.trim();
-    this.saveConfig(config);
+    // 保存到服务端配置
+    await this.saveConfig({ tmdbApiKey: apiKey.trim() });
   }
   
   /**
-   * 验证API密钥格式
+   * 验证API密钥格式（已移除验证，允许任何输入）
    */
   static validateApiKey(apiKey: string): boolean {
-    // TMDB API密钥通常是32位十六进制字符串
-    const tmdbKeyPattern = /^[a-f0-9]{32}$/i;
-    return tmdbKeyPattern.test(apiKey);
+    // 不再验证，允许任何输入
+    return true;
   }
   
   /**
@@ -184,29 +176,26 @@ export class SecureConfigManager {
   /**
    * 检查配置是否存在
    */
-  static hasConfig(): boolean {
-    // 在Docker环境中，检查Docker配置管理器
-    if (DockerConfigManager.isDockerEnvironment()) {
-      const dockerApiKey = DockerConfigManager.getTmdbApiKey();
-      if (dockerApiKey) {
-        return true;
-      }
+  static async hasConfig(): Promise<boolean> {
+    try {
+      const config = await this.getConfig();
+      return !!config.tmdbApiKey;
+    } catch (error) {
+      console.warn('检查配置失败:', error);
+      return false;
     }
-
-    const config = this.getConfig();
-    return !!config.tmdbApiKey;
   }
   
   /**
    * 迁移旧的API密钥存储
    */
-  static migrateOldApiKey(): void {
+  static async migrateOldApiKey(): Promise<void> {
     try {
       if (typeof window === 'undefined') return;
       
       const oldApiKey = localStorage.getItem('tmdb_api_key');
-      if (oldApiKey && !this.hasConfig()) {
-        this.setTmdbApiKey(oldApiKey);
+      if (oldApiKey && !(await this.hasConfig())) {
+        await this.setTmdbApiKey(oldApiKey);
         localStorage.removeItem('tmdb_api_key');
         console.log('已迁移旧的API密钥到安全存储');
       }
