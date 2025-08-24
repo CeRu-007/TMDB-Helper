@@ -105,18 +105,23 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const { toast } = useToast()
   const { changePassword } = useAuth()
   
-  // 确保 activeSection 始终有效
-  const validInitialSection = initialSection && ['api', 'tools', 'video-thumbnail', 'general', 'appearance', 'security', 'help'].includes(initialSection) 
+  // 确保 activeSection 始终有效且为字符串类型
+  const validSections = ['api', 'tools', 'video-thumbnail', 'general', 'appearance', 'security', 'help']
+  const validInitialSection = initialSection && 
+    typeof initialSection === 'string' && 
+    validSections.includes(initialSection) 
     ? initialSection 
     : 'api'
   
   console.log('🚀 [DEBUG] SettingsDialog 初始化:', { 
     initialSection, 
+    initialSectionType: typeof initialSection,
     validInitialSection,
+    validSections,
     open 
   })
   
-  const [activeSection, setActiveSection] = useState(validInitialSection)
+  const [activeSection, setActiveSection] = useState<string>(validInitialSection)
 
   // 包装onOpenChange以触发自定义事件
   const handleOpenChange = (newOpen: boolean) => {
@@ -515,14 +520,25 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
   // 监听initialSection变化，当对话框打开时设置活动页面
   useEffect(() => {
-    if (open && initialSection) {
-      setActiveSection(initialSection)
-      // 如果是API配置，自动切换到硅基流动API标签页
-      if (initialSection === "api") {
-        setApiActiveTab("siliconflow")
+    if (open && initialSection && typeof initialSection === 'string') {
+      console.log('🔄 [DEBUG] useEffect设置activeSection:', {
+        initialSection,
+        type: typeof initialSection,
+        isValidSection: validSections.includes(initialSection)
+      })
+      
+      // 确保只设置有效的section
+      if (validSections.includes(initialSection)) {
+        setActiveSection(initialSection)
+        // 如果是API配置，自动切换到硅基流动API标签页
+        if (initialSection === "api") {
+          setApiActiveTab("siliconflow")
+        }
+      } else {
+        console.warn('⚠️ [DEBUG] 收到无效的initialSection，忽略:', initialSection)
       }
     }
-  }, [open, initialSection])
+  }, [open, initialSection, validSections])
 
   // 应用主题设置
   const applyThemeSettings = (settings: AppearanceSettings) => {
@@ -822,8 +838,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     
     // 强制检查并修复activeSection
     let currentActiveSection = activeSection
-    if (!currentActiveSection || currentActiveSection.trim() === '') {
-      console.warn('⚠️ [DEBUG] activeSection为空，强制设置为api')
+    if (!currentActiveSection || typeof currentActiveSection !== 'string' || currentActiveSection.trim() === '') {
+      console.warn('⚠️ [DEBUG] activeSection无效，强制设置为api:', {
+        原值: currentActiveSection,
+        类型: typeof currentActiveSection,
+        长度: currentActiveSection?.length
+      })
       currentActiveSection = 'api'
       setActiveSection('api')
     }
@@ -3190,7 +3210,19 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   return (
                     <button
                       key={item.id}
-                      onClick={() => setActiveSection(item.id)}
+                      onClick={() => {
+                        console.log('💱 [DEBUG] 菜单项点击:', {
+                          itemId: item.id,
+                          itemType: typeof item.id,
+                          isValidSection: validSections.includes(item.id)
+                        })
+                        if (typeof item.id === 'string' && validSections.includes(item.id)) {
+                          setActiveSection(item.id)
+                        } else {
+                          console.warn('⚠️ [DEBUG] 无效的菜单项ID:', item.id)
+                          setActiveSection('api') // 默认设置为api
+                        }
+                      }}
                       className={`w-full text-left p-3 rounded-lg transition-colors ${activeSection === item.id
                         ? "bg-blue-100 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 border border-blue-200 dark:border-blue-800"
                         : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
@@ -3233,7 +3265,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                     })
                     
                     // 如果用户不在API页面但是有API密钥输入，先切换到API页面
-                    if (activeSection !== 'api' && apiKey && apiKey.trim() !== '' && apiKey !== '***已配置***') {
+                    if (activeSection !== 'api' && apiKey && 
+                        typeof apiKey === 'string' && 
+                        apiKey.trim() !== '' && 
+                        apiKey !== '***已配置***') {
                       console.log('🔄 [DEBUG] 检测到API密钥输入，切换到API页面')
                       setActiveSection('api')
                       setTimeout(() => {

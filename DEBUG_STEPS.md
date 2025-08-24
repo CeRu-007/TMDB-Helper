@@ -16,21 +16,25 @@
    - 添加有效性验证，确保只接受合法的section值
    - 默认强制设置为 'api' 如果初始值无效
    - 添加详细的初始化日志
+   - **新增：修复类型安全问题**，确保activeSection始终为字符串类型
 
 2. **增强handleSave函数**：
    - 添加activeSection的运行时检查和修复
-   - 如果activeSection为空，自动设置为'api'
+   - 如果activeSection为空或非字符串，自动设置为'api'
    - 在default分支添加强制API保存逻辑
+   - **新增：修夏`TypeError: currentActiveSection.trim is not a function`错误**
 
 3. **智能保存按钮**：
    - 检测用户是否有API密钥输入但不在API页面
    - 自动切换到API页面并执行保存
    - 添加详细的点击事件日志
+   - **新增：加强类型检查，防止类型错误**
 
 4. **完整的调试日志**：
    - 追踪activeSection的完整生命周期
    - 显示类型、长度、初始值等详细信息
    - 在每个保存分支添加明确的日志标识
+   - **新增：加强菜单点击和useEffect中的类型安全检查**
 
 ## 调试步骤
 
