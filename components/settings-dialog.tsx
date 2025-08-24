@@ -104,7 +104,19 @@ interface VideoThumbnailSettings {
 export default function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
   const { toast } = useToast()
   const { changePassword } = useAuth()
-  const [activeSection, setActiveSection] = useState(initialSection || "api")
+  
+  // 确保 activeSection 始终有效
+  const validInitialSection = initialSection && ['api', 'tools', 'video-thumbnail', 'general', 'appearance', 'security', 'help'].includes(initialSection) 
+    ? initialSection 
+    : 'api'
+  
+  console.log('🚀 [DEBUG] SettingsDialog 初始化:', { 
+    initialSection, 
+    validInitialSection,
+    open 
+  })
+  
+  const [activeSection, setActiveSection] = useState(validInitialSection)
 
   // 包装onOpenChange以触发自定义事件
   const handleOpenChange = (newOpen: boolean) => {
@@ -798,6 +810,9 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     console.log('🚀 [DEBUG] handleSave 函数被调用')
     console.log('📋 [DEBUG] 当前状态:', {
       activeSection,
+      activeSectionType: typeof activeSection,
+      activeSectionLength: activeSection?.length,
+      initialSection,
       apiKey: apiKey ? `${apiKey.substring(0, 8)}...` : '空',
       apiKeyLength: apiKey?.length || 0,
       tmdbImportPath,
@@ -805,13 +820,23 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       isDockerEnv
     })
     
+    // 强制检查并修复activeSection
+    let currentActiveSection = activeSection
+    if (!currentActiveSection || currentActiveSection.trim() === '') {
+      console.warn('⚠️ [DEBUG] activeSection为空，强制设置为api')
+      currentActiveSection = 'api'
+      setActiveSection('api')
+    }
+    
+    console.log('🎯 [DEBUG] 最终使用的activeSection:', currentActiveSection)
+    
     setSaveStatus("saving")
     setValidationMessage("")
 
     try {
       // 根据当前活动的设置页面保存对应的设置
-      console.log('🎯 [DEBUG] 进入switch语句，activeSection:', activeSection)
-      switch (activeSection) {
+      console.log('🎯 [DEBUG] 进入switch语句，activeSection:', currentActiveSection)
+      switch (currentActiveSection) {
         case "api":
           console.log('💾 [DEBUG] 开始保存API设置...', {
             apiKeyType: apiKey === "***已配置***" ? 'placeholder' : 'actual',
@@ -977,7 +1002,19 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           break
 
         default:
-          console.warn('⚠️ [DEBUG] 未知的activeSection:', activeSection)
+          console.warn('⚠️ [DEBUG] 未知的activeSection:', currentActiveSection)
+          console.log('⚠️ [DEBUG] 尝试作为API设置处理...')
+          // 如果是未知的section，尝试作为API配置处理
+          if (apiKey && apiKey.trim() !== '') {
+            console.log('💾 [DEBUG] 强制执行API密钥保存逻辑')
+            try {
+              await ClientConfigManager.setItem("tmdb_api_key", apiKey)
+              console.log('✅ [DEBUG] 强制API密钥保存成功')
+            } catch (error) {
+              console.error('❌ [DEBUG] 强制API密钥保存失败:', error)
+              throw error
+            }
+          }
           break
       }
 
@@ -3188,7 +3225,24 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   取消
                 </Button>
                 <Button
-                  onClick={handleSave}
+                  onClick={() => {
+                    console.log('💆 [DEBUG] 保存按钮被点击:', {
+                      currentActiveSection: activeSection,
+                      hasApiKey: !!apiKey,
+                      apiKeyLength: apiKey?.length || 0
+                    })
+                    
+                    // 如果用户不在API页面但是有API密钥输入，先切换到API页面
+                    if (activeSection !== 'api' && apiKey && apiKey.trim() !== '' && apiKey !== '***已配置***') {
+                      console.log('🔄 [DEBUG] 检测到API密钥输入，切换到API页面')
+                      setActiveSection('api')
+                      setTimeout(() => {
+                        handleSave()
+                      }, 100)
+                    } else {
+                      handleSave()
+                    }
+                  }}
                   disabled={saveStatus === "saving"}
                   className={saveStatus === "success" ? "bg-green-600 hover:bg-green-700" : ""}
                 >
