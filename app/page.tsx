@@ -65,6 +65,7 @@ import SettingsDialog from "@/components/settings-dialog"
 import ItemDetailDialog from "@/components/item-detail-dialog"
 import VideoThumbnailExtractor from "@/components/video-thumbnail-extractor"
 import { ImageCropper } from "@/components/image-cropper"
+import { InstantImage } from "@/components/InstantImage"
 import GlobalScheduledTasksDialog from "@/components/global-scheduled-tasks-dialog"
 import { TaskExecutionLogsDialog } from "@/components/task-execution-logs-dialog"
 import ScheduledTaskDialog from "@/components/scheduled-task-dialog"
@@ -1625,7 +1626,7 @@ export default function HomePage() {
                           title={item.title}
                         >
                                                       <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl dark:group-hover:shadow-blue-900/40">
-                              <img
+                              <InstantImage
                                 src={item.posterPath ? `https://image.tmdb.org/t/p/w500${item.posterPath}` : "/placeholder.svg"}
                                 alt={item.title}
                                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
@@ -1797,7 +1798,7 @@ export default function HomePage() {
                               title={item.title}
                             >
                               <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl dark:group-hover:shadow-blue-900/40">
-                                <img
+                                <InstantImage
                                   src={item.posterPath ? `https://image.tmdb.org/t/p/w500${item.posterPath}` : "/placeholder.svg"}
                                   alt={item.title}
                                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
