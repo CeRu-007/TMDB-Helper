@@ -865,6 +865,8 @@ function ProfileEditSection({
   const [newName, setNewName] = useState(userInfo.displayName)
   const [isEditingAvatar, setIsEditingAvatar] = useState(false)
   const [newAvatarUrl, setNewAvatarUrl] = useState(userInfo.avatarUrl || '')
+  const [avatarSaveError, setAvatarSaveError] = useState('')
+  const [avatarSaveSuccess, setAvatarSaveSuccess] = useState(false)
 
   const handleSave = async () => {
     if (newName.trim() && newName !== userInfo.displayName) {
