@@ -113,6 +113,7 @@ import { getPlatformInfo } from "@/lib/utils"
 import { PlatformLogo } from "@/components/ui/platform-icon"
 import { Skeleton } from "./ui/skeleton"
 import { cn } from "@/lib/utils"
+import { safeJsonParse } from "@/lib/utils"
 import { BackgroundImage } from "@/components/ui/background-image"
 import { CachedImage } from "@/components/ui/cached-image"
 
@@ -233,12 +234,20 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       try {
         const savedAppearanceSettings = await ClientConfigManager.getItem("appearance_settings")
         if (savedAppearanceSettings) {
-          const saved = JSON.parse(savedAppearanceSettings)
-          setAppearanceSettings({
-            detailBackdropBlurEnabled: saved.detailBackdropBlurEnabled ?? true,
-            detailBackdropBlurIntensity: saved.detailBackdropBlurIntensity ?? 'medium',
-            detailBackdropOverlayOpacity: saved.detailBackdropOverlayOpacity ?? 0.25,
-          })
+          const saved = safeJsonParse<any>(savedAppearanceSettings)
+          if (saved) {
+            setAppearanceSettings({
+              detailBackdropBlurEnabled: saved.detailBackdropBlurEnabled ?? true,
+              detailBackdropBlurIntensity: saved.detailBackdropBlurIntensity ?? 'medium',
+              detailBackdropOverlayOpacity: saved.detailBackdropOverlayOpacity ?? 0.25,
+            })
+          } else {
+            setAppearanceSettings({
+              detailBackdropBlurEnabled: true,
+              detailBackdropBlurIntensity: 'medium',
+              detailBackdropOverlayOpacity: 0.25,
+            })
+          }
         } else {
           setAppearanceSettings({
             detailBackdropBlurEnabled: true,

@@ -1,5 +1,7 @@
 "use client"
 
+import { safeJsonParse } from './utils'
+
 /**
  * 布局偏好设置管理器
  * 负责保存和读取用户的布局偏好设置
@@ -43,7 +45,7 @@ export class LayoutPreferencesManager {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.value) {
-          const preferences = JSON.parse(data.value) as LayoutPreferences;
+          const preferences = safeJsonParse<LayoutPreferences>(data.value);
 
           // 验证数据完整性
           if (preferences?.layoutType && preferences?.lastUpdated) {
@@ -62,7 +64,7 @@ export class LayoutPreferencesManager {
     try {
       const cached = localStorage.getItem(this.STORAGE_KEY)
       if (cached) {
-        const pref = JSON.parse(cached) as LayoutPreferences
+        const pref = safeJsonParse<LayoutPreferences>(cached)
         if (pref?.layoutType && pref?.lastUpdated) {
           return pref
         }

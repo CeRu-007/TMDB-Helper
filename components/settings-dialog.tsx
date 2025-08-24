@@ -48,6 +48,7 @@ import {
 import TMDBImportUpdater from "./tmdb-import-updater"
 import DockerVersionManager from "./docker-version-manager"
 import { ClientConfigManager } from '@/lib/client-config-manager'
+import { safeJsonParse } from '@/lib/utils'
 import ConfigMigrationDialog from "./config-migration-dialog"
 
 interface SettingsDialogProps {
@@ -374,18 +375,19 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         // 加载通用设置
         const savedGeneralSettings = await ClientConfigManager.getItem("general_settings")
         if (savedGeneralSettings) {
-          try {
-            setGeneralSettings(JSON.parse(savedGeneralSettings))
-          } catch (error) {
-            console.error('加载通用设置失败:', error)
+          const parsed = safeJsonParse<GeneralSettings>(savedGeneralSettings)
+          if (parsed) {
+            setGeneralSettings(parsed)
+          } else {
+            console.error('加载通用设置失败: 解析失败')
           }
         }
 
         // 加载外观设置
         const savedAppearanceSettings = await ClientConfigManager.getItem("appearance_settings")
         if (savedAppearanceSettings) {
-          try {
-            const saved = JSON.parse(savedAppearanceSettings)
+          const saved = safeJsonParse<any>(savedAppearanceSettings)
+          if (saved) {
             // 移除已废弃字段
             if ('detailBackdropOverlayOpacity' in saved) delete saved.detailBackdropOverlayOpacity
             // 兼容旧配置：与默认值合并
@@ -403,16 +405,16 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             setAppearanceSettings(merged)
             // 应用主题设置
             applyThemeSettings(merged)
-          } catch (error) {
-            console.error('加载外观设置失败:', error)
+          } else {
+            console.error('加载外观设置失败: 解析失败')
           }
         }
 
         // 加载视频缩略图设置
         const savedVideoThumbnailSettings = await ClientConfigManager.getItem("video_thumbnail_settings")
         if (savedVideoThumbnailSettings) {
-          try {
-            const settings = JSON.parse(savedVideoThumbnailSettings)
+          const settings = safeJsonParse<any>(savedVideoThumbnailSettings)
+          if (settings) {
             setVideoThumbnailSettings(prev => ({
               ...prev,
               ...settings,
@@ -426,19 +428,19 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               siliconFlowApiKey: "", // 将从全局设置中读取
               siliconFlowModel: settings.siliconFlowModel || prev.siliconFlowModel
             }))
-          } catch (error) {
-            console.error('加载视频缩略图设置失败:', error)
+          } else {
+            console.error('加载视频缩略图设置失败: 解析失败')
           }
         }
 
         // 加载硅基流动API设置
         const savedSiliconFlowSettings = await ClientConfigManager.getItem("siliconflow_api_settings")
         if (savedSiliconFlowSettings) {
-          try {
-            const settings = JSON.parse(savedSiliconFlowSettings)
+          const settings = safeJsonParse<any>(savedSiliconFlowSettings)
+          if (settings) {
             setSiliconFlowSettings(settings)
-          } catch (error) {
-            console.error('加载硅基流动API设置失败:', error)
+          } else {
+            console.error('加载硅基流动API设置失败: 解析失败')
           }
         } else {
           // 兼容旧的设置，从分集生成器和缩略图设置中迁移
@@ -447,10 +449,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
           let apiKey = episodeApiKey || ""
           if (!apiKey && thumbnailSettings) {
-            try {
-              const parsed = JSON.parse(thumbnailSettings)
+            const parsed = safeJsonParse<any>(thumbnailSettings)
+            if (parsed) {
               apiKey = parsed.siliconFlowApiKey || ""
-            } catch (e) { }
+            }
           }
 
           if (apiKey) {
@@ -461,11 +463,11 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         // 加载魔搭社区API设置
         const savedModelScopeSettings = await ClientConfigManager.getItem("modelscope_api_settings")
         if (savedModelScopeSettings) {
-          try {
-            const settings = JSON.parse(savedModelScopeSettings)
+          const settings = safeJsonParse<any>(savedModelScopeSettings)
+          if (settings) {
             setModelScopeSettings(settings)
-          } catch (error) {
-            console.error('加载魔搭社区API设置失败:', error)
+          } else {
+            console.error('加载魔搭社区API设置失败: 解析失败')
           }
         } else {
           // 兼容旧的设置

@@ -346,7 +346,7 @@ export class ServerConfigManager {
     
     jsonStringFields.forEach(field => {
       const value = optimizedConfig[field]
-      if (typeof value === 'string') {
+      if (typeof value === 'string' && value.trim() !== '') {
         try {
           // 尝试解析JSON字符串为对象
           const parsedValue = JSON.parse(value)
@@ -357,6 +357,17 @@ export class ServerConfigManager {
         } catch (error) {
           console.warn(`⚠️ [ServerConfigManager] 无法优化字段 ${field}:`, error)
           // 保留原始字符串值
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        // 如果已经是对象，确保可以正确序列化
+        try {
+          // 测试序列化，确保对象可以正确转换
+          JSON.stringify(value)
+          // 如果成功，保留对象格式
+        } catch (error) {
+          console.error(`❌ [ServerConfigManager] 对象序列化失败 ${field}:`, error)
+          // 如果序列化失败，设为 undefined 避免损坏配置
+          optimizedConfig[field] = undefined as any
         }
       }
     })
@@ -470,7 +481,19 @@ export class ServerConfigManager {
    */
   static getConfigItem(key: keyof ServerConfig): any {
     const config = this.getConfig()
-    return config[key]
+    const value = config[key]
+    
+    // 如果是对象，返回 JSON 字符串（保持 API 一致性）
+    if (typeof value === 'object' && value !== null) {
+      try {
+        return JSON.stringify(value)
+      } catch (error) {
+        console.error('❌ [ServerConfigManager] 对象序列化失败:', error)
+        return value
+      }
+    }
+    
+    return value
   }
   
   /**

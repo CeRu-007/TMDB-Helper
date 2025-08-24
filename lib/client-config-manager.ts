@@ -23,9 +23,22 @@ export class ClientConfigManager {
       const data = await response.json()
 
       if (data.success) {
+        let valueToReturn = data.value
+        
+        // 如果从服务端获取的是对象，需要将其转换为 JSON 字符串
+        if (typeof valueToReturn === 'object' && valueToReturn !== null) {
+          try {
+            valueToReturn = JSON.stringify(valueToReturn)
+            console.log('🔄 [ClientConfigManager] 将对象转换为 JSON 字符串:', { key, type: 'object->string' })
+          } catch (error) {
+            console.error('❌ [ClientConfigManager] 对象序列化失败:', error)
+            return null
+          }
+        }
+        
         // 更新缓存
-        this.updateCache(key, data.value)
-        return data.value !== undefined ? String(data.value) : null
+        this.updateCache(key, valueToReturn)
+        return valueToReturn !== undefined ? String(valueToReturn) : null
       }
 
       return null

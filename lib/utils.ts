@@ -27,6 +27,49 @@ export function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * 安全的JSON解析函数
+ * 解决"[object Object]" is not valid JSON的错误
+ * @param value 要解析的值，可能是字符串或对象
+ * @param defaultValue 解析失败时的默认值
+ * @returns 解析后的对象或默认值
+ */
+export function safeJsonParse<T = any>(value: any, defaultValue: T | null = null): T | null {
+  // 如果已经是对象，直接返回
+  if (typeof value === 'object' && value !== null) {
+    return value as T;
+  }
+  
+  // 如果是null或undefined，返回默认值
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  
+  // 如果不是字符串，返回默认值
+  if (typeof value !== 'string') {
+    console.warn('[safeJsonParse] 非字符串值，返回默认值:', typeof value, value);
+    return defaultValue;
+  }
+  
+  // 如果是空字符串，返回默认值
+  if (value.trim() === '') {
+    return defaultValue;
+  }
+  
+  // 如果是"[object Object]"这样的无效JSON，返回默认值
+  if (value === '[object Object]' || value.includes('[object Object]')) {
+    console.warn('[safeJsonParse] 检测到无效的JSON字符串"[object Object]"，返回默认值');
+    return defaultValue;
+  }
+  
+  try {
+    return JSON.parse(value) as T;
+  } catch (error) {
+    console.warn('[safeJsonParse] JSON解析失败，返回默认值:', error, 'value:', value);
+    return defaultValue;
+  }
+}
+
 // 抑制React 19中的ref警告
 export function suppressRefWarnings() {
   // 只在客户端执行

@@ -147,6 +147,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { safeJsonParse } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
 import { VideoAnalyzer, VideoAnalysisResult } from "@/utils/video-analyzer"
 import { VideoAnalysisFeedback, VideoAnalysisStep, createDefaultAnalysisSteps, updateStepStatus } from "@/components/video-analysis-feedback"
