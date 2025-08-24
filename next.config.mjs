@@ -1,18 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 静态导出配置（用于修复构建问题）
-  output: process.env.STATIC_EXPORT === 'true' ? 'export' : undefined,
-  trailingSlash: process.env.STATIC_EXPORT === 'true' ? true : (process.env.ELECTRON_BUILD === 'true'),
-  images: {
-    unoptimized: process.env.STATIC_EXPORT === 'true' ? true : (process.env.ELECTRON_BUILD === 'true')
-  },
-  // 支持 Docker 和 Electron 部署
-  // Electron 构建时不使用 standalone 模式，避免Windows权限问题
-  output: process.env.ELECTRON_BUILD === 'true' ? undefined :
+  // 动态配置output，避免重复定义
+  output: process.env.STATIC_EXPORT === 'true' ? 'export' : 
+          process.env.ELECTRON_BUILD === 'true' ? undefined :
           (process.env.NODE_ENV === 'production' && process.platform !== 'win32' ? 'standalone' : undefined),
-
-  // Electron 桌面应用支持
-  trailingSlash: process.env.ELECTRON_BUILD === 'true',
+  
+  // 动态配置trailingSlash
+  trailingSlash: process.env.STATIC_EXPORT === 'true' || process.env.ELECTRON_BUILD === 'true',
 
   // 禁用实验性功能以避免构建问题
   experimental: {},
@@ -33,12 +27,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: false,
+    unoptimized: process.env.STATIC_EXPORT === 'true' || process.env.ELECTRON_BUILD === 'true',
     domains: ['image.tmdb.org'],
-    formats: ['image/webp', 'image/avif'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60 * 60 * 24 * 7, // 7天缓存
+    formats: ['image/avif', 'image/webp'], // AVIF优先
+    deviceSizes: [640, 828, 1200, 1920], // 减少设备尺寸
+    imageSizes: [16, 32, 48, 64, 96, 128, 256], // 减少图片尺寸
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30天缓存
   },
   rewrites: async () => {
     return [
@@ -114,7 +108,7 @@ const nextConfig = {
         splitChunks: {
           ...config.optimization.splitChunks,
           chunks: 'all',
-          maxSize: 244000, // 限制chunk大小为244KB
+          maxSize: 150000, // 减少到150KB限制
           cacheGroups: {
             ...config.optimization.splitChunks?.cacheGroups,
             // 将数据管理相关模块打包到一个 chunk 中
@@ -185,6 +179,7 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn'],
     } : false,
+    styledComponents: true, // 如果使用styled-components
   },
 
   // 优化生产构建
@@ -193,6 +188,16 @@ const nextConfig = {
     poweredByHeader: false,
     generateEtags: false,
   }),
+
+  // 性能优化
+  modularizeImports: {
+    '@radix-ui/react-icons': {
+      transform: '@radix-ui/react-icons/dist/{{member}}.js',
+    },
+    'lucide-react': {
+      transform: 'lucide-react/dist/esm/icons/{{kebabCase member}}',
+    },
+  },
 
   // Electron 构建优化
   ...(process.env.ELECTRON_BUILD === 'true' && {
