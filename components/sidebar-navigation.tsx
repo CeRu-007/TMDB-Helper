@@ -226,8 +226,8 @@ export function SidebarNavigation({
                     variant={activeMenu === item.id ? "secondary" : "ghost"}
                     size="icon"
                     className={`w-12 h-12 relative transition-all duration-200 ${activeMenu === item.id
-                        ? "bg-blue-100 dark:bg-blue-900/50 border-r-2 border-r-blue-500"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                      ? "bg-blue-100 dark:bg-blue-900/50 border-r-2 border-r-blue-500"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800"
                       }`}
                     onClick={() => handleMenuClick(item.id, item.submenu?.[0]?.id)}
                   >
@@ -267,8 +267,8 @@ export function SidebarNavigation({
                               <div
                                 key={subitem.id}
                                 className={`relative cursor-pointer transition-all duration-200 ${activeMenu === item.id && activeSubmenu === subitem.id
-                                    ? "bg-blue-500 text-white"
-                                    : "hover:bg-blue-50 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300"
+                                  ? "bg-blue-500 text-white"
+                                  : "hover:bg-blue-50 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300"
                                   }`}
                                 onClick={() => handleMenuClick(item.id, subitem.id)}
                               >
