@@ -32,7 +32,6 @@ import {
   ChevronDown
 } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useMobile } from "@/hooks/use-mobile"
 import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferences"
 import Image from "next/image"
 import StreamingPlatformNav from "@/components/streaming-platforms/streaming-platform-nav"
@@ -140,7 +139,7 @@ export function SidebarLayout({
   WeekdayNavigation
 }: SidebarLayoutProps) {
   const { theme, setTheme } = useTheme()
-  const isMobile = useMobile()
+  const isMobile = false
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeMenu, setActiveMenu] = useState<string>('maintenance')
   const [activeSubmenu, setActiveSubmenu] = useState<string>('all')

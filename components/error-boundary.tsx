@@ -146,7 +146,7 @@ export class ErrorBoundary extends Component<Props, State> {
                                 </Alert>
                             )}
 
-                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <div className="flex flex-row gap-3 justify-center">
                                 {canRetry && (
                                     <Button
                                         onClick={this.handleRetry}

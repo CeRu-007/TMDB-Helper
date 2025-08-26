@@ -48,7 +48,7 @@ export function HomeHeader({
 
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* 左侧：标题和布局切换 */}
           <div className="flex items-center space-x-4">
@@ -76,7 +76,7 @@ export function HomeHeader({
               variant="outline"
               size="sm"
               onClick={onShowTasks}
-              className="hidden sm:flex items-center space-x-2"
+              className="flex items-center space-x-2"
             >
               <AlarmClock className="h-4 w-4" />
               <span>定时任务</span>
@@ -88,7 +88,7 @@ export function HomeHeader({
                 variant="outline"
                 size="sm"
                 onClick={onShowExecutionLogs}
-                className="hidden sm:flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800"
+                className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800"
               >
                 <BarChart2 className="h-4 w-4" />
                 <span>执行日志</span>

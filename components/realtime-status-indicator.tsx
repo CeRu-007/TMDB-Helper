@@ -189,7 +189,7 @@ export function MobileFloatingStatusIndicator({
 
     return (
         <div
-            className="fixed bottom-20 right-4 z-50 md:hidden"
+            className="fixed bottom-20 right-4 z-50"
             onClick={onTap}
         >
             <div className="bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 p-2 flex items-center space-x-2">

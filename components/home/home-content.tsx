@@ -32,8 +32,8 @@ const categories = [
 export function HomeContent({ homeState, mediaNews, currentLayout }: HomeContentProps) {
   const isInSidebar = currentLayout === 'sidebar'
   const containerClasses = isInSidebar 
-    ? "mx-auto px-4 sm:px-6 lg:px-8" 
-    : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+    ? "mx-auto px-4 lg:px-8" 
+    : "max-w-7xl mx-auto px-4 lg:px-8"
 
   return (
     <main className="flex-1">
@@ -41,23 +41,23 @@ export function HomeContent({ homeState, mediaNews, currentLayout }: HomeContent
         <div className="py-6">
           {/* 主要标签页 */}
           <Tabs value={homeState.activeTab} onValueChange={homeState.setActiveTab}>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <TabsList className="grid w-full sm:w-auto grid-cols-4 lg:grid-cols-4">
+            <div className="flex flex-row items-center justify-between gap-4 mb-6">
+              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-4">
                 <TabsTrigger value="upcoming" className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">即将上线</span>
+                  <span>即将上线</span>
                 </TabsTrigger>
                 <TabsTrigger value="recent" className="flex items-center space-x-2">
                   <Film className="h-4 w-4" />
-                  <span className="hidden sm:inline">近期开播</span>
+                  <span>近期开播</span>
                 </TabsTrigger>
                 <TabsTrigger value="weekly" className="flex items-center space-x-2">
                   <CalendarRange className="h-4 w-4" />
-                  <span className="hidden sm:inline">每周放送</span>
+                  <span>每周放送</span>
                 </TabsTrigger>
                 <TabsTrigger value="progress" className="flex items-center space-x-2">
                   <BarChart2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">追剧进度</span>
+                  <span>追剧进度</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -91,7 +91,7 @@ export function HomeContent({ homeState, mediaNews, currentLayout }: HomeContent
                   className="flex items-center space-x-2"
                 >
                   <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">添加词条</span>
+                  <span>添加词条</span>
                 </Button>
               </div>
             </div>

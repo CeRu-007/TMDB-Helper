@@ -91,7 +91,7 @@ export function MediaNewsSection({
   return (
     <div className="space-y-4">
       {/* 标题和控制栏 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {title}
@@ -135,7 +135,7 @@ export function MediaNewsSection({
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            <span className="hidden sm:inline">刷新</span>
+            <span>刷新</span>
           </Button>
         </div>
       </div>
@@ -173,7 +173,7 @@ export function MediaNewsSection({
 
       {/* 内容网格 */}
       {!loading && !error && items.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {items.slice(0, 12).map((item) => (
             <Card key={item.id} className="group hover:shadow-md transition-shadow">
               <CardContent className="p-3">

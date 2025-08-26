@@ -101,7 +101,6 @@ import {
   Play,
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/storage"
-import { useMobile } from "@/hooks/use-mobile"
 import TMDBImportIntegrationDialog from "@/components/tmdb-import-integration-dialog"
 import ScheduledTaskDialog from "@/components/scheduled-task-dialog"
 import type { TMDBSeasonData, BackdropSize } from "@/lib/tmdb-types"
@@ -170,7 +169,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [seasonToDelete, setSeasonToDelete] = useState<number | null>(null)
   const [isRefreshingTMDBData, setIsRefreshingTMDBData] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
-  const isMobile = useMobile()
+  const isMobile = false
   const [customSeasonNumber, setCustomSeasonNumber] = useState(1)
   const [showMetadataDialog, setShowMetadataDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)

@@ -19,6 +19,12 @@ const config = {
       },
     },
     extend: {
+      // 添加自定义断点，专注于桌面端
+      screens: {
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

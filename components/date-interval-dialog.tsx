@@ -68,7 +68,7 @@ export default function DateIntervalDialog({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-w-[425px]">
         <DialogHeader>
           <DialogTitle>设置日期递进</DialogTitle>
           <DialogDescription>

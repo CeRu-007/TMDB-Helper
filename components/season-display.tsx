@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { ChevronDown, ChevronUp, Info, CheckSquare, Square, RotateCcw, CheckCircle } from "lucide-react"
 import type { Season } from "@/lib/storage"
-import { useMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 
 interface SeasonDisplayProps {
@@ -31,7 +30,7 @@ export default function SeasonDisplay({
   lastClickedEpisode = null,
 }: SeasonDisplayProps) {
   const [showAllEpisodes, setShowAllEpisodes] = useState(false)
-  const isMobile = useMobile()
+  const isMobile = false
 
   // 添加季数切换的动画效果
   // 在组件顶部添加状态
@@ -78,7 +77,7 @@ export default function SeasonDisplay({
   const currentSeason = getCurrentSeason()
   // 添加安全检查确保episodes存在
   const episodesToShow = currentSeason && currentSeason.episodes && currentSeason.episodes.length > 0
-    ? (showAllEpisodes || !isMobile ? currentSeason.episodes : currentSeason.episodes.slice(0, 12))
+    ? (showAllEpisodes ? currentSeason.episodes : currentSeason.episodes.slice(0, 12))
     : []
 
   // 检查当前季是否全部完成

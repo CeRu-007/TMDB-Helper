@@ -1699,7 +1699,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
             }`}>
               <span className="flex items-center gap-1">
                 {statusInfo.icon}
-                <span className="hidden sm:inline">{statusInfo.label}</span>
+                <span>{statusInfo.label}</span>
               </span>
             </div>
 

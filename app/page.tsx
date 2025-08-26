@@ -71,7 +71,6 @@ import { TaskExecutionLogsDialog } from "@/components/task-execution-logs-dialog
 import ScheduledTaskDialog from "@/components/scheduled-task-dialog"
 import { type TMDBItem, type ScheduledTask } from "@/lib/storage"
 import { taskScheduler } from "@/lib/scheduler"
-import { useMobile } from "@/hooks/use-mobile"
 import MediaCard from "@/components/media-card"
 import { useIsClient } from "@/hooks/use-is-client"
 import { useData } from "@/components/client-data-provider"
@@ -152,7 +151,6 @@ export default function HomePage() {
   const [upcomingError, setUpcomingError] = useState<string | null>(null)
   const [upcomingLastUpdated, setUpcomingLastUpdated] = useState<string | null>(null)
   const [isMissingApiKey, setIsMissingApiKey] = useState(false)
-  const isMobile = useMobile()
   const { theme, setTheme } = useTheme()
   const isClient = useIsClient()
   const [selectedRegion, setSelectedRegion] = useState<string>("CN")
@@ -895,7 +893,7 @@ export default function HomePage() {
       <Sheet>
         <SheetTrigger asChild>
           <Button
-            className="md:hidden fixed bottom-4 right-4 z-50 shadow-md"
+            className="fixed bottom-4 right-4 z-50 shadow-md"
             size="icon"
           >
             <Menu className="h-5 w-5" />
@@ -1090,7 +1088,7 @@ export default function HomePage() {
 
   // 移动端分类选择器
   const MobileCategorySelector = () => (
-    <div className="md:hidden overflow-x-auto pb-3 mb-2 pt-1">
+    <div className="overflow-x-auto pb-3 mb-2 pt-1">
       <div className="flex space-x-2 px-1">
         {categories.map((category) => {
           const isSelected = selectedCategory === category.id;
@@ -2471,7 +2469,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
       <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm border-b dark:border-gray-700 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               {/* Logo */}
@@ -2605,7 +2603,7 @@ export default function HomePage() {
           </div>
           
           {/* 移动端分类选择器 */}
-          <div className="md:hidden overflow-x-auto pb-3">
+          <div className="overflow-x-auto pb-3">
             <div className="flex space-x-2">
               {categories.map((category) => {
                 const isSelected = selectedCategory === category.id;

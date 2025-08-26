@@ -622,7 +622,7 @@ export default function DockerVersionManager() {
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex flex-row items-center justify-between gap-3">
                           <div>
                             <span className="font-medium">发现新版本可用</span>
                             <span className="ml-2 text-sm">从 {versionInfo.currentVersion} 更新到 {versionInfo.latestVersion}</span>
