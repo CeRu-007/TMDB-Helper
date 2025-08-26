@@ -655,7 +655,7 @@ export function ImageCropper() {
       <p className="text-sm text-muted-foreground mb-4 max-w-md">
         上传图片文件进行16:9比例裁切，支持 JPG、PNG、WebP 等常见图片格式
       </p>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-row gap-2">
         <Button
           className="flex items-center"
           onClick={() => fileInputRef.current?.click()}
@@ -691,7 +691,7 @@ export function ImageCropper() {
           />
 
           {/* 头部工具栏 */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-row justify-between items-center gap-4">
             <div>
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Scissors className="h-6 w-6" />
@@ -790,7 +790,7 @@ export function ImageCropper() {
 
       {/* 图片网格 */}
       {images.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           {images.map(renderImageCard)}
         </div>
       ) : (
@@ -1118,7 +1118,7 @@ export function ImageCropper() {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">性能优化</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <Card className="p-4">
                   <div className="space-y-2">
                     <h4 className="font-medium">处理质量</h4>

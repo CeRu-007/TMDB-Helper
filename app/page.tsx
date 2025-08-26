@@ -85,7 +85,6 @@ import { SidebarLayout } from "@/components/sidebar-layout"
 import { LayoutSwitcher } from "@/components/layout-switcher"
 import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferences"
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
-import { MobileFloatingStatusIndicator } from "@/components/realtime-status-indicator"
 import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
 
 
@@ -887,108 +886,7 @@ export default function HomePage() {
   const filteredOngoingCount = filteredOngoingItems.length
   const filteredCompletedCount = filteredCompletedItems.length
 
-  // 移动端操作菜单
-  const MobileMenu = () => (
-    <>
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button
-            className="fixed bottom-4 right-4 z-50 shadow-md"
-            size="icon"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent className="w-[300px]">
-          {/* 移动端菜单内容 */}
-          <div className="mt-6">
-            {/* 用户信息 */}
-            {isInitialized && userInfo && (
-              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <UserAvatar
-                  onShowImportDialog={() => setShowImportDialog(true)}
-                  onShowExportDialog={() => setShowExportDialog(true)}
-                />
-              </div>
-            )}
 
-            <nav className="flex flex-col space-y-4">
-            <Button
-              className="justify-start"
-              onClick={() => setActiveTab("upcoming")}
-            >
-              <Calendar className="h-4 w-4 mr-2" /> 即将上线
-            </Button>
-            <Button
-              className="justify-start"
-              onClick={() => setActiveTab("recent")}
-            >
-              <Film className="h-4 w-4 mr-2" /> 近期开播
-            </Button>
-            <Button
-              className="justify-start"
-              onClick={() => setActiveTab("weekly")}
-            >
-              <CalendarRange className="h-4 w-4 mr-2" /> 每周放送
-            </Button>
-            <Button
-              className="justify-start"
-              onClick={() => setActiveTab("progress")}
-            >
-              <BarChart2 className="h-4 w-4 mr-2" /> 追剧进度
-            </Button>
-
-            {/* 分隔线 */}
-            <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
-
-            {/* 功能按钮 */}
-            <Button
-              className="justify-start"
-              variant="outline"
-              onClick={() => setShowTasksDialog(true)}
-            >
-              <AlarmClock className="h-4 w-4 mr-2" /> 定时任务
-            </Button>
-
-            {runningTasks.length > 0 && (
-              <Button
-                className="justify-start bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800"
-                variant="outline"
-                onClick={() => setShowExecutionLogs(true)}
-              >
-                <BarChart2 className="h-4 w-4 mr-2" /> 执行日志 ({runningTasks.length})
-              </Button>
-            )}
-
-            <Button
-              className="justify-start"
-              variant="outline"
-              onClick={() => setShowImportDialog(true)}
-            >
-              <Upload className="h-4 w-4 mr-2" /> 导入
-            </Button>
-
-            <Button
-              className="justify-start"
-              variant="outline"
-              onClick={() => setShowExportDialog(true)}
-            >
-              <Download className="h-4 w-4 mr-2" /> 导出
-            </Button>
-
-            <Button
-              className="justify-start"
-              variant="outline"
-              onClick={() => setShowSettingsDialog(true)}
-            >
-              <Settings className="h-4 w-4 mr-2" /> 设置
-            </Button>
-          </nav>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
-  );
 
   // 周几导航栏 - 修复词条数量计算问题和侧边栏布局适配
   const WeekdayNavigation = () => {
@@ -1086,36 +984,7 @@ export default function HomePage() {
     )
   }
 
-  // 移动端分类选择器
-  const MobileCategorySelector = () => (
-    <div className="overflow-x-auto pb-3 mb-2 pt-1">
-      <div className="flex space-x-2 px-1">
-        {categories.map((category) => {
-          const isSelected = selectedCategory === category.id;
-          return (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`flex-shrink-0 flex items-center text-xs px-3 py-2 rounded-lg transition-colors ${
-                isSelected
-                  ? "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium shadow-sm border border-blue-200 dark:border-blue-800"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/60 border border-transparent"
-              }`}
-            >
-              <div className={`flex items-center justify-center h-6 w-6 rounded-md mr-1.5 ${
-                isSelected 
-                  ? "bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300" 
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
-              }`}>
-                <span className="h-3.5 w-3.5">{category.icon}</span>
-              </div>
-              <span>{category.name}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  )
+
 
   // 添加加载状态UI组件
   const LoadingState = () => (
@@ -2533,32 +2402,10 @@ export default function HomePage() {
               {/* 移动端菜单 */}
               <MobileMenu />
               
-              {/* 移动端浮动状态指示器 */}
-              <MobileFloatingStatusIndicator
-                isConnected={isConnected}
-                pendingOperations={pendingOperations}
-                onTap={() => {
-                  // 点击时显示详细状态信息
-                  if (pendingOperations > 0) {
-                    toast({
-                      title: "数据同步中",
-                      description: `正在处理 ${pendingOperations} 个操作`,
-                      duration: 3000
-                    })
-                  } else if (!isConnected) {
-                    toast({
-                      title: "连接状态",
-                      description: "实时同步连接已断开",
-                      variant: "destructive",
-                      duration: 3000
-                    })
-                  }
-                }}
-              />
+
               <Button
                 onClick={() => setShowAddDialog(true)}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                size={isMobile ? "sm" : "default"}
               >
                 <Plus className="h-4 w-4 mr-1 md:mr-2" />
                 <span className="hidden sm:inline">添加词条</span>
@@ -2665,20 +2512,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 移动端底部操作栏 */}
-      {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-t dark:border-gray-700 p-4 z-30">
-          <div className="flex justify-center">
-            <Button
-              onClick={() => setShowAddDialog(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full px-8 py-3 shadow-lg"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              添加新词条
-            </Button>
-          </div>
-        </div>
-      )}
+
 
 
 

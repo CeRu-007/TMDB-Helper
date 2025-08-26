@@ -260,23 +260,7 @@
   min-width: auto;
 }
 
-/* 响应式头部按钮 */
-@media (max-width: 768px) {
-  .dialog-header-buttons {
-    gap: 8px;
-  }
 
-  .dialog-header-buttons .action-button-glass {
-    height: 28px;
-    font-size: 12px;
-    padding: 0 8px;
-  }
-
-  .dialog-header-buttons .action-button-glass .lucide {
-    width: 14px;
-    height: 14px;
-  }
-}
 
 
 
@@ -356,20 +340,4 @@
   border: 2px solid rgba(59, 130, 246, 0.3) !important;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
 
-  .task-card-compact {
-    padding: 10px 12px;
-    min-height: 70px;
-  }
-
-  .task-title-horizontal {
-    font-size: 13px;
-  }
-
-  .task-meta-horizontal {
-    font-size: 11px;
-    gap: 6px;
-  }
-}

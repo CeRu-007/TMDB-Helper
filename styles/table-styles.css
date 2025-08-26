@@ -22,7 +22,7 @@
 
 /* 强制表格布局 */
 .enhanced-csv-editor {
-  table-layout: fixed !important; /* 确保表格使用固定布局，列宽由colgroup定义 */
+  table-layout: fixed !important;
   border-collapse: collapse !important;
   width: max-content !important;
   min-width: 100% !important;
@@ -45,10 +45,10 @@
 
 /* 单元格内容样式 - 防止闪烁 */
 .cell-content {
-  transform: translateZ(0); /* 启用GPU加速 */
-  backface-visibility: hidden; /* 减少闪烁 */
-  perspective: 1000px; /* 3D空间渲染 */
-  will-change: transform; /* 告知浏览器此元素将改变 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
 }
 
 /* 强制覆盖所有可能影响表格的样式 */
@@ -69,18 +69,18 @@
   margin: 0 !important;
   border: none !important;
   font-size: 12px !important;
-  pointer-events: none !important; /* 确保内容元素不阻挡鼠标事件 */
-  z-index: 1 !important; /* 确保内容在底层 */
-  word-break: keep-all !important; /* 防止单词断行 */
-  word-wrap: normal !important; /* 防止长单词换行 */
-  letter-spacing: normal !important; /* 正常字母间距 */
-  text-align: left !important; /* 左对齐 */
-  text-indent: 0 !important; /* 无缩进 */
-  max-width: 100% !important; /* 确保不超过容器宽度 */
-  box-sizing: border-box !important; /* 确保padding计入宽度 */
-  transform: translateZ(0) !important; /* 启用GPU加速，减少渲染问题 */
-  -webkit-font-smoothing: antialiased !important; /* 字体平滑 */
-  user-select: none !important; /* 禁止文本选择 */
+  pointer-events: none !important;
+  z-index: 1 !important;
+  word-break: keep-all !important;
+  word-wrap: normal !important;
+  letter-spacing: normal !important;
+  text-align: left !important;
+  text-indent: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  transform: translateZ(0) !important;
+  -webkit-font-smoothing: antialiased !important;
+  user-select: none !important;
 }
 
 /* 强制表格单元格限制在自身内，防止内容溢出 */
@@ -88,7 +88,7 @@
   height: 28px !important;
   max-height: 28px !important;
   min-height: 28px !important;
-  overflow: hidden !important; /* 确保内容不溢出单元格 */
+  overflow: hidden !important;
   padding: 0 !important;
   position: relative !important;
   white-space: nowrap !important;
@@ -112,7 +112,7 @@
   max-height: 28px !important;
   height: 100% !important;
   display: block !important;
-  position: relative !important; /* 改用相对定位而不是绝对定位 */
+  position: relative !important;
   padding: 0 4px !important;
   line-height: 28px !important;
   margin: 0 !important;
@@ -132,7 +132,7 @@
 
 /* 特别处理可能的问题单元格，针对overview列 */
 .enhanced-csv-editor td.overview-cell {
-  min-width: 300px !important; /* 确保overview列的最小宽度 */
+  min-width: 300px !important;
   width: 300px !important;
   overflow: hidden !important;
 }
@@ -170,48 +170,10 @@
   width: 200px !important;
 }
 
-/* 确保内容为空的单元格也能维持宽度 - 更全面的空单元格处理 */
-.cell-content-wrapper:empty::after,
-.cell-content-wrapper.empty-cell::after {
-  content: " ";
-  display: inline-block;
-  width: 100%;
-  min-height: 28px;
-  visibility: visible;
-}
-
-/* 空单元格的视觉处理 */
-.enhanced-csv-editor td .cell-content-wrapper:empty::before,
-.enhanced-csv-editor td .cell-content-wrapper.empty-cell::before {
-  content: "\00a0"; /* 添加不换行空格 */
-  display: inline-block;
-  width: 100%;
-  min-height: 28px;
-  visibility: hidden; /* 不可见但占位 */
-}
-
-/* 特别处理空的URL类型单元格 */
-.enhanced-csv-editor td.backdrop-url-cell .cell-content-wrapper:empty,
-.enhanced-csv-editor td.poster-url-cell .cell-content-wrapper:empty,
-.enhanced-csv-editor td.url-cell .cell-content-wrapper:empty,
-.enhanced-csv-editor td.backdrop-url-cell .cell-content-wrapper.empty-cell,
-.enhanced-csv-editor td.poster-url-cell .cell-content-wrapper.empty-cell,
-.enhanced-csv-editor td.url-cell .cell-content-wrapper.empty-cell {
-  min-width: 200px !important;
-  width: 200px !important;
-}
-
-/* 特别处理空的overview类型单元格 */
-.enhanced-csv-editor td.overview-cell .cell-content-wrapper:empty,
-.enhanced-csv-editor td.overview-cell .cell-content-wrapper.empty-cell {
-  min-width: 300px !important;
-  width: 300px !important;
-}
-
 /* 滚动条样式 */
 .scroll-container::-webkit-scrollbar {
   width: 8px !important;
-  height: 10px !important; /* 增加滚动条高度使其更容易点击 */
+  height: 10px !important;
   background-color: #f1f1f1 !important;
 }
 
@@ -235,20 +197,6 @@
   overflow-x: scroll !important;
   scrollbar-width: thin !important;
   scrollbar-color: #888 #f1f1f1 !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-/* 移动端滚动优化 */
-@media (pointer: coarse) {
-  .overflow-auto::-webkit-scrollbar {
-    width: 12px !important;
-    height: 12px !important;
-  }
-  
-  .overflow-auto::-webkit-scrollbar-thumb {
-    min-height: 40px !important;
-    min-width: 40px !important;
-  }
 }
 
 /* 修复Firefox浏览器的水平滚动问题 */
@@ -271,6 +219,7 @@
   padding: 0 !important;
   vertical-align: middle !important;
 }
+
 /* 支持现有的Tailwind类p-2内边距 */
 .enhanced-csv-editor td.p-2 .cell-content-wrapper {
   padding: 0.5rem !important;
@@ -278,14 +227,14 @@
 
 /* 清除一些可能导致布局问题的旧样式 */
 .absolute-cell-content {
-  position: relative !important; /* 改为相对定位 */
+  position: relative !important;
 }
 
 /* 确保表格组件接收所有事件 */
 .enhanced-csv-editor-container {
   z-index: 10 !important;
   position: relative !important;
-  overflow: hidden !important; /* 防止内部元素溢出 */
+  overflow: hidden !important;
   width: 100% !important;
 }
 
@@ -310,7 +259,7 @@
 /* 自定义滚动条样式 - Webkit浏览器 */
 .overflow-auto::-webkit-scrollbar {
   width: 8px !important;
-  height: 10px !important; /* 增加滚动条高度使其更容易点击 */
+  height: 10px !important;
   background-color: #f1f1f1 !important;
 }
 
@@ -327,41 +276,6 @@
 
 .overflow-auto::-webkit-scrollbar-thumb:hover {
   background: #555 !important;
-}
-
-/* 强制始终显示水平滚动条 */
-.enhanced-csv-editor-container .overflow-auto {
-  overflow-x: scroll !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: #888 #f1f1f1 !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-/* 移动端滚动优化 */
-@media (pointer: coarse) {
-  .overflow-auto::-webkit-scrollbar {
-    width: 12px !important;
-    height: 12px !important;
-  }
-  
-  .overflow-auto::-webkit-scrollbar-thumb {
-    min-height: 40px !important;
-    min-width: 40px !important;
-  }
-}
-
-/* 修复Firefox浏览器的水平滚动问题 */
-@-moz-document url-prefix() {
-  .scroll-container {
-    scrollbar-width: auto !important;
-  }
-}
-
-/* 修复IE/Edge浏览器的滚动问题 */
-@supports (-ms-ime-align:auto) {
-  .scroll-container {
-    -ms-overflow-style: -ms-autohiding-scrollbar !important;
-  }
 }
 
 /* Table styles for enhanced CSV editor */
@@ -478,252 +392,6 @@ td[data-column="overview"],
   min-width: 150px !important;
 }
 
-/* 强化单元格边界，防止内容溢出 */
-.enhanced-csv-editor td {
-  box-sizing: border-box !important;
-  border: 1px solid #e5e7eb !important;
-  overflow: hidden !important;
-  position: relative !important;
-  contain: content !important; /* 使用内容隔离，防止溢出 */
-}
-
-/* 空单元格特殊处理，确保空单元格也有固定宽度 */
-.enhanced-csv-editor td .empty-cell {
-  position: relative !important;
-  min-height: 28px !important;
-  height: 28px !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  display: block !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  border: 1px dashed rgba(0, 0, 0, 0.05) !important; /* 添加虚线边框 */
-}
-
-/* 增强空单元格占位功能 */
-.enhanced-csv-editor td .empty-cell::before {
-  content: " " !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  background-color: rgba(0, 0, 0, 0.02) !important; /* 轻微背景色便于区分 */
-}
-
-/* 添加特殊的空单元格占位符样式 */
-.empty-cell-placeholder {
-  display: inline-block !important;
-  width: 100% !important;
-  height: 100% !important;
-  opacity: 0.3 !important;
-  user-select: none !important;
-  pointer-events: none !important;
-  min-width: 8px !important;
-}
-
-/* 特别处理overview列的空单元格 */
-.enhanced-csv-editor td.overview-cell.empty-cell {
-  min-width: 300px !important;
-  width: 300px !important;
-  background-color: rgba(0, 0, 0, 0.01) !important;
-}
-
-/* 特别处理URL列的空单元格 */
-.enhanced-csv-editor td.backdrop-url-cell.empty-cell,
-.enhanced-csv-editor td.poster-url-cell.empty-cell,
-.enhanced-csv-editor td.url-cell.empty-cell {
-  min-width: 200px !important;
-  width: 200px !important;
-  background-color: rgba(0, 0, 0, 0.01) !important;
-}
-
-/* 确保单元格不会收缩 */
-.enhanced-csv-editor td {
-  min-width: 100px !important;
-  box-sizing: border-box !important;
-  vertical-align: middle !important;
-  table-layout: fixed !important;
-  line-height: 28px !important;
-}
-
-/* 固定行号列样式 - 用于水平滚动时固定行号 */
-.tmdb-table-container [id^="row_"] [data-column-id="rowNumber"],
-.tmdb-table-container thead [data-column-id="rowNumber"] {
-  position: sticky !important;
-  left: 0 !important;
-  z-index: 20 !important;
-  background-color: var(--background) !important;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05) !important;
-  transition: box-shadow 0.2s ease-in-out !important;
-}
-
-/* 表头行号单元格固定并保持在顶层 */
-.tmdb-table-container thead [data-column-id="rowNumber"] {
-  z-index: 30 !important; /* 更高的z-index确保在顶层 */
-  background-color: var(--muted) !important;
-}
-
-/* 固定行号时的阴影效果，增强视觉分隔 */
-.tmdb-table-container .table-scroll-container:not([data-scroll-left="0"]) [id^="row_"] [data-column-id="rowNumber"],
-.tmdb-table-container .table-scroll-container:not([data-scroll-left="0"]) thead [data-column-id="rowNumber"] {
-  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.15), 
-              0 0 1px rgba(0, 0, 0, 0.1) !important;
-  border-right: 1px solid var(--border) !important;
-}
-
-/* 改进的滚动阴影指示器 - 当有更多内容可滚动时显示 */
-.tmdb-table-container .table-scroll-container {
-  background-image: 
-    linear-gradient(to right, transparent, transparent),
-    linear-gradient(to left, transparent, transparent) !important;
-  background-position: left center, right center !important;
-  background-repeat: no-repeat !important;
-  background-size: 20px 100%, 20px 100% !important;
-  background-attachment: local, local !important;
-  transition: all 0.3s ease !important;
-}
-
-/* 当有水平滚动内容时显示右侧阴影 */
-.tmdb-table-container .table-scroll-container[data-has-more-right="true"] {
-  background-image: 
-    linear-gradient(to right, transparent, transparent),
-    linear-gradient(to left, transparent, rgba(0, 0, 0, 0.1)) !important;
-}
-
-/* 当已经滚动且有更多内容时显示两侧阴影 */
-.tmdb-table-container .table-scroll-container:not([data-scroll-left="0"])[data-has-more-right="true"] {
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent),
-    linear-gradient(to left, transparent, rgba(0, 0, 0, 0.1)) !important;
-}
-
-/* 当已经滚动且没有更多内容时只显示左侧阴影 */
-.tmdb-table-container .table-scroll-container:not([data-scroll-left="0"]):not([data-has-more-right="true"]) {
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent),
-    linear-gradient(to left, transparent, transparent) !important;
-}
-
-/* 暗色主题下的滚动阴影调整 */
-.dark .tmdb-table-container .table-scroll-container[data-has-more-right="true"] {
-  background-image: 
-    linear-gradient(to right, transparent, transparent),
-    linear-gradient(to left, transparent, rgba(255, 255, 255, 0.05)) !important;
-}
-
-.dark .tmdb-table-container .table-scroll-container:not([data-scroll-left="0"])[data-has-more-right="true"] {
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.05), transparent),
-    linear-gradient(to left, transparent, rgba(255, 255, 255, 0.05)) !important;
-}
-
-.dark .tmdb-table-container .table-scroll-container:not([data-scroll-left="0"]):not([data-has-more-right="true"]) {
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.05), transparent),
-    linear-gradient(to left, transparent, transparent) !important;
-}
-
-/* 表格行内容区域样式 */
-.tmdb-table-container .table-body-content {
-  overflow-x: auto !important; 
-  overflow-y: hidden !important;
-  width: 100% !important;
-}
-
-/* 行号列宽度控制 */
-.tmdb-table-container [data-column-id="rowNumber"] {
-  min-width: 48px !important;
-  width: 48px !important;
-  max-width: 48px !important;
-}
-
-/* 针对tmdb-grid-cell的修复，确保单元格内容不溢出 */
-.tmdb-grid-cell {
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-/* 调整整体表格容器，确保可以滚动 */
-.tmdb-table-container .relative {
-  overflow-x: auto !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: #888 #f1f1f1 !important;
-}
-
-/* 暗色主题下的行号背景 */
-.dark .tmdb-table-container [id^="row_"] [data-column-id="rowNumber"],
-.dark .tmdb-table-container thead [data-column-id="rowNumber"] {
-  background-color: var(--background) !important;
-  box-shadow: 2px 0 4px rgba(255, 255, 255, 0.05) !important;
-}
-
-.dark .tmdb-table-container thead [data-column-id="rowNumber"] {
-  background-color: var(--muted) !important;
-}
-
-/* 表格包装器和滚动指示器 */
-.csv-table-wrapper {
-  position: relative !important;
-}
-
-/* 滚动指示器容器 */
-.csv-scroll-indicators {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  pointer-events: none !important;
-  z-index: 40 !important;
-}
-
-/* 左侧滚动指示器 - 当滚动时显示 */
-.csv-scroll-indicators .scroll-indicator-left {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  bottom: 0 !important;
-  width: 15px !important;
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05), transparent) !important;
-  opacity: 0 !important;
-  transition: opacity 0.3s ease !important;
-  pointer-events: none !important;
-}
-
-/* 右侧滚动指示器 - 当有更多内容时显示 */
-.csv-scroll-indicators .scroll-indicator-right {
-  position: absolute !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 15px !important;
-  background-image: linear-gradient(to left, rgba(0, 0, 0, 0.05), transparent) !important;
-  opacity: 0 !important;
-  transition: opacity 0.3s ease !important;
-  pointer-events: none !important;
-}
-
-/* 动态显示滚动指示器 */
-.table-scroll-container:not([data-scroll-left="0"]) ~ .csv-scroll-indicators .scroll-indicator-left {
-  opacity: 1 !important;
-}
-
-.table-scroll-container[data-has-more-right="true"] ~ .csv-scroll-indicators .scroll-indicator-right {
-  opacity: 1 !important;
-}
-
-/* 暗色主题下的滚动指示器 */
-.dark .csv-scroll-indicators .scroll-indicator-left {
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03), transparent) !important;
-}
-
-.dark .csv-scroll-indicators .scroll-indicator-right {
-  background-image: linear-gradient(to left, rgba(255, 255, 255, 0.03), transparent) !important;
-}
-
 /* CSV文本编辑器样式 */
 .csv-text-editor {
   font-family: "Consolas", "Monaco", "Courier New", monospace !important;
@@ -735,7 +403,7 @@ td[data-column="overview"],
   background-color: var(--background) !important;
   color: var(--foreground) !important;
   padding: 1rem !important;
-  padding-left: 60px !important; /* 为行号预留空间，会被动态调整 */
+  padding-left: 60px !important;
   scrollbar-width: thin !important;
   scrollbar-color: rgba(155, 155, 155, 0.5) transparent !important;
   caret-color: var(--primary) !important;
@@ -748,7 +416,7 @@ td[data-column="overview"],
   width: 100% !important;
   overflow-x: auto !important;
   overflow-y: auto !important;
-  letter-spacing: 0.025em !important; /* 稍微增加字母间距，提高可读性 */
+  letter-spacing: 0.025em !important;
 }
 
 /* 紧凑模式样式 */
@@ -785,7 +453,7 @@ td[data-column="overview"],
   left: 0 !important;
   top: 0 !important;
   bottom: 0 !important;
-  width: 50px !important; /* 默认宽度，会被动态调整 */
+  width: 50px !important;
   background-color: var(--muted) !important;
   color: var(--muted-foreground) !important;
   font-family: "Consolas", "Monaco", "Courier New", monospace !important;
@@ -897,62 +565,11 @@ td[data-column="overview"],
   background-color: rgba(59, 130, 246, 0.3) !important;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .csv-text-editor {
-    font-size: 12px !important;
-    padding-left: 45px !important; /* 会被动态调整 */
-    letter-spacing: 0.02em !important;
-  }
-  
-  .csv-text-editor.compact-mode {
-    font-size: 11px !important;
-  }
-  
-  .csv-line-numbers {
-    width: 40px !important; /* 会被动态调整 */
-    font-size: 12px !important;
-  }
-  
-  .compact-mode .csv-line-numbers {
-    font-size: 11px !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .csv-text-editor {
-    font-size: 11px !important;
-    padding-left: 35px !important; /* 会被动态调整 */
-    letter-spacing: 0.01em !important;
-  }
-  
-  .csv-text-editor.compact-mode {
-    font-size: 10px !important;
-  }
-  
-  .csv-line-numbers {
-    width: 30px !important; /* 会被动态调整 */
-    font-size: 11px !important;
-  }
-  
-  .compact-mode .csv-line-numbers {
-    font-size: 10px !important;
-  }
-  
-  .csv-line-number {
-    padding: 0 4px !important;
-  }
-  
-  .compact-mode .csv-line-number {
-    padding: 0 3px !important;
-  }
-}
-
 /* 优化表格样式 - 匹配截图中的效果 */
 .optimized-table table {
   border-collapse: collapse;
   width: 100%;
-  min-width: max-content; /* 确保表格不会被压缩 */
+  min-width: max-content;
 }
 
 /* 表头样式 - 蓝色背景白色文字 */
@@ -1035,40 +652,6 @@ td[data-column="overview"],
   background-color: rgba(0, 102, 204, 0.1) !important;
 }
 
-/* 添加水平滚动相关样式 */
-.tmdb-table {
-  width: 100%;
-  overflow: hidden;
-}
-
-/* 确保滚动区域支持水平滚动 */
-.tmdb-table [data-radix-scroll-area-viewport] {
-  width: 100% !important;
-}
-
-/* 确保水平滚动条始终可见 */
-.tmdb-table [data-orientation="horizontal"] {
-  display: flex !important;
-  height: 10px !important;
-}
-
-/* 确保表格内容不会被截断 */
-.tmdb-table .relative {
-  width: max-content !important;
-  min-width: 100% !important;
-}
-
-/* 暗色主题滚动条调整 */
-.dark .tmdb-table [data-orientation="horizontal"] {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-/* 确保表格容器不会限制表格宽度 */
-.csv-table-wrapper {
-  width: 100%;
-  overflow: hidden;
-}
-
 /* 确保滚动条始终可见 */
 ::-webkit-scrollbar {
   height: 10px !important;
@@ -1090,101 +673,3 @@ td[data-column="overview"],
   scrollbar-width: thin;
   scrollbar-color: #888 #f1f1f1;
 }
-
-/* 添加表格操作相关样式 */
-
-/* 活动单元格样式 */
-.tmdb-table [data-state="active"] {
-  box-shadow: 0 0 0 2px var(--primary) !important;
-  z-index: 10 !important;
-}
-
-/* 编辑中的单元格样式 */
-.tmdb-table .cell-editing {
-  padding: 0 !important;
-  position: relative !important;
-}
-
-/* 编辑输入框样式 */
-.tmdb-table .cell-edit-input {
-  width: 100% !important;
-  height: 100% !important;
-  padding: 8px 12px !important;
-  border: none !important;
-  outline: none !important;
-  background: transparent !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  color: inherit !important;
-  resize: none !important;
-}
-
-/* 拖拽选择样式 */
-.tmdb-table .selection-overlay {
-  position: absolute !important;
-  background-color: rgba(59, 130, 246, 0.2) !important;
-  border: 1px solid var(--primary) !important;
-  pointer-events: none !important;
-  z-index: 20 !important;
-}
-
-/* 选中单元格样式增强 */
-.optimized-table td.selected {
-  background-color: rgba(0, 102, 204, 0.2) !important;
-}
-
-/* 活动单元格样式增强 */
-.optimized-table td.active {
-  box-shadow: inset 0 0 0 2px #0066cc !important;
-  position: relative !important;
-  z-index: 5 !important;
-}
-
-/* 表格获得焦点时的样式 */
-.tmdb-table:focus-within {
-  outline: none !important;
-}
-
-/* 表格单元格悬停效果 */
-.optimized-table td:hover {
-  background-color: rgba(0, 102, 204, 0.05) !important;
-}
-
-/* 编辑模式下的单元格样式 */
-.optimized-table td.editing {
-  padding: 0 !important;
-  position: relative !important;
-}
-
-.optimized-table td.editing input {
-  width: 100% !important;
-  height: 100% !important;
-  padding: 8px 12px !important;
-  border: none !important;
-  box-shadow: inset 0 0 0 2px #0066cc !important;
-  outline: none !important;
-  background-color: white !important;
-}
-
-/* 暗色模式下的编辑输入框 */
-.dark .optimized-table td.editing input {
-  background-color: var(--background) !important;
-  color: var(--foreground) !important;
-}
-
-/* 表格键盘导航焦点样式 */
-.tmdb-table:focus-visible {
-  outline: 2px solid var(--primary) !important;
-  outline-offset: 2px !important;
-}
-
-/* 表格可操作状态指示 */
-.tmdb-table[data-interactive="true"] {
-  cursor: cell !important;
-}
-
-/* 表格选择模式样式 */
-.tmdb-table[data-selection-mode="true"] * {
-  user-select: none !important;
-} 

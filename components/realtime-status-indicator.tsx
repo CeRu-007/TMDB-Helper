@@ -85,7 +85,7 @@ export function RealtimeStatusIndicator({
                             className={`${connectionStatus.color} text-white text-xs px-2 py-1 flex items-center space-x-1`}
                         >
                             {connectionStatus.icon}
-                            <span className="hidden sm:inline">实时同步</span>
+                            <span>实时同步</span>
                         </Badge>
                     </TooltipTrigger>
                     <TooltipContent>

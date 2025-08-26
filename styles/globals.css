@@ -366,22 +366,7 @@ body {
   opacity: 1 !important;
 }
 
-/* 移动设备优化 */
-@media (max-width: 768px) {
-  .custom-scrollbar {
-    /* 增大滚动条尺寸，便于触摸 */
-    scrollbar-width: auto;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 10px; /* 移动设备上更宽的滚动条 */
-  }
 
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    min-height: 40px; /* 确保滚动条滑块在移动设备上有足够的触摸区域 */
-    border: 1px solid transparent; /* 减小边框使触摸区更大 */
-  }
-}
 
 /* 暗色模式下的滚动条样式 */
 .dark .custom-scrollbar::-webkit-scrollbar-track {

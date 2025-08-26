@@ -40,7 +40,7 @@ export function WeekdayNavigation({
 
   return (
     <div className={containerClasses}>
-      <div className={isInSidebar ? "mx-auto px-4 sm:px-6 lg:px-8" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"}>
+      <div className={isInSidebar ? "mx-auto px-8" : "max-w-7xl mx-auto px-8"}>
         <div className="flex justify-between items-center py-3">
           {/* 左侧：日期导航按钮 */}
           <div className="flex space-x-1 overflow-x-auto">

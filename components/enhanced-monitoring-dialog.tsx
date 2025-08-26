@@ -529,7 +529,7 @@ export function EnhancedMonitoringDialog({ open, onOpenChange }: EnhancedMonitor
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-4 gap-4">
                         <div>
                           <div className="text-lg font-bold">{performanceReport.summary.totalTasks}</div>
                           <div className="text-xs text-gray-500">总任务数</div>
@@ -599,7 +599,7 @@ export function EnhancedMonitoringDialog({ open, onOpenChange }: EnhancedMonitor
             <TabsContent value="storage" className="space-y-4">
               {data && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-sm flex items-center gap-2">

@@ -105,7 +105,7 @@ export function TMDBTableToolbar<TData>({
             ) : (
               <Save className="h-4 w-4" />
             )}
-            <span className="hidden sm:inline">{isSaving ? '保存中...' : '保存'}</span>
+            <span>{isSaving ? '保存中...' : '保存'}</span>
         </Button>
         <Button
             variant="ghost"
@@ -114,7 +114,7 @@ export function TMDBTableToolbar<TData>({
             className="h-8 gap-1"
         >
             <X className="h-4 w-4" />
-            <span className="hidden sm:inline">取消</span>
+            <span>取消</span>
         </Button>
         <Separator orientation="vertical" className="h-6" />
         <Button
@@ -194,7 +194,7 @@ export function TMDBTableToolbar<TData>({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 gap-1">
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">添加</span>
+                <span>添加</span>
                 <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
@@ -226,7 +226,7 @@ export function TMDBTableToolbar<TData>({
             disabled={selectedCells.length === 0}
           >
             <Trash2 className="h-4 w-4" />
-            <span className="hidden sm:inline">删除行</span>
+            <span>删除行</span>
           </Button>
           <Button
             variant="ghost"
@@ -236,7 +236,7 @@ export function TMDBTableToolbar<TData>({
             disabled={selectedCells.length === 0}
           >
             <Trash2 className="h-4 w-4" />
-            <span className="hidden sm:inline">删除列</span>
+            <span>删除列</span>
           </Button>
           <Separator orientation="vertical" className="h-6" />
           <Button
@@ -247,7 +247,7 @@ export function TMDBTableToolbar<TData>({
             disabled={selectedCells.length === 0}
           >
             <Trash2 className="h-4 w-4" />
-            <span className="hidden sm:inline">清空单元格</span>
+            <span>清空单元格</span>
           </Button>
         </div>
 

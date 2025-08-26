@@ -2643,7 +2643,7 @@ ${selectedTextInfo.text}
 
       {/* 余额不足弹窗 */}
       <Dialog open={showInsufficientBalanceDialog} onOpenChange={setShowInsufficientBalanceDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-red-500" />
@@ -4721,7 +4721,7 @@ function TitleStyleTab({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {TITLE_STYLES.map((style) => {
             const isSelected = config.selectedTitleStyle === style.id
             return (
@@ -4823,7 +4823,7 @@ function SummaryStyleTab({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {GENERATION_STYLES.map((style) => {
             const isSelected = config.selectedStyles.includes(style.id)
             return (
@@ -4928,7 +4928,7 @@ function ExportConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>导出到TMDB格式</DialogTitle>
           <DialogDescription>

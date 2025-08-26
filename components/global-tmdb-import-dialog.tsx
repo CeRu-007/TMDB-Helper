@@ -147,7 +147,7 @@ export default function GlobalTMDBImportDialog({ open, onOpenChange }: GlobalTMD
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {filteredItems.map((item) => (
           <Card key={item.id} className="overflow-hidden">
             <div className="flex">
@@ -287,7 +287,7 @@ export default function GlobalTMDBImportDialog({ open, onOpenChange }: GlobalTMD
           </div>
           
           {/* 搜索和过滤 */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex flex-row gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
               <Input
@@ -297,7 +297,7 @@ export default function GlobalTMDBImportDialog({ open, onOpenChange }: GlobalTMD
                 className="pl-9"
               />
             </div>
-            <div className="w-full md:w-64">
+            <div className="w-64">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger>
                   <div className="flex items-center">

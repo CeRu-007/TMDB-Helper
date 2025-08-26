@@ -334,32 +334,23 @@ export function UserAvatar({
           displayName={userInfo.displayName}
           className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
         />
-        <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
           {userInfo.displayName}
         </span>
-        <ChevronDown className={`hidden sm:block w-4 h-4 text-gray-500 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* 桌面端下拉菜单 */}
+      {/* 下拉菜单 */}
       {showDropdown && (
-        <>
-          <div className="hidden md:block">
-            <UserDropdownMenu
-              ref={dropdownRef}
-              onClose={() => setShowDropdown(false)}
-              triggerElement={buttonRef.current || undefined}
-              onShowImportDialog={onShowImportDialog}
-              onShowExportDialog={onShowExportDialog}
-              onLayoutChange={onLayoutChange}
-              currentLayout={currentLayout}
-            />
-          </div>
-
-          {/* 移动端抽屉菜单 */}
-          <div className="md:hidden">
-            <MobileUserDrawer onClose={() => setShowDropdown(false)} />
-          </div>
-        </>
+        <UserDropdownMenu
+          ref={dropdownRef}
+          onClose={() => setShowDropdown(false)}
+          triggerElement={buttonRef.current || undefined}
+          onShowImportDialog={onShowImportDialog}
+          onShowExportDialog={onShowExportDialog}
+          onLayoutChange={onLayoutChange}
+          currentLayout={currentLayout}
+        />
       )}
     </div>
   )
@@ -841,7 +832,7 @@ function MobileUserDrawer({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* 底部安全区域 */}
-        <div className="h-4 sm:h-6"></div>
+        <div className="h-6"></div>
       </div>
     </div>
   )
@@ -1242,7 +1233,7 @@ function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 
       {/* 对话框 */}
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md mx-4">
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl border dark:border-gray-700 p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl border dark:border-gray-700 p-6 max-h-[90vh] overflow-y-auto">
           {/* 头部 */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -1339,11 +1330,18 @@ function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           </div>
 
           {/* 操作按钮 */}
-          <div className="flex flex-col sm:flex-row sm:justify-between space-y-2 sm:space-y-0 sm:space-x-3">
+          <div className="flex flex-row justify-between space-x-3">
+            <button
+              onClick={() => onOpenChange(false)}
+              className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              关闭
+            </button>
+
             <button
               onClick={handleReset}
               disabled={isResetting}
-              className="px-4 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 order-2 sm:order-1"
+              className="px-4 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isResetting ? (
                 <>
@@ -1354,10 +1352,10 @@ function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                 <span>重置用户数据</span>
               )}
             </button>
-
+            
             <button
               onClick={() => onOpenChange(false)}
-              className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 order-1 sm:order-2"
+              className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
             >
               关闭
             </button>

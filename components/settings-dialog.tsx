@@ -2170,7 +2170,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               <div className="space-y-4">
                 <Label className="text-sm font-medium">TMDB 账户信息</Label>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm text-gray-600 dark:text-gray-400">用户名</Label>
                     <Input

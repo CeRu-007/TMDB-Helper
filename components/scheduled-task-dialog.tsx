@@ -1341,7 +1341,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader className="pb-2">
             <DialogTitle className="flex items-center">
               <AlarmClock className="h-5 w-5 mr-2" />

@@ -294,7 +294,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
         ) : (
           <>
             {/* 状态和版本信息行 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {/* 安装状态 */}
               {installStatus ? (
             <div className="space-y-2">

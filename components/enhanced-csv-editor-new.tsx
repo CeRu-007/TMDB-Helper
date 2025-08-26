@@ -479,20 +479,6 @@ export default function EnhancedCSVEditor({ data, onChange, onSave, onCancel }: 
     overflow-x: scroll !important;
     scrollbar-width: thin !important;
     scrollbar-color: #888 #f1f1f1 !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-  
-  /* 移动端滚动优化 */
-  @media (pointer: coarse) {
-    .overflow-auto::-webkit-scrollbar {
-      width: 12px !important;
-      height: 12px !important;
-    }
-    
-    .overflow-auto::-webkit-scrollbar-thumb {
-      min-height: 40px !important;
-      min-width: 40px !important;
-    }
   }
 
   /* 修复Firefox浏览器的水平滚动问题 */

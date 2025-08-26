@@ -1418,9 +1418,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           </DialogHeader>
 
           {/* 新的网格布局 */}
-          <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="p-6 pt-0 grid grid-cols-4 gap-6">
             {/* 左侧：海报区域 */}
-            <div className="md:col-span-1 md:max-w-full overflow-hidden">
+            <div className="col-span-1 max-w-full overflow-hidden">
               {editing ? (
                 // 编辑模式下使用固定高度容器，添加圆角
                 <div className="h-[670px] flex flex-col pr-2">
@@ -1857,7 +1857,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             </div>
 
             {/* 右侧：内容区域 */}
-            <div className="md:col-span-3">
+            <div className="col-span-3">
               {/* 操作按钮 */}
               <div className="flex flex-wrap gap-2 mb-4 items-center min-h-[40px]">
                 <Button
@@ -2190,7 +2190,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
                                     {/* 剧集网格 */}
                                     {currentSeason && currentSeason.episodes && currentSeason.episodes.length > 0 ? (
-                                      <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                                      <div className="grid grid-cols-10 gap-2">
                                         {currentSeason.episodes.map((episode) => (
                                           <EpisodeCheckbox
                                             key={episode.number}

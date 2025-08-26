@@ -40,13 +40,10 @@ export const PRODUCTION_CONFIG = {
     showPerformanceMetrics: false,
   },
 
-  // 响应式配置
-  responsive: {
-    // 断点配置
+  // 桌面端配置
+  desktop: {
+    // 断点配置（仅保留桌面端断点）
     breakpoints: {
-      xs: 475,
-      sm: 640,
-      md: 768,
       lg: 1024,
       xl: 1280,
       '2xl': 1536,
@@ -55,9 +52,6 @@ export const PRODUCTION_CONFIG = {
     
     // 每个断点的默认列数
     defaultColumns: {
-      xs: 2,
-      sm: 2,
-      md: 3,
       lg: 4,
       xl: 5,
       '2xl': 6,
@@ -66,9 +60,6 @@ export const PRODUCTION_CONFIG = {
     
     // 网格间距配置
     gridGaps: {
-      xs: '0.75rem',
-      sm: '1rem',
-      md: '1.25rem',
       lg: '1.5rem',
       xl: '1.5rem',
       '2xl': '1.5rem',
@@ -121,10 +112,10 @@ export function isProduction(): boolean {
 }
 
 /**
- * 获取响应式配置
+ * 获取桌面端配置
  */
-export function getResponsiveConfig() {
-  return PRODUCTION_CONFIG.responsive
+export function getDesktopConfig() {
+  return PRODUCTION_CONFIG.desktop
 }
 
 /**
@@ -142,33 +133,27 @@ export function getUIConfig() {
 }
 
 /**
- * 根据屏幕宽度获取推荐的列数
+ * 根据屏幕宽度获取推荐的列数（仅桌面端）
  */
 export function getRecommendedColumns(screenWidth: number): number {
-  const { breakpoints, defaultColumns } = PRODUCTION_CONFIG.responsive
+  const { breakpoints, defaultColumns } = PRODUCTION_CONFIG.desktop
   
   if (screenWidth >= breakpoints['3xl']) return defaultColumns['3xl']
   if (screenWidth >= breakpoints['2xl']) return defaultColumns['2xl']
   if (screenWidth >= breakpoints.xl) return defaultColumns.xl
-  if (screenWidth >= breakpoints.lg) return defaultColumns.lg
-  if (screenWidth >= breakpoints.md) return defaultColumns.md
-  if (screenWidth >= breakpoints.sm) return defaultColumns.sm
-  return defaultColumns.xs
+  return defaultColumns.lg // 默认返回大屏幕配置
 }
 
 /**
- * 根据屏幕宽度获取推荐的网格间距
+ * 根据屏幕宽度获取推荐的网格间距（仅桌面端）
  */
 export function getRecommendedGap(screenWidth: number): string {
-  const { breakpoints, gridGaps } = PRODUCTION_CONFIG.responsive
+  const { breakpoints, gridGaps } = PRODUCTION_CONFIG.desktop
   
   if (screenWidth >= breakpoints['3xl']) return gridGaps['3xl']
   if (screenWidth >= breakpoints['2xl']) return gridGaps['2xl']
   if (screenWidth >= breakpoints.xl) return gridGaps.xl
-  if (screenWidth >= breakpoints.lg) return gridGaps.lg
-  if (screenWidth >= breakpoints.md) return gridGaps.md
-  if (screenWidth >= breakpoints.sm) return gridGaps.sm
-  return gridGaps.xs
+  return gridGaps.lg // 默认返回大屏幕配置
 }
 
 export default PRODUCTION_CONFIG

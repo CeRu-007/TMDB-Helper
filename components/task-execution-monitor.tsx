@@ -435,7 +435,7 @@ export default function TaskExecutionMonitor({ open, onOpenChange }: TaskExecuti
         <div className="flex-1 flex flex-col space-y-4 min-h-0">
           {/* 统计信息 */}
           {statistics && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -499,7 +499,7 @@ export default function TaskExecutionMonitor({ open, onOpenChange }: TaskExecuti
               </div>
             ) : (
               <ScrollArea className="h-full">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-4">
+                <div className="grid grid-cols-2 gap-4 pr-4">
                   {tasks.length > 0 ? (
                     tasks.map(renderExecutionCard)
                   ) : (

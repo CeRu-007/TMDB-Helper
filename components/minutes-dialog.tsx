@@ -48,7 +48,7 @@ export default function MinutesDialog({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-w-[425px]">
         <DialogHeader>
           <DialogTitle>设置统一分钟</DialogTitle>
           <DialogDescription>

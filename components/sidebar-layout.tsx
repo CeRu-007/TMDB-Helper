@@ -207,7 +207,7 @@ export function SidebarLayout({
     refreshText?: string;
   }) => (
     <div className="mb-4 border-b border-blue-100/70 dark:border-blue-900/30 pb-3">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-8">
         <div className="flex items-center justify-between">
           {/* 当前选中区域显示和切换按钮集成 - 与原始布局完全一致 */}
           <div className="flex items-center">
@@ -351,7 +351,7 @@ export function SidebarLayout({
   // 渲染词条维护内容
   const renderMaintenanceContent = (categoryId: string) => {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="max-w-7xl mx-auto px-8 py-4">
         {/* 内容展示区域 - 保持与原始布局一致的容器样式 */}
         <div>
           {/* 这里直接渲染原始的children内容，保持完整的功能 */}
@@ -477,7 +477,7 @@ export function SidebarLayout({
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+                <div className="grid grid-cols-6 gap-6">
                   {upcomingItems
                     .filter(upcomingItem =>
                       !items.some(item =>
@@ -701,7 +701,7 @@ export function SidebarLayout({
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+                <div className="grid grid-cols-6 gap-6">
                   {recentItems
                     .filter(recentItem =>
                       !items.some(item =>
@@ -891,33 +891,35 @@ export function SidebarLayout({
 
           {/* 右侧操作按钮——严格对齐到主内容容器的右侧边缘 */}
           <div className={`absolute inset-y-0 right-0 ${isMobile ? 'left-0' : (sidebarCollapsed ? 'left-16' : 'left-64')} pointer-events-none`}>
-            <div className="h-full max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pr-5 lg:pr-9 flex items-center justify-end pointer-events-auto">
+            <div className="h-full max-w-7xl w-full mx-auto px-8 pr-9 flex items-center justify-end pointer-events-auto">
               {/* 桌面版操作按钮 */}
-              <div className="hidden md:flex md:items-center md:space-x-2">
+              <div className="flex items-center space-x-2">
                 {runningTasks.length > 0 && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={onShowExecutionLogs}
-                    className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                    className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 flex items-center space-x-2"
                   >
-                    <BarChart2 className="h-4 w-4 mr-2" />
-                    执行日志 ({runningTasks.length})
+                    <BarChart2 className="h-4 w-4" />
+                    <span>执行日志 ({runningTasks.length})</span>
                   </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={onShowTasksDialog}>
-                  <AlarmClock className="h-4 w-4 mr-2" />
-                  定时任务
+                <Button variant="outline" size="sm" onClick={onShowTasksDialog} className="flex items-center space-x-2">
+                  <AlarmClock className="h-4 w-4" />
+                  <span>定时任务</span>
                 </Button>
 
-                <Button variant="outline" size="sm" onClick={onShowSettingsDialog}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  设置
+                <Button variant="outline" size="sm" onClick={onShowSettingsDialog} className="flex items-center space-x-2">
+                  <Settings className="h-4 w-4" />
+                  <span>设置</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="flex items-center"
+                  title={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
                 >
                   {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
@@ -937,9 +939,8 @@ export function SidebarLayout({
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   size={isMobile ? "sm" : "default"}
                 >
-                  <Plus className="h-4 w-4 mr-1 md:mr-2" />
-                  <span className="hidden sm:inline">添加词条</span>
-                  <span className="sm:hidden">添加</span>
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span>添加词条</span>
                 </Button>
               </div>
             </div>

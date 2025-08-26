@@ -365,7 +365,7 @@ export function VisualCropEditor({
       </div>
 
       {/* 裁切信息 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div className="grid grid-cols-4 gap-4 text-sm">
         <div>
           <Label className="text-xs text-muted-foreground">X坐标</Label>
           <p className="font-mono">{cropArea.x}px</p>

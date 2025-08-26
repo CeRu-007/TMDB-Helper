@@ -197,7 +197,7 @@ export function SchedulerDebugDialog({ open, onOpenChange }: SchedulerDebugDialo
           {status && (
             <div className="space-y-4">
               {/* 调度器状态 */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="p-3 border rounded-lg">
                   <div className="text-sm text-gray-600">调度器状态</div>
                   <div className="flex items-center gap-2">

@@ -40,13 +40,4 @@
   border: 1px solid rgba(var(--primary-rgb), 0.2);
 }
 
-/* 触摸设备优化 */
-@media (hover: none) {
-  .time-wheel-arrow {
-    min-height: 40px; /* 触摸设备上更大的点击区域 */
-  }
-  
-  .time-wheel {
-    padding: 4px; /* 增加内边距，提高触摸精度 */
-  }
-} 
+ 

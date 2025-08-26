@@ -99,7 +99,7 @@ export function HomeHeader({
             )}
 
             {/* 导入导出按钮 */}
-            <div className="hidden md:flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
                 size="sm"

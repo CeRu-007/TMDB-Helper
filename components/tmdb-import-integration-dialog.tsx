@@ -1900,7 +1900,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 </div>
 
                 {/* 配置和按钮区域 */}
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mt-4 grid grid-cols-2 gap-4">
                   {/* 左侧：URL和季数配置 */}
                   <div className="space-y-3">
                 <div>
@@ -2671,7 +2671,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 </div>
 
                 {/* 配置和按钮区域 */}
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="mt-3 grid grid-cols-2 gap-3">
                   {/* 左侧：URL和季数配置 */}
                   <div className="space-y-2">
                   <div>

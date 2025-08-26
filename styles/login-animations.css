@@ -192,26 +192,7 @@
 .particle:nth-child(8) { left: 80%; animation-delay: 14s; }
 .particle:nth-child(9) { left: 90%; animation-delay: 16s; }
 
-/* 响应式调整 */
-@media (max-width: 1024px) {
-  .feature-card {
-    padding: 1rem;
-  }
-  
-  .gradient-text {
-    font-size: 2rem;
-  }
-}
 
-@media (max-width: 768px) {
-  .card-float {
-    animation: none;
-  }
-  
-  .particle {
-    display: none;
-  }
-}
 
 /* 图标样式已完全移除，使用Lucide React默认样式 */
 

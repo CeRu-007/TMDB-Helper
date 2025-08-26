@@ -209,7 +209,7 @@ const StreamingPlatformNav: React.FC = () => {
       {/* 精细网格背景 */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(147,197,253,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(147,197,253,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
-      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-10 w-full px-8 py-8">
         {/* 头部区域容器 - 统一左对齐 */}
         <div className="max-w-7xl mx-auto">
           {/* 精美的页面标题区域 - 居左显示 */}
@@ -220,13 +220,13 @@ const StreamingPlatformNav: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-yellow-500" />
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-600 to-purple-600 dark:from-white dark:via-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-600 to-purple-600 dark:from-white dark:via-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
                   流媒体平台导航
                 </h1>
                 <Sparkles className="w-5 h-5 text-purple-500" />
               </div>
             </div>
-            <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
               探索全球顶级流媒体平台，获取丰富的元数据信息
             </p>
             <div className="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
@@ -312,7 +312,7 @@ const StreamingPlatformNav: React.FC = () => {
               items={filteredPlatforms.map(p => p.id)}
               strategy={rectSortingStrategy}
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8 py-6">
+              <div className="grid grid-cols-5 gap-6 mb-8 py-6">
                 {filteredPlatforms.map((platform) => (
                   <SortablePlatformCard
                     key={platform.id}

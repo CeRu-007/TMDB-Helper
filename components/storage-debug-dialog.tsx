@@ -220,7 +220,7 @@ export function StorageDebugDialog({ open, onOpenChange }: StorageDebugDialogPro
           {/* 存储状态 */}
           {storageStatus && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="p-3 border rounded-lg">
                   <div className="text-sm text-gray-600">项目数量</div>
                   <div className="text-2xl font-bold">

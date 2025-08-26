@@ -151,7 +151,7 @@ export default function SeasonDisplay({
         <div className={`space-y-4 transition-opacity duration-300 ${animating ? "opacity-0" : "opacity-100"}`}>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between text-base md:text-lg">
+              <CardTitle className="flex items-center justify-between text-lg">
                 <span>第{selectedSeason}季 集数维护</span>
                 <div className="flex items-center space-x-2">
                   <Badge variant="outline" className="text-sm">
@@ -234,7 +234,7 @@ export default function SeasonDisplay({
               {/* 集数网格 */}
               <div
                 className={`grid gap-2 ${
-                  isMobile ? "grid-cols-6" : "grid-cols-8 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-10"
+                  isMobile ? "grid-cols-6" : "grid-cols-10"
                 } ${isShiftPressed ? "select-none" : ""}`}
               >
                 {episodesToShow?.map((episode) => (
@@ -262,7 +262,7 @@ export default function SeasonDisplay({
                         checked={episode.completed}
                         className="h-4 w-4 cursor-pointer"
                       />
-                      <span className="text-xs md:text-sm font-medium dark:text-gray-200">{episode.number}</span>
+                      <span className="text-sm font-medium dark:text-gray-200">{episode.number}</span>
                     </div>
                   </div>
                 ))}
@@ -321,7 +321,7 @@ export default function SeasonDisplay({
               <span className="text-sm font-medium text-blue-800 dark:text-blue-200">总体进度</span>
               <span className="text-sm font-bold text-blue-800 dark:text-blue-200">{seasons.length} 季</span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+            <div className="grid grid-cols-4 gap-4 text-xs">
               {seasons.map((season) => {
                 const progress = getSeasonProgress(season)
                 const completedEpisodes = season.episodes && season.episodes.length > 0

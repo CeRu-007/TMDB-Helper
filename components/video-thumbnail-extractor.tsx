@@ -198,7 +198,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
   // 引用
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropAreaRef = useRef<HTMLDivElement>(null)
-  const isMobile = useMobile()
   const { toast } = useToast()
 
   // 图像处理器
@@ -1811,7 +1810,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
       <p className="text-sm text-muted-foreground mb-4 max-w-md">
         上传视频文件以提取缩略图，支持 MP4、WebM、AVI、MOV 等常见视频格式
       </p>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-row gap-2">
         <Button
           className="flex items-center"
           onClick={() => fileInputRef.current?.click()}
@@ -1844,7 +1843,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col space-y-6">
             {/* 标题区域 */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+            <div className="flex flex-row justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight flex items-center">
                   <Film className="mr-2 h-6 w-6 text-primary" />
@@ -1868,7 +1867,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
             {/* 批量操作工具栏 */}
             {videos.length > 0 && (
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border">
+              <div className="flex flex-row justify-between items-center bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium">
                     {videos.length} 个视频
@@ -1885,9 +1884,9 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
                   )}
                 </div>
 
-                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <div className="flex items-center space-x-2">
                   <Button
-                    className="flex-1 sm:flex-none"
+                    className="flex-1"
                     onClick={handleBatchExtraction}
                     disabled={isProcessing || videos.filter(v => v.status === "pending").length === 0}
                   >
@@ -1896,7 +1895,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
                   </Button>
 
                   <Button
-                    className="flex-1 sm:flex-none"
+                    className="flex-1"
                     onClick={downloadAllThumbnails}
                     disabled={videos.filter(v => v.status === "completed" && v.thumbnails.length > 0).length === 0}
                   >
@@ -1905,7 +1904,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
                   </Button>
 
                   <Button
-                    className="flex-1 sm:flex-none"
+                    className="flex-1"
                     onClick={removeAllVideos}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
@@ -1924,7 +1923,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
           <div className="container mx-auto px-4 py-6">
             {/* 视频列表 - 修改为网格布局 */}
             {videos.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-6">
                 {getFilteredVideos().map(renderVideoCard)}
               </div>
             ) : (
