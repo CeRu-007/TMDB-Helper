@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
+import { enhancedImageCache } from '@/lib/enhanced-image-cache'
 
 interface CachedImageProps {
   src: string
@@ -15,8 +16,8 @@ interface CachedImageProps {
   fallbackElement?: React.ReactNode
 }
 
-// 图片缓存管理 - 基于图片路径而不是完整URL
-const imageCache = new Map<string, boolean>();
+// 使用增强的图片缓存管理器
+const imageCache = enhancedImageCache;
 
 // 从URL中提取缓存键
 function getCacheKey(src: string): string {
@@ -34,7 +35,7 @@ function getCacheKey(src: string): string {
 }
 
 /**
- * 缓存图片组件，避免重复加载已缓存的图片
+ * 缓存图片组件，优化加载体验，实现立即显示效果
  */
 export function CachedImage({
   src,
@@ -47,7 +48,7 @@ export function CachedImage({
   onLoad,
   fallbackElement
 }: CachedImageProps) {
-  const [loaded, setLoaded] = useState(false)
+  const [loaded, setLoaded] = useState(true) // 默认为true，立即显示
   const [error, setError] = useState(false)
   const [imageSrc, setImageSrc] = useState<string | undefined>(undefined)
   
@@ -77,7 +78,7 @@ export function CachedImage({
     }
 
     setImageSrc(src);
-    setLoaded(false);
+    setLoaded(true); // 立即设置为已加载状态
     setError(false);
   }, [src])
 
@@ -89,7 +90,6 @@ export function CachedImage({
 
     // 检查图片是否已在缓存中
     if (imageCache.has(cacheKey)) {
-      setLoaded(true);
       return;
     }
 
@@ -97,8 +97,7 @@ export function CachedImage({
 
     img.onload = () => {
       if (isMounted.current) {
-        setLoaded(true);
-        imageCache.set(cacheKey, true);
+        imageCache.set(cacheKey, img);
       }
     };
 
@@ -112,9 +111,9 @@ export function CachedImage({
   }, [imageSrc]);
 
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    setLoaded(true);
     const cacheKey = getCacheKey(imageSrc || '');
-    imageCache.set(cacheKey, true);
+    const img = e.target as HTMLImageElement;
+    imageCache.set(cacheKey, img);
     onLoad?.(e);
   };
 
@@ -136,8 +135,7 @@ export function CachedImage({
       src={imageSrc}
       alt={alt}
       className={cn(
-        "transition-opacity duration-300",
-        loaded ? "opacity-100" : "opacity-0",
+        "opacity-100", // 始终显示，移除过渡效果
         className
       )}
       style={style}

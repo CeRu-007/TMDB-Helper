@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverImageCache } from '@/lib/serverImageCache'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const path = searchParams.get('path')
     const size = searchParams.get('size') || 'w500'
+    const timestamp = searchParams.get('t') // 时间戳参数，用于强制刷新
     
     if (!path) {
       return NextResponse.json({
@@ -16,6 +18,24 @@ export async function GET(request: NextRequest) {
     // 构建TMDB图片URL
     const imageUrl = `https://image.tmdb.org/t/p/${size}${path}`
     
+    // 检查是否有时间戳参数，如果有则跳过缓存
+    const useCache = !timestamp
+    
+    if (useCache) {
+      // 检查服务器端缓存
+      const cached = await serverImageCache.get(imageUrl)
+      if (cached) {
+        return new NextResponse(Buffer.from(cached.buffer, 'base64'), {
+          headers: {
+            'Content-Type': cached.contentType,
+            'Cache-Control': 'public, max-age=86400, stale-while-revalidate=86400', // 缓存24小时，再验证1天
+            'Access-Control-Allow-Origin': '*',
+            'X-Cache': 'HIT',
+          }
+        })
+      }
+    }
+
     // 代理请求到TMDB
     const response = await fetch(imageUrl, {
       headers: {
@@ -34,12 +54,22 @@ export async function GET(request: NextRequest) {
     const imageBuffer = await response.arrayBuffer()
     const contentType = response.headers.get('content-type') || 'image/jpeg'
 
+    // 缓存到服务器端缓存
+    if (useCache) {
+      try {
+        await serverImageCache.set(imageUrl, Buffer.from(imageBuffer), contentType)
+      } catch (cacheError) {
+        console.warn('Failed to cache image:', cacheError)
+      }
+    }
+
     // 返回图片数据
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400', // 缓存24小时
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=86400', // 缓存24小时，再验证1天
         'Access-Control-Allow-Origin': '*',
+        'X-Cache': useCache ? 'MISS' : 'BYPASS',
       }
     })
 

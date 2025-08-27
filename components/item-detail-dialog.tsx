@@ -115,6 +115,7 @@ import { cn } from "@/lib/utils"
 import { safeJsonParse } from "@/lib/utils"
 import { BackgroundImage } from "@/components/ui/background-image"
 import { CachedImage } from "@/components/ui/cached-image"
+import { useItemImagesPreloader } from "@/hooks/useItemImagesPreloader"
 
 import { ClientConfigManager } from "@/lib/client-config-manager"
 
@@ -187,6 +188,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     detailBackdropOverlayOpacity?: number
   } | null>(null);
 
+  // 使用新的图片预加载hook
+  useItemImagesPreloader(item);
+  
   useEffect(() => {
     // 确保所有属性都被正确初始化，包括isDailyUpdate
     const initialEditData = {
@@ -216,16 +220,28 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
 
     // 预加载背景图，确保打开对话框时立即显示
-    // 使用缓存避免重复预加载
+    // 使用更积极的预加载策略，立即触发加载
     if (item.backdropUrl) {
-      const cacheKey = `preload_${item.tmdbId || item.id}`;
-      if (!window.sessionStorage.getItem(cacheKey)) {
-        const img = new Image();
-        img.onload = () => {
-          window.sessionStorage.setItem(cacheKey, 'loaded');
-        };
-        img.src = item.backdropUrl;
-      }
+      const img = new Image();
+      img.src = item.backdropUrl;
+    }
+    
+    // 预加载海报图
+    if (item.posterUrl) {
+      const img = new Image();
+      img.src = item.posterUrl;
+    }
+    
+    // 预加载标志图
+    if (item.logoUrl) {
+      const img = new Image();
+      img.src = item.logoUrl;
+    }
+    
+    // 预加载网络logo图
+    if (item.networkLogoUrl) {
+      const img = new Image();
+      img.src = item.networkLogoUrl;
     }
 
     // 读取全局外观设置
@@ -1431,7 +1447,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         src={localItem.posterUrl}
                         alt={localItem.title}
                         className="w-full h-full object-cover"
-                        loading="lazy"
+                        loading="eager"
                         decoding="async"
                       />
                     ) : (
@@ -1740,7 +1756,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           src={localItem.posterUrl}
                           alt={localItem.title}
                           className="w-full h-full object-cover"
-                          loading="lazy"
+                          loading="eager"
                           decoding="async"
                         />
                       ) : (

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
+import { enhancedImageCache } from '@/lib/enhanced-image-cache'
 
 interface BackgroundImageProps {
   src: string | undefined
@@ -17,8 +18,8 @@ interface BackgroundImageProps {
   refreshKey?: string | number
 }
 
-// 图片缓存管理 - 基于图片路径而不是完整URL
-const imageCache = new Map<string, boolean>();
+// 使用增强的图片缓存管理器
+const imageCache = enhancedImageCache;
 
 // 从URL中提取缓存键
 function getCacheKey(src: string): string {
@@ -36,7 +37,7 @@ function getCacheKey(src: string): string {
 }
 
 /**
- * 背景图组件，支持懒加载、渐变效果和错误处理
+ * 背景图组件，优化加载体验，实现立即显示效果
  */
 export function BackgroundImage({
   src,
@@ -51,12 +52,8 @@ export function BackgroundImage({
   forceRefresh = false,
   refreshKey
 }: BackgroundImageProps) {
-  const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const [imageSrc, setImageSrc] = useState<string | undefined>(undefined)
-  // 添加低质量图像源状态
-  const [lowQualityImageSrc, setLowQualityImageSrc] = useState<string | undefined>(undefined)
-  const [lowQualityLoaded, setLowQualityLoaded] = useState(false)
   
   // 使用ref跟踪组件挂载状态，避免内存泄漏
   const isMounted = useRef(true);
@@ -82,7 +79,6 @@ export function BackgroundImage({
     const cacheKey = getCacheKey(src);
     if (imageCache.has(cacheKey) && !shouldForceRefresh) {
       setImageSrc(src);
-      setLoaded(true);
       return;
     }
 
@@ -112,9 +108,6 @@ export function BackgroundImage({
 
       const fullSrc = `/api/tmdb-image?size=${size}&path=${encodeURIComponent(finalPath)}`;
       setImageSrc(fullSrc);
-
-      // 同时设置低质量图像源，用于快速加载预览
-      setLowQualityImageSrc(`/api/tmdb-image?size=w300&path=${encodeURIComponent(finalPath)}`);
     } else if (src.includes('image.tmdb.org')) {
       // 处理旧的直接TMDB URL（向后兼容）
       const baseUrl = src.split('/w1280').shift() || 'https://image.tmdb.org/t/p'
@@ -139,9 +132,6 @@ export function BackgroundImage({
 
       const fullSrc = `${baseUrl}/${size}${path}`;
       setImageSrc(fullSrc);
-
-      // 同时设置低质量图像源，用于快速加载预览
-      setLowQualityImageSrc(`${baseUrl}/w300${path}`);
     } else {
       // 如果强制刷新非TMDB图片，添加时间戳参数
       let finalSrc = src;
@@ -149,67 +139,33 @@ export function BackgroundImage({
         finalSrc = `${src}?t=${Date.now()}`;
       }
       setImageSrc(finalSrc);
-      // 对于非TMDB图片，低质量图像与原图相同
-      setLowQualityImageSrc(finalSrc);
     }
   }, [src, fallbackSrc, forceRefresh, refreshKey])
 
-  // 预加载低质量图片
-  useEffect(() => {
-    if (!lowQualityImageSrc) return
-    
-    // 检查图片是否已在缓存中
-    const img = new Image();
-    
-    // 如果图片已在缓存中，complete属性会立即为true
-    if (img.complete) {
-      setLowQualityLoaded(true);
-      setError(false);
-    } else {
-      img.onload = () => {
-        if (isMounted.current) {
-          setLowQualityLoaded(true);
-          setError(false);
-        }
-      };
-      
-      img.onerror = () => {
-        if (isMounted.current) {
-          setError(true);
-        }
-      };
-    }
-    
-    img.src = lowQualityImageSrc;
-  }, [lowQualityImageSrc])
-
-  // 预加载高质量图片
+  // 预加载图片
   useEffect(() => {
     if (!imageSrc) return;
 
     const cacheKey = getCacheKey(imageSrc);
 
     // 检查图片是否已在缓存中
+    if (imageCache.has(cacheKey)) {
+      return;
+    }
+
     const img = new Image();
 
-    // 如果图片已在缓存中，complete属性会立即为true
-    if (img.complete) {
-      setLoaded(true);
-      imageCache.set(cacheKey, true);
-    } else {
-      img.onload = () => {
-        if (isMounted.current) {
-          setLoaded(true);
-          imageCache.set(cacheKey, true);
-        }
-      };
+    img.onload = () => {
+      if (isMounted.current) {
+        imageCache.set(cacheKey, img);
+      }
+    };
 
-      img.onerror = () => {
-        if (isMounted.current) {
-          setError(true);
-        }
-      };
-    }
+    img.onerror = () => {
+      if (isMounted.current) {
+        setError(true);
+      }
+    };
 
     img.src = imageSrc;
   }, [imageSrc]);
@@ -231,36 +187,23 @@ export function BackgroundImage({
     <div className={cn("relative overflow-hidden", className)}>
       {imageSrc && !error ? (
         <>
-          {/* 低质量图片作为预加载 */}
-          {lowQualityLoaded && !loaded && (
-            <img
-              src={lowQualityImageSrc}
-              alt={`${alt} 预览`}
-              className={cn(
-                "w-full h-full object-cover absolute inset-0 transition-all duration-300",
-                loaded ? "opacity-0 scale-105" : "opacity-100 scale-100"
-              )}
-              style={{ objectPosition, filter: 'blur(10px)' }}
-              decoding="async"
-            />
-          )}
-          
-          {/* 高质量图片 */}
+          {/* 高质量图片 - 立即显示，移除渐进式加载 */}
           <img
             src={imageSrc}
             alt={alt}
             className={cn(
-              "w-full h-full object-cover transition-all duration-300",
-              loaded ? "opacity-100 scale-100" : "opacity-0 scale-105"
+              "w-full h-full object-cover opacity-100", // 立即显示，移除过渡效果
+              "absolute inset-0"
             )}
             style={{ objectPosition }}
             loading="eager"
             fetchPriority="high"
             decoding="async"
             onLoad={() => {
-              setLoaded(true);
               const cacheKey = getCacheKey(imageSrc);
-              imageCache.set(cacheKey, true);
+              const img = new window.Image();
+              img.src = imageSrc;
+              imageCache.set(cacheKey, img);
             }}
             onError={() => {
               setError(true);
@@ -284,4 +227,4 @@ export function BackgroundImage({
       {children}
     </div>
   )
-} 
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { enhancedImageCache } from '@/lib/enhanced-image-cache'
 
 interface InstantImageProps {
   src: string
@@ -23,28 +24,27 @@ export function InstantImage({
   onLoad,
   onError
 }: InstantImageProps) {
-  const [imageSrc, setImageSrc] = useState(placeholder)
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [imageSrc, setImageSrc] = useState(src || placeholder)
 
   useEffect(() => {
     if (!src || src === placeholder) {
       setImageSrc(placeholder)
-      setIsLoaded(true)
       return
     }
 
-    // 立即加载图片
+    // 立即显示图片，不使用渐进式加载
+    setImageSrc(src)
+    
+    // 预加载图片到缓存
     const img = new Image()
     
     img.onload = () => {
-      setImageSrc(src)
-      setIsLoaded(true)
+      // 添加到增强的缓存管理器
+      enhancedImageCache.set(src, img);
       onLoad?.()
     }
     
     img.onerror = () => {
-      setImageSrc(placeholder)
-      setIsLoaded(true)
       onError?.()
     }
     
@@ -55,7 +55,7 @@ export function InstantImage({
     <img
       src={imageSrc}
       alt={alt}
-      className={`${className} ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
+      className={`${className} opacity-100`} // 立即显示，移除过渡效果
       width={width}
       height={height}
       loading="eager"
@@ -94,6 +94,10 @@ export function useInstantImagePreloader(urls: string[]) {
     urls.forEach(url => {
       if (url && url !== '/placeholder.svg') {
         const img = new Image()
+        img.onload = () => {
+          // 添加到增强的缓存管理器
+          enhancedImageCache.set(url, img);
+        }
         img.src = url
       }
     })
