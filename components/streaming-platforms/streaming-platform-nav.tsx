@@ -209,7 +209,7 @@ const StreamingPlatformNav: React.FC = () => {
       {/* 精细网格背景 */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(147,197,253,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(147,197,253,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
-      <div className="relative z-10 w-full px-8 py-8">
+      <div className="relative z-10 w-full px-4 sm:px-6 py-8">
         {/* 头部区域容器 - 统一左对齐 */}
         <div className="max-w-7xl mx-auto">
           {/* 精美的页面标题区域 - 居左显示 */}
@@ -220,16 +220,16 @@ const StreamingPlatformNav: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-yellow-500" />
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-600 to-purple-600 dark:from-white dark:via-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
+                <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-600 to-purple-600 dark:from-white dark:via-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
                   流媒体平台导航
                 </h1>
                 <Sparkles className="w-5 h-5 text-purple-500" />
               </div>
             </div>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
               探索全球顶级流媒体平台，获取丰富的元数据信息
             </p>
-            <div className="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4" />
                 <span>全球覆盖</span>
@@ -251,7 +251,7 @@ const StreamingPlatformNav: React.FC = () => {
           <div className="mb-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               {/* 分类筛选 */}
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {categories.map((category) => (
                   <Button
                     key={category}
@@ -260,7 +260,7 @@ const StreamingPlatformNav: React.FC = () => {
                     onClick={() => handleCategoryChange(category)}
                     disabled={isDragMode}
                     className={cn(
-                      "transition-all duration-300 rounded-full",
+                      "transition-all duration-300 rounded-full text-xs sm:text-sm",
                       selectedCategory === category
                         ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
                         : "bg-white dark:bg-slate-800/90 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-blue-300 dark:hover:border-purple-400/50 hover:scale-105 hover:shadow-md",
@@ -278,7 +278,7 @@ const StreamingPlatformNav: React.FC = () => {
                 size="sm"
                 onClick={() => setIsDragMode(!isDragMode)}
                 className={cn(
-                  "transition-all duration-300 rounded-full flex items-center gap-2",
+                  "transition-all duration-300 rounded-full flex items-center gap-2 text-xs sm:text-sm",
                   isDragMode
                     ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30"
                     : "bg-white dark:bg-slate-800/90 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-orange-300 dark:hover:border-orange-400/50 hover:scale-105 hover:shadow-md"
@@ -301,7 +301,7 @@ const StreamingPlatformNav: React.FC = () => {
           </div>
         </div>
 
-        {/* 平台网格 - 可拖拽排序，增加间距以便tooltip显示 */}
+        {/* 平台网格 - 可拖拽排序，响应式网格布局 */}
         <div className="max-w-7xl mx-auto">
           <DndContext
             sensors={sensors}
@@ -312,7 +312,7 @@ const StreamingPlatformNav: React.FC = () => {
               items={filteredPlatforms.map(p => p.id)}
               strategy={rectSortingStrategy}
             >
-              <div className="grid grid-cols-5 gap-6 mb-8 py-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6 mb-8 py-6">
                 {filteredPlatforms.map((platform) => (
                   <SortablePlatformCard
                     key={platform.id}

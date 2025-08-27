@@ -25,7 +25,7 @@ export const platforms: Platform[] = [
     url: 'https://www.netflix.com',
     region: '全球',
     popular: true,
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/netflix-logo-icon.svg' // 用户可自定义Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/netflix-logo-icon.svg'
   },
   {
     id: 2,
@@ -37,7 +37,7 @@ export const platforms: Platform[] = [
     url: 'https://www.disneyplus.com',
     region: '全球',
     popular: true,
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/disney-2.svg' // 用户可自定义Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/disney-2.svg'
   },
   {
     id: 3,
@@ -49,7 +49,7 @@ export const platforms: Platform[] = [
     url: 'https://www.primevideo.com',
     region: '全球',
     popular: true,
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/amazon-prime-video-1.svg' // 用户可自定义Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/amazon-prime-video-1.svg'
   },
   {
     id: 4,
@@ -61,7 +61,7 @@ export const platforms: Platform[] = [
     url: 'https://www.hbomax.com',
     region: '美国',
     popular: true,
-    logoUrl: 'https://cdn.cookielaw.org/logos/1b21e05d-c206-4e0b-970e-2d73a23e42e8/0197a675-cce2-7363-aa77-c0700565dd28/ab24c856-14e8-485a-ab26-fdc354c49b32/hbomax25_-_min_-_resized.png' // 用户可自定义Logo地址
+    logoUrl: 'https://cdn.cookielaw.org/logos/1b21e05d-c206-4e0b-970e-2d73a23e42e8/0197a675-cce2-7363-aa77-c0700565dd28/ab24c856-14e8-485a-ab26-fdc354c49b32/hbomax25_-_min_-_resized.png'
   },
   {
     id: 5,
@@ -73,7 +73,7 @@ export const platforms: Platform[] = [
     url: 'https://www.youtube.com',
     region: '全球',
     popular: true,
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/youtube-icon-5.svg' // 用户可自定义Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/youtube-icon-5.svg'
   },
   {
     id: 6,
@@ -85,7 +85,7 @@ export const platforms: Platform[] = [
     url: 'https://www.hulu.com',
     region: '美国',
     popular: false,
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/hulu.svg' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/hulu.svg'
   },
   {
     id: 7,
@@ -97,7 +97,7 @@ export const platforms: Platform[] = [
     url: 'https://tv.apple.com',
     region: '全球',
     popular: false,
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/apple-tv-plus-logo.svg' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/apple-tv-plus-logo.svg'
   },
   {
     id: 8,
@@ -109,7 +109,7 @@ export const platforms: Platform[] = [
     url: 'https://www.paramountplus.com',
     region: '美国',
     popular: false,
-    logoUrl: 'https://cdn.worldvectorlogo.com/logos/paramount-3.svg' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/paramount-3.svg'
   },
   {
     id: 9,
@@ -121,7 +121,7 @@ export const platforms: Platform[] = [
     url: 'https://www.peacocktv.com',
     region: '美国',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/peacock-1.svg'
   },
   {
     id: 10,
@@ -133,7 +133,7 @@ export const platforms: Platform[] = [
     url: 'https://www.crunchyroll.com',
     region: '全球',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://cdn.worldvectorlogo.com/logos/crunchyroll-1.svg'
   },
 
   // 中国大陆平台
@@ -147,7 +147,7 @@ export const platforms: Platform[] = [
     url: 'https://www.iqiyi.com',
     region: '中国大陆',
     popular: true,
-    logoUrl: '' // 用户可自定义Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=iqiyi.com&sz=64'
   },
   {
     id: 12,
@@ -159,7 +159,7 @@ export const platforms: Platform[] = [
     url: 'https://v.qq.com',
     region: '中国大陆',
     popular: true,
-    logoUrl: '' // 用户可自定义Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=v.qq.com&sz=64'
   },
   {
     id: 13,
@@ -171,7 +171,7 @@ export const platforms: Platform[] = [
     url: 'https://www.youku.com',
     region: '中国大陆',
     popular: true,
-    logoUrl: '' // 用户可自定义Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=youku.com&sz=64'
   },
   {
     id: 14,
@@ -183,7 +183,7 @@ export const platforms: Platform[] = [
     url: 'https://www.bilibili.com',
     region: '中国大陆',
     popular: true,
-    logoUrl: '' // 用户可自定义Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=bilibili.com&sz=64'
   },
   {
     id: 15,
@@ -195,7 +195,7 @@ export const platforms: Platform[] = [
     url: 'https://www.mgtv.com',
     region: '中国大陆',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=mgtv.com&sz=64'
   },
   {
     id: 16,
@@ -207,7 +207,7 @@ export const platforms: Platform[] = [
     url: 'https://www.migu.cn',
     region: '中国大陆',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=migu.cn&sz=64'
   },
 
   // 日本平台
@@ -221,7 +221,7 @@ export const platforms: Platform[] = [
     url: 'https://video.unext.jp',
     region: '日本',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=video.unext.jp&sz=64'
   },
   {
     id: 18,
@@ -233,7 +233,7 @@ export const platforms: Platform[] = [
     url: 'https://abema.tv',
     region: '日本',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=abema.tv&sz=64'
   },
   {
     id: 19,
@@ -245,7 +245,7 @@ export const platforms: Platform[] = [
     url: 'https://tver.jp',
     region: '日本',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=tver.jp&sz=64'
   },
   {
     id: 20,
@@ -257,7 +257,7 @@ export const platforms: Platform[] = [
     url: 'https://fod.fujitv.co.jp',
     region: '日本',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=fod.fujitv.co.jp&sz=64'
   },
   {
     id: 21,
@@ -269,7 +269,7 @@ export const platforms: Platform[] = [
     url: 'https://video.dmkt-sp.jp',
     region: '日本',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=video.dmkt-sp.jp&sz=64'
   },
   {
     id: 22,
@@ -281,7 +281,7 @@ export const platforms: Platform[] = [
     url: 'https://animestore.docomo.ne.jp',
     region: '日本',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=animestore.docomo.ne.jp&sz=64'
   },
   {
     id: 23,
@@ -293,7 +293,7 @@ export const platforms: Platform[] = [
     url: 'https://www.nicovideo.jp',
     region: '日本',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=nicovideo.jp&sz=64'
   },
 
   // 韩国平台
@@ -307,7 +307,7 @@ export const platforms: Platform[] = [
     url: 'https://www.wavve.com',
     region: '韩国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=wavve.com&sz=64'
   },
   {
     id: 25,
@@ -319,7 +319,7 @@ export const platforms: Platform[] = [
     url: 'https://www.tving.com',
     region: '韩国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=tving.com&sz=64'
   },
   {
     id: 26,
@@ -331,7 +331,7 @@ export const platforms: Platform[] = [
     url: 'https://www.coupangplay.com',
     region: '韩国',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=coupangplay.com&sz=64'
   },
 
   // 台湾平台
@@ -345,322 +345,324 @@ export const platforms: Platform[] = [
     url: 'https://www.linetv.tw',
     region: '台湾',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=linetv.tw&sz=64'
   },
   {
     id: 28,
-    name: 'LiTV',
-    category: '国际平台',
-    description: '台湾本土OTT影音平台',
-    rating: 3.7,
-    color: 'from-orange-500 to-orange-600',
-    url: 'https://www.litv.tv',
-    region: '台湾',
-    popular: false,
-    logoUrl: '' // 用户填入Logo地址
-  },
-  {
-    id: 29,
-    name: 'friDay影音',
-    category: '国际平台',
-    description: '远传电信旗下影音服务',
-    rating: 3.6,
-    color: 'from-blue-500 to-blue-600',
-    url: 'https://video.friday.tw',
-    region: '台湾',
-    popular: false,
-    logoUrl: '' // 用户填入Logo地址
-  },
-  {
-    id: 30,
-    name: 'myVideo',
-    category: '国际平台',
-    description: '台湾大哥大影音服务',
-    rating: 3.5,
-    color: 'from-purple-500 to-purple-600',
-    url: 'https://www.myvideo.net.tw',
-    region: '台湾',
-    popular: false,
-    logoUrl: '' // 用户填入Logo地址
-  },
-  {
-    id: 31,
     name: 'KKTV',
     category: '国际平台',
-    description: '专注亚洲内容的影音平台',
-    rating: 3.9,
-    color: 'from-red-500 to-red-600',
+    description: '台湾KKBOX旗下视频服务',
+    rating: 3.7,
+    color: 'from-blue-500 to-blue-600',
     url: 'https://www.kktv.me',
     region: '台湾',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=kktv.me&sz=64'
+  },
+  {
+    id: 29,
+    name: 'FriDay影音',
+    category: '国际平台',
+    description: '台湾远传电信旗下视频平台',
+    rating: 3.6,
+    color: 'from-purple-500 to-purple-600',
+    url: 'https://video.friday.tw',
+    region: '台湾',
+    popular: false,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=video.friday.tw&sz=64'
   },
 
   // 香港平台
   {
-    id: 32,
+    id: 30,
     name: 'Viu',
     category: '国际平台',
-    description: '亚洲领先的OTT视频平台',
-    rating: 4.0,
-    color: 'from-yellow-500 to-yellow-600',
+    description: '香港电讯盈科流媒体服务',
+    rating: 3.9,
+    color: 'from-purple-500 to-purple-600',
     url: 'https://www.viu.com',
     region: '香港',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=viu.com&sz=64'
   },
   {
-    id: 33,
-    name: 'myTV SUPER',
+    id: 31,
+    name: 'Now TV',
     category: '国际平台',
-    description: '香港电视广播公司OTT服务',
+    description: '香港电讯盈科付费电视服务',
     rating: 3.8,
     color: 'from-blue-600 to-blue-700',
-    url: 'https://www.mytvsuper.com',
+    url: 'https://www.nowtv.com',
     region: '香港',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
-  },
-  {
-    id: 34,
-    name: 'Now E',
-    category: '国际平台',
-    description: '香港Now TV旗下串流服务',
-    rating: 3.7,
-    color: 'from-purple-500 to-purple-600',
-    url: 'https://nowe.com',
-    region: '香港',
-    popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=nowtv.com&sz=64'
   },
 
   // 新加坡平台
   {
-    id: 35,
-    name: 'Toggle',
+    id: 32,
+    name: 'StarHub Go',
     category: '国际平台',
-    description: '新传媒旗下免费视频平台',
-    rating: 3.8,
+    description: '新加坡StarHub流媒体服务',
+    rating: 3.7,
     color: 'from-green-500 to-green-600',
-    url: 'https://www.toggle.sg',
+    url: 'https://www.starhubgo.com',
     region: '新加坡',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=starhubgo.com&sz=64'
+  },
+  {
+    id: 33,
+    name: 'Singtel TV',
+    category: '国际平台',
+    description: '新加坡电信旗下视频服务',
+    rating: 3.6,
+    color: 'from-red-500 to-red-600',
+    url: 'https://www.singtel.com',
+    region: '新加坡',
+    popular: false,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=singtel.com&sz=64'
+  },
+
+  // 印度平台
+  {
+    id: 34,
+    name: 'SonyLIV',
+    category: '国际平台',
+    description: '印度Sony网络电视服务',
+    rating: 3.9,
+    color: 'from-blue-600 to-blue-700',
+    url: 'https://www.sonyliv.com',
+    region: '印度',
+    popular: true,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=sonyliv.com&sz=64'
+  },
+  {
+    id: 35,
+    name: 'Hotstar',
+    category: '国际平台',
+    description: '印度Disney+Hotstar流媒体服务',
+    rating: 4.0,
+    color: 'from-blue-500 to-blue-600',
+    url: 'https://www.hotstar.com',
+    region: '印度',
+    popular: true,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=hotstar.com&sz=64'
   },
   {
     id: 36,
-    name: 'Starhub TV+',
+    name: 'MX Player',
     category: '国际平台',
-    description: '星和电信视频流媒体服务',
-    rating: 3.6,
-    color: 'from-blue-500 to-blue-600',
-    url: 'https://www.starhub.com/personal/entertainment/tv-plus',
-    region: '新加坡',
+    description: '印度MX Player视频平台',
+    rating: 3.7,
+    color: 'from-orange-500 to-orange-600',
+    url: 'https://www.mxplayer.in',
+    region: '印度',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=mxplayer.in&sz=64'
   },
   {
     id: 37,
-    name: 'mewatch',
+    name: 'JioCinema',
     category: '国际平台',
-    description: '新传媒集团官方流媒体平台',
-    rating: 3.7,
-    color: 'from-red-500 to-red-600',
-    url: 'https://www.mewatch.sg',
-    region: '新加坡',
-    popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    description: '印度JioCinema流媒体服务',
+    rating: 3.8,
+    color: 'from-pink-500 to-red-500',
+    url: 'https://www.jiocinema.com',
+    region: '印度',
+    popular: true,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=jiocinema.com&sz=64'
   },
-
-  // 更多韩国热门平台
   {
     id: 38,
-    name: 'Seezn',
+    name: 'ALT Balaji',
     category: '国际平台',
-    description: 'KT旗下综合OTT平台',
-    rating: 3.8,
-    color: 'from-indigo-500 to-indigo-600',
-    url: 'https://www.seezn.com',
-    region: '韩国',
-    popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    description: '印度Balaji Telefilms视频平台',
+    rating: 3.6,
+    color: 'from-purple-500 to-purple-600',
+    url: 'https://www.altbalaji.com',
+    region: '印度',
+    popular: false,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=altbalaji.com&sz=64'
   },
   {
     id: 39,
-    name: 'Watcha',
+    name: 'Eros Now',
     category: '国际平台',
-    description: '韩国知名影视推荐平台',
-    rating: 4.2,
-    color: 'from-pink-500 to-rose-500',
-    url: 'https://watcha.com',
-    region: '韩国',
-    popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    description: '印度Eros Now流媒体服务',
+    rating: 3.7,
+    color: 'from-red-600 to-red-700',
+    url: 'https://www.erosnow.com',
+    region: '印度',
+    popular: false,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=erosnow.com&sz=64'
   },
+
+  // 英国平台
   {
     id: 40,
-    name: 'Olleh TV',
+    name: 'BBC iPlayer',
     category: '国际平台',
-    description: 'KT集团IPTV服务',
-    rating: 3.7,
-    color: 'from-cyan-500 to-cyan-600',
-    url: 'https://www.olleh.com',
-    region: '韩国',
-    popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    description: '英国BBC官方流媒体服务',
+    rating: 4.2,
+    color: 'from-red-600 to-red-700',
+    url: 'https://www.bbc.co.uk/iplayer',
+    region: '英国',
+    popular: true,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=bbc.co.uk&sz=64'
   },
   {
     id: 41,
-    name: 'U+모바일tv',
+    name: 'ITV Hub',
     category: '国际平台',
-    description: 'LG U+移动电视服务',
-    rating: 3.6,
-    color: 'from-purple-600 to-purple-700',
-    url: 'https://www.lguplus.com',
-    region: '韩国',
-    popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    description: '英国ITV流媒体服务',
+    rating: 3.9,
+    color: 'from-blue-600 to-blue-700',
+    url: 'https://www.itv.com/hub',
+    region: '英国',
+    popular: true,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=itv.com&sz=64'
   },
-
-  // 更多台湾热门平台
   {
     id: 42,
-    name: 'CHOCO TV',
+    name: 'All 4',
     category: '国际平台',
-    description: '台湾免费追剧平台',
-    rating: 3.9,
-    color: 'from-amber-500 to-orange-500',
-    url: 'https://www.chocotv.com.tw',
-    region: '台湾',
-    popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    description: '英国Channel 4流媒体服务',
+    rating: 3.8,
+    color: 'from-green-500 to-green-600',
+    url: 'https://www.channel4.com/now',
+    region: '英国',
+    popular: false,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=channel4.com&sz=64'
   },
   {
     id: 43,
-    name: 'Vidol',
+    name: 'UKTV Play',
     category: '国际平台',
-    description: '三立电视旗下影音平台',
-    rating: 3.8,
-    color: 'from-teal-500 to-teal-600',
-    url: 'https://www.vidol.tv',
-    region: '台湾',
-    popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    description: '英国UKTV流媒体服务',
+    rating: 3.7,
+    color: 'from-purple-500 to-purple-600',
+    url: 'https://uktvplay.uktv.co.uk',
+    region: '英国',
+    popular: false,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=uktvplay.uktv.co.uk&sz=64'
   },
+
+  // 澳大利亚平台
   {
     id: 44,
-    name: 'Hami Video',
+    name: 'Stan',
     category: '国际平台',
-    description: '中华电信影音服务',
-    rating: 3.7,
-    color: 'from-emerald-500 to-emerald-600',
-    url: 'https://hamivideo.hinet.net',
-    region: '台湾',
-    popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    description: '澳大利亚流媒体平台',
+    rating: 3.9,
+    color: 'from-red-500 to-red-600',
+    url: 'https://www.stan.com.au',
+    region: '澳大利亚',
+    popular: true,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=stan.com.au&sz=64'
   },
   {
     id: 45,
-    name: 'CatchPlay+',
+    name: 'ABC iView',
     category: '国际平台',
-    description: '威望国际娱乐影音平台',
+    description: '澳大利亚ABC官方流媒体服务',
     rating: 4.0,
-    color: 'from-violet-500 to-violet-600',
-    url: 'https://www.catchplay.com',
-    region: '台湾',
+    color: 'from-blue-500 to-blue-600',
+    url: 'https://iview.abc.net.au',
+    region: '澳大利亚',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=abc.net.au&sz=64'
   },
   {
     id: 46,
-    name: 'GagaOOLala',
+    name: '7plus',
     category: '国际平台',
-    description: '亚洲LGBTQ+影音平台',
+    description: '澳大利亚Seven Network流媒体服务',
     rating: 3.8,
-    color: 'from-pink-500 to-purple-600',
-    url: 'https://www.gagaoolala.com',
-    region: '台湾',
+    color: 'from-red-600 to-red-700',
+    url: 'https://7plus.com.au',
+    region: '澳大利亚',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=7plus.com.au&sz=64'
   },
-
-  // 马来西亚华人流媒体平台
   {
     id: 47,
-    name: 'Astro GO',
+    name: '9Now',
     category: '国际平台',
-    description: '马来西亚Astro集团流媒体服务，提供中文内容',
-    rating: 4.0,
-    color: 'from-blue-500 to-purple-600',
-    url: 'https://www.astro.com.my',
-    region: '马来西亚',
-    popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    description: '澳大利亚Nine Network流媒体服务',
+    rating: 3.7,
+    color: 'from-red-700 to-red-800',
+    url: 'https://www.9now.com.au',
+    region: '澳大利亚',
+    popular: false,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=9now.com.au&sz=64'
   },
   {
     id: 48,
-    name: 'dimsum',
+    name: '10 Play',
     category: '国际平台',
-    description: '马来西亚华语内容流媒体平台',
-    rating: 3.8,
-    color: 'from-red-500 to-orange-500',
-    url: 'https://www.dimsum.my',
-    region: '马来西亚',
-    popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    description: '澳大利亚Network 10流媒体服务',
+    rating: 3.6,
+    color: 'from-purple-500 to-purple-600',
+    url: 'https://10play.com.au',
+    region: '澳大利亚',
+    popular: false,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=10play.com.au&sz=64'
   },
+
+  // 加拿大平台
   {
     id: 49,
-    name: 'iQIYI马来西亚',
+    name: 'CBC Gem',
     category: '国际平台',
-    description: '爱奇艺马来西亚版，提供中文字幕内容',
-    rating: 4.1,
-    color: 'from-green-500 to-green-600',
-    url: 'https://www.iq.com',
-    region: '马来西亚',
+    description: '加拿大CBC官方流媒体服务',
+    rating: 3.9,
+    color: 'from-red-600 to-red-700',
+    url: 'https://gem.cbc.ca',
+    region: '加拿大',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=cbc.ca&sz=64'
   },
   {
     id: 50,
-    name: 'WeTV马来西亚',
+    name: 'Crave',
     category: '国际平台',
-    description: '腾讯视频海外版，提供中文内容',
-    rating: 4.0,
-    color: 'from-blue-500 to-blue-600',
-    url: 'https://wetv.vip',
-    region: '马来西亚',
+    description: '加拿大Bell Media流媒体服务',
+    rating: 3.8,
+    color: 'from-red-500 to-red-600',
+    url: 'https://www.crave.ca',
+    region: '加拿大',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=crave.ca&sz=64'
   },
 
-  // 新加坡华人流媒体平台（补充）
+  // 法国平台
   {
     id: 51,
-    name: 'iQIYI新加坡',
+    name: 'Salto',
     category: '国际平台',
-    description: '爱奇艺新加坡版，提供中文字幕内容',
-    rating: 4.1,
-    color: 'from-green-500 to-green-600',
-    url: 'https://www.iq.com',
-    region: '新加坡',
+    description: '法国流媒体平台',
+    rating: 3.7,
+    color: 'from-blue-500 to-blue-600',
+    url: 'https://www.salto.fr',
+    region: '法国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=salto.fr&sz=64'
   },
   {
     id: 52,
-    name: 'WeTV新加坡',
+    name: 'Molotov',
     category: '国际平台',
-    description: '腾讯视频海外版，提供中文内容',
-    rating: 4.0,
-    color: 'from-blue-500 to-blue-600',
-    url: 'https://wetv.vip',
-    region: '新加坡',
-    popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    description: '法国免费电视流媒体服务',
+    rating: 3.8,
+    color: 'from-red-500 to-red-600',
+    url: 'https://www.molotov.tv',
+    region: '法国',
+    popular: false,
+    logoUrl: 'https://www.google.com/s2/favicons?domain=molotov.tv&sz=64'
   },
 
-  // 动漫专业平台（保留）
+  // 德国平台
   {
     id: 53,
     name: 'Funimation',
@@ -671,7 +673,7 @@ export const platforms: Platform[] = [
     url: 'https://www.funimation.com',
     region: '全球',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=funimation.com&sz=64'
   },
   {
     id: 54,
@@ -683,7 +685,7 @@ export const platforms: Platform[] = [
     url: 'https://www.animelab.com',
     region: '澳大利亚',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=animelab.com&sz=64'
   },
 
   // 泰国华人平台
@@ -697,7 +699,7 @@ export const platforms: Platform[] = [
     url: 'https://www.pptvhd36.com',
     region: '泰国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=pptvhd36.com&sz=64'
   },
   {
     id: 56,
@@ -709,7 +711,7 @@ export const platforms: Platform[] = [
     url: 'https://www.gmm25.com',
     region: '泰国',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=gmm25.com&sz=64'
   },
 
   // 印尼华人平台
@@ -723,7 +725,7 @@ export const platforms: Platform[] = [
     url: 'https://wetv.vip',
     region: '印尼',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=wetv.vip&sz=64'
   },
   {
     id: 58,
@@ -735,7 +737,7 @@ export const platforms: Platform[] = [
     url: 'https://www.iq.com',
     region: '印尼',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=iq.com&sz=64'
   },
 
   // 菲律宾华人平台
@@ -749,7 +751,7 @@ export const platforms: Platform[] = [
     url: 'https://iwanttfc.com',
     region: '菲律宾',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=iwanttfc.com&sz=64'
   },
 
   // 越南华人平台
@@ -763,7 +765,7 @@ export const platforms: Platform[] = [
     url: 'https://wetv.vip',
     region: '越南',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=wetv.vip&sz=64'
   },
 
   // 更多韩国主要平台
@@ -777,7 +779,7 @@ export const platforms: Platform[] = [
     url: 'https://www.sbs.co.kr',
     region: '韩国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=sbs.co.kr&sz=64'
   },
   {
     id: 62,
@@ -789,7 +791,7 @@ export const platforms: Platform[] = [
     url: 'https://www.imbc.com',
     region: '韩国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=imbc.com&sz=64'
   },
   {
     id: 63,
@@ -801,7 +803,7 @@ export const platforms: Platform[] = [
     url: 'https://www.kbs.co.kr',
     region: '韩国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=kbs.co.kr&sz=64'
   },
   {
     id: 64,
@@ -813,7 +815,7 @@ export const platforms: Platform[] = [
     url: 'https://www.jtbc.co.kr',
     region: '韩国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=jtbc.co.kr&sz=64'
   },
   {
     id: 65,
@@ -825,7 +827,7 @@ export const platforms: Platform[] = [
     url: 'https://www.tvn.co.kr',
     region: '韩国',
     popular: true,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=tvn.co.kr&sz=64'
   },
   {
     id: 66,
@@ -837,7 +839,7 @@ export const platforms: Platform[] = [
     url: 'https://www.ocn.co.kr',
     region: '韩国',
     popular: false,
-    logoUrl: '' // 用户填入Logo地址
+    logoUrl: 'https://www.google.com/s2/favicons?domain=ocn.co.kr&sz=64'
   }
 ];
 

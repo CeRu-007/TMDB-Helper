@@ -19,31 +19,36 @@ const PlatformLogo: React.FC<PlatformLogoProps> = ({
   const [imageError, setImageError] = useState(false);
 
   const sizeClasses = {
+    sm: 'w-8 h-8',
     md: 'w-12 h-12',
     lg: 'w-16 h-16'
   };
 
-  // 如果没有logoUrl或logoUrl为空，返回空的div
-  if (!logoUrl || logoUrl.trim() === '') {
-    return <div className={cn(sizeClasses[size], className)} />;
-  }
-
-  // 如果有logoUrl且未出错，直接显示图片
-  if (!imageError) {
+  // 如果没有logoUrl或logoUrl为空，显示首字母占位符
+  if (!logoUrl || logoUrl.trim() === '' || imageError) {
+    const firstLetter = name.charAt(0).toUpperCase();
     return (
-      <img
-        src={logoUrl}
-        alt={`${name} Logo`}
-        className={cn('object-contain', sizeClasses[size], className)}
-        loading="lazy"
-        decoding="async"
-        onError={() => setImageError(true)}
-      />
+      <div className={cn(
+        'flex items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold',
+        sizeClasses[size],
+        className
+      )}>
+        {firstLetter}
+      </div>
     );
   }
 
-  // 如果图片加载失败，返回空白
-  return <div className={cn(sizeClasses[size], className)} />;
+  // 如果有logoUrl且未出错，直接显示图片
+  return (
+    <img
+      src={logoUrl}
+      alt={`${name} Logo`}
+      className={cn('object-contain rounded-lg', sizeClasses[size], className)}
+      loading="lazy"
+      decoding="async"
+      onError={() => setImageError(true)}
+    />
+  );
 };
 
 export default PlatformLogo;

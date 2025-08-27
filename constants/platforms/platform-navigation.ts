@@ -20,6 +20,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.netflix.com',
     region: '全球',
     popular: true,
+    logo: 'https://cdn.worldvectorlogo.com/logos/netflix-logo-icon.svg',
     fallbackEmoji: '🎬'
   },
   {
@@ -32,6 +33,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.disneyplus.com',
     region: '全球',
     popular: true,
+    logo: 'https://cdn.worldvectorlogo.com/logos/disney-2.svg',
     fallbackEmoji: '🏰'
   },
   {
@@ -40,10 +42,11 @@ export const streamingPlatformsNav: Platform[] = [
     category: '国际平台',
     description: '亚马逊旗下流媒体服务，提供独家原创剧集和电影内容',
     rating: 4.3,
-    color: 'from-blue-400 to-blue-500',
+    color: 'from-blue-600 to-cyan-500',
     url: 'https://www.primevideo.com',
     region: '全球',
     popular: true,
+    logo: 'https://cdn.worldvectorlogo.com/logos/amazon-prime-video-1.svg',
     fallbackEmoji: '📦'
   },
   {
@@ -52,10 +55,11 @@ export const streamingPlatformsNav: Platform[] = [
     category: '国际平台',
     description: 'HBO旗下流媒体平台，以高质量原创剧集和电影著称',
     rating: 4.2,
-    color: 'from-purple-500 to-purple-600',
+    color: 'from-purple-600 to-purple-700',
     url: 'https://www.hbomax.com',
     region: '全球',
     popular: true,
+    logo: 'https://cdn.cookielaw.org/logos/1b21e05d-c206-4e0b-970e-2d73a23e42e8/0197a675-cce2-7363-aa77-c0700565dd28/ab24c856-14e8-485a-ab26-fdc354c49b32/hbomax25_-_min_-_resized.png',
     fallbackEmoji: '🎭'
   },
   {
@@ -68,6 +72,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.youtube.com',
     region: '全球',
     popular: true,
+    logo: 'https://cdn.worldvectorlogo.com/logos/youtube-icon-5.svg',
     fallbackEmoji: '📺'
   },
   {
@@ -80,6 +85,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.hulu.com',
     region: '美国',
     popular: false,
+    logo: 'https://cdn.worldvectorlogo.com/logos/hulu.svg',
     fallbackEmoji: '🟢'
   },
   {
@@ -88,10 +94,11 @@ export const streamingPlatformsNav: Platform[] = [
     category: '国际平台',
     description: '苹果公司推出的流媒体服务，专注于高质量原创内容',
     rating: 4.0,
-    color: 'from-gray-700 to-gray-800',
+    color: 'from-gray-800 to-gray-900',
     url: 'https://tv.apple.com',
     region: '全球',
     popular: false,
+    logo: 'https://cdn.worldvectorlogo.com/logos/apple-tv-plus-logo.svg',
     fallbackEmoji: '🍎'
   },
   {
@@ -104,6 +111,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.paramountplus.com',
     region: '全球',
     popular: false,
+    logo: 'https://cdn.worldvectorlogo.com/logos/paramount-3.svg',
     fallbackEmoji: '⛰️'
   },
   {
@@ -112,10 +120,11 @@ export const streamingPlatformsNav: Platform[] = [
     category: '国际平台',
     description: 'NBC环球旗下流媒体服务，提供新闻、体育和娱乐内容',
     rating: 3.8,
-    color: 'from-blue-500 to-purple-500',
+    color: 'from-purple-500 to-pink-500',
     url: 'https://www.peacocktv.com',
     region: '美国',
     popular: false,
+    logo: 'https://cdn.worldvectorlogo.com/logos/peacock-1.svg',
     fallbackEmoji: '🦚'
   },
   {
@@ -128,6 +137,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.crunchyroll.com',
     region: '全球',
     popular: true,
+    logo: 'https://cdn.worldvectorlogo.com/logos/crunchyroll-1.svg',
     fallbackEmoji: '🍜'
   },
 
@@ -142,6 +152,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.iqiyi.com',
     region: '中国大陆',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=iqiyi.com&sz=64',
     fallbackEmoji: '🎯'
   },
   {
@@ -154,6 +165,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://v.qq.com',
     region: '中国大陆',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=v.qq.com&sz=64',
     fallbackEmoji: '🐧'
   },
   {
@@ -166,6 +178,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.youku.com',
     region: '中国大陆',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=youku.com&sz=64',
     fallbackEmoji: '📱'
   },
   {
@@ -178,6 +191,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.bilibili.com',
     region: '中国大陆',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=bilibili.com&sz=64',
     fallbackEmoji: '📺'
   },
   {
@@ -190,6 +204,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.mgtv.com',
     region: '中国大陆',
     popular: false,
+    logo: 'https://www.google.com/s2/favicons?domain=mgtv.com&sz=64',
     fallbackEmoji: '🥭'
   },
   {
@@ -202,6 +217,7 @@ export const streamingPlatformsNav: Platform[] = [
     url: 'https://www.miguvideo.com',
     region: '中国大陆',
     popular: false,
+    logo: 'https://www.google.com/s2/favicons?domain=miguvideo.com&sz=64',
     fallbackEmoji: '📱'
   },
 
@@ -209,25 +225,27 @@ export const streamingPlatformsNav: Platform[] = [
   {
     id: 'u-next',
     name: 'U-NEXT',
-    category: '国内平台',
+    category: '国际平台',
     description: '日本最大的视频点播服务，提供电影、动漫、电视剧等内容',
     rating: 4.2,
     color: 'from-black to-gray-800',
     url: 'https://video.unext.jp',
     region: '日本',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=video.unext.jp&sz=64',
     fallbackEmoji: '🇯🇵'
   },
   {
     id: 'abema-tv',
     name: 'AbemaTV',
-    category: '国内平台',
+    category: '国际平台',
     description: '日本免费网络电视服务，提供直播和点播内容',
     rating: 4.0,
     color: 'from-green-500 to-green-600',
     url: 'https://abema.tv',
     region: '日本',
     popular: false,
+    logo: 'https://www.google.com/s2/favicons?domain=abema.tv&sz=64',
     fallbackEmoji: '📡'
   },
 
@@ -235,25 +253,27 @@ export const streamingPlatformsNav: Platform[] = [
   {
     id: 'wavve',
     name: 'Wavve',
-    category: '国内平台',
+    category: '国际平台',
     description: '韩国主要广播公司联合推出的流媒体服务',
     rating: 4.0,
-    color: 'from-blue-500 to-blue-600',
+    color: 'from-purple-500 to-purple-600',
     url: 'https://www.wavve.com',
     region: '韩国',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=wavve.com&sz=64',
     fallbackEmoji: '🌊'
   },
   {
     id: 'tving',
     name: 'Tving',
-    category: '国内平台',
+    category: '国际平台',
     description: 'CJ ENM旗下流媒体平台，提供韩剧、综艺和电影',
     rating: 4.1,
-    color: 'from-red-500 to-red-600',
+    color: 'from-red-500 to-pink-500',
     url: 'https://www.tving.com',
     region: '韩国',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=tving.com&sz=64',
     fallbackEmoji: '🇰🇷'
   },
 
@@ -261,13 +281,14 @@ export const streamingPlatformsNav: Platform[] = [
   {
     id: 'line-tv',
     name: 'LINE TV',
-    category: '国内平台',
+    category: '国际平台',
     description: 'LINE旗下免费影音平台，提供台湾和亚洲热门内容',
     rating: 4.0,
     color: 'from-green-500 to-green-600',
     url: 'https://www.linetv.tw',
     region: '台湾',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=linetv.tw&sz=64',
     fallbackEmoji: '💚'
   },
 
@@ -275,13 +296,14 @@ export const streamingPlatformsNav: Platform[] = [
   {
     id: 'viu',
     name: 'Viu',
-    category: '国内平台',
+    category: '国际平台',
     description: '香港电讯盈科旗下流媒体平台，覆盖亚洲多个市场',
     rating: 4.1,
     color: 'from-purple-500 to-purple-600',
     url: 'https://www.viu.com',
     region: '香港',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=viu.com&sz=64',
     fallbackEmoji: '🏙️'
   },
 
@@ -289,13 +311,14 @@ export const streamingPlatformsNav: Platform[] = [
   {
     id: 'toggle',
     name: 'Toggle',
-    category: '国内平台',
+    category: '国际平台',
     description: '新传媒旗下免费流媒体平台，提供本地和国际内容',
     rating: 3.9,
     color: 'from-teal-500 to-teal-600',
     url: 'https://www.toggle.sg',
     region: '新加坡',
     popular: true,
+    logo: 'https://www.google.com/s2/favicons?domain=toggle.sg&sz=64',
     fallbackEmoji: '🇸🇬'
   }
 ]
