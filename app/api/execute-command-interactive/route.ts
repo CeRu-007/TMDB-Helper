@@ -102,6 +102,29 @@ const fixPythonCommand = (command: string): string => {
   return command;
 };
 
+// 辅助函数：修复跨平台的cd命令
+const fixCdCommand = (command: string): string => {
+  // 检查是否包含cd命令
+  if (command.includes('cd ')) {
+    const isWindows = process.platform === 'win32';
+    
+    if (isWindows) {
+      // 在Windows上，如果命令包含 cd "path" && 格式，需要改为 cd /D "path" &&
+      // 这样可以确保能够切换到不同驱动器的目录
+      command = command.replace(/cd\s+"([^"]+)"\s*&&/g, 'cd /D "$1" &&');
+      command = command.replace(/cd\s+([^\s&]+)\s*&&/g, 'cd /D "$1" &&');
+    } else {
+      // 在Linux/macOS上，确保使用标准的cd命令格式
+      // 移除可能存在的 /D 参数
+      command = command.replace(/cd\s+\/D\s+/g, 'cd ');
+    }
+    
+    console.log(`平台: ${process.platform}, 修复后的命令: ${command}`);
+  }
+  
+  return command;
+};
+
 export async function POST(request: NextRequest) {
   try {
     const { command, workingDirectory, timeout } = await request.json()
@@ -130,8 +153,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`正在执行命令: ${command}，工作目录: ${workingDirectory}`)
     
-    // 优化命令，替换Python可执行文件路径
-    const optimizedCommand = fixPythonCommand(command)
+    // 优化命令，替换Python可执行文件路径和修复cd命令
+    let optimizedCommand = fixPythonCommand(command)
+    optimizedCommand = fixCdCommand(optimizedCommand)
     if (optimizedCommand !== command) {
       console.log(`命令已优化: ${optimizedCommand}`)
     }

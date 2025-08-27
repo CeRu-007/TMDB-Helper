@@ -242,22 +242,49 @@ async function downloadLatest(): Promise<NextResponse> {
       fs.mkdirSync(TOOLS_DIR, { recursive: true })
     }
 
-    // 下载源码压缩包
-    const downloadUrl = `${DOWNLOAD_BASE}/${GITHUB_REPO}/archive/refs/heads/master.zip`
+    // 尝试多种下载方式
     const tempZipPath = path.join(TOOLS_DIR, 'tmdb-import-master.zip')
     
-    console.log(`[TMDB-Import Updater] 开始下载: ${downloadUrl}`)
+    // 方式1: 直接下载ZIP文件
+    const downloadUrl = `${DOWNLOAD_BASE}/${GITHUB_REPO}/archive/refs/heads/master.zip`
+    console.log(`[TMDB-Import Updater] 尝试直接下载: ${downloadUrl}`)
     
-    const response = await fetch(downloadUrl)
-    if (!response.ok) {
-      throw new Error(`下载失败: ${response.status} ${response.statusText}`)
+    let downloadSuccess = false
+    
+    try {
+      const response = await fetch(downloadUrl)
+      if (response.ok) {
+        const buffer = await response.arrayBuffer()
+        fs.writeFileSync(tempZipPath, Buffer.from(buffer))
+        console.log(`[TMDB-Import Updater] 直接下载完成: ${tempZipPath}`)
+        downloadSuccess = true
+      } else {
+        console.log(`[TMDB-Import Updater] 直接下载失败: ${response.status} ${response.statusText}`)
+      }
+    } catch (error) {
+      console.log(`[TMDB-Import Updater] 直接下载异常: ${error instanceof Error ? error.message : String(error)}`)
     }
-
-    // 保存压缩包
-    const buffer = await response.arrayBuffer()
-    fs.writeFileSync(tempZipPath, Buffer.from(buffer))
     
-    console.log(`[TMDB-Import Updater] 下载完成: ${tempZipPath}`)
+    // 方式2: 如果直接下载失败，使用GitHub API下载
+    if (!downloadSuccess) {
+      console.log(`[TMDB-Import Updater] 尝试使用GitHub API下载...`)
+      
+      const apiDownloadUrl = `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/zipball/master`
+      const apiResponse = await fetch(apiDownloadUrl, {
+        headers: {
+          'User-Agent': 'TMDB-Helper/1.0',
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      })
+      
+      if (!apiResponse.ok) {
+        throw new Error(`GitHub API下载失败: ${apiResponse.status} ${apiResponse.statusText}`)
+      }
+      
+      const buffer = await apiResponse.arrayBuffer()
+      fs.writeFileSync(tempZipPath, Buffer.from(buffer))
+      console.log(`[TMDB-Import Updater] GitHub API下载完成: ${tempZipPath}`)
+    }
 
     return NextResponse.json({
       success: true,
@@ -314,16 +341,78 @@ async function installUpdate(): Promise<NextResponse> {
     // 解压缩到项目根目录
     console.log(`[TMDB-Import Updater] 开始解压: ${tempZipPath}`)
 
+    // 先确保目标目录不存在
+    if (fs.existsSync(TMDB_IMPORT_DIR)) {
+      fs.rmSync(TMDB_IMPORT_DIR, { recursive: true, force: true })
+    }
+
     const isWindows = process.platform === 'win32'
-    const extractCmd = isWindows
-      ? `powershell -Command "Expand-Archive -Path '${tempZipPath}' -DestinationPath '${TOOLS_DIR}' -Force"`
-      : `unzip -o "${tempZipPath}" -d "${TOOLS_DIR}"`
+    
+    // 创建临时解压目录
+    const tempExtractDir = path.join(TOOLS_DIR, 'temp_tmdb_extract')
+    if (fs.existsSync(tempExtractDir)) {
+      fs.rmSync(tempExtractDir, { recursive: true, force: true })
+    }
+    fs.mkdirSync(tempExtractDir, { recursive: true })
 
-    await execAsync(extractCmd)
+    try {
+      // 解压到临时目录
+      const extractCmd = isWindows
+        ? `powershell -Command "Expand-Archive -Path '${tempZipPath}' -DestinationPath '${tempExtractDir}' -Force"`
+        : `unzip -o "${tempZipPath}" -d "${tempExtractDir}"`
 
-    // 验证解压后的目录是否存在
-    if (!fs.existsSync(TMDB_IMPORT_DIR)) {
-      throw new Error('解压失败，未找到 TMDB-Import-master 目录')
+      await execAsync(extractCmd)
+
+      // 查找解压后的目录
+      const files = fs.readdirSync(tempExtractDir)
+      if (files.length === 0) {
+        throw new Error('解压失败，未找到任何文件')
+      }
+
+      // 获取解压后的实际目录名
+      const extractedDirName = files[0]
+      if (!extractedDirName) {
+        throw new Error('无法确定解压后的目录名')
+      }
+      
+      const extractedDirPath = path.join(tempExtractDir, extractedDirName)
+      
+      // 检查目录是否存在
+      if (!fs.existsSync(extractedDirPath)) {
+        throw new Error(`解压后的目录不存在: ${extractedDirPath}`)
+      }
+      
+      // 移动到最终目标目录
+      console.log(`[TMDB-Import Updater] 移动目录: ${extractedDirPath} -> ${TMDB_IMPORT_DIR}`)
+      // 先尝试直接移动
+      try {
+        fs.renameSync(extractedDirPath, TMDB_IMPORT_DIR)
+      } catch (moveError: any) {
+        // 如果移动失败，尝试复制后删除
+        console.log(`[TMDB-Import Updater] 直接移动失败，尝试复制后删除: ${moveError.message}`)
+        const copyCmd = isWindows
+          ? `powershell -Command "Copy-Item -Path '${extractedDirPath}' -Destination '${TMDB_IMPORT_DIR}' -Recurse -Force"`
+          : `cp -r "${extractedDirPath}" "${TMDB_IMPORT_DIR}"`
+        await execAsync(copyCmd)
+        // 删除源目录
+        fs.rmSync(extractedDirPath, { recursive: true, force: true })
+      }
+      
+      // 清理临时目录
+      fs.rmSync(tempExtractDir, { recursive: true, force: true })
+      
+      // 验证最终目录是否存在
+      if (!fs.existsSync(TMDB_IMPORT_DIR)) {
+        throw new Error(`移动失败，目标目录不存在: ${TMDB_IMPORT_DIR}`)
+      }
+      
+      console.log(`[TMDB-Import Updater] 解压完成，最终目录: TMDB-Import-master`)
+    } catch (extractError) {
+      // 清理临时目录
+      if (fs.existsSync(tempExtractDir)) {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true })
+      }
+      throw extractError
     }
 
     // 恢复 TMDB 用户凭据到新配置文件（如果之前存在）
@@ -447,3 +536,7 @@ function updateConfigWithCredentials(configPath: string, credentials: { tmdb_use
     console.warn('[TMDB-Import Updater] 更新配置文件凭据失败:', error)
   }
 }
+
+
+
+

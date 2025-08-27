@@ -1392,21 +1392,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       // 提取URL参数部分
       const tmdbUrl = cmdParts[cmdParts.length - 1];
 
-      // 判断是否为Windows环境
-      const isWindows = typeof navigator !== 'undefined' ? /Windows/i.test(navigator.userAgent) : (typeof process !== 'undefined' && process.platform === 'win32');
-
-      // 构建完整命令（在页面内直接执行，而不是在新的终端窗口中）
-      const pythonExecutable = isWindows ? "python" : "python3";
-
-      // 构建完整的命令字符串，将cd和python命令合并为一个命令
-      let fullCommand;
-      if (isWindows) {
-        // Windows环境下，使用 & 连接命令，使用双引号包裹URL
-        fullCommand = `cd /D "${tmdbImportPath}" && ${pythonExecutable} -m tmdb-import ${tmdbUrl}`;
-      } else {
-        // Linux/macOS环境下，使用 && 连接命令，使用单引号包裹URL
-        fullCommand = `cd "${tmdbImportPath}" && ${pythonExecutable} -m tmdb-import ${tmdbUrl}`;
-      }
+      // 构建完整的命令字符串，让服务器端API来处理环境检测和命令构建
+      // 使用通用的cd命令格式，让API端点根据实际运行环境来调整
+      const fullCommand = `cd "${tmdbImportPath}" && python -m tmdb-import ${tmdbUrl}`;
 
       // 在页面日志中显示将要执行的命令
       appendTerminalOutput(`将在页面终端执行命令: ${fullCommand}`, "info");

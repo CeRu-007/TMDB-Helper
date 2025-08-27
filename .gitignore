@@ -30,6 +30,7 @@ next-env.d.ts
 # IDE files
 .idea/
 .vscode/
+.qoder/
 *.swp
 *.swo
 
