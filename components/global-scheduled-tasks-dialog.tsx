@@ -59,7 +59,7 @@ import { toast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import ScheduledTaskDialog from "./scheduled-task-dialog"
 import { TaskExecutionLogsDialog } from "./task-execution-logs-dialog"
-import EnhancedSchedulerDebugDialog from "./enhanced-scheduler-debug-dialog"
+
 import { v4 as uuidv4 } from "uuid"
 import { 
   Select,
@@ -138,8 +138,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   const [tasksToRelink, setTasksToRelink] = useState<ScheduledTask[]>([])
   // 任务执行日志对话框状态
   const [showExecutionLogs, setShowExecutionLogs] = useState(false)
-  // 调度器调试对话框状态
-  const [showSchedulerDebug, setShowSchedulerDebug] = useState(false)
+
   // 防止重复加载的标志
   const [isLoadingData, setIsLoadingData] = useState(false)
 
@@ -277,11 +276,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
             title: "项目关联问题",
             description: `有 ${tasksWithInvalidItem.length} 个任务关联的项目不存在，需要修复`,
             variant: "destructive",
-            action: (
-              <ToastAction altText="批量修复" onClick={handleCleanInvalidTasks}>
-                批量修复
-              </ToastAction>
-            )
+
           });
         }
       }
@@ -1860,44 +1855,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     );
   });
 
-  // 清理无效任务
-  const handleCleanInvalidTasks = async () => {
-    try {
-      setLoading(true);
-      
-      toast({
-        title: "正在清理无效任务",
-        description: "正在检查和清理无效任务..."
-      });
-      
-      const result = await taskScheduler.cleanInvalidTasks();
-      
-      if (result.success) {
-        toast({
-          title: "清理完成",
-          description: result.message
-        });
-        
-        // 重新加载任务列表（清理后需要强制刷新）
-        await loadTasksAndItems(true);
-      } else {
-        toast({
-          title: "清理失败",
-          description: result.message,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("清理无效任务失败:", error);
-      toast({
-        title: "清理失败",
-        description: "操作过程中发生错误",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
 
 
@@ -1989,28 +1947,9 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                   )}
                 </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCleanInvalidTasks}
-                  disabled={loading || isRunningTask}
-                  title="清理无效任务"
-                  className=""
-                >
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  清理无效
-                </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSchedulerDebug(true)}
-                  title="调度器诊断"
-                  className=""
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  调度器诊断
-                </Button>
+
+
 
                 <Button
                   variant="outline"
@@ -2442,11 +2381,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         runningTasks={runningTasks}
       />
 
-      {/* 调度器调试对话框 */}
-      <EnhancedSchedulerDebugDialog
-        open={showSchedulerDebug}
-        onOpenChange={setShowSchedulerDebug}
-      />
+
     </>
   )
 }

@@ -70,10 +70,9 @@ export default function SystemStatusPanel({ className }: SystemStatusPanelProps)
     setLoading(true)
     try {
       // 并行获取各个系统状态
-      const [tmdbResponse, storageResponse, schedulerResponse] = await Promise.all([
+      const [tmdbResponse, storageResponse] = await Promise.all([
         fetch('/api/fix-tmdb-import-bug').catch(() => null),
-        fetch('/api/debug-storage').catch(() => null),
-        fetch('/api/scheduler-status').catch(() => null)
+        fetch('/api/debug-storage').catch(() => null)
       ])
 
       const systemStatus: SystemStatus = {
@@ -121,17 +120,7 @@ export default function SystemStatusPanel({ className }: SystemStatusPanelProps)
         }
       }
 
-      // 处理调度器状态
-      if (schedulerResponse?.ok) {
-        const schedulerData = await schedulerResponse.json()
-        if (schedulerData.success) {
-          systemStatus.scheduler = {
-            isInitialized: schedulerData.status?.scheduler?.isInitialized || false,
-            activeTimers: schedulerData.status?.scheduler?.activeTimers || 0,
-            runningTasks: schedulerData.status?.scheduler?.runningTasks || 0
-          }
-        }
-      }
+
 
       setStatus(systemStatus)
     } catch (error) {
@@ -348,23 +337,7 @@ export default function SystemStatusPanel({ className }: SystemStatusPanelProps)
             </div>
           </div>
 
-          {/* 调度器状态 */}
-          <div className="flex items-center justify-between p-3 border rounded-lg">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                {status?.scheduler.isInitialized ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                ) : (
-                  <XCircle className="h-4 w-4 text-red-500" />
-                )}
-                <span className="font-medium text-sm">任务调度器</span>
-              </div>
-              
-              <div className="text-xs text-muted-foreground">
-                {status?.scheduler.activeTimers} 定时器 • {status?.scheduler.runningTasks} 运行中
-              </div>
-            </div>
-          </div>
+
 
           {/* 问题提醒 */}
           {status && (
@@ -399,14 +372,7 @@ export default function SystemStatusPanel({ className }: SystemStatusPanelProps)
                 </Alert>
               )}
               
-              {!status.scheduler.isInitialized && (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription className="text-sm">
-                    任务调度器未初始化，定时任务可能无法正常执行。
-                  </AlertDescription>
-                </Alert>
-              )}
+
             </>
           )}
         </CardContent>

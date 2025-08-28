@@ -93,29 +93,7 @@ class TaskScheduler {
     await this.executeTask(task);
   }
 
-  /**
-   * 获取调度器状态信息
-   */
-  public getSchedulerStatus(): {
-    isInitialized: boolean;
-    activeTimers: number;
-    runningTasks: number;
-    timerDetails: Array<{taskId: string, nextRun?: string}>;
-  } {
-    const timerDetails: Array<{taskId: string, nextRun?: string}> = [];
 
-    // 获取所有定时器的详细信息
-    this.timers.forEach((timer, taskId) => {
-      timerDetails.push({ taskId });
-    });
-
-    return {
-      isInitialized: this.isInitialized,
-      activeTimers: this.timers.size,
-      runningTasks: this.currentExecution.size,
-      timerDetails
-    };
-  }
 
   /**
    * 初始化调度器，加载所有定时任务
@@ -2746,80 +2724,7 @@ class TaskScheduler {
     }
   }
   
-  /**
-   * 清理所有无效任务
-   */
-  public async cleanInvalidTasks(): Promise<{ success: boolean; message: string; cleanedCount: number; }> {
-    try {
-      // 获取所有任务和项目
-      const tasks = await StorageManager.getScheduledTasks();
-      const items = await StorageManager.getItemsWithRetry();
-      
-      // 找出无效任务（没有对应项目的任务）
-      const invalidTasks = tasks.filter(task => {
-        // 检查是否有对应的项目
-        const hasValidItem = items.some(item => item.id === task.itemId);
-        return !hasValidItem;
-      });
-      
-      if (invalidTasks.length === 0) {
-        return {
-          success: true,
-          message: "没有发现无效任务",
-          cleanedCount: 0
-        };
-      }
-      
-      console.log(`[TaskScheduler] 发现 ${invalidTasks.length} 个无效任务，准备清理`);
-      
-      // 尝试修复任务
-      const fixedTasks = await StorageManager.forceRefreshScheduledTasks();
-      
-      // 再次检查哪些任务仍然无效
-      const stillInvalidTasks = fixedTasks.filter(task => {
-        return !items.some(item => item.id === task.itemId);
-      });
-      
-      if (stillInvalidTasks.length === 0) {
-        return {
-          success: true,
-          message: `成功修复了 ${invalidTasks.length} 个无效任务`,
-          cleanedCount: invalidTasks.length
-        };
-      }
-      
-      // 删除仍然无效的任务
-      let deleteCount = 0;
-      for (const task of stillInvalidTasks) {
-        // 清除定时器
-        if (this.timers.has(task.id)) {
-          clearTimeout(this.timers.get(task.id));
-          this.timers.delete(task.id);
-        }
-        
-        // 从存储中删除任务
-        const deleted = await StorageManager.deleteScheduledTask(task.id);
-        if (deleted) {
-          deleteCount++;
-        }
-      }
-      
-      const fixedCount = invalidTasks.length - stillInvalidTasks.length;
-      
-      return {
-        success: true,
-        message: `清理了 ${invalidTasks.length} 个无效任务: ${fixedCount} 个已修复, ${deleteCount} 个已删除`,
-        cleanedCount: fixedCount + deleteCount
-      };
-    } catch (error) {
-      console.error('[TaskScheduler] 清理无效任务失败:', error);
-      return {
-        success: false,
-        message: `清理失败: ${error instanceof Error ? error.message : String(error)}`,
-        cleanedCount: 0
-      };
-    }
-  }
+
 
   /**
    * 立即执行任务

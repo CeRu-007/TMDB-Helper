@@ -95,13 +95,11 @@ export function EnhancedMonitoringDialog({ open, onOpenChange }: EnhancedMonitor
     try {
       // 并行获取所有监控数据
       const [
-        schedulerResponse,
         performanceData,
         syncStats,
         lockStatus,
         configStats
       ] = await Promise.all([
-        fetch('/api/scheduler-status').then(r => r.json()),
         performanceMonitor.getRealTimeMetrics(),
         StorageSyncManager.getSyncStats(),
         DistributedLock.getAllLockStatus(),
@@ -109,13 +107,13 @@ export function EnhancedMonitoringDialog({ open, onOpenChange }: EnhancedMonitor
       ]);
 
       const monitoringData: MonitoringData = {
-        scheduler: schedulerResponse.success ? schedulerResponse.status.scheduler : {
+        scheduler: {
           isInitialized: false,
           activeTimers: 0,
           runningTasks: 0,
           timerDetails: []
         },
-        tasks: schedulerResponse.success ? schedulerResponse.status.tasks : {
+        tasks: {
           total: 0,
           enabled: 0,
           disabled: 0,
@@ -150,20 +148,7 @@ export function EnhancedMonitoringDialog({ open, onOpenChange }: EnhancedMonitor
       let response;
       
       switch (action) {
-        case 'reinitialize':
-          response = await fetch('/api/scheduler-status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'reinitialize' })
-          });
-          break;
-        case 'validate':
-          response = await fetch('/api/scheduler-status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'validate' })
-          });
-          break;
+
         case 'sync':
           await StorageSyncManager.triggerSync();
           break;
@@ -265,7 +250,7 @@ export function EnhancedMonitoringDialog({ open, onOpenChange }: EnhancedMonitor
 
     const issues = [];
     
-    if (!data.scheduler.isInitialized) issues.push('调度器未初始化');
+
     if (data.tasks.running > data.tasks.enabled * 0.8) issues.push('运行任务过多');
     if (data.locks.expiredLocks.length > 5) issues.push('过期锁过多');
     if (data.performance.systemMetrics?.memory.percentage > 80) issues.push('内存使用率过高');
@@ -361,9 +346,8 @@ export function EnhancedMonitoringDialog({ open, onOpenChange }: EnhancedMonitor
           )}
 
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">概览</TabsTrigger>
-              <TabsTrigger value="scheduler">调度器</TabsTrigger>
               <TabsTrigger value="performance">性能</TabsTrigger>
               <TabsTrigger value="storage">存储</TabsTrigger>
               <TabsTrigger value="locks">锁管理</TabsTrigger>
@@ -374,23 +358,7 @@ export function EnhancedMonitoringDialog({ open, onOpenChange }: EnhancedMonitor
             <TabsContent value="overview" className="space-y-4">
               {data && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">调度器状态</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-2">
-                        {data.scheduler.isInitialized ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <AlertTriangle className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className="font-medium">
-                          {data.scheduler.isInitialized ? '已初始化' : '未初始化'}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
+
 
                   <Card>
                     <CardHeader className="pb-2">
@@ -440,82 +408,7 @@ export function EnhancedMonitoringDialog({ open, onOpenChange }: EnhancedMonitor
               )}
             </TabsContent>
 
-            {/* 调度器标签页 */}
-            <TabsContent value="scheduler" className="space-y-4">
-              {data && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">活跃定时器</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">
-                          {data.scheduler.activeTimers}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">执行中任务</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-orange-600">
-                          {data.scheduler.runningTasks}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">启用任务</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-green-600">
-                          {data.tasks.enabled}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">总任务数</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {data.tasks.total}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
 
-                  {/* 当前运行的任务 */}
-                  {data.performance.currentTasks.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-sm">当前运行的任务</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {data.performance.currentTasks.map((task, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 border rounded">
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                                <span className="font-medium">{task.taskName}</span>
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                开始时间: {formatTime(task.startTime)}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              )}
-            </TabsContent>
 
             {/* 性能标签页 */}
             <TabsContent value="performance" className="space-y-4">
