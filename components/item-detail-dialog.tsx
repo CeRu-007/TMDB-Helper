@@ -128,10 +128,10 @@ const CATEGORIES = [
   { id: "kids", name: "少儿", icon: <Baby className="h-4 w-4 mr-2" strokeWidth={2} /> },
   { id: "variety", name: "综艺", icon: <Popcorn className="h-4 w-4 mr-2" strokeWidth={2} /> },
   { id: "short", name: "短剧", icon: <Ticket className="h-4 w-4 mr-2" strokeWidth={2} /> },
-  { id: "movie", name: "电影", icon: <Clapperboard className="h-4 w-4 mr-2" strokeWidth={2} /> },
+
 ]
 
-type CategoryType = "anime" | "tv" | "kids" | "variety" | "short" | "movie";
+type CategoryType = "anime" | "tv" | "kids" | "variety" | "short";
 
 interface ItemDetailDialogProps {
   item: TMDBItem

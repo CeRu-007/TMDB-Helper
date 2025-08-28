@@ -24,7 +24,7 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
   
   // 获取进度
   const getProgress = () => {
-    if (item.mediaType === "movie") return item.completed ? 100 : 0
+    // 移除电影类型检查，只支持电视剧
     
     if (!item.episodes || item.episodes.length === 0) {
       return 0
@@ -58,38 +58,35 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
 
   // 获取更新信息文本 - 针对多集剧集优化
   const getUpdateText = () => {
-    if (item.mediaType === "movie") {
-      return item.completed ? "已完成" : "未完成"
-    } else {
-      // 已完结的剧集显示"全X集"或"已完结"
-      if (item.status === "completed") {
-        // 如果有总集数，显示"全X集"
-        if (item.totalEpisodes) {
-          return `全${item.totalEpisodes}集`
-        }
-        // 没有总集数就显示"已完结"
-        return "已完结"
+    // 移除电影类型检查，只支持电视剧
+    // 已完结的剧集显示"全X集"或"已完结"
+    if (item.status === "completed") {
+      // 如果有总集数，显示"全X集"
+      if (item.totalEpisodes) {
+        return `全${item.totalEpisodes}集`
       }
-      
-      // 连载中的剧集显示进度
-      // 如果有多季信息，显示最新一季的进度
-      if (item.seasons && item.seasons.length > 0) {
-        // 找到最新的季（季数最大的）
-        const latestSeason = item.seasons.reduce((latest, current) =>
-          current.seasonNumber > latest.seasonNumber ? current : latest,
-          item.seasons[0]
-        )
-
-        // 计算最新一季的完成集数 - 添加安全检查确保episodes存在
-        const latestSeasonCompletedEpisodes = latestSeason.episodes && latestSeason.episodes.length > 0
-          ? latestSeason.episodes.filter((ep) => ep.completed).length
-          : 0
-
-        return `更新至第${latestSeasonCompletedEpisodes}集`
-      }
-      // 单季剧集显示总进度
-      return `更新至第${completedEpisodes}集`
+      // 没有总集数就显示"已完结"
+      return "已完结"
     }
+    
+    // 连载中的剧集显示进度
+    // 如果有多季信息，显示最新一季的进度
+    if (item.seasons && item.seasons.length > 0) {
+      // 找到最新的季（季数最大的）
+      const latestSeason = item.seasons.reduce((latest, current) =>
+        current.seasonNumber > latest.seasonNumber ? current : latest,
+        item.seasons[0]
+      )
+
+      // 计算最新一季的完成集数 - 添加安全检查确保episodes存在
+      const latestSeasonCompletedEpisodes = latestSeason.episodes && latestSeason.episodes.length > 0
+        ? latestSeason.episodes.filter((ep) => ep.completed).length
+        : 0
+
+      return `更新至第${latestSeasonCompletedEpisodes}集`
+    }
+    // 单季剧集显示总进度
+    return `更新至第${completedEpisodes}集`
   }
 
   // 获取完结日期（取updatedAt）

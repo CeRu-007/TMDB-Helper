@@ -692,8 +692,7 @@ export default function HomePage() {
           return title.includes("综艺") || notes.includes("综艺");
         case "short":
           return title.includes("短剧") || notes.includes("短剧");
-        case "movie":
-          return item.mediaType === "movie";
+
         default:
           return true;
       }

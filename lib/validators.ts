@@ -11,8 +11,8 @@ export const TMDBItemSchema = z.object({
   id: z.string().min(1, '项目ID不能为空'),
   title: z.string().min(1, '标题不能为空'),
   originalTitle: z.string().optional(),
-  mediaType: z.enum(['movie', 'tv'], {
-    errorMap: () => ({ message: '媒体类型必须是 movie 或 tv' })
+  mediaType: z.enum(['tv'], {
+    errorMap: () => ({ message: '媒体类型必须是 tv' })
   }),
   tmdbId: z.string().optional(),
   tmdbUrl: z.string().url().optional().or(z.literal('')),
@@ -37,7 +37,7 @@ export const TMDBItemSchema = z.object({
   platformUrl: z.string().url().optional().or(z.literal('')),
   maintenanceCode: z.string().optional(),
   notes: z.string().optional(),
-  category: z.enum(['anime', 'tv', 'kids', 'variety', 'short', 'movie']).optional(),
+  category: z.enum(['anime', 'tv', 'kids', 'variety', 'short']).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   seasons: z.array(z.object({

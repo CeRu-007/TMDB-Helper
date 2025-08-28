@@ -45,10 +45,10 @@ const CATEGORIES = [
   { id: "kids" as const, name: "少儿", icon: <Baby className="h-4 w-4" strokeWidth={2} /> },
   { id: "variety" as const, name: "综艺", icon: <Popcorn className="h-4 w-4" strokeWidth={2} /> },
   { id: "short" as const, name: "短剧", icon: <Ticket className="h-4 w-4" strokeWidth={2} /> },
-  { id: "movie" as const, name: "电影", icon: <Clapperboard className="h-4 w-4" strokeWidth={2} /> },
+
 ]
 
-type CategoryType = "anime" | "tv" | "kids" | "variety" | "short" | "movie";
+type CategoryType = "anime" | "tv" | "kids" | "variety" | "short";
 
 interface TMDBSearchResult {
   id: number
@@ -131,7 +131,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
           platformUrl: prev.platformUrl || tmdbData.platformUrl || "",
           weekday: tmdbData.weekday !== undefined ? tmdbData.weekday : prev.weekday,
           // 根据标签自动设置推荐分类
-          category: prev.category || tmdbData.recommendedCategory || (result.media_type === "movie" ? "movie" : "tv") as CategoryType
+          category: prev.category || tmdbData.recommendedCategory || "tv" as CategoryType
         }))
 
         // 设置季数据用于预览
@@ -533,12 +533,12 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         weekday: formData.weekday,
         secondWeekday: formData.secondWeekday >= 0 ? formData.secondWeekday : undefined,
         airTime: formData.airTime,
-        totalEpisodes: selectedResult.media_type === "movie" ? 1 : totalEpisodes,
+        totalEpisodes: totalEpisodes,
         // 添加手动设置集数标记
         ...(isManuallySetEpisodes && { manuallySetEpisodes: true }),
         isDailyUpdate: formData.isDailyUpdate, // 添加每日更新字段
         seasons: seasons.length > 0 ? seasons : undefined,
-        episodes: selectedResult.media_type === "movie" ? [] : episodes,
+        episodes: episodes,
         completed: false,
         status: "ongoing",
         platformUrl: finalPlatformUrl,

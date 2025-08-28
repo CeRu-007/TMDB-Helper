@@ -1,53 +1,6 @@
 import { tmdbNetworkOptimizer } from './network-optimizer';
 
-interface TMDBMovieResponse {
-  id: number
-  title: string
-  poster_path: string | null
-  backdrop_path: string | null
-  homepage: string | null
-  runtime: number | null
-  release_date: string | null
-  vote_average: number | null
-  overview: string | null
-  genres: Array<{
-    id: number
-    name: string
-  }>
-}
 
-// 添加获取电影图片的响应接口
-interface TMDBMovieImagesResponse {
-  id: number
-  backdrops: Array<{
-    aspect_ratio: number
-    height: number
-    iso_639_1: string | null
-    file_path: string
-    vote_average: number
-    vote_count: number
-    width: number
-  }>
-  logos: Array<{
-    aspect_ratio: number
-    height: number
-    iso_639_1: string | null
-    file_path: string
-    file_type: string
-    vote_average: number
-    vote_count: number
-    width: number
-  }>
-  posters: Array<{
-    aspect_ratio: number
-    height: number
-    iso_639_1: string | null
-    file_path: string
-    vote_average: number
-    vote_count: number
-    width: number
-  }>
-}
 
 interface TMDBTVResponse {
   id: number
@@ -305,7 +258,7 @@ export class TMDBService {
       }
 
       const apiKey = await this.getApiKey()
-      const endpoint = mediaType === "movie" ? "movie" : "tv"
+      const endpoint = "tv"
       
       // 使用网络优化器进行请求
       try {
@@ -315,9 +268,7 @@ export class TMDBService {
           throw new Error("获取TMDB图片数据失败")
         }
 
-        const data = mediaType === "movie"
-          ? (await response.json() as TMDBMovieImagesResponse)
-          : (await response.json() as TMDBTVImagesResponse)
+        const data = await response.json() as TMDBTVImagesResponse
 
         // 优先获取中文标志，其次是英文标志，最后才是其他语言的标志
         const chineseLogo = data.logos.find(logo => logo.iso_639_1 === "zh" || logo.iso_639_1 === "zh-CN")
@@ -346,9 +297,7 @@ export class TMDBService {
           throw new Error("获取TMDB图片数据失败")
         }
 
-        const data = mediaType === "movie"
-          ? (await response.json() as TMDBMovieImagesResponse)
-          : (await response.json() as TMDBTVImagesResponse)
+        const data = await response.json() as TMDBTVImagesResponse
 
         const chineseLogo = data.logos.find(logo => logo.iso_639_1 === "zh" || logo.iso_639_1 === "zh-CN")
         const englishLogo = data.logos.find(logo => logo.iso_639_1 === "en")
@@ -409,7 +358,7 @@ export class TMDBService {
       }
 
       const apiKey = await this.getApiKey()
-      const endpoint = mediaType === "movie" ? "movie" : "tv"
+      const endpoint = "tv"
 
       console.log(`[TMDBService] 获取项目数据: ${endpoint}/${id}`);
 
@@ -451,197 +400,139 @@ export class TMDBService {
       let platformUrl = ""
       let totalEpisodes = undefined
       let seasons: TMDBSeasonData[] = []
-      let recommendedCategory: "anime" | "tv" | "kids" | "variety" | "short" | "movie" | undefined = undefined
+      let recommendedCategory: "anime" | "tv" | "kids" | "variety" | "short" | undefined = undefined
 
       // 获取标志，传入forceRefresh参数
       const logoData = await this.getItemLogoFromId(mediaType, id, forceRefresh)
 
-        if (mediaType === "movie") {
-          const movieData = data as TMDBMovieResponse
-          platformUrl = movieData.homepage || ""
+      // 只支持电视剧类型
+      if (mediaType !== "tv") {
+        console.error(`[TMDBService] 不支持的媒体类型: ${mediaType}`)
+        return null
+      }
+      
+      const tvData = data as TMDBTVResponse
+      platformUrl = tvData.homepage || tvData.networks?.[0]?.homepage || ""
+      totalEpisodes = tvData.number_of_episodes || undefined
 
-          // 计算首播日期的星期几
-          let weekday = undefined
-          const airDate = movieData.release_date
-          if (airDate) {
-            const date = new Date(airDate)
-            // 保持 JS 原生的星期值格式（0=周日，1=周一）
-            weekday = date.getDay()
-          }
+      // 处理多季数据
+      if (tvData.seasons && tvData.seasons.length > 0) {
+        // 过滤掉第0季（通常是特别篇）和无效季
+        const validSeasons = tvData.seasons.filter((season) => season.season_number > 0 && season.episode_count > 0)
 
-          // 初始化分类标志
-          let isAnime = false;
-          let isKids = false;
+        seasons = validSeasons.map((season) => ({
+          seasonNumber: season.season_number,
+          name: season.name || `第${season.season_number}季`,
+          totalEpisodes: season.episode_count,
+          posterUrl: season.poster_path ? `${this.IMAGE_BASE_URL}${season.poster_path}` : undefined,
+        }))
 
-          // 检查各种类型标签
-          if (movieData.genres && movieData.genres.length > 0) {
-            // 检查是否是动画电影
-            isAnime = movieData.genres.some(genre =>
-              genre.name.toLowerCase().includes('animation') ||
-              genre.name.toLowerCase().includes('动画'));
+        // 重新计算总集数（排除第0季）
+        totalEpisodes = seasons.reduce((total, season) => total + season.totalEpisodes, 0)
+      }
 
-            // 检查是否是儿童电影
-            isKids = movieData.genres.some(genre =>
-              genre.name.toLowerCase().includes('family') ||
-              genre.name.toLowerCase().includes('children') ||
-              genre.name.toLowerCase().includes('儿童') ||
-              genre.name.toLowerCase().includes('家庭'));
-          }
+      // 提取网络信息
+      const primaryNetwork = tvData.networks && tvData.networks.length > 0 ? tvData.networks[0] : null
+      const networkId = primaryNetwork?.id
+      const networkName = primaryNetwork?.name
+      const networkLogoPath = primaryNetwork?.logo_path
+      const networkLogoUrl = networkLogoPath ? `${this.NETWORK_LOGO_BASE_URL}${networkLogoPath}` : undefined
 
-          // 按照优先级确定分类
-          if (isAnime) {
-            recommendedCategory = "anime";
-          } else if (isKids) {
-            recommendedCategory = "kids";
-          } else {
-            // 默认为普通电影
-            recommendedCategory = "movie";
-          }
+      // 如果有网络logo，缓存它
+      if (networkId && networkLogoPath) {
+        this.cacheNetworkLogoPath(networkId, networkLogoPath)
+      }
 
-          // 如果有背景图，缓存它
-          if (movieData.backdrop_path) {
-            this.cacheBackdropPath(id, movieData.backdrop_path);
-          }
+      // 计算首播日期的星期几
+      let weekday = undefined
+      const airDate = tvData.first_air_date
+      if (airDate) {
+        const date = new Date(airDate)
+        // 保持 JS 原生的星期值格式（0=周日，1=周一）
+        weekday = date.getDay()
+      }
 
-          return {
-            tmdbId: id,
-            title: movieData.title,
-            mediaType,
-            posterUrl: movieData.poster_path ? `${this.IMAGE_BASE_URL}${movieData.poster_path}` : undefined,
-            backdropUrl: movieData.backdrop_path ? `${this.BACKDROP_BASE_URL}${movieData.backdrop_path}` : undefined,
-            backdropPath: movieData.backdrop_path,
-            logoUrl: logoData.path ? `${this.LOGO_BASE_URL}${logoData.path}` : undefined,  // 添加标志URL
-            logoPath: logoData.path || undefined,  // 添加标志路径
-            platformUrl,
-            weekday,
-            recommendedCategory,
-            voteAverage: movieData.vote_average === null ? undefined : movieData.vote_average,
-            overview: movieData.overview === null ? undefined : movieData.overview
-          }
-        } else {
-          const tvData = data as TMDBTVResponse
-          platformUrl = tvData.homepage || tvData.networks?.[0]?.homepage || ""
-          totalEpisodes = tvData.number_of_episodes || undefined
+      // 初始化分类标志
+      let isAnime = false;
+      let isKids = false;
+      let isVariety = false;
 
-          // 处理多季数据
-          if (tvData.seasons && tvData.seasons.length > 0) {
-            // 过滤掉第0季（通常是特别篇）和无效季
-            const validSeasons = tvData.seasons.filter((season) => season.season_number > 0 && season.episode_count > 0)
+      // 检查各种类型标签
+      if (tvData.genres && tvData.genres.length > 0) {
+        // 检查是否是动画
+        isAnime = tvData.genres.some(genre =>
+          genre.name.toLowerCase().includes('animation') ||
+          genre.name.toLowerCase().includes('anime') ||
+          genre.name.toLowerCase().includes('动画'));
 
-            seasons = validSeasons.map((season) => ({
-              seasonNumber: season.season_number,
-              name: season.name || `第${season.season_number}季`,
-              totalEpisodes: season.episode_count,
-              posterUrl: season.poster_path ? `${this.IMAGE_BASE_URL}${season.poster_path}` : undefined,
-            }))
+        // 检查是否是儿童节目
+        isKids = tvData.genres.some(genre =>
+          genre.name.toLowerCase().includes('family') ||
+          genre.name.toLowerCase().includes('children') ||
+          genre.name.toLowerCase().includes('kids') ||
+          genre.name.toLowerCase().includes('儿童') ||
+          genre.name.toLowerCase().includes('家庭'));
 
-            // 重新计算总集数（排除第0季）
-            totalEpisodes = seasons.reduce((total, season) => total + season.totalEpisodes, 0)
-          }
+        // 检查是否是综艺节目
+        isVariety = tvData.genres.some(genre =>
+          genre.name.toLowerCase().includes('reality') ||
+          genre.name.toLowerCase().includes('talk') ||
+          genre.name.toLowerCase().includes('variety') ||
+          genre.name.toLowerCase().includes('综艺') ||
+          genre.name.toLowerCase().includes('脱口秀'));
+      }
 
-          // 提取网络信息
-          const primaryNetwork = tvData.networks && tvData.networks.length > 0 ? tvData.networks[0] : null
-          const networkId = primaryNetwork?.id
-          const networkName = primaryNetwork?.name
-          const networkLogoPath = primaryNetwork?.logo_path
-          const networkLogoUrl = networkLogoPath ? `${this.NETWORK_LOGO_BASE_URL}${networkLogoPath}` : undefined
+      // 按照优先级确定分类
+      if (isAnime) {
+        recommendedCategory = "anime";
+      } else if (isKids) {
+        recommendedCategory = "kids";
+      } else if (isVariety) {
+        recommendedCategory = "variety";
+      } else {
+        // 默认为普通电视剧
+        recommendedCategory = "tv";
+      }
 
-          // 如果有网络logo，缓存它
-          if (networkId && networkLogoPath) {
-            this.cacheNetworkLogoPath(networkId, networkLogoPath)
-          }
+      // 如果有背景图，缓存它
+      if (tvData.backdrop_path) {
+        this.cacheBackdropPath(id, tvData.backdrop_path);
+      }
 
-          // 计算首播日期的星期几
-          let weekday = undefined
-          const airDate = tvData.first_air_date
-          if (airDate) {
-            const date = new Date(airDate)
-            // 保持 JS 原生的星期值格式（0=周日，1=周一）
-            weekday = date.getDay()
-          }
-
-          // 初始化分类标志
-          let isAnime = false;
-          let isKids = false;
-          let isVariety = false;
-
-          // 检查各种类型标签
-          if (tvData.genres && tvData.genres.length > 0) {
-            // 检查是否是动画
-            isAnime = tvData.genres.some(genre =>
-              genre.name.toLowerCase().includes('animation') ||
-              genre.name.toLowerCase().includes('anime') ||
-              genre.name.toLowerCase().includes('动画'));
-
-            // 检查是否是儿童节目
-            isKids = tvData.genres.some(genre =>
-              genre.name.toLowerCase().includes('family') ||
-              genre.name.toLowerCase().includes('children') ||
-              genre.name.toLowerCase().includes('kids') ||
-              genre.name.toLowerCase().includes('儿童') ||
-              genre.name.toLowerCase().includes('家庭'));
-
-            // 检查是否是综艺节目
-            isVariety = tvData.genres.some(genre =>
-              genre.name.toLowerCase().includes('reality') ||
-              genre.name.toLowerCase().includes('talk') ||
-              genre.name.toLowerCase().includes('variety') ||
-              genre.name.toLowerCase().includes('综艺') ||
-              genre.name.toLowerCase().includes('脱口秀'));
-          }
-
-          // 按照优先级确定分类
-          if (isAnime) {
-            recommendedCategory = "anime";
-          } else if (isKids) {
-            recommendedCategory = "kids";
-          } else if (isVariety) {
-            recommendedCategory = "variety";
-          } else {
-            // 默认为普通电视剧
-            recommendedCategory = "tv";
-          }
-
-          // 如果有背景图，缓存它
-          if (tvData.backdrop_path) {
-            this.cacheBackdropPath(id, tvData.backdrop_path);
-          }
-
-          return {
-            tmdbId: id,
-            title: tvData.name,
-            mediaType,
-            posterUrl: tvData.poster_path ? `${this.IMAGE_BASE_URL}${tvData.poster_path}` : undefined,
-            backdropUrl: tvData.backdrop_path ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}` : undefined,
-            backdropPath: tvData.backdrop_path,
-            logoUrl: logoData.path ? `${this.LOGO_BASE_URL}${logoData.path}` : undefined,
-            logoPath: logoData.path || undefined,
-            networkId: networkId,
-            networkName: networkName,
-            networkLogoUrl: networkLogoUrl,
-            totalEpisodes,
-            seasons,
-            platformUrl,
-            weekday,
-            recommendedCategory,
-            voteAverage: tvData.vote_average === null ? undefined : tvData.vote_average,
-            overview: tvData.overview === null ? undefined : tvData.overview
-          }
-        }
-
+      return {
+        tmdbId: id,
+        title: tvData.name,
+        originalTitle: tvData.original_name || undefined,
+        mediaType,
+        posterUrl: tvData.poster_path ? `${this.IMAGE_BASE_URL}${tvData.poster_path}` : undefined,
+        backdropUrl: tvData.backdrop_path ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}` : undefined,
+        backdropPath: tvData.backdrop_path,
+        logoUrl: logoData.path ? `${this.LOGO_BASE_URL}${logoData.path}` : undefined,  // 添加标志URL
+        logoPath: logoData.path || undefined,  // 添加标志路径
+        platformUrl,
+        weekday,
+        totalEpisodes,
+        seasons,
+        recommendedCategory,
+        networkId,
+        networkName,
+        networkLogoUrl,
+        voteAverage: tvData.vote_average === null ? undefined : tvData.vote_average,
+        overview: tvData.overview === null ? undefined : tvData.overview
+      }
     } catch (error) {
       console.error(`[TMDBService] 获取TMDB数据失败:`, error);
       return null;
     }
   }
 
-  private static parseUrl(url: string): { mediaType: "movie" | "tv" | null; id: string | null } {
+  private static parseUrl(url: string): { mediaType: "tv" | null; id: string | null } {
     try {
       const urlObj = new URL(url)
       const pathParts = urlObj.pathname.split("/").filter(Boolean)
 
       if (pathParts.length >= 2) {
-        const mediaType = pathParts[0] === "movie" ? "movie" : pathParts[0] === "tv" ? "tv" : null
+        const mediaType = pathParts[0] === "tv" ? "tv" : null
         const id = pathParts[1].split("-")[0]
 
         return { mediaType, id }

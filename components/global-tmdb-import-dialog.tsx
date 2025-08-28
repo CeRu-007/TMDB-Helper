@@ -313,7 +313,7 @@ export default function GlobalTMDBImportDialog({ open, onOpenChange }: GlobalTMD
                 <SelectContent>
                   <SelectItem value="all">全部分类</SelectItem>
                   <SelectItem value="tv">电视剧</SelectItem>
-                  <SelectItem value="movie">电影</SelectItem>
+
                   <SelectItem value="anime">动漫</SelectItem>
                   <SelectItem value="variety">综艺</SelectItem>
                   <SelectItem value="kids">少儿</SelectItem>

@@ -378,8 +378,7 @@ export function SidebarLayout({
         return renderMaintenanceContent('variety')
       case 'maintenance-short':
         return renderMaintenanceContent('short')
-      case 'maintenance-movie':
-        return renderMaintenanceContent('movie')
+
 
       case 'content-generation-episode-generator':
         // 分集简介生成器
@@ -558,7 +557,7 @@ export function SidebarLayout({
                               {/* 提示文字 */}
                               <div className="absolute bottom-4 left-0 right-0 text-center">
                                 <span className="text-xs font-medium text-white/95 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
-                                  {item.mediaType === "movie" ? "电影" : "剧集"}
+                                  剧集
                                   <span className="mx-1">·</span>
                                   {(() => {
                                     const daysUntilRelease = Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -581,7 +580,7 @@ export function SidebarLayout({
                             </h3>
                             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                               <span className="flex items-center">
-                                {item.mediaType === "movie" ? "电影" : "剧集"}
+                                剧集
                               </span>
                               <span className="mx-1">·</span>
                               <span className="flex items-center">
@@ -782,7 +781,7 @@ export function SidebarLayout({
                               {/* 提示文字 */}
                               <div className="absolute bottom-4 left-0 right-0 text-center">
                                 <span className="text-xs font-medium text-white/95 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
-                                  {item.mediaType === "movie" ? "电影" : "剧集"}
+                                  剧集
                                   <span className="mx-1">·</span>
                                   {(() => {
                                     const daysSinceRelease = Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24));
@@ -805,7 +804,7 @@ export function SidebarLayout({
                             </h3>
                             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                               <span className="flex items-center">
-                                {item.mediaType === "movie" ? "电影" : "剧集"}
+                                剧集
                               </span>
                               <span className="mx-1">·</span>
                               <span className="flex items-center">

@@ -73,7 +73,7 @@ export interface TMDBItem {
   id: string
   title: string
   originalTitle?: string
-  mediaType: "movie" | "tv"
+  mediaType: "tv"
   tmdbId: string
   tmdbUrl?: string
   posterUrl?: string
@@ -99,7 +99,7 @@ export interface TMDBItem {
   platformUrl?: string
   maintenanceCode?: string
   notes?: string
-  category?: "anime" | "tv" | "kids" | "variety" | "short" | "movie" // 添加分类字段
+  category?: "anime" | "tv" | "kids" | "variety" | "short" // 添加分类字段
   scheduledTasks?: ScheduledTask[] // 添加定时任务
   blurIntensity?: 'light' | 'medium' | 'heavy' // 背景图模糊强�?
   rating?: number // 用户评分

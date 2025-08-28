@@ -5,7 +5,7 @@ export interface TMDBItem {
   year?: number
   tmdbId?: string
   imdbId?: string
-  mediaType: "movie" | "tv"
+  mediaType: "tv"
   posterUrl?: string
   posterPath?: string
   backdropPath?: string
