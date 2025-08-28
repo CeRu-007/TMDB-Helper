@@ -40,13 +40,11 @@ import {
   Moon,
   Film,
   HelpCircle,
-  Download,
   GitBranch,
   ChevronDown,
   ChevronUp,
 } from "lucide-react"
 import TMDBImportUpdater from "./tmdb-import-updater"
-import DockerVersionManager from "./docker-version-manager"
 import { ClientConfigManager } from '@/lib/client-config-manager'
 import { safeJsonParse } from '@/lib/utils'
 import ConfigMigrationDialog from "./config-migration-dialog"
@@ -2847,8 +2845,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex items-start space-x-2">
                   <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-blue-800 dark:text-blue-200">
-                    <p className="font-medium mb-1">AI筛选工作原理：</p>
+                  <div>
+                    <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">AI筛选工作原理：</p>
                     <ul className="text-xs space-y-1 list-disc list-inside">
                       <li>程序按帧间隔提取视频帧</li>
                       <li>每帧都通过AI模型分析是否有人物和字幕</li>
@@ -3042,7 +3040,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           </p>
         </div>
 
-        {/* 帮助与支持顶部导航 - 采用与 API 配置一致的标签式布局 */}
+        {/* 帮助与支持顶部导航 - 采用与 API 配置一致的标签式体验 */}
         <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8">
             <button
@@ -3054,35 +3052,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             >
               关于应用
             </button>
-            <button
-              onClick={() => setHelpActiveTab("docker")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${helpActiveTab === "docker"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-            >
-              Docker镜像版本管理
-            </button>
           </nav>
         </div>
 
         {/* 根据选中的标签页显示内容 */}
-        {helpActiveTab === "docker" && (
-          <div className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Download className="h-5 w-5 mr-2" />
-                  Docker镜像版本管理
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DockerVersionManager />
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {helpActiveTab === "about" && (
           <div className="mt-6">
             <Card>
@@ -3171,7 +3144,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                       <li>• 批量处理工具</li>
                       <li>• 智能数据分析</li>
                       <li>• 多主题界面</li>
-                      <li>• Docker镜像版本管理</li>
                     </ul>
                   </div>
 

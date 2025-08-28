@@ -1,6 +1,5 @@
-import { tmdbNetworkOptimizer } from './network-optimizer';
-
-
+ 
+ 
 
 interface TMDBTVResponse {
   id: number
@@ -101,7 +100,7 @@ export class TMDBService {
   // 使用代理URL以解决VPN环境下的图片加载问题
   private static readonly IMAGE_BASE_URL = "/api/tmdb-image?size=w500&path="
   private static readonly BACKDROP_BASE_URL = "/api/tmdb-image?size=w1280&path="
-  private static readonly BACKDROP_ORIGINAL_URL = "/api/tmdb-image?size=original&path="
+  
   private static readonly LOGO_BASE_URL = "/api/tmdb-image?size=w300&path="  // 添加标志基础URL
   private static readonly NETWORK_LOGO_BASE_URL = "/api/tmdb-image?size=w300&path=" // 网络Logo基础URL
   private static readonly CACHE_PREFIX = "tmdb_backdrop_"
@@ -502,7 +501,6 @@ export class TMDBService {
       return {
         tmdbId: id,
         title: tvData.name,
-        originalTitle: tvData.original_name || undefined,
         mediaType,
         posterUrl: tvData.poster_path ? `${this.IMAGE_BASE_URL}${tvData.poster_path}` : undefined,
         backdropUrl: tvData.backdrop_path ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}` : undefined,
@@ -532,9 +530,10 @@ export class TMDBService {
       const pathParts = urlObj.pathname.split("/").filter(Boolean)
 
       if (pathParts.length >= 2) {
-        const mediaType = pathParts[0] === "tv" ? "tv" : null
-        const id = pathParts[1].split("-")[0]
-
+        const mediaType: "tv" | null = pathParts[0] === "tv" ? "tv" : null
+        const second = pathParts[1]
+        if (!second) return { mediaType: null, id: null }
+        const id = (second.split("-")[0] ?? null)
         return { mediaType, id }
       }
 

@@ -1,86 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { ServerConfigManager } from '@/lib/server-config-manager';
+import { fetchTmdbFeed } from '@/lib/tmdb-feed';
 
-// TMDB API配置 - 使用备用域名以解决网络连接问题
-const BASE_URL = 'https://api.tmdb.org/3';
-// 备用代理服务器
-const PROXY_URLS = [
-  'https://api.tmdb.org/3', // 官方备用域名（主要）
-  'https://api.themoviedb.org/3', // 原域名（备用）
-];
-
-// 添加超时处理的fetch函数
-const fetchWithTimeout = async (url: string, options = {}, timeout = 20000) => {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-      // 添加更多的请求选项
-      cache: 'no-store', // 禁用缓存
-      next: { revalidate: 0 },
-    });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
-  }
-};
-
-// 带重试和多服务器故障转移的TMDB API请求函数
-const fetchTMDB = async (endpoint: string, params: Record<string, string> = {}, apiKey: string) => {
-  try {
-    // 构建查询参数
-    const queryParams = new URLSearchParams({
-      api_key: apiKey,
-      ...params
-    }).toString();
-
-    const url = `${BASE_URL}${endpoint}?${queryParams}`;
-
-    console.log(`[TMDB API] 发送请求: ${url.substring(0, 100)}...`);
-
-    const response = await fetchWithTimeout(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'TMDB-Helper/1.0',
-        'Accept': 'application/json',
-      }
-    }, 30000); // 30秒超时
-
-    console.log(`[TMDB API] 响应状态: ${response.status}`);
-
-    if (!response.ok) {
-      console.error(`[TMDB API] API请求失败: ${response.status} ${response.statusText}`);
-
-      // 对于500错误，记录详细信息但不重试
-      if (response.status === 500) {
-        const errorText = await response.text().catch(() => '无法读取错误响应');
-        console.error(`[TMDB API] 服务器内部错误详情:`, errorText.substring(0, 200));
-      }
-
-      throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
-    }
-
-    console.log(`[TMDB API] 请求成功`);
-    return response;
-
-  } catch (error) {
-    console.error(`[TMDB API] 请求异常:`, error instanceof Error ? error.message : String(error));
-    throw error;
-  }
-};
-
+// 统一使用共享模块获取 upcoming Feed，避免重复实现
 export async function GET(request: NextRequest) {
   try {
-    // 从服务端配置中获取API密钥
     const config = ServerConfigManager.getConfig();
     const apiKey = config.tmdbApiKey;
-
     if (!apiKey) {
       return NextResponse.json(
         { success: false, error: 'TMDB API密钥未配置，请在设置中配置并保存' },
@@ -88,169 +14,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 从请求头中获取区域参数
     const url = new URL(request.url);
     const region = url.searchParams.get('region') || 'CN';
     const language = url.searchParams.get('language') || 'zh-CN';
-    const type = url.searchParams.get('type') || 'upcoming'; // upcoming 或 recent
-    
-    // 获取当前日期
-    const today = new Date();
-    let fromDate, toDate;
 
-    if (type === 'upcoming') {
-      // 即将上线 - 当前日期到30天后
-      fromDate = today.toISOString().split('T')[0];
-      const thirtyDaysLater = new Date();
-      thirtyDaysLater.setDate(today.getDate() + 30);
-      toDate = thirtyDaysLater.toISOString().split('T')[0];
-    } else {
-      // 近期开播 - 30天前到昨天（不包括今天）
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(today.getDate() - 30);
-      fromDate = thirtyDaysAgo.toISOString().split('T')[0];
-      
-      const yesterday = new Date();
-      yesterday.setDate(today.getDate() - 1);
-      toDate = yesterday.toISOString().split('T')[0];
-    }
-
-    try {
-      // 并行请求电影和电视剧数据，添加超时处理
-      const [moviesResponse, tvShowsResponse] = await Promise.all([
-        fetchTMDB('/discover/movie', {
-          language: language,
-          region: region,
-          sort_by: type === 'upcoming' ? 'release_date.asc' : 'release_date.desc',
-          'release_date.gte': fromDate,
-          'release_date.lte': toDate,
-          ...(region === 'CN' || region === 'HK' || region === 'TW' ? { with_original_language: 'zh' } : {}),
-          page: '1'
-        }, apiKey),
-        fetchTMDB('/discover/tv', {
-          language: language,
-          sort_by: type === 'upcoming' ? 'first_air_date.asc' : 'first_air_date.desc',
-          'first_air_date.gte': fromDate,
-          'first_air_date.lte': toDate,
-          ...(region === 'CN' || region === 'HK' || region === 'TW' ? { with_original_language: 'zh' } : {}),
-          with_origin_country: region,
-          page: '1'
-        }, apiKey, 3) // 最多重试3次
-      ]);
-
-      // 检查响应状态
-      if (!moviesResponse.ok) {
-        throw new Error(`电影数据请求失败: ${moviesResponse.status} ${moviesResponse.statusText}`);
-      }
-      
-      if (!tvShowsResponse.ok) {
-        throw new Error(`电视剧数据请求失败: ${tvShowsResponse.status} ${tvShowsResponse.statusText}`);
-      }
-
-      // 解析响应数据
-      const moviesData = await moviesResponse.json();
-      const tvShowsData = await tvShowsResponse.json();
-
-      // 处理电影数据
-      const movies = moviesData.results.map((movie: any) => ({
-        id: movie.id,
-        title: movie.title,
-        posterPath: movie.poster_path,
-        releaseDate: movie.release_date,
-        mediaType: 'movie',
-        overview: movie.overview,
-        voteAverage: movie.vote_average,
-        popularity: movie.popularity,
-        originalLanguage: movie.original_language,
-        genreIds: movie.genre_ids,
-        region: region
-      }));
-
-      // 处理电视剧数据
-      const tvShows = tvShowsData.results.map((show: any) => ({
-        id: show.id,
-        title: show.name,
-        posterPath: show.poster_path,
-        releaseDate: show.first_air_date,
-        mediaType: 'tv',
-        overview: show.overview,
-        voteAverage: show.vote_average,
-        popularity: show.popularity,
-        originalLanguage: show.original_language,
-        genreIds: show.genre_ids,
-        region: region
-      }));
-
-      // 合并并按日期排序，只保留未来日期的条目
-      const now = new Date().getTime();
-      const todayStart = new Date().setHours(0, 0, 0, 0);
-      const combinedResults = [...movies, ...tvShows]
-        .filter(item => {
-          const releaseTime = new Date(item.releaseDate).getTime();
-          
-          if (type === 'upcoming') {
-            // 只保留今天和未来的内容（今天的内容也包含在内）
-            return releaseTime >= todayStart;
-          } else {
-            // 近期开播 - 过去30天内的内容，但不包括今天
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            return releaseTime >= thirtyDaysAgo.setHours(0, 0, 0, 0) && releaseTime < todayStart;
-          }
-        })
-        .sort((a, b) => 
-          type === 'upcoming'
-            ? new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime() // 升序
-            : new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime() // 降序
-        );
-
-      // 缓存这些结果到服务器内存（稍后可能需要实现）
-      
-      // 返回结果
-      return NextResponse.json({
-        success: true,
-        results: combinedResults,
-        region: region,
-        language: language,
-        type: type,
-        timestamp: new Date().toISOString()
-      });
-    } catch (apiError: any) {
-      // API请求过程中的错误
-      console.error('TMDB API请求失败:', apiError);
-      
-      // 提供更详细的错误信息
-      let errorMessage = `TMDB API请求失败: ${apiError.message}`;
-      let statusCode = 500;
-      
-      // 区分不同类型的错误
-      if (apiError.name === 'AbortError') {
-        errorMessage = 'TMDB API请求超时，请稍后再试';
-        statusCode = 504; // Gateway Timeout
-      } else if (apiError.message.includes('fetch failed') || apiError.message.includes('无法连接')) {
-        errorMessage = 'TMDB API连接失败，请检查网络连接';
-        statusCode = 503; // Service Unavailable
-      } else if (apiError.message.includes('401')) {
-        errorMessage = 'TMDB API密钥无效，请检查API密钥配置';
-        statusCode = 401; // Unauthorized
-      } else if (apiError.message.includes('429')) {
-        errorMessage = 'TMDB API请求次数超限，请稍后再试';
-        statusCode = 429; // Too Many Requests
-      }
-      
-      // 尝试从缓存提供结果（代码省略）
-      
-      return NextResponse.json(
-        { success: false, error: errorMessage },
-        { status: statusCode }
-      );
-    }
+    const result = await fetchTmdbFeed('upcoming', { region, language }, apiKey);
+    return NextResponse.json(result);
   } catch (error: any) {
-    // 其他一般性错误
     console.error('获取TMDB即将上线内容失败:', error);
     return NextResponse.json(
       { success: false, error: `获取TMDB即将上线内容失败: ${error.message}` },
       { status: 500 }
     );
   }
-} 
+}
