@@ -59,13 +59,13 @@ export interface SidebarLayoutProps {
   upcomingLastUpdated: string | null
   recentLastUpdated: string | null
   selectedRegion: string
-  mediaNewsType: string
+  mediaNewsType: 'upcoming' | 'recent'
   isMissingApiKey: boolean
   upcomingItemsByRegion: Record<string, any[]>
   recentItemsByRegion: Record<string, any[]>
   fetchUpcomingItems: (silent?: boolean, retryCount?: number, region?: string) => void
   fetchRecentItems: (silent?: boolean, retryCount?: number, region?: string) => void
-  setMediaNewsType: (type: string) => void
+  setMediaNewsType: React.Dispatch<React.SetStateAction<'upcoming' | 'recent'>>
   setSelectedRegion: (region: string) => void
   // 词条维护相关状态和函数
   items: any[]
@@ -319,7 +319,9 @@ export function SidebarLayout({
 
     // 处理影视资讯菜单的切换
     if (menuId === 'news' && submenuId) {
-      setMediaNewsType(submenuId)
+      if (submenuId === 'upcoming' || submenuId === 'recent') {
+        setMediaNewsType(submenuId)
+      }
     }
   }
 

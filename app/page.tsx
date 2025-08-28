@@ -155,7 +155,7 @@ export default function HomePage() {
   const [selectedRegion, setSelectedRegion] = useState<string>("CN")
   const [upcomingItemsByRegion, setUpcomingItemsByRegion] = useState<Record<string, any[]>>({})
   // 影视资讯子类型
-  const [mediaNewsType, setMediaNewsType] = useState<string>('upcoming');
+  const [mediaNewsType, setMediaNewsType] = useState<'upcoming' | 'recent'>('upcoming');
   // 近期开播内容
   const [recentItems, setRecentItems] = useState<any[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
@@ -1140,7 +1140,7 @@ export default function HomePage() {
                           if (!region) return null;
                           
                           const isActive = selectedRegion === regionId;
-                          const regionItems = (mediaNewsType as string) === 'upcoming' 
+                          const regionItems = mediaNewsType === 'upcoming' 
                             ? (upcomingItemsByRegion[regionId] || [])
                             : (recentItemsByRegion[regionId] || []);
                           const validItems = regionItems.filter(item => 
@@ -1195,7 +1195,7 @@ export default function HomePage() {
             <button 
               onClick={() => setMediaNewsType('upcoming')}
               className={`px-2.5 py-1 rounded-sm text-sm font-medium transition-all duration-200 ${
-                (mediaNewsType as string) === 'upcoming' 
+                mediaNewsType === 'upcoming' 
                   ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }`}
@@ -1208,7 +1208,7 @@ export default function HomePage() {
             <button 
               onClick={() => setMediaNewsType('recent')}
               className={`px-2.5 py-1 rounded-sm text-sm font-medium transition-all duration-200 ${
-                (mediaNewsType as string) === 'recent' 
+                mediaNewsType === 'recent' 
                   ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }`}
@@ -1362,7 +1362,7 @@ export default function HomePage() {
                 <div className="relative mr-3">
                   <div className="absolute inset-0 bg-blue-500 blur-md opacity-20 rounded-full"></div>
                   <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-full text-white">
-                    {(mediaNewsType as string) === 'upcoming' ? (
+                    {mediaNewsType === 'upcoming' ? (
                     <Calendar className="h-5 w-5" />
                     ) : (
                       <PlayCircle className="h-5 w-5" />
@@ -1372,9 +1372,9 @@ export default function HomePage() {
                 <div>
                   <div className="flex items-center">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-                      {(mediaNewsType as string) === 'upcoming' ? '即将上线' : '近期开播'}
+                      {mediaNewsType === 'upcoming' ? '即将上线' : '近期开播'}
                     </h2>
-                    {(mediaNewsType as string) === 'upcoming' && upcomingItems.length > 0 && (
+                    {mediaNewsType === 'upcoming' && upcomingItems.length > 0 && (
                       <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
                         {upcomingItems.filter(upcomingItem => 
                           !items.some(item => 
@@ -1384,7 +1384,7 @@ export default function HomePage() {
                         ).length}
                       </span>
                     )}
-                    {(mediaNewsType as string) === 'recent' && recentItems.length > 0 && (
+                    {mediaNewsType === 'recent' && recentItems.length > 0 && (
                       <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
                         {recentItems.filter(recentItem => 
                           !items.some(item => 
@@ -1396,7 +1396,7 @@ export default function HomePage() {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {(mediaNewsType as string) === 'upcoming' ? '未来30天将要上线的内容' : '过去30天刚刚开播的内容'}
+                    {mediaNewsType === 'upcoming' ? '未来30天将要上线的内容' : '过去30天刚刚开播的内容'}
                   </p>
                 </div>
               </div>
@@ -1405,10 +1405,10 @@ export default function HomePage() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => (mediaNewsType as string) === 'upcoming' ? fetchUpcomingItems(false, 0, selectedRegion) : fetchRecentItems(false, 0, selectedRegion)}
+                  onClick={() => mediaNewsType === 'upcoming' ? fetchUpcomingItems(false, 0, selectedRegion) : fetchRecentItems(false, 0, selectedRegion)}
                   className="h-9 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${((mediaNewsType as string) === 'upcoming' && loadingUpcoming) || ((mediaNewsType as string) === 'recent' && loadingRecent) ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 mr-2 ${(mediaNewsType === 'upcoming' && loadingUpcoming) || (mediaNewsType === 'recent' && loadingRecent) ? 'animate-spin' : ''}`} />
                   刷新
                 </Button>
               </div>
@@ -1569,7 +1569,7 @@ export default function HomePage() {
                                   </span>
                                   <span className="mx-1">·</span>
                                   <span className="flex items-center">
-                                    {(mediaNewsType as string) === 'upcoming' ? (
+                                    {(mediaNewsType === 'upcoming' ? (
                                       (() => {
                                         const daysUntilRelease = Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                                         if (daysUntilRelease <= 0) {
@@ -1584,7 +1584,7 @@ export default function HomePage() {
                                       Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24)) <= 0 
                                         ? "今天开播" 
                                         : `${Math.ceil((new Date().getTime() - new Date(item.releaseDate).getTime()) / (1000 * 60 * 60 * 24))} 天前开播`
-                                    ) : ""}
+                                    ) : "")}
                                   </span>
                                 </div>
                               </div>
@@ -2419,8 +2419,8 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 分类选择器 - 移到顶部 */}
         <div className="py-4">
-          {/* 桌面端水平分类 */}
-          <div className="hidden md:block">
+          {/* 分类：统一样式（保留原桌面端样式，所有尺寸显示） */}
+          <div className="block">
             <div className="flex flex-wrap gap-2">
               {categories.map((category) => {
                 const isSelected = selectedCategory === category.id;
@@ -2442,35 +2442,6 @@ export default function HomePage() {
                       <span className="h-4 w-4">{category.icon}</span>
                     </div>
                     <span className={isSelected ? "font-medium" : ""}>{category.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          
-          {/* 移动端分类选择器 */}
-          <div className="overflow-x-auto pb-3">
-            <div className="flex space-x-2">
-              {categories.map((category) => {
-                const isSelected = selectedCategory === category.id;
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`flex-shrink-0 flex items-center text-xs px-3 py-2 rounded-lg transition-colors ${
-                      isSelected
-                        ? "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium shadow-sm border border-blue-200 dark:border-blue-800"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/60 border border-transparent"
-                    }`}
-                  >
-                    <div className={`flex items-center justify-center h-6 w-6 rounded-md mr-1.5 ${
-                      isSelected 
-                        ? "bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300" 
-                        : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
-                    }`}>
-                      <span className="h-3.5 w-3.5">{category.icon}</span>
-                    </div>
-                    <span>{category.name}</span>
                   </button>
                 );
               })}
