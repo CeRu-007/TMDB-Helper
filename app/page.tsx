@@ -2399,7 +2399,7 @@ export default function HomePage() {
                 )}
               </div>
               {/* 移动端菜单 */}
-              <MobileMenu />
+              {/* <MobileMenu /> 已移除，项目不再支持移动端 */}
               
 
               <Button
