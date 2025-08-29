@@ -155,9 +155,23 @@ body {
   }
 
   /* 确保全局右下角对话框（Radix Toast/Sonner）永远置顶 */
-  .toaster, [data-sonner-toaster], [data-radix-toast-viewport], .sonner-toaster, .sonner-toast, .sonner-theme-dark, .sonner-theme-light {
-    z-index: 100000 !important;
-    isolation: isolate;
+  /* Sonner Toast 最高优先级样式 */
+  [data-sonner-toaster],
+  [data-sonner-toast],
+  .sonner-toaster,
+  .sonner-toast,
+  .toaster,
+  [data-radix-toast-viewport],
+  .sonner-theme-dark,
+  .sonner-theme-light {
+    z-index: 2147483647 !important;
+    position: fixed !important;
+    isolation: isolate !important;
+  }
+
+  /* 确保sonner容器在最顶层 */
+  [data-sonner-toaster] > * {
+    z-index: 2147483647 !important;
   }
 
   /* 增强选中单元格样式 */
@@ -316,6 +330,16 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Toast 最高优先级样式 */
+[data-radix-toast-viewport] {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+[data-radix-toast-root] {
+  z-index: 2147483647 !important;
 }
 
 /* 为详情对话框滚动区域添加自定义滚动条样式 */

@@ -317,6 +317,14 @@
   transition: border-color 0.2s ease !important;
 }
 
+/* 确保toast通知始终在最顶层 */
+[data-sonner-toaster],
+[data-radix-toast-viewport],
+.sonner-toaster {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
 .dark .task-display-area {
   /* 深色主题下的边框 */
   border: 2px solid rgba(255, 255, 255, 0.2) !important;
