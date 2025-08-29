@@ -84,6 +84,12 @@ export async function POST(request: NextRequest) {
         return await downloadLatest()
       case 'install':
         return await installUpdate()
+      case 'getScheduledTasks':
+        // 返回空的定时任务数据，因为这个端点主要用于TMDB导入更新
+        return NextResponse.json({
+          success: true,
+          data: []
+        })
       default:
         return NextResponse.json({
           success: false,
