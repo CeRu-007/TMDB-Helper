@@ -170,7 +170,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [seasonToDelete, setSeasonToDelete] = useState<number | null>(null)
   const [isRefreshingTMDBData, setIsRefreshingTMDBData] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
-  const isMobile = false
   const [customSeasonNumber, setCustomSeasonNumber] = useState(1)
   const [showMetadataDialog, setShowMetadataDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)

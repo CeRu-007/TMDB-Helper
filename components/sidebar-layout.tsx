@@ -139,7 +139,6 @@ export function SidebarLayout({
   WeekdayNavigation
 }: SidebarLayoutProps) {
   const { theme, setTheme } = useTheme()
-  const isMobile = false
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeMenu, setActiveMenu] = useState<string>('maintenance')
   const [activeSubmenu, setActiveSubmenu] = useState<string>('all')
@@ -891,7 +890,7 @@ export function SidebarLayout({
           </div>
 
           {/* 右侧操作按钮——严格对齐到主内容容器的右侧边缘 */}
-          <div className={`absolute inset-y-0 right-0 ${isMobile ? 'left-0' : (sidebarCollapsed ? 'left-16' : 'left-64')} pointer-events-none`}>
+          <div className={`absolute inset-y-0 right-0 ${sidebarCollapsed ? 'left-16' : 'left-64'} pointer-events-none`}>
             <div className="h-full max-w-7xl w-full mx-auto px-8 pr-9 flex items-center justify-end pointer-events-auto">
               {/* 桌面版操作按钮 */}
               <div className="flex items-center space-x-2">
@@ -938,7 +937,7 @@ export function SidebarLayout({
                 <Button
                   onClick={onShowAddDialog}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  size={isMobile ? "sm" : "default"}
+                  size="default"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   <span>添加词条</span>
@@ -951,8 +950,8 @@ export function SidebarLayout({
 
       {/* 主体内容 */}
       <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-        {/* 侧边栏 - 固定定位，移动端隐藏 */}
-        <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} flex-shrink-0 relative z-30 ${isMobile ? 'hidden' : ''}`}>
+        {/* 侧边栏 - 固定定位 */}
+        <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} flex-shrink-0 relative z-30 `}>
           <div className="fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white dark:bg-gray-900 border-r dark:border-gray-700 overflow-hidden">
             <SidebarNavigation
               onMenuSelect={handleMenuSelect}
@@ -963,8 +962,8 @@ export function SidebarLayout({
           </div>
         </div>
 
-        {/* 主内容区域 - 移动端全宽，桌面端避免被侧边栏遮挡 */}
-        <main className={`flex-1 overflow-hidden ${isMobile ? 'w-full' : ''}`}>
+        {/* 主内容区域 - 桌面端避免被侧边栏遮挡 */}
+        <main className={`flex-1 overflow-hidden `}>
           {/* 根据页面类型决定是否使用滚动容器 */}
           {contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' ? (
             // 缩略图相关页面：提供固定高度容器，让组件内部处理滚动

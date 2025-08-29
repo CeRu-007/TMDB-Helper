@@ -175,36 +175,3 @@ export function SimpleRealtimeStatusIndicator({
     )
 }
 
-// 移动端专用的浮动状态指示器
-export function MobileFloatingStatusIndicator({
-    isConnected,
-    pendingOperations,
-    onTap
-}: {
-    isConnected: boolean
-    pendingOperations: number
-    onTap?: () => void
-}) {
-    if (!isConnected && pendingOperations === 0) return null
-
-    return (
-        <div
-            className="fixed bottom-20 right-4 z-50"
-            onClick={onTap}
-        >
-            <div className="bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 p-2 flex items-center space-x-2">
-                {/* 连接状态 */}
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-                    }`} />
-
-                {/* 操作状态 */}
-                {pendingOperations > 0 && (
-                    <>
-                        <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
-                        <span className="text-xs text-blue-500 font-medium pr-1">{pendingOperations}</span>
-                    </>
-                )}
-            </div>
-        </div>
-    )
-}
