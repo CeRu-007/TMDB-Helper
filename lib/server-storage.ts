@@ -134,6 +134,8 @@ export function importData(jsonData: string): boolean {
  * 导出数据
  */
 export function exportData(): string {
-  const items = readItems();
-  return JSON.stringify(items, null, 2);
+  const { Storage } = require('./storage');
+  const storage = new Storage();
+  const data = storage.getAllItems();
+  return JSON.stringify(data, null, 2);
 } 

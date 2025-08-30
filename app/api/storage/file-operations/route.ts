@@ -3,7 +3,30 @@ import fs from 'fs';
 import path from 'path';
 import { TMDBItem } from '@/lib/storage';
 
-// 数据文件路径
+// 获取用户数据文件路径
+function getUserDataFile(userId?: string): string {
+  // 如果没有提供用户ID，使用默认的管理员用户
+  const actualUserId = userId || 'user_admin_system';
+  const DATA_DIR = path.join(process.cwd(), 'data');
+  const USERS_DIR = path.join(DATA_DIR, 'users');
+  
+  // 确保用户数据目录存在
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(USERS_DIR)) {
+    fs.mkdirSync(USERS_DIR, { recursive: true });
+  }
+  
+  const userDir = path.join(USERS_DIR, actualUserId);
+  if (!fs.existsSync(userDir)) {
+    fs.mkdirSync(userDir, { recursive: true });
+  }
+  
+  return path.join(userDir, 'tmdb_items.json');
+}
+
+// 数据文件路径（保留作为备用）
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'tmdb_items.json');
 
@@ -17,22 +40,41 @@ function ensureDataDir() {
 }
 
 // GET /api/storage/file-operations - 直接读取数据文件
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    ensureDataDir();
+    // 从请求头获取用户ID
+    const userId = request.headers.get('x-user-id') || 'user_admin_system';
+    const userDataFile = getUserDataFile(userId);
     
-    if (!fs.existsSync(DATA_FILE)) {
-      // 如果文件不存在，返回空数组
-      return NextResponse.json({ items: [] });
+    console.log(`[file-operations] 读取用户数据文件: ${userDataFile}`);
+    
+    // 确保用户数据目录存在
+    const userDataDir = path.dirname(userDataFile);
+    if (!fs.existsSync(userDataDir)) {
+      fs.mkdirSync(userDataDir, { recursive: true });
     }
     
-    const data = fs.readFileSync(DATA_FILE, 'utf-8');
+    if (!fs.existsSync(userDataFile)) {
+      // 检查是否存在旧的数据文件需要迁移
+      ensureDataDir();
+      if (fs.existsSync(DATA_FILE)) {
+        console.log(`[file-operations] 发现旧数据文件，迁移到用户目录: ${DATA_FILE} -> ${userDataFile}`);
+        fs.copyFileSync(DATA_FILE, userDataFile);
+        console.log(`[file-operations] 数据迁移完成`);
+      } else {
+        // 如果文件不存在，返回空数组
+        return NextResponse.json({ items: [] });
+      }
+    }
+    
+    const data = fs.readFileSync(userDataFile, 'utf-8');
     const items = JSON.parse(data);
     
     return NextResponse.json({ 
       items,
       success: true,
-      message: `成功读取 ${items.length} 个项目`
+      message: `成功读取 ${items.length} 个项目`,
+      dataPath: userDataFile
     });
   } catch (error) {
     console.error('读取数据文件失败:', error);
@@ -59,22 +101,33 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    ensureDataDir();
+    // 从请求头获取用户ID
+    const userId = request.headers.get('x-user-id') || 'user_admin_system';
+    const userDataFile = getUserDataFile(userId);
+    
+    console.log(`[file-operations] 写入用户数据文件: ${userDataFile}`);
+    
+    // 确保用户数据目录存在
+    const userDataDir = path.dirname(userDataFile);
+    if (!fs.existsSync(userDataDir)) {
+      fs.mkdirSync(userDataDir, { recursive: true });
+    }
     
     // 如果需要备份且原文件存在
-    if (backup && fs.existsSync(DATA_FILE)) {
-      const backupFile = path.join(DATA_DIR, `tmdb_items_backup_${Date.now()}.json`);
-      fs.copyFileSync(DATA_FILE, backupFile);
+    if (backup && fs.existsSync(userDataFile)) {
+      const backupFile = path.join(userDataDir, `tmdb_items_backup_${Date.now()}.json`);
+      fs.copyFileSync(userDataFile, backupFile);
       console.log(`已创建备份文件: ${backupFile}`);
     }
     
     // 写入新数据
-    fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2), 'utf-8');
+    fs.writeFileSync(userDataFile, JSON.stringify(items, null, 2), 'utf-8');
     
     return NextResponse.json({ 
       success: true,
       message: `成功导入 ${items.length} 个项目`,
-      itemCount: items.length
+      itemCount: items.length,
+      dataPath: userDataFile
     });
   } catch (error) {
     console.error('写入数据文件失败:', error);
@@ -101,14 +154,24 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    ensureDataDir();
+    // 从请求头获取用户ID
+    const userId = request.headers.get('x-user-id') || 'user_admin_system';
+    const userDataFile = getUserDataFile(userId);
+    
+    console.log(`[file-operations] 合并用户数据文件: ${userDataFile}`);
+    
+    // 确保用户数据目录存在
+    const userDataDir = path.dirname(userDataFile);
+    if (!fs.existsSync(userDataDir)) {
+      fs.mkdirSync(userDataDir, { recursive: true });
+    }
     
     let existingItems: TMDBItem[] = [];
     
     // 读取现有数据
-    if (fs.existsSync(DATA_FILE)) {
+    if (fs.existsSync(userDataFile)) {
       try {
-        const existingData = fs.readFileSync(DATA_FILE, 'utf-8');
+        const existingData = fs.readFileSync(userDataFile, 'utf-8');
         existingItems = JSON.parse(existingData);
       } catch (error) {
         console.warn('读取现有数据失败，将创建新文件:', error);
@@ -157,7 +220,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // 写入数据
-    fs.writeFileSync(DATA_FILE, JSON.stringify(finalItems, null, 2), 'utf-8');
+    fs.writeFileSync(userDataFile, JSON.stringify(finalItems, null, 2), 'utf-8');
     
     return NextResponse.json({ 
       success: true,
@@ -167,7 +230,8 @@ export async function PUT(request: NextRequest) {
         added: addedCount,
         updated: updatedCount,
         skipped: skippedCount
-      }
+      },
+      dataPath: userDataFile
     });
   } catch (error) {
     console.error('合并数据失败:', error);

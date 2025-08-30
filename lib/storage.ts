@@ -1,4 +1,4 @@
-﻿import { v4 as uuidv4 } from "uuid";
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { v4 as uuidv4 } from "uuid";
 import { UserManager } from "./user-manager";
 import { abortErrorMonitor } from "./abort-error-monitor";
 
@@ -866,9 +866,12 @@ export class StorageManager {
       validItemCount: number;
       validTaskCount: number;
     };
+    isDuplicate?: boolean; // 新增：标识是否为重复数据
+    duplicateInfo?: string; // 新增：重复信息描述
   } {
     try {
       console.log("开始验证导入数据，数据长度:", jsonData.length);
+      
       const parsedData = JSON.parse(jsonData);
       console.log("解析后的数据结构:", {
         isArray: Array.isArray(parsedData),
@@ -981,8 +984,8 @@ export class StorageManager {
         data: {
           items: validItems,
           tasks: validTasks,
-          version,
-          exportDate
+          ...(version && { version }),
+          ...(exportDate && { exportDate })
         },
         stats: {
           itemCount: items.length,
@@ -1027,7 +1030,7 @@ export class StorageManager {
     if (!validation.isValid) {
       return {
         success: false,
-        error: validation.error
+        error: validation.error || "验证失败"
       };
     }
 
@@ -1673,7 +1676,7 @@ export class StorageManager {
       return {
         hasItems: false,
         itemCount: 0,
-        storageType: this.USE_FILE_STORAGE ? 'fileStorage' : 'localStorage',
+        storageType: 'fileStorage' as const,
         isClientEnvironment: this.isClient(),
         isStorageAvailable: this.isStorageAvailable(),
         lastError: error instanceof Error ? error.message : String(error)

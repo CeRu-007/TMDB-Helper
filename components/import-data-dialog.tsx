@@ -68,12 +68,39 @@ export default function ImportDataDialog({ open, onOpenChange }: ImportDataDialo
     const reader = new FileReader()
     reader.onload = async (e) => {
       try {
-        const data = e.target?.result as string
+        let data = e.target?.result as string
+        
         const validation = StorageManager.validateImportData(data)
+        
+        // 如果基本验证通过，进行重复数据检测
+        let isDuplicate = false;
+        let duplicateInfo = '';
+        
+        if (validation.isValid && validation.data?.items) {
+          try {
+            const currentItems = await StorageManager.getItemsWithRetry();
+            if (currentItems.length > 0 && validation.data.items.length > 0) {
+              // 简单比较项目数量和第一个项目的ID
+              if (currentItems.length === validation.data.items.length) {
+                const currentIds = currentItems.map(item => item.id).sort();
+                const importIds = validation.data.items.map(item => item.id).sort();
+                
+                if (JSON.stringify(currentIds) === JSON.stringify(importIds)) {
+                  isDuplicate = true;
+                  duplicateInfo = `导入的数据与当前数据完全一致（${validation.data.items.length} 个项目）`;
+                }
+              }
+            }
+          } catch (error) {
+            console.warn('重复检测失败:', error);
+          }
+        }
         
         setPreview({
           isValid: validation.isValid,
-          error: validation.error,
+          error: isDuplicate ? 
+            `注意：${duplicateInfo}。您可以选择继续导入以确保数据一致性。` : 
+            validation.error,
           stats: validation.stats,
           data: validation.data ? {
             version: validation.data.version,
@@ -101,7 +128,7 @@ export default function ImportDataDialog({ open, onOpenChange }: ImportDataDialo
       const reader = new FileReader()
       reader.onload = async (e) => {
         try {
-          const data = e.target?.result as string
+          let data = e.target?.result as string
 
           setImportStep("正在解析文件...")
           setImportProgress(10)

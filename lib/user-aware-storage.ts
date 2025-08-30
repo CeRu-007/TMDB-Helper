@@ -68,7 +68,9 @@ export function readUserItems(userId: string): TMDBItem[] {
   }
   
   try {
-    const data = fs.readFileSync(filePath, 'utf-8');
+    let data = fs.readFileSync(filePath, 'utf-8');
+    // 清理控制字符
+    data = data.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
     const items = JSON.parse(data);
     console.log(`成功读取用户 ${userId} 的 ${items.length} 个项目`);
     return items;
@@ -349,7 +351,7 @@ export function getUserConfig(userId: string, key: string): string | null {
 export function setUserConfig(userId: string, key: string, value: string): boolean {
   try {
     const userDir = path.join(USERS_DIR, userId);
-    ensureUserDir(userId);
+    ensureUserDataDir(userId);
 
     const configFile = path.join(userDir, 'config.json');
 
@@ -358,7 +360,7 @@ export function setUserConfig(userId: string, key: string, value: string): boole
       configData = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
     }
 
-    configData[key] = value;
+    (configData as any)[key] = value;
 
     // 使用可读紧凑格式保存配置
     fs.writeFileSync(configFile, stringifyAuto(configData, 'config'), 'utf-8');
