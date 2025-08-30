@@ -20,6 +20,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+
     "task-daemon": "node scripts/task-scheduler-daemon.js",
     "task-daemon:dev": "node scripts/task-scheduler-daemon.js --port=4949 --interval=300",
     "docker:build": "docker build -t tmdb-helper .",

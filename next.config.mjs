@@ -34,22 +34,7 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256], // 减少图片尺寸
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30天缓存
   },
-  rewrites: async () => {
-    return [
-      {
-        source: '/api/csv/read',
-        destination: '/api/csv/read',
-      },
-      {
-        source: '/api/csv/save',
-        destination: '/api/csv/save',
-      },
-      {
-        source: '/api/csv/verify',
-        destination: '/api/csv/verify',
-      },
-    ];
-  },
+  // rewrites 已移除，因为不再需要pages/api重定向
 
   // 增强的 webpack 配置来处理 ChunkLoadError 和模块加载问题
   webpack: (config, { isServer, dev }) => {

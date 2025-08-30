@@ -602,6 +602,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       try {
         // 使用API路由读取CSV文件
         console.log("发送API请求读取CSV文件");
+        console.log("请求参数 - workingDirectory:", workingDirectory);
         // 使用try-catch包裹axios请求，防止错误传播到控制台
         try {
         const response = await axios.post('/api/csv/read', { workingDirectory });
@@ -611,15 +612,18 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         }
 
         const csvData = response.data.data;
-        console.log("成功获取CSV数据:", csvData ? `${csvData.rows.length}行数据` : "无数据");
+        
+        // 确保数据格式正确 - 新API返回数组，需要转换为期望的格式
+        const formattedCsvData = Array.isArray(csvData) ? { rows: csvData } : csvData;
+        console.log("成功获取CSV数据:", formattedCsvData && formattedCsvData.rows ? `${formattedCsvData.rows.length}行数据` : "无数据");
 
         // 验证CSV数据
-        const validation = validateCsvData(csvData);
+        const validation = validateCsvData(formattedCsvData);
         if (!validation.valid) {
           console.warn("CSV数据验证失败:", validation.errors);
 
           // 尝试修复CSV数据
-          const fixedData = fixCsvData(csvData);
+          const fixedData = fixCsvData(formattedCsvData);
           setCsvData(fixedData);
 
           // 保存修复后的CSV数据
@@ -630,7 +634,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
           appendTerminalOutput(`CSV数据已自动修复并保存，原因: ${validation.errors.join(', ')}`, "warning");
         } else {
-          setCsvData(csvData);
+          setCsvData(formattedCsvData);
         }
 
         // 生成CSV内容用于显示
