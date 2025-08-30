@@ -1,4 +1,4 @@
-"use client"
+use client"
 
 import React from 'react'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ interface WeekdayNavigationProps {
   selectedDayFilter: "recent" | number
   onDayFilterChange: (filter: "recent" | number) => void
   filteredItems: TMDBItem[]
-  currentLayout: 'original' | 'sidebar'
+  currentLayout: 'sidebar'
   categories: Array<{ id: string; name: string }>
   selectedCategory: string
 }

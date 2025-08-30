@@ -23,10 +23,9 @@ import {
   Calendar,
   Database,
   ChevronDown,
-  LayoutGrid,
   Sidebar
 } from "lucide-react"
-import { LayoutPreferencesManager, type LayoutType, LAYOUT_NAMES } from "@/lib/layout-preferences"
+
 import { useToast } from "@/hooks/use-toast"
 import { UserAvatarImage } from "@/components/ui/smart-avatar"
 
@@ -264,14 +263,10 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
  */
 export function UserAvatar({
   onShowImportDialog,
-  onShowExportDialog,
-  onLayoutChange,
-  currentLayout
+  onShowExportDialog
 }: {
   onShowImportDialog?: () => void
   onShowExportDialog?: () => void
-  onLayoutChange?: (layout: LayoutType) => void
-  currentLayout?: LayoutType
 } = {}) {
   const { userInfo, isLoading } = useUser()
   const { logout } = useAuth()
@@ -348,8 +343,6 @@ export function UserAvatar({
           triggerElement={buttonRef.current || undefined}
           onShowImportDialog={onShowImportDialog}
           onShowExportDialog={onShowExportDialog}
-          onLayoutChange={onLayoutChange}
-          currentLayout={currentLayout}
         />
       )}
     </div>
@@ -364,10 +357,8 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
   triggerElement?: HTMLElement;
   onShowImportDialog?: () => void;
   onShowExportDialog?: () => void;
-  onLayoutChange?: (layout: LayoutType) => void;
-  currentLayout?: LayoutType;
 }>(
-  ({ onClose, triggerElement, onShowImportDialog, onShowExportDialog, onLayoutChange, currentLayout }, ref) => {
+  ({ onClose, triggerElement, onShowImportDialog, onShowExportDialog }, ref) => {
     const { toast } = useToast()
     const { userInfo, updateDisplayName, resetUser } = useUser()
     const { items } = useData()
@@ -444,41 +435,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
       setTheme(theme === 'dark' ? 'light' : 'dark')
     }
 
-    // 处理布局切换
-    const handleLayoutToggle = async () => {
-      if (!onLayoutChange || !currentLayout) return
 
-      const targetLayout: LayoutType = currentLayout === 'original' ? 'sidebar' : 'original'
-
-      try {
-        // 保存布局偏好
-        const success = await LayoutPreferencesManager.savePreferences({
-          layoutType: targetLayout
-        })
-
-        if (success) {
-          onLayoutChange(targetLayout)
-
-          toast({
-            title: "布局已切换",
-            description: `已切换到${LAYOUT_NAMES[targetLayout]}`,
-            duration: 2000
-          })
-        } else {
-          throw new Error("保存布局偏好失败")
-        }
-      } catch (error) {
-        console.error("Layout change failed:", error)
-        toast({
-          title: "切换失败",
-          description: "布局切换失败，请重试",
-          variant: "destructive",
-          duration: 3000
-        })
-      }
-
-      onClose()
-    }
 
     const handleReset = () => {
       if (confirm('确定要重置用户数据吗？这将清除所有本地数据并创建新的用户ID。此操作无法撤销！')) {
@@ -606,20 +563,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             切换主题 ({theme === 'dark' ? '深色' : '浅色'})
           </button>
 
-          {/* 布局切换 - 仅当提供了布局切换回调和当前布局时显示 */}
-          {onLayoutChange && currentLayout && (
-            <button
-              onClick={handleLayoutToggle}
-              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              {currentLayout === 'original' ? (
-                <Sidebar className="w-4 h-4 mr-3" />
-              ) : (
-                <LayoutGrid className="w-4 h-4 mr-3" />
-              )}
-              切换到{currentLayout === 'original' ? '侧边栏布局' : '标签页布局'}
-            </button>
-          )}
+
         </div>
 
 

@@ -22,7 +22,7 @@ export interface AppState {
   // 用户偏好
   preferences: {
     theme: 'light' | 'dark' | 'system'
-    layout: 'original' | 'sidebar'
+    layout: 'sidebar'
     language: 'zh-CN' | 'en-US'
     autoSave: boolean
     notifications: boolean
@@ -71,7 +71,7 @@ const initialState: AppState = {
   initialized: false,
   preferences: {
     theme: 'system',
-    layout: 'original',
+    layout: 'sidebar',
     language: 'zh-CN',
     autoSave: true,
     notifications: true

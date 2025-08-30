@@ -13,13 +13,9 @@ import {
   Moon
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { LayoutSwitcher } from '@/components/layout-switcher'
 import { UserAvatar, useUser } from '@/components/user-identity-provider'
-import { LayoutType } from '@/lib/layout-preferences'
 
 interface HomeHeaderProps {
-  currentLayout: LayoutType
-  onLayoutChange: (layout: LayoutType) => void
   runningTasksCount: number
   onShowSettings: () => void
   onShowTasks: () => void
@@ -29,8 +25,6 @@ interface HomeHeaderProps {
 }
 
 export function HomeHeader({
-  currentLayout,
-  onLayoutChange,
   runningTasksCount,
   onShowSettings,
   onShowTasks,
@@ -41,24 +35,18 @@ export function HomeHeader({
   const { theme, setTheme } = useTheme()
   const { userInfo, isInitialized } = useUser()
 
-  // 如果是侧边栏布局，不显示头部
-  if (currentLayout === 'sidebar') {
-    return null
-  }
+  // 侧边栏布局下不显示此头部组件
+  return null
 
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* 左侧：标题和布局切换 */}
+          {/* 左侧：标题 */}
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               TMDB维护助手
             </h1>
-            <LayoutSwitcher
-              currentLayout={currentLayout}
-              onLayoutChange={onLayoutChange}
-            />
           </div>
 
           {/* 右侧：用户信息和操作按钮 */}

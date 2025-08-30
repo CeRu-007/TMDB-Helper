@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react"
 import { SidebarNavigation } from "@/components/sidebar-navigation"
-import { LayoutSwitcher } from "@/components/layout-switcher"
+
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
 import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
 import { Button } from "@/components/ui/button"
@@ -32,14 +32,12 @@ import {
   ChevronDown
 } from "lucide-react"
 import { useTheme } from "next-themes"
-import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferences"
+import { LayoutPreferencesManager } from "@/lib/layout-preferences"
 import Image from "next/image"
 import StreamingPlatformNav from "@/components/streaming-platforms/streaming-platform-nav"
 
 export interface SidebarLayoutProps {
   children: React.ReactNode
-  onLayoutChange: (layoutType: LayoutType) => void
-  currentLayout: LayoutType
   // 从原始页面传递的状态和处理函数
   totalItems: number
   runningTasks: any[]
@@ -90,8 +88,6 @@ export interface SidebarLayoutProps {
 
 export function SidebarLayout({
   children,
-  onLayoutChange,
-  currentLayout,
   totalItems,
   runningTasks,
   onShowAddDialog,
@@ -930,8 +926,6 @@ export function SidebarLayout({
                 <UserAvatar
                   onShowImportDialog={onShowImportDialog}
                   onShowExportDialog={onShowExportDialog}
-                  onLayoutChange={onLayoutChange}
-                  currentLayout={currentLayout}
                 />
 
                 <Button

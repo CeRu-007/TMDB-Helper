@@ -7,11 +7,10 @@ import { safeJsonParse } from './utils'
  * 负责保存和读取用户的布局偏好设置
  */
 
-export type LayoutType = 'original' | 'sidebar'
+export type LayoutType = 'sidebar'
 
 // 布局显示名称映射
 export const LAYOUT_NAMES = {
-  original: '标签页布局',
   sidebar: '侧边栏布局'
 } as const
 
@@ -47,12 +46,17 @@ export class LayoutPreferencesManager {
         if (data.success && data.value) {
           const preferences = safeJsonParse<LayoutPreferences>(data.value);
 
-          // 验证数据完整性
+          // 验证数据完整性并确保布局类型为sidebar
           if (preferences?.layoutType && preferences?.lastUpdated) {
+            // 强制设置为sidebar布局
+            const validPreferences = {
+              ...preferences,
+              layoutType: 'sidebar' as const
+            }
             try {
-              localStorage.setItem(this.STORAGE_KEY, JSON.stringify(preferences))
+              localStorage.setItem(this.STORAGE_KEY, JSON.stringify(validPreferences))
             } catch {}
-            return preferences;
+            return validPreferences;
           }
         }
       }
@@ -66,7 +70,11 @@ export class LayoutPreferencesManager {
       if (cached) {
         const pref = safeJsonParse<LayoutPreferences>(cached)
         if (pref?.layoutType && pref?.lastUpdated) {
-          return pref
+          // 强制设置为sidebar布局
+          return {
+            ...pref,
+            layoutType: 'sidebar' as const
+          }
         }
       }
     } catch {}
@@ -120,26 +128,17 @@ export class LayoutPreferencesManager {
 
   /**
    * 获取默认布局偏好设置
-   * 默认使用标签页布局（original）
+   * 默认使用侧边栏布局（sidebar）
    */
   static getDefaultPreferences(): LayoutPreferences {
     return {
-      layoutType: 'original', // 标签页布局作为默认布局
+      layoutType: 'sidebar', // 侧边栏布局作为默认布局
       sidebarCollapsed: false,
       lastUpdated: new Date().toISOString()
     }
   }
 
-  /**
-   * 切换布局类型
-   */
-  static async toggleLayout(): Promise<LayoutType> {
-    const currentPreferences = await this.getPreferences()
-    const newLayoutType: LayoutType = currentPreferences.layoutType === 'original' ? 'sidebar' : 'original'
 
-    await this.savePreferences({ layoutType: newLayoutType })
-    return newLayoutType
-  }
 
   /**
    * 设置侧边栏折叠状态
