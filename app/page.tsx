@@ -2158,7 +2158,7 @@ export default function HomePage() {
           ImageCropper={ImageCropper}
           WeekdayNavigation={WeekdayNavigation}
         >
-          {/* 侧边栏布局的词条维护内容 - 移除重复的标签页导航 */}
+          {/* 词条维护内容 */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             {/* 只保留词条维护相关的内容，移除TabsList */}
               <TabsContent value="ongoing">
