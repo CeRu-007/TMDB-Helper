@@ -12,7 +12,7 @@
     "electron",
     "desktop"
   ],
-  "main": "electron/simple-main.js",
+  "main": "electron/main.js",
   "homepage": "./",
   "private": true,
   "scripts": {
