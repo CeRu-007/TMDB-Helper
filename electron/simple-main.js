@@ -35,6 +35,11 @@ function createWindow() {
   
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    
+    // 设置语言环境，解决language-mismatch警告
+    if (mainWindow.webContents.session) {
+      mainWindow.webContents.session.setSpellCheckerLanguages(['zh-CN', 'en-US']);
+    }
   });
   
   if (entryFile) {
@@ -42,8 +47,23 @@ function createWindow() {
     mainWindow.loadFile(entryFile);
   } else {
     console.log('🌐 尝试加载本地服务器');
-    mainWindow.loadURL('http://localhost:3001');
+    mainWindow.loadURL('http://localhost:3000');
   }
+
+  // 安全配置
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl);
+    
+    if (parsedUrl.origin !== 'http://localhost:3000') {
+      event.preventDefault();
+    }
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    const { shell } = require('electron');
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
 }
 
 app.whenReady().then(createWindow);

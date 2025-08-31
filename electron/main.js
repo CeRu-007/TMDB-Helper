@@ -5,7 +5,7 @@ const os = require('os');
 
 // 开发环境检测
 const isDev = process.env.NODE_ENV === 'development';
-const port = isDev ? 3000 : 3001; // 生产环境使用不同端口避免冲突
+const port = 3000; // 统一使用3000端口，与Next.js开发服务器保持一致
 
 // 应用数据目录
 const userDataPath = app.getPath('userData');
@@ -56,6 +56,11 @@ function createWindow() {
   // 窗口准备好后显示
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    
+    // 设置语言环境，解决language-mismatch警告
+    if (mainWindow.webContents.session) {
+      mainWindow.webContents.session.setSpellCheckerLanguages(['zh-CN', 'en-US']);
+    }
 
     // 只在开发环境下打开开发者工具
     if (isDev) {
@@ -153,6 +158,15 @@ function createWindow() {
 
   // 延迟加载，给服务器启动时间
   setTimeout(loadApp, isDev ? 1000 : 2000);
+
+  // 处理导航安全
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl);
+    
+    if (parsedUrl.origin !== `http://localhost:${port}`) {
+      event.preventDefault();
+    }
+  });
 
   // 处理外部链接
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
