@@ -344,6 +344,67 @@ function createMenu() {
       ]
     },
     {
+      label: '开发',
+      submenu: [
+        {
+          label: '打开开发者工具',
+          accelerator: 'F12',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.toggleDevTools();
+            }
+          }
+        },
+        {
+          label: '重新加载页面',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.reload();
+            }
+          }
+        },
+        {
+          label: '强制重新加载',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.reloadIgnoringCache();
+            }
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '清除缓存',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.session.clearCache();
+              dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                title: '缓存清除',
+                message: '缓存已清除',
+                detail: '应用缓存已成功清除'
+              });
+            }
+          }
+        },
+        {
+          label: '清除存储数据',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.session.clearStorageData();
+              dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                title: '存储数据清除',
+                message: '存储数据已清除',
+                detail: '本地存储、会话存储等数据已清除'
+              });
+            }
+          }
+        }
+      ]
+    },
+    {
       label: '帮助',
       submenu: [
         {
