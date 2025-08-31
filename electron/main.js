@@ -477,14 +477,9 @@ app.whenReady().then(async () => {
     console.log('🖥️ 创建应用窗口...');
     createWindow();
 
-    // 生产环境移除菜单栏，开发环境保留菜单功能
-    if (isDev) {
-      console.log('🔧 开发环境：创建应用菜单');
-      createMenu();
-    } else {
-      console.log('🚀 生产环境：移除应用菜单栏');
-      Menu.setApplicationMenu(null);
-    }
+    // 始终创建菜单（包含开发菜单）
+    console.log('🔧 创建应用菜单');
+    createMenu();
 
     console.log('🎉 TMDB Helper 桌面应用启动成功');
   } catch (error) {
