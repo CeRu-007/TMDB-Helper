@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import ImportDataDialog from "./import-data-dialog"
 import ExportDataDialog from "./export-data-dialog"
 import { UserManager, UserInfo } from "@/lib/user-manager"
+import { formatUserDateTime } from "@/lib/utils"
 import { useAuth } from "@/components/auth-provider"
 import { useIsClient } from "@/hooks/use-is-client"
 import { useData } from "@/components/client-data-provider"
@@ -871,7 +872,7 @@ function ProfileEditSection({
               <div className="text-xs">
                 <div className="text-gray-600 dark:text-gray-400">显示名称</div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">{userInfo.displayName}</div>
-                <div className="text-gray-500 dark:text-gray-400">创建于 {new Date(userInfo.createdAt).toLocaleDateString()}</div>
+                <div className="text-gray-500 dark:text-gray-400">创建于 {formatUserDateTime(userInfo.createdAt)}</div>
               </div>
               <button
                 onClick={() => setIsEditing(true)}
@@ -949,7 +950,7 @@ function DataStatsSection({
         </div>
       </div>
       <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-        <div>最后活跃: {new Date(userInfo.lastActiveAt).toLocaleString()}</div>
+        <div>最后活跃: {formatUserDateTime(userInfo.lastActiveAt)}</div>
         {stats.featuresUsed.length > 0 && (
           <div className="mt-1">
             已使用功能: {stats.featuresUsed.slice(0, 3).join(', ')}
@@ -1090,13 +1091,13 @@ function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">创建时间:</span>
                   <span className="text-gray-900 dark:text-gray-100">
-                    {new Date(userInfo.createdAt).toLocaleString()}
+                    {formatUserDateTime(userInfo.createdAt)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">最后活跃:</span>
                   <span className="text-gray-900 dark:text-gray-100">
-                    {new Date(userInfo.lastActiveAt).toLocaleString()}
+                    {formatUserDateTime(userInfo.lastActiveAt)}
                   </span>
                 </div>
                 <div className="flex justify-between">

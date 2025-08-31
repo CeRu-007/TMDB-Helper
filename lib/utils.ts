@@ -1,12 +1,24 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
 
 /**
- * 合并类名工具函数，用于处理Tailwind类名冲突
- * 结合了clsx和tailwind-merge的功能
+ * 统一的用户时间格式化函数
+ * 确保所有用户相关的时间显示格式一致：年月日时分秒
  */
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+export function formatUserDateTime(dateString: string): string {
+  return new Date(dateString).toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit", 
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
 }
 
 /**
@@ -215,4 +227,4 @@ export function getPlatformInfo(url?: string) {
       url
     };
   }
-} 
+}
