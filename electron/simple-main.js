@@ -171,8 +171,8 @@ function createMenu() {
               type: 'info',
               title: '关于 TMDB Helper',
               message: 'TMDB Helper',
-              detail: '版本 0.3.7
-
+              detail: '版本 0.3.7\
+\
 一个强大的 TMDB 媒体管理助手桌面应用'
             });
           }
