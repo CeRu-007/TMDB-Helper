@@ -36,9 +36,9 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     
-    // 设置语言环境，解决language-mismatch警告
+    // 禁用拼写检查，避免语言代码问题
     if (mainWindow.webContents.session) {
-      mainWindow.webContents.session.setSpellCheckerLanguages(['zh-CN', 'en-US']);
+      mainWindow.webContents.session.setSpellCheckerEnabled(false);
     }
   });
   
