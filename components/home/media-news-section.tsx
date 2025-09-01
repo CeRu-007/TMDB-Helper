@@ -173,7 +173,7 @@ export function MediaNewsSection({
 
       {/* 内容网格 */}
       {!loading && !error && items.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {items.slice(0, 12).map((item) => (
             <Card key={item.id} className="group hover:shadow-md transition-shadow">
               <CardContent className="p-3">

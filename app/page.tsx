@@ -1637,7 +1637,7 @@ export default function HomePage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                       {recentItems
                         .filter(recentItem => 
                           !items.some(item => 
@@ -2208,13 +2208,13 @@ export default function HomePage() {
 
                 {/* 内容展示区域 */}
                 <div className="mt-6">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
-                    {getFilteredItems(filteredOngoingItems).map((item) => (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                    {getFilteredItems(filteredCompletedItems).map((item) => (
                       <MediaCard
                         key={item.id}
                         item={item}
                         onClick={() => setSelectedItem(item)}
-                        showAirTime={true}
+                        showAirTime={true} // 总是显示播出时间
                       />
                     ))}
                   </div>

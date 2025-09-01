@@ -20,9 +20,18 @@ let mainWindow;
 
 // 创建主窗口
 function createWindow() {
+  // 获取屏幕尺寸以设置合适的窗口大小
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+  
+  // 设置窗口尺寸为屏幕的80%，但不超过最大限制
+  const windowWidth = Math.min(Math.floor(width * 0.8), 1400);
+  const windowHeight = Math.min(Math.floor(height * 0.8), 900);
+  
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    width: windowWidth,
+    height: windowHeight,
     minWidth: 1024,  // 降低最小宽度要求至1024px
     minHeight: 700,
     webPreferences: {
