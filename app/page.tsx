@@ -160,6 +160,9 @@ export default function HomePage() {
   const [recentError, setRecentError] = useState<string | null>(null);
   const [recentLastUpdated, setRecentLastUpdated] = useState<string | null>(null);
   const [recentItemsByRegion, setRecentItemsByRegion] = useState<Record<string, any[]>>({});
+  // 添加窗口大小状态
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // 布局状态管理 - 现在只使用侧边栏布局
   const currentLayout: LayoutType = 'sidebar'
@@ -605,6 +608,44 @@ export default function HomePage() {
       setIsClientReady(true)
     }
   }, [isClient])
+
+  // 监听Electron窗口大小变化和全屏状态变化
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+      const electronAPI = (window as any).electronAPI;
+      
+      // 监听窗口大小变化
+      const handleWindowResize = (size: { width: number; height: number }) => {
+        console.log('窗口大小变化:', size);
+        setWindowSize(size);
+      };
+      
+      // 监听全屏状态变化
+      const handleFullscreenChange = (isFullscreen: boolean) => {
+        console.log('全屏状态变化:', isFullscreen);
+        setIsFullscreen(isFullscreen);
+      };
+      
+      // 添加事件监听器
+      electronAPI.onWindowResize(handleWindowResize);
+      electronAPI.onFullscreenChange(handleFullscreenChange);
+      
+      // 清理事件监听器
+      return () => {
+        electronAPI.removeAllListeners('window-resize');
+        electronAPI.removeAllListeners('fullscreen-change');
+      };
+    }
+  }, []);
+
+  // 根据窗口大小调整布局
+  useEffect(() => {
+    if (windowSize.width > 0 && windowSize.height > 0) {
+      // 可以根据窗口大小调整某些UI元素
+      console.log(`当前窗口大小: ${windowSize.width} x ${windowSize.height}`);
+      console.log(`全屏状态: ${isFullscreen ? '是' : '否'}`);
+    }
+  }, [windowSize, isFullscreen]);
 
 
 

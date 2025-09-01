@@ -17,6 +17,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('menu-export-data', callback);
   },
   
+  // 监听窗口大小变化事件
+  onWindowResize: (callback) => {
+    ipcRenderer.on('window-resize', (event, size) => callback(size));
+  },
+  
+  // 监听全屏状态变化事件
+  onFullscreenChange: (callback) => {
+    ipcRenderer.on('fullscreen-change', (event, isFullscreen) => callback(isFullscreen));
+  },
+  
   // 移除监听器
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);

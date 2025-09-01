@@ -23,7 +23,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
-    minWidth: 1200,
+    minWidth: 1024,  // 降低最小宽度要求至1024px
     minHeight: 700,
     webPreferences: {
       nodeIntegration: false,
@@ -45,6 +45,29 @@ function createWindow() {
     // 性能优化选项
     useContentSize: true,
     enableLargerThanScreen: false
+  });
+
+  // 添加窗口大小变化监听
+  mainWindow.on('resize', () => {
+    if (mainWindow) {
+      const [width, height] = mainWindow.getSize();
+      console.log(`窗口大小变化: ${width} x ${height}`);
+      // 发送窗口大小变化事件到渲染进程
+      mainWindow.webContents.send('window-resize', { width, height });
+    }
+  });
+
+  // 添加全屏状态变化监听
+  mainWindow.on('enter-full-screen', () => {
+    console.log('进入全屏模式');
+    // 发送全屏状态变化事件到渲染进程
+    mainWindow.webContents.send('fullscreen-change', true);
+  });
+
+  mainWindow.on('leave-full-screen', () => {
+    console.log('退出全屏模式');
+    // 发送全屏状态变化事件到渲染进程
+    mainWindow.webContents.send('fullscreen-change', false);
   });
 
   // 设置 User-Agent 以标识为 Electron 应用
@@ -114,10 +137,17 @@ function createWindow() {
           // 查找静态HTML文件
           const appPath = app.getAppPath();
           const possiblePaths = [
+            path.join(appPath, '.next', 'standalone', 'index.html'),
             path.join(appPath, '.next', 'server', 'pages', 'index.html'),
             path.join(appPath, '.next', 'static', 'index.html'),
             path.join(appPath, 'out', 'index.html'),
-            path.join(appPath, 'public', 'index.html')
+            path.join(appPath, 'public', 'index.html'),
+            // 添加更多可能的路径
+            path.join(appPath, '.next', 'server', 'app', 'index.html'),
+            path.join(appPath, '.next', 'server', 'app', 'page.html'),
+            path.join(process.resourcesPath, '.next', 'server', 'pages', 'index.html'),
+            path.join(process.resourcesPath, '.next', 'standalone', 'index.html'),
+            path.join(process.resourcesPath, 'out', 'index.html')
           ];
 
           let htmlPath = null;
