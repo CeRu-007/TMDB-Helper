@@ -1290,7 +1290,7 @@ export default function HomePage() {
 
             {/* 内容展示区域 */}
             <div className="mt-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                 {getFilteredItems(filteredOngoingItems).map((item) => (
                   <MediaCard
                     key={item.id}
@@ -1329,7 +1329,7 @@ export default function HomePage() {
 
             {/* 内容展示区域 */}
             <div className="mt-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                 {getFilteredItems(filteredCompletedItems).map((item) => (
                   <MediaCard
                     key={item.id}
@@ -1465,7 +1465,7 @@ export default function HomePage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                   {upcomingItems
                     .filter(upcomingItem => 
                       !items.some(item => 
@@ -2209,7 +2209,7 @@ export default function HomePage() {
                 {/* 内容展示区域 */}
                 <div className="mt-6">
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                    {getFilteredItems(filteredCompletedItems).map((item) => (
+                    {getFilteredItems(filteredOngoingItems).map((item) => (
                       <MediaCard
                         key={item.id}
                         item={item}
@@ -2221,15 +2221,21 @@ export default function HomePage() {
 
                   {getFilteredItems(filteredOngoingItems).length === 0 && (
                     <div className="text-center py-16">
-                      <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
-                      <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                        {selectedCategory !== "all"
-                          ? `${categories.find(c => c.id === selectedCategory)?.name}分类暂无连载中词条`
-                          : selectedDayFilter === "recent"
-                            ? "暂无最近更新的词条"
-                            : `${WEEKDAYS[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]}暂无连载中词条`}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">添加新词条后会自动出现在这里</p>
+                      <div className="p-8 max-w-md mx-auto">
+                        <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
+                        <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                          {selectedCategory !== "all" 
+                            ? `${categories.find(c => c.id === selectedCategory)?.name}分类暂无词条` 
+                            : selectedDayFilter === "recent"
+                              ? "暂无最近更新的词条"
+                              : `${WEEKDAYS[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]}暂无词条`}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">添加新词条开始维护吧</p>
+                        <Button onClick={() => setShowAddDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+                          <Plus className="h-4 w-4 mr-2" />
+                          添加新词条
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2241,13 +2247,13 @@ export default function HomePage() {
 
                 {/* 内容展示区域 */}
                 <div className="mt-6">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                     {getFilteredItems(filteredCompletedItems).map((item) => (
                       <MediaCard
                         key={item.id}
                         item={item}
                         onClick={() => setSelectedItem(item)}
-                        showAirTime={true}
+                        showAirTime={true} // 总是显示播出时间
                       />
                     ))}
                   </div>
@@ -2256,8 +2262,8 @@ export default function HomePage() {
                     <div className="text-center py-16">
                       <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
                       <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                        {selectedCategory !== "all"
-                          ? `${categories.find(c => c.id === selectedCategory)?.name}分类暂无已完结词条`
+                        {selectedCategory !== "all" 
+                          ? `${categories.find(c => c.id === selectedCategory)?.name}分类暂无已完结词条` 
                           : selectedDayFilter === "recent"
                             ? "暂无最近完成的词条"
                             : `${WEEKDAYS[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]}暂无已完结词条`}

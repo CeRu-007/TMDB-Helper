@@ -151,7 +151,7 @@ export function ProgressSection({ homeState, currentLayout, categories }: Progre
 
         <TabsContent value="ongoing" className="space-y-4">
           {ongoingItems.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
               {ongoingItems.map((item) => (
                 <MediaCard
                   key={item.id}
@@ -172,7 +172,7 @@ export function ProgressSection({ homeState, currentLayout, categories }: Progre
 
         <TabsContent value="completed" className="space-y-4">
           {completedItems.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
               {completedItems.map((item) => (
                 <MediaCard
                   key={item.id}
