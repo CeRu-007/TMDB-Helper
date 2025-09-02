@@ -705,7 +705,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     setEpisodeChangeData(null)
   }
 
+  const [isSaving, setIsSaving] = useState(false)
+  
   const handleSaveEdit = async () => {
+    // 防止重复点击
+    if (isSaving) return
+    
+    setIsSaving(true)
+    
     const updatedItem = {
       ...editData,
       updatedAt: new Date().toISOString(),
@@ -714,8 +721,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       // 确保每日更新设置被保存
       isDailyUpdate: editData.isDailyUpdate
     }
-
-
 
     try {
       // 使用增强数据提供者进行乐观更新
@@ -726,6 +731,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     } catch (error) {
       console.error('更新项目失败:', error)
       // 错误处理已在增强数据提供者中完成
+      // 保持编辑状态，让用户可以重新尝试保存
+    } finally {
+      // 确保在操作完成后重置保存状态
+      setIsSaving(false)
     }
   }
 
@@ -1405,8 +1414,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                   className="h-8 w-8 transition-transform hover:scale-110"
                   title="保存"
                   onClick={handleSaveEdit}
+                  disabled={isSaving}
                 >
-                  <Save className="h-4 w-4" />
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                 </Button>
               )}
               {editing && (
