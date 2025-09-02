@@ -8,6 +8,8 @@ import { Grid, LayoutGrid } from "lucide-react"
 import { Toggle } from "@/components/ui/toggle"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { Separator } from "@/components/ui/separator"
+import { TableHelpTooltip } from "./table-help-tooltip"
+import { Trash2 } from "lucide-react"
 
 // 导入CSV数据类型
 import { CSVData as CSVDataType } from "@/lib/csv-processor"
@@ -32,6 +34,8 @@ export interface NewTMDBTableProps extends TMDBTableProps {
  * - 列宽可调整
  * - 列顺序可拖拽调整
  * - 大数据集虚拟滚动优化
+ * - 列操作和行操作功能
+ * - 改善的单元格编辑体验
  */
 export function NewTMDBTable(props: NewTMDBTableProps) {
   // 表格配置状态
@@ -42,9 +46,15 @@ export function NewTMDBTable(props: NewTMDBTableProps) {
     enableReorder: true,
     showRowNumbers: true,
     alternateRowColors: true,
+    showColumnOperations: true,
+    showRowOperations: true,
     // 行高设置为40px，与VS Code的CSV编辑器类似
     rowHeight: 40,
   });
+
+  // 选中行状态（从子组件传递上来）
+  const [selectedRowsCount, setSelectedRowsCount] = useState(0);
+  const [tableRef, setTableRef] = useState<any>(null);
   
   // 切换网格线显示
   const toggleGridLines = () => {
@@ -81,18 +91,81 @@ export function NewTMDBTable(props: NewTMDBTableProps) {
     // 启用列顺序调整
     enableColumnReordering: config.enableReorder,
     // 设置行高
-    rowHeight: config.fixedRowHeight ? config.rowHeight : undefined,
+    rowHeight: config.fixedRowHeight ? config.rowHeight : 40,
     // 传递数据变更回调
     onDataChange: props.onChange
   };
   
   return (
     <div className="flex flex-col h-full">
+      {/* 工具栏 */}
+      <div className="flex items-center justify-between p-2 border-b bg-muted/30">
+        <div className="flex items-center space-x-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Toggle
+                  pressed={config.showGridLines}
+                  onPressedChange={toggleGridLines}
+                  size="sm"
+                  aria-label="切换网格线"
+                >
+                  <Grid className="h-4 w-4" />
+                </Toggle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>切换网格线显示</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Toggle
+                  pressed={config.alternateRowColors}
+                  onPressedChange={toggleAlternateRowColors}
+                  size="sm"
+                  aria-label="切换交替行颜色"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Toggle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>切换交替行颜色</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <Separator orientation="vertical" className="h-6" />
+          
+          <span className="text-xs text-muted-foreground">
+            {props.data?.rows?.length || 0} 行 × {props.data?.headers?.length || 0} 列
+          </span>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          {props.isSaving && (
+            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+              <span>保存中...</span>
+            </div>
+          )}
+          
+          <TableHelpTooltip />
+        </div>
+      </div>
+
       {/* 表格区域 - 增强滚动容器 */}
       <div className="flex-1 overflow-hidden csv-table-wrapper">
         {/* 表格主体内容 */}
         <div className="h-full w-full overflow-hidden">
-          <BaseTMDBTable {...enhancedProps} />
+          <BaseTMDBTable 
+            {...enhancedProps} 
+            showRowNumbers={config.showRowNumbers}
+            showColumnOperations={config.showColumnOperations}
+            showRowOperations={config.showRowOperations}
+          />
         </div>
         
         {/* 滚动提示器 - 视觉反馈区域 */}

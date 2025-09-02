@@ -2457,6 +2457,172 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         background-color: var(--accent-muted, #e5e5e5);
         color: var(--accent-foreground, #18181b);
       }
+
+      /* 增强表格样式 */
+      .new-tmdb-table.grid-lines table {
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+
+      .new-tmdb-table.grid-lines th,
+      .new-tmdb-table.grid-lines td {
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .new-tmdb-table.grid-lines th:last-child,
+      .new-tmdb-table.grid-lines td:last-child {
+        border-right: none;
+      }
+
+      .new-tmdb-table.grid-lines tr:last-child td {
+        border-bottom: none;
+      }
+
+      .new-tmdb-table.alternate-rows tbody tr:nth-child(even) {
+        background-color: var(--muted/50);
+      }
+
+      .new-tmdb-table.fixed-row-height tbody tr {
+        height: 40px;
+      }
+
+      /* 优化表格滚动 */
+      .csv-table-wrapper {
+        position: relative;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+
+      .csv-table-wrapper::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      .csv-table-wrapper::-webkit-scrollbar-track {
+        background: var(--muted/30);
+        border-radius: 4px;
+      }
+
+      .csv-table-wrapper::-webkit-scrollbar-thumb {
+        background: var(--muted-foreground/30);
+        border-radius: 4px;
+      }
+
+      .csv-table-wrapper::-webkit-scrollbar-thumb:hover {
+        background: var(--muted-foreground/50);
+      }
+
+      /* 单元格编辑优化 */
+      .group\/cell:hover {
+        background-color: var(--accent/10);
+      }
+
+      .group\/cell input {
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      /* 行号列样式 */
+      .tmdb-table th:first-child,
+      .tmdb-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background-color: var(--background);
+        border-right: 2px solid var(--border);
+      }
+
+      /* 列头操作按钮样式 */
+      .group:hover .group-hover\\:opacity-100 {
+        opacity: 1;
+      }
+
+      /* 行操作按钮样式 */
+      .group:hover .group-hover\\:opacity-100 {
+        opacity: 1;
+      }
+
+      /* 表格工具栏样式 */
+      .csv-table-toolbar {
+        background: var(--muted/30);
+        border-bottom: 1px solid var(--border);
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      /* 表格状态信息样式 */
+      .csv-table-status {
+        font-size: 12px;
+        color: var(--muted-foreground);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* 改善单元格编辑体验 */
+      .csv-cell-editor {
+        width: 100%;
+        height: 100%;
+        padding: 4px 8px;
+        border: 2px solid var(--primary);
+        border-radius: 4px;
+        background: var(--background);
+        font-size: 14px;
+        line-height: 1.4;
+        outline: none;
+        box-shadow: 0 0 0 2px var(--primary/20);
+      }
+
+      /* 单元格悬停效果 */
+      .csv-cell:hover {
+        background-color: var(--accent/10);
+      }
+
+      .csv-cell.selected {
+        background-color: var(--primary/20);
+      }
+
+      .csv-cell.active {
+        outline: 2px solid var(--primary);
+        outline-offset: -2px;
+      }
+
+      /* 行列操作按钮动画 */
+      .csv-operation-btn {
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+      }
+
+      .group:hover .csv-operation-btn {
+        opacity: 1;
+      }
+
+      /* 表格加载状态 */
+      .csv-table-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        color: var(--muted-foreground);
+      }
+
+      /* 响应式表格 */
+      @media (max-width: 768px) {
+        .csv-table-toolbar {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 8px;
+        }
+        
+        .csv-table-status {
+          justify-content: center;
+        }
+      }
     `;
     document.head.appendChild(globalStyle);
 

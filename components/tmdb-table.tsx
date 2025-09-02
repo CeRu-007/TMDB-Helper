@@ -3,8 +3,29 @@
 import React, { useState, useEffect, useRef, useCallback } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import TableContextMenu from "./table-context-menu"
+import { 
+  Plus, 
+  Minus, 
+  ChevronDown, 
+  MoreHorizontal, 
+  ArrowUp, 
+  ArrowDown, 
+  ArrowLeft, 
+  ArrowRight,
+  Copy,
+  Trash2,
+  Edit3
+} from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 // 导入CSV数据类型
 export interface CSVData {
@@ -22,6 +43,9 @@ export interface TMDBTableProps {
   onCellChange?: (row: number, col: number, value: string) => void
   onSelectionChange?: (selection: { row: number, col: number }[]) => void
   onDataChange?: (newData: CSVData) => void
+  showRowNumbers?: boolean
+  showColumnOperations?: boolean
+  showRowOperations?: boolean
 }
 
 // 剪贴板数据接口
@@ -69,7 +93,10 @@ export function TMDBTable({
   rowHeight,
   onCellChange,
   onSelectionChange,
-  onDataChange
+  onDataChange,
+  showRowNumbers = true,
+  showColumnOperations = true,
+  showRowOperations = true
 }: TMDBTableProps) {
   // 列宽状态
   const [columnWidths, setColumnWidths] = useState<number[]>([])
@@ -117,6 +144,10 @@ export function TMDBTable({
   const LONG_PRESS_DELAY = 500
   // 记录初始点击的单元格位置
   const [initialClickCell, setInitialClickCell] = useState<{ row: number, col: number } | null>(null)
+  // 行选择状态
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  // 全选状态
+  const [isAllRowsSelected, setIsAllRowsSelected] = useState(false)
   
   // 当外部数据变化时更新本地数据
   useEffect(() => {
@@ -175,13 +206,14 @@ export function TMDBTable({
         
         // 获取最近的历史记录
         const prevData = history[0];
-        
-        // 从历史记录中移除该记录并恢复数据
-        setHistory(prev => prev.slice(1));
-        setLocalData(prevData);
-        onDataChange?.(prevData);
-        
-        console.log('撤销完成，恢复到历史记录:', prevData);
+        if (prevData) {
+          // 从历史记录中移除该记录并恢复数据
+          setHistory(prev => prev.slice(1));
+          setLocalData(prevData);
+          onDataChange?.(prevData);
+          
+          console.log('撤销完成，恢复到历史记录:', prevData);
+        }
       }
       
       // 全选 (Ctrl+A)
@@ -200,6 +232,36 @@ export function TMDBTable({
       if (e.key === 'Enter' && activeCell && !isEditing) {
         e.preventDefault()
         startEditing(activeCell.row, activeCell.col)
+      }
+      
+      // 按F2键开始编辑
+      if (e.key === 'F2' && activeCell && !isEditing) {
+        e.preventDefault()
+        startEditing(activeCell.row, activeCell.col)
+      }
+      
+      // 插入行快捷键 (Ctrl+Shift+Plus)
+      if (e.key === '+' && e.ctrlKey && e.shiftKey && activeCell) {
+        e.preventDefault()
+        insertRow(activeCell.row, 'after')
+      }
+      
+      // 插入列快捷键 (Ctrl+Alt+Plus)
+      if (e.key === '+' && e.ctrlKey && e.altKey && activeCell) {
+        e.preventDefault()
+        insertColumn(activeCell.col, 'after')
+      }
+      
+      // 删除行快捷键 (Ctrl+Shift+Minus)
+      if (e.key === '-' && e.ctrlKey && e.shiftKey && activeCell && localData.rows.length > 1) {
+        e.preventDefault()
+        deleteRow(activeCell.row)
+      }
+      
+      // 删除列快捷键 (Ctrl+Alt+Minus)
+      if (e.key === '-' && e.ctrlKey && e.altKey && activeCell && localData.headers.length > 1) {
+        e.preventDefault()
+        deleteColumn(activeCell.col)
       }
       
       // 按Escape键取消选择或框选模式
@@ -287,20 +349,22 @@ export function TMDBTable({
     else if (event.shiftKey && selectedCells.length > 0) {
       // 传统的Shift+点击选择范围
       const lastCell = selectedCells[selectedCells.length - 1]
-      const startRow = Math.min(lastCell.row, row)
-      const endRow = Math.max(lastCell.row, row)
-      const startCol = Math.min(lastCell.col, col)
-      const endCol = Math.max(lastCell.col, col)
-      
-      const newSelection = []
-      for (let r = startRow; r <= endRow; r++) {
-        for (let c = startCol; c <= endCol; c++) {
-          newSelection.push({ row: r, col: c })
+      if (lastCell) {
+        const startRow = Math.min(lastCell.row, row)
+        const endRow = Math.max(lastCell.row, row)
+        const startCol = Math.min(lastCell.col, col)
+        const endCol = Math.max(lastCell.col, col)
+        
+        const newSelection = []
+        for (let r = startRow; r <= endRow; r++) {
+          for (let c = startCol; c <= endCol; c++) {
+            newSelection.push({ row: r, col: c })
+          }
         }
+        
+        setSelectedCells(newSelection)
+        onSelectionChange?.(newSelection)
       }
-      
-      setSelectedCells(newSelection)
-      onSelectionChange?.(newSelection)
     }
     // 普通点击，选择单个单元格
     else {
@@ -309,7 +373,9 @@ export function TMDBTable({
       onSelectionChange?.(newSelection)
       
       // 记录初始点击的单元格位置
-      setInitialClickCell(newSelection[0])
+      if (newSelection[0]) {
+        setInitialClickCell(newSelection[0])
+      }
       
       // 使用长按定时器启用框选模式
       longPressTimerRef.current = setTimeout(() => {
@@ -464,19 +530,21 @@ export function TMDBTable({
   
   // 完成编辑
   const finishEditing = () => {
-    if (editCell) {
+    if (editCell && editCell.row < localData.rows.length && editCell.col < localData.headers.length) {
       // 保存当前状态到历史记录
       saveToHistory(localData);
       
       // 更新数据
       const newData = { ...localData }
       newData.rows = [...newData.rows]
-      newData.rows[editCell.row] = [...newData.rows[editCell.row]]
-      newData.rows[editCell.row][editCell.col] = editCell.value
-      
-      setLocalData(newData)
-      onCellChange?.(editCell.row, editCell.col, editCell.value)
-      onDataChange?.(newData)
+      if (newData.rows[editCell.row]) {
+        newData.rows[editCell.row] = [...newData.rows[editCell.row]]
+        newData.rows[editCell.row][editCell.col] = editCell.value
+        
+        setLocalData(newData)
+        onCellChange?.(editCell.row, editCell.col, editCell.value)
+        onDataChange?.(newData)
+      }
     }
     
     setIsEditing(false)
@@ -504,9 +572,40 @@ export function TMDBTable({
     if (e.key === 'Enter') {
       e.preventDefault()
       finishEditing()
+      
+      // Enter后移动到下一行同一列
+      if (activeCell && activeCell.row < localData.rows.length - 1) {
+        const nextCell = { row: activeCell.row + 1, col: activeCell.col }
+        setActiveCell(nextCell)
+        setSelectedCells([nextCell])
+        onSelectionChange?.([nextCell])
+      }
     } else if (e.key === 'Escape') {
       e.preventDefault()
       cancelEditing()
+    } else if (e.key === 'Tab') {
+      e.preventDefault()
+      finishEditing()
+      
+      // Tab键移动到下一列
+      if (activeCell) {
+        let nextRow = activeCell.row
+        let nextCol = activeCell.col + 1
+        
+        // 如果到了行末，移动到下一行的第一列
+        if (nextCol >= localData.headers.length) {
+          nextCol = 0
+          nextRow = activeCell.row + 1
+        }
+        
+        // 如果还在表格范围内
+        if (nextRow < localData.rows.length) {
+          const nextCell = { row: nextRow, col: nextCol }
+          setActiveCell(nextCell)
+          setSelectedCells([nextCell])
+          onSelectionChange?.([nextCell])
+        }
+      }
     }
   }
   
@@ -850,6 +949,240 @@ export function TMDBTable({
       return newHistory.slice(0, MAX_HISTORY_SIZE);
     });
   };
+
+  // 列操作函数
+  const insertColumn = (index: number, position: 'before' | 'after' = 'after') => {
+    saveToHistory(localData);
+    
+    const insertIndex = position === 'before' ? index : index + 1;
+    const newData = { ...localData };
+    
+    // 插入新列头
+    newData.headers = [
+      ...newData.headers.slice(0, insertIndex),
+      `新列${insertIndex + 1}`,
+      ...newData.headers.slice(insertIndex)
+    ];
+    
+    // 为每行插入新的空单元格
+    newData.rows = newData.rows.map(row => [
+      ...row.slice(0, insertIndex),
+      '',
+      ...row.slice(insertIndex)
+    ]);
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+  };
+
+  const deleteColumn = (index: number) => {
+    if (localData.headers.length <= 1) return; // 至少保留一列
+    
+    saveToHistory(localData);
+    
+    const newData = { ...localData };
+    
+    // 删除列头
+    newData.headers = newData.headers.filter((_, i) => i !== index);
+    
+    // 删除每行对应的单元格
+    newData.rows = newData.rows.map(row => row.filter((_, i) => i !== index));
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+    
+    // 清除选择状态
+    setSelectedCells([]);
+    setActiveCell(null);
+  };
+
+  const duplicateColumn = (index: number) => {
+    saveToHistory(localData);
+    
+    const newData = { ...localData };
+    
+    // 复制列头
+    const originalHeader = newData.headers[index];
+    newData.headers = [
+      ...newData.headers.slice(0, index + 1),
+      `${originalHeader}_副本`,
+      ...newData.headers.slice(index + 1)
+    ];
+    
+    // 复制每行对应的单元格
+    newData.rows = newData.rows.map(row => [
+      ...row.slice(0, index + 1),
+      row[index] || '',
+      ...row.slice(index + 1)
+    ]);
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+  };
+
+  const moveColumn = (fromIndex: number, direction: 'left' | 'right') => {
+    const toIndex = direction === 'left' ? fromIndex - 1 : fromIndex + 1;
+    
+    if (toIndex < 0 || toIndex >= localData.headers.length) return;
+    
+    saveToHistory(localData);
+    
+    const newData = { ...localData };
+    
+    // 交换列头
+    [newData.headers[fromIndex], newData.headers[toIndex]] = 
+    [newData.headers[toIndex], newData.headers[fromIndex]];
+    
+    // 交换每行对应的单元格
+    newData.rows = newData.rows.map(row => {
+      const newRow = [...row];
+      [newRow[fromIndex], newRow[toIndex]] = [newRow[toIndex], newRow[fromIndex]];
+      return newRow;
+    });
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+  };
+
+  // 行操作函数
+  const insertRow = (index: number, position: 'before' | 'after' = 'after') => {
+    saveToHistory(localData);
+    
+    const insertIndex = position === 'before' ? index : index + 1;
+    const newData = { ...localData };
+    
+    // 创建新的空行
+    const newRow = new Array(newData.headers.length).fill('');
+    
+    newData.rows = [
+      ...newData.rows.slice(0, insertIndex),
+      newRow,
+      ...newData.rows.slice(insertIndex)
+    ];
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+  };
+
+  const deleteRow = (index: number) => {
+    if (localData.rows.length <= 1) return; // 至少保留一行
+    
+    saveToHistory(localData);
+    
+    const newData = { ...localData };
+    newData.rows = newData.rows.filter((_, i) => i !== index);
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+    
+    // 清除选择状态
+    setSelectedCells([]);
+    setActiveCell(null);
+  };
+
+  const duplicateRow = (index: number) => {
+    saveToHistory(localData);
+    
+    const newData = { ...localData };
+    const rowToDuplicate = [...newData.rows[index]];
+    
+    newData.rows = [
+      ...newData.rows.slice(0, index + 1),
+      rowToDuplicate,
+      ...newData.rows.slice(index + 1)
+    ];
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+  };
+
+  const moveRow = (fromIndex: number, direction: 'up' | 'down') => {
+    const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+    
+    if (toIndex < 0 || toIndex >= localData.rows.length) return;
+    
+    saveToHistory(localData);
+    
+    const newData = { ...localData };
+    [newData.rows[fromIndex], newData.rows[toIndex]] = 
+    [newData.rows[toIndex], newData.rows[fromIndex]];
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+  };
+
+  // 行选择相关函数
+  const handleRowSelect = (rowIndex: number, checked: boolean) => {
+    const newSelectedRows = new Set(selectedRows);
+    if (checked) {
+      newSelectedRows.add(rowIndex);
+    } else {
+      newSelectedRows.delete(rowIndex);
+    }
+    setSelectedRows(newSelectedRows);
+    
+    // 更新全选状态
+    setIsAllRowsSelected(newSelectedRows.size === localData.rows.length);
+  };
+
+  const handleSelectAllRows = (checked: boolean) => {
+    if (checked) {
+      const allRows = new Set(Array.from({ length: localData.rows.length }, (_, i) => i));
+      setSelectedRows(allRows);
+    } else {
+      setSelectedRows(new Set());
+    }
+    setIsAllRowsSelected(checked);
+  };
+
+  const deleteSelectedRows = () => {
+    if (selectedRows.size === 0) return;
+    if (localData.rows.length - selectedRows.size < 1) {
+      // 至少保留一行
+      return;
+    }
+    
+    saveToHistory(localData);
+    
+    const newData = { ...localData };
+    const sortedIndices = Array.from(selectedRows).sort((a, b) => b - a); // 从大到小排序，避免索引问题
+    
+    sortedIndices.forEach(index => {
+      newData.rows.splice(index, 1);
+    });
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+    
+    // 清除选择状态
+    setSelectedRows(new Set());
+    setIsAllRowsSelected(false);
+    setSelectedCells([]);
+    setActiveCell(null);
+  };
+
+  const duplicateSelectedRows = () => {
+    if (selectedRows.size === 0) return;
+    
+    saveToHistory(localData);
+    
+    const newData = { ...localData };
+    const sortedIndices = Array.from(selectedRows).sort((a, b) => a - b); // 从小到大排序
+    
+    // 从后往前插入，避免索引问题
+    for (let i = sortedIndices.length - 1; i >= 0; i--) {
+      const index = sortedIndices[i];
+      const rowToDuplicate = [...newData.rows[index]];
+      newData.rows.splice(index + 1, 0, rowToDuplicate);
+    }
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+    
+    // 清除选择状态
+    setSelectedRows(new Set());
+    setIsAllRowsSelected(false);
+  };
   
   // 如果没有数据，显示空表格
   if (!localData || !localData.headers || !localData.rows) {
@@ -869,6 +1202,12 @@ export function TMDBTable({
       onCut={handleCut}
         onPaste={handlePaste}
       onDelete={handleDeleteSelectedCells}
+      onInsertRow={insertRow}
+      onDeleteRow={deleteRow}
+      onInsertColumn={insertColumn}
+      onDeleteColumn={deleteColumn}
+      onDuplicateRow={duplicateRow}
+      onDuplicateColumn={duplicateColumn}
     >
       <div 
         className={cn("tmdb-table", className)} 
@@ -878,6 +1217,34 @@ export function TMDBTable({
         onSelect={(e) => e.preventDefault()}
         onMouseDown={handleMouseDown}
       >
+        {/* 批量操作工具栏 */}
+        {selectedRows.size > 0 && (
+          <div className="mb-2 bg-background border rounded-lg shadow-sm p-2 flex items-center space-x-2">
+            <span className="text-xs text-muted-foreground">
+              已选择 {selectedRows.size} 行
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={duplicateSelectedRows}
+              className="h-7 text-xs"
+            >
+              <Copy className="h-3 w-3 mr-1" />
+              复制
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={deleteSelectedRows}
+              disabled={localData.rows.length - selectedRows.size < 1}
+              className="h-7 text-xs"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              删除
+            </Button>
+          </div>
+        )}
+
         {/* 测试按钮，仅用于开发调试 */}
         {process.env.NODE_ENV === 'development' && (
           <div className="absolute top-2 right-2 z-50">
@@ -914,6 +1281,21 @@ export function TMDBTable({
             <Table>
             <TableHeader>
                 <TableRow>
+                  {/* 行号列头 */}
+                  {showRowNumbers && (
+                    <TableHead className="w-16 text-center bg-muted/50 sticky left-0 z-10">
+                      <div className="flex items-center justify-center space-x-1">
+                        <input
+                          type="checkbox"
+                          checked={isAllRowsSelected}
+                          onChange={(e) => handleSelectAllRows(e.target.checked)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-xs">#</span>
+                      </div>
+                    </TableHead>
+                  )}
+                  
                   {localData.headers.map((header, index) => (
                     <TableHead 
                       key={index}
@@ -922,8 +1304,64 @@ export function TMDBTable({
                         minWidth: columnWidths[index] 
                       }}
                       data-column={header.toLowerCase().replace(/\s+/g, '_')}
+                      className="relative group"
                     >
-                      {header}
+                      <div className="flex items-center justify-between">
+                        <span className="truncate">{header}</span>
+                        
+                        {/* 列操作按钮 */}
+                        {showColumnOperations && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => insertColumn(index, 'before')}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                在左侧插入列
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => insertColumn(index, 'after')}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                在右侧插入列
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => duplicateColumn(index)}>
+                                <Copy className="mr-2 h-4 w-4" />
+                                复制列
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => moveColumn(index, 'left')}
+                                disabled={index === 0}
+                              >
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                左移
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => moveColumn(index, 'right')}
+                                disabled={index === localData.headers.length - 1}
+                              >
+                                <ArrowRight className="mr-2 h-4 w-4" />
+                                右移
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => deleteColumn(index)}
+                                disabled={localData.headers.length <= 1}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                删除列
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </TableHead>
               ))}
                 </TableRow>
@@ -933,7 +1371,76 @@ export function TMDBTable({
                           <TableRow
                     key={rowIndex}
                     style={{ height: rowHeight }}
+                    className="group"
                   >
+                    {/* 行号和行操作 */}
+                    {showRowNumbers && (
+                      <TableCell className="w-16 text-center bg-muted/50 sticky left-0 z-10 border-r">
+                        <div className="flex items-center justify-center space-x-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedRows.has(rowIndex)}
+                            onChange={(e) => handleRowSelect(rowIndex, e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-xs text-muted-foreground">{rowIndex + 1}</span>
+                          
+                          {/* 行操作按钮 */}
+                          {showRowOperations && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <MoreHorizontal className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" className="w-48">
+                                <DropdownMenuItem onClick={() => insertRow(rowIndex, 'before')}>
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  在上方插入行
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => insertRow(rowIndex, 'after')}>
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  在下方插入行
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => duplicateRow(rowIndex)}>
+                                  <Copy className="mr-2 h-4 w-4" />
+                                  复制行
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => moveRow(rowIndex, 'up')}
+                                  disabled={rowIndex === 0}
+                                >
+                                  <ArrowUp className="mr-2 h-4 w-4" />
+                                  上移
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => moveRow(rowIndex, 'down')}
+                                  disabled={rowIndex === localData.rows.length - 1}
+                                >
+                                  <ArrowDown className="mr-2 h-4 w-4" />
+                                  下移
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => deleteRow(rowIndex)}
+                                  disabled={localData.rows.length <= 1}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  删除行
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
+                    
                     {row.map((cell, colIndex) => (
                               <TableCell 
                         key={colIndex}
@@ -943,7 +1450,7 @@ export function TMDBTable({
                           isDragging && canStartDragging && dragStart?.row === rowIndex && dragStart?.col === colIndex && "cursor-crosshair",
                           isShiftSelecting && "cursor-crosshair",
                           canStartDragging && isDragging && "cursor-crosshair",
-                          "relative select-none" // 添加select-none类以防止文本选择
+                          "relative select-none group/cell" // 添加select-none类以防止文本选择
                         )}
                         onClick={(e) => handleCellClick(rowIndex, colIndex, e)}
                         onDoubleClick={(e) => handleCellDoubleClick(rowIndex, colIndex, e)}
@@ -951,18 +1458,34 @@ export function TMDBTable({
                         onMouseDown={(e) => handleCellMouseDown(rowIndex, colIndex, e)}
                         data-column={localData.headers[colIndex].toLowerCase().replace(/\s+/g, '_')}
                       >
-                        {isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? (
-                          <input
-                            ref={editInputRef}
-                            className="w-full h-full p-0 border-0 focus:ring-0 focus:outline-none bg-transparent"
-                            value={editCell.value}
-                            onChange={handleEditInputChange}
-                            onKeyDown={handleEditInputKeyDown}
-                            onBlur={finishEditing}
-                          />
-                        ) : (
-                          cell
-                      )}
+                        <div className="relative w-full h-full">
+                          {isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? (
+                            <input
+                              ref={editInputRef}
+                              className="w-full h-full p-1 border border-primary rounded focus:ring-2 focus:ring-primary/50 focus:outline-none bg-background"
+                              value={editCell.value}
+                              onChange={handleEditInputChange}
+                              onKeyDown={handleEditInputKeyDown}
+                              onBlur={finishEditing}
+                            />
+                          ) : (
+                            <>
+                              <div className="truncate pr-6">{cell}</div>
+                              {/* 单元格编辑按钮 */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 p-0 opacity-0 group-hover/cell:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditing(rowIndex, colIndex);
+                                }}
+                              >
+                                <Edit3 className="h-3 w-3" />
+                              </Button>
+                            </>
+                        )}
+                        </div>
                   </TableCell>
                   ))}
                 </TableRow>

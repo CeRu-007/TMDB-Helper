@@ -20,7 +20,14 @@ import {
   ClipboardPaste,
   ArrowDownUp,
   CalendarDays,
-  Timer
+  Timer,
+  Plus,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Columns,
+  Rows
 } from "lucide-react"
 import DateIntervalDialog from "./date-interval-dialog"
 import MinutesDialog from "./minutes-dialog"
@@ -36,6 +43,12 @@ export interface TableContextMenuProps {
   onCut: () => void
   onPaste: () => void
   onDelete: () => void
+  onInsertRow?: (index: number, position: 'before' | 'after') => void
+  onDeleteRow?: (index: number) => void
+  onInsertColumn?: (index: number, position: 'before' | 'after') => void
+  onDeleteColumn?: (index: number) => void
+  onDuplicateRow?: (index: number) => void
+  onDuplicateColumn?: (index: number) => void
 }
 
 export default function TableContextMenu({
@@ -46,7 +59,13 @@ export default function TableContextMenu({
   onCopy,
   onCut,
   onPaste,
-  onDelete
+  onDelete,
+  onInsertRow,
+  onDeleteRow,
+  onInsertColumn,
+  onDeleteColumn,
+  onDuplicateRow,
+  onDuplicateColumn
 }: TableContextMenuProps) {
   // 日期间隔对话框状态
   const [dateDialogOpen, setDateDialogOpen] = useState(false)
@@ -61,10 +80,24 @@ export default function TableContextMenu({
     return selectedCells.every(cell => cell.col === firstCol)
   }
   
+  // 检查选中的单元格是否在同一行
+  const isSameRow = () => {
+    if (selectedCells.length <= 1) return false
+    
+    const firstRow = selectedCells[0].row
+    return selectedCells.every(cell => cell.row === firstRow)
+  }
+  
   // 获取选中单元格的列索引
   const getSelectedColumn = () => {
     if (!isSameColumn()) return -1
     return selectedCells[0].col
+  }
+  
+  // 获取选中单元格的行索引
+  const getSelectedRow = () => {
+    if (!isSameRow()) return -1
+    return selectedCells[0].row
   }
   
   // 获取选中单元格的值
@@ -171,6 +204,88 @@ export default function TableContextMenu({
             <span>删除</span>
           </ContextMenuItem>
           
+          <ContextMenuSeparator />
+          
+          {/* 行操作 */}
+          <ContextMenuSub>
+            <ContextMenuSubTrigger disabled={selectedCells.length === 0}>
+              <Rows className="mr-2 h-4 w-4" />
+              <span>行操作</span>
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent className="w-48">
+              <ContextMenuItem
+                onClick={() => onInsertRow?.(getSelectedRow(), 'before')}
+                disabled={selectedCells.length === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                在上方插入行
+              </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => onInsertRow?.(getSelectedRow(), 'after')}
+                disabled={selectedCells.length === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                在下方插入行
+              </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => onDuplicateRow?.(getSelectedRow())}
+                disabled={!isSameRow()}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                复制行
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              <ContextMenuItem
+                onClick={() => onDeleteRow?.(getSelectedRow())}
+                disabled={!isSameRow() || data.rows.length <= 1}
+                className="text-destructive"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                删除行
+              </ContextMenuItem>
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+
+          {/* 列操作 */}
+          <ContextMenuSub>
+            <ContextMenuSubTrigger disabled={selectedCells.length === 0}>
+              <Columns className="mr-2 h-4 w-4" />
+              <span>列操作</span>
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent className="w-48">
+              <ContextMenuItem
+                onClick={() => onInsertColumn?.(getSelectedColumn(), 'before')}
+                disabled={selectedCells.length === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                在左侧插入列
+              </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => onInsertColumn?.(getSelectedColumn(), 'after')}
+                disabled={selectedCells.length === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                在右侧插入列
+              </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => onDuplicateColumn?.(getSelectedColumn())}
+                disabled={!isSameColumn()}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                复制列
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              <ContextMenuItem
+                onClick={() => onDeleteColumn?.(getSelectedColumn())}
+                disabled={!isSameColumn() || data.headers.length <= 1}
+                className="text-destructive"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                删除列
+              </ContextMenuItem>
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+
           <ContextMenuSeparator />
           
           {/* 日期操作 */}
