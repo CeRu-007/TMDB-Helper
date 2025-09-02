@@ -1,8 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils'
 import { enhancedImageCache } from '@/lib/enhanced-image-cache'
+
+// 添加版本标识，帮助追踪更新
+const TMDB_IMAGE_DIRECT_VERSION = '1.0.0';
 
 interface BackgroundImageProps {
   src: string | undefined
@@ -21,14 +24,9 @@ interface BackgroundImageProps {
 // 使用增强的图片缓存管理器
 const imageCache = enhancedImageCache;
 
-// 从URL中提取缓存键
+// 从原始URL中提取缓存键
 function getCacheKey(src: string): string {
-  if (src.includes('/api/tmdb-image')) {
-    // 对于代理URL，使用路径作为缓存键
-    const urlParams = new URLSearchParams(src.split('?')[1] || '');
-    const path = urlParams.get('path') || '';
-    return `tmdb:${path}`;
-  } else if (src.includes('image.tmdb.org')) {
+  if (src.includes('image.tmdb.org')) {
     // 对于直接TMDB URL，提取路径
     const pathMatch = src.match(/\/t\/p\/[^/]+(.+)$/);
     return pathMatch ? `tmdb:${pathMatch[1]}` : src;
@@ -82,56 +80,35 @@ export function BackgroundImage({
       return;
     }
 
-    // 检查是否是TMDB代理图片URL
-    if (src.includes('/api/tmdb-image')) {
-      // 解析代理URL中的路径参数
-      const urlParams = new URLSearchParams(src.split('?')[1] || '');
-      const path = urlParams.get('path') || '';
+    // 处理TMDB图片URL
+    if (src.includes('image.tmdb.org')) {
+      // 分解URL提取基础路径和文件路径
+      const match = src.match(/(.+\/t\/p\/)[^/]+(.+)/);
+      if (match) {
+        const baseUrl = match[1]; // 例如 https://image.tmdb.org/t/p/
+        let path = match[2];    // 例如 /abc123.jpg
+        
+        // 根据屏幕宽度选择合适的尺寸
+        const width = window.innerWidth
+        let size = 'w1280'
 
-      // 只有在强制刷新时才添加时间戳参数
-      let finalPath = path;
-      if (shouldForceRefresh && !path.includes('&t=')) {
-        finalPath = `${path}&t=${Date.now()}`;
+        if (width <= 640) {
+          size = 'w780'
+        } else if (width <= 1600) {
+          size = 'w1280'
+        } else {
+          size = 'original'
+        }
+
+        // 只有在强制刷新时才添加时间戳参数
+        if (shouldForceRefresh && !path.includes('?t=')) {
+          path = `${path}?t=${Date.now()}`
+        }
+
+        const fullSrc = `${baseUrl}${size}${path}`;
+        setImageSrc(fullSrc);
+        return;
       }
-
-      // 根据屏幕宽度选择合适的尺寸
-      const width = window.innerWidth
-      let size = 'w1280'
-
-      if (width <= 640) {
-        size = 'w780'
-      } else if (width <= 1600) {
-        size = 'w1280'
-      } else {
-        size = 'original'
-      }
-
-      const fullSrc = `/api/tmdb-image?size=${size}&path=${encodeURIComponent(finalPath)}`;
-      setImageSrc(fullSrc);
-    } else if (src.includes('image.tmdb.org')) {
-      // 处理旧的直接TMDB URL（向后兼容）
-      const baseUrl = src.split('/w1280').shift() || 'https://image.tmdb.org/t/p'
-      let path = src.split('/w1280').pop() || ''
-
-      // 只有在强制刷新时才添加时间戳参数
-      if (shouldForceRefresh && !path.includes('?t=')) {
-        path = `${path}?t=${Date.now()}`
-      }
-
-      // 根据屏幕宽度选择合适的尺寸
-      const width = window.innerWidth
-      let size = 'w1280'
-
-      if (width <= 640) {
-        size = 'w780'
-      } else if (width <= 1600) {
-        size = 'w1280'
-      } else {
-        size = 'original'
-      }
-
-      const fullSrc = `${baseUrl}/${size}${path}`;
-      setImageSrc(fullSrc);
     } else {
       // 如果强制刷新非TMDB图片，添加时间戳参数
       let finalSrc = src;

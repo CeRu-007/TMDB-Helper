@@ -21,13 +21,8 @@ const imageCache = enhancedImageCache;
 
 // 从URL中提取缓存键
 function getCacheKey(src: string): string {
-  if (src.includes('/api/tmdb-image')) {
-    // 对于代理URL，使用路径作为缓存键
-    const urlParams = new URLSearchParams(src.split('?')[1] || '');
-    const path = urlParams.get('path') || '';
-    return `tmdb:${path}`;
-  } else if (src.includes('image.tmdb.org')) {
-    // 对于直接TMDB URL，提取路径
+  if (src.includes('image.tmdb.org')) {
+    // 对于TMDB URL，提取路径
     const pathMatch = src.match(/\/t\/p\/[^/]+(.+)$/);
     return pathMatch ? `tmdb:${pathMatch[1]}` : src;
   }

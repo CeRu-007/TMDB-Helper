@@ -97,12 +97,12 @@ export type LogoSize = 'w45' | 'w92' | 'w154' | 'w185' | 'w300' | 'w500' | 'orig
 export class TMDBService {
   // 使用备用域名以解决某些网络环境的连接问题
   private static readonly BASE_URL = "https://api.tmdb.org/3"
-  // 使用代理URL以解决VPN环境下的图片加载问题
-  private static readonly IMAGE_BASE_URL = "/api/tmdb-image?size=w500&path="
-  private static readonly BACKDROP_BASE_URL = "/api/tmdb-image?size=w1280&path="
+  // 直接使用TMDB的原始URL，不再使用代理
+  private static readonly IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
+  private static readonly BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
   
-  private static readonly LOGO_BASE_URL = "/api/tmdb-image?size=w300&path="  // 添加标志基础URL
-  private static readonly NETWORK_LOGO_BASE_URL = "/api/tmdb-image?size=w300&path=" // 网络Logo基础URL
+  private static readonly LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300"  // 添加标志基础URL
+  private static readonly NETWORK_LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300" // 网络Logo基础URL
   private static readonly CACHE_PREFIX = "tmdb_backdrop_"
   private static readonly LOGO_CACHE_PREFIX = "tmdb_logo_"  // 标志缓存前缀
   private static readonly NETWORK_LOGO_CACHE_PREFIX = "tmdb_network_logo_"  // 网络标志缓存前缀
@@ -622,7 +622,22 @@ export class TMDBService {
         sizeValue = size as BackdropSize;
     }
     
-    const baseUrl = `https://image.tmdb.org/t/p/${sizeValue}${backdropPath}`;
+    // 使用类中定义的基础URL
+    let baseUrl;
+    switch (sizeValue) {
+      case 'w300':
+      case 'w780':
+        baseUrl = `${this.IMAGE_BASE_URL.replace('w500', sizeValue)}${backdropPath}`;
+        break;
+      case 'w1280':
+        baseUrl = `${this.BACKDROP_BASE_URL}${backdropPath}`;
+        break;
+      case 'original':
+        baseUrl = `https://image.tmdb.org/t/p/original${backdropPath}`;
+        break;
+      default:
+        baseUrl = `${this.BACKDROP_BASE_URL}${backdropPath}`;
+    }
     
     // 如果强制刷新，添加时间戳参数
     if (forceRefresh) {

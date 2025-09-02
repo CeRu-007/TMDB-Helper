@@ -63,9 +63,9 @@ export function SmartAvatar({
   const needsProxy = (url: string): boolean => {
     if (!url) return false
 
-    // 检测TMDB图片URL
+    // 直接使用TMDB图片URL，不需要代理
     if (url.includes('image.tmdb.org')) {
-      return true
+      return false
     }
 
     // 检测其他可能需要代理的域名
