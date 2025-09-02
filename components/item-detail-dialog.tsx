@@ -1436,28 +1436,29 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           <div className="p-6 pt-0 grid grid-cols-4 gap-6">
             {/* 左侧：海报区域 */}
             <div className="col-span-1 max-w-full overflow-hidden">
-              {editing ? (
-                // 编辑模式下使用固定高度容器，添加圆角
-                <div className="h-[670px] flex flex-col pr-2">
-                  {/* 海报区域 - 使用固定高度比例 */}
-                  <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
-                    {localItem.posterUrl ? (
-                      <CachedImage
-                        src={localItem.posterUrl}
-                        alt={localItem.title}
-                        className="w-full h-full object-cover"
-                        loading="eager"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="text-center p-4">
-                        <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">海报</p>
-                      </div>
-                    )}
-                  </div>
+              {/* 使用统一的容器结构避免切换时的闪烁 */}
+              <div className="h-[670px] flex flex-col pr-2">
+                {/* 海报区域 - 使用固定高度比例 */}
+                <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
+                  {localItem.posterUrl ? (
+                    <CachedImage
+                      src={localItem.posterUrl}
+                      alt={localItem.title}
+                      className="w-full h-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="text-center p-4">
+                      <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">海报</p>
+                    </div>
+                  )}
+                </div>
 
-                  {/* 编辑模式下的表单区域 - 添加圆角和固定容器 */}
+                {/* 条目信息区域 - 根据编辑状态显示不同内容 */}
+                {editing ? (
+                  // 编辑模式下的表单区域 - 添加圆角和固定容器
                   <div className="w-full rounded-lg backdrop-blur-md bg-background/30 p-2 flex-1 overflow-hidden transition-all duration-300 hover:shadow-lg">
                     <ScrollArea className="h-full">
                       <div className="space-y-1.5 pr-2">
@@ -1743,32 +1744,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                       </div>
                     </ScrollArea>
                   </div>
-                </div>
-              ) : (
-                // 查看模式下不使用固定高度，保持内容自然布局
-                <div className="flex flex-col">
-                  <div className="pr-2 flex-1 flex flex-col">
-                    {/* 海报区域 */}
-                    <div className="rounded-md overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 transition-all duration-300 hover:shadow-lg">
-                      {localItem.posterUrl ? (
-                        <CachedImage
-                          src={localItem.posterUrl}
-                          alt={localItem.title}
-                          className="w-full h-full object-cover"
-                          loading="eager"
-                          decoding="async"
-                        />
-                      ) : (
-                        <div className="text-center p-4">
-                          <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                          <p className="text-sm text-muted-foreground">海报</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 查看模式下的功能区 */}
-                    <div className="mt-2 w-full rounded-md backdrop-blur-md bg-background/30 p-3 transition-all duration-300 hover:shadow-lg">
-                      <div className="space-y-1 flex-1 flex flex-col">
+                ) : (
+                  // 查看模式下的功能区 - 保持相同的容器高度避免闪烁
+                  <div className="w-full rounded-lg backdrop-blur-md bg-background/30 p-3 flex-1 overflow-hidden transition-all duration-300 hover:shadow-lg">
+                    <ScrollArea className="h-full">
+                      <div className="space-y-1 pr-2">
                         {/* 播出平台区域 - 优先使用TMDB网络logo */}
                         <div className="pb-0.5 mb-0.5">
                           <h3 className="text-sm font-medium flex items-center">
@@ -1865,10 +1845,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           </ScrollArea>
                         </div>
                       </div>
-                    </div>
+                    </ScrollArea>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* 右侧：内容区域 */}
