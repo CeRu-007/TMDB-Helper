@@ -37,7 +37,7 @@ export interface NewTMDBTableProps extends TMDBTableProps {
  * - 列操作和行操作功能
  * - 改善的单元格编辑体验
  */
-export function NewTMDBTable(props: NewTMDBTableProps) {
+const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
   // 表格配置状态
   const [config, setConfig] = useState({
     showGridLines: true,
@@ -176,4 +176,20 @@ export function NewTMDBTable(props: NewTMDBTableProps) {
       </div>
     </div>
   );
-} 
+}
+
+// 使用React.memo优化性能
+export const NewTMDBTable = React.memo(NewTMDBTableComponent, (prevProps, nextProps) => {
+  // 自定义比较函数，只在关键属性变化时才重新渲染
+  return (
+    prevProps.data === nextProps.data &&
+    prevProps.onChange === nextProps.onChange &&
+    prevProps.onSave === nextProps.onSave &&
+    prevProps.onCancel === nextProps.onCancel &&
+    prevProps.height === nextProps.height &&
+    prevProps.isSaving === nextProps.isSaving &&
+    prevProps.className === nextProps.className
+  )
+})
+
+NewTMDBTable.displayName = 'NewTMDBTable'

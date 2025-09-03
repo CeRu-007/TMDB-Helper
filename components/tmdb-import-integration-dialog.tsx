@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect, useCallback } from "react"
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import {
   Dialog,
   DialogContent,
@@ -228,7 +228,12 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 监听窗口大小变化，动态调整编辑器高度
   useEffect(() => {
     const handleResize = () => {
-      setEditorHeight(calculateOptimalEditorHeight());
+      if (typeof window !== 'undefined') {
+        const viewportHeight = window.innerHeight;
+        const reservedSpace = 100;
+        const availableHeight = viewportHeight - reservedSpace - 5;
+        setEditorHeight(Math.max(800, availableHeight));
+      }
     };
 
     if (typeof window !== 'undefined') {
@@ -240,7 +245,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         window.removeEventListener('resize', handleResize);
       };
     }
-  }, [calculateOptimalEditorHeight]);
+  }, []); // 移除依赖，避免频繁重新创建事件监听器
 
   useEffect(() => {
     if (terminalRef.current) {
@@ -288,6 +293,18 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     const tmdbCommand = generateTMDBCommand(selectedSeason)
     setDisplayedTMDBCommand(tmdbCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`)
   }, [selectedSeason, item])
+
+  // 缓存计算结果，避免重复计算
+  const memoizedValues = useMemo(() => {
+    return {
+      hasCSVData: !!csvData,
+      csvRowCount: csvData?.rows?.length || 0,
+      csvColCount: csvData?.headers?.length || 0,
+      isProcessTab: activeTab === "process",
+      isEditTab: activeTab === "edit",
+      canShowTable: csvData && tableReady && (activeTab === "edit" || inTab)
+    }
+  }, [csvData, tableReady, activeTab, inTab])
 
   // 检测错误类型并提供解决方案
   const analyzeError = (errorText: string) => {
@@ -1685,7 +1702,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       const timer = setTimeout(() => {
         setTableReady(true)
         console.log("表格组件已准备就绪", { inTab, activeTab, hasCsvData: !!csvData })
-      }, 100)
+      }, 50) // 减少延迟时间，提高响应性
 
       return () => clearTimeout(timer)
     }
@@ -1756,11 +1773,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     if (value === "process") {
       console.log("切换到处理标签页，强制刷新内容")
       setProcessTabRenderCount(prev => prev + 1)
-
-      // 延迟执行以确保DOM更新
-      setTimeout(() => {
-        setProcessTabRenderCount(prev => prev + 1)
-      }, 50)
     }
     // 如果切换到编辑标签页，增加渲染计数以强制刷新内容
     else if (value === "edit") {
@@ -1778,12 +1790,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 console.log("成功加载CSV数据，准备编辑");
                 setTableReady(true);
                 forceRefreshEditTab();
-                setTimeout(() => {
-                  if (editorMode === 'text') {
-                    console.log("优化编辑区域高度以显示更多内容");
-                    forceExpandEditor();
-                  }
-                }, 100);
               }
             }
           } catch (error) {
@@ -1794,14 +1800,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         // 已有CSV数据，直接刷新编辑页面
         setTableReady(true);
         forceRefreshEditTab();
-
-        // 延迟执行forceExpandEditor以确保DOM已更新
-        setTimeout(() => {
-          if (editorMode === 'text') {
-            console.log("优化编辑区域高度以显示更多内容");
-            forceExpandEditor();
-          }
-        }, 100);
       }
     }
   }
@@ -3345,10 +3343,12 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
   }, [open])
 
-  // 实时记录组件挂载状态
+  // 实时记录组件挂载状态 - 仅在开发环境下启用
   useEffect(() => {
-    console.log("组件状态:", { open, activeTab, inTab, isDialogInitialized, csvData: !!csvData });
-  });
+    if (process.env.NODE_ENV === 'development') {
+      console.log("组件状态:", { open, activeTab, inTab, isDialogInitialized, csvData: !!csvData });
+    }
+  }, [open, activeTab, inTab, isDialogInitialized, csvData]); // 添加依赖数组，避免每次渲染都执行
 
   // 添加函数来强制刷新编辑标签页内容
   const forceRefreshEditTab = useCallback(() => {
@@ -3360,31 +3360,20 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     // 增加渲染计数
     setEditTabRenderCount(prev => prev + 1);
 
-    // 多阶段刷新机制，确保DOM完全更新
-    const refreshStages = [300, 700, 1200];
+    // 简化刷新机制，减少不必要的延迟
+    const timer = setTimeout(() => {
+      setTableReady(true);
+      setEditTabRenderCount(prev => prev + 1);
+      
+      if (csvData) {
+        console.log(`CSV数据状态: ${csvData.rows.length}行数据可用`);
+      } else {
+        console.log("警告: CSV数据未加载");
+      }
+    }, 100); // 减少延迟时间
 
-    refreshStages.forEach((delay, index) => {
-      setTimeout(() => {
-        console.log(`编辑标签刷新阶段 ${index + 1}/${refreshStages.length}`);
-        setTableReady(true);
-        setEditTabRenderCount(prev => prev + 1);
-
-        // 额外的调试信息
-        if (csvData) {
-          console.log(`CSV数据状态: ${csvData.rows.length}行数据可用`);
-        } else {
-          console.log("警告: CSV数据未加载");
-        }
-      }, delay);
-    });
-
-    // 通知用户刷新正在进行
-    toast({
-      title: "页面刷新",
-      description: "正在刷新编辑页面...",
-      duration: 2000,
-    });
-  }, [csvData, toast]);
+    return () => clearTimeout(timer);
+  }, [csvData]);
 
   // 确保编辑标签页能正确显示内容
   useEffect(() => {
@@ -3393,15 +3382,13 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       // 立即设置表格就绪状态
       setTableReady(true);
 
-      // 使用多阶段渲染确保DOM已更新
-      const renderStages = [50, 300, 600];
-      renderStages.forEach((delay, index) => {
-        setTimeout(() => {
-          console.log(`编辑标签页渲染阶段 ${index + 1}/${renderStages.length}`);
-          setTableReady(true);
-          setEditTabRenderCount(prev => prev + 1);
-        }, delay);
-      });
+      // 简化渲染逻辑，减少不必要的延迟
+      const timer = setTimeout(() => {
+        setTableReady(true);
+        setEditTabRenderCount(prev => prev + 1);
+      }, 100); // 减少延迟时间
+
+      return () => clearTimeout(timer);
     }
   }, [csvData, activeTab]);
 
@@ -3421,12 +3408,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 在组件挂载和item变化时初始化命令显示
   useEffect(() => {
     updateDisplayedCommands()
-  }, [updateDisplayedCommands])
-
-  // 在组件挂载和item变化时初始化命令显示
-  useEffect(() => {
-    updateDisplayedCommands()
-  }, [updateDisplayedCommands])
+  }, []) // 移除依赖，只在组件挂载时执行一次
 
   // 处理CSV数据变更
   const handleCsvDataChange = (newData: CSVDataType) => {

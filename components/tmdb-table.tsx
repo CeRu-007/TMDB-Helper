@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef, useCallback } from "react"
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
@@ -58,7 +58,7 @@ interface ClipboardData {
 }
 
 // 拖拽框选配置
-const DEBOUNCE_DELAY = 10; // 鼠标移动防抖延迟，单位毫秒
+const DEBOUNCE_DELAY = 16; // 鼠标移动防抖延迟，单位毫秒（约60fps）
 
 /**
  * 防抖函数 - 用于优化频繁触发的事件
@@ -85,7 +85,7 @@ function debounce<T extends (...args: any[]) => any>(
  * TMDBTable 组件
  * 基本的表格组件，用于显示和编辑CSV数据
  */
-export function TMDBTable({
+const TMDBTableComponent = ({
   data,
   className,
   enableColumnResizing = true,
@@ -97,7 +97,7 @@ export function TMDBTable({
   showRowNumbers = true,
   showColumnOperations = true,
   showRowOperations = true
-}: TMDBTableProps) {
+}: TMDBTableProps) => {
   // 列宽状态
   const [columnWidths, setColumnWidths] = useState<number[]>([])
   // 选中单元格状态
@@ -140,14 +140,56 @@ export function TMDBTable({
   const MAX_HISTORY_SIZE = 50
   // 长按定时器引用
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
-  // 长按激活时间（毫秒）- 增加到500ms以提供更明显的长按感知
-  const LONG_PRESS_DELAY = 500
+  // 长按激活时间（毫秒）- 优化为200ms以提供更好的响应性
+  const LONG_PRESS_DELAY = 200
   // 记录初始点击的单元格位置
   const [initialClickCell, setInitialClickCell] = useState<{ row: number, col: number } | null>(null)
   // 行选择状态
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
   // 全选状态
   const [isAllRowsSelected, setIsAllRowsSelected] = useState(false)
+  
+  // 使用useRef存储最新状态，避免事件监听器频繁重新创建
+  const stateRef = useRef({
+    selectedCells,
+    activeCell,
+    isEditing,
+    localData,
+    isDragging,
+    isShiftSelecting,
+    history
+  })
+  
+  // 更新状态引用
+  useEffect(() => {
+    stateRef.current = {
+      selectedCells,
+      activeCell,
+      isEditing,
+      localData,
+      isDragging,
+      isShiftSelecting,
+      history
+    }
+  })
+  
+  // 缓存选中单元格的计算结果，避免每次渲染都重新计算
+  const selectedCellsSet = useMemo(() => {
+    const set = new Set<string>()
+    selectedCells.forEach(cell => {
+      set.add(`${cell.row}-${cell.col}`)
+    })
+    return set
+  }, [selectedCells])
+  
+  // 缓存是否有选中单元格的结果
+  const hasSelectedCells = useMemo(() => selectedCells.length > 0, [selectedCells.length])
+  
+  // 缓存表格行数和列数
+  const tableSize = useMemo(() => ({
+    rows: localData.rows.length,
+    cols: localData.headers.length
+  }), [localData.rows.length, localData.headers.length])
   
   // 当外部数据变化时更新本地数据
   useEffect(() => {
@@ -165,6 +207,8 @@ export function TMDBTable({
   // 添加键盘事件监听
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const { selectedCells, activeCell, isEditing, localData, isDragging, isShiftSelecting, history } = stateRef.current
+      
       if (isEditing) return; // 编辑模式下不处理全局键盘事件
       
       // 删除选中单元格内容 (Del键)
@@ -289,6 +333,8 @@ export function TMDBTable({
     }
     
     const handleKeyUp = (e: KeyboardEvent) => {
+      const { isShiftSelecting } = stateRef.current
+      
       // 松开Shift键时，如果是通过Shift键启用的框选模式，则退出框选模式
       if (e.key === 'Shift' && isShiftSelecting) {
         setIsShiftSelecting(false)
@@ -307,7 +353,7 @@ export function TMDBTable({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [selectedCells, activeCell, isEditing, localData, isDragging, isShiftSelecting, history])
+  }, []) // 移除所有依赖，使用useRef来访问最新状态
   
   // 处理单元格点击
   const handleCellClick = (row: number, col: number, event: React.MouseEvent) => {
@@ -397,6 +443,8 @@ export function TMDBTable({
   
   // 原始鼠标移动处理函数（未防抖）
   const handleMouseMoveOriginal = (row: number, col: number, event: React.MouseEvent) => {
+    const { isDragging, selectedCells } = stateRef.current
+    
     // 只有在鼠标按下且允许拖拽框选后才能执行拖拽操作
     if (isDragging && dragStart && canStartDragging && isMouseDown) {
       const startRow = Math.min(dragStart.row, row)
@@ -410,7 +458,16 @@ export function TMDBTable({
       
       // 优化：只有在选择区域发生变化时才更新选中单元格
       const selectionSize = rowCount * colCount
-      if (selectedCells.length !== selectionSize) {
+      const currentSelectionKey = `${startRow}-${endRow}-${startCol}-${endCol}`
+      
+      // 使用更精确的比较，避免不必要的更新
+      if (selectedCells.length !== selectionSize || 
+          !selectedCells.every((cell, index) => {
+            const expectedRow = startRow + Math.floor(index / colCount)
+            const expectedCol = startCol + (index % colCount)
+            return cell.row === expectedRow && cell.col === expectedCol
+          })) {
+        
         const newSelection = []
         for (let r = startRow; r <= endRow; r++) {
           for (let c = startCol; c <= endCol; c++) {
@@ -432,7 +489,7 @@ export function TMDBTable({
     debounce((row: number, col: number, event: React.MouseEvent) => {
       handleMouseMoveOriginal(row, col, event)
     }, DEBOUNCE_DELAY),
-    [mouseDownPosition, isDragging, dragStart, isShiftSelecting, canStartDragging, isMouseDown, selectedCells.length]
+    [] // 移除依赖数组，使用stateRef访问最新状态
   )
   
   // 处理鼠标抬起（结束拖拽选择）
@@ -1497,4 +1554,21 @@ export function TMDBTable({
         </div>
     </TableContextMenu>
   )
-} 
+}
+
+// 使用React.memo优化性能，避免不必要的重新渲染
+export const TMDBTable = React.memo(TMDBTableComponent, (prevProps, nextProps) => {
+  // 自定义比较函数，只在关键属性变化时才重新渲染
+  return (
+    prevProps.data === nextProps.data &&
+    prevProps.className === nextProps.className &&
+    prevProps.enableColumnResizing === nextProps.enableColumnResizing &&
+    prevProps.enableColumnReordering === nextProps.enableColumnReordering &&
+    prevProps.rowHeight === nextProps.rowHeight &&
+    prevProps.showRowNumbers === nextProps.showRowNumbers &&
+    prevProps.showColumnOperations === nextProps.showColumnOperations &&
+    prevProps.showRowOperations === nextProps.showRowOperations
+  )
+})
+
+TMDBTable.displayName = 'TMDBTable'
