@@ -186,6 +186,9 @@ const TITLE_STYLES = [
 
 // 简介风格选项
 const SUMMARY_STYLES = [
+  // 特殊风格 - 模仿风格（互斥）
+  { id: "imitate", name: "模仿", description: "根据提供的样本内容，模仿其写作风格和表达方式生成简介", icon: "🎭", isExclusive: true },
+
   // 平台风格
   { id: "crunchyroll", name: "Crunchyroll平台风格", description: "动漫平台专业风格：结构化简洁表达，客观描述核心冲突，每段≤15字的精准叙述", icon: "🍥" },
   { id: "netflix", name: "Netflix平台风格", description: "流媒体平台戏剧风格：情感驱动叙述，强调角色困境与选择，富有张力的悬念营造", icon: "🎬" },
@@ -270,6 +273,11 @@ interface GenerationConfig {
   // 视频分析配置
   speechRecognitionModel?: string // 语音识别模型
   enableVideoAnalysis?: boolean // 是否启用视频分析
+  // 模仿风格配置
+  imitateConfig?: {
+    sampleContent: string // 需要模仿的样本内容
+    generateCount: number // 生成数量
+  }
 }
 
 // 导出配置
@@ -422,7 +430,11 @@ export function SubtitleEpisodeGenerator({
     temperature: 0.7,
     includeOriginalTitle: true,
     speechRecognitionModel: "FunAudioLLM/SenseVoiceSmall",
-    enableVideoAnalysis: false
+    enableVideoAnalysis: false,
+    imitateConfig: {
+      sampleContent: "",
+      generateCount: 3
+    }
   })
 
   // 首次从服务端加载分集生成配置与模型
@@ -1012,16 +1024,81 @@ export function SubtitleEpisodeGenerator({
     // 为每个有效的选中风格单独生成
     for (const styleId of validSelectedStyles) {
       try {
-        const result = await generateEpisodeContentForStyle(episode, styleId)
+        // 处理模仿风格的特殊情况：需要生成多个版本
+        if (styleId === 'imitate' && config.imitateConfig?.generateCount) {
+          const generateCount = config.imitateConfig.generateCount
+          
+          for (let i = 0; i < generateCount; i++) {
+            try {
+              const result = await generateEpisodeContentForStyle(episode, styleId)
 
-        // 检查是否是余额不足的结果
-        if (result.error === 'INSUFFICIENT_BALANCE') {
-          // 余额不足时，直接返回已有结果，不继续生成其他风格
+              // 检查是否是余额不足的结果
+              if (result.error === 'INSUFFICIENT_BALANCE') {
+                results.push(result)
+                return results // 余额不足时直接返回
+              }
+
+              // 为模仿风格的多个版本添加序号标识
+              result.styleName = `模仿 (版本${i + 1})`
+              results.push(result)
+
+              // 避免API限流，在版本之间添加延迟
+              if (i < generateCount - 1) {
+                await new Promise(resolve => setTimeout(resolve, 800))
+              }
+            } catch (error) {
+              console.error(`模仿风格版本${i + 1}生成失败:`, error)
+
+              // 检查是否是余额不足错误
+              if (isInsufficientBalanceError(error)) {
+                const style = GENERATION_STYLES.find(s => s.id === styleId)
+                results.push({
+                  episodeNumber: episode.episodeNumber,
+                  originalTitle: episode.title || `第${episode.episodeNumber}集`,
+                  generatedTitle: `第${episode.episodeNumber}集`,
+                  generatedSummary: '余额不足，无法生成内容',
+                  confidence: 0,
+                  wordCount: 0,
+                  generationTime: Date.now(),
+                  model: config.model,
+                  styles: [styleId],
+                  styleId: styleId,
+                  styleName: `模仿 (版本${i + 1})`,
+                  error: 'INSUFFICIENT_BALANCE'
+                })
+                return results // 余额不足时直接返回
+              }
+
+              // 添加失败的结果占位符
+              const style = GENERATION_STYLES.find(s => s.id === styleId)
+              results.push({
+                episodeNumber: episode.episodeNumber,
+                originalTitle: episode.title || `第${episode.episodeNumber}集`,
+                generatedTitle: `第${episode.episodeNumber}集（模仿版本${i + 1}生成失败）`,
+                generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
+                confidence: 0,
+                wordCount: 0,
+                generationTime: Date.now(),
+                model: config.model,
+                styles: [styleId],
+                styleId: styleId,
+                styleName: `模仿 (版本${i + 1})`
+              })
+            }
+          }
+        } else {
+          // 普通风格的单次生成
+          const result = await generateEpisodeContentForStyle(episode, styleId)
+
+          // 检查是否是余额不足的结果
+          if (result.error === 'INSUFFICIENT_BALANCE') {
+            // 余额不足时，直接返回已有结果，不继续生成其他风格
+            results.push(result)
+            break
+          }
+
           results.push(result)
-          break
         }
-
-        results.push(result)
 
         // 避免API限流，在风格之间添加短暂延迟
         if (validSelectedStyles.length > 1 && styleId !== validSelectedStyles[validSelectedStyles.length - 1]) {
@@ -1087,6 +1164,57 @@ export function SubtitleEpisodeGenerator({
 
     // 所有风格都使用统一的字数设置
     const summaryRequirement = `字数控制在${config.summaryLength[0]}-${config.summaryLength[1]}字范围内，最多不超过${config.summaryLength[1] + 10}字`
+
+    // 处理模仿风格的特殊情况
+    if (styleId === 'imitate' && config.imitateConfig?.sampleContent) {
+      return `请根据以下字幕内容，为第${episode.episodeNumber}集生成标题和剧情简介：
+
+## 字幕内容
+${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : ''}
+
+## 模仿风格样本
+以下是您需要模仿的简介风格样本：
+${config.imitateConfig.sampleContent}
+
+## 生成要求
+1. **标题要求**：${titleStyleRequirements}
+2. **简介要求**：${summaryRequirement}，包含主要情节和看点
+3. **模仿要求**：
+   - 【风格分析】：深入分析样本的写作风格、语调特点、句式结构和表达习惯
+   - 【结构模仿】：学习样本的叙述结构、段落组织和信息呈现方式
+   - 【思路借鉴】：参考样本的描述思路、重点突出方式和情感表达方法
+   - 【词汇创新】：严禁直接使用样本中的具体词汇、短语或句子，必须用全新的词汇表达
+   - 【风格一致】：确保生成的简介在写作风格上与样本保持一致，但用词完全不同
+   - 【内容原创】：完全基于当前分集内容创作，只模仿风格不复制内容
+4. **语言要求**：使用中文，严格按照样本的语言风格和表达方式
+
+## ⚠️ 重要要求
+- 简介字数必须控制在${config.summaryLength[0]}-${config.summaryLength[1]}字范围内
+- 如果内容需要，最多可超出到${config.summaryLength[1] + 10}字
+- 超出${config.summaryLength[1] + 10}字的内容不符合要求
+- **严禁使用疑问句、反问句或以问号结尾的句子**
+- **所有简介必须使用陈述句，确定性地描述剧情内容**
+- **重点：必须严格模仿样本的写作风格，包括用词、句式、表达习惯等**
+
+## 输出格式
+**🚨 严格要求：只输出JSON，禁止任何推理过程 🚨**
+
+❌ 错误示例：
+"让我来分析一下这段内容..."
+"首先，我需要理解..."
+"根据字幕内容，我认为..."
+
+✅ 正确示例：
+{
+  "title": "分集标题",
+  "summary": "分集剧情简介",
+  "confidence": 0.85
+}
+
+${config.customPrompt ? `
+## 额外要求
+${config.customPrompt}` : ''}`
+    }
 
     // Netflix风格的特殊要求
     const netflixSpecialRequirements = styleId === 'netflix' ? `
@@ -4683,6 +4811,110 @@ function GenerationTab({
           className="h-20 resize-none"
         />
       </div>
+
+      {/* 模仿风格配置 */}
+      {config.selectedStyles.includes('imitate') && (
+        <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-4 bg-blue-50/50 dark:bg-blue-950/20">
+          <div className="flex items-center space-x-2 mb-4">
+            <Copy className="h-4 w-4 text-blue-500" />
+            <Label className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              模仿风格配置
+            </Label>
+          </div>
+          
+          <div className="space-y-4">
+            {/* 生成数量选择器 */}
+            <div>
+              <Label htmlFor="imitateGenerateCount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                生成数量
+              </Label>
+              <p className="text-xs text-gray-500 mt-1 mb-2">
+                设置基于样本风格生成多少个不同版本的简介
+              </p>
+              <Select
+                value={config.imitateConfig?.generateCount?.toString() || "3"}
+                onValueChange={(value) => {
+                  if (typeof onConfigChange === 'function') {
+                    onConfigChange({
+                      ...config,
+                      imitateConfig: {
+                        ...config.imitateConfig!,
+                        generateCount: parseInt(value)
+                      }
+                    })
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num} 个简介版本
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 风格样本输入框 */}
+            <div>
+              <Label htmlFor="imitateSampleContent" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                风格样本内容
+              </Label>
+              <p className="text-xs text-gray-500 mt-1 mb-2">
+                输入您希望AI模仿的简介风格样本，AI将分析其写作特点并应用到生成中
+              </p>
+              <Textarea
+                id="imitateSampleContent"
+                placeholder="请输入您希望模仿的简介风格样本..."
+                value={config.imitateConfig?.sampleContent || ""}
+                onChange={(e) => {
+                  if (e.target.value.length <= 500 && typeof onConfigChange === 'function') {
+                    const sampleContent = e.target.value
+                    const sampleLength = sampleContent.length
+                    
+                    // 根据样本字数自动调整简介字数范围
+                    let newSummaryLength = config.summaryLength
+                    if (sampleLength > 0) {
+                      const minLength = Math.max(20, Math.floor(sampleLength * 0.8))
+                      const maxLength = Math.min(400, Math.ceil(sampleLength * 1.2))
+                      newSummaryLength = [minLength, maxLength]
+                    }
+                    
+                    onConfigChange({
+                      ...config,
+                      imitateConfig: {
+                        ...config.imitateConfig!,
+                        sampleContent: sampleContent
+                      },
+                      summaryLength: newSummaryLength
+                    })
+                  }
+                }}
+                className="min-h-[120px] resize-none"
+                maxLength={500}
+              />
+              <div className="flex flex-col space-y-1 mt-1">
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-gray-500">
+                    AI将模仿写作风格、结构和表达方式，不会直接复用样本词汇
+                  </p>
+                  <span className="text-xs text-gray-400">
+                    {config.imitateConfig?.sampleContent?.length || 0}/500
+                  </span>
+                </div>
+                {config.imitateConfig?.sampleContent && config.imitateConfig.sampleContent.length > 0 && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    已自动调整简介字数范围为 {config.summaryLength[0]}-{config.summaryLength[1]} 字（基于样本长度）
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -4790,6 +5022,7 @@ function SummaryStyleTab({
   config: GenerationConfig
   onConfigChange: (config: GenerationConfig) => void
 }) {
+  const { toast } = useToast()
   const handleStyleToggle = (styleId: string) => {
     // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
@@ -4798,20 +5031,59 @@ function SummaryStyleTab({
     }
 
     let newStyles: string[]
+    let newConfig = { ...config }
 
-    if (config.selectedStyles.includes(styleId)) {
-      // 取消选择
-      newStyles = config.selectedStyles.filter(id => id !== styleId)
+    // 检查是否是模仿风格
+    if (styleId === 'imitate') {
+      if (config.selectedStyles.includes('imitate')) {
+        // 取消选择模仿风格
+        newStyles = []
+      } else {
+        // 选择模仿风格，清空其他所有风格
+        newStyles = ['imitate']
+        
+        // 显示配置提示
+        toast({
+          title: "模仿风格已选择",
+          description: '请前往“生成设置”标签页配置模仿样本内容和生成数量',
+          duration: 5000,
+        })
+      }
     } else {
-      // 选择新风格，直接添加
-      newStyles = [...config.selectedStyles, styleId]
+      // 普通风格选择逻辑
+      if (config.selectedStyles.includes('imitate')) {
+        // 如果当前选中了模仿风格，不允许选择其他风格
+        return
+      }
+
+      if (config.selectedStyles.includes(styleId)) {
+        // 取消选择
+        newStyles = config.selectedStyles.filter(id => id !== styleId)
+      } else {
+        // 选择新风格，直接添加
+        newStyles = [...config.selectedStyles, styleId]
+      }
     }
+
+    newConfig.selectedStyles = newStyles
+
+    onConfigChange(newConfig)
+  }
+
+  const handleImitateConfigChange = (field: 'sampleContent' | 'generateCount', value: string | number) => {
+    if (typeof onConfigChange !== 'function') return
 
     onConfigChange({
       ...config,
-      selectedStyles: newStyles
+      imitateConfig: {
+        ...config.imitateConfig!,
+        [field]: value
+      }
     })
   }
+
+  const isImitateSelected = config.selectedStyles.includes('imitate')
+  const isOtherStyleDisabled = isImitateSelected
 
   return (
     <div className="space-y-6">
@@ -4819,65 +5091,78 @@ function SummaryStyleTab({
         <h3 className="text-sm font-medium mb-3">选择简介生成风格</h3>
         <div className="space-y-2 mb-4">
           <p className="text-xs text-gray-500">
-            可以选择多种风格组合使用，AI会为每种风格单独生成分集简介
+            {isImitateSelected 
+              ? "模仿模式：AI将根据您提供的样本内容模仿其风格生成简介" 
+              : "可以选择多种风格组合使用，AI会为每种风格单独生成分集简介"
+            }
           </p>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
           {GENERATION_STYLES.map((style) => {
             const isSelected = config.selectedStyles.includes(style.id)
+            const isDisabled = isOtherStyleDisabled && style.id !== 'imitate'
+            
             return (
               <div
                 key={style.id}
-                className={`group relative rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden ${
-                  isSelected
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-lg ring-2 ring-blue-500/20"
-                    : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md hover:bg-blue-50/50 dark:hover:bg-blue-950/10"
-                }`}
-                onClick={() => handleStyleToggle(style.id)}
-              >
-                {/* 选中状态指示器 */}
-                {isSelected && (
-                  <div className="absolute top-3 right-3 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
+                    className={`group relative rounded-xl border transition-all duration-200 overflow-hidden ${
+                      isDisabled
+                        ? "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-50 cursor-not-allowed"
+                        : isSelected
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-lg ring-2 ring-blue-500/20 cursor-pointer"
+                        : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md hover:bg-blue-50/50 dark:hover:bg-blue-950/10 cursor-pointer"
+                    }`}
+                    onClick={() => !isDisabled && handleStyleToggle(style.id)}
+                  >
+                    {/* 选中状态指示器 */}
+                    {isSelected && (
+                      <div className="absolute top-3 right-3 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
 
-                <div className="p-5">
-                  {/* 头部：图标和标题 */}
-                  <div className="flex items-start space-x-3 mb-3">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
-                      isSelected
-                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
-                    }`}>
-                      {style.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`font-semibold text-sm leading-tight ${
-                        isSelected
-                          ? "text-blue-900 dark:text-blue-100"
-                          : "text-gray-900 dark:text-gray-100"
+                    <div className="p-5">
+                      {/* 头部：图标和标题 */}
+                      <div className="flex items-start space-x-3 mb-3">
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
+                          isDisabled
+                            ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
+                            : isSelected
+                            ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                        }`}>
+                          {style.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`font-semibold text-sm leading-tight ${
+                            isDisabled
+                              ? "text-gray-400 dark:text-gray-500"
+                              : isSelected
+                              ? "text-blue-900 dark:text-blue-100"
+                              : "text-gray-900 dark:text-gray-100"
+                          }`}>
+                            {style.name}
+                          </h4>
+                        </div>
+                      </div>
+
+                      {/* 描述文字 */}
+                      <p className={`text-xs leading-relaxed ${
+                        isDisabled
+                          ? "text-gray-400 dark:text-gray-500"
+                          : isSelected
+                          ? "text-blue-700 dark:text-blue-300"
+                          : "text-gray-600 dark:text-gray-400"
                       }`}>
-                        {style.name}
-                      </h4>
+                        {style.description}
+                      </p>
                     </div>
                   </div>
-
-                  {/* 描述文字 */}
-                  <p className={`text-xs leading-relaxed ${
-                    isSelected
-                      ? "text-blue-700 dark:text-blue-300"
-                      : "text-gray-600 dark:text-gray-400"
-                  }`}>
-                    {style.description}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
+                )
+              })}
         </div>
       </div>
     </div>
