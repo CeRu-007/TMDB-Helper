@@ -204,6 +204,28 @@ const TMDBTableComponent = ({
     }
   }, [data])
   
+  // 监听全选状态变化，确保表格正确渲染
+  useEffect(() => {
+    if (isAllRowsSelected || selectedRows.size > 0) {
+      // 延迟执行以确保DOM更新完成
+      const timer = setTimeout(() => {
+        // 触发表格重新计算布局
+        const tableContainer = document.querySelector('.tmdb-table');
+        if (tableContainer) {
+          const scrollArea = tableContainer.querySelector('[data-radix-scroll-area-viewport]');
+          if (scrollArea) {
+            // 强制重新计算滚动区域
+            const currentScrollTop = scrollArea.scrollTop;
+            scrollArea.style.height = scrollArea.style.height; // 触发重新计算
+            scrollArea.scrollTop = currentScrollTop;
+          }
+        }
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isAllRowsSelected, selectedRows.size])
+  
   // 添加键盘事件监听
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1182,15 +1204,27 @@ const TMDBTableComponent = ({
     setIsAllRowsSelected(newSelectedRows.size === localData.rows.length);
   };
 
-  const handleSelectAllRows = (checked: boolean) => {
-    if (checked) {
-      const allRows = new Set(Array.from({ length: localData.rows.length }, (_, i) => i));
-      setSelectedRows(allRows);
-    } else {
-      setSelectedRows(new Set());
-    }
-    setIsAllRowsSelected(checked);
-  };
+  const handleSelectAllRows = useCallback((checked: boolean) => {
+    // 使用requestAnimationFrame确保DOM更新完成后再处理状态
+    requestAnimationFrame(() => {
+      if (checked) {
+        const allRows = new Set(Array.from({ length: localData.rows.length }, (_, i) => i));
+        setSelectedRows(allRows);
+        setIsAllRowsSelected(true);
+      } else {
+        setSelectedRows(new Set());
+        setIsAllRowsSelected(false);
+      }
+      
+      // 确保滚动容器正确更新
+      setTimeout(() => {
+        const scrollArea = document.querySelector('.tmdb-table .scroll-area-viewport');
+        if (scrollArea) {
+          scrollArea.scrollTop = scrollArea.scrollTop; // 触发重新计算
+        }
+      }, 0);
+    });
+  }, [localData.rows.length]);
 
   const deleteSelectedRows = () => {
     if (selectedRows.size === 0) return;
@@ -1267,7 +1301,11 @@ const TMDBTableComponent = ({
       onDuplicateColumn={duplicateColumn}
     >
       <div 
-        className={cn("tmdb-table", className)} 
+        className={cn(
+          "tmdb-table", 
+          className,
+          isAllRowsSelected && "selecting-all"
+        )} 
         ref={tableRef}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
@@ -1333,8 +1371,8 @@ const TMDBTableComponent = ({
           </div>
         )}
         
-        <ScrollArea className="h-full w-full">
-          <div className="relative w-fit min-w-full">
+        <ScrollArea className="h-full w-full scroll-area-viewport">
+          <div className="relative w-fit min-w-full" style={{ paddingBottom: '1px' }}>
             <Table>
             <TableHeader>
                 <TableRow>

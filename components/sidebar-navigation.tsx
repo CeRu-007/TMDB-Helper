@@ -56,7 +56,7 @@ const menuItems: MenuItem[] = [
       { id: "kids", label: "少儿", icon: <Baby className="h-3 w-3" /> },
       { id: "variety", label: "综艺", icon: <Popcorn className="h-3 w-3" /> },
       { id: "short", label: "短剧", icon: <Ticket className="h-3 w-3" /> },
-
+      { id: "independent", label: "独立维护", icon: <Wand2 className="h-3 w-3" /> },
     ]
   },
   {

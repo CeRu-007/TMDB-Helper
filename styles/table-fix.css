@@ -1,0 +1,72 @@
+/* 修复全选按钮导致最后一行无法显示的问题 */
+
+/* 确保表格容器有正确的高度计算 */
+.tmdb-table {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 确保ScrollArea正确处理高度 */
+.tmdb-table [data-radix-scroll-area-root] {
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.tmdb-table [data-radix-scroll-area-viewport] {
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+/* 确保表格内容区域有足够的底部间距 */
+.tmdb-table table {
+  margin-bottom: 20px;
+}
+
+/* 优化表格行的渲染 */
+.tmdb-table tbody tr:last-child {
+  margin-bottom: 10px;
+}
+
+/* 确保新表格组件的正确高度 */
+.new-tmdb-table {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.new-tmdb-table .csv-table-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 修复独立维护页面的表格容器 */
+.independent-maintenance .new-tmdb-table {
+  height: 100%;
+}
+
+.independent-maintenance .csv-table-wrapper {
+  height: 100%;
+}
+
+/* 确保表格在全选状态下正确显示 */
+.tmdb-table.selecting-all [data-radix-scroll-area-viewport] {
+  padding-bottom: 20px;
+}
+
+/* 优化滚动性能 */
+.tmdb-table [data-radix-scroll-area-viewport] {
+  scroll-behavior: smooth;
+}
+
+/* 确保表格行在选中状态下正确显示 */
+.tmdb-table tbody tr {
+  min-height: 40px;
+}
+
+/* 修复可能的高度塌陷问题 */
+.csv-table-wrapper > div {
+  min-height: 100%;
+}

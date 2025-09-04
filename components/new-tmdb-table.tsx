@@ -93,7 +93,7 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
     // 设置行高
     rowHeight: config.fixedRowHeight ? config.rowHeight : 40,
     // 传递数据变更回调
-    onDataChange: props.onChange
+    onDataChange: props.onChange || undefined
   };
   
   return (
@@ -157,9 +157,9 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
       </div>
 
       {/* 表格区域 - 增强滚动容器 */}
-      <div className="flex-1 overflow-hidden csv-table-wrapper">
+      <div className="flex-1 min-h-0 overflow-hidden csv-table-wrapper">
         {/* 表格主体内容 */}
-        <div className="h-full w-full overflow-hidden">
+        <div className="h-full w-full min-h-0 overflow-hidden">
           <BaseTMDBTable 
             {...enhancedProps} 
             showRowNumbers={config.showRowNumbers}

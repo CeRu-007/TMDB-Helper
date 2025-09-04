@@ -5,6 +5,7 @@ import { SidebarNavigation } from "@/components/sidebar-navigation"
 
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
 import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
+import { IndependentMaintenance } from "@/components/independent-maintenance"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -359,6 +360,15 @@ export function SidebarLayout({
     )
   }
 
+  // 渲染独立维护内容
+  const renderIndependentMaintenanceContent = () => {
+    return (
+      <div className="h-full">
+        <IndependentMaintenance onShowSettingsDialog={onShowSettingsDialog} />
+      </div>
+    )
+  }
+
   // 渲染内容区域
   const renderContent = () => {
     // 根据选中的菜单项显示不同内容
@@ -375,7 +385,8 @@ export function SidebarLayout({
         return renderMaintenanceContent('variety')
       case 'maintenance-short':
         return renderMaintenanceContent('short')
-
+      case 'maintenance-independent':
+        return renderIndependentMaintenanceContent()
 
       case 'content-generation-episode-generator':
         // 分集简介生成器
