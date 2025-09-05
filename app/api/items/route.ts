@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readUserItems } from '@/lib/user-aware-storage';
-import { getUserIdFromRequest } from '@/app/api/user/route';
+import { getUserIdFromRequest } from '@/lib/user-utils';
 import { TMDBItem } from '@/lib/storage';
 
 /**

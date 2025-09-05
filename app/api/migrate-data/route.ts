@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { migrateExistingData, getAllUsers, getUserStats } from '@/lib/user-aware-storage';
-import { getUserIdFromRequest } from '@/app/api/user/route';
+import { getUserIdFromRequest } from '@/lib/user-utils';
 
 /**
  * 数据迁移API

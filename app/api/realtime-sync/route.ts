@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserIdFromRequest } from '@/app/api/user/route'
+import { getUserIdFromRequest } from '@/lib/user-utils'
 
 // 存储活跃的SSE连接
 const connections = new Map<string, {
