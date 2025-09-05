@@ -106,9 +106,8 @@ export class LayoutPreferencesManager {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'set',
           key: 'layout_preferences',
-          value: JSON.stringify(updatedPreferences)
+          value: updatedPreferences
         })
       });
 

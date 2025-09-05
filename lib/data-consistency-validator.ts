@@ -35,7 +35,7 @@ export interface ValidationConfig {
 export class DataConsistencyValidator {
   private static instance: DataConsistencyValidator;
   private config: ValidationConfig;
-  private validationTimer: NodeJS.Timeout | null = null;
+
   private isValidating = false;
   private lastValidationTime = 0;
   private validationHistory: ConsistencyCheckResult[] = [];
@@ -58,7 +58,7 @@ export class DataConsistencyValidator {
   private getDefaultConfig(): ValidationConfig {
     return {
       enabled: true,
-      checkIntervalMs: 5 * 60 * 1000, // 5分钟
+      checkIntervalMs: 30 * 60 * 1000, // 30分钟（减少频繁验证）
       autoFix: true,
       maxRetries: 3,
       conflictResolution: 'frontend_wins',
@@ -76,22 +76,18 @@ export class DataConsistencyValidator {
     // 重启定时验证
     if (this.config.enabled) {
       this.startPeriodicValidation();
-    } else {
-      this.stopPeriodicValidation();
     }
   }
 
   /**
-   * 启动定期验证
+   * 启动验证（只在启动时执行一次，移除定时器）
    */
-  public startPeriodicValidation(): void {
+  public async startPeriodicValidation(): Promise<void> {
     if (!this.config.enabled) return;
 
-    this.stopPeriodicValidation();
-
-    this.validationTimer = setInterval(async () => {
-      if (!this.isValidating) {
-        await this.validateConsistency();
+    // 只在启动时验证一次
+    if (!this.isValidating) {
+      await this.validateConsistency();
       }
     }, this.config.checkIntervalMs);
 
@@ -101,13 +97,7 @@ export class DataConsistencyValidator {
   /**
    * 停止定期验证
    */
-  public stopPeriodicValidation(): void {
-    if (this.validationTimer) {
-      clearInterval(this.validationTimer);
-      this.validationTimer = null;
-      console.log('[DataConsistencyValidator] 已停止定期验证');
-    }
-  }
+
 
   /**
    * 手动验证数据一致性（增强版，改进错误处理）

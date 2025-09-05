@@ -35,7 +35,6 @@ export class ConfigAdapter {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'set',
           key,
           value
         })

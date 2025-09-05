@@ -1,11 +1,18 @@
 import { NextRequest } from 'next/server';
+import { AuthManager } from './auth-manager';
 
 /**
- * 临时替代函数 - 获取用户ID
- * 在没有用户管理系统的情况下，返回默认用户ID
+ * 获取用户ID
+ * 优先从认证头获取，否则返回系统管理员用户ID
  */
 export function getUserIdFromRequest(request: NextRequest): string {
-  // 简单实现：返回默认用户ID
-  // 在实际应用中，这里应该从认证token或session中获取用户ID
-  return 'default-user';
+  // 从请求头获取用户ID
+  const userIdFromHeader = request.headers.get('x-user-id');
+  
+  if (userIdFromHeader) {
+    return userIdFromHeader;
+  }
+  
+  // 如果没有提供用户ID，返回系统管理员用户ID
+  return AuthManager.getSystemUserId();
 }

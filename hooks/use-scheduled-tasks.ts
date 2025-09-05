@@ -68,10 +68,10 @@ export function useScheduledTasks(): UseScheduledTasksReturn {
     // 初始加载
     refreshTasks()
 
-    // 减少轮询频率：每30秒检查一次正在运行的任务（而不是2秒）
+    // 减少轮询频率：每2分钟检查一次正在运行的任务（而不是30秒）
     const intervalId = perf.setInterval(() => {
       updateRunningTasks()
-    }, 30000, 'scheduledTasksUpdate')
+    }, 120000, 'scheduledTasksUpdate')
 
     // 自动修复定时任务 - 延迟到10秒后执行，避免启动时的频繁调用
     const fixTimeoutId = perf.setTimeout(async () => {

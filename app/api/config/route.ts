@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ServerConfigManager, ServerConfig } from '@/lib/server-config-manager'
 
+// 配置缓存机制
+let configCache: ServerConfig | null = null
+let cacheTimestamp = 0
+const CACHE_TTL = 30000 // 30秒缓存时间
+
 /**
  * 键名映射：将前端使用的下划线命名转换为服务端的驼峰命名
  */
@@ -58,8 +63,19 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // 获取完整配置
-    const config = ServerConfigManager.getConfig()
+    // 获取完整配置（使用缓存机制）
+    let config: ServerConfig
+    const now = Date.now()
+    
+    if (configCache && now - cacheTimestamp < CACHE_TTL) {
+      // 使用缓存
+      config = configCache
+    } else {
+      // 重新获取并更新缓存
+      config = ServerConfigManager.getConfig()
+      configCache = config
+      cacheTimestamp = now
+    }
 
     // 移除敏感信息的显示（但保留功能）
     const safeConfig = {
@@ -111,6 +127,10 @@ export async function POST(request: NextRequest) {
 
         const newConfig = ServerConfigManager.updateConfig(updates)
 
+        // 清除配置缓存
+        configCache = null
+        cacheTimestamp = 0
+
         return NextResponse.json({
           success: true,
           message: '配置更新成功',
@@ -121,7 +141,11 @@ export async function POST(request: NextRequest) {
       case 'set': {
         // 设置单个配置项
         const { key, value } = data
-        console.log('🔧 [API Route] 开始设置配置项:', { key, valueType: typeof value, valueLength: value?.length })
+        
+        // 🔧 修复：只在开发模式下输出详细日志
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 [API Route] 开始设置配置项:', { key, valueType: typeof value, valueLength: value?.length })
+        }
         
         if (!key) {
           console.error('❌ [API Route] 缺少配置键名')
@@ -133,15 +157,26 @@ export async function POST(request: NextRequest) {
 
         // 获取映射后的键名
         const mappedKey = mapKeyName(key)
-        console.log('🔄 [API Route] 键名映射:', { originalKey: key, mappedKey })
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 [API Route] 键名映射:', { originalKey: key, mappedKey })
+        }
         
         try {
           ServerConfigManager.setConfigItem(mappedKey, value)
-          console.log('✅ [API Route] 配置项设置成功:', { key, mappedKey })
+          
+          // 🔧 修复：只在开发模式下输出成功日志
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ [API Route] 配置项设置成功:', { key, mappedKey })
+          }
         } catch (error) {
           console.error('❌ [API Route] ServerConfigManager.setConfigItem 失败:', error)
           throw error
         }
+
+        // 清除配置缓存
+        configCache = null
+        cacheTimestamp = 0
 
         return NextResponse.json({
           success: true,
@@ -163,6 +198,10 @@ export async function POST(request: NextRequest) {
         const mappedKey = mapKeyName(key)
         ServerConfigManager.removeConfigItem(mappedKey)
 
+        // 清除配置缓存
+        configCache = null
+        cacheTimestamp = 0
+
         return NextResponse.json({
           success: true,
           message: `配置项 ${key} 删除成功`
@@ -172,6 +211,10 @@ export async function POST(request: NextRequest) {
       case 'reset': {
         // 重置为默认配置
         const defaultConfig = ServerConfigManager.resetToDefault()
+
+        // 清除配置缓存
+        configCache = null
+        cacheTimestamp = 0
 
         return NextResponse.json({
           success: true,
@@ -191,6 +234,10 @@ export async function POST(request: NextRequest) {
         }
 
         const importedConfig = ServerConfigManager.importConfig(configJson)
+
+        // 清除配置缓存
+        configCache = null
+        cacheTimestamp = 0
 
         return NextResponse.json({
           success: true,
@@ -248,6 +295,10 @@ export async function PUT(request: NextRequest) {
     }
 
     ServerConfigManager.saveConfig(config)
+
+    // 清除配置缓存
+    configCache = null
+    cacheTimestamp = 0
 
     return NextResponse.json({
       success: true,

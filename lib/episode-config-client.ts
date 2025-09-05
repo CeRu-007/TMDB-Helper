@@ -4,7 +4,7 @@ export class EpisodeConfigClient {
       await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'set', key: 'episode_generator_config', value: json })
+        body: JSON.stringify({ key: 'episode_generator_config', value: json })
       })
     } catch (e) {
       console.error('保存分集生成配置失败:', e)

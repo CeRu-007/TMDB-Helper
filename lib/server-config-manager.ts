@@ -43,6 +43,10 @@ export interface ServerConfig {
 export class ServerConfigManager {
   private static readonly CONFIG_FILE = 'server-config.json'
   private static readonly CONFIG_VERSION = '1.0.0'
+  private static lastValidationTime: number = 0
+  private static lastConfigLogTime: number = 0
+  private static lastSaveLogTime: number = 0
+  private static lastUpdateLogTime: number = 0
   
   /**
    * 获取配置文件路径
@@ -116,11 +120,19 @@ export class ServerConfigManager {
       }
     })
     
-    console.log('✓ [ServerConfigManager] 配置验证完成:', validatedConfig)
-    console.log('✓ [ServerConfigManager] API密钥字段检查:')
-    preserveFields.forEach(field => {
-      console.log(`  - ${field}:`, field in validatedConfig ? '存在' : '缺失')
-    })
+    // 减少日志输出 - 只在调试模式或首次创建时输出
+    // 只在首次验证或配置有变化时输出日志
+    const shouldLog = process.env.NODE_ENV === 'development' && 
+                     (!this.lastValidationTime || Date.now() - this.lastValidationTime > 5000);
+    
+    if (shouldLog) {
+      console.log('✓ [ServerConfigManager] 配置验证完成')
+      console.log('✓ [ServerConfigManager] API密钥字段检查:')
+      preserveFields.forEach(field => {
+        console.log(`  - ${field}:`, field in validatedConfig ? '存在' : '缺失')
+      })
+      this.lastValidationTime = Date.now();
+    }
     
     return validatedConfig
   }
@@ -255,11 +267,44 @@ export class ServerConfigManager {
     return mappedConfig as ServerConfig
   }
 
+  private static configCache: ServerConfig | null = null;
+  private static cacheExpiry: number = 0;
+  private static readonly CONFIG_CACHE_DURATION = 30 * 60 * 1000; // 30分钟配置缓存（大幅延长缓存时间）
+  private static isLoading: boolean = false; // 防止并发加载
+
   /**
-   * 读取配置
+   * 读取配置 (带缓存优化)
    */
   static getConfig(): ServerConfig {
     try {
+      // 检查缓存是否有效
+      const now = Date.now();
+      if (this.configCache && now < this.cacheExpiry) {
+        // 减少缓存命中日志输出，避免频繁打印
+        return this.configCache;
+      }
+
+      // 防止并发加载
+      if (this.isLoading) {
+        // 如果正在加载，返回现有缓存（如果有的话）
+        if (this.configCache) {
+          console.log('⏳ [ServerConfigManager] 配置加载中，返回现有缓存');
+          return this.configCache;
+        }
+        // 如果没有缓存，等待加载完成
+        console.log('⏳ [ServerConfigManager] 配置加载中，等待完成...');
+        let attempts = 0;
+        while (this.isLoading && attempts < 50) { // 最多等待5秒
+          require('child_process').execSync('timeout /t 0 /nobreak', { stdio: 'ignore' });
+          attempts++;
+        }
+        if (this.configCache) {
+          return this.configCache;
+        }
+      }
+
+      this.isLoading = true;
+
       const configPath = this.getConfigPath()
 
       if (!fs.existsSync(configPath)) {
@@ -267,16 +312,28 @@ export class ServerConfigManager {
         console.log('📁 [ServerConfigManager] 配置文件不存在，创建默认配置')
         const defaultConfig = this.getDefaultConfig()
         this.saveConfig(defaultConfig)
+        // 更新缓存
+        this.configCache = defaultConfig;
+        this.cacheExpiry = now + this.CONFIG_CACHE_DURATION;
         return defaultConfig
       }
 
       const configData = fs.readFileSync(configPath, 'utf8')
       const rawConfig = JSON.parse(configData)
-      console.log('📖 [ServerConfigManager] 读取原始配置:', rawConfig)
+      // 减少日志输出 - 只在调试模式下输出详细信息，且限制频率
+      const shouldLogConfig = process.env.NODE_ENV === 'development' && 
+                            (!this.lastConfigLogTime || Date.now() - this.lastConfigLogTime > 10000);
+      
+      if (shouldLogConfig) {
+        console.log('📖 [ServerConfigManager] 读取原始配置')
+        this.lastConfigLogTime = Date.now();
+      }
 
       // 映射键名
       const config = this.mapKeys(rawConfig)
-      console.log('🔄 [ServerConfigManager] 键名映射后配置:', config)
+      if (shouldLogConfig) {
+        console.log('🔄 [ServerConfigManager] 键名映射完成')
+      }
 
       // 检查版本兼容性
       if (config.version !== this.CONFIG_VERSION) {
@@ -291,15 +348,22 @@ export class ServerConfigManager {
           lastUpdated: Date.now()       // 更新时间戳
         })
         
-        console.log('✅ [ServerConfigManager] 升级后配置:', upgradedConfig)
+        console.log('✅ [ServerConfigManager] 升级后配置完成')
         this.saveConfig(upgradedConfig)
+        // 更新缓存
+        this.configCache = upgradedConfig;
+        this.cacheExpiry = now + this.CONFIG_CACHE_DURATION;
         return upgradedConfig
       }
 
-      console.log('✅ [ServerConfigManager] 配置读取成功，无需升级')
+      // 更新缓存
+      this.configCache = config;
+      this.cacheExpiry = now + this.CONFIG_CACHE_DURATION;
+      this.isLoading = false;
       return config
     } catch (error) {
       console.error('❌ [ServerConfigManager] 读取服务端配置失败:', error)
+      this.isLoading = false;
       
       // ⚠️ 关键修复：出错时不要直接覆盖，先尝试恢复备份
       const configPath = this.getConfigPath()
@@ -321,6 +385,7 @@ export class ServerConfigManager {
       console.warn('⚠️ [ServerConfigManager] 无法恢复配置，创建新的默认配置（用户数据可能丢失）')
       const defaultConfig = this.getDefaultConfig()
       this.saveConfig(defaultConfig)
+      this.isLoading = false;
       return defaultConfig
     }
   }
@@ -352,7 +417,9 @@ export class ServerConfigManager {
           const parsedValue = JSON.parse(value)
           if (typeof parsedValue === 'object' && parsedValue !== null) {
             optimizedConfig[field] = parsedValue as any
-            console.log(`🎨 [ServerConfigManager] 优化字段格式: ${field}`)
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🎨 [ServerConfigManager] 优化字段格式: ${field}`)
+            }
           }
         } catch (error) {
           console.warn(`⚠️ [ServerConfigManager] 无法优化字段 ${field}:`, error)
@@ -376,29 +443,45 @@ export class ServerConfigManager {
   }
   
   /**
-   * 保存配置
+   * 保存配置 (减少日志输出)
    */
   static saveConfig(config: ServerConfig): void {
     try {
       const configPath = this.getConfigPath()
-      console.log('📋 [ServerConfigManager] 开始保存配置到:', configPath)
-      console.log('🗂️ [ServerConfigManager] 将保存的原始配置:', config)
       
-      // ⚠️ 关键修复：先确保API密钥字段结构完整，再进行验证
-      const defaultConfig = this.getDefaultConfig()
-      const mergedConfig = {
-        ...defaultConfig,  // 先设置完整结构
-        ...config          // 再用用户配置覆盖（保留用户数据优先）
+      // ⚠️ 优化：只在必要时进行完整验证（配置升级或结构不完整时）
+      let validatedConfig = config;
+      
+      // 检查是否需要完整验证（配置版本不匹配或缺少关键字段）
+      const needsFullValidation = 
+        config.version !== this.CONFIG_VERSION ||
+        !config.tmdbApiKey ||
+        !config.siliconFlowApiKey ||
+        !config.modelScopeApiKey;
+      
+      if (needsFullValidation) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 [ServerConfigManager] 配置需要完整验证，执行验证流程')
+        }
+        const defaultConfig = this.getDefaultConfig()
+        const mergedConfig = {
+          ...defaultConfig,  // 先设置完整结构
+          ...config          // 再用用户配置覆盖（保留用户数据优先）
+        }
+        validatedConfig = this.validateConfig(mergedConfig)
+      } else {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('⚡ [ServerConfigManager] 配置验证跳过，使用现有配置')
+        }
       }
-      
-      // 验证配置完整性
-      const validatedConfig = this.validateConfig(mergedConfig)
       
       // 备份现有配置
       if (fs.existsSync(configPath)) {
         const backupPath = `${configPath}.backup`
         fs.copyFileSync(configPath, backupPath)
-        console.log('📦 [ServerConfigManager] 已备份现有配置到:', backupPath)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📦 [ServerConfigManager] 已备份现有配置到:', backupPath)
+        }
       }
       
       // 更新时间戳和版本
@@ -411,29 +494,36 @@ export class ServerConfigManager {
       // 🎨 新增：优化配置格式，将长JSON字符串转换为对象
       const optimizedConfig = this.optimizeConfigFormat(configToSave)
       
-      console.log('🗄️ [ServerConfigManager] 最终保存的配置:', optimizedConfig)
-      
       // 保存配置，使用缩进格式以提高可读性
       const configJson = JSON.stringify(optimizedConfig, null, 2)
-      console.log('📏 [ServerConfigManager] JSON字符串长度:', configJson.length)
       
       fs.writeFileSync(configPath, configJson, 'utf8')
-      console.log('✅ [ServerConfigManager] 服务端配置已保存:', configPath)
       
-      // 验证保存结果
+      // 更新缓存
+      this.configCache = optimizedConfig;
+      this.cacheExpiry = Date.now() + this.CONFIG_CACHE_DURATION;
+      
+      // 验证保存结果 (简化日志)
       if (fs.existsSync(configPath)) {
         const savedContent = fs.readFileSync(configPath, 'utf8')
         const savedConfig = JSON.parse(savedContent)
-        console.log('✓ [ServerConfigManager] 保存验证成功，文件大小:', savedContent.length)
-        console.log('✓ [ServerConfigManager] 验证保存的配置:', savedConfig)
         
         // ⚠️ 关键验证：检查用户配置是否保存成功
         if (config.tmdbApiKey && !savedConfig.tmdbApiKey) {
           console.error('❌ [ServerConfigManager] 警告：API密钥未成功保存!')
           throw new Error('API密钥保存失败')
         }
-        if (config.tmdbApiKey) {
-          console.log('✅ [ServerConfigManager] API密钥保存验证成功')
+        
+        // 只在调试模式下输出详细日志，且限制频率
+        const shouldLogSave = process.env.NODE_ENV === 'development' && 
+                            (!this.lastSaveLogTime || Date.now() - this.lastSaveLogTime > 5000);
+        
+        if (shouldLogSave) {
+          console.log('✓ [ServerConfigManager] 保存验证成功，文件大小:', savedContent.length)
+          if (config.tmdbApiKey) {
+            console.log('✅ [ServerConfigManager] API密钥保存验证成功')
+          }
+          this.lastSaveLogTime = Date.now();
         }
       } else {
         console.error('❌ [ServerConfigManager] 保存后文件不存在!')
@@ -454,20 +544,26 @@ export class ServerConfigManager {
   }
   
   /**
-   * 更新配置
+   * 更新配置 (减少日志输出)
    */
   static updateConfig(updates: Partial<ServerConfig>): ServerConfig {
-    console.log('🔄 [ServerConfigManager] 开始更新配置:', updates)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 [ServerConfigManager] 开始更新配置:', updates)
+    }
     
     const currentConfig = this.getConfig()
-    console.log('📋 [ServerConfigManager] 当前配置:', currentConfig)
-    
     const newConfig = { ...currentConfig, ...updates }
-    console.log('🆕 [ServerConfigManager] 新配置:', newConfig)
     
     try {
       this.saveConfig(newConfig)
-      console.log('✅ [ServerConfigManager] 配置更新成功')
+      // 限制更新日志频率
+      const shouldLogUpdate = process.env.NODE_ENV === 'development' && 
+                            (!this.lastUpdateLogTime || Date.now() - this.lastUpdateLogTime > 5000);
+      
+      if (shouldLogUpdate) {
+        console.log('✅ [ServerConfigManager] 配置更新成功')
+        this.lastUpdateLogTime = Date.now();
+      }
     } catch (error) {
       console.error('❌ [ServerConfigManager] 配置更新失败:', error)
       throw error
@@ -497,17 +593,20 @@ export class ServerConfigManager {
   }
   
   /**
-   * 设置特定配置项
+   * 设置特定配置项 (减少日志输出)
    */
   static setConfigItem(key: keyof ServerConfig, value: any): void {
-    console.log('🔧 [ServerConfigManager] 开始设置配置项:', { key, valueType: typeof value, valueLength: value?.length })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 [ServerConfigManager] 开始设置配置项:', { key, valueType: typeof value, valueLength: value?.length })
+    }
     
     const updates = { [key]: value } as Partial<ServerConfig>
-    console.log('📋 [ServerConfigManager] 准备更新:', updates)
     
     try {
       this.updateConfig(updates)
-      console.log('✅ [ServerConfigManager] 配置项设置成功:', key)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ [ServerConfigManager] 配置项设置成功:', key)
+      }
     } catch (error) {
       console.error('❌ [ServerConfigManager] 配置项设置失败:', error)
       throw error

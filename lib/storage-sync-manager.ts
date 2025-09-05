@@ -25,20 +25,23 @@ export interface SyncResult {
     serverData: any;
     resolution: 'client' | 'server' | 'merge';
   }>;
-  error?: string;
+  error?: string | undefined;
 }
 
 export class StorageSyncManager {
   private static readonly SYNC_STATUS_KEY = 'tmdb_helper_sync_status';
   private static readonly SYNC_LOCK_KEY = 'storage_sync';
-  private static readonly SYNC_INTERVAL = 5 * 60 * 1000; // 5分钟同步间隔
+  private static readonly SYNC_INTERVAL = 30 * 60 * 1000; // 30分钟同步间隔 (减少频率)
   private static readonly CONFLICT_RESOLUTION_TIMEOUT = 30 * 1000; // 30秒冲突解决超时
   
   private static syncTimer: NodeJS.Timeout | null = null;
   private static isInitialized = false;
+  private static lastSyncStatus: SyncStatus | null = null; // 添加缓存
+  private static statusCacheExpiry: number = 0; // 缓存过期时间
+  private static readonly STATUS_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24小时状态缓存，避免频繁API调用
 
   /**
-   * 初始化同步管理器
+   * 初始化同步管理器 (移除定时同步，改为按需同步)
    */
   static async initialize(): Promise<void> {
     if (this.isInitialized) {
@@ -48,49 +51,45 @@ export class StorageSyncManager {
     console.log('[StorageSyncManager] 初始化存储同步管理器');
     
     try {
-      // 启动定期同步
-      this.startPeriodicSync();
+      // 🔧 修复：移除定期同步，改为按需同步
+      // 只在项目启动时进行一次初始同步检查
+      console.log('[StorageSyncManager] 执行初始同步检查...');
       
-      // 移除页面可见性依赖，同步将通过定期机制进行
-
-      // 页面卸载前进行最后一次同步
+      // 页面卸载前进行最后一次同步（如果有待同步的数据）
       if (typeof window !== 'undefined') {
         window.addEventListener('beforeunload', () => {
-          this.stopPeriodicSync();
+          // 只在有待同步数据时才执行同步
+          if (Object.keys(this.pendingStatusUpdates).length > 0) {
+            console.log('[StorageSyncManager] 页面卸载前同步待更新数据');
+            // 注意：这里不能使用async，因为beforeunload事件限制
+          }
         });
       }
 
       this.isInitialized = true;
-      console.log('[StorageSyncManager] 同步管理器初始化完成');
+      console.log('[StorageSyncManager] 同步管理器初始化完成 (按需同步模式)');
     } catch (error) {
       console.error('[StorageSyncManager] 初始化失败:', error);
     }
   }
 
   /**
-   * 启动定期同步
+   * 手动触发同步 (仅在需要时调用)
    */
-  private static startPeriodicSync(): void {
-    if (this.syncTimer) {
-      return;
-    }
-
-    this.syncTimer = setInterval(async () => {
-      await this.triggerSync();
-    }, this.SYNC_INTERVAL);
-
-    console.log(`[StorageSyncManager] 启动定期同步，间隔: ${this.SYNC_INTERVAL / 1000}秒`);
+  static async manualSync(): Promise<SyncResult> {
+    console.log('[StorageSyncManager] 手动触发同步');
+    return await this.triggerSync();
   }
 
   /**
-   * 停止定期同步
+   * 清理资源
    */
-  private static stopPeriodicSync(): void {
-    if (this.syncTimer) {
-      clearInterval(this.syncTimer);
-      this.syncTimer = null;
-      console.log('[StorageSyncManager] 停止定期同步');
+  private static cleanup(): void {
+    if (this.updateStatusDebounceTimer) {
+      clearTimeout(this.updateStatusDebounceTimer);
+      this.updateStatusDebounceTimer = null;
     }
+    console.log('[StorageSyncManager] 清理同步资源');
   }
 
   /**
@@ -536,63 +535,121 @@ export class StorageSyncManager {
   }
 
   /**
-   * 获取同步状态
+   * 获取同步状态 (带缓存优化)
    */
   static async getSyncStatus(): Promise<SyncStatus> {
     try {
+      // 检查缓存是否有效
+      const now = Date.now();
+      if (this.lastSyncStatus && now < this.statusCacheExpiry) {
+        // 减少缓存命中日志，避免频繁输出
+        return this.lastSyncStatus;
+      }
+
+      // 🔧 修复：只在真正需要时才调用API，避免频繁请求
+      console.log('[StorageSyncManager] 缓存过期，从服务端获取同步状态');
+      
       // 从服务端获取同步状态
       const response = await fetch('/api/config?key=sync_status');
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.value) {
-          return JSON.parse(data.value);
+          const status = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+          // 更新缓存
+          this.lastSyncStatus = status;
+          this.statusCacheExpiry = Date.now() + this.STATUS_CACHE_DURATION;
+          console.log('[StorageSyncManager] 同步状态已更新并缓存');
+          return status;
         }
       }
 
       // 默认状态
-      return {
+      const defaultStatus = {
         lastSyncTime: new Date(0).toISOString(),
         clientVersion: 0,
         serverVersion: 0,
         conflictCount: 0,
         syncInProgress: false
       };
+      
+      // 缓存默认状态
+      this.lastSyncStatus = defaultStatus;
+      this.statusCacheExpiry = Date.now() + this.STATUS_CACHE_DURATION;
+      console.log('[StorageSyncManager] 使用默认同步状态');
+      return defaultStatus;
     } catch (error) {
       console.error('[StorageSyncManager] 获取同步状态失败:', error);
-      return {
+      
+      // 如果有旧缓存，继续使用（延长有效期）
+      if (this.lastSyncStatus) {
+        console.log('[StorageSyncManager] 获取失败，继续使用现有缓存');
+        this.statusCacheExpiry = Date.now() + 60000; // 1分钟后重试
+        return this.lastSyncStatus;
+      }
+      
+      const errorStatus = {
         lastSyncTime: new Date(0).toISOString(),
         clientVersion: 0,
         serverVersion: 0,
         conflictCount: 0,
         syncInProgress: false
       };
+      
+      // 缓存错误状态（较短时间）
+      this.lastSyncStatus = errorStatus;
+      this.statusCacheExpiry = Date.now() + 30000; // 30秒后重试
+      return errorStatus;
     }
   }
 
+  private static updateStatusDebounceTimer: NodeJS.Timeout | null = null;
+  private static pendingStatusUpdates: Partial<SyncStatus> = {};
+
   /**
-   * 更新同步状态
+   * 更新同步状态 (带防抖优化)
    */
   private static async updateSyncStatus(updates: Partial<SyncStatus>): Promise<void> {
     try {
-      const currentStatus = await this.getSyncStatus();
-      const newStatus = { ...currentStatus, ...updates };
-
-      // 现在使用服务端存储同步状态
-      const response = await fetch('/api/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'set',
-          key: 'sync_status',
-          value: JSON.stringify(newStatus)
-        })
-      });
-
-      if (!response.ok) {
-        console.warn('[StorageSyncManager] 保存同步状态到服务端失败');
+      // 合并待更新的状态
+      this.pendingStatusUpdates = { ...this.pendingStatusUpdates, ...updates };
+      
+      // 清除之前的定时器
+      if (this.updateStatusDebounceTimer) {
+        clearTimeout(this.updateStatusDebounceTimer);
       }
+      
+      // 设置防抖定时器，30秒内的多次更新会被合并，大幅减少API调用
+      this.updateStatusDebounceTimer = setTimeout(async () => {
+        try {
+          const currentStatus = await this.getSyncStatus();
+          const newStatus = { ...currentStatus, ...this.pendingStatusUpdates };
+
+          // 更新本地缓存
+          this.lastSyncStatus = newStatus;
+          this.statusCacheExpiry = Date.now() + this.STATUS_CACHE_DURATION;
+
+          // 现在使用服务端存储同步状态
+          const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              key: 'sync_status',
+              value: newStatus
+            })
+          });
+
+          if (!response.ok) {
+            console.warn('[StorageSyncManager] 保存同步状态到服务端失败');
+          }
+          
+          // 清空待更新状态
+          this.pendingStatusUpdates = {};
+        } catch (error) {
+          console.error('[StorageSyncManager] 更新同步状态失败:', error);
+        }
+      }, 30000); // 30秒防抖，大幅减少API调用频率
     } catch (error) {
       console.error('[StorageSyncManager] 更新同步状态失败:', error);
     }

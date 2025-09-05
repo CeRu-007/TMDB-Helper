@@ -44,6 +44,7 @@ TMDB-Import-master/
 # AI Assistant directories
 .augment/
 .kiro/
+.codebuddy/
 
 # Local data files
 data/

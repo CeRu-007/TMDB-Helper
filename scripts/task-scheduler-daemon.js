@@ -218,8 +218,18 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-// 启动主程序
-main().catch(error => {
-  console.error(`[TaskSchedulerDaemon] 守护进程启动失败:`, error);
-  process.exit(1);
-});
+// 守护进程已禁用 - 避免频繁的配置API调用
+console.log(`[TaskSchedulerDaemon] 守护进程已禁用，避免频繁API调用。如需启用，请手动运行此脚本。`);
+console.log(`[TaskSchedulerDaemon] 使用方法: node scripts/task-scheduler-daemon.js --enable`);
+
+// 只有明确指定 --enable 参数才启动
+const enableFlag = process.argv.includes('--enable');
+if (enableFlag) {
+  console.log(`[TaskSchedulerDaemon] 检测到 --enable 参数，启动守护进程...`);
+  main().catch(error => {
+    console.error(`[TaskSchedulerDaemon] 守护进程启动失败:`, error);
+    process.exit(1);
+  });
+} else {
+  console.log(`[TaskSchedulerDaemon] 守护进程未启动。要启动请使用: node scripts/task-scheduler-daemon.js --enable`);
+}

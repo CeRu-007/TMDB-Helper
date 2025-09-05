@@ -148,17 +148,27 @@ class TaskScheduler {
         this.scheduleTask(task);
       });
 
-      // 启动定期验证任务关联的定时器（每小时检查一次）
-      this.startPeriodicValidation();
+      // 只在启动时执行一次验证和清理，避免频繁的定时检查
+      console.log('[TaskScheduler] 执行启动时的一次性验证和清理...');
+      
+      // 执行一次任务关联验证
+      try {
+        const result = await StorageManager.validateAndFixTaskAssociations();
+        if (result.invalidTasks > 0) {
+          console.log(`[TaskScheduler] 启动验证发现并处理了 ${result.invalidTasks} 个无效任务`);
+        }
+      } catch (error) {
+        console.error('[TaskScheduler] 启动验证失败:', error);
+      }
 
-      // 启动定期检查错过任务的定时器（每10分钟检查一次）
-      this.startMissedTasksCheck();
+      // 执行一次已完结项目清理
+      try {
+        await this.cleanupCompletedProjects();
+      } catch (error) {
+        console.error('[TaskScheduler] 启动清理失败:', error);
+      }
 
-      // 启动定期清理已完结项目的任务（每小时检查一次）
-      this.startCompletedProjectsCleanup();
-
-      // 启动定期验证所有定时器（每30分钟检查一次）
-      this.startPeriodicTimerValidation();
+      console.log('[TaskScheduler] 启动验证和清理完成，已禁用定时检查以避免频繁API调用');
 
       this.isInitialized = true;
       console.log(`[TaskScheduler] 初始化完成，已加载 ${tasks.length} 个定时任务 (${enabledTasks.length} 个已启用)`);

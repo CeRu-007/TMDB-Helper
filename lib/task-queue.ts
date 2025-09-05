@@ -37,9 +37,7 @@ export class TaskQueue {
   private queue: Map<string, QueuedTask> = new Map();
   private processingTasks: Set<string> = new Set();
   private isProcessing = false;
-  private processingInterval: NodeJS.Timeout | null = null;
   private readonly QUEUE_KEY = 'tmdb_helper_task_queue';
-  private readonly PROCESSING_INTERVAL = 5000; // 5秒检查间隔
 
   private constructor() {
     this.loadQueue();
@@ -53,27 +51,27 @@ export class TaskQueue {
   }
 
   /**
-   * 启动队列处理
+   * 启动队列处理（只在启动时执行一次）
    */
   public startProcessing(): void {
     if (this.isProcessing) {
+      return;
+    }
+    this.isProcessing = true;
+    this.processQueue(); // 只在启动时处理一次
       console.log('[TaskQueue] 队列处理已在运行中');
       return;
     }
 
-    console.log('[TaskQueue] 启动任务队列处理');
+    console.log('[TaskQueue] 启动任务队列处理（一次性执行）');
     this.isProcessing = true;
 
-    this.processingInterval = setInterval(async () => {
-      await this.processQueue();
-    }, this.PROCESSING_INTERVAL);
-
-    // 立即处理一次
+    // 只在启动时处理一次，移除定时器
     this.processQueue();
   }
 
   /**
-   * 停止队列处理
+   * 停止队列处理（已移除定时器）
    */
   public stopProcessing(): void {
     if (!this.isProcessing) {
@@ -82,11 +80,6 @@ export class TaskQueue {
 
     console.log('[TaskQueue] 停止任务队列处理');
     this.isProcessing = false;
-
-    if (this.processingInterval) {
-      clearInterval(this.processingInterval);
-      this.processingInterval = null;
-    }
   }
 
   /**
