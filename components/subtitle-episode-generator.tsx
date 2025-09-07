@@ -192,7 +192,7 @@ const SUMMARY_STYLES = [
   // 平台风格
   { id: "crunchyroll", name: "Crunchyroll平台风格", description: "动漫平台专业风格：结构化简洁表达，客观描述核心冲突，每段≤15字的精准叙述", icon: "🍥" },
   { id: "netflix", name: "Netflix平台风格", description: "流媒体平台戏剧风格：情感驱动叙述，强调角色困境与选择，富有张力的悬念营造", icon: "🎬" },
-  { id: "ai_free", name: "AI自由发挥", description: "让AI根据内容自主选择最合适的表达方式，无固定格式限制，追求自然流畅的叙述", icon: "🤖" },
+  { id: "ai_free", name: "AI自由发挥", description: "AI根据内容自由生成", icon: "🤖" },
 
   // 常规风格
   { id: "professional", name: "专业", description: "正式、准确的描述风格", icon: "📝" },
@@ -483,6 +483,25 @@ export function SubtitleEpisodeGenerator({
     })()
   }, [])
 
+  // 自动保存配置变更到localStorage
+  React.useEffect(() => {
+    // 跳过初始化时的保存
+    if (config.model === "deepseek-ai/DeepSeek-V2.5" && 
+        config.summaryLength[0] === 20 && 
+        config.summaryLength[1] === 30 && 
+        config.selectedStyles.length === 0) {
+      return
+    }
+
+    // 延迟保存，避免频繁保存
+    const timeoutId = setTimeout(() => {
+      const { model, ...configWithoutModel } = config
+      void EpisodeConfigClient.saveConfig(JSON.stringify(configWithoutModel))
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
+  }, [config])
+
   // 从全局设置加载API密钥
   const loadGlobalSettings = React.useCallback(async () => {
     // 加载硅基流动设置
@@ -721,8 +740,11 @@ export function SubtitleEpisodeGenerator({
             // 提取字幕文本（跳过序号和时间戳）
             const text = lines.slice(2).join(' ').replace(/<[^>]*>/g, '').trim()
             if (text) {
-              episodeContent += text + " "
-              totalContent += text + " "
+              // 保持原始字幕格式，每行字幕独立保存
+              episodeContent += `${text}
+`
+              totalContent += `${text}
+`
 
               // 检查是否是新集的开始（简单的启发式规则）
               if (text.match(/第\s*\d+\s*集|Episode\s*\d+|EP\s*\d+/i)) {
@@ -1186,8 +1208,6 @@ ${config.imitateConfig.sampleContent}
    - 【词汇创新】：严禁直接使用样本中的具体词汇、短语或句子，必须用全新的词汇表达
    - 【风格一致】：确保生成的简介在写作风格上与样本保持一致，但用词完全不同
    - 【内容原创】：完全基于当前分集内容创作，只模仿风格不复制内容
-4. **语言要求**：使用中文，严格按照样本的语言风格和表达方式
-
 ## ⚠️ 重要要求
 - 简介字数必须控制在${config.summaryLength[0]}-${config.summaryLength[1]}字范围内
 - 如果内容需要，最多可超出到${config.summaryLength[1] + 10}字
@@ -1197,14 +1217,6 @@ ${config.imitateConfig.sampleContent}
 - **重点：必须严格模仿样本的写作风格，包括用词、句式、表达习惯等**
 
 ## 输出格式
-**🚨 严格要求：只输出JSON，禁止任何推理过程 🚨**
-
-❌ 错误示例：
-"让我来分析一下这段内容..."
-"首先，我需要理解..."
-"根据字幕内容，我认为..."
-
-✅ 正确示例：
 {
   "title": "分集标题",
   "summary": "分集剧情简介",
@@ -1241,8 +1253,7 @@ ${config.customPrompt}` : ''}`
    - **语言风格**：
      * 生动有力，富有感染力
      * 适度使用修饰词增强表现力
-     * 避免过于客观的描述，注入情感色彩
-     * 禁用疑问句，但可使用感叹词增强语气` : ''
+     * 避免过于客观的描述，注入情感色彩` : ''
 
     // Crunchyroll风格的特殊要求
     const crunchyrollSpecialRequirements = styleId === 'crunchyroll' ? `
@@ -1259,19 +1270,12 @@ ${config.customPrompt}` : ''}`
      * 奇幻/恐怖类：强调危机或超自然元素
      * 日常/恋爱类：突出情感变化或生活事件
      * 动作/冒险类：点明战斗目标与阻碍
-   - **语言要求**：
-     * 使用陈述句，禁用疑问句、反问句
-     * 客观中立叙述，不带主观情感色彩
-     * 避免华丽辞藻和复杂句式
-     * 重点描述动作和事件，而非心理活动` : ''
+` : ''
 
     // AI自由发挥风格的特殊要求
     const aiFreeSpecialRequirements = styleId === 'ai_free' ? `
 5. **AI自由发挥风格特殊要求**：
-   - 根据这段字幕文本生成一段分集剧情简介
-   - 无任何格式限制，完全按照AI的理解和判断来表达
-   - 自主选择最合适的叙述方式和语言风格
-   - 保持简洁明了，突出核心剧情要点` : ''
+   - 根据这段字幕文本生成一集分集剧情简介` : ''
 
     return `请根据以下字幕内容，为第${episode.episodeNumber}集生成标题和剧情简介：
 
@@ -1282,7 +1286,7 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
 1. **标题要求**：${titleStyleRequirements}
 2. **简介要求**：${summaryRequirement}，包含主要情节和看点
 3. **简介风格要求**：严格采用${styleDescription}的风格，确保风格特色鲜明
-4. **语言要求**：使用中文，语言生动自然${netflixSpecialRequirements}${crunchyrollSpecialRequirements}${aiFreeSpecialRequirements}
+${netflixSpecialRequirements}${crunchyrollSpecialRequirements}${aiFreeSpecialRequirements}
 
 ## ⚠️ 重要要求
 - 简介字数必须控制在${config.summaryLength[0]}-${config.summaryLength[1]}字范围内
@@ -1292,14 +1296,6 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
 - **所有简介必须使用陈述句，确定性地描述剧情内容**
 
 ## 输出格式
-**🚨 严格要求：只输出JSON，禁止任何推理过程 🚨**
-
-❌ 错误示例：
-"让我来分析一下这段内容..."
-"首先，我需要理解..."
-"根据字幕内容，我认为..."
-
-✅ 正确示例：
 {
   "title": "分集标题",
   "summary": "分集剧情简介",
@@ -1337,7 +1333,6 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
 1. **标题要求**：${titleStyleRequirements}
 2. **简介要求**：字数控制在${lengthRange}字范围内，最多不超过${config.summaryLength[1] + 10}字，包含主要情节和看点
 3. **风格要求**：采用${styleDescriptions}的风格
-4. **语言要求**：使用中文，语言生动自然
 
 ## ⚠️ 重要要求
 - 简介字数必须控制在${lengthRange}字范围内
@@ -1587,22 +1582,13 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   const getOperationConfig = (operation: EnhanceOperation) => {
     switch (operation) {
       case 'polish':
-      case 'formalize':
-      case 'literarize':
         return { temperature: 0.6, maxTokens: 1000 } // 需要更精确的控制
       case 'shorten':
-      case 'summarize':
         return { temperature: 0.4, maxTokens: 600 } // 需要更简洁的输出
       case 'expand':
-      case 'continue':
-      case 'addSpoilers':
         return { temperature: 0.8, maxTokens: 1200 } // 需要更多创造性
-      case 'colloquialize':
-      case 'rephrase':
       case 'rewrite':
         return { temperature: 0.7, maxTokens: 1000 } // 平衡创造性和准确性
-      case 'removeSpoilers':
-        return { temperature: 0.5, maxTokens: 800 } // 需要谨慎处理
       case 'proofread':
         return { temperature: 0.3, maxTokens: 1000 } // 需要精确的语法纠正
       default:
@@ -1833,232 +1819,11 @@ ${selectedTextInfo.text}
 标题：[扩写后的标题]
 简介：[扩写后的简介]`
 
-      case 'continue':
-        return `请在以下影视剧集简介基础上进行专业续写，延续和深化故事发展：
 
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
 
-【续写策略】
-1. **自然衔接**：从现有情节的最后一个关键点开始延续
-2. **情节推进**：增加新的冲突、转折或揭示
-3. **角色发展**：展现人物在新情况下的反应和成长
-4. **悬念升级**：在解决部分疑问的同时制造新的悬念
-5. **节奏控制**：保持紧凑的叙事节奏，避免拖沓
 
-【续写要求】
-- 新增内容必须与原有情节逻辑一致
-- 保持角色性格的连贯性
-- 增强本集的完整性和观看价值
-- 为下一集留下合理的悬念点
-- 标题可根据新内容适度调整
 
-请严格按照以下格式输出：
-标题：[续写后的标题]
-简介：[续写后的完整简介]`
 
-      case 'formalize':
-        return `请将以下影视剧集标题和简介转换为正式、专业的官方表达风格：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【正式化标准】
-1. **词汇规范**：使用标准书面语，避免网络用语、俚语和口语化表达
-2. **句式严谨**：采用完整的句式结构，避免省略和随意表达
-3. **语调客观**：保持中性、客观的叙述语调，避免过于主观的评价
-4. **表达精准**：使用准确、专业的词汇描述情节和人物关系
-5. **格式规范**：符合官方发布和正式媒体的表达标准
-
-【适用场景】
-- 官方网站和平台发布
-- 新闻稿和媒体通稿
-- 正式的宣传材料
-- 学术或专业讨论
-
-请严格按照以下格式输出：
-标题：[正式化后的标题]
-简介：[正式化后的简介]`
-
-      case 'colloquialize':
-        return `请将以下影视剧集标题和简介转换为通俗易懂、贴近大众的亲民表达风格：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【口语化策略】
-1. **词汇平民化**：将专业术语、书面语转换为日常用语
-2. **表达生活化**：使用贴近生活的比喻和描述方式
-3. **语调亲切**：采用轻松、亲和的叙述语调
-4. **句式简化**：使用简单直接的句式，避免复杂的从句结构
-5. **情感共鸣**：增加能引起普通观众共鸣的表达
-
-【口语化特点】
-- 就像朋友间聊天一样自然
-- 让没有专业背景的观众也能轻松理解
-- 保持内容的准确性但降低理解门槛
-- 增加趣味性和亲近感
-
-请严格按照以下格式输出：
-标题：[口语化后的标题]
-简介：[口语化后的简介]`
-
-      case 'literarize':
-        return `请将以下影视剧集标题和简介转换为具有文学色彩和艺术气息的高雅表达风格：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【文艺化手法】
-1. **修辞运用**：适度使用比喻、拟人、排比等修辞手法
-2. **词汇升华**：选用富有诗意和文化内涵的词汇
-3. **意境营造**：通过文字营造深层的情感氛围和意境
-4. **节奏美感**：注重语言的韵律感和节奏美
-5. **文化底蕴**：融入适当的文化元素和人文思考
-
-【文艺化原则】
-- 保持故事本质，但提升表达层次
-- 避免过度华丽而失去可读性
-- 增强内容的艺术价值和文化品味
-- 适合文艺片、艺术电影等高端作品
-- 体现创作者的文学素养和艺术追求
-
-请严格按照以下格式输出：
-标题：[文艺化后的标题]
-简介：[文艺化后的简介]`
-
-      case 'rewrite':
-        return `请完全重新构思和表达以下影视剧集标题和简介，提供全新的叙述视角：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【重写策略】
-1. **视角转换**：尝试从不同角色或观察者的视角重新叙述
-2. **结构重组**：完全改变信息的呈现顺序和逻辑结构
-3. **表达革新**：使用全新的词汇、句式和表达方式
-4. **重点调整**：可以突出原文中的次要元素，淡化主要元素
-5. **风格转变**：在保持内容准确的前提下改变整体风格
-
-【重写要求】
-- 核心事实和关键情节必须保持一致
-- 读者应该感受到完全不同的阅读体验
-- 新版本应该具有独立的价值和吸引力
-- 避免简单的同义词替换，要有实质性的创新
-- 保持逻辑清晰和可读性
-
-请严格按照以下格式输出：
-标题：[重写后的标题]
-简介：[重写后的简介]`
-
-      case 'summarize':
-        return `请将以下影视剧集标题和简介提炼为高度浓缩的核心摘要：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【总结策略】
-1. **核心提取**：识别并保留最关键的故事核心和转折点
-2. **信息筛选**：只保留对理解剧情绝对必要的信息
-3. **精华浓缩**：将复杂情节压缩为最简洁的表达
-4. **重点突出**：确保读者能快速抓住本集的核心看点
-5. **逻辑完整**：虽然简短但逻辑链条必须完整
-
-【总结标准】
-- 标题6-8字，直击核心主题
-- 简介30-50字，包含最关键信息
-- 删除所有修饰词和次要细节
-- 保持故事的基本逻辑和因果关系
-- 适合快速浏览和信息获取
-
-请严格按照以下格式输出：
-标题：[总结后的标题]
-简介：[总结后的简介]`
-
-      case 'rephrase':
-        return `请改写以下影视剧集标题和简介，保持核心意思不变但提供全新的表达方式：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【改写原则】
-1. **意思保持**：核心信息、情节发展、人物关系完全一致
-2. **表达创新**：使用不同的词汇、句式和表达角度
-3. **风格一致**：保持原有的语言风格和情感基调
-4. **避免重复**：尽量不使用原文中的关键词汇和句式
-5. **自然流畅**：新表达应该自然流畅，不显生硬
-
-【改写技巧】
-- 同义词替换但要精准恰当
-- 调整句子结构和信息顺序
-- 改变描述角度但不改变事实
-- 保持原有的节奏感和可读性
-- 确保改写后的版本同样吸引人
-
-请严格按照以下格式输出：
-标题：[改写后的标题]
-简介：[改写后的简介]`
-
-      case 'removeSpoilers':
-        return `请精心移除以下影视剧集标题和简介中的剧透内容，保持最佳的观看体验：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【去剧透策略】
-1. **识别剧透点**：准确识别可能影响观看体验的关键信息
-2. **保留悬念**：删除结局暗示但保留足够的悬念和吸引力
-3. **维持逻辑**：确保去除剧透后内容仍然逻辑完整
-4. **平衡信息**：在不透露关键情节的前提下提供足够的背景
-5. **增强期待**：通过暗示和铺垫增强观众的期待感
-
-【去剧透原则】
-- 删除具体的结果和结局
-- 保留冲突设置和人物关系
-- 避免透露关键转折点的具体内容
-- 保持故事的基本框架和吸引力
-- 适合预告片、宣传和推广使用
-
-请严格按照以下格式输出：
-标题：[去剧透后的标题]
-简介：[去剧透后的简介]`
-
-      case 'addSpoilers':
-        return `请在以下影视剧集标题和简介中适度增加剧情细节，满足深度了解需求：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【增加剧透策略】
-1. **关键揭示**：适度透露重要的情节转折和结果
-2. **细节补充**：增加具体的剧情发展和人物命运
-3. **深度分析**：提供更多背景信息和因果关系
-4. **结果暗示**：可以暗示或直接说明某些关键事件的结果
-5. **讨论价值**：增加有助于剧情分析和讨论的信息
-
-【增加剧透原则】
-- 适合已观看或不介意剧透的观众
-- 提供更完整的故事脉络和逻辑
-- 增强内容的分析价值和讨论深度
-- 保持叙述的连贯性和可读性
-- 适合剧评、解析和深度讨论使用
-
-【注意事项】
-- 标题可以更直接地反映核心冲突或结果
-- 简介可以包含更多具体的情节发展
-
-请严格按照以下格式输出：
-标题：[增加剧透后的标题]
-简介：[增加剧透后的简介]`
 
       case 'proofread':
         return `请对以下影视剧集标题和简介进行语法纠错和语句优化，使其更加通顺流畅：
@@ -2101,15 +1866,7 @@ ${selectedTextInfo.text}
       case 'polish': return '润色'
       case 'shorten': return '缩写'
       case 'expand': return '扩写'
-      case 'continue': return '续写'
-      case 'formalize': return '正式化'
-      case 'colloquialize': return '口语化'
-      case 'literarize': return '文艺化'
-      case 'rewrite': return '重写'
-      case 'summarize': return '总结'
-      case 'rephrase': return '改写'
-      case 'removeSpoilers': return '去剧透'
-      case 'addSpoilers': return '增加剧透'
+      case 'rewrite': return '改写'
       case 'proofread': return '纠错'
       default: return '处理'
     }
@@ -3149,7 +2906,7 @@ function WorkArea({
 }
 
 // 操作类型定义
-type EnhanceOperation = 'polish' | 'shorten' | 'expand' | 'continue' | 'formalize' | 'colloquialize' | 'literarize' | 'rewrite' | 'summarize' | 'rephrase' | 'removeSpoilers' | 'addSpoilers' | 'proofread'
+type EnhanceOperation = 'polish' | 'shorten' | 'expand' | 'proofread' | 'rewrite'
 
 // 结果展示组件
 const ResultsDisplay: React.FC<{
