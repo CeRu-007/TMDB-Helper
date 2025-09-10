@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('写入TMDB import.csv失败:', error)
+    
     return NextResponse.json(
       { 
         error: '写入文件失败',

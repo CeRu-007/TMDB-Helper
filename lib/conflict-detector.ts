@@ -36,7 +36,7 @@ export class ConflictDetector {
    */
   public updateConfig(config: Partial<ConflictDetectionConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[ConflictDetector] 配置已更新:', this.config);
+    
   }
 
   /**
@@ -52,7 +52,7 @@ export class ConflictDetector {
    */
   public unregisterTask(taskId: string): void {
     if (this.scheduledTasks.delete(taskId)) {
-      console.log(`[ConflictDetector] 取消注册任务: ${taskId}`);
+      
     }
   }
 
@@ -255,7 +255,7 @@ export class ConflictDetector {
     });
 
     if (expiredTasks.length > 0) {
-      console.log(`[ConflictDetector] 清理了 ${expiredTasks.length} 个过期任务注册`);
+      
     }
   }
 

@@ -79,7 +79,6 @@ export class OperationQueueManager {
     const mergedOperations = await this.mergeOperation(queuedOperation);
     
     if (mergedOperations.length > 0) {
-      console.log(`[OperationQueue] 操作已合并: ${operationId} 合并了 ${mergedOperations.length} 个操作`);
       
       // 通知被合并的操作
       for (const mergedId of mergedOperations) {
@@ -104,7 +103,7 @@ export class OperationQueueManager {
     
     // 检查队列长度限制
     if (queue.length >= this.MAX_QUEUE_SIZE) {
-      console.warn(`[OperationQueue] 队列已满，丢弃最旧的操作: ${operation.itemId}`);
+      
       const oldestOp = queue.shift();
       if (oldestOp) {
         this.notifyOperationResult(oldestOp.id, false, '队列已满，操作被丢弃');
@@ -189,7 +188,7 @@ export class OperationQueueManager {
    */
   private async processItemQueue(itemId: string): Promise<void> {
     if (this.processingItems.has(itemId)) {
-      console.log(`[OperationQueue] 项目 ${itemId} 正在处理中，跳过`);
+      
       return;
     }
 
@@ -206,7 +205,7 @@ export class OperationQueueManager {
       const lockResult = await DistributedLock.acquireLock(lockKey, 'storage_write', 30000);
       
       if (!lockResult.success) {
-        console.warn(`[OperationQueue] 无法获取锁: ${itemId}, 延迟处理`);
+        
         // 延迟重试
         setTimeout(() => this.processItemQueue(itemId), 1000);
         return;
@@ -235,7 +234,6 @@ export class OperationQueueManager {
       }
 
     } catch (error) {
-      console.error(`[OperationQueue] 处理队列失败: ${itemId}`, error);
       
       // 标记队列中的操作为失败
       const queue = this.itemQueues.get(itemId) || [];
@@ -283,7 +281,7 @@ export class OperationQueueManager {
           queue.unshift(operation); // 插入到队列前面，优先处理
           
         } else {
-          console.error(`[OperationQueue] 操作最终失败: ${operation.id}`, error);
+          
           this.notifyOperationResult(operation.id, false, errorMessage);
         }
       }
@@ -312,16 +310,15 @@ export class OperationQueueManager {
 
       return true;
     } catch (error) {
-      console.error(`[OperationQueue] 操作执行失败: ${operation.id}`, error);
-
+      
       // 特殊处理 AbortError 和超时错误
       if (error instanceof Error) {
         if (error.message.includes('请求超时') || error.message.includes('请求被中止')) {
-          console.warn(`[OperationQueue] 检测到网络问题，操作将重试: ${operation.id}`);
+          
           // 对于网络问题，我们认为这是可重试的错误
           return false;
         } else if (error.message.includes('API调用失败')) {
-          console.warn(`[OperationQueue] API调用失败，操作将重试: ${operation.id}`);
+          
           return false;
         }
       }
@@ -394,7 +391,6 @@ export class OperationQueueManager {
       }
     }
 
-    console.log(`[OperationQueue] 清理完成，剩余队列: ${this.itemQueues.size}`);
   }
 
   /**

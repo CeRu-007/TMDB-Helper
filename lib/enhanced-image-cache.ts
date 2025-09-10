@@ -110,7 +110,7 @@ class EnhancedImageCache {
         })
       }
     } catch (error) {
-      console.warn('Failed to load enhanced image cache from localStorage:', error)
+      
     }
   }
 
@@ -137,7 +137,7 @@ class EnhancedImageCache {
       
       localStorage.setItem(this.localStorageKey, JSON.stringify(data))
     } catch (error) {
-      console.warn('Failed to save enhanced image cache to localStorage:', error)
+      
     }
   }
 
@@ -149,7 +149,7 @@ class EnhancedImageCache {
         localStorage.removeItem(this.localStorageKey)
       }
     } catch (error) {
-      console.warn('Failed to clear localStorage:', error)
+      
     }
   }
 

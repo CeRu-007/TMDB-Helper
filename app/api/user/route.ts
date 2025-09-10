@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[API User] GET 错误:', error)
+    
     return NextResponse.json({ error: '服务器内部错误' }, { status: 500 })
   }
 }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[API User] POST 错误:', error)
+    
     return NextResponse.json({ error: '服务器内部错误' }, { status: 500 })
   }
 }
@@ -135,7 +135,7 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[API User] DELETE 错误:', error)
+    
     return NextResponse.json({ error: '服务器内部错误' }, { status: 500 })
   }
 }

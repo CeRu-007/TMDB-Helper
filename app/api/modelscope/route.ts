@@ -56,12 +56,6 @@ async function handleStreamResponse(response: Response, serviceType: string) {
       }
     }
 
-    console.log('流式响应处理完成:', {
-      thinkingLength: thinkingContent.length,
-      answerLength: answerContent.length,
-      service: serviceType
-    });
-
     // 返回最终答案内容
     return NextResponse.json({
       success: true,
@@ -74,7 +68,7 @@ async function handleStreamResponse(response: Response, serviceType: string) {
     });
 
   } catch (error: any) {
-    console.error('处理流式响应失败:', error);
+    
     return NextResponse.json(
       {
         error: '处理流式响应失败',
@@ -85,7 +79,6 @@ async function handleStreamResponse(response: Response, serviceType: string) {
     );
   }
 }
-
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     // 验证API密钥基本格式（移除过于严格的sk-前缀要求）
     if (!apiKey || apiKey.length < 10) {
-      console.warn('API密钥格式警告: API密钥长度过短或为空');
+      
       return NextResponse.json(
         {
           error: 'API密钥格式错误：密钥不能为空且长度不能过短',
@@ -206,12 +199,6 @@ export async function POST(request: NextRequest) {
     // 检查是否是需要特殊处理的思考模型（Qwen3-32B 和 DeepSeek-R1 系列）
     const isThinkingModel = model.includes('Qwen3-32B') || model.includes('DeepSeek-R1');
 
-    console.log('模型类型检测:', {
-      model,
-      isThinkingModel,
-      willUseStream: isThinkingModel
-    });
-
     // 构建请求体
     const requestBody: any = {
       model,
@@ -253,7 +240,7 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error(`${serviceType} API错误:`, response.status, response.statusText, errorData);
+      
       console.error('请求详情:', {
         url: apiEndpoint,
         method: 'POST',
@@ -271,9 +258,9 @@ export async function POST(request: NextRequest) {
       try {
         const errorJson = JSON.parse(errorData);
         errorDetails = errorJson.error?.message || errorJson.message || errorData;
-        console.error('解析的错误详情:', errorJson);
+        
       } catch (e) {
-        console.error('无法解析错误响应为JSON:', errorData);
+        
       }
 
       return NextResponse.json(
@@ -293,8 +280,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-
-
     // 安全地解析JSON响应
     let data;
     try {
@@ -303,7 +288,7 @@ export async function POST(request: NextRequest) {
 
       // 检查响应是否是HTML（错误页面）
       if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-        console.error('收到HTML响应而不是JSON，可能是API端点错误或认证失败');
+        
         return NextResponse.json(
           {
             error: 'API端点返回HTML页面，请检查API密钥和端点配置',
@@ -315,9 +300,9 @@ export async function POST(request: NextRequest) {
       }
 
       data = JSON.parse(responseText);
-      console.log(`${serviceType} API解析后响应:`, { service: serviceType, data });
+      
     } catch (parseError: any) {
-      console.error('解析API响应失败:', parseError);
+      
       return NextResponse.json(
         {
           error: 'API响应格式错误，无法解析JSON',
@@ -341,14 +326,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('响应格式验证失败:', {
-        hasChoices: !!data.choices,
-        choicesLength: data.choices?.length,
-        hasFirstChoice: !!data.choices?.[0],
-        hasMessage: !!data.choices?.[0]?.message,
-        fullData: data
-      });
-
+      
       return NextResponse.json(
         {
           error: '魔搭社区API返回格式异常',
@@ -372,26 +350,12 @@ export async function POST(request: NextRequest) {
     // 如果 content 为空，尝试使用 reasoning_content 作为回退
     if (!messageContent && message.reasoning_content) {
       messageContent = message.reasoning_content;
-      console.log('content 为空，使用 reasoning_content 作为回退');
+      
     }
-
-    console.log('提取的消息内容:', {
-      content: messageContent,
-      contentType: typeof messageContent,
-      contentLength: messageContent?.length,
-      isEmpty: !messageContent,
-      hasReasoningContent: !!message.reasoning_content,
-      reasoningContentLength: message.reasoning_content?.length
-    });
 
     // 检查最终内容是否为空
     if (!messageContent) {
-      console.error('最终提取的内容为空:', {
-        originalContent: message.content,
-        reasoningContent: message.reasoning_content,
-        fullMessage: message
-      });
-
+      
       return NextResponse.json(
         {
           error: '模型返回内容为空',
@@ -418,8 +382,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('API调用错误:', error);
-
+    
     return NextResponse.json(
       {
         error: '服务器内部错误',
@@ -495,7 +458,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('获取模型列表错误:', error);
     
     return NextResponse.json(
       { 

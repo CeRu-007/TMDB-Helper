@@ -90,7 +90,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
         throw new Error(result.error)
       }
     } catch (error) {
-      console.error('检查版本失败:', error)
+      
       if (showLoading) {
         toast({
           title: "检查版本失败",
@@ -118,7 +118,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
         }
       }
     } catch (error) {
-      console.error('获取安装状态失败:', error)
+      
       if (showLoading) {
         toast({
           title: "获取安装状态失败",
@@ -193,7 +193,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
       await Promise.all([checkVersion(), getInstallStatus()])
 
     } catch (error) {
-      console.error('安装失败:', error)
+      
       toast({
         title: "安装失败",
         description: error instanceof Error ? error.message : "未知错误",

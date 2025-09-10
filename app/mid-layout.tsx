@@ -25,7 +25,7 @@ export default function MidLayout({
 
     // 执行配置迁移
     ConfigMigration.autoMigrate().catch(error => {
-      console.error('自动配置迁移失败:', error);
+      
     });
   }, []);
 

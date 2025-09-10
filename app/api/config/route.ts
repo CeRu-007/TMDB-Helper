@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       fullConfig: config // 完整配置用于前端使用
     })
   } catch (error) {
-    console.error('获取配置失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '获取配置失败: ' + (error instanceof Error ? error.message : '未知错误')
@@ -144,11 +144,11 @@ export async function POST(request: NextRequest) {
         
         // 🔧 修复：只在开发模式下输出详细日志
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 [API Route] 开始设置配置项:', { key, valueType: typeof value, valueLength: value?.length })
+          
         }
         
         if (!key) {
-          console.error('❌ [API Route] 缺少配置键名')
+          
           return NextResponse.json({
             success: false,
             error: '缺少配置键名'
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
         const mappedKey = mapKeyName(key)
         
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔄 [API Route] 键名映射:', { originalKey: key, mappedKey })
+          
         }
         
         try {
@@ -167,10 +167,10 @@ export async function POST(request: NextRequest) {
           
           // 🔧 修复：只在开发模式下输出成功日志
           if (process.env.NODE_ENV === 'development') {
-            console.log('✅ [API Route] 配置项设置成功:', { key, mappedKey })
+            
           }
         } catch (error) {
-          console.error('❌ [API Route] ServerConfigManager.setConfigItem 失败:', error)
+          
           throw error
         }
 
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
     }
   } catch (error) {
-    console.error('配置操作失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '配置操作失败: ' + (error instanceof Error ? error.message : '未知错误')
@@ -306,7 +306,7 @@ export async function PUT(request: NextRequest) {
       config
     })
   } catch (error) {
-    console.error('替换配置失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '替换配置失败: ' + (error instanceof Error ? error.message : '未知错误')
@@ -340,7 +340,7 @@ export async function DELETE(request: NextRequest) {
       config: defaultConfig
     })
   } catch (error) {
-    console.error('删除配置失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '删除配置失败: ' + (error instanceof Error ? error.message : '未知错误')

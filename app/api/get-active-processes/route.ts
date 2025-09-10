@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       processIds.forEach(pid => {
         if (!validProcesses.includes(pid)) {
           global.activeProcesses!.delete(pid)
-          console.log(`已从活跃进程列表中移除无效进程 ${pid}`)
+          
         }
       })
     }
@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
       }
     )
   } catch (error) {
-    console.error("获取活跃进程列表时发生错误:", error)
     
     return new Response(
       JSON.stringify({

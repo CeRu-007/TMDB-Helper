@@ -61,10 +61,10 @@ class ErrorRecoveryManager {
         )
       },
       onRetry: (error, retryCount) => {
-        console.log(`[ErrorRecovery] 连接重试 ${retryCount}/5: ${error.message}`)
+        
       },
       onMaxRetriesReached: (error) => {
-        console.error(`[ErrorRecovery] 连接恢复失败，已达到最大重试次数: ${error.message}`)
+        
       }
     })
 
@@ -78,7 +78,7 @@ class ErrorRecoveryManager {
         return retryCount < 3 && !error.message.includes('unauthorized')
       },
       onRetry: (error, retryCount) => {
-        console.log(`[ErrorRecovery] 同步重试 ${retryCount}/3: ${error.message}`)
+        
       }
     })
 
@@ -92,7 +92,7 @@ class ErrorRecoveryManager {
         return retryCount < 2 && !error.message.includes('validation')
       },
       onRetry: (error, retryCount) => {
-        console.log(`[ErrorRecovery] 乐观更新重试 ${retryCount}/2: ${error.message}`)
+        
       }
     })
 
@@ -110,7 +110,7 @@ class ErrorRecoveryManager {
         )
       },
       onRetry: (error, retryCount) => {
-        console.log(`[ErrorRecovery] 数据加载重试 ${retryCount}/3: ${error.message}`)
+        
       }
     })
   }
@@ -153,7 +153,6 @@ class ErrorRecoveryManager {
       this.errorHistory = this.errorHistory.slice(-this.maxHistorySize)
     }
 
-    console.error(`[ErrorRecovery] 记录错误: ${errorContext.type} - ${errorContext.error.message}`)
   }
 
   /**
@@ -162,7 +161,7 @@ class ErrorRecoveryManager {
   private async attemptRecovery(errorContext: ErrorContext): Promise<boolean> {
     const strategy = this.recoveryStrategies.get(errorContext.type)
     if (!strategy) {
-      console.warn(`[ErrorRecovery] 没有找到 ${errorContext.type} 类型的恢复策略`)
+      
       return false
     }
 
@@ -170,7 +169,7 @@ class ErrorRecoveryManager {
     
     // 检查是否应该重试
     if (!strategy.shouldRetry(errorContext.error, errorContext.retryCount)) {
-      console.log(`[ErrorRecovery] 不满足重试条件: ${errorContext.type}`)
+      
       return false
     }
 
@@ -179,8 +178,6 @@ class ErrorRecoveryManager {
       strategy.retryDelay * Math.pow(strategy.backoffMultiplier, errorContext.retryCount),
       strategy.maxDelay
     )
-
-    console.log(`[ErrorRecovery] 计划在 ${delay}ms 后重试 ${errorContext.type}`)
 
     // 设置重试定时器
     const retryTimer = setTimeout(async () => {
@@ -207,7 +204,7 @@ class ErrorRecoveryManager {
           }
         }
       } catch (retryError) {
-        console.error(`[ErrorRecovery] 重试过程中发生错误:`, retryError)
+        
       }
     }, delay)
 
@@ -236,7 +233,7 @@ class ErrorRecoveryManager {
 
         case 'optimistic':
           // 乐观更新已移除，直接返回成功
-          console.log('[ErrorRecoveryManager] 乐观更新错误恢复已跳过（系统已移除乐观更新）')
+          
           return true
 
         case 'data':
@@ -248,11 +245,11 @@ class ErrorRecoveryManager {
           return false
 
         default:
-          console.warn(`[ErrorRecovery] 未知的恢复类型: ${errorContext.type}`)
+          
           return false
       }
     } catch (recoveryError) {
-      console.error(`[ErrorRecovery] 恢复操作失败:`, recoveryError)
+      
       return false
     }
   }
@@ -263,7 +260,7 @@ class ErrorRecoveryManager {
   public cancelAllRecoveries(): void {
     this.activeRecoveries.forEach((timer, id) => {
       clearTimeout(timer)
-      console.log(`[ErrorRecovery] 取消恢复操作: ${id}`)
+      
     })
     this.activeRecoveries.clear()
   }
@@ -300,7 +297,7 @@ class ErrorRecoveryManager {
   public cleanup(): void {
     const oneWeekAgo = Date.now() - 7 * 24 * 3600000 // 一周前
     this.errorHistory = this.errorHistory.filter(e => e.timestamp > oneWeekAgo)
-    console.log(`[ErrorRecovery] 清理完成，保留 ${this.errorHistory.length} 个错误记录`)
+    
   }
 
   /**
@@ -308,7 +305,7 @@ class ErrorRecoveryManager {
    */
   public setRecoveryStrategy(type: string, strategy: RecoveryStrategy): void {
     this.recoveryStrategies.set(type, strategy)
-    console.log(`[ErrorRecovery] 设置自定义恢复策略: ${type}`)
+    
   }
 
   /**

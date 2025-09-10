@@ -138,7 +138,7 @@ export class UserManager {
         localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userInfo));
         return userInfo;
       } catch (error) {
-        console.warn('解析用户信息失败:', error);
+        
       }
     }
 
@@ -176,7 +176,7 @@ export class UserManager {
       localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userInfo));
       return true;
     } catch (error) {
-      console.error('更新用户显示名称失败:', error);
+      
       return false;
     }
   }
@@ -196,7 +196,7 @@ export class UserManager {
       localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userInfo));
       return true;
     } catch (error) {
-      console.error('更新用户头像失败:', error);
+      
       return false;
     }
   }
@@ -277,7 +277,7 @@ export class UserManager {
     // 检查指纹是否匹配（简单的安全检查）
     const currentFingerprint = this.generateFingerprint();
     if (userInfo.fingerprint !== currentFingerprint) {
-      console.warn('用户指纹不匹配，可能是不同的浏览器或设备');
+      
       // 更新指纹而不是拒绝会话
       userInfo.fingerprint = currentFingerprint;
       localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userInfo));
@@ -329,7 +329,7 @@ export class UserManager {
 
       localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userInfo));
     } catch (error) {
-      console.error('记录功能使用失败:', error);
+      
     }
   }
 
@@ -353,7 +353,7 @@ export class UserManager {
 
       localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userInfo));
     } catch (error) {
-      console.error('更新使用时长失败:', error);
+      
     }
   }
 }

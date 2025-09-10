@@ -35,7 +35,7 @@ const isProcessRunning = async (pid: number): Promise<boolean> => {
       return result.trim() !== '';
     }
   } catch (error) {
-    console.error(`检查进程 ${pid} 状态时出错:`, error);
+    
     return false;
   }
 };
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       const isRunning = await isProcessRunning(processId);
       
       if (isRunning) {
-        console.log(`进程 ${processId} 存在于系统中，但不在应用程序的跟踪列表中`);
+        
         return new Response(
           JSON.stringify({
             success: false,
@@ -184,18 +184,17 @@ export async function POST(request: NextRequest) {
         );
       } catch (error) {
         lastError = error;
-        console.error(`第 ${i + 1} 次发送失败:`, error);
         
         // 如果是Windows且使用\n发送失败，尝试使用\r\n
         if (process.platform === 'win32' && sendDirectly && i === 0 && input.indexOf('\r\n') === -1) {
-          console.log("Windows环境下尝试使用\\r\\n替代\\n");
+          
           try {
             const winEOL = '\r\n';
             const inputToSend = `${input}${winEOL}`;
             
             const writeResult = childProcess.stdin.write(inputToSend, 'utf8');
             if (writeResult) {
-              console.log(`使用\\r\\n成功向进程 ${processId} 发送输入`);
+              
               return new Response(
                 JSON.stringify({
                   success: true,
@@ -207,14 +206,14 @@ export async function POST(request: NextRequest) {
               );
             }
           } catch (winError) {
-            console.error("尝试使用Windows行终止符也失败:", winError);
+            
           }
         }
         
         if (i < MAX_RETRIES - 1) {
           // 指数退避策略
           const backoffDelay = RETRY_DELAY * Math.pow(2, i);
-          console.log(`将在 ${backoffDelay}ms 后重试...`);
+          
           await delay(backoffDelay);
           continue;
         }
@@ -222,8 +221,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 所有重试都失败了
-    console.error(`向进程 ${processId} 发送输入失败，已重试 ${MAX_RETRIES} 次`);
-      
+    
       return new Response(
         JSON.stringify({
           success: false,
@@ -236,7 +234,6 @@ export async function POST(request: NextRequest) {
         }
     );
   } catch (error) {
-    console.error("处理请求时发生错误:", error)
     
     return new Response(
       JSON.stringify({

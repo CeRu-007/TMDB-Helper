@@ -127,8 +127,7 @@ export class AdvancedMetadataExtractor {
 
     try {
       const platform = this.detectPlatform(url)
-      console.log(`开始提取 ${platform} 平台的元数据...`)
-
+      
       // 调用后端API进行高级提取
       const response = await fetch("/api/advanced-extract-metadata", {
         method: "POST",
@@ -157,7 +156,7 @@ export class AdvancedMetadataExtractor {
         extractionTime,
       }
     } catch (error) {
-      console.error("高级元数据提取失败:", error)
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : "未知错误",

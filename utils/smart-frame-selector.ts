@@ -87,9 +87,7 @@ export class SmartFrameSelector {
   ): Promise<SmartSelectionResult> {
     await this.ensureAnalyzerInitialized();
     this.processingStartTime = Date.now();
-    
-    console.log(`开始智能帧选择，总帧数: ${frames.length}, 目标数量: ${options.targetCount}`);
-    
+
     const statistics = {
       totalFrames: frames.length,
       analyzedFrames: 0,
@@ -99,30 +97,27 @@ export class SmartFrameSelector {
     };
 
     // 第一阶段：本地快速分析所有帧
-    console.log('第一阶段：本地快速分析');
+    
     const localAnalysis = await this.enhancedAnalyzer.analyzeFrames(frames);
     statistics.analyzedFrames = localAnalysis.length;
 
     // 第二阶段：基于本地分析结果进行初步筛选
-    console.log('第二阶段：初步筛选候选帧');
+    
     const candidates = this.selectCandidateFrames(localAnalysis, options);
     
     // 第三阶段：AI精确分析（如果启用且有必要）
     let finalAnalysis = candidates;
     if (options.aiAnalysis.enabled && this.siliconFlowAPI && candidates.length > options.targetCount) {
-      console.log('第三阶段：AI精确分析');
+      
       finalAnalysis = await this.performAIAnalysis(candidates, frames, options);
       statistics.aiAnalyzedFrames = finalAnalysis.filter(f => f.aiAnalyzed).length;
     }
 
     // 第四阶段：最终选择和多样性优化
-    console.log('第四阶段：最终选择和多样性优化');
+    
     const selectedFrames = this.performFinalSelection(finalAnalysis, options);
 
     statistics.processingTime = Date.now() - this.processingStartTime;
-    
-    console.log(`智能帧选择完成，耗时: ${statistics.processingTime}ms`);
-    console.log(`选择了 ${selectedFrames.length} 帧，AI分析了 ${statistics.aiAnalyzedFrames} 帧`);
 
     return {
       selectedFrames: selectedFrames.map(frame => ({
@@ -164,7 +159,7 @@ export class SmartFrameSelector {
 
     // 如果过滤后候选帧太少，放宽条件
     if (candidates.length < options.targetCount * 2) {
-      console.log('候选帧不足，放宽筛选条件');
+      
       candidates = analysis.filter(frame => frame.scores.qualityScore > 0.2);
     }
 
@@ -192,8 +187,6 @@ export class SmartFrameSelector {
 
     const maxAIFrames = options.aiAnalysis.maxAIFrames || 10;
     const framesToAnalyze = candidates.slice(0, Math.min(maxAIFrames, candidates.length));
-    
-    console.log(`使用AI分析 ${framesToAnalyze.length} 个候选帧`);
 
     // 批量AI分析
     const batchSize = 3; // 减少并发请求数
@@ -209,7 +202,7 @@ export class SmartFrameSelector {
           const enhancedCandidate = this.mergeAIAnalysis(candidate, aiResult);
           return { ...enhancedCandidate, aiResult };
         } catch (error) {
-          console.warn(`AI分析帧 ${candidate.index} 失败:`, error);
+          
           return candidate; // 返回原始分析结果
         }
       });

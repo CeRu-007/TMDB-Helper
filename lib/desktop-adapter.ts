@@ -123,7 +123,7 @@ export function checkFilePermissions(filePath: string): boolean {
     fs.accessSync(filePath, fs.constants.R_OK | fs.constants.W_OK);
     return true;
   } catch (error) {
-    console.warn(`文件权限检查失败: ${filePath}`, error);
+    
     return false;
   }
 }
@@ -136,7 +136,7 @@ export function safeReadFile(filePath: string, encoding: BufferEncoding = 'utf8'
     }
     return fs.readFileSync(filePath, encoding);
   } catch (error) {
-    console.error(`读取文件失败: ${filePath}`, error);
+    
     return null;
   }
 }
@@ -153,7 +153,7 @@ export function safeWriteFile(filePath: string, data: string, encoding: BufferEn
     fs.writeFileSync(filePath, data, encoding);
     return true;
   } catch (error) {
-    console.error(`写入文件失败: ${filePath}`, error);
+    
     return false;
   }
 }

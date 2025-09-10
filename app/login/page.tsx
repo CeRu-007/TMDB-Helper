@@ -55,7 +55,6 @@ export default function LoginPage() {
     })()
   }, [])
 
-
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -80,7 +79,7 @@ export default function LoginPage() {
           await fetch('/api/auth/init', { method: 'POST' })
         }
       } catch (error) {
-        console.error('检查初始化状态失败:', error)
+        
       } finally {
         setIsInitializing(false)
       }
@@ -384,8 +383,6 @@ export default function LoginPage() {
                     )}
                   </Button>
                 </form>
-
-
 
                 {/* 底部装饰 */}
                 <div className="mt-6 text-center">

@@ -29,9 +29,9 @@ export class ClientConfigManager {
         if (typeof valueToReturn === 'object' && valueToReturn !== null) {
           try {
             valueToReturn = JSON.stringify(valueToReturn)
-            console.log('🔄 [ClientConfigManager] 将对象转换为 JSON 字符串:', { key, type: 'object->string' })
+            
           } catch (error) {
-            console.error('❌ [ClientConfigManager] 对象序列化失败:', error)
+            
             return null
           }
         }
@@ -43,7 +43,7 @@ export class ClientConfigManager {
 
       return null
     } catch (error) {
-      console.error('获取配置项失败:', error)
+      
       return null
     }
   }
@@ -60,7 +60,6 @@ export class ClientConfigManager {
         key,
         value
       }
-      console.log('📤 [ClientConfigManager] 发送请求体:', requestBody)
       
       const response = await fetch('/api/config', {
         method: 'POST',
@@ -70,38 +69,25 @@ export class ClientConfigManager {
         body: JSON.stringify(requestBody)
       })
 
-      console.log('📥 [ClientConfigManager] 收到响应:', { 
-        status: response.status, 
-        ok: response.ok,
-        statusText: response.statusText,
-        url: response.url
-      })
-      
       if (!response.ok) {
-        console.error('❌ [ClientConfigManager] HTTP响应不成功:', response.status, response.statusText)
+        
         return false
       }
       
       const data = await response.json()
-      console.log('📋 [ClientConfigManager] 响应数据:', data)
-
+      
       if (data.success) {
         // 更新缓存
         this.updateCache(key, value)
-        console.log('✅ [ClientConfigManager] 配置项设置成功:', key)
+        
         return true
       }
 
-      console.error('❌ [ClientConfigManager] 设置配置项失败:', data.error)
       return false
     } catch (error) {
-      console.error('❌ [ClientConfigManager] 设置配置项异常:', error)
+      
       if (error instanceof Error) {
-        console.error('❌ [ClientConfigManager] 异常详情:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        })
+        
       }
       return false
     }
@@ -132,10 +118,9 @@ export class ClientConfigManager {
         return true
       }
 
-      console.error('删除配置项失败:', data.error)
       return false
     } catch (error) {
-      console.error('删除配置项失败:', error)
+      
       return false
     }
   }
@@ -152,10 +137,9 @@ export class ClientConfigManager {
         return data.fullConfig || data.config
       }
 
-      console.error('获取配置失败:', data.error)
       return {}
     } catch (error) {
-      console.error('获取配置失败:', error)
+      
       return {}
     }
   }
@@ -186,10 +170,9 @@ export class ClientConfigManager {
         return true
       }
 
-      console.error('更新配置失败:', data.error)
       return false
     } catch (error) {
-      console.error('更新配置失败:', error)
+      
       return false
     }
   }
@@ -275,7 +258,7 @@ export class ClientConfigManager {
 
       return null
     } catch (error) {
-      console.error('获取配置信息失败:', error)
+      
       return null
     }
   }
@@ -301,10 +284,9 @@ export class ClientConfigManager {
         return data.configJson
       }
 
-      console.error('导出配置失败:', data.error)
       return null
     } catch (error) {
-      console.error('导出配置失败:', error)
+      
       return null
     }
   }
@@ -333,10 +315,9 @@ export class ClientConfigManager {
         return true
       }
 
-      console.error('导入配置失败:', data.error)
       return false
     } catch (error) {
-      console.error('导入配置失败:', error)
+      
       return false
     }
   }
@@ -364,10 +345,9 @@ export class ClientConfigManager {
         return true
       }
 
-      console.error('重置配置失败:', data.error)
       return false
     } catch (error) {
-      console.error('重置配置失败:', error)
+      
       return false
     }
   }

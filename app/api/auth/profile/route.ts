@@ -22,7 +22,7 @@ export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
     });
 
   } catch (error) {
-    console.error('[Auth] 获取用户信息失败:', error);
+    
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }
@@ -67,7 +67,7 @@ export const PUT = AuthMiddleware.withAuth(async (request: NextRequest) => {
     });
 
   } catch (error) {
-    console.error('[Auth] 更新用户信息失败:', error);
+    
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }

@@ -7,7 +7,7 @@ export class EpisodeConfigClient {
         body: JSON.stringify({ key: 'episode_generator_config', value: json })
       })
     } catch (e) {
-      console.error('保存分集生成配置失败:', e)
+      
     }
   }
 }

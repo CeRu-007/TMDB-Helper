@@ -54,15 +54,10 @@ export class SiliconFlowAPI {
 
       // 使用JPEG格式，质量0.9，确保兼容性
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      console.log('图像转换完成:', {
-        originalSize: `${imageData.width}x${imageData.height}`,
-        base64Length: dataUrl.length,
-        format: 'image/jpeg'
-      });
-
+      
       return dataUrl;
     } catch (error) {
-      console.error('图像转换失败:', error);
+      
       throw new Error(`图像转换失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
@@ -221,13 +216,6 @@ export class SiliconFlowAPI {
         max_tokens: 500
       };
 
-      console.log('发送API请求:', {
-        url: `${this.config.baseUrl}/chat/completions`,
-        model: this.config.model,
-        imageSize: `${imageData.width}x${imageData.height}`,
-        base64Length: base64Image.length
-      });
-
       const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -237,35 +225,27 @@ export class SiliconFlowAPI {
         body: JSON.stringify(requestBody)
       });
 
-      console.log('API响应状态:', response.status, response.statusText);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API错误响应:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        });
+        
         throw new Error(`API 请求失败: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('API响应结果:', result);
-
+      
       if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-        console.error('API返回格式错误:', result);
+        
         throw new Error('API 返回格式错误');
       }
 
       const content = result.choices[0].message.content;
-      console.log('AI分析内容:', content);
-
+      
       // 尝试解析JSON，如果失败则提供默认值
       let analysisResult: FrameAnalysisResult;
       try {
         analysisResult = JSON.parse(content) as FrameAnalysisResult;
       } catch (parseError) {
-        console.warn('JSON解析失败，使用增强文本分析:', content);
+        
         // 🔧 增强的文本分析作为回退
         analysisResult = this.parseTextAnalysis(content);
       }
@@ -281,11 +261,10 @@ export class SiliconFlowAPI {
         analysisResult.confidence = 0.5;
       }
 
-      console.log('最终分析结果:', analysisResult);
       return analysisResult;
 
     } catch (error) {
-      console.error('硅基流动 API 调用失败:', error);
+      
       console.error('错误详情:', {
         message: error instanceof Error ? error.message : '未知错误',
         stack: error instanceof Error ? error.stack : undefined,
@@ -327,7 +306,7 @@ export class SiliconFlowAPI {
 
         this.config.model = originalModel;
       } catch (error) {
-        console.warn(`模型 ${model} 分析失败:`, error);
+        
       }
     }
 
@@ -343,8 +322,6 @@ export class SiliconFlowAPI {
     // 字幕检测采用保守策略：多数模型认为有字幕才认为有字幕
     const finalHasSubtitles = hasSubtitlesVotes > results.length / 2;
     const finalHasPeople = hasPeopleVotes > results.length / 2;
-
-    console.log(`多模型验证结果: 字幕投票=${hasSubtitlesVotes}/${results.length}, 人物投票=${hasPeopleVotes}/${results.length}`);
 
     return {
       hasSubtitles: finalHasSubtitles,
@@ -397,8 +374,7 @@ export class SiliconFlowAPI {
    */
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('开始测试硅基流动API连接...');
-
+      
       // 创建一个标准的测试图片
       const canvas = document.createElement('canvas');
       canvas.width = 320;
@@ -423,17 +399,15 @@ export class SiliconFlowAPI {
       ctx.fill();
 
       const imageData = ctx.getImageData(0, 0, 320, 240);
-      console.log('创建测试图像:', `${imageData.width}x${imageData.height}`);
-
+      
       const result = await this.analyzeFrame(imageData);
-      console.log('测试连接结果:', result);
-
+      
       return {
         success: !result.error,
         error: result.error
       };
     } catch (error) {
-      console.error('连接测试失败:', error);
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : '连接测试失败'

@@ -61,7 +61,7 @@ export class LayoutPreferencesManager {
         }
       }
     } catch (error) {
-      console.error("Failed to fetch layout preferences from server:", error)
+      
     }
 
     // 回退：尝试本地缓存
@@ -88,7 +88,7 @@ export class LayoutPreferencesManager {
    */
   static async savePreferences(preferences: Partial<LayoutPreferences>): Promise<boolean> {
     if (!this.isClient()) {
-      console.warn("Cannot save layout preferences: not in client environment")
+      
       return false
     }
 
@@ -120,7 +120,7 @@ export class LayoutPreferencesManager {
       }
       return false;
     } catch (error) {
-      console.error("Failed to save layout preferences:", error)
+      
       return false
     }
   }
@@ -136,8 +136,6 @@ export class LayoutPreferencesManager {
       lastUpdated: new Date().toISOString()
     }
   }
-
-
 
   /**
    * 设置侧边栏折叠状态
@@ -169,7 +167,7 @@ export class LayoutPreferencesManager {
 
       return response.ok;
     } catch (error) {
-      console.error("Failed to reset layout preferences:", error)
+      
       return false
     }
   }

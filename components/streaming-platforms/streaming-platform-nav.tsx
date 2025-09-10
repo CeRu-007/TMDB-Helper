@@ -140,7 +140,7 @@ const StreamingPlatformNav: React.FC = () => {
         // 根据保存的顺序重新排序平台
         return allPlatforms.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
       } catch (e) {
-        console.error('Failed to parse platform order from localStorage', e);
+        
         return getFilteredPlatforms('全部');
       }
     }
@@ -201,7 +201,6 @@ const StreamingPlatformNav: React.FC = () => {
   const handlePlatformClick = (platform: Platform) => {
     window.open(platform.url, '_blank', 'noopener,noreferrer');
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-900 dark:via-blue-950/30 dark:to-purple-950/30 relative overflow-hidden">

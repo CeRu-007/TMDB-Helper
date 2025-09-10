@@ -41,7 +41,7 @@ export class ConflictResolver {
    */
   public updateConfig(config: Partial<ConflictResolutionConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[ConflictResolver] 配置已更新:', this.config);
+    
   }
 
   /**
@@ -55,8 +55,6 @@ export class ConflictResolver {
     if (!this.config.enabled || conflicts.length === 0) {
       return null;
     }
-
-    console.log(`[ConflictResolver] 开始解决任务冲突: ${task.name}, 冲突数量: ${conflicts.length}`);
 
     let resolution: Resolution | null = null;
 
@@ -297,7 +295,7 @@ export class ConflictResolver {
    */
   public clearResolutionHistory(): void {
     this.resolutionHistory = [];
-    console.log('[ConflictResolver] 解决历史已清理');
+    
   }
 
   /**

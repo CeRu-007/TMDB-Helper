@@ -80,7 +80,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
       if (!server || server.trim() === '') return null;
       return server;
     } catch (e) {
-      console.error('获取 TMDB-Import 路径失败:', e);
+      
       return null;
     }
   }, []);
@@ -168,9 +168,6 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         throw new Error("请先在设置中配置TMDB-Import工具路径")
       }
 
-      console.log("开始读取CSV文件，工作目录:", savedTmdbImportPath)
-      console.log("发送API请求读取CSV文件")
-
       // 使用与词条详情页面相同的API调用方式
       const response = await fetch('/api/csv/read', {
         method: 'POST',
@@ -195,8 +192,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
       
       // 确保数据格式正确 - 新API返回数组，需要转换为期望的格式
       const formattedCsvData = Array.isArray(csvData) ? { rows: csvData } : csvData
-      console.log("成功获取CSV数据:", formattedCsvData && formattedCsvData.rows ? `${formattedCsvData.rows.length}行数据` : "无数据")
-
+      
       // 设置CSV数据
       setCsvData(formattedCsvData)
 
@@ -211,7 +207,6 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
       })
 
     } catch (error: any) {
-      console.error("读取CSV文件时出错:", error)
       
       // 特殊处理404错误（文件不存在）
       if (error.message && error.message.includes('404')) {
@@ -335,7 +330,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                 hasError = true
               }
             } catch (e) {
-              console.log("解析命令输出时出错:", e)
+              
             }
           }
         }
@@ -463,7 +458,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
       appendTerminalOutput(`> ${input}`, "info")
     } catch (error) {
-      console.error("Send input error:", error)
+      
       appendTerminalOutput(`发送输入失败: ${error instanceof Error ? error.message : "未知错误"}`, "error")
     }
   }, [currentProcessId, appendTerminalOutput, toast])
@@ -556,7 +551,6 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         errorTitle = "存储错误"
       }
 
-      console.error("保存CSV文件失败:", error)
       appendTerminalOutput(`保存CSV文件失败: ${errorMessage}`, "error")
       toast({
         title: errorTitle,
@@ -643,7 +637,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                             const parsed = parseCsvContent(e.target.value)
                             setCsvData(parsed)
                           } catch (error) {
-                            console.error("CSV parse error:", error)
+                            
                           }
                         }}
                         className="w-full h-full font-mono text-sm resize-none focus:outline-none bg-transparent"

@@ -260,16 +260,13 @@ const TMDBTableComponent = ({
       // 撤销 (Ctrl+Z)
       if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
-        console.log('检测到Ctrl+Z按键');
         
         // 内联撤销函数，避免依赖问题
         if (history.length === 0) {
-          console.log('没有历史记录可撤销');
+          
           return;
         }
-        
-        console.log('执行撤销操作，当前历史记录数量:', history.length);
-        
+
         // 获取最近的历史记录
         const prevData = history[0];
         if (prevData) {
@@ -277,8 +274,7 @@ const TMDBTableComponent = ({
           setHistory(prev => prev.slice(1));
           setLocalData(prevData);
           onDataChange?.(prevData);
-          
-          console.log('撤销完成，恢复到历史记录:', prevData);
+
         }
       }
       
@@ -764,9 +760,9 @@ const TMDBTableComponent = ({
     
     try {
       await navigator.clipboard.writeText(copyText)
-      console.log('数据已复制到剪贴板')
+      
     } catch (err) {
-      console.error('复制到剪贴板失败:', err)
+      
     }
   }
   
@@ -852,7 +848,7 @@ const TMDBTableComponent = ({
       onSelectionChange?.(newSelection)
       
     } catch (err) {
-      console.error('粘贴操作失败:', err)
+      
     }
   }
   
@@ -1013,7 +1009,6 @@ const TMDBTableComponent = ({
   
   // 保存当前状态到历史记录
   const saveToHistory = (currentData: CSVData) => {
-    console.log('准备保存历史记录');
     
     // 创建当前数据的深拷贝
     const dataCopy: CSVData = {
@@ -1024,7 +1019,7 @@ const TMDBTableComponent = ({
     // 添加到历史记录，并限制历史记录大小
     setHistory(prev => {
       const newHistory = [dataCopy, ...prev];
-      console.log('历史记录已保存，当前历史记录数量:', newHistory.length);
+      
       return newHistory.slice(0, MAX_HISTORY_SIZE);
     });
   };
@@ -1346,15 +1341,13 @@ const TMDBTableComponent = ({
             <button
               className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded"
               onClick={() => {
-                console.log('手动触发撤销操作');
+                
                 // 内联撤销函数
                 if (history.length === 0) {
-                  console.log('没有历史记录可撤销');
+                  
                   return;
                 }
-                
-                console.log('执行撤销操作，当前历史记录数量:', history.length);
-                
+
                 // 获取最近的历史记录
                 const prevData = history[0];
                 
@@ -1362,8 +1355,7 @@ const TMDBTableComponent = ({
                 setHistory(prev => prev.slice(1));
                 setLocalData(prevData);
                 onDataChange?.(prevData);
-                
-                console.log('撤销完成，恢复到历史记录:', prevData);
+
               }}
             >
               撤销(测试)

@@ -34,17 +34,16 @@ export async function POST(request: NextRequest) {
     if (processId && global.activeProcesses.has(processId)) {
       targetProcess = global.activeProcesses.get(processId)
       targetProcessId = processId
-      console.log(`使用提供的进程ID: ${processId}`)
+      
     } 
     // 2. 尝试获取第一个可用进程
     else if (global.activeProcesses.size > 0) {
       targetProcessId = [...global.activeProcesses.keys()][0]
       targetProcess = global.activeProcesses.get(targetProcessId)
-      console.log(`使用第一个可用进程ID: ${targetProcessId}`)
+      
     }
     // 3. 没有可用进程，尝试创建一个简单的交互式进程
     else {
-      console.log("没有可用进程，尝试创建一个简单的交互式进程")
       
       // 这只是一个后备方案，创建一个简单的命令行进程
       try {
@@ -62,10 +61,10 @@ export async function POST(request: NextRequest) {
           targetProcessId = childProcess.pid
           targetProcess = childProcess
           global.activeProcesses.set(targetProcessId, childProcess)
-          console.log(`已创建临时进程，ID: ${targetProcessId}`)
+          
         }
       } catch (err) {
-        console.error("创建临时进程失败:", err)
+        
       }
     }
     
@@ -113,7 +112,6 @@ export async function POST(request: NextRequest) {
         }
       )
     } catch (error) {
-      console.error(`向进程 ${targetProcessId} 发送输入失败:`, error)
       
       return new Response(
         JSON.stringify({
@@ -127,7 +125,6 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    console.error("处理请求时发生错误:", error)
     
     return new Response(
       JSON.stringify({

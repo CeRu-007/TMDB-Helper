@@ -20,11 +20,6 @@ if (!fs.existsSync(appDataDir)) {
 // 设置环境变量，让应用知道数据目录位置
 process.env.TMDB_DATA_DIR = appDataDir;
 
-console.log(`🚀 启动 TMDB Helper 服务器`);
-console.log(`📁 数据目录: ${appDataDir}`);
-console.log(`🌐 环境: ${dev ? '开发' : '生产'}`);
-console.log(`🔗 端口: ${port}`);
-
 // 创建 Next.js 应用
 const app = next({ 
   dev, 
@@ -65,40 +60,38 @@ app.prepare().then(() => {
       // 处理页面路由
       await handle(req, res, parsedUrl);
     } catch (err) {
-      console.error('服务器错误:', err.stack);
+      
       res.statusCode = 500;
       res.end('Internal Server Error');
     }
   })
   .once('error', (err) => {
-    console.error('服务器启动失败:', err);
+    
     process.exit(1);
   })
   .listen(port, () => {
-    console.log(`✅ TMDB Helper 服务器已启动`);
-    console.log(`🔗 访问地址: http://${hostname}:${port}`);
+
     console.log('ready'); // Electron 主进程会监听这个输出
   });
 });
 
 // 优雅关闭
 process.on('SIGTERM', () => {
-  console.log('🛑 收到 SIGTERM 信号，正在关闭服务器...');
+  
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('🛑 收到 SIGINT 信号，正在关闭服务器...');
+  
   process.exit(0);
 });
 
 // 错误处理
 process.on('uncaughtException', (err) => {
-  console.error('未捕获的异常:', err);
+  
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('未处理的 Promise 拒绝:', reason);
-  console.error('Promise:', promise);
+
 });

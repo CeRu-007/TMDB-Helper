@@ -18,7 +18,6 @@ function parseCSVRobust(csvContent) {
 
   // 解析第一行作为标题
   const headers = parseCSVLineRobust(lines[0])
-  console.log('解析到的标题:', headers)
   
   // 修复和解析数据行
   const repairedRows = []
@@ -43,7 +42,7 @@ function parseCSVRobust(csvContent) {
     
     if (testFields.length === headers.length) {
       repairedRows.push(testFields)
-      console.log(`修复第${repairedRows.length}行: ${testFields[0]} - ${testFields[1]}`)
+      
       currentRow = ''
     } else if (testFields.length > headers.length) {
       // 尝试分割行
@@ -52,7 +51,7 @@ function parseCSVRobust(csvContent) {
         const currentFields = parseCSVLineRobust(splitResult.currentRow)
         if (currentFields.length === headers.length) {
           repairedRows.push(currentFields)
-          console.log(`修复第${repairedRows.length}行: ${currentFields[0]} - ${currentFields[1]}`)
+          
           currentRow = splitResult.nextRow
         } else {
           currentRow = ''
@@ -70,11 +69,10 @@ function parseCSVRobust(csvContent) {
     const finalFields = parseCSVLineRobust(currentRow)
     if (finalFields.length === headers.length) {
       repairedRows.push(finalFields)
-      console.log(`修复第${repairedRows.length}行: ${finalFields[0]} - ${finalFields[1]}`)
+      
     }
   }
-  
-  console.log(`修复完成: ${repairedRows.length}行数据`)
+
   return { headers, rows: repairedRows }
 }
 
@@ -170,14 +168,13 @@ function escapeCSVField(field) {
  * 删除指定剧集
  */
 function deleteEpisodes(data, episodesToDelete) {
-  console.log('删除剧集:', episodesToDelete)
   
   const episodeColumnIndex = data.headers.findIndex(header => 
     header.toLowerCase().includes('episode') || header.includes('剧集')
   )
   
   if (episodeColumnIndex === -1) {
-    console.error('未找到剧集编号列')
+    
     return data
   }
   
@@ -188,14 +185,12 @@ function deleteEpisodes(data, episodesToDelete) {
     const shouldDelete = episodesToDeleteSet.has(episodeNumber)
     
     if (shouldDelete) {
-      console.log(`删除: 第${episodeNumber}集 - ${row[1]}`)
+      
     }
     
     return !shouldDelete
   })
-  
-  console.log(`删除完成: 原${data.rows.length}行，现${filteredRows.length}行`)
-  
+
   return {
     headers: [...data.headers],
     rows: filteredRows
@@ -207,37 +202,31 @@ function deleteEpisodes(data, episodesToDelete) {
  */
 async function emergencyFix() {
   try {
-    console.log('=== 紧急CSV修复开始 ===\n')
     
     // 检查当前import.csv的状态
     const importPath = path.join(__dirname, '../TMDB-Import-master/import.csv')
     const backupPath = path.join(__dirname, '../TMDB-Import-master/import_backup_1752635032809.csv')
-    
-    console.log('检查文件状态...')
-    console.log('import.csv路径:', importPath)
-    console.log('备份文件路径:', backupPath)
-    
+
     // 检查备份文件是否存在
     if (!fs.existsSync(backupPath)) {
-      console.error('❌ 备份文件不存在:', backupPath)
+      
       return
     }
     
     // 读取备份文件（完整数据）
     const backupContent = fs.readFileSync(backupPath, 'utf-8')
-    console.log('✅ 成功读取备份文件')
     
     // 使用强化解析器修复CSV结构
-    console.log('\n1. 修复CSV结构...')
+    
     const repairedData = parseCSVRobust(backupContent)
     
     // 删除指定剧集（1-8集）
-    console.log('\n2. 删除指定剧集...')
+    
     const episodesToDelete = [1, 2, 3, 4, 5, 6, 7, 8]
     const filteredData = deleteEpisodes(repairedData, episodesToDelete)
     
     // 生成最终CSV内容
-    console.log('\n3. 生成最终CSV内容...')
+    
     const finalContent = generateCSV(filteredData)
     
     // 创建新的备份（当前损坏的文件）
@@ -245,36 +234,28 @@ async function emergencyFix() {
     if (fs.existsSync(importPath)) {
       const currentContent = fs.readFileSync(importPath, 'utf-8')
       fs.writeFileSync(damagedBackupPath, currentContent, 'utf-8')
-      console.log('✅ 已备份当前损坏的文件:', damagedBackupPath)
+      
     }
     
     // 覆盖import.csv
-    console.log('\n4. 覆盖import.csv文件...')
+    
     fs.writeFileSync(importPath, finalContent, 'utf-8')
-    console.log('✅ 已覆盖import.csv文件')
     
     // 验证修复结果
-    console.log('\n5. 验证修复结果...')
+    
     const verifyContent = fs.readFileSync(importPath, 'utf-8')
     const verifyLines = verifyContent.split('\n').filter(line => line.trim() !== '')
-    
-    console.log('验证结果:')
-    console.log('- 总行数:', verifyLines.length)
-    console.log('- 数据行数:', verifyLines.length - 1)
-    console.log('- 前2行预览:')
+
     verifyLines.slice(0, 2).forEach((line, index) => {
       console.log(`  第${index + 1}行: ${line.substring(0, 100)}...`)
     })
-    
-    console.log('\n🎉 紧急修复完成！')
-    console.log('统计信息:')
-    console.log(`- 原始行数: ${repairedData.rows.length}`)
+
     console.log(`- 删除剧集: ${episodesToDelete.join(', ')}`)
-    console.log(`- 剩余行数: ${filteredData.rows.length}`)
+    
     console.log(`- 剩余剧集: ${filteredData.rows.map(row => row[0]).join(', ')}`)
     
   } catch (error) {
-    console.error('❌ 紧急修复失败:', error)
+    
   }
 }
 

@@ -25,10 +25,7 @@ export class BrowserInterruptDetector {
     const allErrorText = [errorMessage, errorStack, stdoutText, stderrText]
       .join(' ')
       .toLowerCase();
-    
-    console.log(`[BrowserInterruptDetector] 分析错误信息: ${errorMessage}`);
-    console.log(`[BrowserInterruptDetector] 错误详情长度: stdout=${stdoutText.length}, stderr=${stderrText.length}`);
-    
+
     // 检测用户主动关闭浏览器的特征
     const userClosePatterns = [
       // 浏览器窗口被用户关闭

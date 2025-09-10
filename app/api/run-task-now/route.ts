@@ -15,17 +15,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`[API] 收到立即执行任务请求: ${taskId}`)
-
     // 调用任务调度器的runTaskNow方法
     const result = await taskScheduler.runTaskNow(taskId)
-
-    console.log(`[API] 任务执行结果:`, result)
 
     return NextResponse.json(result)
 
   } catch (error) {
-    console.error("[API] 立即执行任务失败:", error)
     
     return NextResponse.json(
       { 

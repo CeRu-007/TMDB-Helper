@@ -20,7 +20,7 @@ export function TerminalInputButtons({
   // 简化为只发送回车
   const sendEnter = async () => {
     if (isSending) {
-      console.log("正在发送回车，请稍候...");
+      
       return;
     }
     
@@ -40,15 +40,15 @@ export function TerminalInputButtons({
       })
       
       if (response.ok) {
-        console.log("成功发送回车")
+        
         if (onSendCommand) {
           await onSendCommand("\n")
         }
       } else {
-        console.error("发送回车失败:", response.status)
+        
       }
     } catch (error) {
-      console.error("发送回车时出错:", error)
+      
     } finally {
       setTimeout(() => {
         setIsSending(false)

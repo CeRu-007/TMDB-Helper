@@ -26,7 +26,7 @@ export function useImagePreloader({ urls, priority = 1, onProgress }: UseImagePr
               loaded++
               onProgress?.(loaded, total)
             } catch (error) {
-              console.warn(`Failed to preload image: ${url}`, error)
+              
               loaded++
               onProgress?.(loaded, total)
             }

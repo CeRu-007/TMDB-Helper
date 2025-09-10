@@ -13,7 +13,6 @@ export interface CSVData {
  * 能够正确处理包含引号、逗号和换行符的复杂字段
  */
 export function parseCSVRobust(csvContent: string): CSVData {
-  console.log('开始强化CSV解析，内容长度:', csvContent.length)
   
   // 使用状态机方法解析整个CSV内容
   const result = parseCSVWithStateMachine(csvContent)
@@ -24,10 +23,7 @@ export function parseCSVRobust(csvContent: string): CSVData {
 
   const headers = result[0]
   const rows = result.slice(1)
-  
-  console.log('解析到的标题:', headers)
-  console.log(`成功解析CSV: ${headers.length}列, ${rows.length}行`)
-  
+
   // 验证和修复行数据
   const validatedRows: string[][] = []
   
@@ -35,7 +31,6 @@ export function parseCSVRobust(csvContent: string): CSVData {
     const row = rows[i]
     
     if (row.length !== headers.length) {
-      console.warn(`第${i+2}行字段数量不匹配: 期望${headers.length}个，实际${row.length}个`)
       
       // 尝试修复：补齐缺失字段或截断多余字段
       const fixedRow = [...row]
@@ -46,7 +41,7 @@ export function parseCSVRobust(csvContent: string): CSVData {
         fixedRow.splice(headers.length)
       }
       validatedRows.push(fixedRow)
-      console.log(`已修复第${i+2}行字段数量`)
+      
     } else {
       validatedRows.push(row)
     }
@@ -130,8 +125,7 @@ function parseCSVWithStateMachine(csvContent: string): string[][] {
       result.push(currentRow)
     }
   }
-  
-  console.log(`状态机解析完成，共解析出 ${result.length} 行`)
+
   return result
 }
 
@@ -233,21 +227,17 @@ function escapeCSVField(field: string): string {
  * 这是一个专门的函数，用于安全地删除指定剧集
  */
 export function deleteEpisodesByNumbers(data: CSVData, episodesToDelete: number[]): CSVData {
-  console.log('开始删除剧集:', episodesToDelete)
-  console.log('原始数据行数:', data.rows.length)
-  
+
   // 找到episode_number列的索引
   const episodeColumnIndex = data.headers.findIndex(header => 
     header.toLowerCase().includes('episode') || header.includes('剧集')
   )
   
   if (episodeColumnIndex === -1) {
-    console.error('未找到剧集编号列')
+    
     return data
   }
-  
-  console.log('剧集编号列索引:', episodeColumnIndex)
-  
+
   // 创建要删除的剧集编号集合
   const episodesToDeleteSet = new Set(episodesToDelete.map(ep => String(ep)))
   
@@ -257,15 +247,12 @@ export function deleteEpisodesByNumbers(data: CSVData, episodesToDelete: number[
     const shouldDelete = episodesToDeleteSet.has(episodeNumber)
     
     if (shouldDelete) {
-      console.log(`删除第${index + 1}行，剧集编号: ${episodeNumber}`)
+      
     }
     
     return !shouldDelete
   })
-  
-  console.log('删除后剩余行数:', filteredRows.length)
-  console.log('实际删除行数:', data.rows.length - filteredRows.length)
-  
+
   return {
     headers: [...data.headers],
     rows: filteredRows

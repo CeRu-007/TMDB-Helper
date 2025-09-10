@@ -55,7 +55,7 @@ async function cleanupTempFiles(sessionId: string) {
     const sessionDir = path.join(TEMP_DIR, sessionId);
     await fs.rm(sessionDir, { recursive: true, force: true });
   } catch (error) {
-    console.warn('清理临时文件失败:', error);
+    
   }
 }
 
@@ -78,7 +78,7 @@ async function checkFFmpegAvailability(): Promise<boolean> {
     await execAsync('ffmpeg -version', { timeout: 5000 });
     return true;
   } catch (error) {
-    console.error('ffmpeg不可用:', error);
+    
     return false;
   }
 }
@@ -102,14 +102,12 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
 
   try {
     // 使用ffmpeg直接从URL提取音频，不下载视频文件
-    console.log('开始从URL提取音频...');
+    
     const command = `ffmpeg -i "${videoUrl}" -vn -acodec pcm_s16le -ar 16000 -ac 1 "${audioPath}"`;
     const { stdout, stderr } = await execAsync(command, {
       timeout: 1800000, // 30分钟超时，支持长视频
       maxBuffer: 1024 * 1024 * 50 // 50MB buffer，支持更大的音频文件
     });
-
-    console.log('音频提取完成');
 
     // 获取音频信息
     const probeCommand = `ffprobe -v quiet -print_format json -show_format "${audioPath}"`;
@@ -127,8 +125,7 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
       title
     };
   } catch (error) {
-    console.error('音频提取失败:', error);
-
+    
     // 提供更详细的错误信息
     let errorMessage = '音频提取失败';
     if (error instanceof Error) {
@@ -157,8 +154,6 @@ function getModelConfidence(model: string): number {
   if (model.includes('SpeechT5')) return 0.7;
   return 0.8; // 默认置信度
 }
-
-
 
 // 语音转文字（使用硅基流动语音识别模型）
 async function transcribeAudio(audioPath: string, apiKey: string, audioDuration: number = 0, model: string = 'FunAudioLLM/SenseVoiceSmall'): Promise<{
@@ -214,7 +209,6 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
     const result = await response.json();
     const transcriptText = result.text || '';
 
-    console.log(`语音识别完成，文本长度: ${transcriptText.length}字符`);
     console.log('API响应结构:', Object.keys(result));
 
     // 处理不同模型的响应格式
@@ -228,7 +222,7 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
         text: segment.text || '',
         confidence: segment.confidence || 0.8
       }));
-      console.log(`使用API返回的${segments.length}个分段`);
+      
     } else {
       // 回退到基于句子的分段处理
       const sentences = transcriptText.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
@@ -241,7 +235,7 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
         text: sentence.trim(),
         confidence: getModelConfidence(model) // 根据模型设置置信度
       }));
-      console.log(`生成了${segments.length}个基于句子的分段`);
+      
     }
 
     return {
@@ -249,8 +243,7 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
       segments
     };
   } catch (error) {
-    console.error('语音转文字失败:', error);
-
+    
     // 提供更详细的错误信息
     let errorMessage = '语音转文字失败';
     if (error instanceof Error) {
@@ -313,8 +306,6 @@ function formatSRTTime(seconds: number): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
 }
 
-
-
 export async function POST(request: NextRequest) {
   const sessionId = uuidv4();
   
@@ -346,17 +337,17 @@ export async function POST(request: NextRequest) {
     }
     
     // 1. 直接从URL提取音频
-    console.log('开始从URL提取音频...');
+    
     const audioInfo = await extractAudioFromUrl(videoUrl, sessionId);
 
     // 2. 语音转文字
-    console.log('进行语音识别...');
+    
     const selectedModel = speechRecognitionModel || 'FunAudioLLM/SenseVoiceSmall';
     const audioTranscriptResult = await transcribeAudio(audioInfo.audioPath, apiKey, audioInfo.duration, selectedModel);
     const audioTranscript = audioTranscriptResult.text;
 
     // 3. 生成结构化内容
-    console.log('生成结构化内容...');
+    
     const videoInfo = {
       title: audioInfo.title,
       duration: audioInfo.duration,
@@ -385,12 +376,10 @@ export async function POST(request: NextRequest) {
 
     // 5. 立即清理临时文件（处理完成后不再需要）
     await cleanupTempFiles(sessionId);
-    console.log('临时音频文件已清理');
-
+    
     return NextResponse.json(result);
     
   } catch (error) {
-    console.error('视频分析失败:', error);
     
     // 清理临时文件
     await cleanupTempFiles(sessionId);

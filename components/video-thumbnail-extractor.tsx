@@ -193,8 +193,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
   const [processorInitialized, setProcessorInitialized] = useState(false)
   const [processorError, setProcessorError] = useState<string | null>(null)
 
-
-
   // 引用
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropAreaRef = useRef<HTMLDivElement>(null)
@@ -231,10 +229,9 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
           setProcessorInitialized(true)
           setProcessorReady(true)
 
-          console.log("图像处理器初始化成功")
         }
       } catch (error) {
-        console.error("初始化图像处理器失败:", error)
+        
         setModelStatus({
           subtitle: "error",
           person: "error"
@@ -288,7 +285,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
           }, 1000); // 延迟1秒确保处理器已初始化
         }
       } catch (error) {
-        console.error("加载设置失败:", error)
+        
       }
     }
   }, [toast])
@@ -437,8 +434,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     }
   }
 
-
-
   // 批量处理视频
   const handleBatchExtraction = async () => {
     if (isProcessing) return
@@ -520,8 +515,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
             // 更新总进度
             setTotalProgress(Math.floor((completedCount / pendingVideos.length) * 100))
           } catch (error) {
-            console.error(`处理视频 ${video.name} 失败:`, error)
-
+            
             // 视频状态已在processVideo内部更新为错误
 
             // 更新完成计数
@@ -553,7 +547,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
       // 开始处理队列
       await processQueue(pendingVideos)
     } catch (error) {
-      console.error("批量处理视频时出错:", error)
+      
       setIsProcessing(false)
       setProcessingQueue([])
 
@@ -651,7 +645,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         }
       }
     } catch (error) {
-      console.warn('AI分析失败:', error)
+      
       return {
         hasPeople: false,
         hasSubtitles: true, // 保守策略：假设有字幕
@@ -682,8 +676,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
 
-    console.log(`开始顺序提取帧，起始时间: ${options.startTime}s, 帧间隔: ${options.frameInterval}, 目标数量: ${options.frameCount}`)
-
     for (let i = 0; i < options.frameCount; i++) {
       try {
         // 计算当前帧的时间点（以帧为单位）
@@ -691,7 +683,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         
         // 确保不超过视频时长
         if (currentTime >= video.duration) {
-          console.log(`已达到视频结尾，停止提取。当前时间: ${currentTime}s, 视频时长: ${video.duration}s`)
+          
           break
         }
 
@@ -733,24 +725,22 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
           frames.push(imageData)
           console.log(`成功提取第 ${i + 1} 帧，时间: ${currentTime.toFixed(2)}s`)
         } else {
-          console.warn(`第 ${i + 1} 帧数据无效，跳过`)
+          
         }
 
       } catch (error) {
-        console.warn(`提取第 ${i + 1} 帧失败:`, error)
+        
         // 继续提取下一帧
       }
     }
 
-    console.log(`顺序帧提取完成，成功提取 ${frames.length} 帧`)
     return frames
   }
 
   // 处理单个视频
   const processVideo = async (videoData: VideoFile): Promise<void> => {
     try {
-      console.log(`开始处理视频: ${videoData.name}`)
-
+      
       // 创建视频元素
       const video = document.createElement('video')
       video.preload = 'metadata'
@@ -792,8 +782,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         }
       })
 
-      console.log(`视频元数据加载完成: ${videoData.name}`)
-
       // 更新视频信息
       const duration = video.duration || 0
       const resolution = video.videoWidth && video.videoHeight ?
@@ -823,8 +811,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         Math.max(0, duration - 1)
       )
 
-      console.log(`开始提取帧: ${videoData.name}, 起始时间: ${validStartTime}秒`)
-
       // 简单的顺序帧提取
       // 如果启用AI筛选，提取更多帧作为候选（因为很多帧可能被筛选掉）
       const candidateFrameCount = settings.enableAIFilter ? 
@@ -838,8 +824,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         keepOriginalResolution: settings.keepOriginalResolution
       })
 
-      console.log(`成功提取 ${frames.length} 帧: ${videoData.name}`)
-
       // 更新进度-帧提取完成
       setVideos(prev =>
         prev.map(v => v.id === videoData.id ?
@@ -849,13 +833,9 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
       // 如果没有提取到帧，抛出错误
       if (frames.length === 0) {
-        console.error(`未能提取到任何帧: ${videoData.name}`)
+        
         throw new Error("无法从视频中提取帧")
       }
-
-      console.log(`开始处理帧: ${videoData.name}`)
-      console.log(`AI筛选模式: ${settings.enableAIFilter ? '启用' : '禁用'}`)
-      console.log(`目标缩略图数量: ${settings.thumbnailCount}`)
 
       // 生成缩略图
       const thumbnails: Thumbnail[] = []
@@ -867,20 +847,15 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         const frame = frames[i]
         processedFrames++
 
-        console.log(`处理帧 ${processedFrames}/${frames.length}: ${videoData.name}, 帧索引: ${i}`)
-
         // 如果启用了AI筛选，先进行AI分析
         if (settings.enableAIFilter && settings.siliconFlowApiKey.trim()) {
           try {
-            console.log(`AI分析帧 ${i}: ${videoData.name}`)
-            const aiResult = await analyzeFrameWithAI(frame, settings.siliconFlowApiKey, settings.siliconFlowModel)
             
-            console.log(`AI分析结果 - 帧 ${i}: 有人物=${aiResult.hasPeople}, 有字幕=${aiResult.hasSubtitles}, 置信度=${aiResult.confidence}`)
+            const aiResult = await analyzeFrameWithAI(frame, settings.siliconFlowApiKey, settings.siliconFlowModel)
 
             // 只有包含人物且无字幕的帧才生成缩略图
             if (!aiResult.hasPeople || aiResult.hasSubtitles) {
               aiFilteredFrames++
-              console.log(`跳过帧 ${i}: 不符合条件（有人物=${aiResult.hasPeople}, 有字幕=${aiResult.hasSubtitles}）`)
               
               // 更新进度
               setVideos(prev =>
@@ -891,9 +866,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
               continue
             }
 
-            console.log(`帧 ${i} 符合条件，开始生成缩略图`)
           } catch (aiError) {
-            console.warn(`AI分析帧 ${i} 失败，跳过: ${videoData.name}`, aiError)
             
             // 更新进度
             setVideos(prev =>
@@ -907,8 +880,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
         // 生成缩略图
         try {
-          console.log(`生成缩略图 ${thumbnails.length + 1}: ${videoData.name}, 帧索引: ${i}`)
-
+          
           const result = await imageProcessorRef.current.generateThumbnail(frame, {
             maxWidth: settings.keepOriginalResolution ? frame.width : 640,
             maxHeight: settings.keepOriginalResolution ? frame.height : 360,
@@ -917,7 +889,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
           })
 
           if (!result || !result.url) {
-            console.warn(`缩略图生成失败，跳过帧 ${i}: ${videoData.name}`)
+            
             continue
           }
 
@@ -933,9 +905,8 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
             isMain: thumbnails.length === 0 // 第一个为主图
           })
 
-          console.log(`成功生成缩略图 ${thumbnails.length}: ${videoData.name}`)
         } catch (thumbnailError) {
-          console.warn(`生成缩略图时出错，跳过帧 ${i}: ${videoData.name}`, thumbnailError)
+          
           continue
         }
 
@@ -947,12 +918,8 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         )
       }
 
-      console.log(`帧处理完成: ${videoData.name}`)
-      console.log(`处理统计: 总帧数=${frames.length}, 处理帧数=${processedFrames}, AI筛选掉=${aiFilteredFrames}, 生成缩略图=${thumbnails.length}`)
-
       // 如果AI筛选过于严格导致缩略图不足，尝试放宽条件
       if (settings.enableAIFilter && thumbnails.length < settings.thumbnailCount && frames.length > thumbnails.length) {
-        console.log(`AI筛选结果不足，尝试放宽条件生成更多缩略图: ${videoData.name}`)
         
         // 对剩余的帧使用更宽松的条件（只要有人物，不管是否有字幕）
         for (let i = 0; i < frames.length && thumbnails.length < settings.thumbnailCount; i++) {
@@ -962,12 +929,11 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
           const frame = frames[i]
           
           try {
-            console.log(`放宽条件分析帧 ${i}: ${videoData.name}`)
+            
             const aiResult = await analyzeFrameWithAI(frame, settings.siliconFlowApiKey, settings.siliconFlowModel)
             
             // 放宽条件：只要有人物就可以
             if (aiResult.hasPeople) {
-              console.log(`放宽条件下符合要求的帧 ${i}: 有人物=${aiResult.hasPeople}`)
               
               // 生成缩略图
               const result = await imageProcessorRef.current.generateThumbnail(frame, {
@@ -986,31 +952,21 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
                   quality: 80, // 稍低的质量标记
                   isMain: thumbnails.length === 0
                 })
-                console.log(`放宽条件下成功生成缩略图 ${thumbnails.length}: ${videoData.name}`)
+                
               }
             }
           } catch (error) {
-            console.warn(`放宽条件分析帧 ${i} 失败:`, error)
+            
           }
         }
       }
 
       // 检查是否生成了缩略图
       if (thumbnails.length === 0) {
-        console.error(`未能生成缩略图: ${videoData.name}`)
-        console.error(`调试信息:`, {
-          原始帧数: frames.length,
-          处理帧数: processedFrames,
-          AI筛选掉: aiFilteredFrames,
-          目标缩略图数: settings.thumbnailCount,
-          视频时长: duration,
-          开始时间: validStartTime,
-          启用AI筛选: settings.enableAIFilter
-        })
-        
+
         // 尝试生成至少一个缩略图作为回退
         if (frames.length > 0) {
-          console.log(`尝试使用第一帧作为回退缩略图: ${videoData.name}`)
+          
           try {
             const fallbackResult = await imageProcessorRef.current.generateThumbnail(frames[0], {
               maxWidth: settings.keepOriginalResolution ? frames[0].width : 640,
@@ -1027,10 +983,10 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
                 quality: 50, // 默认质量
                 isMain: true
               })
-              console.log(`成功生成回退缩略图: ${videoData.name}`)
+              
             }
           } catch (fallbackError) {
-            console.error(`回退缩略图生成也失败: ${videoData.name}`, fallbackError)
+            
           }
         }
         
@@ -1038,8 +994,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
           throw new Error(`未能生成缩略图: 原始帧数=${frames.length}, 处理帧数=${processedFrames}`)
         }
       }
-
-      console.log(`处理完成，生成了 ${thumbnails.length} 个缩略图: ${videoData.name}`)
 
       // 更新视频状态为完成
       setVideos(prev =>
@@ -1054,8 +1008,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         )
       )
     } catch (error) {
-      console.error("处理视频失败:", error)
-
+      
       // 更新视频状态为错误
       setVideos(prev =>
         prev.map(v => v.id === videoData.id ?
@@ -1176,7 +1129,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         const videoFolder = imgFolder.folder(video.name.replace(/[\\/:*?"<>|]/g, "_"));
 
         if (!videoFolder) {
-          console.warn(`无法为视频 ${video.name} 创建文件夹，跳过`);
+          
           continue;
         }
 
@@ -1230,7 +1183,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         variant: "default",
       });
     } catch (error) {
-      console.error("下载缩略图失败:", error);
+      
       toast({
         title: "下载失败",
         description: "打包缩略图时出错",
@@ -1463,8 +1416,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
       </DialogContent>
     </Dialog>
   )
-
-
 
   // 渲染帮助对话框
   const renderHelpDialog = () => (

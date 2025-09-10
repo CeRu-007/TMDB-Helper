@@ -21,7 +21,7 @@ export async function GET(
         );
     }
   } catch (error) {
-    console.error(`CSV GET ${action} 错误:`, error);
+    
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }
@@ -53,7 +53,7 @@ export async function POST(
         );
     }
   } catch (error) {
-    console.error(`CSV POST ${action} 错误:`, error);
+    
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }
@@ -79,7 +79,7 @@ export async function DELETE(
         );
     }
   } catch (error) {
-    console.error(`CSV DELETE ${action} 错误:`, error);
+    
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }
@@ -91,7 +91,6 @@ export async function DELETE(
 async function handleReadCsv(request: NextRequest) {
   try {
     const { workingDirectory } = await request.json();
-    console.log('CSV Read API - 工作目录:', workingDirectory);
     
     if (!workingDirectory) {
       return NextResponse.json(
@@ -101,7 +100,6 @@ async function handleReadCsv(request: NextRequest) {
     }
     
     const filePath = path.join(workingDirectory, 'import.csv');
-    console.log('CSV Read API - 文件路径:', filePath);
     
     if (!fs.existsSync(filePath)) {
       return NextResponse.json(
@@ -115,12 +113,11 @@ async function handleReadCsv(request: NextRequest) {
     
     // 使用原始的parseCsvContent函数解析CSV内容
     const csvData = parseCsvContent(content);
-    
-    console.log('CSV Read API - 成功解析:', `${csvData.rows.length}行数据`);
+
     return NextResponse.json({ success: true, data: csvData });
     
   } catch (error) {
-    console.error('CSV Read API - 错误:', error);
+    
     return NextResponse.json(
       { success: false, error: '读取CSV文件失败' },
       { status: 500 }
@@ -133,9 +130,7 @@ async function handleSaveCsv(request: NextRequest) {
   try {
     const requestData = await request.json();
     const { filePath, content, data } = requestData;
-    
-    console.log('CSV Save API - 请求参数:', { filePath, hasContent: !!content, hasData: !!data });
-    
+
     if (!filePath) {
       return NextResponse.json(
         { success: false, error: '缺少文件路径参数' },
@@ -162,17 +157,14 @@ async function handleSaveCsv(request: NextRequest) {
     } else {
       csvContent = '';
     }
-    
-    console.log('CSV Save API - 保存内容长度:', csvContent.length);
-    
+
     // 写入文件
     fs.writeFileSync(filePath, csvContent, 'utf-8');
-    
-    console.log('CSV Save API - 文件保存成功:', filePath);
+
     return NextResponse.json({ success: true, message: 'CSV文件保存成功' });
     
   } catch (error) {
-    console.error('CSV Save API - 错误:', error);
+    
     return NextResponse.json(
       { success: false, error: '保存CSV文件失败' },
       { status: 500 }
@@ -213,7 +205,7 @@ async function handleVerifyCsv(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('CSV Verify API - 错误:', error);
+    
     return NextResponse.json(
       { success: false, error: '验证CSV文件失败' },
       { status: 500 }
@@ -253,7 +245,7 @@ async function handleDeleteCsv(request: NextRequest) {
     return NextResponse.json({ success: true, message: 'CSV文件删除成功' });
     
   } catch (error) {
-    console.error('CSV Delete API - 错误:', error);
+    
     return NextResponse.json(
       { success: false, error: '删除CSV文件失败' },
       { status: 500 }
@@ -293,7 +285,7 @@ async function handleGetFiles(request: NextRequest) {
     return NextResponse.json({ success: true, files });
     
   } catch (error) {
-    console.error('CSV Files API - 错误:', error);
+    
     return NextResponse.json(
       { success: false, error: '获取文件列表失败' },
       { status: 500 }

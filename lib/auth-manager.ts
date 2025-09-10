@@ -97,7 +97,7 @@ export class AuthManager {
       }
       return user as AdminUser;
     } catch (error) {
-      console.error('读取管理员用户信息失败:', error);
+      
       return null;
     }
   }
@@ -111,7 +111,7 @@ export class AuthManager {
       fs.writeFileSync(AuthManager.AUTH_FILE, JSON.stringify(user, null, 2), 'utf-8');
       return true;
     } catch (error) {
-      console.error('保存管理员用户信息失败:', error);
+      
       return false;
     }
   }
@@ -125,7 +125,7 @@ export class AuthManager {
       await fs.promises.writeFile(AuthManager.AUTH_FILE, JSON.stringify(user, null, 2), 'utf-8')
       return true;
     } catch (error) {
-      console.error('保存管理员用户信息失败:', error);
+      
       return false;
     }
   }
@@ -147,7 +147,7 @@ export class AuthManager {
 
       return AuthManager.saveAdminUser(adminUser);
     } catch (error) {
-      console.error('创建管理员用户失败:', error);
+      
       return false;
     }
   }
@@ -175,7 +175,7 @@ export class AuthManager {
         return adminUser;
       }
     } catch (error) {
-      console.error('密码验证失败:', error);
+      
     }
 
     return null;
@@ -204,7 +204,7 @@ export class AuthManager {
       const decoded = jwt.verify(token, AuthManager.JWT_SECRET) as AuthToken;
       return decoded;
     } catch (error) {
-      console.error('Token验证失败:', error);
+      
       return null;
     }
   }
@@ -261,7 +261,7 @@ export class AuthManager {
           }
 
           if (needOverride) {
-            console.log('[Auth] 根据环境变量覆盖管理员账号信息...')
+            
             if (envUsername) nextUsername = envUsername
             if (envPassword) nextPasswordHash = await bcrypt.hash(envPassword, 12)
 
@@ -283,13 +283,13 @@ export class AuthManager {
 
     // 不存在用户：优先用环境变量创建
     if (envUsername && envPassword) {
-      console.log('从环境变量初始化管理员用户...');
+      
       return await AuthManager.createAdminUser(envUsername, envPassword);
     }
 
     // 创建默认管理员用户
     console.log('创建默认管理员用户 (admin/admin)...');
-    console.warn('⚠️  请在生产环境中修改默认密码！');
+    
     return await AuthManager.createAdminUser('admin', 'admin');
   }
 
@@ -315,7 +315,7 @@ export class AuthManager {
 
       return AuthManager.saveAdminUser(adminUser);
     } catch (error) {
-      console.error('更改密码失败:', error);
+      
       return false;
     }
   }

@@ -6,7 +6,6 @@ import path from 'path';
  * 修复 TMDB-Import 中文字符解析错误
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  console.log('[API] 收到修复 TMDB-Import 错误请求');
   
   try {
     const { action, fixType } = await request.json();
@@ -35,16 +34,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // 创建备份
     const backupPath = episodeFilePath + '.backup.' + Date.now();
     fs.writeFileSync(backupPath, originalContent);
-    console.log(`[API] 已创建备份文件: ${backupPath}`);
     
     // 修复代码
     const fixedContent = applyChineseCharacterFix(originalContent);
     
     // 写入修复后的文件
     fs.writeFileSync(episodeFilePath, fixedContent, 'utf-8');
-    
-    console.log('[API] TMDB-Import 中文字符解析错误修复完成');
-    
+
     return NextResponse.json({
       success: true,
       message: '修复成功，已应用中文字符解析错误修复补丁',
@@ -52,7 +48,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
     
   } catch (error: any) {
-    console.error('[API] 修复 TMDB-Import 错误失败:', error);
+    
     return NextResponse.json({ 
       success: false, 
       error: error.message || '修复失败' 
@@ -226,7 +222,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
     
   } catch (error: any) {
-    console.error('[API] 检查修复状态失败:', error);
+    
     return NextResponse.json({ 
       exists: false,
       fixed: false,

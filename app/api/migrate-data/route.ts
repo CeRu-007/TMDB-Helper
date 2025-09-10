@@ -26,8 +26,6 @@ export async function POST(request: NextRequest) {
 
     // 移除了tmdb_items优化功能，现在使用自动紧凑格式保存
 
-    console.log(`[API] 开始为用户 ${userId} 执行数据迁移`);
-
     // 执行迁移
     const migrated = migrateExistingData(userId);
     
@@ -51,7 +49,7 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('数据迁移失败:', error);
+    
     return NextResponse.json(
       { 
         success: false,
@@ -95,7 +93,7 @@ export async function GET(request: NextRequest) {
       }))
     });
   } catch (error) {
-    console.error('获取迁移状态失败:', error);
+    
     return NextResponse.json(
       { 
         success: false,
@@ -138,7 +136,7 @@ export async function DELETE(request: NextRequest) {
       userId
     });
   } catch (error) {
-    console.error('清理用户数据失败:', error);
+    
     return NextResponse.json(
       { 
         success: false,

@@ -43,24 +43,22 @@ class RealtimeSyncManager {
      */
     public async initialize(): Promise<void> {
         if (typeof window === 'undefined') {
-            console.log('[RealtimeSync] 服务端环境，跳过初始化')
+            
             return
         }
 
         const connectionEventId = performanceMonitor.startEvent('connection')
 
         try {
-            console.log('[RealtimeSync] 初始化实时同步连接')
-
+            
             // 生成唯一连接ID
             this.connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-            console.log('[RealtimeSync] 连接ID:', this.connectionId)
-
+            
             // 创建 Server-Sent Events 连接
             this.eventSource = new EventSource('/api/realtime-sync')
 
             this.eventSource.onopen = () => {
-                console.log('[RealtimeSync] 连接已建立')
+                
                 this.isConnected = true
                 this.reconnectAttempts = 0
                 
@@ -80,11 +78,10 @@ class RealtimeSyncManager {
                 
                 try {
                     const data: DataChangeEvent = JSON.parse(event.data)
-                    console.log('[RealtimeSync] 收到数据变更事件:', data)
-
+                    
                     // 过滤掉自己发出的事件，避免循环处理
                     if (data.sourceConnectionId && data.sourceConnectionId === this.connectionId) {
-                        console.log('[RealtimeSync] 跳过自己发出的事件:', data.sourceConnectionId)
+                        
                         performanceMonitor.endEvent(messageEventId, true)
                         return
                     }
@@ -93,7 +90,7 @@ class RealtimeSyncManager {
                     
                     performanceMonitor.endEvent(messageEventId, true)
                 } catch (error) {
-                    console.error('[RealtimeSync] 解析事件数据失败:', error)
+                    
                     performanceMonitor.endEvent(messageEventId, false, error instanceof Error ? error.message : '解析失败')
                     
                     // 使用错误恢复管理器处理错误
@@ -106,7 +103,7 @@ class RealtimeSyncManager {
             }
 
             this.eventSource.onerror = (error) => {
-                console.error('[RealtimeSync] 连接错误:', error)
+                
                 this.isConnected = false
                 
                 performanceMonitor.endEvent(connectionEventId, false, '连接错误')
@@ -126,7 +123,7 @@ class RealtimeSyncManager {
             }
 
         } catch (error) {
-            console.error('[RealtimeSync] 初始化失败:', error)
+            
             performanceMonitor.endEvent(connectionEventId, false, error instanceof Error ? error.message : '初始化失败')
             
             // 使用错误恢复管理器处理初始化错误
@@ -142,14 +139,12 @@ class RealtimeSyncManager {
      */
     private handleReconnect(): void {
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.error('[RealtimeSync] 达到最大重连次数，停止重连')
+            
             return
         }
 
         this.reconnectAttempts++
         const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
-
-        console.log(`[RealtimeSync] ${delay}ms 后尝试第 ${this.reconnectAttempts} 次重连`)
 
         setTimeout(() => {
             this.cleanup()
@@ -165,7 +160,7 @@ class RealtimeSyncManager {
             this.listeners.set(eventType, new Set())
         }
         this.listeners.get(eventType)!.add(listener)
-        console.log(`[RealtimeSync] 添加 ${eventType} 事件监听器`)
+        
     }
 
     /**
@@ -179,7 +174,7 @@ class RealtimeSyncManager {
                 this.listeners.delete(eventType)
             }
         }
-        console.log(`[RealtimeSync] 移除 ${eventType} 事件监听器`)
+        
     }
 
     /**
@@ -192,7 +187,7 @@ class RealtimeSyncManager {
                 try {
                     listener(event)
                 } catch (error) {
-                    console.error(`[RealtimeSync] 事件监听器执行失败:`, error)
+                    
                 }
             })
         }
@@ -204,7 +199,7 @@ class RealtimeSyncManager {
                 try {
                     listener(event)
                 } catch (error) {
-                    console.error(`[RealtimeSync] 通用事件监听器执行失败:`, error)
+                    
                 }
             })
         }
@@ -221,8 +216,6 @@ class RealtimeSyncManager {
                 sourceConnectionId: this.connectionId // 添加源连接ID
             }
 
-            console.log('[RealtimeSync] 发送数据变更通知:', fullEvent)
-
             await fetch('/api/realtime-sync', {
                 method: 'POST',
                 headers: {
@@ -231,7 +224,7 @@ class RealtimeSyncManager {
                 body: JSON.stringify(fullEvent)
             })
         } catch (error) {
-            console.error('[RealtimeSync] 发送数据变更通知失败:', error)
+            
         }
     }
 
@@ -251,7 +244,7 @@ class RealtimeSyncManager {
             this.eventSource = null
         }
         this.isConnected = false
-        console.log('[RealtimeSync] 清理连接资源')
+        
     }
 
     /**
@@ -260,7 +253,7 @@ class RealtimeSyncManager {
     public destroy(): void {
         this.cleanup()
         this.listeners.clear()
-        console.log('[RealtimeSync] 销毁实时同步管理器')
+        
     }
 }
 

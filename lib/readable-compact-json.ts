@@ -132,8 +132,6 @@ export function stringifySimpleReadableCompact(data: any): string {
   return formatted;
 }
 
-
-
 /**
  * 针对定时任务的可读紧凑格式
  */
@@ -165,7 +163,7 @@ export function optimizeToReadableCompact(jsonString: string, dataType?: string)
     const data = JSON.parse(jsonString);
     return stringifyAuto(data, dataType as any);
   } catch (error) {
-    console.error('JSON解析失败:', error);
+    
     return jsonString;
   }
 }

@@ -222,7 +222,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
   const loadTasksAndItems = async (forceRefresh = false) => {
     // 防止重复加载
     if (isLoadingData) {
-      console.log("[GlobalScheduledTasksDialog] 数据正在加载中，跳过重复请求");
+      
       return;
     }
 
@@ -230,19 +230,16 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     setLoading(true);
 
     try {
-      console.log("[GlobalScheduledTasksDialog] 开始加载数据...");
-
+      
       // 并行加载任务和项目，只在必要时强制刷新
       const [allTasks, allItems] = await Promise.all([
         StorageManager.getScheduledTasks(forceRefresh),
         StorageManager.getItemsWithRetry()
       ]);
 
-      console.log(`[GlobalScheduledTasksDialog] 加载完成: ${allTasks.length} 个任务, ${allItems.length} 个项目`);
-      
       // 检查项目是否存在
       if (allItems.length === 0) {
-        console.warn("[GlobalScheduledTasksDialog] 警告: 系统中没有项目，任务将无法执行");
+        
         toast({
           title: "注意",
           description: "系统中没有可用项目，定时任务将无法执行",
@@ -254,7 +251,6 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       // 检查任务的项目关联
       const tasksWithInvalidItem = allTasks.filter(task => !allItems.some(item => item.id === task.itemId));
       if (tasksWithInvalidItem.length > 0) {
-        console.warn(`[GlobalScheduledTasksDialog] 警告: 有 ${tasksWithInvalidItem.length} 个任务关联的项目不存在`);
         
         // 显示警告并提供修复选项
         if (tasksWithInvalidItem.length === 1) {
@@ -284,9 +280,8 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       setTasks(allTasks)
       setItems(allItems)
 
-
     } catch (error) {
-      console.error("[GlobalScheduledTasksDialog] 加载数据失败:", error);
+      
       toast({
         title: "加载失败",
         description: "无法加载定时任务或项目数据",
@@ -304,13 +299,13 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       const updatedTasks = await StorageManager.getScheduledTasks();
       setTasks(updatedTasks);
     } catch (error) {
-      console.error("[GlobalScheduledTasksDialog] 刷新任务失败:", error);
+      
     }
   }
 
   // 手动刷新数据
   const handleManualRefresh = async () => {
-    console.log("[GlobalScheduledTasksDialog] 手动刷新数据...");
+    
     toast({
       title: "正在刷新",
       description: "正在刷新定时任务列表...",
@@ -327,14 +322,11 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     // 方法1: 通过ID直接匹配
     const exactMatch = items.find(item => item.id === taskItemId);
     if (exactMatch) {
-      console.log(`[GlobalScheduledTasksDialog] 通过ID直接找到项目: ${exactMatch.title}`);
+      
       return exactMatch;
     }
 
     // 如果没有直接找到，尝试通过其他方法查找
-    console.log(`[GlobalScheduledTasksDialog] 通过ID ${taskItemId} 未找到项目，尝试其他方法...`);
-    
-
     
     // 方法2: 如果提供了任务对象，尝试通过itemTmdbId和itemTitle匹配
     if (task) {
@@ -342,7 +334,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       if (task.itemTmdbId) {
         const tmdbIdMatch = items.find(item => item.tmdbId === task.itemTmdbId);
         if (tmdbIdMatch) {
-          console.log(`[GlobalScheduledTasksDialog] 通过TMDB ID匹配到项目: ${tmdbIdMatch.title}`);
+          
           return tmdbIdMatch;
         }
       }
@@ -356,7 +348,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         );
         
         if (titleMatch) {
-          console.log(`[GlobalScheduledTasksDialog] 通过标题匹配到项目: ${titleMatch.title}`);
+          
           return titleMatch;
         }
       }
@@ -370,14 +362,13 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       );
       
       if (nameMatch) {
-        console.log(`[GlobalScheduledTasksDialog] 通过任务名称匹配到项目: ${nameMatch.title}`);
+        
         return nameMatch;
       }
     }
     
     // 方法3: 如果ID是数字字符串或者长度不正确，可能是格式问题
     if (/^\d+$/.test(taskItemId) || taskItemId.length > 40) {
-      console.log(`[GlobalScheduledTasksDialog] 检测到可能是格式问题的ID: ${taskItemId}`);
       
       // 按创建时间排序找最近的项目
       const sortedItems = [...items].sort((a, b) => 
@@ -385,13 +376,13 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       );
       
       if (sortedItems.length > 0) {
-        console.log(`[GlobalScheduledTasksDialog] 使用最近创建的项目: ${sortedItems[0].title}`);
+        
         return sortedItems[0];
       }
     }
     
     // 最终结果是未找到项目
-    console.log(`[GlobalScheduledTasksDialog] 无法找到匹配的项目`);
+    
     return undefined;
   }, [items]);
 
@@ -506,7 +497,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         }
       }
     } catch (error) {
-      console.error("更新任务状态失败:", error)
+      
       toast({
         title: "操作失败",
         description: "无法更新任务状态",
@@ -529,12 +520,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       // 检查是否有可用项目
       const hasItems = await StorageManager.hasAnyItems();
       if (!hasItems) {
-        console.error("[GlobalScheduledTasksDialog] 系统中没有可用项目");
-
+        
         // 获取详细的存储状态信息
         const storageStatus = await StorageManager.getStorageStatus();
-        console.log("[GlobalScheduledTasksDialog] 存储状态:", storageStatus);
-
+        
         toast({
           title: "无法执行任务",
           description: `系统中没有可用项目，请先添加至少一个项目后再试。存储类型: ${storageStatus.storageType}，项目数量: ${storageStatus.itemCount}`,
@@ -546,13 +535,11 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       
       // 检查项目列表是否为空（本地状态检查，作为备份）
       if (!items || items.length === 0) {
-        console.error("[GlobalScheduledTasksDialog] 本地项目列表为空，尝试重新加载...");
         
         // 尝试重新加载项目列表
         setLoading(true);
         try {
           const allItems = await StorageManager.getItemsWithRetry();
-          console.log(`[GlobalScheduledTasksDialog] 重新加载了 ${allItems.length} 个项目`);
           
           // 如果仍然为空，提示用户
           if (!allItems || allItems.length === 0) {
@@ -567,7 +554,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           // 更新项目列表
           setItems(allItems);
         } catch (loadError) {
-          console.error("[GlobalScheduledTasksDialog] 重新加载项目失败:", loadError);
+          
           toast({
             title: "无法执行任务",
             description: "系统中没有可用项目，请先添加至少一个项目后再试",
@@ -639,28 +626,23 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         setRunningTaskId(null);
         return;
       }
-      
-      console.log(`[GlobalScheduledTasksDialog] 执行定时任务: ${task.name}`);
 
       // 验证重要字段
       if (!relatedItem.id) {
-        console.error("[GlobalScheduledTasksDialog] 错误: 项目缺少ID");
+        
         throw new Error("项目ID无效");
       }
 
       if (!relatedItem.platformUrl) {
-        console.error("[GlobalScheduledTasksDialog] 错误: 项目缺少平台URL");
+        
         throw new Error("项目缺少平台URL");
       }
 
       // 使用调度器直接执行任务
-      console.log(`[GlobalScheduledTasksDialog] 通过调度器执行任务: ${task.id}`);
-
+      
       try {
         // 直接调用调度器的手动执行方法
         await taskScheduler.executeTaskManually(task);
-
-        console.log(`[GlobalScheduledTasksDialog] 任务执行成功: ${task.name}`);
 
         // 轻量级刷新任务状态（调度器已经更新了任务状态）
         await refreshTasksOnly();
@@ -676,11 +658,10 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           icon: <AlarmClock className="h-4 w-4" />
         });
       } catch (executionError: any) {
-        console.error("[GlobalScheduledTasksDialog] 调度器执行任务失败:", executionError);
+        
         throw executionError; // 重新抛出以便外层catch处理
       }
     } catch (error: any) {
-      console.error("[GlobalScheduledTasksDialog] 执行任务失败:", error);
       
       // 更新任务的失败状态
       try {
@@ -703,15 +684,14 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
           await refreshTasksOnly();
         }
       } catch (updateError) {
-        console.error("[GlobalScheduledTasksDialog] 更新任务失败状态时出错:", updateError);
+        
       }
       
       // 根据错误类型提供不同的提示
       if (error.message && error.message.includes("系统中没有可用项目")) {
         // 获取存储状态信息
         const storageStatus = await StorageManager.getStorageStatus();
-        console.log("[GlobalScheduledTasksDialog] 任务执行失败时的存储状态:", storageStatus);
-
+        
         toast({
           title: "无法执行任务",
           description: `系统中没有可用项目，请先添加至少一个项目后再试。当前存储: ${storageStatus.storageType}，项目数: ${storageStatus.itemCount}`,
@@ -769,7 +749,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         })
       }
     } catch (error) {
-      console.error("删除定时任务失败:", error)
+      
       toast({
         title: "删除失败",
         description: "无法删除定时任务",
@@ -964,7 +944,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         localStorage.setItem('tmdb_helper_relink_history', JSON.stringify(relinkHistory));
       } catch (e) {
         // 忽略存储错误
-        console.warn("保存关联历史记录失败", e);
+        
       }
       
       // 更新任务的项目ID
@@ -1017,7 +997,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         setRelinkSuggestions([])
       }
     } catch (error) {
-      console.error("重新关联项目失败:", error)
+      
       toast({
         title: "关联失败",
         description: "无法更新任务关联",
@@ -1142,7 +1122,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         setSelectedTasks(new Set())
       }
     } catch (error) {
-      console.error("批量启用任务失败:", error)
+      
       toast({
         title: "批量操作失败",
         description: "无法启用部分或全部任务",
@@ -1198,7 +1178,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         setSelectedTasks(new Set())
       }
     } catch (error) {
-      console.error("批量禁用任务失败:", error)
+      
       toast({
         title: "批量操作失败",
         description: "无法禁用部分或全部任务",
@@ -1239,7 +1219,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         })
       }
     } catch (error) {
-      console.error("批量删除任务失败:", error)
+      
       toast({
         title: "批量删除失败",
         description: "无法删除部分或全部任务",
@@ -1340,7 +1320,7 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
       setTasksToRelink([]);
       
     } catch (error) {
-      console.error("批量重新关联项目失败:", error);
+      
       toast({
         title: "批量关联失败",
         description: error instanceof Error ? error.message : "无法更新任务关联",
@@ -1855,10 +1835,6 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
     );
   });
 
-
-
-
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1946,10 +1922,6 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
                     </>
                   )}
                 </Button>
-
-
-
-
 
                 <Button
                   variant="outline"
@@ -2372,15 +2344,12 @@ export default function GlobalScheduledTasksDialog({ open, onOpenChange }: Globa
         </DialogContent>
       </Dialog>
 
-
-
       {/* 任务执行日志对话框 */}
       <TaskExecutionLogsDialog
         open={showExecutionLogs}
         onOpenChange={setShowExecutionLogs}
         runningTasks={runningTasks}
       />
-
 
     </>
   )

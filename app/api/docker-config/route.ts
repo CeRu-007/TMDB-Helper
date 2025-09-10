@@ -33,7 +33,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('获取Docker配置失败:', error);
+    
     return NextResponse.json(
       { success: false, error: `获取配置失败: ${error instanceof Error ? error.message : '未知错误'}` },
       { status: 500 }
@@ -58,16 +58,15 @@ export async function POST(request: NextRequest) {
       action 
     } = body;
 
-
     // 保存TMDB配置
     if (tmdbApiKey) {
       console.log(`🔑 接收到TMDB API密钥保存请求: ${tmdbApiKey.substring(0, 8)}...`);
 
       try {
         ServerConfigManager.setConfigItem('tmdbApiKey', tmdbApiKey);
-        console.log(`✅ TMDB API密钥保存成功`);
+        
       } catch (error) {
-        console.error(`❌ TMDB API密钥保存失败:`, error);
+        
         return NextResponse.json(
           { success: false, error: `API密钥保存失败: ${error instanceof Error ? error.message : '未知错误'}` },
           { status: 500 }
@@ -119,7 +118,7 @@ export async function POST(request: NextRequest) {
       message: '配置保存成功'
     });
   } catch (error) {
-    console.error('保存Docker配置失败:', error);
+    
     return NextResponse.json(
       { success: false, error: '保存配置失败' },
       { status: 500 }
@@ -137,7 +136,7 @@ export async function DELETE() {
       message: '配置已重置为默认值'
     });
   } catch (error) {
-    console.error('重置配置失败:', error);
+    
     return NextResponse.json(
       { success: false, error: `重置配置失败: ${error instanceof Error ? error.message : '未知错误'}` },
       { status: 500 }

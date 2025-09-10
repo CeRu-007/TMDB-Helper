@@ -1,5 +1,4 @@
  
- 
 
 interface TMDBTVResponse {
   id: number
@@ -138,7 +137,7 @@ export class TMDBService {
         return await this.getApiKeyServer();
       }
     } catch (error) {
-      console.error('获取TMDB API密钥失败:', error);
+      
       throw new Error("TMDB API密钥未设置，请在设置中配置");
     }
   }
@@ -157,7 +156,7 @@ export class TMDBService {
       }
       localStorage.setItem(cacheKey, JSON.stringify(cacheData))
     } catch (error) {
-      console.warn("缓存标志失败:", error)
+      
       // 缓存失败不影响主要功能，只是记录警告
     }
   }
@@ -188,7 +187,7 @@ export class TMDBService {
       
       return path
     } catch (error) {
-      console.warn("获取缓存标志失败:", error)
+      
       return null
     }
   }
@@ -207,7 +206,7 @@ export class TMDBService {
       }
       localStorage.setItem(cacheKey, JSON.stringify(cacheData))
     } catch (error) {
-      console.warn("缓存网络logo失败:", error)
+      
     }
   }
 
@@ -237,7 +236,7 @@ export class TMDBService {
       
       return path
     } catch (error) {
-      console.warn("获取缓存网络logo失败:", error)
+      
       return null
     }
   }
@@ -288,7 +287,7 @@ export class TMDBService {
 
         return { url: null, path: null }
       } catch (error) {
-        console.error("网络请求失败，使用传统方式:", error)
+        
         // 回退到传统fetch方式
         const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}/images?api_key=${apiKey}`)
         
@@ -316,7 +315,7 @@ export class TMDBService {
         return { url: null, path: null }
       }
     } catch (error) {
-      console.error("获取TMDB标志失败:", error)
+      
       return { url: null, path: null }
     }
   }
@@ -342,7 +341,7 @@ export class TMDBService {
 
       return response.json()
     } catch (error) {
-      console.error('TMDB搜索失败:', error)
+      
       throw error
     }
   }
@@ -359,12 +358,10 @@ export class TMDBService {
       const apiKey = await this.getApiKey()
       const endpoint = "tv"
 
-      console.log(`[TMDBService] 获取项目数据: ${endpoint}/${id}`);
-
       // 创建AbortController用于超时控制
       const controller = new AbortController();
       const timeout = setTimeout(() => {
-        console.log(`[TMDBService] 请求超时，中止请求`);
+        
         controller.abort();
       }, 30000); // 30秒超时
 
@@ -385,17 +382,16 @@ export class TMDBService {
         const { PerformanceOptimizer } = await import('./performance-optimizer');
         PerformanceOptimizer.recordApiResponse(startTime, endTime);
       } catch (error) {
-        console.warn('无法加载性能监控器:', error);
+        
       }
 
       if (!response.ok) {
-        console.error(`[TMDBService] API请求失败: ${response.status} ${response.statusText}`);
+        
         return null;
       }
 
       const data = await response.json()
-      console.log(`[TMDBService] 获取到TMDB数据:`, { mediaType, id, title: data.title || data.name })
-
+      
       let platformUrl = ""
       let totalEpisodes = undefined
       let seasons: TMDBSeasonData[] = []
@@ -406,7 +402,7 @@ export class TMDBService {
 
       // 只支持电视剧类型
       if (mediaType !== "tv") {
-        console.error(`[TMDBService] 不支持的媒体类型: ${mediaType}`)
+        
         return null
       }
       
@@ -519,7 +515,7 @@ export class TMDBService {
         overview: tvData.overview === null ? undefined : tvData.overview
       }
     } catch (error) {
-      console.error(`[TMDBService] 获取TMDB数据失败:`, error);
+      
       return null;
     }
   }
@@ -539,7 +535,7 @@ export class TMDBService {
 
       return { mediaType: null, id: null }
     } catch (error) {
-      console.error("URL parsing error:", error)
+      
       return { mediaType: null, id: null }
     }
   }
@@ -558,7 +554,7 @@ export class TMDBService {
       };
       localStorage.setItem(cacheKey, JSON.stringify(cacheData));
     } catch (error) {
-      console.error("缓存背景图路径失败:", error);
+      
     }
   }
 
@@ -586,7 +582,7 @@ export class TMDBService {
       
       return path;
     } catch (error) {
-      console.error("获取缓存背景图路径失败:", error);
+      
       return null;
     }
   }
@@ -679,7 +675,7 @@ export class TMDBService {
       
       return null
     } catch (error) {
-      console.error("获取网络logo失败:", error)
+      
       return null
     }
   }

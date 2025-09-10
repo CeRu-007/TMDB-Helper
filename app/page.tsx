@@ -85,8 +85,6 @@ import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferen
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
 import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
 
-
-
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
 // 定义国家/区域常量
@@ -167,8 +165,6 @@ export default function HomePage() {
   // 布局状态管理 - 现在只使用侧边栏布局
   const currentLayout: LayoutType = 'sidebar'
 
-
-
   // 使用增强的数据提供者获取数据和方法
   const { 
     items, 
@@ -198,7 +194,7 @@ export default function HomePage() {
 
     // 检查signal是否已经被中止
     if (signal?.aborted) {
-      console.log('[fetchUpcomingItems] 请求已被中止，跳过执行');
+      
       if (!silent) {
         setLoadingUpcoming(false);
       }
@@ -219,7 +215,7 @@ export default function HomePage() {
         const controller = new AbortController();
         requestSignal = controller.signal;
         timeoutId = setTimeout(() => {
-          console.log('[fetchUpcomingItems] 请求超时，中止请求');
+          
           controller.abort();
         }, 30000); // 30秒超时
       }
@@ -240,7 +236,6 @@ export default function HomePage() {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('服务器响应错误:', errorText);
         
         // 检查是否是API密钥未配置或用户身份验证失败的错误
         if (response.status === 400 && errorText.includes('API密钥未配置')) {
@@ -272,7 +267,7 @@ export default function HomePage() {
           }
         } catch (e) {
           // 如果无法解析为JSON，使用原始错误文本
-          console.debug('无法解析错误响应为JSON:', e);
+          
         }
         
         throw new Error(errorMessage);
@@ -305,14 +300,12 @@ export default function HomePage() {
     } catch (error) {
       // 专门处理AbortError
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('[fetchUpcomingItems] 请求被中止:', error.message);
+        
         if (!silent) {
           setLoadingUpcoming(false);
         }
         return; // 对于AbortError，直接返回，不进行重试或错误处理
       }
-
-      console.error('获取影视资讯内容失败:', error);
 
       const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -320,7 +313,7 @@ export default function HomePage() {
       if (errorMessage.includes('TMDB API连接失败') ||
           errorMessage.includes('网络连接异常') ||
           errorMessage.includes('fetch failed')) {
-        console.debug('TMDB API连接问题，静默处理:', errorMessage);
+        
         if (!silent) {
           setLoadingUpcoming(false);
         }
@@ -335,7 +328,6 @@ export default function HomePage() {
           (errorMessage.includes('network') ||
            errorMessage.includes('timeout') ||
            error instanceof TypeError)) {
-        console.log(`尝试重新获取影视资讯内容，第${retryCount + 1}次重试`);
         
         // 使用指数退避算法计算延迟时间
         // 基础延迟为1000ms，每次重试翻倍，并添加随机因子
@@ -359,7 +351,7 @@ export default function HomePage() {
         try {
           // 检查是否在客户端环境
           if (typeof window === 'undefined') {
-            console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+            
             return;
           }
 
@@ -379,14 +371,14 @@ export default function HomePage() {
             }
           }
         } catch (e) {
-          console.warn('无法从本地存储加载缓存数据:', e);
+          
           // 清除损坏的缓存数据
           try {
             if (typeof window !== 'undefined') {
               localStorage.removeItem(`upcomingItems_${region}`);
             }
           } catch (cleanupError) {
-            console.warn('清除损坏缓存失败:', cleanupError);
+            
           }
         }
       }
@@ -408,7 +400,7 @@ export default function HomePage() {
       try {
         // 检查是否在客户端环境
         if (typeof window === 'undefined') {
-          console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+          
           return;
         }
 
@@ -432,7 +424,7 @@ export default function HomePage() {
             try {
               localStorage.removeItem(`upcomingItems_${region.id}`);
             } catch (e) {
-              console.warn(`[HomePage] 清除损坏缓存失败:`, e);
+              
             }
           }
         });
@@ -450,7 +442,7 @@ export default function HomePage() {
           }
         }
       } catch (e) {
-        console.warn('无法从本地存储加载缓存数据:', e);
+        
       }
 
       // 检查组件是否仍然挂载且请求未被中止
@@ -463,7 +455,7 @@ export default function HomePage() {
         await fetchUpcomingItems(false, 0, selectedRegion, abortController.signal);
       } catch (error) {
         // 错误已在fetchUpcomingItems中处理
-        console.debug('[HomePage] 初始数据获取完成');
+        
       }
     };
 
@@ -501,7 +493,7 @@ export default function HomePage() {
       } else {
         // 检查请求是否已被中止
         if (abortController.signal.aborted) {
-          console.log('[HomePage] 区域数据请求已被中止');
+          
           return;
         }
 
@@ -510,7 +502,7 @@ export default function HomePage() {
           await fetchUpcomingItems(false, 0, selectedRegion, abortController.signal);
         } catch (error) {
           // 错误已在fetchUpcomingItems中处理
-          console.debug(`[HomePage] 区域 ${selectedRegion} 数据获取完成`);
+          
         }
       }
     };
@@ -530,12 +522,12 @@ export default function HomePage() {
     
     const autoFixScheduledTasks = async () => {
       try {
-        console.log("正在检查并自动修复定时任务...");
+        
         // 强制刷新将执行migrateScheduledTasks
         const fixedTasks = await StorageManager.forceRefreshScheduledTasks();
-        console.log(`定时任务检查完成，共处理 ${fixedTasks.length} 个任务`);
+        
       } catch (error) {
-        console.error("自动修复定时任务时发生错误:", error);
+        
       }
     };
     
@@ -575,7 +567,7 @@ export default function HomePage() {
         );
         setRunningTasks(running);
       } catch (error) {
-        console.error('获取正在运行的任务失败:', error);
+        
       }
     };
 
@@ -616,13 +608,13 @@ export default function HomePage() {
       
       // 监听窗口大小变化
       const handleWindowResize = (size: { width: number; height: number }) => {
-        console.log('窗口大小变化:', size);
+        
         setWindowSize(size);
       };
       
       // 监听全屏状态变化
       const handleFullscreenChange = (isFullscreen: boolean) => {
-        console.log('全屏状态变化:', isFullscreen);
+        
         setIsFullscreen(isFullscreen);
       };
       
@@ -642,12 +634,9 @@ export default function HomePage() {
   useEffect(() => {
     if (windowSize.width > 0 && windowSize.height > 0) {
       // 可以根据窗口大小调整某些UI元素
-      console.log(`当前窗口大小: ${windowSize.width} x ${windowSize.height}`);
-      console.log(`全屏状态: ${isFullscreen ? '是' : '否'}`);
+
     }
   }, [windowSize, isFullscreen]);
-
-
 
   const getItemsByStatus = (status: "ongoing" | "completed") => {
     return items.filter((item) => item.status === status)
@@ -886,8 +875,6 @@ export default function HomePage() {
   const filteredOngoingCount = filteredOngoingItems.length
   const filteredCompletedCount = filteredCompletedItems.length
 
-
-
   // 周几导航栏 - 修复词条数量计算问题和侧边栏布局适配
   const WeekdayNavigation = () => {
     // 根据当前活动标签页获取对应状态的词条
@@ -983,8 +970,6 @@ export default function HomePage() {
       </div>
     )
   }
-
-
 
   // 添加加载状态UI组件
   const LoadingState = () => (
@@ -1693,7 +1678,6 @@ export default function HomePage() {
                                         };
 
                                         // 通过状态传递数据，不再使用localStorage
-                                        console.log('预填充数据:', detailData);
                                         
                                         // 打开对话框
                                       setShowAddDialog(true);
@@ -1835,7 +1819,7 @@ export default function HomePage() {
 
     // 检查signal是否已经被中止
     if (signal?.aborted) {
-      console.log('[fetchRecentItems] 请求已被中止，跳过执行');
+      
       if (!silent) {
         setLoadingRecent(false);
       }
@@ -1855,7 +1839,7 @@ export default function HomePage() {
         const controller = new AbortController();
         requestSignal = controller.signal;
         timeoutId = setTimeout(() => {
-          console.log('[fetchRecentItems] 请求超时，中止请求');
+          
           controller.abort();
         }, 30000); // 30秒超时
       }
@@ -1876,7 +1860,6 @@ export default function HomePage() {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('服务器响应错误:', errorText);
         
         // 检查是否是API密钥未配置或用户身份验证失败的错误
         if (response.status === 400 && errorText.includes('API密钥未配置')) {
@@ -1930,14 +1913,12 @@ export default function HomePage() {
     } catch (error) {
       // 专门处理AbortError
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('[fetchRecentItems] 请求被中止:', error.message);
+        
         if (!silent) {
           setLoadingRecent(false);
         }
         return; // 对于AbortError，直接返回，不进行重试或错误处理
       }
-
-      console.error('获取近期开播内容失败:', error);
 
       const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -1945,7 +1926,7 @@ export default function HomePage() {
       if (errorMessage.includes('TMDB API连接失败') ||
           errorMessage.includes('网络连接异常') ||
           errorMessage.includes('fetch failed')) {
-        console.debug('TMDB API连接问题，静默处理:', errorMessage);
+        
         if (!silent) {
           setLoadingRecent(false);
         }
@@ -1960,7 +1941,6 @@ export default function HomePage() {
           (errorMessage.includes('network') ||
            errorMessage.includes('timeout') ||
            error instanceof TypeError)) {
-        console.log(`尝试重新获取近期开播内容，第${retryCount + 1}次重试`);
         
         // 使用指数退避算法计算延迟时间
         const baseDelay = 1000;
@@ -1982,7 +1962,7 @@ export default function HomePage() {
         try {
           // 检查是否在客户端环境
           if (typeof window === 'undefined') {
-            console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+            
             return;
           }
 
@@ -1990,21 +1970,21 @@ export default function HomePage() {
           if (cachedItems && cachedItems.trim() !== '') {
             const parsedItems = JSON.parse(cachedItems);
             if (Array.isArray(parsedItems) && parsedItems.length > 0) {
-              console.log(`从缓存中加载 ${parsedItems.length} 个近期开播内容`);
+              
               setRecentItems(parsedItems);
               setRecentError(`无法连接到TMDB，显示的是缓存数据 (${new Date().toLocaleString('zh-CN')})`);
               return;
             }
           }
         } catch (e) {
-          console.warn('无法从本地存储加载缓存数据:', e);
+          
           // 清除损坏的缓存数据
           try {
             if (typeof window !== 'undefined') {
               localStorage.removeItem(`recentItems_${region}`);
             }
           } catch (cleanupError) {
-            console.warn('清除损坏缓存失败:', cleanupError);
+            
           }
         }
       }
@@ -2068,7 +2048,7 @@ export default function HomePage() {
       try {
         // 检查是否在客户端环境
         if (typeof window === 'undefined') {
-          console.log('[HomePage] 服务器端渲染，跳过localStorage操作');
+          
           return;
         }
 
@@ -2092,7 +2072,7 @@ export default function HomePage() {
             try {
               localStorage.removeItem(`recentItems_${region.id}`);
             } catch (e) {
-              console.warn(`[HomePage] 清除损坏缓存失败:`, e);
+              
             }
           }
         });
@@ -2110,7 +2090,7 @@ export default function HomePage() {
           }
         }
       } catch (e) {
-        console.warn('无法从本地存储加载缓存数据:', e);
+        
       }
 
       // 检查组件是否仍然挂载且请求未被中止
@@ -2123,7 +2103,7 @@ export default function HomePage() {
         await fetchRecentItems(false, 0, selectedRegion, abortController.signal);
       } catch (error) {
         // 错误已在fetchRecentItems中处理
-        console.debug('[HomePage] 近期开播初始数据获取完成');
+        
       }
     };
 
@@ -2310,7 +2290,7 @@ export default function HomePage() {
             }}
             onUpdate={handleUpdateItem}
             onTaskSaved={(task) => {
-              console.log("定时任务已保存:", task);
+              
               toast({
                 title: "定时任务已保存",
                 description: `任务 "${task.name}" 已成功保存`,
@@ -2389,9 +2369,6 @@ export default function HomePage() {
                 </Button>
                 {/* 用户头像 */}
 
-
-
-
                 {isInitialized && userInfo && (
                   <div className="ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
                     <UserAvatar
@@ -2402,7 +2379,6 @@ export default function HomePage() {
                 )}
               </div>
               {/* 移动端菜单已移除，项目不再支持移动端 */}
-              
 
               <Button
                 onClick={() => setShowAddDialog(true)}
@@ -2449,8 +2425,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        
-
 
         {/* Stats Bar - 统计卡片 */}
         <div className="grid grid-cols-3 gap-4 mb-6">
@@ -2482,10 +2456,6 @@ export default function HomePage() {
           {renderContent()}
         </div>
       </div>
-
-
-
-
 
       {/* Dialogs */}
       <AddItemDialog 
@@ -2521,7 +2491,7 @@ export default function HomePage() {
           }}
           onUpdate={handleUpdateItem}
           onTaskSaved={(task) => {
-            console.log("定时任务已保存:", task);
+            
             toast({
               title: "定时任务已保存",
               description: `任务 "${task.name}" 已成功保存`,

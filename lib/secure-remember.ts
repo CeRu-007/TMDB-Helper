@@ -57,7 +57,7 @@ export async function saveRemember(username: string, password: string, remember:
     const b64 = btoa(String.fromCharCode(...combined))
     localStorage.setItem(PASSWORD_KEY, b64)
   } catch (e) {
-    console.warn('[secure-remember] save failed', e)
+    
   }
 }
 
@@ -80,7 +80,7 @@ export async function loadRemember(): Promise<{ username: string; password: stri
     const password = new TextDecoder().decode(pt)
     return { username, password, remember }
   } catch (e) {
-    console.warn('[secure-remember] load failed', e)
+    
     return { username: localStorage.getItem(USERNAME_KEY) || '', password: '', remember: localStorage.getItem(REMEMBER_KEY) === '1' }
   }
 }

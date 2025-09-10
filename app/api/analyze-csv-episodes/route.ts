@@ -14,15 +14,13 @@ export async function POST(request: NextRequest) {
         error: '缺少CSV文件路径参数'
       }, { status: 400 });
     }
-    
-    console.log(`[API] 分析CSV文件剩余集数: ${csvPath}`);
-    
+
     // 检查CSV文件是否存在
     try {
       await fs.access(csvPath);
-      console.log(`[API] ✓ CSV文件存在且可访问`);
+      
     } catch (error) {
-      console.error(`[API] ✗ CSV文件不存在或不可访问: ${error}`);
+      
       return NextResponse.json({
         success: false,
         error: 'CSV文件不存在',
@@ -31,15 +29,13 @@ export async function POST(request: NextRequest) {
     }
     
     // 读取CSV文件内容
-    console.log(`[API] 开始读取CSV文件...`);
+    
     const csvContent = await fs.readFile(csvPath, 'utf-8');
-    console.log(`[API] CSV文件大小: ${csvContent.length} 字符`);
     
     const lines = csvContent.split('\n').filter(line => line.trim() !== '');
-    console.log(`[API] CSV总行数: ${lines.length}`);
     
     if (lines.length <= 1) {
-      console.log(`[API] CSV文件为空或只有标题行`);
+      
       return NextResponse.json({
         success: true,
         remainingEpisodes: [],
@@ -92,16 +88,12 @@ export async function POST(request: NextRequest) {
         }
       }, { status: 400 });
     }
-    
-    console.log(`[API] 找到集数列 "${matchedColumnName}" 在索引: ${episodeColumnIndex}`);
-    
+
     // 解析数据行，提取集数
     const remainingEpisodes: number[] = [];
     const dataLines = lines.slice(1);
     const parseErrors: Array<{line: number, value: string, error: string}> = [];
-    
-    console.log(`[API] 开始解析 ${dataLines.length} 行数据...`);
-    
+
     for (let i = 0; i < dataLines.length; i++) {
       const line = dataLines[i];
       const columns = parseCSVLine(line);
@@ -112,7 +104,7 @@ export async function POST(request: NextRequest) {
         
         if (!isNaN(episodeNumber)) {
           remainingEpisodes.push(episodeNumber);
-          console.log(`[API] 找到剩余集数: ${episodeNumber}`);
+          
         } else {
           const error = `无法解析集数: "${episodeNumberStr}"`;
           parseErrors.push({
@@ -129,7 +121,7 @@ export async function POST(request: NextRequest) {
           value: '',
           error
         });
-        console.warn(`[API] 第${i + 2}行${error}`);
+        
       }
     }
     
@@ -157,7 +149,7 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
     
   } catch (error) {
-    console.error('[API] 分析CSV剩余集数失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '分析失败',

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[Auth] 检查初始化状态失败:', error);
+    
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[Auth] 初始化认证系统失败:', error);
+    
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }

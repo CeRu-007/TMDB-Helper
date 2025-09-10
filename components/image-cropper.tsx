@@ -118,7 +118,7 @@ export function ImageCropper() {
         setGlobalSettings(prev => ({ ...prev, ...parsed }))
       }
     } catch (error) {
-      console.error('加载设置失败:', error)
+      
     }
   }, [])
 
@@ -131,7 +131,7 @@ export function ImageCropper() {
         description: "您的偏好设置已成功保存",
       })
     } catch (error) {
-      console.error('保存设置失败:', error)
+      
       toast({
         title: "保存失败",
         description: "设置保存失败，请重试",
@@ -165,7 +165,7 @@ export function ImageCropper() {
         localStorage.setItem('imageCropperSettings', JSON.stringify(newSettings))
         console.log('设置已保存到localStorage') // 调试信息
       } catch (error) {
-        console.error('自动保存设置失败:', error)
+        
       }
       return newSettings
     })
@@ -370,7 +370,7 @@ export function ImageCropper() {
       })
       
     } catch (error) {
-      console.error('图片处理失败:', error)
+      
       toast({
         title: "处理失败",
         description: "图片处理过程中出现错误",
@@ -407,7 +407,7 @@ export function ImageCropper() {
     try {
       // 检查剪贴板API支持
       if (!navigator.clipboard || !navigator.clipboard.write) {
-        console.warn('剪贴板API不支持')
+        
         return false
       }
 
@@ -424,7 +424,7 @@ export function ImageCropper() {
       await navigator.clipboard.write([clipboardItem])
       return true
     } catch (error) {
-      console.error('复制到剪贴板失败:', error)
+      
       return false
     }
   }
@@ -494,7 +494,7 @@ export function ImageCropper() {
             }
           }
         } catch (error) {
-          console.error(`下载图片 ${image.name} 失败:`, error)
+          
           toast({
             title: `图片 ${currentIndex}/${totalImages} 下载失败`,
             description: `${image.name} 下载过程中出现错误`,
@@ -520,7 +520,7 @@ export function ImageCropper() {
       })
 
     } catch (error) {
-      console.error('批量下载过程中出现错误:', error)
+      
       toast({
         title: "批量下载出现错误",
         description: "部分图片可能下载失败，请检查并重试",

@@ -26,9 +26,7 @@ class MemoryLogger {
       success,
       error
     }
-    
-    console.log(`[Docker Version Manager] ${operation}:`, logEntry)
-    
+
     // 存储到内存中，限制数量
     this.logs.push(logEntry)
     if (this.logs.length > this.maxLogs) {

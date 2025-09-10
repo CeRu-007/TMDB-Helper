@@ -88,7 +88,7 @@ export class VideoAnalyzer {
 
       return result.data;
     } catch (error) {
-      console.error('视频分析失败:', error);
+      
       throw error;
     }
   }

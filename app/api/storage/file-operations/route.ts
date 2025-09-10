@@ -45,9 +45,7 @@ export async function GET(request: NextRequest) {
     // 从请求头获取用户ID
     const userId = request.headers.get('x-user-id') || 'user_admin_system';
     const userDataFile = getUserDataFile(userId);
-    
-    console.log(`[file-operations] 读取用户数据文件: ${userDataFile}`);
-    
+
     // 确保用户数据目录存在
     const userDataDir = path.dirname(userDataFile);
     if (!fs.existsSync(userDataDir)) {
@@ -58,9 +56,9 @@ export async function GET(request: NextRequest) {
       // 检查是否存在旧的数据文件需要迁移
       ensureDataDir();
       if (fs.existsSync(DATA_FILE)) {
-        console.log(`[file-operations] 发现旧数据文件，迁移到用户目录: ${DATA_FILE} -> ${userDataFile}`);
+        
         fs.copyFileSync(DATA_FILE, userDataFile);
-        console.log(`[file-operations] 数据迁移完成`);
+        
       } else {
         // 如果文件不存在，返回空数组
         return NextResponse.json({ items: [] });
@@ -77,7 +75,7 @@ export async function GET(request: NextRequest) {
       dataPath: userDataFile
     });
   } catch (error) {
-    console.error('读取数据文件失败:', error);
+    
     return NextResponse.json(
       { 
         error: '读取数据文件失败', 
@@ -104,9 +102,7 @@ export async function POST(request: NextRequest) {
     // 从请求头获取用户ID
     const userId = request.headers.get('x-user-id') || 'user_admin_system';
     const userDataFile = getUserDataFile(userId);
-    
-    console.log(`[file-operations] 写入用户数据文件: ${userDataFile}`);
-    
+
     // 确保用户数据目录存在
     const userDataDir = path.dirname(userDataFile);
     if (!fs.existsSync(userDataDir)) {
@@ -117,7 +113,7 @@ export async function POST(request: NextRequest) {
     if (backup && fs.existsSync(userDataFile)) {
       const backupFile = path.join(userDataDir, `tmdb_items_backup_${Date.now()}.json`);
       fs.copyFileSync(userDataFile, backupFile);
-      console.log(`已创建备份文件: ${backupFile}`);
+      
     }
     
     // 写入新数据
@@ -130,7 +126,7 @@ export async function POST(request: NextRequest) {
       dataPath: userDataFile
     });
   } catch (error) {
-    console.error('写入数据文件失败:', error);
+    
     return NextResponse.json(
       { 
         error: '写入数据文件失败', 
@@ -157,9 +153,7 @@ export async function PUT(request: NextRequest) {
     // 从请求头获取用户ID
     const userId = request.headers.get('x-user-id') || 'user_admin_system';
     const userDataFile = getUserDataFile(userId);
-    
-    console.log(`[file-operations] 合并用户数据文件: ${userDataFile}`);
-    
+
     // 确保用户数据目录存在
     const userDataDir = path.dirname(userDataFile);
     if (!fs.existsSync(userDataDir)) {
@@ -174,7 +168,7 @@ export async function PUT(request: NextRequest) {
         const existingData = fs.readFileSync(userDataFile, 'utf-8');
         existingItems = JSON.parse(existingData);
       } catch (error) {
-        console.warn('读取现有数据失败，将创建新文件:', error);
+        
       }
     }
     
@@ -234,7 +228,7 @@ export async function PUT(request: NextRequest) {
       dataPath: userDataFile
     });
   } catch (error) {
-    console.error('合并数据失败:', error);
+    
     return NextResponse.json(
       { 
         error: '合并数据失败', 

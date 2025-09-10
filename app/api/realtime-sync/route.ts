@@ -18,10 +18,10 @@ setInterval(() => {
       try {
         connection.controller.close()
       } catch (error) {
-        console.error('关闭超时连接失败:', error)
+        
       }
       connections.delete(connectionId)
-      console.log(`[RealtimeSync] 清理超时连接: ${connectionId}`)
+      
     }
   }
 }, 10000) // 每10秒检查一次
@@ -36,8 +36,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '缺少用户身份信息' }, { status: 401 })
   }
 
-  console.log(`[RealtimeSync] 用户 ${userId} 建立SSE连接`)
-
   const stream = new ReadableStream({
     start(controller) {
       const connectionId = `${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -48,8 +46,6 @@ export async function GET(request: NextRequest) {
         userId,
         lastPing: Date.now()
       })
-
-      console.log(`[RealtimeSync] 新连接建立: ${connectionId}`)
 
       // 发送初始连接确认
       const initMessage = `data: ${JSON.stringify({
@@ -75,7 +71,7 @@ export async function GET(request: NextRequest) {
             clearInterval(heartbeat)
           }
         } catch (error) {
-          console.error(`[RealtimeSync] 心跳发送失败: ${connectionId}`, error)
+          
           clearInterval(heartbeat)
           connections.delete(connectionId)
         }
@@ -83,7 +79,7 @@ export async function GET(request: NextRequest) {
 
       // 连接关闭时清理
       request.signal.addEventListener('abort', () => {
-        console.log(`[RealtimeSync] 连接关闭: ${connectionId}`)
+        
         clearInterval(heartbeat)
         connections.delete(connectionId)
       })
@@ -113,14 +109,13 @@ export async function POST(request: NextRequest) {
     }
 
     const eventData = await request.json()
-    console.log(`[RealtimeSync] 收到用户 ${userId} 的数据变更通知:`, eventData)
-
+    
     // 广播给该用户的所有连接
     const userConnections = Array.from(connections.entries())
       .filter(([_, connection]) => connection.userId === userId)
 
     if (userConnections.length === 0) {
-      console.log(`[RealtimeSync] 用户 ${userId} 没有活跃连接`)
+      
       return NextResponse.json({ success: true, broadcastCount: 0 })
     }
 
@@ -135,9 +130,9 @@ export async function POST(request: NextRequest) {
       try {
         connection.controller.enqueue(new TextEncoder().encode(message))
         broadcastCount++
-        console.log(`[RealtimeSync] 广播到连接: ${connectionId}`)
+        
       } catch (error) {
-        console.error(`[RealtimeSync] 广播失败: ${connectionId}`, error)
+        
         // 移除失效连接
         connections.delete(connectionId)
       }
@@ -150,7 +145,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[RealtimeSync] 处理数据变更通知失败:', error)
+    
     return NextResponse.json(
       { 
         error: '处理数据变更通知失败',
@@ -182,9 +177,9 @@ export async function DELETE(request: NextRequest) {
         connection.controller.close()
         connections.delete(connectionId)
         closedCount++
-        console.log(`[RealtimeSync] 关闭连接: ${connectionId}`)
+        
       } catch (error) {
-        console.error(`[RealtimeSync] 关闭连接失败: ${connectionId}`, error)
+        
       }
     }
 
@@ -195,7 +190,7 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[RealtimeSync] 关闭连接失败:', error)
+    
     return NextResponse.json(
       { 
         error: '关闭连接失败',

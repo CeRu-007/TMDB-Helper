@@ -87,7 +87,7 @@ export class TaskSchedulerAdvancedConfigManager {
     try {
       this.config = await this.loadConfig();
     } catch (error) {
-      console.error('[TaskSchedulerAdvancedConfig] 初始化配置失败:', error);
+      
       this.config = this.getDefaultConfig();
     }
   }
@@ -194,7 +194,7 @@ export class TaskSchedulerAdvancedConfigManager {
         }
       }
     } catch (error) {
-      console.error('[TaskSchedulerAdvancedConfig] 加载配置失败:', error);
+      
     }
 
     return this.getDefaultConfig();
@@ -231,10 +231,10 @@ export class TaskSchedulerAdvancedConfigManager {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(this.configKey, JSON.stringify(this.config));
-        console.log('[TaskSchedulerAdvancedConfig] 配置已保存');
+        
       }
     } catch (error) {
-      console.error('[TaskSchedulerAdvancedConfig] 保存配置失败:', error);
+      
     }
   }
 
@@ -251,7 +251,7 @@ export class TaskSchedulerAdvancedConfigManager {
   public updateConfig(updates: Partial<TaskSchedulerAdvancedConfig>): void {
     this.config = this.mergeWithDefaults({ ...this.config, ...updates });
     this.saveConfig();
-    console.log('[TaskSchedulerAdvancedConfig] 配置已更新:', updates);
+    
   }
 
   /**
@@ -260,7 +260,7 @@ export class TaskSchedulerAdvancedConfigManager {
   public resetToDefaults(): void {
     this.config = this.getDefaultConfig();
     this.saveConfig();
-    console.log('[TaskSchedulerAdvancedConfig] 配置已重置为默认值');
+    
   }
 
   /**

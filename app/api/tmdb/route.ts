@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         }, { status: 400 })
     }
   } catch (error) {
-    console.error('TMDB API错误:', error)
+    
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : '未知错误'

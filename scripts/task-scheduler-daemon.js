@@ -32,10 +32,6 @@ args.forEach(arg => {
 const baseUrl = `http://localhost:${port}`;
 const checkInterval = interval * 1000; // 转换为毫秒
 
-console.log(`[TaskSchedulerDaemon] 启动定时任务守护进程`);
-console.log(`[TaskSchedulerDaemon] 目标服务器: ${baseUrl}`);
-console.log(`[TaskSchedulerDaemon] 检查间隔: ${interval} 秒`);
-
 /**
  * 发送HTTP请求
  */
@@ -102,22 +98,19 @@ async function checkScheduledTasks() {
     const response = await makeRequest(`${baseUrl}/api/check-scheduled-tasks`);
     
     if (response.statusCode !== 200) {
-      console.error(`[TaskSchedulerDaemon] 检查任务失败，状态码: ${response.statusCode}`);
+      
       return;
     }
 
     const result = response.data;
     
     if (!result.success) {
-      console.error(`[TaskSchedulerDaemon] 检查任务失败:`, result.error);
+      
       return;
     }
 
-    console.log(`[TaskSchedulerDaemon] 任务检查完成 - 总任务: ${result.totalTasks}, 启用: ${result.enabledTasks}, 错过: ${result.missedTasks}, 即将执行: ${result.upcomingTasks}`);
-
     // 如果有错过的任务，尝试执行
     if (result.missedTasks > 0) {
-      console.log(`[TaskSchedulerDaemon] 发现 ${result.missedTasks} 个错过的任务，开始执行`);
       
       for (const missedTask of result.missedTaskDetails) {
         try {
@@ -131,12 +124,12 @@ async function checkScheduledTasks() {
           });
 
           if (executeResponse.statusCode === 200 && executeResponse.data.success) {
-            console.log(`[TaskSchedulerDaemon] 任务执行成功: ${missedTask.name}`);
+            
           } else {
-            console.error(`[TaskSchedulerDaemon] 任务执行失败: ${missedTask.name}`, executeResponse.data);
+            
           }
         } catch (error) {
-          console.error(`[TaskSchedulerDaemon] 执行任务时出错: ${missedTask.name}`, error.message);
+          
         }
         
         // 任务之间间隔5秒，避免过载
@@ -146,14 +139,14 @@ async function checkScheduledTasks() {
 
     // 显示即将执行的任务
     if (result.upcomingTasks > 0) {
-      console.log(`[TaskSchedulerDaemon] 即将执行的任务:`);
+      
       result.upcomingTaskDetails.forEach(task => {
-        console.log(`  - ${task.name}: ${task.timeDiff} 分钟后执行`);
+        
       });
     }
 
   } catch (error) {
-    console.error(`[TaskSchedulerDaemon] 检查定时任务时出错:`, error.message);
+    
   }
 }
 
@@ -173,7 +166,6 @@ async function checkServerHealth() {
  * 主循环
  */
 async function main() {
-  console.log(`[TaskSchedulerDaemon] 等待服务器启动...`);
   
   // 等待服务器启动
   let serverReady = false;
@@ -190,11 +182,9 @@ async function main() {
   }
 
   if (!serverReady) {
-    console.error(`[TaskSchedulerDaemon] 服务器在 ${maxRetries * 10} 秒内未就绪，退出`);
+    
     process.exit(1);
   }
-
-  console.log(`[TaskSchedulerDaemon] 服务器已就绪，开始定时检查任务`);
 
   // 立即执行一次检查
   await checkScheduledTasks();
@@ -204,32 +194,29 @@ async function main() {
     await checkScheduledTasks();
   }, checkInterval);
 
-  console.log(`[TaskSchedulerDaemon] 守护进程已启动，每 ${interval} 秒检查一次任务`);
 }
 
 // 处理进程退出
 process.on('SIGINT', () => {
-  console.log(`\n[TaskSchedulerDaemon] 收到退出信号，正在关闭守护进程...`);
+  
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log(`\n[TaskSchedulerDaemon] 收到终止信号，正在关闭守护进程...`);
+  
   process.exit(0);
 });
 
 // 守护进程已禁用 - 避免频繁的配置API调用
-console.log(`[TaskSchedulerDaemon] 守护进程已禁用，避免频繁API调用。如需启用，请手动运行此脚本。`);
-console.log(`[TaskSchedulerDaemon] 使用方法: node scripts/task-scheduler-daemon.js --enable`);
 
 // 只有明确指定 --enable 参数才启动
 const enableFlag = process.argv.includes('--enable');
 if (enableFlag) {
-  console.log(`[TaskSchedulerDaemon] 检测到 --enable 参数，启动守护进程...`);
+  
   main().catch(error => {
-    console.error(`[TaskSchedulerDaemon] 守护进程启动失败:`, error);
+    
     process.exit(1);
   });
 } else {
-  console.log(`[TaskSchedulerDaemon] 守护进程未启动。要启动请使用: node scripts/task-scheduler-daemon.js --enable`);
+  
 }

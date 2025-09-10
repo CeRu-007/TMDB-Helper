@@ -69,7 +69,7 @@ export class SubtitleExtractor {
       
       return subtitleTracks;
     } catch (error) {
-      console.error('检测字幕轨道失败:', error);
+      
       return [];
     }
   }
@@ -91,7 +91,7 @@ export class SubtitleExtractor {
       const subtitleContent = await fs.readFile(outputPath, 'utf-8');
       return subtitleContent;
     } catch (error) {
-      console.error('提取内嵌字幕失败:', error);
+      
       return null;
     }
   }
@@ -132,7 +132,7 @@ export class SubtitleExtractor {
       
       return externalTracks;
     } catch (error) {
-      console.error('查找外挂字幕失败:', error);
+      
       return [];
     }
   }
@@ -348,7 +348,7 @@ export class SubtitleExtractor {
       }
 
     } catch (error) {
-      console.error('字幕提取失败:', error);
+      
       result.confidence = 0;
     }
 
@@ -487,7 +487,7 @@ export class SubtitleExtractor {
         await fs.unlink(path.join(this.sessionDir, file));
       }
     } catch (error) {
-      console.warn('清理字幕文件失败:', error);
+      
     }
   }
 }

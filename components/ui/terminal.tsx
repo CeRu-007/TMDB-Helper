@@ -129,7 +129,7 @@ export function Terminal({
     try {
       await navigator.clipboard.writeText(output)
     } catch (err) {
-      console.error("复制失败:", err)
+      
     }
   }
 

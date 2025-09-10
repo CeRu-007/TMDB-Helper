@@ -44,9 +44,8 @@ export class PerformanceOptimizer {
         timestamp: Date.now()
       });
 
-      console.log(`页面加载时间: ${pageLoadTime}ms`);
     } catch (error) {
-      console.error('记录页面加载性能失败:', error);
+      
     }
   }
 
@@ -66,7 +65,7 @@ export class PerformanceOptimizer {
     });
 
     if (responseTime > 3000) {
-      console.warn(`API响应时间较慢: ${responseTime}ms`);
+      
     }
   }
 
@@ -95,7 +94,7 @@ export class PerformanceOptimizer {
     // 监听chunk加载错误
     window.addEventListener('error', (event) => {
       if (event.filename && event.filename.includes('_next/static/chunks/')) {
-        console.error('Chunk加载失败:', event.filename);
+        
         this.handleChunkLoadError(event.filename);
       }
     });
@@ -104,7 +103,7 @@ export class PerformanceOptimizer {
     window.addEventListener('unhandledrejection', (event) => {
       if (event.reason && event.reason.message && 
           event.reason.message.includes('ChunkLoadError')) {
-        console.error('Chunk加载错误:', event.reason);
+        
         this.handleChunkLoadError('unknown');
       }
     });
@@ -114,7 +113,6 @@ export class PerformanceOptimizer {
    * 处理chunk加载错误
    */
   private static handleChunkLoadError(chunkName: string): void {
-    console.log(`尝试重新加载chunk: ${chunkName}`);
     
     // 延迟重新加载页面，给用户一些时间
     setTimeout(() => {
@@ -153,7 +151,7 @@ export class PerformanceOptimizer {
         localStorage.setItem(this.METRICS_KEY, JSON.stringify(metrics));
       }
     } catch (error) {
-      console.error('记录性能指标失败:', error);
+      
     }
   }
 
@@ -169,7 +167,7 @@ export class PerformanceOptimizer {
       const stored = localStorage.getItem(this.METRICS_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      console.error('获取性能指标失败:', error);
+      
       return [];
     }
   }
@@ -227,7 +225,7 @@ export class PerformanceOptimizer {
 
       localStorage.setItem(this.CACHE_STATS_KEY, JSON.stringify(stats));
     } catch (error) {
-      console.error('更新缓存统计失败:', error);
+      
     }
   }
 
@@ -244,7 +242,7 @@ export class PerformanceOptimizer {
         lastCleanup: Date.now()
       };
     } catch (error) {
-      console.error('获取缓存统计失败:', error);
+      
       return {
         hits: 0,
         misses: 0,
@@ -279,10 +277,10 @@ export class PerformanceOptimizer {
       localStorage.setItem(this.CACHE_STATS_KEY, JSON.stringify(stats));
 
       if (cleanedCount > 0) {
-        console.log(`清理了 ${cleanedCount} 个过期缓存项`);
+        
       }
     } catch (error) {
-      console.error('清理缓存失败:', error);
+      
     }
   }
 
@@ -302,7 +300,7 @@ export class PerformanceOptimizer {
         }
       }
     } catch (error) {
-      console.error('计算缓存大小失败:', error);
+      
     }
     return size;
   }
@@ -330,7 +328,6 @@ export class PerformanceOptimizer {
       this.cleanupExpiredCache();
     }, 60 * 60 * 1000); // 每小时检查一次
 
-    console.log('性能监控已初始化');
   }
 }
 

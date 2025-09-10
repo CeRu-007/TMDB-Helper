@@ -79,9 +79,9 @@ export async function preloadImagesServerSide(urls: string[]): Promise<void> {
     }
 
     const result = await response.json()
-    console.log('Server-side preload result:', result)
+    
   } catch (error) {
-    console.warn('Server-side preload failed:', error)
+    
   }
 }
 

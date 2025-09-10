@@ -13,7 +13,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('导出数据失败:', error);
+    
     return NextResponse.json(
       { error: '导出数据失败', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '导入数据失败' }, { status: 500 });
     }
   } catch (error) {
-    console.error('导入数据失败:', error);
+    
     return NextResponse.json(
       { error: '导入数据失败', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

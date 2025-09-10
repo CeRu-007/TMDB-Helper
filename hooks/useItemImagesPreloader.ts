@@ -37,7 +37,7 @@ export function useItemImagesPreloader(item: ItemImages) {
     if (imageUrls.length > 0) {
       // 对于词条详情页面的关键图片，使用高优先级预加载
       imagePreloaderService.preloadCriticalImages(imageUrls).catch(error => {
-        console.warn('Failed to preload critical images:', error)
+        
       })
     }
   }, [item.backdropUrl, item.posterUrl, item.logoUrl, item.networkLogoUrl])

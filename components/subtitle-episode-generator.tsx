@@ -471,14 +471,14 @@ export function SubtitleEpisodeGenerator({
               model: episodeGenerationModel,
             }))
           } catch (e) {
-            console.error('Failed to parse saved episode_generator_config:', e)
+            
             setConfig(prev => ({ ...prev, model: episodeGenerationModel }))
           }
         } else {
           setConfig(prev => ({ ...prev, model: episodeGenerationModel }))
         }
       } catch (e) {
-        console.error('加载服务端分集生成配置失败:', e)
+        
       }
     })()
   }, [])
@@ -511,7 +511,7 @@ export function SubtitleEpisodeGenerator({
         const settings = JSON.parse(globalSiliconFlowSettings)
         setSiliconFlowApiKey(settings.apiKey || '')
       } catch (error) {
-        console.error('解析全局硅基流动设置失败:', error)
+        
       }
     } else {
       // 兼容旧的设置
@@ -528,7 +528,7 @@ export function SubtitleEpisodeGenerator({
         const settings = JSON.parse(globalModelScopeSettings)
         setModelScopeApiKey(settings.apiKey || '')
       } catch (error) {
-        console.error('解析全局魔搭社区设置失败:', error)
+        
       }
     } else {
       // 兼容旧的设置
@@ -561,7 +561,7 @@ export function SubtitleEpisodeGenerator({
             }
           }
         } catch (e) {
-          console.error(`Failed to parse ${apiProvider} settings:`, e)
+          
         }
         setConfig(prev => ({ ...prev, model: newModel }))
       })()
@@ -585,7 +585,7 @@ export function SubtitleEpisodeGenerator({
   React.useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'siliconflow_api_settings' || e.key === 'modelscope_api_settings') {
-        console.log('检测到全局API设置变化，重新加载配置')
+        
         loadGlobalSettings()
       }
     }
@@ -594,7 +594,7 @@ export function SubtitleEpisodeGenerator({
 
     // 监听自定义事件（用于同一页面内的设置变化）
     const handleCustomSettingsChange = () => {
-      console.log('检测到设置页面配置变化，重新加载配置')
+      
       loadGlobalSettings()
     }
     window.addEventListener('siliconflow-settings-changed', handleCustomSettingsChange)
@@ -602,9 +602,9 @@ export function SubtitleEpisodeGenerator({
 
     // 监听全局设置对话框关闭事件
     const handleGlobalSettingsClose = () => {
-      console.log('检测到全局设置对话框关闭')
+      
       if (shouldReopenSettingsDialog) {
-        console.log('重新打开分集简介生成设置对话框')
+        
         setShouldReopenSettingsDialog(false)
         // 延迟一点时间确保全局设置对话框完全关闭
         setTimeout(() => {
@@ -622,8 +622,6 @@ export function SubtitleEpisodeGenerator({
     }
   }, [loadGlobalSettings, shouldReopenSettingsDialog])
 
-
-
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 处理文件上传（通用函数）
@@ -632,7 +630,7 @@ export function SubtitleEpisodeGenerator({
 
     for (const file of fileArray) {
       if (!file.name.match(/\.(srt|vtt|ass|ssa)$/i)) {
-        alert(`不支持的文件格式: ${file.name}`)
+        
         continue
       }
 
@@ -652,8 +650,7 @@ export function SubtitleEpisodeGenerator({
 
         setSubtitleFiles(prev => [...prev, subtitleFile])
       } catch (error) {
-        console.error('文件解析失败:', error)
-        alert(`文件解析失败: ${file.name}`)
+
       }
     }
   }, [])
@@ -841,7 +838,7 @@ export function SubtitleEpisodeGenerator({
         }
       }
     } catch (error) {
-      console.error('解析字幕文件失败:', error)
+      
       // 返回一个默认的集数
       episodes.push({
         episodeNumber: 1,
@@ -871,7 +868,7 @@ export function SubtitleEpisodeGenerator({
         return Math.round(totalMinutes)
       }
     } catch (error) {
-      console.error('时间戳解析失败:', timestamp, error)
+      
     }
 
     return 0
@@ -926,17 +923,10 @@ export function SubtitleEpisodeGenerator({
           let errorData = null
           try {
             errorData = JSON.parse(responseText)
-            console.error('API错误详情:', {
-              status: response.status,
-              statusText: response.statusText,
-              errorData,
-              apiProvider,
-              endpoint: apiEndpoint,
-              model: config.model
-            })
+            
             errorMessage = errorData.error || errorMessage
           } catch (parseError) {
-            console.error('无法解析错误响应为JSON:', parseError)
+            
             errorMessage = `API返回非JSON响应: ${responseText.substring(0, 100)}`
           }
 
@@ -973,17 +963,16 @@ export function SubtitleEpisodeGenerator({
           }
         }
       } catch (e) {
-        console.error('处理错误响应时发生异常:', e)
+        
         errorMessage = `网络错误或响应格式异常: ${e.message}`
       }
       throw new Error(errorMessage)
     }
 
     const result = await response.json()
-    console.log('客户端收到的完整响应:', result)
-
+    
     if (!result.success) {
-      console.error('API调用失败:', result)
+      
       throw new Error(result.error || 'API调用失败')
     }
 
@@ -999,22 +988,14 @@ export function SubtitleEpisodeGenerator({
     const content = result.data.content
 
     if (!content) {
-      console.error('内容为空的详细信息:', {
-        content,
-        contentType: typeof content,
-        isNull: content === null,
-        isUndefined: content === undefined,
-        isEmpty: content === '',
-        fullData: result.data
-      })
+      
       throw new Error('API返回内容为空，请重试')
     }
 
     // 解析生成的内容
-    console.log('准备解析内容，调用parseGeneratedContent')
+    
     const parsedResult = parseGeneratedContent(content, episode, config, styleId)
-    console.log('解析完成，结果:', parsedResult)
-
+    
     // 如果生成的简介太短，标记为低置信度
     if (parsedResult.generatedSummary.length < 30) {
       console.warn(`生成的简介太短(${parsedResult.generatedSummary.length}字)，建议重新生成`)
@@ -1033,13 +1014,13 @@ export function SubtitleEpisodeGenerator({
     const validSelectedStyles = config.selectedStyles.filter(styleId => {
       const isValid = validStyleIds.includes(styleId)
       if (!isValid) {
-        console.warn(`跳过无效的风格ID: ${styleId}`)
+        
       }
       return isValid
     })
 
     if (validSelectedStyles.length === 0) {
-      console.error('没有有效的风格被选中')
+      
       return results
     }
 
@@ -1069,8 +1050,7 @@ export function SubtitleEpisodeGenerator({
                 await new Promise(resolve => setTimeout(resolve, 800))
               }
             } catch (error) {
-              console.error(`模仿风格版本${i + 1}生成失败:`, error)
-
+              
               // 检查是否是余额不足错误
               if (isInsufficientBalanceError(error)) {
                 const style = GENERATION_STYLES.find(s => s.id === styleId)
@@ -1127,8 +1107,7 @@ export function SubtitleEpisodeGenerator({
           await new Promise(resolve => setTimeout(resolve, 500))
         }
       } catch (error) {
-        console.error(`风格 ${styleId} 生成失败:`, error)
-
+        
         // 检查是否是余额不足错误
         if (isInsufficientBalanceError(error)) {
           // 余额不足时，添加特殊的结果并停止生成
@@ -1302,8 +1281,6 @@ ${netflixSpecialRequirements}${crunchyrollSpecialRequirements}${aiFreeSpecialReq
   "confidence": 0.85
 }
 
-
-
 ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
 
@@ -1352,14 +1329,10 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
 ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
   }
 
-
-
   // 解析生成的内容
   const parseGeneratedContent = (content: string, episode: SubtitleEpisode, config: GenerationConfig, styleId?: string): GenerationResult => {
     const style = styleId ? GENERATION_STYLES.find(s => s.id === styleId) : null
     const styleName = style?.name || ''
-
-
 
     console.log('开始解析生成的内容:', {
       content: content.substring(0, 500) + (content.length > 500 ? '...' : ''),
@@ -1371,7 +1344,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
     try {
       const parsed = JSON.parse(content)
-      console.log('JSON解析成功:', parsed)
+      
       const summary = parsed.summary || '暂无简介'
 
       // 温和的字数检查（仅警告，不截断）
@@ -1400,15 +1373,11 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         styleName: styleName
       }
     } catch (error) {
-      console.log('JSON解析失败，尝试文本解析:', error.message)
-      console.log('原始内容:', content)
 
       // 如果不是JSON格式，尝试从文本中提取
       const lines = content.split('\n').filter(line => line.trim())
       let title = `第${episode.episodeNumber}集`
       let summary = '暂无简介'
-
-      console.log('分割后的行:', lines)
 
       // 尝试多种解析方式
       for (const line of lines) {
@@ -1417,17 +1386,17 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         // 检查标题
         if (trimmedLine.includes('标题') || trimmedLine.includes('title') || trimmedLine.includes('Title')) {
           title = trimmedLine.replace(/.*[:：]\s*/, '').replace(/["""]/g, '').trim()
-          console.log('提取到标题:', title)
+          
         }
         // 检查简介
         else if (trimmedLine.includes('简介') || trimmedLine.includes('summary') || trimmedLine.includes('Summary')) {
           summary = trimmedLine.replace(/.*[:：]\s*/, '').replace(/["""]/g, '').trim()
-          console.log('提取到简介:', summary)
+          
         }
         // 如果没有明确标识，但内容较长，可能是简介
         else if (trimmedLine.length > 20 && !trimmedLine.includes('第') && !trimmedLine.includes('集')) {
           summary = trimmedLine
-          console.log('推测为简介内容:', summary)
+          
         }
       }
 
@@ -1439,22 +1408,22 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
         const quotedMatch = trimmedContent.match(/"([^"]{20,})"/);
         if (quotedMatch) {
           summary = quotedMatch[1]
-          console.log('提取引号内的长文本作为简介:', summary)
+          
         }
         // 如果没有引号，但内容较短且看起来像简介，直接使用
         else if (trimmedContent.length < 200 && !trimmedContent.includes('\n\n')) {
           summary = trimmedContent
-          console.log('使用完整内容作为简介:', summary)
+          
         }
         // 如果内容很长，尝试提取第一段有意义的文本
         else {
           const sentences = trimmedContent.split(/[。！？.!?]/).filter(s => s.trim().length > 10)
           if (sentences.length > 0) {
             summary = sentences[0].trim() + '。'
-            console.log('提取第一句有意义的文本作为简介:', summary)
+            
           } else {
             summary = trimmedContent.substring(0, 100) + '...'
-            console.log('截取前100字符作为简介:', summary)
+            
           }
         }
       }
@@ -1482,13 +1451,13 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
       if (onOpenGlobalSettings) {
         onOpenGlobalSettings('api')
       } else {
-        alert(`请选择字幕文件并配置${apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}API密钥`)
+        
       }
       return
     }
 
     if (selectedFile.episodes.length === 0) {
-      alert('字幕文件解析失败，请检查文件格式')
+      
       return
     }
 
@@ -1530,7 +1499,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
             await new Promise(resolve => setTimeout(resolve, 1500))
           }
         } catch (error) {
-          console.error(`第${episode.episodeNumber}集生成失败:`, error)
+          
           failCount += config.selectedStyles.length
           completedTasks += config.selectedStyles.length
 
@@ -1558,19 +1527,18 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
       // 显示生成结果摘要
       if (successCount > 0) {
-        console.log(`生成完成：成功 ${successCount} 个结果，失败 ${failCount} 个结果`)
+        
       } else {
-        alert('所有集数生成失败，请检查API配置和网络连接')
+        
       }
     } catch (error) {
-      console.error('批量生成失败:', error)
-
+      
       // 检查是否是余额不足错误
       if (isInsufficientBalanceError(error)) {
         setShowInsufficientBalanceDialog(true)
         // 不显示额外的错误提示
       } else {
-        alert(`生成失败：${error instanceof Error ? error.message : '未知错误'}`)
+        
       }
     } finally {
       setIsGenerating(false)
@@ -1608,12 +1576,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
       // 如果是改写操作且有选中文字信息，使用特殊的处理逻辑
       if (operation === 'rewrite' && selectedTextInfo) {
-        console.log('改写API调用信息:', {
-          operation,
-          selectedTextInfo,
-          originalSummary: result.generatedSummary
-        })
-
+        
         prompt = `请对以下文字进行改写，保持原意但使用不同的表达方式：
 
 【需要改写的文字】
@@ -1690,15 +1653,6 @@ ${selectedTextInfo.text}
                           enhancedContent +
                           originalSummary.substring(selectedTextInfo.end)
 
-        console.log('改写结果处理:', {
-          originalSummary,
-          selectedText: selectedTextInfo.text,
-          rewrittenText: enhancedContent,
-          newSummary,
-          start: selectedTextInfo.start,
-          end: selectedTextInfo.end
-        })
-
         // 更新结果
         handleUpdateResult(fileId, resultIndex, {
           generatedSummary: newSummary,
@@ -1728,8 +1682,7 @@ ${selectedTextInfo.text}
       }
 
     } catch (error) {
-      console.error('内容增强失败:', error)
-
+      
       // 检查是否是余额不足错误
       if (isInsufficientBalanceError(error)) {
         setShowInsufficientBalanceDialog(true)
@@ -1739,8 +1692,6 @@ ${selectedTextInfo.text}
       }
     }
   }
-
-
 
   // 构建增强提示词
   const buildEnhancePrompt = (result: GenerationResult, operation: EnhanceOperation) => {
@@ -1818,12 +1769,6 @@ ${selectedTextInfo.text}
 请严格按照以下格式输出：
 标题：[扩写后的标题]
 简介：[扩写后的简介]`
-
-
-
-
-
-
 
       case 'proofread':
         return `请对以下影视剧集标题和简介进行语法纠错和语句优化，使其更加通顺流畅：
@@ -1952,7 +1897,7 @@ ${selectedTextInfo.text}
         throw new Error('写入文件失败')
       }
     } catch (error) {
-      console.error('导出失败:', error)
+      
       throw error
     }
   }
@@ -1995,8 +1940,7 @@ ${selectedTextInfo.text}
       })
 
     } catch (error) {
-      console.error('视频分析失败:', error)
-      alert(`视频分析失败: ${error instanceof Error ? error.message : '未知错误'}`)
+
     } finally {
       setIsVideoAnalyzing(false)
       setVideoAnalysisProgress(0)
@@ -2039,7 +1983,7 @@ ${selectedTextInfo.text}
             await new Promise(resolve => setTimeout(resolve, 1500))
           }
         } catch (error) {
-          console.error(`第${episode.episodeNumber}集生成失败:`, error)
+          
           failCount += config.selectedStyles.length
           completedTasks += config.selectedStyles.length
 
@@ -2073,8 +2017,7 @@ ${selectedTextInfo.text}
       })
 
     } catch (error) {
-      console.error('批量生成失败:', error)
-
+      
       // 检查是否是余额不足错误
       if (isInsufficientBalanceError(error)) {
         setShowInsufficientBalanceDialog(true)
@@ -2133,16 +2076,6 @@ ${selectedTextInfo.text}
     };
   };
 
-
-
-
-
-
-
-
-
-
-
   // 批量生成所有文件的简介
   const handleBatchGenerateAll = async () => {
     const currentApiKey = apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey
@@ -2150,20 +2083,20 @@ ${selectedTextInfo.text}
       if (onOpenGlobalSettings) {
         onOpenGlobalSettings('api')
       } else {
-        alert(`请先配置${apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}API密钥`)
+        
       }
       return
     }
 
     if (subtitleFiles.length === 0) {
-      alert('请先上传字幕文件')
+      
       return
     }
 
     // 检查是否有可生成的文件
     const validFiles = subtitleFiles.filter(file => file.episodes.length > 0)
     if (validFiles.length === 0) {
-      alert('没有可生成简介的字幕文件，请检查文件格式')
+      
       return
     }
 
@@ -2192,8 +2125,7 @@ ${selectedTextInfo.text}
 
       // 为每个文件生成简介
       for (const file of validFiles) {
-        console.log(`开始处理文件: ${file.name}`)
-
+        
         // 设置当前文件状态为generating
         setSubtitleFiles(prev => prev.map(f =>
           f.id === file.id
@@ -2240,8 +2172,7 @@ ${selectedTextInfo.text}
               await new Promise(resolve => setTimeout(resolve, 1500))
             }
           } catch (error) {
-            console.error(`文件 ${file.name} 第${episode.episodeNumber}集生成失败:`, error)
-
+            
             // 为每个风格添加失败的结果占位符
             for (const styleId of config.selectedStyles) {
               const style = GENERATION_STYLES.find(s => s.id === styleId)
@@ -2295,7 +2226,7 @@ ${selectedTextInfo.text}
 
       // 计算总体统计
       const allResultsFlat = Object.values(allResults).flat()
-      console.log(`批量生成完成：共处理 ${validFiles.length} 个文件，${totalEpisodes} 集内容`)
+      
       console.log(`成功：${allResultsFlat.filter(r => r.confidence > 0).length} 集，失败：${allResultsFlat.filter(r => r.confidence === 0).length} 集`)
 
       // 生成完成后，自动选择合适的文件显示结果
@@ -2315,14 +2246,13 @@ ${selectedTextInfo.text}
         }
       }
     } catch (error) {
-      console.error('批量生成失败:', error)
-
+      
       // 检查是否是余额不足错误
       if (isInsufficientBalanceError(error)) {
         setShowInsufficientBalanceDialog(true)
         // 不显示额外的错误提示
       } else {
-        alert(`批量生成失败：${error instanceof Error ? error.message : '未知错误'}`)
+        
       }
     } finally {
       setIsGenerating(false)
@@ -2788,8 +2718,6 @@ function FileList({
   )
 }
 
-
-
 // 工作区组件
 function WorkArea({
   file,
@@ -2838,7 +2766,6 @@ function WorkArea({
               </p>
             </div>
           </div>
-
 
         </div>
 
@@ -3009,7 +2936,7 @@ const ResultsDisplay: React.FC<{
         return nodeIndex >= 0 ? nodeIndex + targetOffset : offset
       }
     } catch (error) {
-      console.log('getOffsetFromTextNode 错误:', error)
+      
       return 0
     }
   }
@@ -3019,8 +2946,6 @@ const ResultsDisplay: React.FC<{
 
     e.preventDefault()
     e.stopPropagation()
-
-    console.log('开始自定义选择')
 
     setIsSelecting(true)
     setSelectionHighlight(null)
@@ -3061,7 +2986,7 @@ const ResultsDisplay: React.FC<{
         startOffset = Math.min(lineIndex * 50 + charIndex, fullText.length)
       }
     } catch (error) {
-      console.log('计算起始位置失败:', error)
+      
       startOffset = 0
     }
 
@@ -3093,7 +3018,7 @@ const ResultsDisplay: React.FC<{
           endOffset = Math.min(lineIndex * 50 + charIndex, fullText.length)
         }
       } catch (error) {
-        console.log('计算结束位置失败:', error)
+        
         endOffset = startOffset
       }
 
@@ -3103,8 +3028,6 @@ const ResultsDisplay: React.FC<{
       if (end > start) {
         const fullText = container.textContent || ''
         const selectedText = fullText.substring(start, end)
-
-        console.log('选择范围:', { start, end, selectedText })
 
         setSelectionHighlight({ start, end })
         setSelectedText(selectedText)
@@ -3116,8 +3039,6 @@ const ResultsDisplay: React.FC<{
     const handleMouseUp = (upEvent: MouseEvent) => {
       upEvent.preventDefault()
       upEvent.stopPropagation()
-
-      console.log('结束选择')
 
       setIsSelecting(false)
       document.removeEventListener('mousemove', handleMouseMove, { capture: true })
@@ -3295,8 +3216,6 @@ const ResultsDisplay: React.FC<{
     }
   }, [rewritingIndex])
 
-
-
   const handleCancelRewrite = () => {
     setRewritingIndex(null)
     setSelectedText('')
@@ -3335,18 +3254,11 @@ const ResultsDisplay: React.FC<{
 
   const handleConfirmRewrite = async (index: number) => {
     if (!selectedText.trim()) {
-      alert('请先选择需要改写的文字')
+      
       return
     }
 
     if (isRewritingText) return // 防止重复操作
-
-    console.log('改写调试信息:', {
-      selectedText,
-      selectionStart,
-      selectionEnd,
-      originalText: results[index]?.generatedSummary
-    })
 
     setIsRewritingText(true)
 
@@ -3360,15 +3272,12 @@ const ResultsDisplay: React.FC<{
         })
       }
     } catch (error) {
-      console.error('改写失败:', error)
-      alert(`改写失败：${error instanceof Error ? error.message : '未知错误'}`)
+
     } finally {
       setIsRewritingText(false)
       handleCancelRewrite()
     }
   }
-
-
 
   const handleCancelEdit = () => {
     setEditingIndex(null)
@@ -3729,7 +3638,7 @@ function EmptyState({ onUpload, onVideoAnalysis }: {
       setAnalysisSteps(prev => updateStepStatus(prev, 'generate', 'completed', '简介生成完成'))
 
     } catch (error) {
-      console.error('视频分析失败:', error)
+      
       const errorMessage = error instanceof Error ? error.message : '未知错误'
       setAnalysisError(`视频分析失败: ${errorMessage}`)
 
@@ -4390,7 +4299,7 @@ function GenerationTab({
   const handleModelChange = (newModel: string) => {
     // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
-      console.error('onConfigChange is not a function:', onConfigChange)
+      
       return
     }
 
@@ -4401,7 +4310,7 @@ function GenerationTab({
         model: newModel
       })
     } catch (error) {
-      console.error('Error calling onConfigChange:', error)
+      
       return
     }
 
@@ -4414,9 +4323,9 @@ function GenerationTab({
         const settings = existing ? JSON.parse(existing) : {}
         settings.episodeGenerationModel = newModel
         await ClientConfigManager.setItem(key, JSON.stringify(settings))
-        console.log(`模型配置已保存到服务端${apiProvider === 'siliconflow' ? '（硅基流动）' : '（魔搭社区）'}设置:`, newModel)
+        
       } catch (error) {
-        console.error('保存模型配置失败:', error)
+        
       }
     })()
   }
@@ -4542,8 +4451,6 @@ function GenerationTab({
           </Label>
         </div>
       </div>
-
-
 
       {/* 自定义提示词 */}
       <div>
@@ -4687,7 +4594,7 @@ function TitleStyleTab({
   const handleTitleStyleToggle = (styleId: string) => {
     // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
-      console.error('onConfigChange is not a function:', onConfigChange)
+      
       return
     }
 
@@ -4783,7 +4690,7 @@ function SummaryStyleTab({
   const handleStyleToggle = (styleId: string) => {
     // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
-      console.error('onConfigChange is not a function:', onConfigChange)
+      
       return
     }
 

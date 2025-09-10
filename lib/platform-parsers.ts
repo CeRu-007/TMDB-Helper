@@ -90,7 +90,7 @@ export const NetflixParser: PlatformParser = {
         metadata.language = audioMatch[1].trim()
       }
     } catch (error) {
-      console.error("Netflix 解析错误:", error)
+      
     }
 
     return metadata
@@ -166,7 +166,7 @@ export const PrimeVideoParser: PlatformParser = {
         metadata.duration = Number.parseInt(runtimeMatch[1])
       }
     } catch (error) {
-      console.error("Prime Video 解析错误:", error)
+      
     }
 
     return metadata
@@ -230,7 +230,7 @@ export const DisneyPlusParser: PlatformParser = {
         }
       }
     } catch (error) {
-      console.error("Disney+ 解析错误:", error)
+      
     }
 
     return metadata
@@ -333,7 +333,7 @@ export const BilibiliParser: PlatformParser = {
         // 可以用于其他用途
       }
     } catch (error) {
-      console.error("Bilibili 解析错误:", error)
+      
     }
 
     return metadata
@@ -402,7 +402,7 @@ export const IqiyiParser: PlatformParser = {
         metadata.rating = Number.parseFloat(scoreMatch[1])
       }
     } catch (error) {
-      console.error("爱奇艺解析错误:", error)
+      
     }
 
     return metadata
@@ -467,7 +467,7 @@ export const YoukuParser: PlatformParser = {
         }
       }
     } catch (error) {
-      console.error("优酷解析错误:", error)
+      
     }
 
     return metadata
@@ -520,7 +520,7 @@ export const TencentVideoParser: PlatformParser = {
         }
       }
     } catch (error) {
-      console.error("腾讯视频解析错误:", error)
+      
     }
 
     return metadata
@@ -588,7 +588,7 @@ export const HBOMaxParser: PlatformParser = {
         }
       }
     } catch (error) {
-      console.error("HBO Max 解析错误:", error)
+      
     }
 
     return metadata
@@ -634,7 +634,7 @@ export const AppleTVParser: PlatformParser = {
         }
       }
     } catch (error) {
-      console.error("Apple TV+ 解析错误:", error)
+      
     }
 
     return metadata

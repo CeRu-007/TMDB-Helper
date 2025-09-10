@@ -59,7 +59,7 @@ export function safeJsonParse<T = any>(value: any, defaultValue: T | null = null
   
   // 如果不是字符串，返回默认值
   if (typeof value !== 'string') {
-    console.warn('[safeJsonParse] 非字符串值，返回默认值:', typeof value, value);
+    
     return defaultValue;
   }
   
@@ -70,14 +70,14 @@ export function safeJsonParse<T = any>(value: any, defaultValue: T | null = null
   
   // 如果是"[object Object]"这样的无效JSON，返回默认值
   if (value === '[object Object]' || value.includes('[object Object]')) {
-    console.warn('[safeJsonParse] 检测到无效的JSON字符串"[object Object]"，返回默认值');
+    
     return defaultValue;
   }
   
   try {
     return JSON.parse(value) as T;
   } catch (error) {
-    console.warn('[safeJsonParse] JSON解析失败，返回默认值:', error, 'value:', value);
+    
     return defaultValue;
   }
 }
@@ -219,7 +219,7 @@ export function getPlatformInfo(url?: string) {
       };
     }
   } catch (error) {
-    console.error("URL解析错误:", error);
+    
     return { 
       name: '未知平台', 
       icon: 'generic',

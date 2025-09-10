@@ -6,7 +6,6 @@ import { taskScheduler } from '@/lib/scheduler';
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[API] 开始验证任务关联');
     
     const result = await taskScheduler.validateAndFixAllTaskAssociations();
     
@@ -30,7 +29,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
   } catch (error) {
-    console.error('[API] 验证任务关联失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '验证任务关联失败',
@@ -53,7 +52,7 @@ export async function GET(request: NextRequest) {
       method: 'POST'
     }, { status: 200 });
   } catch (error) {
-    console.error('[API] 获取任务关联状态失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '获取任务关联状态失败',

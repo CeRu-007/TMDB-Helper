@@ -26,8 +26,7 @@ export class MigrationHelper {
     if (typeof window === 'undefined') return;
 
     try {
-      console.log('开始执行数据迁移...');
-
+      
       // 1. 迁移API密钥
       await this.migrateApiKey();
 
@@ -37,9 +36,8 @@ export class MigrationHelper {
       // 3. 标记迁移完成
       localStorage.setItem(this.MIGRATION_KEY, this.CURRENT_VERSION);
 
-      console.log('数据迁移完成');
     } catch (error) {
-      console.error('数据迁移失败:', error);
+      
       throw error;
     }
   }
@@ -57,13 +55,13 @@ export class MigrationHelper {
         if (SecureConfigManager.validateApiKey(oldApiKey)) {
           SecureConfigManager.setTmdbApiKey(oldApiKey);
           localStorage.removeItem('tmdb_api_key');
-          console.log('API密钥迁移成功');
+          
         } else {
-          console.warn('发现无效的API密钥，跳过迁移');
+          
         }
       }
     } catch (error) {
-      console.error('API密钥迁移失败:', error);
+      
     }
   }
 
@@ -93,10 +91,10 @@ export class MigrationHelper {
       });
 
       if (keysToRemove.length > 0) {
-        console.log(`清理了 ${keysToRemove.length} 个旧缓存项`);
+        
       }
     } catch (error) {
-      console.error('清理旧缓存失败:', error);
+      
     }
   }
 
@@ -143,7 +141,7 @@ export class MigrationHelper {
       try {
         await this.performMigration();
       } catch (error) {
-        console.error('自动迁移失败:', error);
+        
         // 不抛出错误，避免阻塞应用启动
       }
     }
@@ -155,7 +153,7 @@ if (typeof window !== 'undefined') {
   // 延迟执行，避免阻塞页面加载
   setTimeout(() => {
     MigrationHelper.autoMigrate().catch(error => {
-      console.error('自动迁移过程中出现错误:', error);
+      
     });
   }, 1000);
 }

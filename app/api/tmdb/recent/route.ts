@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const result = await fetchTmdbFeed('recent', { region, language }, apiKey);
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error('获取TMDB近期开播内容失败:', error);
+    
     return NextResponse.json(
       { success: false, error: `获取TMDB近期开播内容失败: ${error.message}` },
       { status: 500 }

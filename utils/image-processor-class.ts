@@ -75,7 +75,7 @@ export class ImageProcessor {
               callback(e.data);
             } else if (error) {
               // 如果有错误但没有任务ID，通知所有等待的任务
-              console.error('Worker错误:', error);
+              
               const callbacks = new Map(this.taskCallbacks); // 创建副本避免修改原始Map
               this.taskCallbacks.clear(); // 先清空回调列表
               
@@ -88,7 +88,6 @@ export class ImageProcessor {
           
           // 设置错误处理程序
           this.worker.onerror = (e: ErrorEvent) => {
-            console.error('Worker错误:', e.message);
             
             // 通知所有等待的任务
             const callbacks = new Map(this.taskCallbacks); // 创建副本避免修改原始Map
@@ -139,7 +138,7 @@ export class ImageProcessor {
                 this.worker = null;
               }
             } else {
-              console.log('图像处理器初始化成功');
+              
               this.initialized = true;
               resolve();
             }
@@ -152,7 +151,7 @@ export class ImageProcessor {
             data: { test: true }
           });
         } catch (error) {
-          console.error('创建Worker失败:', error);
+          
           reject(error);
           
           // 标记为未初始化
@@ -161,7 +160,7 @@ export class ImageProcessor {
           this.initializationPromise = null;
         }
       } catch (error) {
-        console.error('初始化图像处理器失败:', error);
+        
         reject(error);
         
         // 标记为未初始化
@@ -233,8 +232,7 @@ export class ImageProcessor {
     duration: number,
     frameCount: number
   ): Promise<number[]> {
-    console.log('🔍 开始关键帧检测...');
-
+    
     // 基于视频长度的智能采样策略
     const timePoints: number[] = [];
 
@@ -293,7 +291,6 @@ export class ImageProcessor {
         .map(t => Math.round(t * 10) / 10) // 保留1位小数
     )).sort((a, b) => a - b);
 
-    console.log(`🎯 关键帧检测完成，生成${uniqueTimePoints.length}个时间点`);
     return uniqueTimePoints.slice(0, frameCount);
   }
 
@@ -523,7 +520,7 @@ export class ImageProcessor {
         const timeoutId = setTimeout(() => {
           if (this.taskCallbacks.has(taskId)) {
             this.taskCallbacks.delete(taskId);
-            console.error(`任务 ${type} 处理超时，ID: ${taskId}`);
+            
             reject(new Error(`任务处理超时: ${type}`));
           }
         }, timeoutDuration);
@@ -533,7 +530,7 @@ export class ImageProcessor {
           clearTimeout(timeoutId);
           
           if (result.error) {
-            console.error(`任务 ${type} 执行错误:`, result.error);
+            
             reject(new Error(result.error));
           } else {
             resolve(result);
@@ -541,7 +538,6 @@ export class ImageProcessor {
         });
         
         // 记录任务开始
-        console.log(`开始处理任务: ${type}, ID: ${taskId}`);
         
         // 发送消息到Worker
         this.worker!.postMessage({
@@ -550,7 +546,7 @@ export class ImageProcessor {
           ...data
         });
       } catch (error) {
-        console.error(`发送任务失败: ${type}`, error);
+        
         reject(error);
       }
     });
@@ -580,7 +576,7 @@ export class ImageProcessor {
     this.initialized = false;
     ImageProcessor.instance = null;
     this.initializationPromise = null;
-    console.log('ImageProcessor 资源已释放');
+    
   }
 
   /**
@@ -715,8 +711,7 @@ export class ImageProcessor {
     }
   ): Promise<ImageData[]> {
     try {
-        console.log('🎬 开始提取视频帧，视频尺寸:', video.videoWidth, 'x', video.videoHeight);
-
+        
         // 获取视频时长和设置
         const duration = video.duration;
         const startTime = options.startTime || 0;
@@ -727,8 +722,6 @@ export class ImageProcessor {
           options.enhancedFrameDiversity : true;
         const useAIPrefilter = options.useAIPrefilter && this.isAIAnalysisEnabled();
         const useMultiModelValidation = options.useMultiModelValidation || false;
-
-        console.log(`📊 视频参数: 时长=${duration}秒, 开始=${startTime}秒, 帧数=${frameCount}, 模式=${interval}, AI预筛选=${useAIPrefilter}, 多模型验证=${useMultiModelValidation}`);
 
         // 快速验证视频状态
         if (duration <= 0 || isNaN(duration)) {
@@ -745,19 +738,19 @@ export class ImageProcessor {
           // 保持原始分辨率
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
-          console.log(`使用原始分辨率: ${canvas.width} x ${canvas.height}`);
+          
         } else {
           // 对于大型视频，降低canvas尺寸以提高性能
           const maxDimension = 1280; // 限制最大尺寸
           
           if (video.videoWidth > maxDimension || video.videoHeight > maxDimension) {
             scale = maxDimension / Math.max(video.videoWidth, video.videoHeight);
-            console.log(`视频尺寸过大，缩放比例: ${scale}`);
+            
           }
           
           canvas.width = Math.floor(video.videoWidth * scale);
           canvas.height = Math.floor(video.videoHeight * scale);
-          console.log(`使用缩放分辨率: ${canvas.width} x ${canvas.height}`);
+          
         }
         
         const ctx = canvas.getContext('2d', {
@@ -771,7 +764,7 @@ export class ImageProcessor {
         
         // 确保视频可以播放
         if (video.readyState < 2) {
-          console.log('⏳ 等待视频加载...');
+          
           await new Promise<void>((resolve, reject) => {
             const loadHandler = () => {
               video.removeEventListener('loadeddata', loadHandler);
@@ -833,8 +826,6 @@ export class ImageProcessor {
         
         // 🚀 优化的帧提取逻辑
         const candidateFrames: { imageData: ImageData; timePoint: number; aiScore?: number }[] = [];
-
-        console.log('⚡ 开始快速帧提取...');
 
         // 🔧 增强的帧提取逻辑，包含详细错误诊断
         let successCount = 0;
@@ -964,7 +955,7 @@ export class ImageProcessor {
 
               // 致命错误立即终止整个提取过程
               if (isFatalError) {
-                console.error(`遇到致命错误，终止提取: ${errorMsg}`);
+                
                 throw error;
               }
 
@@ -999,8 +990,6 @@ export class ImageProcessor {
           console.warn('提取过程中的错误:', errors.slice(0, 5)); // 只显示前5个错误
         }
 
-        console.log(`📦 提取完成，获得 ${candidateFrames.length} 个候选帧`);
-
         // 🔧 增强的错误处理和回退机制
         if (candidateFrames.length === 0) {
           // 提供详细的错误诊断信息
@@ -1030,12 +1019,9 @@ export class ImageProcessor {
             }
           };
 
-          console.error('📋 帧提取失败诊断信息:', diagnosticInfo);
-
           // 尝试回退策略
           if (timePoints.length > 0) {
-            console.log('🔄 尝试回退策略：简化提取...');
-
+            
             try {
               // 回退策略1：尝试提取视频中间的一帧
               const middleTime = duration / 2;
@@ -1057,10 +1043,10 @@ export class ImageProcessor {
               // 降低验证标准
               if (fallbackImageData && fallbackImageData.data && fallbackImageData.data.length > 0) {
                 candidateFrames.push({ imageData: fallbackImageData, timePoint: middleTime });
-                console.log('✅ 回退策略成功，提取到1帧');
+                
               }
             } catch (fallbackError) {
-              console.error('回退策略也失败了:', fallbackError);
+              
             }
           }
 
@@ -1079,7 +1065,7 @@ export class ImageProcessor {
 
         // 🤖 AI预筛选（如果启用且候选帧过多）
         if (useAIPrefilter && candidateFrames.length > frameCount) {
-          console.log('🧠 开始AI预筛选...');
+          
           await this.performAIPrefiltering(candidateFrames, frameCount, {
             useMultiModel: useMultiModelValidation
           });
@@ -1095,7 +1081,6 @@ export class ImageProcessor {
             .slice(0, frameCount)
             .map(f => f.imageData);
 
-          console.log('🎯 基于AI评分选择最终帧');
         } else {
           // 基于时间分布选择
           const step = Math.max(1, Math.floor(candidateFrames.length / frameCount));
@@ -1104,20 +1089,18 @@ export class ImageProcessor {
             .slice(0, frameCount)
             .map(f => f.imageData);
 
-          console.log('📊 基于时间分布选择最终帧');
         }
 
         // 应用多样性过滤（如果启用）
         if (enhancedFrameDiversity && finalFrames.length > 1) {
           finalFrames = this.applyDiversityFilter(finalFrames, 0.75);
-          console.log(`🎨 多样性过滤后保留 ${finalFrames.length} 帧`);
+          
         }
 
-        console.log(`🎉 帧提取完成！最终获得 ${finalFrames.length} 帧`);
         return finalFrames;
 
     } catch (error) {
-      console.error('提取视频帧失败:', error);
+      
       throw error;
     }
   }
@@ -1158,8 +1141,7 @@ export class ImageProcessor {
     }>;
   }> {
     try {
-      console.log(`🚀 开始智能帧分析 ${frames.length} 帧以找到最优 ${count} 帧`);
-
+      
       // 🎯 尝试使用新的智能帧选择器
       try {
         if (!this.smartFrameSelector) {
@@ -1202,15 +1184,6 @@ export class ImageProcessor {
 
         // 🎯 执行智能帧选择
         const smartResult = await this.smartFrameSelector.selectBestFrames(frames, selectionOptions);
-        
-        console.log(`✅ 智能帧选择完成！`);
-        console.log(`📊 统计信息:`, {
-          总帧数: smartResult.statistics.totalFrames,
-          分析帧数: smartResult.statistics.analyzedFrames,
-          AI分析帧数: smartResult.statistics.aiAnalyzedFrames,
-          处理时间: `${smartResult.statistics.processingTime}ms`,
-          选择帧数: smartResult.selectedFrames.length
-        });
 
         // 转换为原有格式
         const result = {
@@ -1229,16 +1202,16 @@ export class ImageProcessor {
         return result;
 
       } catch (smartSelectorError) {
-        console.warn('🔄 智能帧选择器失败，回退到传统方法:', smartSelectorError);
+        
         // 继续执行原有的传统分析逻辑
       }
 
       // 检查是否启用AI分析（保留原有逻辑作为回退）
       const useAIAnalysis = this.isAIAnalysisEnabled();
       if (useAIAnalysis) {
-        console.log('使用硅基流动AI进行智能帧分析');
+        
       } else {
-        console.log('使用传统像素分析方法');
+        
       }
 
       // 如果帧数过多，先进行初步筛选以减轻计算负担
@@ -1253,7 +1226,7 @@ export class ImageProcessor {
         for (let i = 0; i < frames.length; i += step) {
           framesToAnalyze.push(frames[i]);
         }
-        console.log(`筛选后待分析帧数: ${framesToAnalyze.length}`);
+        
       }
       
       // 使用批处理来分析帧，避免一次性分析太多帧导致超时
@@ -1290,7 +1263,7 @@ export class ImageProcessor {
 
               if (useAIAnalysis && this.siliconFlowAPI) {
                 // 使用AI分析
-                console.log(`使用AI分析帧 ${originalIndex}`);
+                
                 const aiResult = await this.siliconFlowAPI.analyzeFrame(frame);
 
                 if (!aiResult.error) {
@@ -1303,9 +1276,8 @@ export class ImageProcessor {
                     diversityScore: aiResult.confidence || 0.7 // 使用AI的置信度作为多样性分数
                   };
 
-                  console.log(`AI分析结果 - 帧${originalIndex}: 字幕=${aiResult.hasSubtitles}, 人物=${aiResult.hasPeople}, 置信度=${aiResult.confidence}`);
                 } else {
-                  console.warn(`AI分析失败，回退到传统方法: ${aiResult.error}`);
+                  
                   // AI分析失败，回退到传统方法
                   const effectiveSampleRate = Math.min(options.sampleRate || 2, 3);
                   const results = await this.batchAnalyzeImage(frame, {
@@ -1348,7 +1320,7 @@ export class ImageProcessor {
                 scores: scores
               };
             } catch (error) {
-              console.error(`分析帧 ${originalIndex} 失败:`, error);
+              
               // 返回默认分数，而不是失败整个批次
               return {
                 index: frames.indexOf(frame),
@@ -1375,14 +1347,14 @@ export class ImageProcessor {
           });
           
         } catch (error) {
-          console.error(`处理帧批次 ${i/batchSize + 1} 失败:`, error);
+          
           // 继续处理其他批次，不要中断整个过程
         }
       }
       
       // 如果没有成功分析任何帧，返回基本结果
       if (frameAnalysis.length === 0) {
-        console.warn('没有成功分析任何帧，返回基本结果');
+        
         return {
           frames: frames.slice(0, count).map((_, index) => ({
             index,
@@ -1396,18 +1368,14 @@ export class ImageProcessor {
           }))
         };
       }
-      
-      console.log(`成功分析 ${frameAnalysis.length} 帧`);
-      
+
       // ==================== 新增: 优先检测人物帧并优化字幕 ====================
       
       // 1. 先按人物分数对帧排序，找出包含人物的高质量帧
       const peopleFrames = [...frameAnalysis].sort((a, b) => 
         b.scores.peopleScore - a.scores.peopleScore
       ).filter(frame => frame.scores.peopleScore > 0.6); // 选择人物分数较高的帧
-      
-      console.log(`找到 ${peopleFrames.length} 个包含人物的高质量帧`);
-      
+
       // 2. 处理每个包含人物的帧，检查其相邻帧是否有无字幕的更好选择
       const optimizedFrames: typeof frameAnalysis = [];
       const processedIndices = new Set<number>();
@@ -1485,7 +1453,7 @@ export class ImageProcessor {
               });
             }
           } catch (error) {
-            console.error('分析相邻帧失败:', error);
+            
             // 如果分析失败，使用原始帧
             optimizedFrames.push(peopleFrame);
             processedIndices.add(peopleFrame.index);
@@ -1521,7 +1489,7 @@ export class ImageProcessor {
         );
         
         if (bestAlternative) {
-          console.log(`找到帧 ${peopleFrame.index} 的无字幕替代帧 ${bestAlternative.index}`);
+          
           // 使用这个替代帧，但保留原始帧的一些特性
           optimizedFrames.push({
             ...bestAlternative,
@@ -1541,9 +1509,7 @@ export class ImageProcessor {
           processedIndices.add(peopleFrame.index);
         }
       }
-      
-      console.log(`优化后的人物帧数量: ${optimizedFrames.length}`);
-      
+
       // 计算综合得分
       interface ScoredFrame extends FrameAnalysis {
         totalScore: number;
@@ -1640,9 +1606,7 @@ export class ImageProcessor {
           }
         }
       }
-      
-      console.log(`最终选择了 ${finalSelectedFrames.length} 个帧`);
-      
+
       // 根据索引排序，保持时间顺序
       finalSelectedFrames.sort((a, b) => a.index - b.index);
       
@@ -1651,11 +1615,10 @@ export class ImageProcessor {
         frames: finalSelectedFrames.map(({ index, scores }) => ({ index, scores }))
       };
     } catch (error) {
-      console.error('分析帧失败:', error);
       
       // 发生错误时，尝试返回最少一帧
       if (frames.length > 0) {
-        console.warn('由于分析错误，返回第一帧作为备选');
+        
         return {
           frames: [{ 
             index: 0, 
@@ -1724,7 +1687,6 @@ export class ImageProcessor {
       
       // 如果是全黑图像，创建带文本的图像
       if (isEntirelyBlack) {
-        console.warn('检测到全黑图像，生成替代图像');
         
         // 设置canvas尺寸
         canvas.width = maxWidth;
@@ -1804,7 +1766,7 @@ export class ImageProcessor {
         
         ctx.putImageData(imageData, 0, 0);
       } catch (error) {
-        console.warn('增强图像失败，继续使用原始图像:', error);
+        
       }
       
       // 转换为数据URL
@@ -1824,7 +1786,6 @@ export class ImageProcessor {
       
       return { url };
     } catch (error) {
-      console.error('生成缩略图失败:', error);
       
       // 创建错误占位图
       const canvas = document.createElement('canvas');
@@ -1859,20 +1820,20 @@ export class ImageProcessor {
     try {
       // 基本结构检查
       if (!imageData || !imageData.data || !imageData.width || !imageData.height) {
-        console.warn('ImageData 基本结构无效');
+        
         return false;
       }
 
       // 尺寸检查
       if (imageData.width <= 0 || imageData.height <= 0) {
-        console.warn('ImageData 尺寸无效:', imageData.width, 'x', imageData.height);
+        
         return false;
       }
 
       // 数据长度检查
       const expectedLength = imageData.width * imageData.height * 4;
       if (imageData.data.length !== expectedLength) {
-        console.warn('ImageData 数据长度不匹配:', imageData.data.length, '期望:', expectedLength);
+        
         return false;
       }
 
@@ -1932,7 +1893,7 @@ export class ImageProcessor {
 
       return true;
     } catch (error) {
-      console.error('验证 ImageData 时发生错误:', error);
+      
       return false;
     }
   }

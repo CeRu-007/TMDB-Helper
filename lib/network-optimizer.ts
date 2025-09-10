@@ -59,18 +59,16 @@ export class NetworkOptimizer {
       const env = dockerStorageAdapter.getEnvironment();
       
       if (env.isDocker) {
-        console.log('网络优化器: 检测到Docker环境，应用Docker网络配置:', networkConfig);
         
         // 应用Docker特定的配置
         this.maxBatchSize = Math.min(this.maxBatchSize, networkConfig.maxConcurrentRequests);
         
         // 在Docker环境中增加批量延迟以减少网络压力
         (this as any).batchDelay = Math.max(this.batchDelay, 100);
-        
-        console.log('网络优化器: Docker配置已应用');
+
       }
     } catch (error) {
-      console.warn('网络优化器: Docker支持初始化失败:', error);
+      
     }
   }
 
@@ -145,7 +143,7 @@ export class NetworkOptimizer {
 
       // 2. 检查请求去重
       if (this.pendingRequests.has(dedupeKey)) {
-        console.log(`请求去重: ${config.url}`);
+        
         return await this.pendingRequests.get(dedupeKey)!;
       }
 
@@ -309,8 +307,7 @@ export class NetworkOptimizer {
     if (this.batchQueue.length === 0) return;
 
     const currentBatch = this.batchQueue.splice(0, this.maxBatchSize);
-    console.log(`处理批量请求: ${currentBatch.length} 个请求`);
-
+    
     // 按优先级排序
     currentBatch.sort((a, b) => {
       const priorityOrder = { high: 3, normal: 2, low: 1 };
@@ -341,7 +338,6 @@ export class NetworkOptimizer {
    * 智能预加载
    */
   async preload(configs: RequestConfig[]): Promise<void> {
-    console.log(`开始预加载 ${configs.length} 个资源`);
     
     // 按优先级分组
     const highPriority = configs.filter(c => c.priority === 'high');
@@ -374,7 +370,7 @@ export class NetworkOptimizer {
         }
       }
     } catch (error) {
-      console.warn('预加载过程中出现错误:', error);
+      
     }
   }
 
@@ -448,7 +444,7 @@ export class NetworkOptimizer {
   async clearCache(pattern?: string): Promise<void> {
     if (pattern) {
       // 这里需要实现模式匹配的缓存清除
-      console.log(`清除匹配模式 "${pattern}" 的缓存`);
+      
       // 由于IndexedDB的限制，这里简化实现
       await indexedDBStorage.cleanupCache();
     } else {

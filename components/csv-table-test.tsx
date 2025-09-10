@@ -22,7 +22,7 @@ export function CSVTableTest() {
   const [isSaving, setIsSaving] = useState(false)
 
   const handleDataChange = (newData: CSVData) => {
-    console.log("数据已更改:", newData)
+    
     setData(newData)
   }
 
@@ -31,7 +31,7 @@ export function CSVTableTest() {
     // 模拟保存延迟
     await new Promise(resolve => setTimeout(resolve, 1000))
     setIsSaving(false)
-    console.log("数据已保存")
+    
     return true
   }
 

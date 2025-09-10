@@ -58,7 +58,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
         taskCount: tasks.length
       })
     } catch (error) {
-      console.error("Failed to load stats:", error)
+      
       setStats({
         itemCount: items.length,
         taskCount: 0
@@ -86,7 +86,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
 
       onOpenChange(false)
     } catch (error) {
-      console.error("Export failed:", error)
+      
       const errorMessage = error instanceof Error ? error.message : '未知错误'
 
       // 显示用户友好的错误提示
@@ -104,8 +104,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
   // 导出精确副本
   const exportExactCopy = async () => {
     try {
-      console.log('[Export] 开始导出精确副本...')
-
+      
       // 尝试从API获取数据
       const response = await fetch('/api/storage/file-operations', {
         method: 'GET',
@@ -121,7 +120,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
       const result = await response.json()
 
       if (result.success && result.items) {
-        console.log(`[Export] 成功从API获取 ${result.items.length} 个项目`)
+        
         const data = JSON.stringify(result.items, null, 2)
         downloadFile(data, 'tmdb_items.json', 'application/json')
 
@@ -134,12 +133,11 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
         throw new Error(result.error || "API返回数据无效")
       }
     } catch (apiError) {
-      console.error("从API导出失败，尝试使用内存数据:", apiError)
-
+      
       // 降级到内存数据
       try {
         if (items && items.length > 0) {
-          console.log(`[Export] 使用内存数据导出 ${items.length} 个项目`)
+          
           const data = JSON.stringify(items, null, 2)
           downloadFile(data, 'tmdb_items.json', 'application/json')
 
@@ -152,7 +150,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
           throw new Error("内存中没有可用数据")
         }
       } catch (memoryError) {
-        console.error("内存数据导出也失败:", memoryError)
+        
         throw new Error(`数据导出失败: API错误(${apiError instanceof Error ? apiError.message : '未知'})，内存错误(${memoryError instanceof Error ? memoryError.message : '未知'})`)
       }
     }
@@ -161,8 +159,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
   // 导出完整备份
   const exportFullBackup = async () => {
     try {
-      console.log('[Export] 开始导出完整备份...')
-
+      
       let exportItems: TMDBItem[] = []
       let exportTasks: ScheduledTask[] = []
       let dataSource = 'unknown'
@@ -181,26 +178,26 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
           if (result.success && result.items) {
             exportItems = result.items
             dataSource = 'API'
-            console.log(`[Export] 从API获取 ${exportItems.length} 个项目`)
+            
           }
         }
       } catch (apiError) {
-        console.warn('[Export] API获取项目失败:', apiError)
+        
       }
 
       // 如果API失败，使用内存数据
       if (exportItems.length === 0 && items && items.length > 0) {
         exportItems = items
         dataSource = 'Memory'
-        console.log(`[Export] 从内存获取 ${exportItems.length} 个项目`)
+        
       }
 
       // 获取定时任务数据
       try {
         exportTasks = await StorageManager.getScheduledTasks()
-        console.log(`[Export] 获取 ${exportTasks.length} 个定时任务`)
+        
       } catch (taskError) {
-        console.error('[Export] 获取定时任务失败:', taskError)
+        
         exportTasks = []
 
         // 已切换到服务端存储，此兜底逻辑不再需要
@@ -235,8 +232,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
       })
 
     } catch (error) {
-      console.error("完整备份导出失败:", error)
-
+      
       // 使用数据恢复管理器作为降级方案
       await exportWithRecoveryManager()
     }
@@ -245,8 +241,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
   // 使用数据恢复管理器导出
   const exportWithRecoveryManager = async () => {
     try {
-      console.log('[Export] 使用数据恢复管理器导出...')
-
+      
       const result = await dataRecoveryManager.safeExportData({
         includeBackup: true,
         validateData: true,
@@ -266,11 +261,10 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
         throw new Error(result.error || '数据恢复管理器导出失败')
       }
     } catch (recoveryError) {
-      console.error("数据恢复管理器导出也失败:", recoveryError)
-
+      
       // 最后的降级方案：使用原始的exportData方法
       try {
-        console.log('[Export] 尝试使用原始导出方法...')
+        
         const fallbackData = await exportData()
         downloadFile(fallbackData, `tmdb-helper-fallback-${new Date().toISOString().split("T")[0]}.json`, 'application/json')
 
@@ -280,7 +274,7 @@ export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialo
           duration: 3000
         })
       } catch (fallbackError) {
-        console.error("备用导出方法也失败:", fallbackError)
+        
         throw new Error(`所有导出方法都失败: ${recoveryError instanceof Error ? recoveryError.message : '未知错误'}`)
       }
     }

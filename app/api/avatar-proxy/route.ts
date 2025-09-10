@@ -96,8 +96,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('头像代理错误:', error)
-
+    
     // 处理不同类型的错误
     if (error instanceof Error) {
       if (error.name === 'AbortError' || error.message.includes('timeout')) {

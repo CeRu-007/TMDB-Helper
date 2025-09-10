@@ -11,14 +11,11 @@ const path = require('path')
  * 处理包含换行符的CSV文件
  */
 function repairAndParseCSV(csvContent) {
-  console.log('开始修复CSV文件...')
   
   // 首先尝试识别正确的行结构
   const lines = csvContent.split('\n')
   const headers = parseCSVLineRobust(lines[0])
-  console.log('标题行:', headers)
-  console.log('期望字段数:', headers.length)
-  
+
   const repairedRows = []
   let currentRow = ''
   let fieldCount = 0
@@ -48,7 +45,7 @@ function repairAndParseCSV(csvContent) {
     if (testFields.length === headers.length) {
       // 行完整，添加到结果
       repairedRows.push(testFields)
-      console.log(`修复第${repairedRows.length}行: ${testFields[0]} - ${testFields[1]}`)
+      
       currentRow = ''
     } else if (testFields.length > headers.length) {
       // 字段过多，可能是下一行的开始
@@ -61,7 +58,7 @@ function repairAndParseCSV(csvContent) {
         const currentFields = parseCSVLineRobust(currentRowPart)
         if (currentFields.length === headers.length) {
           repairedRows.push(currentFields)
-          console.log(`修复第${repairedRows.length}行: ${currentFields[0]} - ${currentFields[1]}`)
+          
           currentRow = nextRowPart
         } else {
           currentRow = ''
@@ -79,11 +76,10 @@ function repairAndParseCSV(csvContent) {
     const finalFields = parseCSVLineRobust(currentRow)
     if (finalFields.length === headers.length) {
       repairedRows.push(finalFields)
-      console.log(`修复第${repairedRows.length}行: ${finalFields[0]} - ${finalFields[1]}`)
+      
     }
   }
-  
-  console.log(`修复完成: ${repairedRows.length}行数据`)
+
   return { headers, rows: repairedRows }
 }
 
@@ -180,14 +176,13 @@ function escapeCSVField(field) {
  * 删除指定剧集
  */
 function deleteEpisodes(data, episodesToDelete) {
-  console.log('删除剧集:', episodesToDelete)
   
   const episodeColumnIndex = data.headers.findIndex(header => 
     header.toLowerCase().includes('episode') || header.includes('剧集')
   )
   
   if (episodeColumnIndex === -1) {
-    console.error('未找到剧集编号列')
+    
     return data
   }
   
@@ -198,14 +193,12 @@ function deleteEpisodes(data, episodesToDelete) {
     const shouldDelete = episodesToDeleteSet.has(episodeNumber)
     
     if (shouldDelete) {
-      console.log(`删除: 第${episodeNumber}集 - ${row[1]}`)
+      
     }
     
     return !shouldDelete
   })
-  
-  console.log(`删除完成: 原${data.rows.length}行，现${filteredRows.length}行`)
-  
+
   return {
     headers: [...data.headers],
     rows: filteredRows
@@ -217,41 +210,30 @@ function deleteEpisodes(data, episodesToDelete) {
  */
 async function main() {
   try {
-    console.log('=== 开始修复和处理CSV文件 ===\n')
     
     // 读取原始文件
     const backupPath = path.join(__dirname, '../TMDB-Import-master/import_backup_1752629372534.csv')
     const originalContent = fs.readFileSync(backupPath, 'utf-8')
-    
-    console.log('1. 修复CSV结构...')
+
     const repairedData = repairAndParseCSV(originalContent)
-    
-    console.log('\n2. 保存修复后的完整文件...')
+
     const repairedCSV = generateCSV(repairedData)
     const repairedPath = path.join(__dirname, '../TMDB-Import-master/import_repaired.csv')
     fs.writeFileSync(repairedPath, repairedCSV, 'utf-8')
-    console.log(`修复后的完整文件已保存: ${repairedPath}`)
-    
-    console.log('\n3. 删除指定剧集...')
+
     const episodesToDelete = [1, 2, 3, 4, 5, 6, 7, 8]
     const filteredData = deleteEpisodes(repairedData, episodesToDelete)
-    
-    console.log('\n4. 生成最终文件...')
+
     const finalCSV = generateCSV(filteredData)
     const finalPath = path.join(__dirname, '../TMDB-Import-master/import_final.csv')
     fs.writeFileSync(finalPath, finalCSV, 'utf-8')
-    
-    console.log(`\n✅ 处理完成！`)
-    console.log(`修复后完整文件: ${repairedPath}`)
-    console.log(`删除剧集后文件: ${finalPath}`)
-    console.log(`\n统计信息:`)
-    console.log(`- 原始行数: ${repairedData.rows.length}`)
+
     console.log(`- 删除剧集: ${episodesToDelete.join(', ')}`)
-    console.log(`- 剩余行数: ${filteredData.rows.length}`)
+    
     console.log(`- 剩余剧集: ${filteredData.rows.map(row => row[0]).join(', ')}`)
     
   } catch (error) {
-    console.error('处理失败:', error)
+    
   }
 }
 

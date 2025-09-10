@@ -45,30 +45,27 @@ async function executeTMDBImportCommand(command: string, workingDirectory: strin
         try {
             await execAsync('python --version');
         } catch (pythonError) {
-            console.error('[API] Python不可用', pythonError);
+            
             throw new Error('Python不可用，请确保已安装Python并添加到PATH中');
         }
 
         // 执行命令
-        console.log(`[API] 开始执行命令: ${command}`);
+        
         const { stdout, stderr } = await execAsync(command, {
             cwd: workingDirectory,
             timeout: 180000 // 设置3分钟超时
         });
 
         if (stderr) {
-            console.warn(`[API] 命令执行产生stderr输出: ${stderr}`);
+            
         }
 
-        console.log(`[API] 命令执行完成，输出长度: ${stdout.length}字符`);
-        console.log(`[API] 标准输出内容:`, stdout);
         if (stderr) {
-            console.log(`[API] 标准错误内容:`, stderr);
+            
         }
         return { stdout, stderr };
     } catch (error: any) {
-        console.error('[API] 命令执行失败:', error);
-
+        
         // 提供更详细的错误信息
         let errorMessage = error.message || '未知错误';
         if (error.code === 'ENOENT') {
@@ -85,8 +82,7 @@ async function executeTMDBImportCommand(command: string, workingDirectory: strin
 出中解析CSV文件路径
  */
 function parseCSVPathFromOutput(output: string): string | null {
-    console.log(`[API] 尝试解析CSV路径，输出内容:`, output);
-
+    
     // 尝试多种可能的输出格式
     const patterns = [
         /Saved to (.+\.csv)/i,                    // 原始格式: "Saved to xxx.csv"
@@ -110,11 +106,10 @@ function parseCSVPathFromOutput(output: string): string | null {
     const csvFiles = output.match(/\S+\.csv/g);
     if (csvFiles && csvFiles.length > 0) {
         const csvPath = csvFiles[csvFiles.length - 1]; // 使用最后一个找到的CSV文件
-        console.log(`[API] 通过通用匹配找到CSV路径: ${csvPath}`);
+        
         return csvPath;
     }
 
-    console.warn(`[API] 无法解析CSV路径，完整输出:`, output);
     return null;
 }
 
@@ -128,7 +123,7 @@ async function readCSVFile(filePath: string): Promise<string> {
         }
         return await fs.promises.readFile(filePath, 'utf-8');
     } catch (error) {
-        console.error('读取CSV文件失败:', error);
+        
         throw new Error(`无法读取CSV文件: ${filePath}`);
     }
 }
@@ -142,8 +137,6 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
         return { headers: [], rows: [] };
     }
 
-    console.log(`[API] 开始解析CSV，总行数: ${lines.length}`);
-
     const headers = parseCSVLine(lines[0]);
     console.log(`[API] CSV表头: ${headers.join(' | ')}`);
 
@@ -155,7 +148,7 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
 
             // 验证行的字段数量
             if (row.length !== headers.length) {
-                console.warn(`[API] 第${i + 1}行字段数量不匹配: 期望${headers.length}个，实际${row.length}个`);
+                
                 console.warn(`[API] 问题行内容: ${lines[i].substring(0, 100)}...`);
 
                 // 尝试修复字段数量
@@ -169,14 +162,12 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
 
             rows.push(row);
         } catch (error) {
-            console.error(`[API] 解析第${i + 1}行失败:`, error);
-            console.error(`[API] 问题行: ${lines[i]}`);
+
             // 跳过有问题的行
             continue;
         }
     }
 
-    console.log(`[API] CSV解析完成: ${headers.length}列 x ${rows.length}行`);
     return { headers, rows };
 }
 
@@ -262,7 +253,7 @@ function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][]
     );
 
     if (episodeColumnIndex === -1) {
-        console.warn('无法找到CSV中的集数列');
+        
         return csvData;
     }
 
@@ -301,7 +292,7 @@ function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][]
     if (isYoukuPlatform && episodesToRemove.length > 0) {
         // 移除最后一集，即只删除1到n-1集
         episodesToRemove.pop();
-        console.log(`[API] 优酷平台特殊处理：原本要删除${completedEpisodes.length}集，实际删除${episodesToRemove.length}集`);
+        
     }
 
     if (episodesToRemove.length === 0) {
@@ -329,7 +320,6 @@ function filterRowsByEpisodeRange(rows: string[][], episodeColumnIndex: number, 
         return rows;
     }
 
-    console.log(`[API] 开始过滤CSV行，总行数: ${rows.length}, 集数列索引: ${episodeColumnIndex}`);
     console.log(`[API] 要删除的集数: ${episodesToRemove.join(', ')}`);
 
     // 创建要删除的集数Set，提高查找效率
@@ -343,7 +333,7 @@ function filterRowsByEpisodeRange(rows: string[][], episodeColumnIndex: number, 
 
         // 检查行是否完整
         if (episodeColumnIndex >= row.length) {
-            console.log(`[API] 保留不完整的行${i}: 列数不足`);
+            
             filteredRows.push(row);
             continue;
         }
@@ -352,17 +342,17 @@ function filterRowsByEpisodeRange(rows: string[][], episodeColumnIndex: number, 
         const episodeNumber = extractEpisodeNumber(episodeValue);
 
         if (episodeNumber === null) {
-            console.log(`[API] 保留无法解析集数的行 ${i}: "${episodeValue}"`);
+            
             filteredRows.push(row);
             continue;
         }
 
         // 检查是否需要删除
         if (episodesToRemoveSet.has(episodeNumber)) {
-            console.log(`[API] 删除第${episodeNumber}集的数据行${i}: "${episodeValue}"`);
+            
             deletedCount++;
         } else {
-            console.log(`[API] 保留第${episodeNumber}集的数据行${i}: "${episodeValue}"`);
+            
             filteredRows.push(row);
         }
     }
@@ -426,7 +416,7 @@ async function writeCSVFile(filePath: string, content: string): Promise<void> {
     try {
         await fs.promises.writeFile(filePath, content, 'utf-8');
     } catch (error) {
-        console.error('写入CSV文件失败:', error);
+        
         throw new Error(`无法写入CSV文件: ${filePath}`);
     }
 }
@@ -519,14 +509,14 @@ async function markEpisodesAsCompleted(item: TMDBItem, seasonNumber: number, epi
         try {
             const success = await StorageManager.updateItem(updatedItem);
             if (success) {
-                console.log(`[API] 成功更新项目: ${updatedItem.title}`);
+                
                 return updatedItem;
             } else {
-                console.error(`[API] 更新项目失败: ${updatedItem.title}`);
+                
                 return null;
             }
         } catch (error) {
-            console.error(`[API] 更新项目时出错:`, error);
+            
             return null;
         }
     }
@@ -537,8 +527,7 @@ async function markEpisodesAsCompleted(item: TMDBItem, seasonNumber: number, epi
 * POST 处理程序
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-    console.log('[API] 收到执行定时任务请求');
-
+    
     try {
         // 解析请求体
         const requestData: ExecuteTaskRequest = await request.json();
@@ -548,11 +537,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
         }
 
-        console.log(`[API] 执行定时任务: taskId=${requestData.taskId}, itemId=${requestData.itemId}, 第${requestData.action.seasonNumber}季`);
-
         // 记录额外元数据（如果存在）
         if (requestData.metadata) {
-            console.log(`[API] 附加元数据: tmdbId=${requestData.metadata.tmdbId || '未提供'}, title="${requestData.metadata.title || '未提供'}"`);
+            
         }
 
         // 获取所有项目，用于后续各种情况
@@ -560,17 +547,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         let items: TMDBItem[] = [];
         try {
             items = readItems(); // 直接从服务器端文件读取
-            console.log(`[API] 从服务器存储读取了${items.length} 个项目`);
+            
         } catch (serverError) {
-            console.warn(`[API] 服务器存储读取失败，尝试StorageManager:`, serverError);
+            
             // 如果服务器存储失败，回退到StorageManager
             items = await StorageManager.getItemsWithRetry();
-            console.log(`[API] 从StorageManager获取了${items.length} 个项目`);
+            
         }
 
         // 添加零项目保护 - 如果系统中没有任何项目，直接返回错误
         if (items.length === 0) {
-            console.error('[API] 系统中没有可用项目，无法继续执行');
+            
             return NextResponse.json({
                 success: false,
                 error: "系统中没有可用项目",
@@ -600,16 +587,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                     }, { status: 400 });
                 }
             } else {
-                console.warn(`[API] 通过ID ${requestData.itemId} 未找到项目，尝试其他方法`);
+                
             }
         } else {
-            console.warn(`[API] 请求中无有效itemId，将尝试从其他信息中查找项目`);
+            
         }
 
         // 如果没有通过ID找到项目，尝试通过元数据查找
         if (!foundValidItem && requestData.metadata) {
-            console.log(`[API] 尝试通过元数据查找项目`);
-
+            
             // 通过TMDB ID查找
             if (requestData.metadata.tmdbId) {
                 const matchByTmdbId = items.find(i => i.tmdbId === requestData.metadata?.tmdbId);
@@ -641,8 +627,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         // 如果所有方法都失败，使用最近创建的项目作为最后手段
         if (!foundValidItem) {
-            console.warn(`[API] 所有匹配方法均失败，使用最近创建的项目作为备用`);
-
+            
             // 按创建时间排序
             const sortedItems = [...items].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -666,7 +651,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         // 最终检查是否找到有效项目
         if (!item || !foundValidItem) {
-            console.error(`[API] 无法为请求找到有效项目，itemId=${requestData.itemId}`);
+            
             return NextResponse.json({
                 error: `无法找到有效项目`,
                 suggestion: '请检查项目是否存在或重新创建任务'
@@ -721,7 +706,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         // 如果无法从输出解析，尝试查找工作目录中最新的CSV文件
         if (!csvPath) {
-            console.warn(`[API] 无法从输出解析CSV路径，尝试查找最新的CSV文件`);
+            
             try {
                 const files = await fs.promises.readdir(tmdbImportDir);
                 const csvFiles = files.filter(file => file.endsWith('.csv'));
@@ -738,16 +723,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
                     csvFilesWithStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
                     csvPath = csvFilesWithStats[0].file;
-                    console.log(`[API] 找到最新的CSV文件: ${csvPath}`);
+                    
                 }
             } catch (dirError) {
-                console.error(`[API] 查找CSV文件失败:`, dirError);
+                
             }
         }
 
         if (!csvPath) {
-            console.error(`[API] 无法解析CSV路径，完整输出:`, stdout);
-            console.error(`[API] 错误输出:`, stderr);
 
             return NextResponse.json({
                 error: '无法从输出中找到CSV文件路径',
@@ -768,11 +751,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             csvAbsolutePath = path.resolve(tmdbImportDir, csvPath);
         }
 
-        console.log(`[API] CSV文件路径: ${csvAbsolutePath}`);
-
         // 验证CSV文件是否存在
         if (!fs.existsSync(csvAbsolutePath)) {
-            console.error(`[API] CSV文件不存在: ${csvAbsolutePath}`);
+            
             return NextResponse.json({
                 error: 'CSV文件不存在',
                 details: {
@@ -802,15 +783,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 const filteredContent = csvDataToString(filteredData);
                 await writeCSVFile(csvAbsolutePath, filteredContent);
 
-                console.log(`[API] 已过滤已完成集数: 原始=${csvData.rows.length}行, 过滤后=${filteredData.rows.length}行`);
             } catch (error) {
-                console.error('[API] 过滤已完成集数时出错:', error);
+                
                 // 继续执行，不中断流程
             }
         }
 
         // 处理列数据清空选项（修复后的逻辑）
-        console.log(`[API] 检查列删除选项: removeAirDateColumn=${requestData.action.removeAirDateColumn}, removeRuntimeColumn=${requestData.action.removeRuntimeColumn}, removeBackdropColumn=${requestData.action.removeBackdropColumn}`);
+        
         if (requestData.action.removeAirDateColumn || requestData.action.removeRuntimeColumn || requestData.action.removeBackdropColumn) {
             try {
                 // 读取CSV文件
@@ -863,20 +843,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                                 row[index] = ''; // 清空数据，保留列结构和逗号分隔符
                             }
                         });
-                        console.log(`[API] 已清空列数据: ${columnName}`);
+                        
                     });
 
                     // 将修改后的数据写回CSV文件
                     const modifiedContent = csvDataToString(csvData);
                     await writeCSVFile(csvAbsolutePath, modifiedContent);
 
-                    console.log(`[API] 已清空 ${indicesToEmpty.length} 个列的数据，CSV文件已更新`);
                     modified = true;
                 } else {
-                    console.log(`[API] 未找到需要清空数据的列`);
+                    
                 }
             } catch (error) {
-                console.error('[API] 清空CSV列数据时出错:', error);
+                
                 // 继续执行，不中断流程
             }
         }
@@ -916,7 +895,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             });
         }
     } catch (error: any) {
-        console.error('[API] 执行定时任务失败:', error);
+        
         return NextResponse.json({
             error: '执行定时任务失败',
             message: error instanceof Error ? error.message : String(error)
@@ -928,8 +907,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  * 为了兼容原有的GET请求方式，仍然保留GET处理程序
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-    console.log('[API] 收到GET请求，建议改用POST方法');
-
+    
     try {
         // 从URL参数中获取信息
         const url = new URL(request.url);
@@ -952,15 +930,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         let items: TMDBItem[] = [];
         try {
             items = readItems(); // 直接从服务器端文件读取
-            console.log(`[API] GET请求从服务器存储读取了${items.length} 个项目`);
+            
         } catch (serverError) {
-            console.warn(`[API] GET请求服务器存储读取失败，尝试StorageManager:`, serverError);
+            
             items = await StorageManager.getItemsWithRetry();
-            console.log(`[API] GET请求从StorageManager获取了${items.length} 个项目`);
+            
         }
 
         if (items.length === 0) {
-            console.error('[API] GET请求处理错误: 系统中没有可用项目');
+            
             return NextResponse.json({
                 success: false,
                 error: "系统中没有可用项目",
@@ -993,7 +971,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             body: JSON.stringify(requestData)
         }));
     } catch (error: any) {
-        console.error('[API] 处理GET请求失败:', error);
+        
         return NextResponse.json({
             error: '处理请求失败',
             message: error instanceof Error ? error.message : String(error)

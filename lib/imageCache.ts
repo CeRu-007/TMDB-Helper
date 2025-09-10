@@ -47,7 +47,7 @@ class ImageCacheManager {
         })
       }
     } catch (error) {
-      console.warn('Failed to load image cache from localStorage:', error)
+      
     }
   }
 
@@ -62,7 +62,7 @@ class ImageCacheManager {
       })
       localStorage.setItem(this.localStorageKey, JSON.stringify(data))
     } catch (error) {
-      console.warn('Failed to save image cache to localStorage:', error)
+      
     }
   }
 

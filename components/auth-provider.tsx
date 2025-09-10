@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         systemUserId: null
       })
     } catch (error) {
-      console.error('[Auth] 检查认证状态失败:', error)
+      
       setAuthState({
         user: null,
         isLoading: false,
@@ -120,11 +120,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         return true
       } else {
-        console.error('[Auth] 登录失败:', data.error)
+        
         return false
       }
     } catch (error) {
-      console.error('[Auth] 登录请求失败:', error)
+      
       return false
     }
   }
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: 'include'
       })
     } catch (error) {
-      console.error('[Auth] 登出请求失败:', error)
+      
     }
 
     setAuthState({

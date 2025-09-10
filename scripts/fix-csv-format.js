@@ -16,7 +16,7 @@ const colors = {
 // 日志函数
 function log(message, color = colors.reset) {
   const time = new Date().toLocaleTimeString();
-  console.log(`${color}[${time}] ${message}${colors.reset}`);
+  
 }
 
 /**

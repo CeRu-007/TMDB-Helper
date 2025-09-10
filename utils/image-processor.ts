@@ -65,7 +65,7 @@ export async function extractImageColors(imageUrl: string): Promise<ExtractedCol
             isDark
           });
       } catch (error) {
-          console.error("处理图像时出错:", error);
+          
         reject(error);
       }
       };

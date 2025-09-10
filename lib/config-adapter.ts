@@ -18,7 +18,7 @@ export class ConfigAdapter {
         return data.success ? data.value : null;
       }
     } catch (error) {
-      console.error('获取配置失败:', error);
+      
     }
     return null;
   }
@@ -45,7 +45,7 @@ export class ConfigAdapter {
         return data.success;
       }
     } catch (error) {
-      console.error('设置配置失败:', error);
+      
     }
     return false;
   }
@@ -130,35 +130,35 @@ export class ConfigAdapter {
             DockerConfigManager.saveConfig(config);
           }
         } catch (e) {
-          console.warn('解析硅基流动API设置失败:', e);
+          
         }
         break;
       case 'general_settings':
         try {
           DockerConfigManager.setGeneralSettings(JSON.parse(value));
         } catch (e) {
-          console.warn('解析通用设置失败:', e);
+          
         }
         break;
       case 'appearance_settings':
         try {
           DockerConfigManager.setAppearanceSettings(JSON.parse(value));
         } catch (e) {
-          console.warn('解析外观设置失败:', e);
+          
         }
         break;
       case 'video_thumbnail_settings':
         try {
           DockerConfigManager.setVideoThumbnailSettings(JSON.parse(value));
         } catch (e) {
-          console.warn('解析视频缩略图设置失败:', e);
+          
         }
         break;
       case 'task_scheduler_config':
         try {
           DockerConfigManager.setTaskSchedulerConfig(JSON.parse(value));
         } catch (e) {
-          console.warn('解析任务调度器配置失败:', e);
+          
         }
         break;
       default:
@@ -263,7 +263,7 @@ export class ConfigAdapter {
         });
 
         if (response.ok) {
-          console.log('配置迁移成功');
+          
           // 清除已迁移的localStorage数据
           keysToMigrate.forEach(key => {
             if (localStorageData[key]) {
@@ -273,7 +273,7 @@ export class ConfigAdapter {
         }
       }
     } catch (error) {
-      console.error('配置迁移失败:', error);
+      
     }
   }
 }

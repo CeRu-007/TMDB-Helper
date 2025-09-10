@@ -148,7 +148,7 @@ export function SidebarLayout({
         const preferences = await LayoutPreferencesManager.getPreferences()
         setSidebarCollapsed(preferences.sidebarCollapsed || false)
       } catch (error) {
-        console.error('Failed to load sidebar preferences:', error)
+        
         setSidebarCollapsed(false) // 使用默认状态
       }
     }
@@ -163,7 +163,7 @@ export function SidebarLayout({
     try {
       await LayoutPreferencesManager.setSidebarCollapsed(newCollapsed)
     } catch (error) {
-      console.error('Failed to save sidebar state:', error)
+      
       // 如果保存失败，恢复原状态
       setSidebarCollapsed(sidebarCollapsed)
     }

@@ -64,7 +64,7 @@ export async function GET(
     });
     
   } catch (error) {
-    console.error('读取临时文件失败:', error);
+    
     return NextResponse.json({
       error: '读取文件失败'
     }, { status: 500 });

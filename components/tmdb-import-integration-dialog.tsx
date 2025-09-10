@@ -117,7 +117,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
           if (!Number.isNaN(parsed) && parsed > 0) setSelectedSeason(parsed)
         }
       } catch (e) {
-        console.warn('读取服务端季数失败，使用默认1', e)
+        
       }
     })()
   }, [item.id])
@@ -185,7 +185,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       if (!server || server.trim() === '') return null;
       return server;
     } catch (e) {
-      console.error('获取 TMDB-Import 路径失败:', e);
+      
       return null;
     }
   }, []);
@@ -396,24 +396,23 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       });
 
       if (!response.ok) {
-        console.error("获取活跃进程列表失败:", response.status);
+        
         return false;
       }
 
       const data = await response.json();
 
       if (!data.success) {
-        console.error("获取活跃进程列表API错误:", data.error);
+        
         return false;
       }
 
       // 检查processId是否在活跃进程列表中
       const isActive = data.processes.includes(pid);
-      console.log(`进程 ${pid} 状态检查: ${isActive ? "活跃" : "已终止"}`);
-
+      
       return isActive;
     } catch (error) {
-      console.error("检查进程状态时出错:", error);
+      
       return false;
     }
   };
@@ -568,7 +567,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               }
             } catch (e) {
               // 忽略解析错误
-              console.log("解析命令输出时出错:", e)
+              
             }
           }
         }
@@ -580,8 +579,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       }
 
       // 记录收集到的输出信息
-      console.log("命令执行完成，stdout长度:", stdoutText.length, "stderr长度:", errorText.length)
-
+      
       // 返回更完整的结果对象
       return {
         success: !hasError,
@@ -614,12 +612,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const readCSVFile = async (workingDirectory: string): Promise<boolean> => {
     try {
       setIsProcessing(true);
-      console.log("开始读取CSV文件，工作目录:", workingDirectory);
-
+      
       try {
         // 使用API路由读取CSV文件
-        console.log("发送API请求读取CSV文件");
-        console.log("请求参数 - workingDirectory:", workingDirectory);
+
         // 使用try-catch包裹axios请求，防止错误传播到控制台
         try {
         const response = await axios.post('/api/csv/read', { workingDirectory });
@@ -632,13 +628,11 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         
         // 确保数据格式正确 - 新API返回数组，需要转换为期望的格式
         const formattedCsvData = Array.isArray(csvData) ? { rows: csvData } : csvData;
-        console.log("成功获取CSV数据:", formattedCsvData && formattedCsvData.rows ? `${formattedCsvData.rows.length}行数据` : "无数据");
-
+        
         // 验证CSV数据
         const validation = validateCsvData(formattedCsvData);
         if (!validation.valid) {
-          console.warn("CSV数据验证失败:", validation.errors);
-
+          
           // 尝试修复CSV数据
           const fixedData = fixCsvData(formattedCsvData);
           setCsvData(fixedData);
@@ -659,11 +653,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         setCsvContent(content);
 
         appendTerminalOutput("CSV文件读取成功", "success");
-        console.log("CSV文件读取成功，已更新状态");
-
+        
         // 确保在处理页面时强制刷新处理页面内容
         if (activeTab === "process") {
-          console.log("当前在处理页面，触发处理页面刷新");
+          
           setProcessTabRenderCount(prev => prev + 1);
         }
 
@@ -680,7 +673,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             setLastError(errorMessage);
 
             // 静默处理错误，不抛出异常
-            console.log("CSV文件不存在，需要先运行平台元数据抓取命令");
+            
           } else if (axiosError.message && axiosError.message.includes('文件不存在')) {
             const errorMessage = '未找到CSV文件。请先运行平台元数据抓取命令生成CSV文件。';
             appendTerminalOutput(errorMessage, "error");
@@ -691,27 +684,27 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             setLastError(errorMessage);
 
             // 静默处理错误，不抛出异常
-            console.log("CSV文件不存在，需要先运行平台元数据抓取命令");
+            
           } else {
             // 其他错误
             const errorMessage = axiosError.message || '未知错误';
             appendTerminalOutput(`读取CSV文件失败: ${errorMessage}`, "error");
             setLastError(errorMessage);
-            console.error("读取CSV文件时出错:", axiosError);
+            
           }
 
           return false;
         }
       } catch (error: any) {
         // 捕获并处理所有其他错误
-        console.error("读取CSV文件过程中出错:", error);
+        
         appendTerminalOutput(`读取CSV文件过程中出错: ${error.message || '未知错误'}`, "error");
         setLastError(error.message || '未知错误');
         return false;
       }
     } catch (outerError: any) {
       // 捕获所有可能的外部错误
-      console.error("readCSVFile函数出现未预期的错误:", outerError);
+      
       appendTerminalOutput("读取CSV文件时出现未预期的错误，请检查控制台日志", "error");
       setLastError(outerError.message || '未知错误');
       return false;
@@ -722,8 +715,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 处理读取到的CSV数据
   const handleCsvDataAfterRead = (csvData: CSVDataType) => {
-    console.log("CSV数据加载成功，开始处理")
-
+    
     // 设置CSV数据
     setCsvData(csvData)
 
@@ -738,13 +730,12 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     // 确保在处理页面时强制刷新处理页面内容
     if (activeTab === "process") {
-      console.log("CSV数据加载后，触发处理页面刷新");
+      
       setProcessTabRenderCount(prev => prev + 1);
     }
     // 确保在编辑页面时强制刷新编辑页面内容
     else if (activeTab === "edit") {
-      console.log("CSV数据加载后，处于编辑页，触发编辑页面完整刷新");
-
+      
       // 立即设置表格就绪状态
       setTableReady(true);
 
@@ -765,7 +756,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     // 检查操作锁，如果有其他操作正在进行，则退出
     if (operationLock) {
-      console.log(`操作被阻止：当前已有操作 ${operationLock} 在进行中`);
+      
       toast({
         title: "操作被阻止",
         description: `当前已有操作 ${operationLock} 在进行中，请等待完成`,
@@ -776,20 +767,19 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     // 设置当前操作锁为"platform"
     setOperationLock("platform");
-    console.log("设置操作锁: platform");
-
+    
     const savedTmdbImportPath = (await getTmdbImportPath())
     if (!savedTmdbImportPath) {
-      alert("请先在设置中配置TMDB-Import工具路径")
+      
       setOperationLock(null);
-      console.log("释放操作锁: 未配置TMDB-Import路径");
+      
       return
     }
 
     if (!platformUrl) {
-      alert("请先设置播出平台URL")
+      
       setOperationLock(null);
-      console.log("释放操作锁: 未设置平台URL");
+      
       return
     }
 
@@ -829,7 +819,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         try {
           updateStepStatus(1, "completed", "CSV文件读取完成")
         } catch (error) {
-          console.error("修复CSV数据时出错:", error);
+          
           updateStepStatus(1, "completed", "CSV文件读取完成")
         }
 
@@ -840,12 +830,12 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         updateStepStatus(1, "error", undefined, "CSV文件读取失败")
       }
     } catch (error) {
-      console.error("处理过程中出错:", error)
+      
       updateStepStatus(currentStep, "error", undefined, error instanceof Error ? error.message : "未知错误")
     } finally {
       // 释放操作锁
       setOperationLock(null);
-      console.log("释放操作锁: platform处理完成");
+      
       // 自动跳转到处理页面
       setActiveTab("process")
     }
@@ -867,7 +857,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         return decodeURIComponent(escape(text));
       }
     } catch (e) {
-      console.error("修复编码时出错:", e);
+      
     }
     return text;
   };
@@ -946,7 +936,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       return fixedLines.join('\n');
     } catch (e) {
-      console.error("修复CSV编码时出错:", e);
+      
     }
 
     // 如果所有方法都失败，返回原文本
@@ -1043,8 +1033,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       setActiveTab("process");
       return true;
     } catch (error: any) {
-      console.error("保存CSV文件失败:", error);
-
+      
       // 提供更友好的错误消息
       let errorMessage = error.message || '未知错误';
       let errorTitle = "保存失败";
@@ -1152,7 +1141,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         errorTitle = "存储错误";
       }
 
-      console.error("保存CSV文件失败:", error);
       appendTerminalOutput(`保存CSV文件失败: ${errorMessage}`, "error");
       toast({
         title: errorTitle,
@@ -1252,8 +1240,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       return true;
     } catch (error: any) {
-      console.error("保存CSV文件失败:", error);
-
+      
       // 提供更友好的错误消息
       let errorMessage = error.message || '未知错误';
       let errorTitle = "保存失败";
@@ -1292,7 +1279,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       setCopyFeedback(`${type}已复制`)
       setTimeout(() => setCopyFeedback(null), 2000)
     } catch (error) {
-      console.error("复制失败:", error)
+      
     }
   }
 
@@ -1349,7 +1336,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       appendTerminalOutput("✓ 已清理overview列中的换行符", "success")
       appendTerminalOutput("✓ 已规范化CSV数据结构", "success")
     } catch (error) {
-      console.error("下载CSV文件时发生错误:", error)
+      
       appendTerminalOutput(`⚠️ 下载CSV文件失败: ${error instanceof Error ? error.message : "未知错误"}`, "error")
     }
   }
@@ -1364,7 +1351,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     // 检查操作锁，如果有其他操作正在进行，则退出
     if (operationLock) {
-      console.log(`操作被阻止：当前已有操作 ${operationLock} 在进行中`);
+      
       toast({
         title: "操作被阻止",
         description: `当前已有操作 ${operationLock} 在进行中，请等待完成`,
@@ -1442,7 +1429,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         });
       }
     } catch (error: any) {
-      console.error("执行过程中出错:", error);
+      
       appendTerminalOutput(`执行出错: ${error.message || '未知错误'}`, "error");
       updateStepStatus(2, "error", undefined, `执行出错: ${error.message || '未知错误'}`);
       toast({
@@ -1529,7 +1516,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     if (mode === "text") {
       // 延迟执行以确保DOM已更新
       setTimeout(() => {
-        console.log("切换到文本模式，优化编辑区域高度");
+        
         forceExpandEditor();
       }, 100);
     }
@@ -1575,7 +1562,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         variant: "default",
       })
     } catch (error) {
-      console.error("格式化CSV内容时出错:", error)
+      
       toast({
         title: "格式化失败",
         description: "CSV内容格式不正确，无法格式化",
@@ -1684,14 +1671,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 调试函数
   const debugState = () => {
-    console.log("组件状态:", {
-      inTab,
-      activeTab,
-      csvData: csvData ? `${csvData.rows.length}行数据` : "无数据",
-      editorMode,
-      isProcessing,
-      tableReady
-    })
+    
   }
 
   // 确保表格组件只有在完全准备好后才会渲染
@@ -1701,7 +1681,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       setTableReady(false)
       const timer = setTimeout(() => {
         setTableReady(true)
-        console.log("表格组件已准备就绪", { inTab, activeTab, hasCsvData: !!csvData })
+        
       }, 50) // 减少延迟时间，提高响应性
 
       return () => clearTimeout(timer)
@@ -1712,7 +1692,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   useEffect(() => {
     const loadCsvData = async () => {
       if (inTab && !csvData) {
-        console.log("尝试在inTab模式下加载CSV数据");
+        
         const savedTmdbImportPath = await getTmdbImportPath();
         if (savedTmdbImportPath) {
           try {
@@ -1720,17 +1700,17 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             // 由于readCSVFile已经处理了所有错误，这里不需要再捕获错误
             const result = await readCSVFile(savedTmdbImportPath);
             if (result) {
-              console.log("CSV数据加载成功");
+              
               // 不再自动切换到编辑标签
               // setActiveTab("edit");
 
               // 确保处理标签页内容正确显示
               if (activeTab === "process") {
-                console.log("CSV数据加载后，刷新处理标签页");
+                
                 setProcessTabRenderCount(prev => prev + 1);
               }
             } else {
-              console.log("CSV数据加载失败");
+              
               // 在加载失败的情况下，初始化处理标签页
               setActiveTab("process");
             }
@@ -1741,7 +1721,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             setActiveTab("process");
           }
         } else {
-          console.log("未找到TMDB-Import工具路径");
+          
           setActiveTab("process");
         }
       }
@@ -1753,17 +1733,17 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         await loadCsvData();
       } catch (error) {
         // 捕获所有可能的错误，防止它们传播到控制台
-        console.log("加载CSV数据时出现未预期的错误");
+        
       }
     })();
   }, [inTab, csvData]);
 
   // 添加标签切换处理器
   const handleTabChange = (value: string) => {
-    console.log(`标签切换: ${activeTab} -> ${value}`)
+    
     // 如果点击的是当前已激活的标签，不做任何操作
     if (value === activeTab) {
-      console.log("点击了当前已激活的标签，忽略操作")
+      
       return;
     }
 
@@ -1771,29 +1751,28 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     // 如果切换到处理标签页，增加渲染计数以强制刷新内容
     if (value === "process") {
-      console.log("切换到处理标签页，强制刷新内容")
+      
       setProcessTabRenderCount(prev => prev + 1)
     }
     // 如果切换到编辑标签页，增加渲染计数以强制刷新内容
     else if (value === "edit") {
-      console.log("切换到编辑标签页，强制刷新内容")
-
+      
       // 确保有CSV数据可供编辑
       if (!csvData) {
-        console.log("尝试加载CSV数据以供编辑");
+        
         (async () => {
           try {
             const savedTmdbImportPath = await getTmdbImportPath();
             if (savedTmdbImportPath) {
               const success = await readCSVFile(savedTmdbImportPath);
               if (success) {
-                console.log("成功加载CSV数据，准备编辑");
+                
                 setTableReady(true);
                 forceRefreshEditTab();
               }
             }
           } catch (error) {
-            console.log("加载CSV数据时出现错误，无法编辑");
+            
           }
         })();
       } else {
@@ -3238,7 +3217,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   useEffect(() => {
     // 当从编辑页面切换到处理页面时
     if (activeTab === "process") {
-      console.log("切换到处理标签页，强制更新渲染计数器确保内容显示");
+      
       // 更新渲染计数器，强制重新渲染处理页面内容
       setProcessTabRenderCount(prev => prev + 1);
     }
@@ -3247,7 +3226,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 确保正确加载和显示CSV数据
   useEffect(() => {
     if (csvData && activeTab === "process") {
-      console.log("检测到CSV数据并在处理标签页，确保内容显示");
+      
       // CSV数据存在且在处理页面，确保处理页面被正确渲染
       setProcessTabRenderCount(prev => prev + 1);
     }
@@ -3255,7 +3234,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 添加一个函数来强制刷新处理页面内容
   const forceRefreshProcessTab = useCallback(() => {
-    console.log("强制刷新处理标签页内容");
+    
     setProcessTabRenderCount(prev => prev + 1);
 
     // 延迟再次刷新，确保DOM已完全加载
@@ -3267,7 +3246,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 在组件挂载时执行一次处理页面内容刷新
   useEffect(() => {
     if (activeTab === "process") {
-      console.log("组件挂载，初始化处理标签页");
+      
       forceRefreshProcessTab();
     }
   }, [forceRefreshProcessTab]);
@@ -3275,14 +3254,14 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 确保TMDB导入命令显示正确
   useEffect(() => {
     if (activeTab === "process" && item && item.tmdbId) {
-      console.log("检测到TMDB ID，确保命令显示正确");
+      
       forceRefreshProcessTab();
     }
   }, [item, activeTab, forceRefreshProcessTab]);
 
   // 添加加载本地CSV文件的函数
   const loadLocalCSVFile = useCallback(async () => {
-    console.log("尝试加载本地CSV文件");
+    
     const savedTmdbImportPath = await getTmdbImportPath();
     if (savedTmdbImportPath) {
       try {
@@ -3305,7 +3284,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
           });
         }
       } catch (error: any) {
-        console.error("加载CSV文件时出错:", error);
+        
         appendTerminalOutput(`加载CSV文件时出错: ${error.message || "未知错误"}`, "error");
         toast({
           title: "加载错误",
@@ -3327,7 +3306,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   useEffect(() => {
     // 当对话框打开时，强制设置为处理标签
     if (open) {
-      console.log("对话框打开，强制设置处理标签页")
+      
       setActiveTab("process")
       setProcessTabRenderCount(prev => prev + 1)
 
@@ -3346,14 +3325,13 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 实时记录组件挂载状态 - 仅在开发环境下启用
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      console.log("组件状态:", { open, activeTab, inTab, isDialogInitialized, csvData: !!csvData });
+      
     }
   }, [open, activeTab, inTab, isDialogInitialized, csvData]); // 添加依赖数组，避免每次渲染都执行
 
   // 添加函数来强制刷新编辑标签页内容
   const forceRefreshEditTab = useCallback(() => {
-    console.log("强制刷新编辑标签页内容");
-
+    
     // 确保tableReady状态为true
     setTableReady(true);
 
@@ -3366,9 +3344,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       setEditTabRenderCount(prev => prev + 1);
       
       if (csvData) {
-        console.log(`CSV数据状态: ${csvData.rows.length}行数据可用`);
+        
       } else {
-        console.log("警告: CSV数据未加载");
+        
       }
     }, 100); // 减少延迟时间
 
@@ -3378,7 +3356,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 确保编辑标签页能正确显示内容
   useEffect(() => {
     if (csvData && activeTab === "edit") {
-      console.log("检测到CSV数据并在编辑标签页，确保内容显示");
+      
       // 立即设置表格就绪状态
       setTableReady(true);
 
@@ -3441,7 +3419,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
         // 注意：tasklist命令的输出在Windows上通常写入stdout而非stderr
         const outputText = edgeCheckResult.stdoutText || edgeCheckResult.errorText || "";
-        console.log("Edge检测输出:", outputText);
+        
         appendTerminalOutput(`Edge检测结果: ${outputText.length > 100 ? outputText.substring(0, 100) + "..." : outputText}`, "info");
 
         const hasEdgeProcess = outputText.toLowerCase().includes("msedge.exe");
@@ -3455,7 +3433,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
           if (wmicOutput.toLowerCase().includes("processid") && wmicOutput.trim().split("\n").length > 1) {
             appendTerminalOutput(`通过WMIC检测到Edge进程`, "warning");
-            console.log("WMIC检测结果:", wmicOutput);
+            
           }
         }
 
@@ -3559,7 +3537,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       }
     } catch (error: any) {
       appendTerminalOutput(`检查Edge浏览器实例时出错: ${error.message || "未知错误"}`, "warning");
-      console.error("检查Edge浏览器实例时出错:", error);
+      
       return true; // 出错时也继续执行
     }
   }
@@ -3628,7 +3606,7 @@ selenium_dir = ${seleniumDirPath}
       }
     } catch (error: any) {
       appendTerminalOutput(`准备独立的Selenium目录时出错: ${error.message || "未知错误"}`, "error");
-      console.error("准备独立的Selenium目录时出错:", error);
+      
       return false;
     }
   }
@@ -3719,7 +3697,7 @@ selenium_dir = ${seleniumDirPath}
       return tempDirPath;
     } catch (error: any) {
       appendTerminalOutput(`创建临时工作目录时出错: ${error.message || "未知错误"}`, "error");
-      console.error("创建临时工作目录时出错:", error);
+      
       return originalDirectory; // 出错时使用原始目录
     }
   }
@@ -3733,7 +3711,6 @@ selenium_dir = ${seleniumDirPath}
       const checkConfigCmd = isWindows
         ? `if exist "${workingDirectory}\\config.ini" echo exists`
         : `test -f "${workingDirectory}/config.ini" && echo exists`;
-
 
       const configCheckResult = await executeCommandWithStream(checkConfigCmd, process.cwd());
 
@@ -3783,7 +3760,7 @@ logging_level = INFO
       }
     } catch (error: any) {
       appendTerminalOutput(`创建临时配置文件时出错: ${error.message || "未知错误"}`, "error");
-      console.error("创建临时配置文件时出错:", error);
+      
       return false;
     }
   }
@@ -3872,7 +3849,4 @@ logging_level = INFO
 }
 
   // 搜索相关函数已简化
-
-
-
 

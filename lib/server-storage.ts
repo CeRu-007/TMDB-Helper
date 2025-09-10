@@ -30,7 +30,7 @@ export function readItems(): TMDBItem[] {
     const data = fs.readFileSync(DATA_FILE, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
-    console.error('读取数据文件失败:', error);
+    
     return [];
   }
 }
@@ -46,7 +46,7 @@ export function writeItems(items: TMDBItem[]): boolean {
     fs.writeFileSync(DATA_FILE, stringifyAuto(items, 'tmdb'), 'utf-8');
     return true;
   } catch (error) {
-    console.error('写入数据文件失败:', error);
+    
     return false;
   }
 }
@@ -79,24 +79,21 @@ export function updateItem(updatedItem: TMDBItem): boolean {
  * 删除项目
  */
 export function deleteItem(id: string): boolean {
-  console.log(`[ServerStorage] 开始删除项目: ID=${id}`);
-
+  
   const items = readItems();
   const filteredItems = items.filter(item => item.id !== id);
 
   if (filteredItems.length < items.length) {
     const success = writeItems(filteredItems);
     if (success) {
-      console.log(`[ServerStorage] 项目删除成功: ID=${id}`);
-
+      
       // 注意：服务器端无法直接访问localStorage中的定时任务
       // 任务清理将由客户端的StorageManager.deleteItem方法处理
-      console.log(`[ServerStorage] 提示：请确保客户端清理相关的定时任务`);
+      
     }
     return success;
   }
 
-  console.log(`[ServerStorage] 项目不存在或删除失败: ID=${id}`);
   return false;
 }
 
@@ -122,10 +119,9 @@ export function importData(jsonData: string): boolean {
       throw new Error('无效的数据格式：期望数组或包含items字段的对象');
     }
 
-    console.log(`服务器端导入 ${items.length} 个项目`);
     return writeItems(items);
   } catch (error) {
-    console.error('导入数据失败:', error);
+    
     return false;
   }
 }

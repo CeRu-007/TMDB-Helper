@@ -38,7 +38,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     
     // 处理测试消息，用于初始化检查
     if (type === 'test') {
-      console.log('图像处理工作线程收到测试消息');
+      
       self.postMessage({ 
         type, 
         result: 'ok', 
@@ -62,7 +62,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
           const staticScore = calculateStaticScore(imageData, options?.sampleRate || 1);
           self.postMessage({ type, score: staticScore, taskId });
         } catch (error) {
-          console.error('计算静态分数失败:', error);
+          
           self.postMessage({ 
             type, 
             error: '计算静态分数失败', 
@@ -77,7 +77,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
           const subtitleScore = calculateSubtitleScore(imageData, width, height, options?.subtitleDetectionStrength || 0.8);
           self.postMessage({ type, score: subtitleScore, taskId });
         } catch (error) {
-          console.error('计算字幕分数失败:', error);
+          
           self.postMessage({ 
             type, 
             error: '计算字幕分数失败', 
@@ -92,7 +92,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
           const peopleScore = calculatePeopleScore(imageData, options?.sampleRate || 4);
           self.postMessage({ type, score: peopleScore, taskId });
         } catch (error) {
-          console.error('计算人物分数失败:', error);
+          
           self.postMessage({ 
             type, 
             error: '计算人物分数失败', 
@@ -112,7 +112,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
             taskId
           });
         } catch (error) {
-          console.error('批量分析失败:', error);
+          
           // 返回默认结果
           self.postMessage({ 
             type, 
@@ -131,7 +131,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
         self.postMessage({ error: '不支持的分析类型', taskId });
     }
   } catch (error) {
-    console.error('Worker处理消息失败:', error);
+    
     self.postMessage({ 
       error: '处理消息失败: ' + (error instanceof Error ? error.message : String(error)),
       taskId: e.data?.taskId
@@ -174,7 +174,7 @@ function batchAnalyzeImage(
     console.log(`已完成图像分析 (${simplifiedAnalysis ? '简化模式' : '完整模式'}), 尺寸: ${width}x${height}`);
     return results;
   } catch (error) {
-    console.error('批量分析图像失败:', error);
+    
     // 返回默认结果
     return {
       staticScore: 0.5,
@@ -486,7 +486,7 @@ function calculateSubtitleScore(
     // 返回0-1之间的分数
     return Math.min(1, Math.max(0, subtitleScore));
   } catch (error) {
-    console.error('计算字幕分数失败:', error);
+    
     return 0.5; // 返回中间值
   }
 }

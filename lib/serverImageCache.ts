@@ -26,7 +26,7 @@ class ServerImageCache {
     try {
       await fs.mkdir(this.cacheDir, { recursive: true })
     } catch (error) {
-      console.warn('Failed to create cache directory:', error)
+      
     }
   }
 
@@ -128,7 +128,7 @@ class ServerImageCache {
       const cachePath = this.getCacheFilePath(url)
       await fs.writeFile(cachePath, JSON.stringify(cachedImage))
     } catch (error) {
-      console.warn('Failed to save image to file cache:', error)
+      
     }
   }
 
@@ -150,7 +150,7 @@ class ServerImageCache {
       await this.set(url, buffer, contentType)
       return true
     } catch (error) {
-      console.warn(`Failed to preload image: ${url}`, error)
+      
       return false
     }
   }
@@ -197,7 +197,7 @@ class ServerImageCache {
         }
       }
     } catch (error) {
-      console.warn('Failed to cleanup cache:', error)
+      
     }
 
     return deletedCount

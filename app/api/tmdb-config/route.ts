@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       config: config
     })
   } catch (error) {
-    console.error('读取TMDB配置失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '读取配置文件失败'
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       message: '配置保存成功'
     })
   } catch (error) {
-    console.error('保存TMDB配置失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '保存配置文件失败'

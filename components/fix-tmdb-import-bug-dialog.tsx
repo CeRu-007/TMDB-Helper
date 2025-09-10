@@ -169,7 +169,7 @@ def fixed_episode_comparison(episoideID, episoideNumber):
         throw new Error(result.error || "修复失败")
       }
     } catch (error: any) {
-      console.error("修复失败:", error)
+      
       setFixResult(`修复失败: ${error.message}`)
       toast({
         title: "修复失败",

@@ -43,7 +43,7 @@ export function DataDiagnosticPanel({ className = "" }: DataDiagnosticPanelProps
         })
       }
     } catch (error) {
-      console.error('数据验证失败:', error)
+      
       toast({
         title: "验证过程失败",
         description: error instanceof Error ? error.message : '未知错误',
@@ -87,7 +87,7 @@ export function DataDiagnosticPanel({ className = "" }: DataDiagnosticPanelProps
         throw new Error(result.error || '导出失败')
       }
     } catch (error) {
-      console.error('安全导出失败:', error)
+      
       toast({
         title: "导出失败",
         description: error instanceof Error ? error.message : '未知错误',
@@ -112,7 +112,7 @@ export function DataDiagnosticPanel({ className = "" }: DataDiagnosticPanelProps
       // 重新验证
       await runValidation()
     } catch (error) {
-      console.error('数据修复失败:', error)
+      
       toast({
         title: "修复失败",
         description: error instanceof Error ? error.message : '未知错误',
@@ -136,7 +136,7 @@ export function DataDiagnosticPanel({ className = "" }: DataDiagnosticPanelProps
       try {
         localStorage.removeItem(key)
       } catch (error) {
-        console.error(`清理数据失败: ${key}`, error)
+        
       }
     })
 

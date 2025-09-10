@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Image preload error:', error)
     
     if (error instanceof Error && error.message === 'Preload timeout') {
       return NextResponse.json(
@@ -94,7 +93,7 @@ export async function GET(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('Image cache retrieval error:', error)
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

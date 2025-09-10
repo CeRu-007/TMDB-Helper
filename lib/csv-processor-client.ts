@@ -57,7 +57,7 @@ export function parseCsvContent(content: string): CSVData {
     // 解析表头
     const headers = parseHeaderLine(lines[0]);
     if (headers.length === 0) {
-      console.error("CSV表头解析失败或为空");
+      
       return { headers: [], rows: [] };
     }
 
@@ -67,7 +67,7 @@ export function parseCsvContent(content: string): CSVData {
     // 规范化数据
     return normalizeCsvData({ headers, rows });
   } catch (error) {
-    console.error("解析CSV内容时出错:", error);
+    
     return { headers: [], rows: [] };
   }
 }
@@ -88,7 +88,7 @@ function parseHeaderLine(line: string): string[] {
       return (match[2] || '').trim();
     }).filter(header => header !== '');
   } catch (error) {
-    console.error("解析CSV表头时出错:", error);
+    
     // 简单分割作为备选方案
     return line.split(',').map(h => h.replace(/"/g, '').trim());
   }
@@ -152,7 +152,7 @@ function parseDataLine(line: string, expectedColumns: number): string[] {
     
     return result;
   } catch (error) {
-    console.error("解析CSV数据行时出错:", error);
+    
     // 简单分割作为备选方案，并确保长度一致
     const row = line.split(',');
     while (row.length < expectedColumns) {
@@ -174,7 +174,7 @@ export function normalizeCsvData(data: CSVData): CSVData {
   try {
     // 检查输入数据有效性
     if (!data || !data.headers || !Array.isArray(data.headers) || !data.rows || !Array.isArray(data.rows)) {
-      console.error("规范化CSV数据时发现无效数据结构", data);
+      
       return { headers: [], rows: [] };
     }
     
@@ -186,7 +186,7 @@ export function normalizeCsvData(data: CSVData): CSVData {
     
     // 确保表头不为空
     if (normalizedData.headers.length === 0) {
-      console.warn("CSV数据表头为空，无法规范化");
+      
       return { headers: [], rows: [] };
     }
     
@@ -194,7 +194,7 @@ export function normalizeCsvData(data: CSVData): CSVData {
     normalizedData.rows = data.rows.map(row => {
       // 检查行是否是有效数组
       if (!Array.isArray(row)) {
-        console.warn("发现无效CSV行数据，已转换为空行");
+        
         return Array(normalizedData.headers.length).fill('');
       }
       
@@ -225,7 +225,7 @@ export function normalizeCsvData(data: CSVData): CSVData {
     
     return normalizedData;
   } catch (error) {
-    console.error("规范化CSV数据时出错:", error);
+    
     return data; // 返回原始数据，避免数据丢失
   }
 }
@@ -296,7 +296,7 @@ export function repairCsvData(data: CSVData): CSVData {
     // 修复列错位问题
     return fixColumnMisalignment(normalizedData);
   } catch (error) {
-    console.error("修复CSV数据时出错:", error);
+    
     return data; // 返回原始数据，避免数据丢失
   }
 }
@@ -324,7 +324,7 @@ export function fixColumnMisalignment(data: CSVData): CSVData {
     
     return repairedData;
   } catch (error) {
-    console.error("修复列错位时出错:", error);
+    
     return data; // 出错时返回原始数据
   }
 }
@@ -366,7 +366,7 @@ export function serializeCsvData(data: CSVData): string {
     // 将表头和数据行合并为完整的CSV字符串
     return [headerLine, ...dataLines].join('\n');
   } catch (error) {
-    console.error("序列化CSV数据时出错:", error);
+    
     return '';
   }
 }
@@ -406,7 +406,7 @@ export function processOverviewColumn(data: CSVData): CSVData {
       rows: processedRows
     };
   } catch (error) {
-    console.error("处理Overview列时出错:", error);
+    
     return data;
   }
 } 

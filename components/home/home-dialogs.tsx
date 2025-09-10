@@ -74,7 +74,7 @@ export function HomeDialogs({ homeState }: HomeDialogsProps) {
           }}
           onUpdate={handleUpdateItem}
           onTaskSaved={(task) => {
-            console.log("定时任务已保存:", task);
+            
             toast({
               title: "定时任务已保存",
               description: `任务 "${task.name}" 已成功保存`,

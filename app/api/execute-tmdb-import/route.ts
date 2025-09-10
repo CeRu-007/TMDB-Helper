@@ -29,8 +29,6 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
     return { headers: [], rows: [] };
   }
 
-  console.log(`[API] 开始解析CSV，总行数: ${lines.length}`);
-
   const headers = parseCSVLine(lines[0]);
   console.log(`[API] CSV表头: ${headers.join(' | ')}`);
 
@@ -42,7 +40,7 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
 
       // 验证行的字段数量
       if (row.length !== headers.length) {
-        console.warn(`[API] 第${i + 1}行字段数量不匹配: 期望${headers.length}个，实际${row.length}个`);
+        
         console.warn(`[API] 问题行内容: ${lines[i].substring(0, 100)}...`);
 
         // 补齐或截断字段以匹配表头数量
@@ -56,13 +54,11 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
 
       rows.push(row);
     } catch (error) {
-      console.error(`[API] 解析第${i + 1}行时出错:`, error);
-      console.error(`[API] 问题行内容: ${lines[i]}`);
+
       // 跳过有问题的行，继续处理
     }
   }
 
-  console.log(`[API] CSV解析完成，有效数据行数: ${rows.length}`);
   return { headers, rows };
 }
 
@@ -134,7 +130,7 @@ async function writeCSVFile(filePath: string, content: string): Promise<void> {
   try {
     await fs.promises.writeFile(filePath, content, 'utf-8');
   } catch (error) {
-    console.error('写入CSV文件失败:', error);
+    
     throw new Error(`无法写入CSV文件: ${filePath}`);
   }
 }
@@ -144,14 +140,13 @@ async function writeCSVFile(filePath: string, content: string): Promise<void> {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log(`[API] 开始处理TMDB导入请求`);
-
+    
     let requestBody;
     try {
       requestBody = await request.json();
-      console.log(`[API] 请求体解析成功:`, requestBody);
+      
     } catch (parseError) {
-      console.error(`[API] 请求体解析失败:`, parseError);
+      
       return NextResponse.json({
         success: false,
         error: '请求体解析失败'
@@ -190,13 +185,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`[API] 执行TMDB导入: CSV=${csvPath}, Season=${seasonNumber}, TMDB ID=${tmdbId}, Item ID=${itemId}`);
-    console.log(`[API] 列删除选项: removeAirDateColumn=${removeAirDateColumn}, removeRuntimeColumn=${removeRuntimeColumn}, removeBackdropColumn=${removeBackdropColumn}`);
-
     // 检查CSV文件是否存在
     try {
       if (!fs.existsSync(csvPath)) {
-        console.error(`[API] CSV文件不存在: ${csvPath}`);
+        
         return NextResponse.json({
           success: false,
           error: 'CSV文件不存在',
@@ -205,10 +197,9 @@ export async function POST(request: NextRequest) {
       }
 
       const fileStats = fs.statSync(csvPath);
-      console.log(`[API] CSV文件存在，大小: ${fileStats.size} 字节`);
-
+      
       if (fileStats.size === 0) {
-        console.error(`[API] CSV文件为空: ${csvPath}`);
+        
         return NextResponse.json({
           success: false,
           error: 'CSV文件为空',
@@ -216,7 +207,7 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
     } catch (fsError) {
-      console.error(`[API] 文件系统操作失败:`, fsError);
+      
       return NextResponse.json({
         success: false,
         error: '文件系统操作失败',
@@ -227,8 +218,7 @@ export async function POST(request: NextRequest) {
     // 处理列数据清空选项
     if (removeAirDateColumn || removeRuntimeColumn || removeBackdropColumn) {
       try {
-        console.log(`[API] 开始处理列删除选项`);
-
+        
         // 读取CSV文件
         const csvContent = await readCSVFile(csvPath);
 
@@ -279,25 +269,24 @@ export async function POST(request: NextRequest) {
                 row[index] = ''; // 清空数据，保留列结构和逗号分隔符
               }
             });
-            console.log(`[API] 已清空列数据: ${columnName}`);
+            
           });
 
           // 将修改后的数据写回CSV文件
           const modifiedContent = csvDataToString(csvData);
           await writeCSVFile(csvPath, modifiedContent);
 
-          console.log(`[API] 已清空 ${indicesToEmpty.length} 个列的数据，CSV文件已更新`);
           modified = true;
         } else {
-          console.log(`[API] 未找到需要清空数据的列`);
+          
         }
 
         if (modified) {
-          console.log(`[API] CSV文件已根据列删除选项进行修改`);
+          
         }
 
       } catch (csvError) {
-        console.error(`[API] 处理CSV列删除选项时出错:`, csvError);
+        
         return NextResponse.json({
           success: false,
           error: '处理CSV列删除选项失败',
@@ -305,17 +294,16 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
     } else {
-      console.log(`[API] 未启用列删除选项，跳过CSV修改`);
+      
     }
 
     // 查找TMDB-Import目录（从服务端配置读取）
     const configuredPath = ServerConfigManager.getConfigItem('tmdbImportPath') as string | undefined
     const tmdbImportDir = configuredPath ? configuredPath : path.resolve(process.cwd(), 'TMDB-Import-master')
-    console.log(`[API] 检查TMDB-Import目录: ${tmdbImportDir}`);
-
+    
     try {
       if (!fs.existsSync(tmdbImportDir)) {
-        console.error(`[API] TMDB-Import目录不存在: ${tmdbImportDir}`);
+        
         return NextResponse.json({
           success: false,
           error: '找不到TMDB-Import目录',
@@ -326,7 +314,7 @@ export async function POST(request: NextRequest) {
       // 检查目录是否可读
       const dirStats = fs.statSync(tmdbImportDir);
       if (!dirStats.isDirectory()) {
-        console.error(`[API] TMDB-Import路径不是目录: ${tmdbImportDir}`);
+        
         return NextResponse.json({
           success: false,
           error: 'TMDB-Import路径不是目录',
@@ -334,9 +322,8 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      console.log(`[API] TMDB-Import目录验证成功`);
     } catch (dirError) {
-      console.error(`[API] TMDB-Import目录检查失败:`, dirError);
+      
       return NextResponse.json({
         success: false,
         error: 'TMDB-Import目录检查失败',
@@ -347,23 +334,18 @@ export async function POST(request: NextRequest) {
     // 构建TMDB导入命令
     const tmdbUrl = `https://www.themoviedb.org/tv/${tmdbId}/season/${seasonNumber}?language=zh-CN`;
 
-    console.log(`[API] 执行TMDB导入命令: python -m tmdb-import "${tmdbUrl}"`);
-    console.log(`[API] 工作目录: ${tmdbImportDir}`);
     if (!configuredPath) {
-      console.warn('[API] 未在服务端配置 tmdbImportPath，已回退到项目默认 TMDB-Import-master 路径')
+      
     }
-    console.log(`[API] 冲突处理选项: ${conflictAction}`);
-
+    
     try {
-      console.log(`[API] 开始执行TMDB导入进程`);
-
+      
       let result;
       try {
         result = await executeTMDBImportWithInteraction(tmdbImportDir, tmdbUrl, conflictAction);
-        console.log(`[API] TMDB导入进程执行完成，结果:`, { success: result.success, hasError: !!result.error });
+        
       } catch (processError) {
-        console.error(`[API] 进程执行异常:`, processError);
-
+        
         // 分析错误类型
         let errorType = 'unknown';
         let errorMessage = processError instanceof Error ? processError.message : String(processError);
@@ -393,7 +375,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (!result.success) {
-        console.error(`[API] TMDB导入进程失败:`, result.error);
+        
         console.error(`[API] 进程输出 (stdout):`, result.stdout?.substring(0, 500) || '无输出');
         console.error(`[API] 进程错误 (stderr):`, result.stderr?.substring(0, 500) || '无错误输出');
 
@@ -403,8 +385,6 @@ export async function POST(request: NextRequest) {
           result.stdout,
           result.stderr
         );
-
-        console.log(`[API] 错误分析结果:`, interruptResult);
 
         let errorType = interruptResult.errorType;
         let enhancedError = result.error || 'TMDB导入进程失败';
@@ -449,7 +429,7 @@ export async function POST(request: NextRequest) {
         importedEpisodes = parseImportedEpisodes(result.stdout || '');
         console.log(`[API] TMDB导入成功，导入的集数: ${importedEpisodes.join(', ')}`);
       } catch (parseError) {
-        console.error(`[API] 解析导入集数失败:`, parseError);
+        
         console.log(`[API] 原始输出:`, result.stdout?.substring(0, 1000) || '无输出');
         importedEpisodes = []; // 默认为空数组
       }
@@ -463,8 +443,6 @@ export async function POST(request: NextRequest) {
       }, { status: 200 });
 
     } catch (execError: any) {
-      console.error(`[API] TMDB导入命令执行失败:`, execError);
-      console.error(`[API] 错误堆栈:`, execError.stack);
 
       return NextResponse.json({
         success: false,
@@ -480,9 +458,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[API] TMDB导入API顶层错误:', error);
-    console.error('[API] 错误类型:', typeof error);
-    console.error('[API] 错误堆栈:', error instanceof Error ? error.stack : '无堆栈信息');
 
     return NextResponse.json({
       success: false,
@@ -505,9 +480,6 @@ async function executeTMDBImportWithInteraction(
   conflictAction: string
 ): Promise<{ success: boolean; stdout: string; stderr: string; error?: string }> {
   return new Promise((resolve) => {
-    console.log(`[API] 启动TMDB导入进程，冲突处理: ${conflictAction}`);
-    console.log(`[API] 命令: python -m tmdb-import "${tmdbUrl}"`);
-    console.log(`[API] 工作目录: ${workingDir}`);
 
     let child;
     let hasResolved = false;
@@ -527,11 +499,9 @@ async function executeTMDBImportWithInteraction(
         env: { ...process.env, PYTHONUNBUFFERED: '1' } // 确保Python输出不被缓冲
       });
 
-      console.log(`[API] 进程启动成功，PID: ${child.pid}`);
-
       // 检查进程是否真的启动了
       if (!child.pid) {
-        console.error(`[API] 进程启动失败：无法获取进程ID`);
+        
         safeResolve({
           success: false,
           stdout: '',
@@ -542,7 +512,7 @@ async function executeTMDBImportWithInteraction(
       }
 
     } catch (spawnError) {
-      console.error(`[API] 进程启动失败:`, spawnError);
+      
       safeResolve({
         success: false,
         stdout: '',
@@ -558,8 +528,7 @@ async function executeTMDBImportWithInteraction(
     // 设置超时
     const timeout = setTimeout(() => {
       if (!hasResolved) {
-        console.log(`[API] TMDB导入超时，正在终止进程`);
-
+        
         try {
           child.kill('SIGTERM');
           // 如果SIGTERM不起作用，5秒后强制终止
@@ -569,7 +538,7 @@ async function executeTMDBImportWithInteraction(
             }
           }, 5000);
         } catch (killError) {
-          console.error(`[API] 终止进程失败:`, killError);
+          
         }
 
         safeResolve({
@@ -595,13 +564,11 @@ async function executeTMDBImportWithInteraction(
           lowerOutput.includes('[w/y/n]') ||
           lowerOutput.includes('w/y/n')) {
 
-        console.log(`[API] 检测到交互式提示，自动回答: ${conflictAction}`);
-
         // 自动回答
         try {
           child.stdin.write(`${conflictAction}\n`);
         } catch (stdinError) {
-          console.error(`[API] 写入stdin失败:`, stdinError);
+          
         }
       }
     });
@@ -618,7 +585,7 @@ async function executeTMDBImportWithInteraction(
           lowerOutput.includes('critical') ||
           lowerOutput.includes('traceback') ||
           lowerOutput.includes('modulenotfounderror')) {
-        console.error(`[API] 检测到致命错误，准备终止进程`);
+        
       }
     });
 
@@ -627,17 +594,16 @@ async function executeTMDBImportWithInteraction(
       clearTimeout(timeout);
 
       if (!hasResolved) {
-        console.log(`[API] TMDB导入进程结束，退出码: ${code}, 信号: ${signal}`);
-
+        
         if (code === 0) {
-          console.log(`[API] TMDB导入进程成功结束`);
+          
           safeResolve({
             success: true,
             stdout,
             stderr
           });
         } else {
-          console.error(`[API] TMDB导入进程异常结束，退出码: ${code}, 信号: ${signal}`);
+          
           console.error(`[API] 标准输出:`, stdout.substring(0, 500));
           console.error(`[API] 标准错误:`, stderr.substring(0, 500));
 
@@ -661,7 +627,7 @@ async function executeTMDBImportWithInteraction(
       clearTimeout(timeout);
 
       if (!hasResolved) {
-        console.error(`[API] TMDB导入进程错误:`, error);
+        
         safeResolve({
           success: false,
           stdout,
@@ -678,8 +644,6 @@ async function executeTMDBImportWithInteraction(
  */
 function parseImportedEpisodes(output: string): number[] {
   const importedEpisodes: number[] = [];
-
-  console.log(`[API] 解析导入的集数，输出内容:`, output);
 
   // 尝试多种模式来匹配导入的集数
   const patterns = [
@@ -711,8 +675,7 @@ function parseImportedEpisodes(output: string): number[] {
 
   // 如果没有找到具体的集数，尝试从CSV文件中推断
   if (importedEpisodes.length === 0) {
-    console.log(`[API] 无法从输出解析集数，尝试其他方法`);
-
+    
     // 查找输出中的数字，可能是集数
     const numbers = output.match(/\b\d+\b/g);
     if (numbers) {

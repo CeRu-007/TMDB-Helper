@@ -82,7 +82,7 @@ export class DockerStorageAdapter {
 
       return false;
     } catch (error) {
-      console.warn('检测Docker环境时出错:', error);
+      
       return false;
     }
   }
@@ -119,7 +119,7 @@ export class DockerStorageAdapter {
         fs.unlinkSync(testPath);
         return true;
       } catch (error) {
-        console.warn('文件系统写入权限检查失败:', error);
+        
         return false;
       }
     }
@@ -210,14 +210,14 @@ export class DockerStorageAdapter {
           // 目录不存在，尝试创建
           try {
             await fs.mkdir(dir, { recursive: true });
-            console.log(`Docker适配器: 创建目录 ${dir}`);
+            
           } catch (createError) {
-            console.warn(`Docker适配器: 无法创建目录 ${dir}:`, createError);
+            
           }
         }
       }
     } catch (error) {
-      console.error('Docker适配器: 创建目录时出错:', error);
+      
     }
   }
 
@@ -406,27 +406,20 @@ export const dockerStorageAdapter = DockerStorageAdapter.getInstance();
 export async function initializeDockerAdapter(): Promise<void> {
   const adapter = dockerStorageAdapter;
   const env = adapter.getEnvironment();
-  
-  console.log('Docker存储适配器初始化:', {
-    isDocker: env.isDocker,
-    hasWritePermission: env.hasWritePermission,
-    dataPath: env.dataPath
-  });
 
   // 创建必要的目录
   await adapter.ensureDirectories();
 
   // 检查存储健康状态
   const health = await adapter.checkStorageHealth();
-  console.log('存储健康状态:', health.status);
   
   if (health.recommendations.length > 0) {
-    console.log('配置建议:', health.recommendations);
+    
   }
 
   // 输出配置建议
   const recommendations = adapter.getConfigurationRecommendations();
   if (env.isDocker && recommendations.docker.length > 0) {
-    console.log('Docker配置建议:', recommendations.docker);
+    
   }
 }

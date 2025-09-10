@@ -7,15 +7,11 @@ import { StorageManager } from '@/lib/storage';
 export async function POST(request: NextRequest) {
   try {
     const { taskId, newItemId, autoFix = false } = await request.json();
-    
-    console.log(`[API] 修复任务项目ID关联: taskId=${taskId}, newItemId=${newItemId}, autoFix=${autoFix}`);
-    
+
     // 获取所有任务和项目
     const allTasks = await StorageManager.getScheduledTasks();
     const allItems = await StorageManager.getItemsWithRetry();
-    
-    console.log(`[API] 找到 ${allTasks.length} 个任务, ${allItems.length} 个项目`);
-    
+
     const result = {
       tasksChecked: 0,
       tasksFixed: 0,
@@ -41,7 +37,6 @@ export async function POST(request: NextRequest) {
       const currentItem = allItems.find(i => i.id === task.itemId);
       
       if (!currentItem) {
-        console.log(`[API] 任务 ${task.name} 的项目ID ${task.itemId} 无效`);
         
         if (newItemId) {
           // 使用指定的新项目ID
@@ -72,7 +67,7 @@ export async function POST(request: NextRequest) {
               newItemId: newItem.id,
               newItemTitle: newItem.title
             });
-            console.log(`[API] ✓ 任务 ${task.name} 的项目ID已更新: ${task.itemId} -> ${newItem.id}`);
+            
           } else {
             result.errors.push(`更新任务 ${task.name} 失败`);
           }
@@ -101,7 +96,7 @@ export async function POST(request: NextRequest) {
                   newItemTitle: matchedItem.title,
                   matchMethod: 'title'
                 });
-                console.log(`[API] ✓ 自动修复任务 ${task.name}: ${task.itemId} -> ${matchedItem.id}`);
+                
               } else {
                 result.errors.push(`自动更新任务 ${task.name} 失败`);
               }
@@ -128,12 +123,11 @@ export async function POST(request: NextRequest) {
           }
         }
       } else {
-        console.log(`[API] 任务 ${task.name} 的项目ID ${task.itemId} 有效`);
+        
       }
       
     } else {
       // 检查所有任务
-      console.log(`[API] 检查所有任务的项目ID关联...`);
       
       for (const task of allTasks) {
         result.tasksChecked++;
@@ -141,7 +135,6 @@ export async function POST(request: NextRequest) {
         const currentItem = allItems.find(i => i.id === task.itemId);
         
         if (!currentItem) {
-          console.log(`[API] 任务 ${task.name} 的项目ID ${task.itemId} 无效`);
           
           // 尝试通过标题匹配
           const matchedItem = allItems.find(i => i.title === task.itemTitle);
@@ -165,7 +158,7 @@ export async function POST(request: NextRequest) {
                 newItemTitle: matchedItem.title,
                 matchMethod: 'title'
               });
-              console.log(`[API] ✓ 自动修复任务 ${task.name}: ${task.itemId} -> ${matchedItem.id}`);
+              
             } else {
               result.errors.push(`自动更新任务 ${task.name} 失败`);
             }
@@ -184,9 +177,7 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    
-    console.log(`[API] 检查完成: 检查了 ${result.tasksChecked} 个任务, 修复了 ${result.tasksFixed} 个任务`);
-    
+
     return NextResponse.json({
       success: true,
       result,
@@ -201,7 +192,7 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
     
   } catch (error) {
-    console.error('[API] 修复任务项目ID关联失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '修复失败',

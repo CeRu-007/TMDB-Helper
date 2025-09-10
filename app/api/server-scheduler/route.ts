@@ -56,11 +56,10 @@ class ServerScheduler {
    */
   public start(): void {
     if (this.isRunning) {
-      console.log('[ServerScheduler] 调度器已在运行中');
+      
       return;
     }
 
-    console.log('[ServerScheduler] 启动服务端调度器');
     this.isRunning = true;
     this.startTime = Date.now();
 
@@ -81,7 +80,6 @@ class ServerScheduler {
       return;
     }
 
-    console.log('[ServerScheduler] 停止服务端调度器');
     this.isRunning = false;
 
     if (this.checkInterval) {
@@ -96,14 +94,13 @@ class ServerScheduler {
   private async checkAndExecuteTasks(): Promise<void> {
     try {
       this.lastCheck = new Date().toISOString();
-      console.log(`[ServerScheduler] 开始检查定时任务: ${this.lastCheck}`);
-
+      
       // 读取所有定时任务
       const tasks = readScheduledTasks();
       const items = readItems();
 
       if (tasks.length === 0) {
-        console.log('[ServerScheduler] 没有定时任务需要检查');
+        
         return;
       }
 
@@ -126,15 +123,13 @@ class ServerScheduler {
         }
       }
 
-      console.log(`[ServerScheduler] 发现 ${dueTasks.length} 个需要执行的任务`);
-
       // 执行到期的任务
       for (const task of dueTasks) {
         await this.executeTask(task, items);
       }
 
     } catch (error) {
-      console.error('[ServerScheduler] 检查任务时出错:', error);
+      
     }
   }
 
@@ -179,11 +174,8 @@ class ServerScheduler {
       result.success = true;
       this.processedTasks++;
 
-      console.log(`[ServerScheduler] 任务执行成功: ${task.name}`);
-
     } catch (error) {
-      console.error(`[ServerScheduler] 任务执行失败: ${task.name}`, error);
-
+      
       result.error = error instanceof Error ? error.message : String(error);
       this.failedTasks++;
 
@@ -212,8 +204,6 @@ class ServerScheduler {
     // 构建导出命令
     const extractCommand = `python -m tmdb-import.extractor -u "${item.platformUrl}" -s ${task.action.seasonNumber}`;
 
-    console.log(`[ServerScheduler] 执行命令: ${extractCommand}`);
-
     const { stdout, stderr } = await execAsync(extractCommand, {
       cwd: tmdbImportDir,
       timeout: 3 * 60 * 1000 // 3分钟超时
@@ -239,7 +229,7 @@ class ServerScheduler {
       const taskIndex = tasks.findIndex(t => t.id === task.id);
 
       if (taskIndex === -1) {
-        console.warn(`[ServerScheduler] 找不到要更新的任务: ${task.id}`);
+        
         return;
       }
 
@@ -255,10 +245,8 @@ class ServerScheduler {
       tasks[taskIndex] = updatedTask;
       writeScheduledTasks(tasks);
 
-      console.log(`[ServerScheduler] 任务状态已更新: ${task.name}`);
-
     } catch (error) {
-      console.error(`[ServerScheduler] 更新任务状态失败: ${task.id}`, error);
+      
     }
   }
 
@@ -360,14 +348,14 @@ class ServerScheduler {
     this.processedTasks = 0;
     this.failedTasks = 0;
     this.startTime = Date.now();
-    console.log('[ServerScheduler] 统计信息已重置');
+    
   }
 
   /**
    * 手动触发任务检查
    */
   public async triggerCheck(): Promise<void> {
-    console.log('[ServerScheduler] 手动触发任务检查');
+    
     await this.checkAndExecuteTasks();
   }
 }
@@ -389,7 +377,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[API] 获取服务端调度器状态失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '获取调度器状态失败',
@@ -457,7 +445,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[API] 服务端调度器操作失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '调度器操作失败',

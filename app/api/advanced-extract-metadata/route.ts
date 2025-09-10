@@ -9,8 +9,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 })
     }
 
-    console.log(`开始高级提取: ${platform} - ${url}`)
-
     // 执行多层次提取
     const extractionResults = await performMultiLayerExtraction(url, platform, config)
 
@@ -29,7 +27,7 @@ export async function POST(request: NextRequest) {
       sources: extractionResults.map((r) => r.source),
     })
   } catch (error) {
-    console.error("高级元数据提取错误:", error)
+    
     return NextResponse.json(
       {
         success: false,
@@ -55,7 +53,7 @@ async function performMultiLayerExtraction(
 
   try {
     // 第一层：基础HTML解析
-    console.log("执行基础HTML解析...")
+    
     const basicResult = await extractBasicMetadata(url, platform, config)
     if (basicResult.metadata) {
       results.push({
@@ -66,7 +64,7 @@ async function performMultiLayerExtraction(
     }
 
     // 第二层：平台特定解析
-    console.log("执行平台特定解析...")
+    
     const platformResult = await extractPlatformSpecificMetadata(url, platform, config)
     if (platformResult.metadata) {
       results.push({
@@ -78,7 +76,7 @@ async function performMultiLayerExtraction(
 
     // 第三层：动态内容解析（模拟Selenium行为）
     if (config.waitForDynamic) {
-      console.log("执行动态内容解析...")
+      
       const dynamicResult = await extractDynamicMetadata(url, platform, config)
       if (dynamicResult.metadata) {
         results.push({
@@ -90,7 +88,7 @@ async function performMultiLayerExtraction(
     }
 
     // 第四层：外部API补充
-    console.log("执行外部API补充...")
+    
     const externalResult = await extractFromExternalAPIs(url, platform, results[0]?.metadata)
     if (externalResult.metadata) {
       results.push({
@@ -100,7 +98,7 @@ async function performMultiLayerExtraction(
       })
     }
   } catch (error) {
-    console.error("多层提取过程中出错:", error)
+    
   }
 
   return results
@@ -136,7 +134,7 @@ async function extractBasicMetadata(
       confidence: calculateBasicConfidence(metadata),
     }
   } catch (error) {
-    console.error("基础提取失败:", error)
+    
     return { confidence: 0 }
   }
 }
@@ -176,7 +174,7 @@ async function extractPlatformSpecificMetadata(
       confidence: calculatePlatformConfidence(metadata, platform),
     }
   } catch (error) {
-    console.error("平台特定提取失败:", error)
+    
     return { confidence: 0 }
   }
 }
@@ -220,7 +218,7 @@ async function extractDynamicMetadata(
           }
         }
       } catch (error) {
-        console.log(`AJAX端点 ${endpoint.url} 请求失败:`, error)
+        
       }
     }
 
@@ -229,7 +227,7 @@ async function extractDynamicMetadata(
       confidence: bestConfidence,
     }
   } catch (error) {
-    console.error("动态内容提取失败:", error)
+    
     return { confidence: 0 }
   }
 }
@@ -259,7 +257,7 @@ async function extractFromExternalAPIs(
       confidence: calculateExternalConfidence(metadata),
     }
   } catch (error) {
-    console.error("外部API提取失败:", error)
+    
     return { confidence: 0 }
   }
 }
@@ -400,7 +398,7 @@ function extractJsonLdData(html: string): Partial<AdvancedExtractedMetadata> {
         }
       }
     } catch (error) {
-      console.log("JSON-LD解析失败:", error)
+      
     }
   }
 
@@ -657,7 +655,7 @@ function extractNetflixMetadata(html: string, url: string): AdvancedExtractedMet
       // 解析Netflix特有的数据结构
       // ... 具体实现
     } catch (error) {
-      console.log("Netflix数据解析失败:", error)
+      
     }
   }
 
@@ -688,7 +686,7 @@ function extractBilibiliMetadata(html: string, url: string): AdvancedExtractedMe
         }
       }
     } catch (error) {
-      console.log("Bilibili数据解析失败:", error)
+      
     }
   }
 

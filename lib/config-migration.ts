@@ -63,7 +63,6 @@ export class ConfigMigration {
     }
 
     try {
-      console.log('🔄 开始配置迁移...')
       
       // 收集需要迁移的数据
       const dataToMigrate: Record<string, string> = {}
@@ -72,7 +71,7 @@ export class ConfigMigration {
         const value = localStorage.getItem(key)
         if (value !== null && value.trim() !== '') {
           dataToMigrate[key] = value
-          console.log(`📦 发现需要迁移的配置: ${key}`)
+          
         }
       }
 
@@ -89,15 +88,15 @@ export class ConfigMigration {
           const success = await ClientConfigManager.setItem(key, value)
           if (success) {
             result.migratedKeys.push(key)
-            console.log(`✅ 成功迁移配置: ${key}`)
+            
           } else {
             result.errors.push(`迁移配置失败: ${key}`)
-            console.error(`❌ 迁移配置失败: ${key}`)
+            
           }
         } catch (error) {
           const errorMsg = `迁移配置 ${key} 时出错: ${error instanceof Error ? error.message : '未知错误'}`
           result.errors.push(errorMsg)
-          console.error(`❌ ${errorMsg}`)
+          
         }
       })
 
@@ -111,13 +110,13 @@ export class ConfigMigration {
           
           if (serverValue !== localValue) {
             result.errors.push(`配置验证失败: ${key}`)
-            console.error(`❌ 配置验证失败: ${key}`)
+            
           } else {
-            console.log(`✅ 配置验证成功: ${key}`)
+            
           }
         } catch (error) {
           result.errors.push(`验证配置 ${key} 时出错`)
-          console.error(`❌ 验证配置 ${key} 时出错:`, error)
+          
         }
       })
 
@@ -129,18 +128,18 @@ export class ConfigMigration {
         this.markMigrationComplete()
         result.success = true
         result.message = `成功迁移 ${result.migratedKeys.length} 个配置项到服务端`
-        console.log('🎉 配置迁移完成！')
+        
       } else {
         result.success = false
         result.message = `迁移过程中出现 ${result.errors.length} 个错误`
-        console.error('❌ 配置迁移部分失败')
+        
       }
 
     } catch (error) {
       result.success = false
       result.message = `迁移失败: ${error instanceof Error ? error.message : '未知错误'}`
       result.errors.push(result.message)
-      console.error('❌ 配置迁移失败:', error)
+      
     }
 
     return result
@@ -150,14 +149,13 @@ export class ConfigMigration {
    * 清理localStorage中的配置数据
    */
   private static cleanupLocalStorage(): void {
-    console.log('🧹 清理localStorage中的配置数据...')
     
     for (const key of this.MIGRATION_KEYS) {
       try {
         localStorage.removeItem(key)
-        console.log(`🗑️ 已清理localStorage配置: ${key}`)
+        
       } catch (error) {
-        console.warn(`⚠️ 清理localStorage配置失败: ${key}`, error)
+        
       }
     }
   }
@@ -168,9 +166,9 @@ export class ConfigMigration {
   private static markMigrationComplete(): void {
     try {
       localStorage.setItem(this.MIGRATION_FLAG, 'true')
-      console.log('✅ 已标记迁移完成')
+      
     } catch (error) {
-      console.warn('⚠️ 标记迁移完成失败:', error)
+      
     }
   }
 
@@ -180,7 +178,7 @@ export class ConfigMigration {
   static resetMigrationFlag(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(this.MIGRATION_FLAG)
-      console.log('🔄 已重置迁移状态')
+      
     }
   }
 
@@ -224,14 +222,13 @@ export class ConfigMigration {
    */
   static async autoMigrate(): Promise<void> {
     if (this.needsMigration()) {
-      console.log('🔄 检测到需要迁移的配置，开始自动迁移...')
+      
       const result = await this.migrate()
       
       if (result.success) {
-        console.log('🎉 自动迁移成功:', result.message)
+        
       } else {
-        console.error('❌ 自动迁移失败:', result.message)
-        console.error('错误详情:', result.errors)
+
       }
     }
   }

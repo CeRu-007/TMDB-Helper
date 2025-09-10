@@ -18,7 +18,7 @@ export class AuthMiddleware {
 
       // 如果是桌面应用，直接返回认证成功
       if (isElectron) {
-        console.log('[AuthMiddleware] 桌面应用跳过认证检查');
+        
         return {
           success: true,
           userId: AuthManager.getSystemUserId()
@@ -50,7 +50,7 @@ export class AuthMiddleware {
       };
 
     } catch (error) {
-      console.error('[AuthMiddleware] 认证验证失败:', error);
+      
       return { success: false, error: '服务器内部错误' };
     }
   }

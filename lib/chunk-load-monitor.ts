@@ -59,9 +59,7 @@ export class ChunkLoadMonitor {
       
       (window as any).__webpack_require__.f.j = (chunkId: string, promises: Promise<any>[]) => {
         const startTime = Date.now();
-        
-        console.log(`[ChunkLoadMonitor] 开始加载 chunk: ${chunkId}`);
-        
+
         // 调用原始的 chunk 加载函数
         const result = this.originalWebpackRequire.call(this, chunkId, promises);
         
@@ -109,7 +107,6 @@ export class ChunkLoadMonitor {
         const error = event.reason;
         
         if (this.isChunkLoadError(error)) {
-          console.error('[ChunkLoadMonitor] 检测到 ChunkLoadError:', error);
           
           this.recordChunkLoad({
             success: false,
@@ -127,7 +124,6 @@ export class ChunkLoadMonitor {
         const url = script.src;
         
         if (url && this.isWebpackChunk(url)) {
-          console.error('[ChunkLoadMonitor] 脚本加载失败:', url);
           
           this.recordChunkLoad({
             url,
@@ -168,7 +164,7 @@ export class ChunkLoadMonitor {
       try {
         listener(event);
       } catch (error) {
-        console.error('[ChunkLoadMonitor] 监听器执行失败:', error);
+        
       }
     });
   }
@@ -278,7 +274,7 @@ export class ChunkLoadMonitor {
    */
   public clearHistory(): void {
     this.loadHistory = [];
-    console.log('[ChunkLoadMonitor] 加载历史已清理');
+    
   }
 
   /**

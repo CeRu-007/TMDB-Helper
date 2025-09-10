@@ -56,14 +56,14 @@ function getUserTaskFilePath(userId: string): string {
  */
 export function readUserItems(userId: string): TMDBItem[] {
   if (!userId || userId === 'anonymous') {
-    console.warn('无效的用户ID，返回空数组');
+    
     return [];
   }
 
   const filePath = getUserDataFilePath(userId);
   
   if (!fs.existsSync(filePath)) {
-    console.log(`用户 ${userId} 的数据文件不存在，返回空数组`);
+    
     return [];
   }
   
@@ -72,10 +72,10 @@ export function readUserItems(userId: string): TMDBItem[] {
     // 清理控制字符
     data = data.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
     const items = JSON.parse(data);
-    console.log(`成功读取用户 ${userId} 的 ${items.length} 个项目`);
+    
     return items;
   } catch (error) {
-    console.error(`读取用户 ${userId} 数据文件失败:`, error);
+    
     return [];
   }
 }
@@ -85,7 +85,7 @@ export function readUserItems(userId: string): TMDBItem[] {
  */
 export function writeUserItems(userId: string, items: TMDBItem[]): boolean {
   if (!userId || userId === 'anonymous') {
-    console.error('无效的用户ID，无法写入数据');
+    
     return false;
   }
 
@@ -94,10 +94,10 @@ export function writeUserItems(userId: string, items: TMDBItem[]): boolean {
   try {
     // 使用可读紧凑格式保存，既节省空间又便于阅读
     fs.writeFileSync(filePath, stringifyAuto(items, 'tmdb'), 'utf-8');
-    console.log(`成功写入用户 ${userId} 的 ${items.length} 个项目`);
+    
     return true;
   } catch (error) {
-    console.error(`写入用户 ${userId} 数据文件失败:`, error);
+    
     return false;
   }
 }
@@ -122,8 +122,7 @@ export function updateUserItem(userId: string, updatedItem: TMDBItem): boolean {
     items[index] = updatedItem;
     return writeUserItems(userId, items);
   }
-  
-  console.warn(`用户 ${userId} 的项目 ${updatedItem.id} 不存在`);
+
   return false;
 }
 
@@ -137,8 +136,7 @@ export function deleteUserItem(userId: string, itemId: string): boolean {
   if (filteredItems.length < items.length) {
     return writeUserItems(userId, filteredItems);
   }
-  
-  console.warn(`用户 ${userId} 的项目 ${itemId} 不存在`);
+
   return false;
 }
 
@@ -171,10 +169,9 @@ export function importUserData(userId: string, jsonData: string): boolean {
       throw new Error('无效的数据格式：期望数组或包含items字段的对象');
     }
 
-    console.log(`用户 ${userId} 导入 ${items.length} 个项目`);
     return writeUserItems(userId, items);
   } catch (error) {
-    console.error(`用户 ${userId} 导入数据失败:`, error);
+    
     return false;
   }
 }
@@ -205,7 +202,7 @@ export function readUserTasks(userId: string): ScheduledTask[] {
     const data = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
-    console.error(`读取用户 ${userId} 任务文件失败:`, error);
+    
     return [];
   }
 }
@@ -225,7 +222,7 @@ export function writeUserTasks(userId: string, tasks: ScheduledTask[]): boolean 
     fs.writeFileSync(filePath, stringifyAuto(tasks, 'tasks'), 'utf-8');
     return true;
   } catch (error) {
-    console.error(`写入用户 ${userId} 任务文件失败:`, error);
+    
     return false;
   }
 }
@@ -251,12 +248,11 @@ export function migrateExistingData(defaultUserId: string = 'default_user'): boo
         const backupFile = path.join(DATA_DIR, `tmdb_items_backup_${Date.now()}.json`);
         fs.copyFileSync(oldDataFile, backupFile);
         fs.unlinkSync(oldDataFile);
-        
-        console.log(`成功迁移 ${items.length} 个项目到用户 ${defaultUserId}`);
+
         migrated = true;
       }
     } catch (error) {
-      console.error('迁移项目数据失败:', error);
+      
     }
   }
   
@@ -271,12 +267,11 @@ export function migrateExistingData(defaultUserId: string = 'default_user'): boo
         const backupFile = path.join(DATA_DIR, `scheduled_tasks_backup_${Date.now()}.json`);
         fs.copyFileSync(oldTaskFile, backupFile);
         fs.unlinkSync(oldTaskFile);
-        
-        console.log(`成功迁移 ${tasks.length} 个任务到用户 ${defaultUserId}`);
+
         migrated = true;
       }
     } catch (error) {
-      console.error('迁移任务数据失败:', error);
+      
     }
   }
   
@@ -298,7 +293,7 @@ export function getAllUsers(): string[] {
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
   } catch (error) {
-    console.error('获取用户列表失败:', error);
+    
     return [];
   }
 }
@@ -313,14 +308,14 @@ export function clearUserData(userId: string): boolean {
     if (fs.existsSync(userDir)) {
       // 删除用户目录及其所有内容
       fs.rmSync(userDir, { recursive: true, force: true });
-      console.log(`用户 ${userId} 的数据已清空`);
+      
       return true;
     } else {
-      console.log(`用户 ${userId} 的数据目录不存在`);
+      
       return true; // 目录不存在也算成功
     }
   } catch (error) {
-    console.error(`清空用户 ${userId} 数据失败:`, error);
+    
     return false;
   }
 }
@@ -340,7 +335,7 @@ export function getUserConfig(userId: string, key: string): string | null {
     const configData = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
     return configData[key] || null;
   } catch (error) {
-    console.error(`获取用户 ${userId} 配置 ${key} 失败:`, error);
+    
     return null;
   }
 }
@@ -366,7 +361,7 @@ export function setUserConfig(userId: string, key: string, value: string): boole
     fs.writeFileSync(configFile, stringifyAuto(configData, 'config'), 'utf-8');
     return true;
   } catch (error) {
-    console.error(`设置用户 ${userId} 配置 ${key} 失败:`, error);
+    
     return false;
   }
 }
@@ -385,7 +380,7 @@ export function getAllUserConfig(userId: string): Record<string, any> {
 
     return JSON.parse(fs.readFileSync(configFile, 'utf-8'));
   } catch (error) {
-    console.error(`获取用户 ${userId} 所有配置失败:`, error);
+    
     return {};
   }
 }
@@ -409,7 +404,7 @@ export function getUserStats(userId: string): {
       const stats = fs.statSync(filePath);
       lastModified = stats.mtime.toISOString();
     } catch (error) {
-      console.warn('获取文件修改时间失败:', error);
+      
     }
   }
   

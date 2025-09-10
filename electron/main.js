@@ -60,7 +60,7 @@ function createWindow() {
   mainWindow.on('resize', () => {
     if (mainWindow) {
       const [width, height] = mainWindow.getSize();
-      console.log(`窗口大小变化: ${width} x ${height}`);
+      
       // 发送窗口大小变化事件到渲染进程
       mainWindow.webContents.send('window-resize', { width, height });
     }
@@ -68,13 +68,13 @@ function createWindow() {
 
   // 添加全屏状态变化监听
   mainWindow.on('enter-full-screen', () => {
-    console.log('进入全屏模式');
+    
     // 发送全屏状态变化事件到渲染进程
     mainWindow.webContents.send('fullscreen-change', true);
   });
 
   mainWindow.on('leave-full-screen', () => {
-    console.log('退出全屏模式');
+    
     // 发送全屏状态变化事件到渲染进程
     mainWindow.webContents.send('fullscreen-change', false);
   });
@@ -83,8 +83,7 @@ function createWindow() {
   const originalUA = mainWindow.webContents.getUserAgent();
   const newUA = originalUA + ' TMDB-Helper-Electron';
   mainWindow.webContents.setUserAgent(newUA);
-  console.log('🔧 设置 User-Agent:', newUA);
-
+  
   // 窗口准备好后显示
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
@@ -115,15 +114,15 @@ function createWindow() {
 
   // 添加页面加载事件监听
   mainWindow.webContents.on('did-finish-load', () => {
-    console.log('✅ 页面加载完成');
+    
   });
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-    console.error('❌ 页面加载失败:', errorCode, errorDescription, validatedURL);
+    
   });
 
   mainWindow.webContents.on('dom-ready', () => {
-    console.log('✅ DOM 准备完成');
+    
   });
 
   // 加载应用
@@ -132,17 +131,16 @@ function createWindow() {
       if (isDev) {
         // 开发环境使用本地服务器
         const startUrl = `http://localhost:${port}`;
-        console.log('🔗 开发环境加载 URL:', startUrl);
+        
         await mainWindow.loadURL(startUrl);
       } else {
         // 生产环境尝试使用本地服务器，如果失败则使用静态文件
         try {
           const startUrl = `http://localhost:${port}`;
-          console.log('🔗 尝试加载本地服务器:', startUrl);
+          
           await mainWindow.loadURL(startUrl);
         } catch (serverError) {
-          console.log('⚠️ 本地服务器启动失败，尝试加载静态文件');
-
+          
           // 查找静态HTML文件
           const appPath = app.getAppPath();
           const possiblePaths = [
@@ -168,17 +166,16 @@ function createWindow() {
           }
 
           if (htmlPath) {
-            console.log('📄 加载静态文件:', htmlPath);
+            
             await mainWindow.loadFile(htmlPath);
           } else {
             throw new Error('无法找到应用文件');
           }
         }
       }
-      console.log('✅ 应用加载成功');
+      
     } catch (error) {
-      console.error('❌ 应用加载失败:', error);
-
+      
       // 显示错误页面
       const errorHtml = `
         <html>
@@ -229,8 +226,7 @@ function startNextServer() {
     }
 
     // 生产环境下直接在当前进程中启动 Next.js
-    console.log('🌐 在当前进程中启动 Next.js 服务器...');
-
+    
     try {
       // 设置环境变量
       process.env.NODE_ENV = 'production';
@@ -255,13 +251,11 @@ function startNextServer() {
         }
       }
 
-      console.log('📁 应用路径:', appPath);
-      console.log('📁 Next.js 构建目录:', nextDir);
       console.log('📁 .next 目录存在:', fs.existsSync(nextDir));
 
       // 检查 .next 目录是否存在
       if (!fs.existsSync(nextDir)) {
-        console.error('❌ .next 目录不存在，尝试的路径:');
+        
         console.error('  -', path.join(appPath, '.next'));
         console.error('  -', path.join(path.dirname(appPath), '.next'));
         console.error('  -', path.join(process.cwd(), '.next'));
@@ -287,11 +281,11 @@ function startNextServer() {
       nextApp.prepare().then(() => {
         const server = createServer(async (req, res) => {
           try {
-            console.log(`📥 请求: ${req.method} ${req.url}`);
+            
             const parsedUrl = parse(req.url, true);
             await handle(req, res, parsedUrl);
           } catch (err) {
-            console.error('请求处理错误:', err);
+            
             res.statusCode = 500;
             res.end('Internal Server Error');
           }
@@ -299,27 +293,26 @@ function startNextServer() {
 
         server.listen(port, (err) => {
           if (err) {
-            console.error('服务器启动失败:', err);
+            
             reject(err);
           } else {
-            console.log(`✅ Next.js 服务器已启动在端口 ${port}`);
-            console.log(`🔗 服务器地址: http://localhost:${port}`);
+
             resolve();
           }
         });
 
         server.on('error', (error) => {
-          console.error('服务器错误:', error);
+          
           reject(error);
         });
 
       }).catch((error) => {
-        console.error('Next.js 准备失败:', error);
+        
         reject(error);
       });
 
     } catch (error) {
-      console.error('启动 Next.js 失败:', error);
+      
       reject(error);
     }
   });
@@ -501,29 +494,22 @@ app.whenReady().then(async () => {
       app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
     }
 
-    console.log('🚀 开始启动 TMDB Helper 桌面应用');
     console.log('📁 应用路径:', app.getAppPath());
     console.log('📁 用户数据路径:', app.getPath('userData'));
-    console.log('🌐 环境:', isDev ? '开发' : '生产');
-    console.log('🔗 端口:', port);
 
     // 启动 Next.js 服务器
-    console.log('🌐 启动 Next.js 服务器...');
+    
     await startNextServer();
-    console.log('✅ Next.js 服务器启动成功');
-
+    
     // 创建窗口和菜单
-    console.log('🖥️ 创建应用窗口...');
+    
     createWindow();
 
     // 始终创建菜单（包含开发菜单）
-    console.log('🔧 创建应用菜单');
+    
     createMenu();
 
-    console.log('🎉 TMDB Helper 桌面应用启动成功');
   } catch (error) {
-    console.error('❌ 应用启动失败:', error);
-    console.error('错误堆栈:', error.stack);
 
     // 显示更详细的错误信息
     const errorMessage = `启动失败: ${error.message}\n\n详细信息:\n${error.stack}`;

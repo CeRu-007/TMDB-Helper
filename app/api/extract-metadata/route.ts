@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       parser: parser?.name || "通用解析器",
     })
   } catch (error) {
-    console.error("元数据提取错误:", error)
+    
     return NextResponse.json(
       {
         success: false,
@@ -63,7 +63,7 @@ async function extractMetadataFromUrl(url: string, platform: string, parser: any
     let metadata: ExtractedMetadata = {}
 
     if (parser) {
-      console.log(`使用 ${parser.name} 专用解析器`)
+      
       const platformMetadata = parser.parse(html, url)
       metadata = { ...metadata, ...platformMetadata }
     }
@@ -77,7 +77,7 @@ async function extractMetadataFromUrl(url: string, platform: string, parser: any
 
     return metadata
   } catch (error) {
-    console.error("抓取页面失败:", error)
+    
     // 如果直接抓取失败，返回基于URL的基本信息
     return generateFallbackMetadata(url, platform)
   }

@@ -15,11 +15,7 @@ export async function POST(request: NextRequest) {
         error: '缺少原始CSV文件路径'
       }, { status: 400 });
     }
-    
-    console.log(`[API] 验证CSV处理结果`);
-    console.log(`[API] 原始文件: ${originalCsvPath}`);
-    console.log(`[API] 处理后文件: ${processedCsvPath || '未提供'}`);
-    
+
     const result: any = {
       originalFile: {
         path: originalCsvPath,
@@ -144,7 +140,7 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
     
   } catch (error) {
-    console.error('[API] 验证CSV处理失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '验证失败',
@@ -159,9 +155,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
-    
-    console.log(`[API] 列出CSV文件: ${tmdbImportDir}`);
-    
+
     try {
       const files = await fs.readdir(tmdbImportDir);
       const csvFiles = files.filter(file => file.endsWith('.csv'));
@@ -202,7 +196,7 @@ export async function GET(request: NextRequest) {
     }
     
   } catch (error) {
-    console.error('[API] 列出CSV文件失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '操作失败',

@@ -77,14 +77,12 @@ export class AbortErrorMonitor {
       this.errorHistory = this.errorHistory.slice(0, this.maxHistorySize);
     }
 
-    console.error(`[AbortErrorMonitor] 记录 AbortError 事件:`, event);
-
     // 通知监听器
     this.listeners.forEach(listener => {
       try {
         listener(event);
       } catch (error) {
-        console.error('[AbortErrorMonitor] 监听器执行失败:', error);
+        
       }
     });
 
@@ -164,7 +162,7 @@ export class AbortErrorMonitor {
    */
   public clearHistory(): void {
     this.errorHistory = [];
-    console.log('[AbortErrorMonitor] 错误历史已清理');
+    
   }
 
   /**
@@ -176,16 +174,15 @@ export class AbortErrorMonitor {
     const recentErrors = this.errorHistory.filter(e => now - e.timestamp < fiveMinutes);
 
     if (recentErrors.length >= 10) {
-      console.warn(`[AbortErrorMonitor] 警告：过去5分钟内发生了 ${recentErrors.length} 个 AbortError`);
       
       // 分析错误模式
       const timeoutCount = recentErrors.filter(e => e.isTimeout).length;
       const unexpectedCount = recentErrors.length - timeoutCount;
       
       if (timeoutCount > unexpectedCount) {
-        console.warn('[AbortErrorMonitor] 主要是超时错误，可能需要增加超时时间或检查网络状况');
+        
       } else {
-        console.warn('[AbortErrorMonitor] 主要是意外中止错误，可能存在系统或浏览器问题');
+        
       }
     }
   }

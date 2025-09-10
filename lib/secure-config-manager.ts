@@ -33,7 +33,7 @@ export class SecureConfigManager {
     try {
       return decodeURIComponent(atob(encryptedData));
     } catch (error) {
-      console.error('解密失败:', error);
+      
       return '';
     }
   }
@@ -61,7 +61,7 @@ export class SecureConfigManager {
         }
       }
     } catch (error) {
-      console.error('保存配置失败:', error);
+      
       throw new Error('配置保存失败');
     }
   }
@@ -85,7 +85,7 @@ export class SecureConfigManager {
                 const decryptedValue = this.decrypt(value as string);
                 config[configKey] = JSON.parse(decryptedValue);
               } catch (decryptError) {
-                console.warn(`解密配置项 ${key} 失败:`, decryptError);
+                
               }
             }
           }
@@ -94,7 +94,7 @@ export class SecureConfigManager {
 
       return config;
     } catch (error) {
-      console.error('读取配置失败:', error);
+      
       return {};
     }
   }
@@ -122,7 +122,7 @@ export class SecureConfigManager {
         return config.tmdbApiKey;
       }
     } catch (error) {
-      console.warn('获取服务端配置失败:', error);
+      
     }
 
     // 其次使用环境变量
@@ -168,7 +168,7 @@ export class SecureConfigManager {
         localStorage.removeItem('tmdb_api_key');
       }
     } catch (error) {
-      console.error('清除配置失败:', error);
+      
     }
   }
   
@@ -180,7 +180,7 @@ export class SecureConfigManager {
       const config = await this.getConfig();
       return !!config.tmdbApiKey;
     } catch (error) {
-      console.warn('检查配置失败:', error);
+      
       return false;
     }
   }
@@ -196,10 +196,10 @@ export class SecureConfigManager {
       if (oldApiKey && !(await this.hasConfig())) {
         await this.setTmdbApiKey(oldApiKey);
         localStorage.removeItem('tmdb_api_key');
-        console.log('已迁移旧的API密钥到安全存储');
+        
       }
     } catch (error) {
-      console.error('迁移API密钥失败:', error);
+      
     }
   }
 }

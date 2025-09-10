@@ -51,7 +51,7 @@ class PerformanceMonitor {
    */
   public startMonitoring(): void {
     this.isMonitoring = true
-    console.log('[PerformanceMonitor] 开始性能监控')
+    
   }
 
   /**
@@ -59,7 +59,7 @@ class PerformanceMonitor {
    */
   public stopMonitoring(): void {
     this.isMonitoring = false
-    console.log('[PerformanceMonitor] 停止性能监控')
+    
   }
 
   /**
@@ -244,7 +244,7 @@ class PerformanceMonitor {
   public cleanup(): void {
     const oneHourAgo = performance.now() - 3600000 // 1小时前
     this.events = this.events.filter(event => event.startTime > oneHourAgo)
-    console.log(`[PerformanceMonitor] 清理完成，保留 ${this.events.length} 个事件`)
+    
   }
 
   /**

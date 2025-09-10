@@ -103,11 +103,11 @@ export class ServerConfigManager {
       if (!(field in validatedConfig)) {
         // 字段不存在，设为空字符串
         validatedConfig[field as keyof ServerConfig] = "" as any
-        console.log(`🔧 [ServerConfigManager] 添加缺失的API密钥字段: ${field} = ""`)
+        
       } else if (validatedConfig[field as keyof ServerConfig] === undefined || validatedConfig[field as keyof ServerConfig] === null) {
         // 字段存在但值为undefined或null，设为空字符串
         validatedConfig[field as keyof ServerConfig] = "" as any
-        console.log(`🔧 [ServerConfigManager] 转换${validatedConfig[field as keyof ServerConfig]}为空字符串: ${field} = ""`)
+        
       }
       // 如果字段存在且有值，则保持不变
     })
@@ -126,10 +126,9 @@ export class ServerConfigManager {
                      (!this.lastValidationTime || Date.now() - this.lastValidationTime > 5000);
     
     if (shouldLog) {
-      console.log('✓ [ServerConfigManager] 配置验证完成')
-      console.log('✓ [ServerConfigManager] API密钥字段检查:')
+
       preserveFields.forEach(field => {
-        console.log(`  - ${field}:`, field in validatedConfig ? '存在' : '缺失')
+        
       })
       this.lastValidationTime = Date.now();
     }
@@ -288,11 +287,11 @@ export class ServerConfigManager {
       if (this.isLoading) {
         // 如果正在加载，返回现有缓存（如果有的话）
         if (this.configCache) {
-          console.log('⏳ [ServerConfigManager] 配置加载中，返回现有缓存');
+          
           return this.configCache;
         }
         // 如果没有缓存，等待加载完成
-        console.log('⏳ [ServerConfigManager] 配置加载中，等待完成...');
+        
         let attempts = 0;
         while (this.isLoading && attempts < 50) { // 最多等待5秒
           require('child_process').execSync('timeout /t 0 /nobreak', { stdio: 'ignore' });
@@ -309,7 +308,7 @@ export class ServerConfigManager {
 
       if (!fs.existsSync(configPath)) {
         // 如果配置文件不存在，创建默认配置
-        console.log('📁 [ServerConfigManager] 配置文件不存在，创建默认配置')
+        
         const defaultConfig = this.getDefaultConfig()
         this.saveConfig(defaultConfig)
         // 更新缓存
@@ -325,19 +324,18 @@ export class ServerConfigManager {
                             (!this.lastConfigLogTime || Date.now() - this.lastConfigLogTime > 10000);
       
       if (shouldLogConfig) {
-        console.log('📖 [ServerConfigManager] 读取原始配置')
+        
         this.lastConfigLogTime = Date.now();
       }
 
       // 映射键名
       const config = this.mapKeys(rawConfig)
       if (shouldLogConfig) {
-        console.log('🔄 [ServerConfigManager] 键名映射完成')
+        
       }
 
       // 检查版本兼容性
       if (config.version !== this.CONFIG_VERSION) {
-        console.log(`🔄 [ServerConfigManager] 配置版本升级：${config.version} → ${this.CONFIG_VERSION}`)
         
         // ⚠️ 关键修复：保留用户现有配置，只添加缺失的默认字段
         const defaultConfig = this.getDefaultConfig()
@@ -347,8 +345,7 @@ export class ServerConfigManager {
           version: this.CONFIG_VERSION,  // 更新版本号
           lastUpdated: Date.now()       // 更新时间戳
         })
-        
-        console.log('✅ [ServerConfigManager] 升级后配置完成')
+
         this.saveConfig(upgradedConfig)
         // 更新缓存
         this.configCache = upgradedConfig;
@@ -362,7 +359,7 @@ export class ServerConfigManager {
       this.isLoading = false;
       return config
     } catch (error) {
-      console.error('❌ [ServerConfigManager] 读取服务端配置失败:', error)
+      
       this.isLoading = false;
       
       // ⚠️ 关键修复：出错时不要直接覆盖，先尝试恢复备份
@@ -371,18 +368,18 @@ export class ServerConfigManager {
       
       if (fs.existsSync(backupPath)) {
         try {
-          console.log('🔄 [ServerConfigManager] 尝试从备份恢复配置')
+          
           const backupData = fs.readFileSync(backupPath, 'utf8')
           const backupConfig = JSON.parse(backupData)
-          console.log('✅ [ServerConfigManager] 备份恢复成功:', backupConfig)
+          
           return backupConfig
         } catch (backupError) {
-          console.error('❌ [ServerConfigManager] 备份恢复失败:', backupError)
+          
         }
       }
       
       // 最后的备选方案：创建默认配置（但记录警告）
-      console.warn('⚠️ [ServerConfigManager] 无法恢复配置，创建新的默认配置（用户数据可能丢失）')
+      
       const defaultConfig = this.getDefaultConfig()
       this.saveConfig(defaultConfig)
       this.isLoading = false;
@@ -418,11 +415,11 @@ export class ServerConfigManager {
           if (typeof parsedValue === 'object' && parsedValue !== null) {
             optimizedConfig[field] = parsedValue as any
             if (process.env.NODE_ENV === 'development') {
-              console.log(`🎨 [ServerConfigManager] 优化字段格式: ${field}`)
+              
             }
           }
         } catch (error) {
-          console.warn(`⚠️ [ServerConfigManager] 无法优化字段 ${field}:`, error)
+          
           // 保留原始字符串值
         }
       } else if (typeof value === 'object' && value !== null) {
@@ -432,7 +429,7 @@ export class ServerConfigManager {
           JSON.stringify(value)
           // 如果成功，保留对象格式
         } catch (error) {
-          console.error(`❌ [ServerConfigManager] 对象序列化失败 ${field}:`, error)
+          
           // 如果序列化失败，设为 undefined 避免损坏配置
           optimizedConfig[field] = undefined as any
         }
@@ -461,7 +458,7 @@ export class ServerConfigManager {
       
       if (needsFullValidation) {
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 [ServerConfigManager] 配置需要完整验证，执行验证流程')
+          
         }
         const defaultConfig = this.getDefaultConfig()
         const mergedConfig = {
@@ -471,7 +468,7 @@ export class ServerConfigManager {
         validatedConfig = this.validateConfig(mergedConfig)
       } else {
         if (process.env.NODE_ENV === 'development') {
-          console.log('⚡ [ServerConfigManager] 配置验证跳过，使用现有配置')
+          
         }
       }
       
@@ -480,7 +477,7 @@ export class ServerConfigManager {
         const backupPath = `${configPath}.backup`
         fs.copyFileSync(configPath, backupPath)
         if (process.env.NODE_ENV === 'development') {
-          console.log('📦 [ServerConfigManager] 已备份现有配置到:', backupPath)
+          
         }
       }
       
@@ -510,7 +507,7 @@ export class ServerConfigManager {
         
         // ⚠️ 关键验证：检查用户配置是否保存成功
         if (config.tmdbApiKey && !savedConfig.tmdbApiKey) {
-          console.error('❌ [ServerConfigManager] 警告：API密钥未成功保存!')
+          
           throw new Error('API密钥保存失败')
         }
         
@@ -519,25 +516,21 @@ export class ServerConfigManager {
                             (!this.lastSaveLogTime || Date.now() - this.lastSaveLogTime > 5000);
         
         if (shouldLogSave) {
-          console.log('✓ [ServerConfigManager] 保存验证成功，文件大小:', savedContent.length)
+          
           if (config.tmdbApiKey) {
-            console.log('✅ [ServerConfigManager] API密钥保存验证成功')
+            
           }
           this.lastSaveLogTime = Date.now();
         }
       } else {
-        console.error('❌ [ServerConfigManager] 保存后文件不存在!')
+        
         throw new Error('文件保存失败')
       }
       
     } catch (error) {
-      console.error('❌ [ServerConfigManager] 保存服务端配置失败:', error)
+      
       if (error instanceof Error) {
-        console.error('❌ [ServerConfigManager] 错误详情:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        })
+        
       }
       throw new Error('保存配置失败')
     }
@@ -548,7 +541,7 @@ export class ServerConfigManager {
    */
   static updateConfig(updates: Partial<ServerConfig>): ServerConfig {
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 [ServerConfigManager] 开始更新配置:', updates)
+      
     }
     
     const currentConfig = this.getConfig()
@@ -561,11 +554,11 @@ export class ServerConfigManager {
                             (!this.lastUpdateLogTime || Date.now() - this.lastUpdateLogTime > 5000);
       
       if (shouldLogUpdate) {
-        console.log('✅ [ServerConfigManager] 配置更新成功')
+        
         this.lastUpdateLogTime = Date.now();
       }
     } catch (error) {
-      console.error('❌ [ServerConfigManager] 配置更新失败:', error)
+      
       throw error
     }
     
@@ -584,7 +577,7 @@ export class ServerConfigManager {
       try {
         return JSON.stringify(value)
       } catch (error) {
-        console.error('❌ [ServerConfigManager] 对象序列化失败:', error)
+        
         return value
       }
     }
@@ -597,7 +590,7 @@ export class ServerConfigManager {
    */
   static setConfigItem(key: keyof ServerConfig, value: any): void {
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 [ServerConfigManager] 开始设置配置项:', { key, valueType: typeof value, valueLength: value?.length })
+      
     }
     
     const updates = { [key]: value } as Partial<ServerConfig>
@@ -605,10 +598,10 @@ export class ServerConfigManager {
     try {
       this.updateConfig(updates)
       if (process.env.NODE_ENV === 'development') {
-        console.log('✅ [ServerConfigManager] 配置项设置成功:', key)
+        
       }
     } catch (error) {
-      console.error('❌ [ServerConfigManager] 配置项设置失败:', error)
+      
       throw error
     }
   }
@@ -655,7 +648,7 @@ export class ServerConfigManager {
       this.saveConfig(importedConfig)
       return importedConfig
     } catch (error) {
-      console.error('导入配置失败:', error)
+      
       throw new Error('导入配置失败: ' + (error instanceof Error ? error.message : '未知错误'))
     }
   }

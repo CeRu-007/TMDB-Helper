@@ -46,8 +46,7 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('硅基流动API错误:', response.status, errorData);
-
+      
       // 尝试解析错误详情
       let parsedError = null;
       try {
@@ -103,7 +102,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('硅基流动API调用错误:', error);
     
     return NextResponse.json(
       { 
@@ -150,7 +148,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('获取模型列表错误:', error);
     
     return NextResponse.json(
       { 

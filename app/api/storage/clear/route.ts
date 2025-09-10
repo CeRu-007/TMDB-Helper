@@ -17,13 +17,11 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
 
-    console.log(`[API] 清空用户 ${userId} 的存储数据`)
-
     // 清空用户数据
     const success = clearUserData(userId)
 
     if (success) {
-      console.log(`[API] 用户 ${userId} 的存储数据已清空`)
+      
       return NextResponse.json({
         success: true,
         message: '存储数据已清空'
@@ -35,7 +33,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
   } catch (error) {
-    console.error('[API] 清空存储数据失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '服务器内部错误'

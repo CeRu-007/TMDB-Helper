@@ -146,13 +146,13 @@ class DataRecoveryManager {
 
     for (let i = 0; i < fallbackMethods.length; i++) {
       try {
-        console.log(`[DataRecovery] 尝试方法 ${i + 1} 获取项目数据`)
+        
         const items = await fallbackMethods[i]()
-        console.log(`[DataRecovery] 方法 ${i + 1} 成功，获取 ${items.length} 个项目`)
+        
         return items
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('未知错误')
-        console.warn(`[DataRecovery] 方法 ${i + 1} 失败:`, lastError.message)
+        
       }
     }
 
@@ -175,14 +175,13 @@ class DataRecoveryManager {
     while (attempt < options.maxRetries) {
       try {
         attempt++
-        console.log(`[DataRecovery] 开始第 ${attempt} 次导出尝试`)
-
+        
         // 验证数据
         if (options.validateData) {
           const validation = await this.validateData()
           if (!validation.isValid) {
             if (options.autoFix) {
-              console.log('[DataRecovery] 检测到数据问题，尝试自动修复')
+              
               await this.attemptDataFix(validation)
             } else {
               throw new Error(`数据验证失败: ${validation.errors.join(', ')}`)
@@ -215,8 +214,6 @@ class DataRecoveryManager {
         const jsonData = JSON.stringify(exportData, null, 2)
         const filename = `tmdb-helper-safe-backup-${new Date().toISOString().split("T")[0]}.json`
 
-        console.log(`[DataRecovery] 导出成功，第 ${attempt} 次尝试`)
-
         return {
           success: true,
           data: jsonData,
@@ -231,12 +228,11 @@ class DataRecoveryManager {
 
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('未知错误')
-        console.error(`[DataRecovery] 第 ${attempt} 次导出尝试失败:`, lastError.message)
-
+        
         if (attempt < options.maxRetries) {
           // 等待后重试
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
-          console.log(`[DataRecovery] ${delay}ms 后重试`)
+          
           await new Promise(resolve => setTimeout(resolve, delay))
         }
       }
@@ -252,15 +248,14 @@ class DataRecoveryManager {
    * 尝试修复数据问题
    */
   private async attemptDataFix(validation: DataValidationResult): Promise<void> {
-    console.log('[DataRecovery] 开始尝试修复数据问题')
-
+    
     // 修复任务数据
     if (validation.errors.some(error => error.includes('任务'))) {
       try {
         await StorageManager.forceRefreshScheduledTasks()
-        console.log('[DataRecovery] 任务数据修复完成')
+        
       } catch (error) {
-        console.error('[DataRecovery] 任务数据修复失败:', error)
+        
       }
     }
 
@@ -268,9 +263,9 @@ class DataRecoveryManager {
     if (validation.errors.some(error => error.includes('localStorage'))) {
       try {
         this.cleanupCorruptedData()
-        console.log('[DataRecovery] localStorage清理完成')
+        
       } catch (error) {
-        console.error('[DataRecovery] localStorage清理失败:', error)
+        
       }
     }
   }
@@ -291,9 +286,9 @@ class DataRecoveryManager {
     corruptedKeys.forEach(key => {
       try {
         localStorage.removeItem(key)
-        console.log(`[DataRecovery] 已清理损坏数据: ${key}`)
+        
       } catch (error) {
-        console.error(`[DataRecovery] 清理数据失败: ${key}`, error)
+        
       }
     })
   }
@@ -308,12 +303,11 @@ class DataRecoveryManager {
       const backupKey = `${this.BACKUP_PREFIX}${Date.now()}`
       const backupData = JSON.stringify(data)
       localStorage.setItem(backupKey, backupData)
-      console.log(`[DataRecovery] 已创建备份: ${backupKey}`)
-
+      
       // 清理旧备份
       this.cleanupOldBackups()
     } catch (error) {
-      console.error('[DataRecovery] 创建备份失败:', error)
+      
     }
   }
 
@@ -338,9 +332,9 @@ class DataRecoveryManager {
     sortedBackups.slice(5).forEach(backup => {
       try {
         localStorage.removeItem(backup.key)
-        console.log(`[DataRecovery] 已清理旧备份: ${backup.key}`)
+        
       } catch (error) {
-        console.error(`[DataRecovery] 清理旧备份失败: ${backup.key}`, error)
+        
       }
     })
   }

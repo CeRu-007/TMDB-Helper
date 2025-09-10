@@ -73,7 +73,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   // 监听对话框状态变化，重置状态
   useEffect(() => {
     if (open) {
-      console.log("ScheduledTaskDialog 打开，item.id:", item.id);
+      
       // 重置状态
       setHasUnsavedChanges(false);
       setIsAutoSaving(false);
@@ -83,18 +83,17 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
 
       if (existingTask) {
         // 如果传入了existingTask，直接使用它
-        console.log("使用传入的 existingTask:", existingTask);
+        
         setTasks([existingTask])
         setLoading(false)
       } else {
         // 否则从存储中加载任务
-        console.log("从存储中加载任务...");
+        
         loadTasks()
       }
     } else {
       // 对话框关闭时重置所有状态
-      console.log("ScheduledTaskDialog 关闭，重置状态");
-
+      
       // 清理防抖定时器
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -126,14 +125,14 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   const loadTasks = async () => {
     setLoading(true)
     try {
-      console.log("开始加载定时任务...");
+      
       const allTasks = await StorageManager.getScheduledTasks()
-      console.log("所有定时任务:", allTasks.length);
+      
       const itemTasks = allTasks.filter(task => task.itemId === item.id)
-      console.log(`项目 ${item.id} 的定时任务:`, itemTasks.length);
+      
       setTasks(itemTasks)
     } catch (error) {
-      console.error("加载定时任务失败:", error)
+      
       toast({
         title: "加载失败",
         description: "无法加载定时任务列表",
@@ -146,7 +145,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
 
   // 创建新任务
   const handleAddTask = () => {
-    console.log("创建新任务，关联项目:", item);
+    
     const newTask: ScheduledTask = {
       id: uuidv4(),
       itemId: item.id,
@@ -182,7 +181,6 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       updatedAt: new Date().toISOString()
     }
 
-    console.log("新建任务数据:", newTask);
     setCurrentTask(newTask)
     setIsAddingTask(true)
     setHasUnsavedChanges(false) // 新建任务初始状态不应该有未保存更改
@@ -204,13 +202,13 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     try {
       // 确保项目有效
       if (!item || !item.id) {
-        console.error("[ScheduledTaskDialog] 错误: 当前项目无效或缺少ID");
+        
         throw new Error("当前项目无效，无法创建定时任务");
       }
 
       // 确保项目有平台URL
       if (!item.platformUrl) {
-        console.error("[ScheduledTaskDialog] 错误: 当前项目缺少平台URL");
+        
         throw new Error("当前项目缺少平台URL，无法创建定时任务");
       }
 
@@ -228,19 +226,18 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         updatedTask.name = `${item.title} 定时任务`;
       }
 
-      console.log(`[ScheduledTaskDialog] 正在保存定时任务: ID=${updatedTask.id}, 项目ID=${updatedTask.itemId}, 名称=${updatedTask.name}, 启用状态=${updatedTask.enabled}`);
       console.log(`[ScheduledTaskDialog] 任务详情:`, JSON.stringify(updatedTask, null, 2));
 
       let success = false;
       if (isAddingTask) {
         success = await StorageManager.addScheduledTask(updatedTask)
         if (success) {
-          console.log(`[ScheduledTaskDialog] 创建任务成功: ID=${updatedTask.id}`);
+          
         }
       } else {
         success = await StorageManager.updateScheduledTask(updatedTask)
         if (success) {
-          console.log(`[ScheduledTaskDialog] 更新任务成功: ID=${updatedTask.id}`);
+          
         }
       }
 
@@ -264,7 +261,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         } else if (onUpdate) {
           onUpdate(item);
         } else {
-          console.warn("[ScheduledTaskDialog] 未提供onTaskSaved或onUpdate回调，任务已保存但UI可能不会更新");
+          
         }
 
         // 如果任务已启用，重新调度
@@ -280,8 +277,6 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           setHasUnsavedChanges(false)
         }
 
-        console.log(`[ScheduledTaskDialog] ${isAddingTask ? '创建' : '更新'}任务成功: ID=${updatedTask.id}`);
-
         if (shouldCloseDialog) {
           toast({
             title: `${isAddingTask ? '创建' : '更新'}成功`,
@@ -290,7 +285,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         }
       }
     } catch (error) {
-      console.error("[ScheduledTaskDialog] 保存定时任务失败:", error)
+      
       toast({
         title: "保存失败",
         description: error instanceof Error ? error.message : "无法保存定时任务，请检查项目关联是否正确",
@@ -304,7 +299,6 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     if (!currentTask) return
     await handleSaveTaskWithState(currentTask);
   }
-
 
   // 取消编辑
   const cancelEditTask = () => {
@@ -343,7 +337,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         await loadTasks()
       }
     } catch (error) {
-      console.error("删除定时任务失败:", error)
+      
       toast({
         title: "删除失败",
         description: "无法删除定时任务",
@@ -385,7 +379,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         }
       }
     } catch (error) {
-      console.error("更新任务状态失败:", error)
+      
       toast({
         title: "操作失败",
         description: "无法更新任务状态",
@@ -414,10 +408,10 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         if (foundItem) {
           currentItem = foundItem;
         } else {
-          console.warn(`找不到任务关联的项目ID: ${task.itemId}，将使用当前组件的项目`);
+          
         }
       } catch (error) {
-        console.warn("获取项目信息失败，将使用当前项目作为备用:", error);
+        
       }
 
       // 检查项目平台URL
@@ -445,9 +439,6 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           platformUrl: currentItem.platformUrl
         }
       };
-
-      console.log(`[ScheduledTaskDialog] 执行定时任务: ${task.name}，数据:`, requestData);
-      console.log(`[ScheduledTaskDialog] 列删除选项: removeAirDateColumn=${requestData.action.removeAirDateColumn}, removeRuntimeColumn=${requestData.action.removeRuntimeColumn}, removeBackdropColumn=${requestData.action.removeBackdropColumn}`);
 
       // 添加超时控制
       const controller = new AbortController();
@@ -523,15 +514,14 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
 
         // 检查是否是超时错误
         if (fetchError.name === 'AbortError') {
-          console.error("[ScheduledTaskDialog] 请求超时");
+          
           throw new Error("请求超时（3分钟），请检查网络连接或稍后再试");
         }
 
         throw fetchError; // 重新抛出以便外层catch处理
       }
     } catch (error: any) {
-      console.error("[ScheduledTaskDialog] 执行任务失败:", error);
-
+      
       // 更新任务的失败状态
       try {
         const failedTask = {
@@ -547,7 +537,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         // 重新加载任务列表
         await loadTasks();
       } catch (updateError) {
-        console.error("[ScheduledTaskDialog] 更新任务失败状态时出错:", updateError);
+        
       }
 
       // 提供特定错误消息
@@ -625,8 +615,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         }, 100); // 100ms 防抖
       } else {
         // 执行频率切换时，重置表单状态但不设置未保存状态
-        console.log(`[ScheduledTaskDialog] 执行频率切换到: ${value}，重置相关字段`);
-
+        
         // 根据频率类型重置相关字段的默认值
         if (value === 'daily') {
           // 每日执行：重置时间
@@ -659,8 +648,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
     if (!taskToSave) return
 
     setIsAutoSaving(true)
-    console.log(`[ScheduledTaskDialog] 自动保存任务: ID=${taskToSave.id}, enabled=${taskToSave.enabled}`)
-
+    
     try {
       const updatedTask = {
         ...taskToSave,
@@ -677,7 +665,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
       }
 
       if (success) {
-        console.log(`[ScheduledTaskDialog] 自动保存成功: ID=${updatedTask.id}`)
+        
         setHasUnsavedChanges(false)
 
         // 如果任务已启用，重新调度
@@ -699,7 +687,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         // 重新加载任务列表
         await loadTasks()
       } else {
-        console.error(`[ScheduledTaskDialog] 自动保存失败: ID=${updatedTask.id}`)
+        
         toast({
           title: "自动保存失败",
           description: "无法保存任务状态，请手动保存",
@@ -707,7 +695,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         })
       }
     } catch (error) {
-      console.error("[ScheduledTaskDialog] 自动保存失败:", error)
+      
       toast({
         title: "自动保存失败",
         description: "保存任务时出错，请手动保存",

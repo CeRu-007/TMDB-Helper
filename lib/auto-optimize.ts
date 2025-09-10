@@ -65,7 +65,7 @@ function optimizeJSONFile(filePath: string): {
     try {
       jsonData = JSON.parse(originalData);
     } catch (error) {
-      console.error(`[AutoOptimize] JSON解析失败: ${filePath}`, error);
+      
       return null;
     }
     const optimizedData = stringifyAuto(jsonData);
@@ -76,7 +76,6 @@ function optimizeJSONFile(filePath: string): {
     const optimizedSize = optimizedData.length;
     const spaceSaved = originalSize - optimizedSize;
 
-    console.log(`[AutoOptimize] 优化文件: ${filePath}`);
     console.log(`  - 原始大小: ${(originalSize / 1024 / 1024).toFixed(2)} MB`);
     console.log(`  - 优化后大小: ${(optimizedSize / 1024 / 1024).toFixed(2)} MB`);
     console.log(`  - 节省空间: ${(spaceSaved / 1024 / 1024).toFixed(2)} MB`);
@@ -89,7 +88,7 @@ function optimizeJSONFile(filePath: string): {
     };
 
   } catch (error) {
-    console.error(`[AutoOptimize] 优化文件失败: ${filePath}`, error);
+    
     return {
       success: false,
       originalSize: 0,
@@ -167,13 +166,11 @@ export function autoOptimizeAllUsers(): {
 
     // 检查用户目录是否存在
     if (!fs.existsSync(usersDir)) {
-      console.log('[AutoOptimize] 用户目录不存在，跳过优化');
+      
       return result;
     }
 
     const userDirs = fs.readdirSync(usersDir);
-    
-    console.log(`[AutoOptimize] 开始扫描 ${userDirs.length} 个用户目录...`);
 
     for (const userDir of userDirs) {
       const userPath = path.join(usersDir, userDir);
@@ -210,11 +207,11 @@ export function autoOptimizeAllUsers(): {
     if (result.totalFilesOptimized > 0) {
       console.log(`[AutoOptimize] 优化完成: 处理了 ${result.usersProcessed} 个用户，优化了 ${result.totalFilesOptimized} 个文件，总共节省 ${(result.totalSpaceSaved / 1024 / 1024).toFixed(2)} MB`);
     } else {
-      console.log('[AutoOptimize] 没有发现需要优化的文件');
+      
     }
 
   } catch (error) {
-    console.error('[AutoOptimize] 自动优化失败:', error);
+    
     result.errors.push(`自动优化失败: ${error instanceof Error ? error.message : '未知错误'}`);
   }
 
@@ -227,7 +224,7 @@ export function autoOptimizeAllUsers(): {
 export function runAutoOptimizeOnStartup(): void {
   // 延迟执行，避免影响应用启动速度
   setTimeout(() => {
-    console.log('[AutoOptimize] 开始自动优化检查...');
+    
     autoOptimizeAllUsers();
   }, 5000); // 5秒后执行
 }

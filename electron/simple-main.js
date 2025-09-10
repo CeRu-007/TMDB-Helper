@@ -43,10 +43,10 @@ function createWindow() {
   });
   
   if (entryFile) {
-    console.log('📄 加载静态文件:', entryFile);
+    
     mainWindow.loadFile(entryFile);
   } else {
-    console.log('🌐 尝试加载本地服务器');
+    
     mainWindow.loadURL('http://localhost:3000');
   }
 

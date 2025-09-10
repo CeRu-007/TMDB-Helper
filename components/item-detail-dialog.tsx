@@ -208,7 +208,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         setCustomSeasonNumber(maxSeasonNumber)
       } catch (error) {
         // 如果出错，默认设置为1
-        console.error("获取最大季数失败:", error)
+        
         setSelectedSeason(1)
         setCustomSeasonNumber(1)
       }
@@ -270,7 +270,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           })
         }
       } catch (e) {
-        console.warn('读取appearance_settings失败', e)
+        
         setAppearanceSettings({
           detailBackdropBlurEnabled: true,
           detailBackdropBlurIntensity: 'medium',
@@ -317,8 +317,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
   }, [])
 
-
-
   // 监听滚动事件，实现视差效果
   useEffect(() => {
     if (!open || !contentRef.current) return
@@ -343,8 +341,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       contentElement?.removeEventListener('scroll', handleScroll)
     }
   }, [open, contentRef.current])
-
-
 
   const handleEpisodeToggle = async (episodeNumber: number, completed: boolean, seasonNumber: number) => {
     // 添加视觉反馈
@@ -450,8 +446,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         completed: completed
       }
 
-      console.log('发送API请求:', requestData)
-
       const response = await fetch('/api/mark-episodes-completed', {
         method: 'POST',
         headers: {
@@ -462,27 +456,21 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('API调用失败:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        })
+        
         throw new Error(`API调用失败: ${response.status} ${response.statusText}`)
       }
 
       const result = await response.json()
       if (!result.success) {
-        console.error('API返回错误:', result)
+        
         throw new Error(result.error || 'API返回错误')
       }
-
-      console.log('API调用成功:', result)
 
       // API成功后，通知父组件更新全局状态
       onUpdate(updatedItem)
 
     } catch (error) {
-      console.error('更新集数状态失败:', error)
+      
       // 如果API调用失败，回滚本地状态
       setLocalItem(localItem)
       setCopyFeedback('更新失败，请重试')
@@ -729,7 +717,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       onUpdate(updatedItem)
       setEditing(false)
     } catch (error) {
-      console.error('更新项目失败:', error)
+      
       // 错误处理已在增强数据提供者中完成
       // 保持编辑状态，让用户可以重新尝试保存
     } finally {
@@ -744,7 +732,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setCopyFeedback(`${type}已复制`)
       setTimeout(() => setCopyFeedback(null), 2000)
     } catch (error) {
-      console.error("复制失败:", error)
+      
     }
   }
 
@@ -1017,18 +1005,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       }
 
       // 调试日志：检查刷新获取到的数据
-      console.log("🔄 [刷新TMDB] 获取到的数据:", {
-        title: tmdbData.title,
-        hasBackdrop: !!tmdbData.backdropUrl,
-        hasLogo: !!tmdbData.logoUrl,
-        hasNetworkLogo: !!tmdbData.networkLogoUrl,
-        backdropUrl: tmdbData.backdropUrl,
-        logoUrl: tmdbData.logoUrl,
-        networkLogoUrl: tmdbData.networkLogoUrl,
-        networkName: tmdbData.networkName,
-        willUsePosterAsBackground: !tmdbData.backdropUrl && !!editData.posterUrl
-      });
-
+      
       // 更新背景图
       let updatedData = { ...editData };
       let hasNewBackdrop = false;
@@ -1069,12 +1046,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       if (editData.mediaType === "tv") {
         // 检查是否有网络信息
         if (tmdbData.networkId || tmdbData.networkName || tmdbData.networkLogoUrl) {
-          console.log("从TMDB获取到网络信息:", {
-            networkId: tmdbData.networkId,
-            networkName: tmdbData.networkName,
-            networkLogoUrl: tmdbData.networkLogoUrl,
-          });
-
+          
           updatedData = {
             ...updatedData,
             networkId: tmdbData.networkId,
@@ -1179,7 +1151,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
         if (tmdbData.networkLogoUrl) {
           newLocalItem.networkLogoUrl = tmdbData.networkLogoUrl;
-          console.log("已更新网络logo URL:", tmdbData.networkLogoUrl);
+          
         }
       }
 
@@ -1194,8 +1166,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
       // 通知父组件更新
       onUpdate(newLocalItem);
-
-
 
       // 显示成功信息
       if (hasNewBackdrop) {
@@ -1215,7 +1185,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setTimeout(() => setCopyFeedback(null), 2000);
 
     } catch (error) {
-      console.error("刷新TMDB数据失败:", error);
+      
       setRefreshError(error instanceof Error ? error.message : "刷新TMDB数据失败，请稍后再试");
     } finally {
       setIsRefreshingTMDBData(false);
@@ -1273,7 +1243,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           ref={contentRef}
           showCloseButton={false}
         >
-
 
           {/* 背景图 - 使用BackgroundImage组件，支持缓存避免重复加载 */}
           {(() => {
@@ -1775,13 +1744,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                           <div className="flex items-center justify-start w-full">
                             {(() => {
                               // 调试日志：检查网络logo数据
-                              console.log("🔍 [词条详情] 网络logo检查:", {
-                                hasNetworkLogoUrl: !!localItem.networkLogoUrl,
-                                networkLogoUrl: localItem.networkLogoUrl,
-                                networkName: localItem.networkName,
-                                hasPlatformUrl: !!localItem.platformUrl,
-                                platformUrl: localItem.platformUrl
-                              });
+                              
                               return localItem.networkLogoUrl;
                             })() ? (
                               // 显示TMDB官方网络logo
@@ -2370,8 +2333,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               </AlertDialogFooter>
             </AlertDialogNoOverlayContent>
           </AlertDialogNoOverlay>
-
-
 
           {/* 修复TMDB导入Bug对话框 */}
           <FixTMDBImportBugDialog

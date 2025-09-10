@@ -83,7 +83,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
           info.displayName = authUser.username
         }
         setUserInfo(info)
-        console.log(`[UserIdentity] 用户会话有效: ${info.userId}`)
+        
       } else {
         // 创建新用户会话
         const info = UserManager.getUserInfo()
@@ -92,7 +92,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
           info.displayName = authUser.username
         }
         setUserInfo(info)
-        console.log(`[UserIdentity] 创建新用户会话: ${info.userId}`)
+        
       }
 
       // 调用服务器端API确保用户ID同步
@@ -104,16 +104,16 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
 
         if (response.ok) {
           const data = await response.json()
-          console.log(`[UserIdentity] 服务器端用户ID同步: ${data.userId}`)
+          
         }
       } catch (apiError) {
-        console.warn('[UserIdentity] 服务器端用户ID同步失败:', apiError)
+        
         // 不影响客户端功能，继续执行
       }
 
       setIsInitialized(true)
     } catch (error) {
-      console.error('[UserIdentity] 用户身份初始化失败:', error)
+      
       // 即使出错也要设置为已初始化，避免无限加载
       setIsInitialized(true)
     } finally {
@@ -154,7 +154,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
             }),
           })
         } catch (apiError) {
-          console.warn('[UserIdentity] 服务器端用户信息同步失败:', apiError)
+          
         }
 
         return true
@@ -162,7 +162,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
 
       return false
     } catch (error) {
-      console.error('[UserIdentity] 更新用户显示名称失败:', error)
+      
       return false
     }
   }
@@ -193,7 +193,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
             }),
           })
         } catch (apiError) {
-          console.warn('[UserIdentity] 服务器端头像信息同步失败:', apiError)
+          
         }
 
         return true
@@ -201,7 +201,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
 
       return false
     } catch (error) {
-      console.error('[UserIdentity] 更新用户头像失败:', error)
+      
       return false
     }
   }
@@ -218,7 +218,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
         method: 'DELETE',
         credentials: 'include',
       }).catch(error => {
-        console.warn('[UserIdentity] 服务器端会话清除失败:', error)
+        
       })
 
       // 重新初始化
@@ -226,7 +226,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
         initializeUser()
       }, 100)
     } catch (error) {
-      console.error('[UserIdentity] 重置用户失败:', error)
+      
     }
   }
 
@@ -238,7 +238,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
       const info = UserManager.getUserInfo()
       setUserInfo(info)
     } catch (error) {
-      console.error('[UserIdentity] 刷新用户信息失败:', error)
+      
     }
   }
 
@@ -436,8 +436,6 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
       setTheme(theme === 'dark' ? 'light' : 'dark')
     }
 
-
-
     const handleReset = () => {
       if (confirm('确定要重置用户数据吗？这将清除所有本地数据并创建新的用户ID。此操作无法撤销！')) {
         resetUser()
@@ -564,10 +562,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             切换主题 ({theme === 'dark' ? '深色' : '浅色'})
           </button>
 
-
         </div>
-
-
 
         <div className="border-t dark:border-gray-700 py-1">
           {/* 登出 */}
@@ -616,8 +611,6 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
 )
 
 UserDropdownMenu.displayName = 'UserDropdownMenu'
-
-
 
 /**
  * 个人资料编辑区域
@@ -995,7 +988,7 @@ function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         resetUser()
         onOpenChange(false)
       } catch (error) {
-        console.error('重置用户数据失败:', error)
+        
       } finally {
         setIsResetting(false)
       }

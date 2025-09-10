@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         }, { status: 400 })
     }
   } catch (error) {
-    console.error('[TMDB-Import Updater] GET请求失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '检查版本信息失败',
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
     }
   } catch (error) {
-    console.error('[TMDB-Import Updater] POST请求失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '更新操作失败',
@@ -132,7 +132,7 @@ async function checkVersion(): Promise<NextResponse> {
       data: versionInfo
     })
   } catch (error) {
-    console.error('[TMDB-Import Updater] 检查版本失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '检查版本信息失败',
@@ -156,7 +156,7 @@ async function getStatus(): Promise<NextResponse> {
         const files = fs.readdirSync(TMDB_IMPORT_DIR, { recursive: true })
         fileCount = files.length
       } catch (error) {
-        console.warn('[TMDB-Import Updater] 统计文件数量失败:', error)
+        
       }
     }
 
@@ -171,7 +171,7 @@ async function getStatus(): Promise<NextResponse> {
       }
     })
   } catch (error) {
-    console.error('[TMDB-Import Updater] 获取状态失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '获取安装状态失败',
@@ -228,7 +228,7 @@ async function getLocalVersion() {
       commitMessage: versionData.commitMessage
     }
   } catch (error) {
-    console.warn('[TMDB-Import Updater] 读取本地版本信息失败:', error)
+    
     return {
       exists: true // 目录存在但版本文件损坏
     }
@@ -253,7 +253,6 @@ async function downloadLatest(): Promise<NextResponse> {
     
     // 方式1: 直接下载ZIP文件
     const downloadUrl = `${DOWNLOAD_BASE}/${GITHUB_REPO}/archive/refs/heads/master.zip`
-    console.log(`[TMDB-Import Updater] 尝试直接下载: ${downloadUrl}`)
     
     let downloadSuccess = false
     
@@ -262,10 +261,10 @@ async function downloadLatest(): Promise<NextResponse> {
       if (response.ok) {
         const buffer = await response.arrayBuffer()
         fs.writeFileSync(tempZipPath, Buffer.from(buffer))
-        console.log(`[TMDB-Import Updater] 直接下载完成: ${tempZipPath}`)
+        
         downloadSuccess = true
       } else {
-        console.log(`[TMDB-Import Updater] 直接下载失败: ${response.status} ${response.statusText}`)
+        
       }
     } catch (error) {
       console.log(`[TMDB-Import Updater] 直接下载异常: ${error instanceof Error ? error.message : String(error)}`)
@@ -273,7 +272,6 @@ async function downloadLatest(): Promise<NextResponse> {
     
     // 方式2: 如果直接下载失败，使用GitHub API下载
     if (!downloadSuccess) {
-      console.log(`[TMDB-Import Updater] 尝试使用GitHub API下载...`)
       
       const apiDownloadUrl = `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/zipball/master`
       const apiResponse = await fetch(apiDownloadUrl, {
@@ -289,7 +287,7 @@ async function downloadLatest(): Promise<NextResponse> {
       
       const buffer = await apiResponse.arrayBuffer()
       fs.writeFileSync(tempZipPath, Buffer.from(buffer))
-      console.log(`[TMDB-Import Updater] GitHub API下载完成: ${tempZipPath}`)
+      
     }
 
     return NextResponse.json({
@@ -301,7 +299,7 @@ async function downloadLatest(): Promise<NextResponse> {
       }
     })
   } catch (error) {
-    console.error('[TMDB-Import Updater] 下载失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '下载最新版本失败',
@@ -326,27 +324,25 @@ async function installUpdate(): Promise<NextResponse> {
     const configPath = path.join(TMDB_IMPORT_DIR, 'config.ini')
 
     if (fs.existsSync(TMDB_IMPORT_DIR)) {
-      console.log(`[TMDB-Import Updater] 准备覆盖安装现有目录: ${TMDB_IMPORT_DIR}`)
-
+      
       // 提取 TMDB 用户凭据
       if (fs.existsSync(configPath)) {
         try {
           const configContent = fs.readFileSync(configPath, 'utf-8')
           existingCredentials = extractTMDBCredentials(configContent)
-          console.log(`[TMDB-Import Updater] 已提取 TMDB 用户凭据`)
+          
         } catch (error) {
-          console.warn('[TMDB-Import Updater] 读取配置文件失败:', error)
+          
         }
       }
 
       // 直接删除现有安装目录
       fs.rmSync(TMDB_IMPORT_DIR, { recursive: true, force: true })
-      console.log(`[TMDB-Import Updater] 已删除现有安装目录`)
+      
     }
 
     // 解压缩到项目根目录
-    console.log(`[TMDB-Import Updater] 开始解压: ${tempZipPath}`)
-
+    
     // 先确保目标目录不存在
     if (fs.existsSync(TMDB_IMPORT_DIR)) {
       fs.rmSync(TMDB_IMPORT_DIR, { recursive: true, force: true })
@@ -389,13 +385,13 @@ async function installUpdate(): Promise<NextResponse> {
       }
       
       // 移动到最终目标目录
-      console.log(`[TMDB-Import Updater] 移动目录: ${extractedDirPath} -> ${TMDB_IMPORT_DIR}`)
+      
       // 先尝试直接移动
       try {
         fs.renameSync(extractedDirPath, TMDB_IMPORT_DIR)
       } catch (moveError: any) {
         // 如果移动失败，尝试复制后删除
-        console.log(`[TMDB-Import Updater] 直接移动失败，尝试复制后删除: ${moveError.message}`)
+        
         const copyCmd = isWindows
           ? `powershell -Command "Copy-Item -Path '${extractedDirPath}' -Destination '${TMDB_IMPORT_DIR}' -Recurse -Force"`
           : `cp -r "${extractedDirPath}" "${TMDB_IMPORT_DIR}"`
@@ -411,8 +407,7 @@ async function installUpdate(): Promise<NextResponse> {
       if (!fs.existsSync(TMDB_IMPORT_DIR)) {
         throw new Error(`移动失败，目标目录不存在: ${TMDB_IMPORT_DIR}`)
       }
-      
-      console.log(`[TMDB-Import Updater] 解压完成，最终目录: TMDB-Import-master`)
+
     } catch (extractError) {
       // 清理临时目录
       if (fs.existsSync(tempExtractDir)) {
@@ -426,9 +421,9 @@ async function installUpdate(): Promise<NextResponse> {
       try {
         const newConfigPath = path.join(TMDB_IMPORT_DIR, 'config.ini')
         updateConfigWithCredentials(newConfigPath, existingCredentials)
-        console.log(`[TMDB-Import Updater] 已恢复 TMDB 用户凭据`)
+        
       } catch (error) {
-        console.warn('[TMDB-Import Updater] 恢复 TMDB 凭据失败:', error)
+        
       }
     }
 
@@ -444,8 +439,6 @@ async function installUpdate(): Promise<NextResponse> {
 
     // 清理临时文件
     fs.unlinkSync(tempZipPath)
-    
-    console.log(`[TMDB-Import Updater] 安装完成: ${TMDB_IMPORT_DIR}`)
 
     // 构建完成消息
     let message = '安装完成'
@@ -464,7 +457,7 @@ async function installUpdate(): Promise<NextResponse> {
       }
     })
   } catch (error) {
-    console.error('[TMDB-Import Updater] 安装失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '安装更新失败',
@@ -511,7 +504,7 @@ function extractTMDBCredentials(configContent: string): { tmdb_username?: string
  */
 function updateConfigWithCredentials(configPath: string, credentials: { tmdb_username?: string; tmdb_password?: string }): void {
   if (!fs.existsSync(configPath)) {
-    console.warn('[TMDB-Import Updater] 配置文件不存在，无法更新凭据')
+    
     return
   }
 
@@ -537,12 +530,9 @@ function updateConfigWithCredentials(configPath: string, credentials: { tmdb_use
 
     const updatedContent = lines.join('\n')
     fs.writeFileSync(configPath, updatedContent, 'utf-8')
-    console.log('[TMDB-Import Updater] 已更新配置文件中的 TMDB 凭据')
+    
   } catch (error) {
-    console.warn('[TMDB-Import Updater] 更新配置文件凭据失败:', error)
+    
   }
 }
-
-
-
 

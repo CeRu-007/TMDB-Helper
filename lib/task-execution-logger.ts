@@ -39,8 +39,7 @@ export class TaskExecutionLogger {
    * 开始任务执行日志记录
    */
   public async startTaskExecution(taskId: string): Promise<void> {
-    console.log(`[TaskExecutionLogger] 开始任务执行日志记录: ${taskId}`);
-
+    
     // 初始化任务日志
     this.taskLogs.set(taskId, []);
     this.taskProgress.set(taskId, 0);
@@ -71,7 +70,6 @@ export class TaskExecutionLogger {
    * 结束任务执行日志记录
    */
   public async endTaskExecution(taskId: string, success: boolean, error?: string): Promise<void> {
-    console.log(`[TaskExecutionLogger] 结束任务执行日志记录: ${taskId}, 成功: ${success}`);
     
     const finalStep = success ? '执行完成' : '执行失败';
     const finalMessage = success ? '任务执行成功' : `任务执行失败: ${error || '未知错误'}`;
@@ -109,7 +107,7 @@ export class TaskExecutionLogger {
       step.status = 'running';
       step.startTime = new Date().toISOString();
       this.taskCurrentStep.set(taskId, step.name);
-      console.log(`[TaskExecutionLogger] 开始执行步骤: ${stepKey} - ${step.name}`);
+      
     }
   }
 
@@ -126,7 +124,7 @@ export class TaskExecutionLogger {
       if (error) {
         step.error = error;
       }
-      console.log(`[TaskExecutionLogger] ${success ? '完成' : '失败'}步骤: ${stepKey} - ${step.name}`);
+      
     }
   }
 
@@ -157,8 +155,6 @@ export class TaskExecutionLogger {
 
     // 更新当前步骤
     this.taskCurrentStep.set(taskId, step);
-
-    console.log(`[TaskExecutionLogger] [${taskId}] ${step}: ${message}`);
 
     // 更新任务状态
     await this.updateTaskStatus(taskId, {
@@ -240,7 +236,7 @@ export class TaskExecutionLogger {
       try {
         listener(logs, progress, currentStep);
       } catch (error) {
-        console.error(`[TaskExecutionLogger] 监听器执行失败:`, error);
+        
       }
     });
   }
@@ -263,7 +259,7 @@ export class TaskExecutionLogger {
         await StorageManager.updateScheduledTask(updatedTask);
       }
     } catch (error) {
-      console.error(`[TaskExecutionLogger] 更新任务状态失败:`, error);
+      
     }
   }
 

@@ -3,8 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('📊 分析项目文件大小...\n');
-
 function getDirectorySize(dirPath) {
   if (!fs.existsSync(dirPath)) {
     return 0;
@@ -66,7 +64,7 @@ console.log(`📊 总计大小: ${formatSize(totalSize)}`);
 
 // 分析 .next 子目录
 if (fs.existsSync('.next')) {
-  console.log('\n📁 .next 目录详细分析:');
+  
   const nextSubDirs = [
     ['standalone', '.next/standalone'],
     ['static', '.next/static'],
@@ -82,7 +80,7 @@ if (fs.existsSync('.next')) {
 
 // 分析 TMDB-Import-master 子目录
 if (fs.existsSync('TMDB-Import-master')) {
-  console.log('\n📁 TMDB-Import-master 目录详细分析:');
+  
   const tmdbSubDirs = [
     ['tmdb-import', 'TMDB-Import-master/tmdb-import'],
     ['Browser', 'TMDB-Import-master/Browser'],
@@ -95,21 +93,20 @@ if (fs.existsSync('TMDB-Import-master')) {
 }
 
 // 预估打包后大小
-console.log('\n🎯 打包大小预估:');
+
 const nextSize = getDirectorySize('.next/standalone') + getDirectorySize('.next/static');
 const electronSize = getDirectorySize('electron');
 const publicSize = fs.existsSync('public/images/tmdb-helper-logo-new.png') ?
                    fs.statSync('public/images/tmdb-helper-logo-new.png').size : 0;
 
 const estimatedSize = nextSize + electronSize + publicSize;
-console.log('📦 注意: TMDB-Import-master 已从打包中排除');
 
 console.log(`📦 预估安装包大小: ${formatSize(estimatedSize)}`);
 
 if (estimatedSize > 200 * 1024 * 1024) { // 200MB
-  console.log('⚠️  安装包仍然较大，建议进一步优化');
+  
 } else if (estimatedSize > 100 * 1024 * 1024) { // 100MB
-  console.log('✅ 安装包大小合理');
+  
 } else {
-  console.log('🎉 安装包大小优秀！');
+  
 }

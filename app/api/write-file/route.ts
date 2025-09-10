@@ -56,7 +56,7 @@ function validateCsvContent(content: string, filePath: string): {valid: boolean,
       message: lines.join('\n')
     };
   } catch (error) {
-    console.error("CSV验证失败:", error);
+    
     return { valid: true }; // 发生错误时不阻止保存，但记录错误
   }
 }
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       // 如果验证通过并且有修复后的内容，使用修复后的内容
       if (validation.message && validation.message !== content) {
         finalContent = validation.message;
-        console.log("已自动修复CSV内容格式");
+        
       }
     }
     
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       message: finalContent !== content ? "已自动修复CSV格式并保存" : undefined
     })
   } catch (error) {
-    console.error('写入文件失败:', error)
+    
     return NextResponse.json(
       { 
         error: "写入文件失败", 

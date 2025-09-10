@@ -151,7 +151,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         }
       }
     } catch (error) {
-      console.error("获取详细信息失败:", error)
+      
     } finally {
       setDetailLoading(false)
     }
@@ -215,7 +215,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
               }
             })
             .catch(error => {
-              console.error("获取详细信息失败:", error);
+              
             })
             .finally(() => {
               setDetailLoading(false);
@@ -223,7 +223,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
               localStorage.removeItem('tmdb_prefilled_data');
             });
         } catch (error) {
-          console.error("解析预填充数据失败:", error);
+          
           localStorage.removeItem('tmdb_prefilled_data');
         }
       }
@@ -286,7 +286,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
       setSearchResults(results)
     } catch (error) {
-      console.error("搜索失败:", error)
+      
       toast({
         title: "搜索失败",
         description: error instanceof Error ? error.message : "搜索失败，请重试",
@@ -419,16 +419,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       }
 
       // 调试日志：检查获取到的数据
-      console.log("🎬 [添加词条] 获取到的TMDB数据:", {
-        title: tmdbData.title,
-        hasBackdrop: !!tmdbData.backdropUrl,
-        hasLogo: !!tmdbData.logoUrl,
-        hasNetworkLogo: !!tmdbData.networkLogoUrl,
-        backdropUrl: tmdbData.backdropUrl,
-        logoUrl: tmdbData.logoUrl,
-        networkLogoUrl: tmdbData.networkLogoUrl
-      });
-
+      
       // 如果缺少关键图片信息，尝试强制刷新获取
       const missingImages = [];
       if (!tmdbData.logoUrl) missingImages.push("logo");
@@ -445,26 +436,26 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
           if (refreshedData) {
             // 更新缺失的图片信息
             if (!tmdbData.logoUrl && refreshedData.logoUrl) {
-              console.log("✅ [添加词条] 强制刷新后获取到logo:", refreshedData.logoUrl);
+              
               tmdbData.logoUrl = refreshedData.logoUrl;
               tmdbData.logoPath = refreshedData.logoPath;
             }
 
             if (!tmdbData.backdropUrl && refreshedData.backdropUrl) {
-              console.log("✅ [添加词条] 强制刷新后获取到背景图:", refreshedData.backdropUrl);
+              
               tmdbData.backdropUrl = refreshedData.backdropUrl;
               tmdbData.backdropPath = refreshedData.backdropPath;
             }
 
             if (!tmdbData.networkLogoUrl && refreshedData.networkLogoUrl) {
-              console.log("✅ [添加词条] 强制刷新后获取到网络logo:", refreshedData.networkLogoUrl);
+              
               tmdbData.networkLogoUrl = refreshedData.networkLogoUrl;
               tmdbData.networkId = refreshedData.networkId;
               tmdbData.networkName = refreshedData.networkName;
             }
           }
         } catch (error) {
-          console.warn("⚠️ [添加词条] 强制刷新获取图片失败:", error);
+          
         }
       }
 
@@ -548,16 +539,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       }
 
       // 调试日志：检查最终创建的词条数据
-      console.log("📝 [添加词条] 最终创建的词条数据:", {
-        title: newItem.title,
-        hasBackdrop: !!newItem.backdropUrl,
-        hasLogo: !!newItem.logoUrl,
-        hasNetworkLogo: !!newItem.networkLogoUrl,
-        backdropUrl: newItem.backdropUrl,
-        logoUrl: newItem.logoUrl,
-        networkLogoUrl: newItem.networkLogoUrl
-      });
-
+      
       // 检查重复项目
       const existingItems = await StorageManager.getItemsWithRetry();
       const duplicateItem = existingItems.find(item =>
@@ -566,8 +548,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       );
 
       if (duplicateItem) {
-        console.log("检测到重复词条:", newItem.title);
-
+        
         // 显示重复提示
         toast({
           title: "⚠️ 词条已存在",
@@ -593,7 +574,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       onOpenChange(false)
       resetForm()
     } catch (error) {
-      console.error("添加词条失败:", error)
+      
       toast({
         title: "添加失败",
         description: error instanceof Error ? error.message : "未知错误",

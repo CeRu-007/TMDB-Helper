@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
 
     if (!userId) {
-      console.warn('[API] 缺少用户身份信息，返回空数据');
+      
       return NextResponse.json({
         success: true,
         items: [],
@@ -30,9 +30,9 @@ export async function GET(request: NextRequest) {
     let items: TMDBItem[] = [];
     try {
       items = readUserItems(userId);
-      console.log(`[API] 成功获取用户 ${userId} 的 ${items.length} 个项目`);
+      
     } catch (error) {
-      console.error(`[API] 获取用户 ${userId} 的项目数据失败:`, error);
+      
       items = [];
     }
 
@@ -55,7 +55,6 @@ export async function GET(request: NextRequest) {
     return response;
 
   } catch (error) {
-    console.error('[API] 获取项目数据失败:', error);
     
     return NextResponse.json({
       success: false,
@@ -89,8 +88,6 @@ export async function POST(request: NextRequest) {
         error: '缺少用户身份信息'
       }, { status: 401 });
     }
-
-    console.log(`[API] 用户 ${userId} 执行批量操作: ${action}`);
 
     switch (action) {
       case 'validate_consistency':
@@ -147,7 +144,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[API] 批量操作失败:', error);
     
     return NextResponse.json({
       success: false,

@@ -158,7 +158,7 @@ export class SiliconFlowMultimodal {
         };
       }
     } catch (error) {
-      console.error('视频帧分析失败:', error);
+      
       throw new Error(`视频帧分析失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
@@ -185,7 +185,7 @@ export class SiliconFlowMultimodal {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
-        console.error(`分析第${i + 1}帧失败:`, error);
+        
         results.push({
           description: '分析失败',
           confidence: 0,
@@ -260,7 +260,7 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       const data = await response.json();
       return data.choices[0]?.message?.content || '生成简介失败';
     } catch (error) {
-      console.error('生成视频总结失败:', error);
+      
       throw new Error(`生成视频总结失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
@@ -337,7 +337,7 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
         confidence: segments.length > 0 ? segments.reduce((sum, seg) => sum + (seg.confidence || 0), 0) / segments.length : 0.8
       };
     } catch (error) {
-      console.error('语音转文字失败:', error);
+      
       throw new Error(`语音转文字失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
@@ -455,7 +455,7 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       
       return visionModels;
     } catch (error) {
-      console.error('获取视觉模型列表失败:', error);
+      
       return [this.defaultVisualModel];
     }
   }

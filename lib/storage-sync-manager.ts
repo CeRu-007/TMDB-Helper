@@ -48,19 +48,16 @@ export class StorageSyncManager {
       return;
     }
 
-    console.log('[StorageSyncManager] 初始化存储同步管理器');
-    
     try {
       // 🔧 修复：移除定期同步，改为按需同步
       // 只在项目启动时进行一次初始同步检查
-      console.log('[StorageSyncManager] 执行初始同步检查...');
       
       // 页面卸载前进行最后一次同步（如果有待同步的数据）
       if (typeof window !== 'undefined') {
         window.addEventListener('beforeunload', () => {
           // 只在有待同步数据时才执行同步
           if (Object.keys(this.pendingStatusUpdates).length > 0) {
-            console.log('[StorageSyncManager] 页面卸载前同步待更新数据');
+            
             // 注意：这里不能使用async，因为beforeunload事件限制
           }
         });
@@ -69,7 +66,7 @@ export class StorageSyncManager {
       this.isInitialized = true;
       console.log('[StorageSyncManager] 同步管理器初始化完成 (按需同步模式)');
     } catch (error) {
-      console.error('[StorageSyncManager] 初始化失败:', error);
+      
     }
   }
 
@@ -77,7 +74,7 @@ export class StorageSyncManager {
    * 手动触发同步 (仅在需要时调用)
    */
   static async manualSync(): Promise<SyncResult> {
-    console.log('[StorageSyncManager] 手动触发同步');
+    
     return await this.triggerSync();
   }
 
@@ -89,7 +86,7 @@ export class StorageSyncManager {
       clearTimeout(this.updateStatusDebounceTimer);
       this.updateStatusDebounceTimer = null;
     }
-    console.log('[StorageSyncManager] 清理同步资源');
+    
   }
 
   /**
@@ -100,7 +97,7 @@ export class StorageSyncManager {
     const lockResult = await DistributedLock.acquireLock(this.SYNC_LOCK_KEY, 'storage_write', 2 * 60 * 1000);
     
     if (!lockResult.success) {
-      console.log(`[StorageSyncManager] 无法获取同步锁: ${lockResult.error}`);
+      
       return {
         success: false,
         itemsUpdated: 0,
@@ -111,9 +108,9 @@ export class StorageSyncManager {
     }
 
     try {
-      console.log('[StorageSyncManager] 开始数据同步');
+      
       const result = await this.performSync();
-      console.log(`[StorageSyncManager] 同步完成: 项目更新${result.itemsUpdated}个, 任务更新${result.tasksUpdated}个, 冲突${result.conflicts.length}个`);
+      
       return result;
     } finally {
       await DistributedLock.releaseLock(this.SYNC_LOCK_KEY);
@@ -170,7 +167,6 @@ export class StorageSyncManager {
       return result;
 
     } catch (error) {
-      console.error('[StorageSyncManager] 同步失败:', error);
       
       // 更新同步状态
       await this.updateSyncStatus({ syncInProgress: false });
@@ -242,7 +238,7 @@ export class StorageSyncManager {
       return { updated, conflicts };
 
     } catch (error) {
-      console.error('[StorageSyncManager] 同步项目数据失败:', error);
+      
       return { updated: 0, conflicts: [] };
     }
   }
@@ -309,7 +305,7 @@ export class StorageSyncManager {
       return { updated, conflicts };
 
     } catch (error) {
-      console.error('[StorageSyncManager] 同步任务数据失败:', error);
+      
       return { updated: 0, conflicts: [] };
     }
   }
@@ -465,7 +461,7 @@ export class StorageSyncManager {
       // 现在直接从服务端获取数据
       return await StorageManager.getItemsWithRetry();
     } catch (error) {
-      console.error('[StorageSyncManager] 获取项目数据失败:', error);
+      
       return [];
     }
   }
@@ -481,7 +477,7 @@ export class StorageSyncManager {
       }
       return [];
     } catch (error) {
-      console.error('[StorageSyncManager] 获取客户端任务数据失败:', error);
+      
       return [];
     }
   }
@@ -512,7 +508,7 @@ export class StorageSyncManager {
       return data;
 
     } catch (error) {
-      console.error('[StorageSyncManager] 获取服务端数据失败:', error);
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error)
@@ -524,14 +520,14 @@ export class StorageSyncManager {
    * 保存客户端项目数据（已移除localStorage，现在使用服务端存储）
    */
   private static async saveClientItems(items: TMDBItem[]): Promise<void> {
-    console.warn('[StorageSyncManager] saveClientItems方法已废弃，数据现在直接存储在服务端');
+    
   }
 
   /**
    * 保存客户端任务数据（已移除localStorage，现在使用服务端存储）
    */
   private static async saveClientTasks(tasks: ScheduledTask[]): Promise<void> {
-    console.warn('[StorageSyncManager] saveClientTasks方法已废弃，数据现在直接存储在服务端');
+    
   }
 
   /**
@@ -547,7 +543,6 @@ export class StorageSyncManager {
       }
 
       // 🔧 修复：只在真正需要时才调用API，避免频繁请求
-      console.log('[StorageSyncManager] 缓存过期，从服务端获取同步状态');
       
       // 从服务端获取同步状态
       const response = await fetch('/api/config?key=sync_status');
@@ -558,7 +553,7 @@ export class StorageSyncManager {
           // 更新缓存
           this.lastSyncStatus = status;
           this.statusCacheExpiry = Date.now() + this.STATUS_CACHE_DURATION;
-          console.log('[StorageSyncManager] 同步状态已更新并缓存');
+          
           return status;
         }
       }
@@ -575,14 +570,13 @@ export class StorageSyncManager {
       // 缓存默认状态
       this.lastSyncStatus = defaultStatus;
       this.statusCacheExpiry = Date.now() + this.STATUS_CACHE_DURATION;
-      console.log('[StorageSyncManager] 使用默认同步状态');
+      
       return defaultStatus;
     } catch (error) {
-      console.error('[StorageSyncManager] 获取同步状态失败:', error);
       
       // 如果有旧缓存，继续使用（延长有效期）
       if (this.lastSyncStatus) {
-        console.log('[StorageSyncManager] 获取失败，继续使用现有缓存');
+        
         this.statusCacheExpiry = Date.now() + 60000; // 1分钟后重试
         return this.lastSyncStatus;
       }
@@ -641,17 +635,17 @@ export class StorageSyncManager {
           });
 
           if (!response.ok) {
-            console.warn('[StorageSyncManager] 保存同步状态到服务端失败');
+            
           }
           
           // 清空待更新状态
           this.pendingStatusUpdates = {};
         } catch (error) {
-          console.error('[StorageSyncManager] 更新同步状态失败:', error);
+          
         }
       }, 30000); // 30秒防抖，大幅减少API调用频率
     } catch (error) {
-      console.error('[StorageSyncManager] 更新同步状态失败:', error);
+      
     }
   }
 
@@ -659,7 +653,6 @@ export class StorageSyncManager {
    * 强制全量同步
    */
   static async forceFullSync(): Promise<SyncResult> {
-    console.log('[StorageSyncManager] 开始强制全量同步');
     
     // 重置同步状态
     await this.updateSyncStatus({

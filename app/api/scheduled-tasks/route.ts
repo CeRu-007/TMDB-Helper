@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       tasks
     })
   } catch (error) {
-    console.error('[API] 获取定时任务失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '获取定时任务失败'
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
   } catch (error) {
-    console.error('[API] 添加定时任务失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '添加定时任务失败'
@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest) {
       }, { status: 500 })
     }
   } catch (error) {
-    console.error('[API] 更新定时任务失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '更新定时任务失败'
@@ -129,7 +129,7 @@ export async function DELETE(request: NextRequest) {
       }, { status: 500 })
     }
   } catch (error) {
-    console.error('[API] 删除定时任务失败:', error)
+    
     return NextResponse.json({
       success: false,
       error: '删除定时任务失败'

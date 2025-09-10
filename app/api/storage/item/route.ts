@@ -18,8 +18,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`[API] 管理员添加项目: ${item.title}`);
-
     const success = addUserItem(ADMIN_USER_ID, item);
 
     if (success) {
@@ -31,7 +29,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
   } catch (error) {
-    console.error('[API] 添加项目失败:', error);
+    
     return NextResponse.json({
       error: '服务器内部错误',
       success: false,
@@ -53,8 +51,6 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`[API] 管理员更新项目: ${item.title}`);
-
     const success = updateUserItem(ADMIN_USER_ID, item);
 
     if (success) {
@@ -66,7 +62,7 @@ export async function PUT(request: NextRequest) {
       }, { status: 404 });
     }
   } catch (error) {
-    console.error('[API] 更新项目失败:', error);
+    
     return NextResponse.json({
       error: '服务器内部错误',
       success: false,
@@ -88,8 +84,6 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`[API] 管理员删除项目: ${id}`);
-
     const success = deleteUserItem(ADMIN_USER_ID, id);
 
     if (success) {
@@ -101,7 +95,7 @@ export async function DELETE(request: NextRequest) {
       }, { status: 404 });
     }
   } catch (error) {
-    console.error('[API] 删除项目失败:', error);
+    
     return NextResponse.json({
       error: '服务器内部错误',
       success: false,

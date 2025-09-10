@@ -114,18 +114,18 @@ export class ConfigManager {
           // 验证配置版本
           if (parsed.version === ConfigManager.CONFIG_VERSION) {
             this.config = { ...this.getDefaultConfig(), ...parsed.config };
-            console.log('[ConfigManager] 已加载保存的配置');
+            
           } else {
-            console.log('[ConfigManager] 配置版本不匹配，使用默认配置');
+            
             this.saveConfig();
           }
         } else {
-          console.log('[ConfigManager] 未找到保存的配置，使用默认配置');
+          
           this.saveConfig();
         }
       }
     } catch (error) {
-      console.error('[ConfigManager] 加载配置失败，使用默认配置:', error);
+      
       this.config = this.getDefaultConfig();
     }
   }
@@ -153,12 +153,12 @@ export class ConfigManager {
       });
 
       if (response.ok) {
-        console.log('[ConfigManager] 配置已保存到服务端');
+        
       } else {
-        console.error('[ConfigManager] 保存配置到服务端失败');
+        
       }
     } catch (error) {
-      console.error('[ConfigManager] 保存配置失败:', error);
+      
     }
   }
 
@@ -186,7 +186,7 @@ export class ConfigManager {
     // 验证配置
     const validation = this.validateConfig(this.config);
     if (!validation.isValid) {
-      console.error('[ConfigManager] 配置验证失败:', validation.errors);
+      
       this.config = oldConfig; // 回滚
       throw new Error(`配置验证失败: ${validation.errors.join(', ')}`);
     }
@@ -197,7 +197,6 @@ export class ConfigManager {
     // 通知监听器
     this.notifyListeners(this.config);
 
-    console.log('[ConfigManager] 配置已更新:', updates);
   }
 
   /**
@@ -206,7 +205,7 @@ export class ConfigManager {
   public resetToDefault(): void {
     const defaultConfig = this.getDefaultConfig();
     this.updateConfig(defaultConfig);
-    console.log('[ConfigManager] 配置已重置为默认值');
+    
   }
 
   /**
@@ -314,7 +313,7 @@ export class ConfigManager {
         try {
           callback(config);
         } catch (error) {
-          console.error(`[ConfigManager] 通知监听器 ${key} 时出错:`, error);
+          
         }
       });
     }
@@ -353,14 +352,13 @@ export class ConfigManager {
 
       // 应用配置
       this.updateConfig(importData.config);
-      console.log('[ConfigManager] 配置导入成功');
-
+      
       if (validation.warnings.length > 0) {
-        console.warn('[ConfigManager] 配置导入警告:', validation.warnings);
+        
       }
 
     } catch (error) {
-      console.error('[ConfigManager] 配置导入失败:', error);
+      
       throw error;
     }
   }

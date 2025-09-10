@@ -7,7 +7,6 @@ import { TMDBItem } from '@/lib/storage';
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[API] 开始存储迁移');
     
     const { items } = await request.json();
     
@@ -36,9 +35,7 @@ export async function POST(request: NextRequest) {
     
     // 读取现有的服务器端数据
     const existingItems = readItems();
-    console.log(`[API] 现有服务器数据: ${existingItems.length} 个项目`);
-    console.log(`[API] 待迁移数据: ${validItems.length} 个项目`);
-    
+
     // 合并数据，避免重复
     const mergedItems = [...existingItems];
     let addedCount = 0;
@@ -72,7 +69,7 @@ export async function POST(request: NextRequest) {
     const success = writeItems(mergedItems);
     
     if (success) {
-      console.log(`[API] 迁移成功: 添加 ${addedCount} 个，更新 ${updatedCount} 个项目`);
+      
       return NextResponse.json({
         success: true,
         message: '数据迁移成功',
@@ -87,7 +84,7 @@ export async function POST(request: NextRequest) {
       throw new Error('写入文件失败');
     }
   } catch (error) {
-    console.error('[API] 存储迁移失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '存储迁移失败',
@@ -116,7 +113,7 @@ export async function GET(request: NextRequest) {
       }
     }, { status: 200 });
   } catch (error) {
-    console.error('[API] 获取迁移状态失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '获取迁移状态失败',

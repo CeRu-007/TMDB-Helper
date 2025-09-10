@@ -32,17 +32,16 @@ export function readScheduledTasks(userId: string = 'user_admin_system'): Schedu
 
     const tasksFilePath = getTasksFilePath(userId);
     if (!fs.existsSync(tasksFilePath)) {
-      console.log('[ServerScheduledTasks] 定时任务文件不存在，返回空数组');
+      
       return [];
     }
 
     const data = fs.readFileSync(tasksFilePath, 'utf-8');
     const tasks = JSON.parse(data) as ScheduledTask[];
-    
-    console.log(`[ServerScheduledTasks] 从服务端文件读取到 ${tasks.length} 个定时任务`);
+
     return tasks;
   } catch (error) {
-    console.error('[ServerScheduledTasks] 读取定时任务文件失败:', error);
+    
     return [];
   }
 }
@@ -58,11 +57,10 @@ export function writeScheduledTasks(tasks: ScheduledTask[], userId: string = 'us
     // 使用可读紧凑格式保存定时任务
     const data = stringifyAuto(tasks, 'tasks');
     fs.writeFileSync(tasksFilePath, data, 'utf-8');
-    
-    console.log(`[ServerScheduledTasks] 成功写入 ${tasks.length} 个定时任务到服务端文件`);
+
     return true;
   } catch (error) {
-    console.error('[ServerScheduledTasks] 写入定时任务文件失败:', error);
+    
     return false;
   }
 }
@@ -88,7 +86,7 @@ export function addScheduledTask(task: ScheduledTask, userId: string = 'user_adm
     
     return writeScheduledTasks(tasks, userId);
   } catch (error) {
-    console.error('[ServerScheduledTasks] 添加定时任务失败:', error);
+    
     return false;
   }
 }
@@ -102,7 +100,7 @@ export function updateScheduledTask(updatedTask: ScheduledTask, userId: string =
     const taskIndex = tasks.findIndex(t => t.id === updatedTask.id);
 
     if (taskIndex === -1) {
-      console.warn(`[ServerScheduledTasks] 要更新的任务不存在: ${updatedTask.id}`);
+      
       return addScheduledTask(updatedTask, userId);
     }
 
@@ -111,7 +109,7 @@ export function updateScheduledTask(updatedTask: ScheduledTask, userId: string =
 
     return writeScheduledTasks(tasks, userId);
   } catch (error) {
-    console.error('[ServerScheduledTasks] 更新定时任务失败:', error);
+    
     return false;
   }
 }
@@ -125,14 +123,13 @@ export function deleteScheduledTask(taskId: string, userId: string = 'user_admin
     const filteredTasks = tasks.filter(t => t.id !== taskId);
 
     if (filteredTasks.length === tasks.length) {
-      console.warn(`[ServerScheduledTasks] 要删除的任务不存在: ${taskId}`);
+      
       return false;
     }
 
-    console.log(`[ServerScheduledTasks] 删除任务: ${taskId}`);
     return writeScheduledTasks(filteredTasks, userId);
   } catch (error) {
-    console.error('[ServerScheduledTasks] 删除定时任务失败:', error);
+    
     return false;
   }
 }
@@ -151,7 +148,6 @@ export function getItemScheduledTasks(itemId: string, userId: string = 'user_adm
  */
 export function syncTasksFromClient(clientTasks: ScheduledTask[]): boolean {
   try {
-    console.log(`[ServerScheduledTasks] 开始同步 ${clientTasks.length} 个客户端任务到服务端`);
     
     // 读取现有的服务端任务
     const serverTasks = readScheduledTasks();
@@ -171,10 +167,10 @@ export function syncTasksFromClient(clientTasks: ScheduledTask[]): boolean {
         
         if (clientUpdated > serverUpdated) {
           mergedTasks.push(clientTask);
-          console.log(`[ServerScheduledTasks] 使用客户端版本: ${clientTask.name}`);
+          
         } else {
           mergedTasks.push(serverTask);
-          console.log(`[ServerScheduledTasks] 使用服务端版本: ${serverTask.name}`);
+          
         }
         
         // 从Map中移除已处理的任务
@@ -182,26 +178,26 @@ export function syncTasksFromClient(clientTasks: ScheduledTask[]): boolean {
       } else {
         // 新的客户端任务
         mergedTasks.push(clientTask);
-        console.log(`[ServerScheduledTasks] 添加新的客户端任务: ${clientTask.name}`);
+        
       }
     }
     
     // 添加剩余的服务端任务（客户端没有的）
     for (const [, serverTask] of serverTasksMap) {
       mergedTasks.push(serverTask);
-      console.log(`[ServerScheduledTasks] 保留服务端任务: ${serverTask.name}`);
+      
     }
     
     // 写入合并后的任务
     const success = writeScheduledTasks(mergedTasks);
     
     if (success) {
-      console.log(`[ServerScheduledTasks] 同步完成，共 ${mergedTasks.length} 个任务`);
+      
     }
     
     return success;
   } catch (error) {
-    console.error('[ServerScheduledTasks] 同步任务失败:', error);
+    
     return false;
   }
 }

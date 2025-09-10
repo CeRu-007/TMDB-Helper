@@ -19,9 +19,7 @@ export async function POST(request: NextRequest) {
         error: '缺少平台URL参数'
       }, { status: 400 });
     }
-    
-    console.log(`[API] 执行播出平台抓取: URL=${platformUrl}, Season=${seasonNumber}`);
-    
+
     // 查找TMDB-Import目录
     const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
     if (!fs.existsSync(tmdbImportDir)) {
@@ -34,20 +32,15 @@ export async function POST(request: NextRequest) {
     
     // 构建播出平台抓取命令
     const extractCommand = `python -m tmdb-import "${platformUrl}"`;
-    
-    console.log(`[API] 执行命令: ${extractCommand}`);
-    console.log(`[API] 工作目录: ${tmdbImportDir}`);
-    
+
     try {
       const { stdout, stderr } = await execAsync(extractCommand, {
         cwd: tmdbImportDir,
         timeout: 300000 // 5分钟超时
       });
-      
-      console.log(`[API] 命令执行完成`);
-      console.log(`[API] 标准输出:`, stdout);
+
       if (stderr) {
-        console.log(`[API] 标准错误:`, stderr);
+        
       }
       
       // 解析CSV文件路径
@@ -71,9 +64,7 @@ export async function POST(request: NextRequest) {
           csvFilesWithStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
           const latestCsvFile = csvFilesWithStats[0].file;
           const fullCsvPath = path.join(tmdbImportDir, latestCsvFile);
-          
-          console.log(`[API] 通过文件查找找到CSV: ${fullCsvPath}`);
-          
+
           return NextResponse.json({
             success: true,
             csvPath: fullCsvPath,
@@ -113,9 +104,7 @@ export async function POST(request: NextRequest) {
           }
         }, { status: 500 });
       }
-      
-      console.log(`[API] 播出平台抓取成功，CSV文件: ${csvAbsolutePath}`);
-      
+
       return NextResponse.json({
         success: true,
         csvPath: csvAbsolutePath,
@@ -124,7 +113,6 @@ export async function POST(request: NextRequest) {
       }, { status: 200 });
       
     } catch (execError: any) {
-      console.error(`[API] 命令执行失败:`, execError);
       
       return NextResponse.json({
         success: false,
@@ -141,7 +129,7 @@ export async function POST(request: NextRequest) {
     }
     
   } catch (error) {
-    console.error('[API] 播出平台抓取失败:', error);
+    
     return NextResponse.json({
       success: false,
       error: '播出平台抓取失败',
@@ -154,7 +142,6 @@ export async function POST(request: NextRequest) {
  * 从输出中解析CSV文件路径
  */
 function parseCSVPathFromOutput(output: string): string | null {
-  console.log(`[API] 尝试解析CSV路径，输出内容:`, output);
   
   // 尝试多种可能的输出格式
   const patterns = [
@@ -179,10 +166,9 @@ function parseCSVPathFromOutput(output: string): string | null {
   const csvFiles = output.match(/\S+\.csv/g);
   if (csvFiles && csvFiles.length > 0) {
     const csvPath = csvFiles[csvFiles.length - 1]; // 使用最后一个找到的CSV文件
-    console.log(`[API] 通过通用匹配找到CSV路径: ${csvPath}`);
+    
     return csvPath;
   }
-  
-  console.warn(`[API] 无法解析CSV路径，完整输出:`, output);
+
   return null;
 }

@@ -49,7 +49,7 @@ export function getDockerConfig(): DockerConfig {
     saveDockerConfig(DEFAULT_CONFIG)
     return DEFAULT_CONFIG
   } catch (error) {
-    console.error('读取Docker配置失败:', error)
+    
     return DEFAULT_CONFIG
   }
 }
@@ -66,7 +66,7 @@ export function saveDockerConfig(config: DockerConfig): void {
 
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2))
   } catch (error) {
-    console.error('保存Docker配置失败:', error)
+    
     throw new Error('保存配置失败')
   }
 }

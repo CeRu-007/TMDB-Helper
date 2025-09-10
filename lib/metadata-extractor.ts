@@ -80,7 +80,7 @@ export class MetadataExtractor {
         confidence: result.confidence || 0.5,
       }
     } catch (error) {
-      console.error("元数据提取失败:", error)
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : "未知错误",

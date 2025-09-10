@@ -8,16 +8,15 @@ import { readScheduledTasks } from '@/lib/server-scheduled-tasks';
  * 用于检查是否有错过的任务需要执行
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  console.log('[API] 收到定时任务检查请求');
   
   try {
     // 从服务器端存储读取项目数据
     let items;
     try {
       items = readItems();
-      console.log(`[API] 从服务器存储读取到 ${items.length} 个项目`);
+      
     } catch (serverError) {
-      console.warn(`[API] 服务器存储读取失败，返回空列表:`, serverError);
+      
       items = [];
     }
 
@@ -25,11 +24,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     let tasks: ScheduledTask[] = [];
     try {
       tasks = readScheduledTasks();
-      console.log(`[API] 从服务端文件获取到 ${tasks.length} 个定时任务`);
+      
     } catch (serverError) {
-      console.warn(`[API] 服务端文件读取失败，尝试从StorageManager获取:`, serverError);
+      
       tasks = await StorageManager.getScheduledTasks();
-      console.log(`[API] 从StorageManager获取到 ${tasks.length} 个定时任务`);
+      
     }
 
     const now = new Date();
@@ -59,7 +58,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           upcomingTasks.push(task);
         }
       } catch (error) {
-        console.error(`[API] 检查任务 ${task.id} 时出错:`, error);
+        
       }
     }
 
@@ -88,7 +87,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
 
   } catch (error: any) {
-    console.error('[API] 检查定时任务失败:', error);
+    
     return NextResponse.json({ 
       success: false,
       error: '检查定时任务失败', 
@@ -101,7 +100,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  * POST 处理程序 - 执行错过的任务
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  console.log('[API] 收到执行错过任务请求');
   
   try {
     const { taskId } = await request.json();
@@ -115,7 +113,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
       tasks = readScheduledTasks();
     } catch (serverError) {
-      console.warn(`[API] 服务端文件读取失败，尝试从StorageManager获取:`, serverError);
+      
       tasks = await StorageManager.getScheduledTasks();
     }
 
@@ -151,7 +149,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
       items = readItems();
     } catch (serverError) {
-      console.warn(`[API] 服务器存储读取失败:`, serverError);
+      
       items = [];
     }
 
@@ -182,7 +180,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const executeResult = await executeResponse.json();
 
     if (executeResult.success) {
-      console.log(`[API] 成功执行错过的任务: ${task.name}`);
+      
       return NextResponse.json({
         success: true,
         message: `成功执行错过的任务: ${task.name}`,
@@ -191,7 +189,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         executeResult
       });
     } else {
-      console.error(`[API] 执行错过的任务失败: ${task.name}`, executeResult);
+      
       return NextResponse.json({
         success: false,
         error: '执行错过的任务失败',
@@ -200,7 +198,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
   } catch (error: any) {
-    console.error('[API] 执行错过任务失败:', error);
+    
     return NextResponse.json({ 
       success: false,
       error: '执行错过任务失败', 

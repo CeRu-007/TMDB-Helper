@@ -12,16 +12,12 @@ export async function GET(request: NextRequest) {
                       userAgent.includes('TMDB-Helper-Electron') ||
                       process.env.ELECTRON_BUILD === 'true';
 
-    console.log('[Auth] User-Agent:', userAgent);
-    console.log('[Auth] 是否为桌面应用:', isElectron);
-
     // 如果是桌面应用，直接返回认证成功
     if (isElectron) {
-      console.log('[Auth] 桌面应用跳过认证检查');
-
+      
       // 确保管理员用户存在
       if (!AuthManager.hasAdminUser()) {
-        console.log('[Auth] 初始化管理员用户...');
+        
         await AuthManager.initializeFromEnv();
       }
 
@@ -37,7 +33,6 @@ export async function GET(request: NextRequest) {
         isElectron: true
       });
 
-      console.log('[Auth] 桌面应用认证成功');
       return response;
     }
 
@@ -80,7 +75,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[Auth] 认证验证失败:', error);
+    
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }
