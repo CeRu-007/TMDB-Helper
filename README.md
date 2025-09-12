@@ -1,6 +1,6 @@
 <img src="https://github.com/user-attachments/assets/7fabd3b5-dc7d-416f-83f8-ad79d223adc9" alt="TMDB-Helper Logo" width="300">
 
-[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/CeRu-007/TMDB-Helper)
+[![Version](https://img.shields.io/badge/version-0.4.1-blue.svg)](https://github.com/CeRu-007/TMDB-Helper)
 [![Docker](https://img.shields.io/badge/docker-supported-brightgreen.svg)](https://hub.docker.com/r/ceru007/tmdb-helper)
 [![TMDB-Import](https://img.shields.io/badge/dependency-TMDB--Import-blue.svg)](https://github.com/fzlins/TMDB-Import)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)

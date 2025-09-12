@@ -6,6 +6,15 @@ export async function GET() {
     // 获取版本描述信息
     const getVersionDescription = (version: string) => {
       switch (version) {
+        case '0.4.1':
+          return {
+            title: '调整分集简介的问题',
+            description: `主要更新：
+• 调整分集简介的问题
+• 修复频繁配置读取问题
+• 解决TMDB导入功能的Python模块缺失问题`,
+            releaseDate: '2025-09-12'
+          };
         case '0.4.0':
           return {
             title: 'feat: 新增独立维护功能与 AI 分集简介 + 多维度系统优化',
