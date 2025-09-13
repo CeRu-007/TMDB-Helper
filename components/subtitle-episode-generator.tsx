@@ -190,8 +190,8 @@ const SUMMARY_STYLES = [
   { id: "imitate", name: "模仿", description: "根据提供的样本内容，模仿其写作风格和表达方式生成简介", icon: "🎭", isExclusive: true },
 
   // 平台风格
-  { id: "crunchyroll", name: "Crunchyroll平台风格", description: "动漫平台专业风格：结构化简洁表达，客观描述核心冲突，每段≤15字的精准叙述", icon: "🍥" },
-  { id: "netflix", name: "Netflix平台风格", description: "流媒体平台戏剧风格：情感驱动叙述，强调角色困境与选择，富有张力的悬念营造", icon: "🎬" },
+  { id: "crunchyroll", name: "Crunchyroll平台风格", description: "动漫平台专业风格：结构化简洁表达，客观描述核心冲突", icon: "🍥" },
+  { id: "netflix", name: "Netflix平台风格", description: "情感驱动叙述，强调角色困境与选择，富有张力的悬念营造", icon: "🎬" },
   { id: "ai_free", name: "AI自由发挥", description: "AI根据内容自由生成", icon: "🤖" },
 
   // 常规风格
@@ -259,6 +259,7 @@ interface GenerationResult {
   styleId?: string // 单个风格ID，用于标识该结果对应的风格
   styleName?: string // 风格名称，用于显示
   error?: string // 错误类型，如 'INSUFFICIENT_BALANCE'
+  originalContent?: string // 原始内容，用于某些特殊情况
 }
 
 // 生成配置
@@ -437,70 +438,122 @@ export function SubtitleEpisodeGenerator({
     }
   })
 
+  // 配置是否已初始化的标记
+  const [configInitialized, setConfigInitialized] = useState(false)
+
   // 首次从服务端加载分集生成配置与模型
   React.useEffect(() => {
     (async () => {
       try {
+        console.log('🔧 [配置加载] 开始加载配置...')
+        
         const provider = (await ClientConfigManager.getItem('episode_generator_api_provider')) || 'siliconflow'
         const settingsKey = provider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
         const settingsText = await ClientConfigManager.getItem(settingsKey)
         let episodeGenerationModel = provider === 'siliconflow' ? 'deepseek-ai/DeepSeek-V2.5' : 'Qwen/Qwen3-32B'
+        
         if (settingsText) {
-          try { const s = JSON.parse(settingsText); if (s.episodeGenerationModel) episodeGenerationModel = s.episodeGenerationModel } catch {}
+          try { 
+            const s = JSON.parse(settingsText)
+            if (s.episodeGenerationModel) episodeGenerationModel = s.episodeGenerationModel 
+          } catch {}
         }
+        
         const saved = await ClientConfigManager.getItem('episode_generator_config')
+        console.log('🔧 [配置加载] 从服务端获取的配置:', saved)
+        
         if (saved) {
           try {
             const parsed = JSON.parse(saved)
+            console.log('🔧 [配置加载] 解析后的配置:', parsed)
+            
+            // 处理标题风格的兼容性
             if (parsed.selectedTitleStyles && Array.isArray(parsed.selectedTitleStyles)) {
               parsed.selectedTitleStyle = parsed.selectedTitleStyles[0] || 'location_skill'
               delete parsed.selectedTitleStyles
             } else if (!parsed.selectedTitleStyle) {
               parsed.selectedTitleStyle = 'location_skill'
             }
+            
+            // 处理简介风格的兼容性
             if (parsed.selectedStyles && Array.isArray(parsed.selectedStyles)) {
-              const validStyleIds = (typeof GENERATION_STYLES !== 'undefined' ? GENERATION_STYLES.map((s:any)=>s.id) : [])
-              parsed.selectedStyles = parsed.selectedStyles.filter((id:string)=> validStyleIds.length ? validStyleIds.includes(id) : true)
+              const validStyleIds = SUMMARY_STYLES.map(s => s.id)
+              parsed.selectedStyles = parsed.selectedStyles.filter((id: string) => validStyleIds.includes(id))
             } else {
               parsed.selectedStyles = []
             }
-            const { model: _omitModel, ...configWithoutModel } = parsed
-            setConfig(prev => ({
-              ...prev,
-              ...configWithoutModel,
-              model: episodeGenerationModel,
-            }))
-          } catch (e) {
             
+            // 确保所有必要字段都存在
+            const completeConfig = {
+              model: episodeGenerationModel,
+              summaryLength: parsed.summaryLength || [20, 30],
+              selectedStyles: parsed.selectedStyles || [],
+              selectedTitleStyle: parsed.selectedTitleStyle || 'location_skill',
+              temperature: parsed.temperature || 0.7,
+              includeOriginalTitle: parsed.includeOriginalTitle !== undefined ? parsed.includeOriginalTitle : true,
+              speechRecognitionModel: parsed.speechRecognitionModel || "FunAudioLLM/SenseVoiceSmall",
+              enableVideoAnalysis: parsed.enableVideoAnalysis || false,
+              imitateConfig: parsed.imitateConfig || {
+                sampleContent: "",
+                generateCount: 3
+              }
+            }
+            
+            console.log('🔧 [配置加载] 最终配置:', completeConfig)
+            setConfig(completeConfig)
+          } catch (e) {
+            console.error('🔧 [配置加载] 解析配置失败:', e)
             setConfig(prev => ({ ...prev, model: episodeGenerationModel }))
           }
         } else {
+          console.log('🔧 [配置加载] 未找到保存的配置，使用默认配置')
           setConfig(prev => ({ ...prev, model: episodeGenerationModel }))
         }
-      } catch (e) {
         
+        // 标记配置已初始化
+        setConfigInitialized(true)
+        console.log('🔧 [配置加载] 配置初始化完成')
+      } catch (e) {
+        console.error('🔧 [配置加载] 加载配置时出错:', e)
+        setConfigInitialized(true)
       }
     })()
   }, [])
 
-  // 自动保存配置变更到localStorage
+  // 自动保存配置变更到服务端
   React.useEffect(() => {
-    // 跳过初始化时的保存
-    if (config.model === "deepseek-ai/DeepSeek-V2.5" && 
-        config.summaryLength[0] === 20 && 
-        config.summaryLength[1] === 30 && 
-        config.selectedStyles.length === 0) {
+    // 只有在配置初始化完成后才进行保存
+    if (!configInitialized) {
+      console.log('🔧 [配置保存] 配置尚未初始化，跳过保存')
       return
     }
 
+    console.log('🔧 [配置保存] 配置发生变化，准备保存:', config)
+
     // 延迟保存，避免频繁保存
-    const timeoutId = setTimeout(() => {
-      const { model, ...configWithoutModel } = config
-      void EpisodeConfigClient.saveConfig(JSON.stringify(configWithoutModel))
+    const timeoutId = setTimeout(async () => {
+      try {
+        // 排除模型字段，因为模型是从全局设置中获取的
+        const { model, ...configWithoutModel } = config
+        const configJson = JSON.stringify(configWithoutModel)
+        
+        console.log('🔧 [配置保存] 开始保存配置到服务端:', configJson)
+        
+        // 使用 ClientConfigManager 保存配置
+        const success = await ClientConfigManager.setItem('episode_generator_config', configJson)
+        
+        if (success) {
+          console.log('🔧 [配置保存] 配置保存成功')
+        } else {
+          console.error('🔧 [配置保存] 配置保存失败')
+        }
+      } catch (error) {
+        console.error('🔧 [配置保存] 保存配置时出错:', error)
+      }
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [config])
+  }, [config, configInitialized])
 
   // 从全局设置加载API密钥
   const loadGlobalSettings = React.useCallback(async () => {
@@ -1153,13 +1206,12 @@ export function SubtitleEpisodeGenerator({
   // 构建提示词（为单个风格）
   const buildPromptForStyle = (episode: SubtitleEpisode, config: GenerationConfig, styleId: string): string => {
     const style = GENERATION_STYLES.find(s => s.id === styleId)
-    const styleDescription = style ? `${style.name}(${style.description})` : styleId
 
-    // 构建标题风格要求
+    // 构建标题风格要求 - 只使用描述内容，不包含风格名称
     const titleStyleRequirements = config.selectedTitleStyle
       ? (() => {
           const titleStyle = TITLE_STYLES.find(s => s.id === config.selectedTitleStyle)
-          return titleStyle ? `${titleStyle.name}(${titleStyle.description})` : config.selectedTitleStyle
+          return titleStyle ? titleStyle.description : config.selectedTitleStyle
         })()
       : "简洁有力，8-15个字符，体现本集核心看点"
 
@@ -1179,7 +1231,7 @@ ${config.imitateConfig.sampleContent}
 
 ## 生成要求
 1. **标题要求**：${titleStyleRequirements}
-2. **简介要求**：${summaryRequirement}，包含主要情节和看点
+2. **简介要求**：${summaryRequirement}
 3. **模仿要求**：
    - 【风格分析】：深入分析样本的写作风格、语调特点、句式结构和表达习惯
    - 【结构模仿】：学习样本的叙述结构、段落组织和信息呈现方式
@@ -1188,9 +1240,6 @@ ${config.imitateConfig.sampleContent}
    - 【风格一致】：确保生成的简介在写作风格上与样本保持一致，但用词完全不同
    - 【内容原创】：完全基于当前分集内容创作，只模仿风格不复制内容
 ## ⚠️ 重要要求
-- 简介字数必须控制在${config.summaryLength[0]}-${config.summaryLength[1]}字范围内
-- 如果内容需要，最多可超出到${config.summaryLength[1] + 10}字
-- 超出${config.summaryLength[1] + 10}字的内容不符合要求
 - **严禁使用疑问句、反问句或以问号结尾的句子**
 - **所有简介必须使用陈述句，确定性地描述剧情内容**
 - **重点：必须严格模仿样本的写作风格，包括用词、句式、表达习惯等**
@@ -1209,7 +1258,6 @@ ${config.customPrompt}` : ''}`
 
     // Netflix风格的特殊要求
     const netflixSpecialRequirements = styleId === 'netflix' ? `
-5. **Netflix风格特殊要求**：
    - **情感驱动叙述**：
      * 重点描述角色的内心冲突和情感状态
      * 突出人物关系的变化和张力
@@ -1236,24 +1284,30 @@ ${config.customPrompt}` : ''}`
 
     // Crunchyroll风格的特殊要求
     const crunchyrollSpecialRequirements = styleId === 'crunchyroll' ? `
-5. **Crunchyroll风格特殊要求**：
-   - **句式结构**（严格遵循以下两种格式之一）：
-     * 两段式：[情节点1]，[情节点2]。（一个逗号一个句号）
-     * 三段式：[情节点1]，[情节点2]，[情节点3]。（两个逗号一个句号）
+   - **句式结构**（根据字幕内容采用最合适的）：
+     * [核心角色] + [核心事件]
+     * [核心角色] + [核心行为]
+     * [情境] + [核心角色]
+     * [情境] + [核心事件]
+     * [情境] + [核心行为]
+     * [背景] + [核心行为]
+     * [背景] + [核心事件]
+     * [背景] + [核心角色]
    - **内容规范**：
-     * 每段情节点必须是主谓宾完整短句，长度不超过15字
-     * 聚焦核心冲突或人物关系转折，避免细节描述
-     * 结尾句必须保留悬念（暗示威胁、新角色登场或未解决事件）
-     * 用词简洁客观，严禁使用感叹号、夸张形容词
-   - **主题适配**：
-     * 奇幻/恐怖类：强调危机或超自然元素
-     * 日常/恋爱类：突出情感变化或生活事件
-     * 动作/冒险类：点明战斗目标与阻碍
-` : ''
+     * 每段句式长度不超过15字
+     * 严禁使用疑问句、反问句或以问号结尾的句子
+     * 在描述事件时，不要描述结果
+     * 句式结构的第二部分，可以是连续的
+     * 基本结构就是 “谁（在什么情况下）做了什么”。
+     * 优先使用能营造氛围的‘情境’作为开头，除非人物的核心动机（背景）是事件最独特、最重要的吸引力。
+     * 最终生成的结果必须是一个逗号+句号或者两个逗号+句号
+     **综合应用示例**：
+     * 采用 [情境] + [核心角色/核心行为]：在纸醉金迷的家族宴会上，恺撒意外发现了针对自己的暗杀阴谋。
+     * 采用 [背景] + [核心角色/核心行为]：为了巩固家族联盟，恺撒在一场盛宴上遭遇了突如其来的背叛。
+     * 采用 [核心角色] + [核心行为/事件]：恺撒在看似和谐的家族宴会中，揭开了一场暗杀计划的序幕。` : ''
 
     // AI自由发挥风格的特殊要求
     const aiFreeSpecialRequirements = styleId === 'ai_free' ? `
-5. **AI自由发挥风格特殊要求**：
    - 根据这段字幕文本生成一集分集剧情简介` : ''
 
     return `请根据以下字幕内容，为第${episode.episodeNumber}集生成标题和剧情简介：
@@ -1264,13 +1318,9 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
 ## 生成要求
 1. **标题要求**：${titleStyleRequirements}
 2. **简介要求**：${summaryRequirement}，包含主要情节和看点
-3. **简介风格要求**：严格采用${styleDescription}的风格，确保风格特色鲜明
-${netflixSpecialRequirements}${crunchyrollSpecialRequirements}${aiFreeSpecialRequirements}
+3. **简介风格要求**：${netflixSpecialRequirements}${crunchyrollSpecialRequirements}${aiFreeSpecialRequirements}
 
 ## ⚠️ 重要要求
-- 简介字数必须控制在${config.summaryLength[0]}-${config.summaryLength[1]}字范围内
-- 如果内容需要，最多可超出到${config.summaryLength[1] + 10}字
-- 超出${config.summaryLength[1] + 10}字的内容不符合要求
 - **严禁使用疑问句、反问句或以问号结尾的句子**
 - **所有简介必须使用陈述句，确定性地描述剧情内容**
 
@@ -1286,16 +1336,41 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
   // 构建提示词（兼容旧版本，融合多个风格）
   const buildPrompt = (episode: SubtitleEpisode, config: GenerationConfig): string => {
-    const styleDescriptions = config.selectedStyles.map(styleId => {
+    // 只使用风格的具体要求，不包含风格名称和描述
+    const styleRequirements = config.selectedStyles.map(styleId => {
       const style = GENERATION_STYLES.find(s => s.id === styleId)
-      return style ? `${style.name}(${style.description})` : styleId
-    }).join('、')
+      if (!style) return ''
+      
+      // 根据不同风格返回具体要求
+      switch (styleId) {
+        case 'crunchyroll':
+          return '结构化简洁表达，客观描述核心冲突'
+        case 'netflix':
+          return '情感驱动叙述，强调角色困境与选择，富有张力的悬念营造'
+        case 'professional':
+          return '正式、准确的描述风格'
+        case 'engaging':
+          return '吸引观众的生动描述'
+        case 'suspenseful':
+          return '营造紧张悬疑氛围'
+        case 'emotional':
+          return '注重情感表达和共鸣'
+        case 'humorous':
+          return '轻松幽默的表达方式'
+        case 'dramatic':
+          return '强调戏剧冲突和张力'
+        case 'ai_free':
+          return 'AI根据内容自由生成'
+        default:
+          return style.description
+      }
+    }).filter(req => req).join('，')
 
-    // 构建标题风格要求
+    // 构建标题风格要求 - 只使用描述内容
     const titleStyleRequirements = config.selectedTitleStyle
       ? (() => {
           const titleStyle = TITLE_STYLES.find(s => s.id === config.selectedTitleStyle)
-          return titleStyle ? `${titleStyle.name}(${titleStyle.description})` : config.selectedTitleStyle
+          return titleStyle ? titleStyle.description : config.selectedTitleStyle
         })()
       : "简洁有力，8-15个字符，体现本集核心看点"
 
@@ -1309,12 +1384,9 @@ ${episode.content.substring(0, 2000)}${episode.content.length > 2000 ? '...' : '
 ## 生成要求
 1. **标题要求**：${titleStyleRequirements}
 2. **简介要求**：字数控制在${lengthRange}字范围内，最多不超过${config.summaryLength[1] + 10}字，包含主要情节和看点
-3. **风格要求**：采用${styleDescriptions}的风格
+3. **风格要求**：${styleRequirements}
 
 ## ⚠️ 重要要求
-- 简介字数必须控制在${lengthRange}字范围内
-- 如果内容需要，最多可超出到${config.summaryLength[1] + 10}字
-- 超出${config.summaryLength[1] + 10}字的内容不符合要求
 - **严禁使用疑问句、反问句或以问号结尾的句子**
 - **所有简介必须使用陈述句，确定性地描述剧情内容**
 
