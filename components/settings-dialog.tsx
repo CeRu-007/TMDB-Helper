@@ -1850,6 +1850,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                       </div>
                     </SelectItem>
 
+                    <SelectItem value="deepseek-ai/DeepSeek-V3.1">
+                      <div className="flex flex-col">
+                        <span className="font-medium">DeepSeek-V3.1</span>
+                        <span className="text-xs text-gray-500">DeepSeek最新版本，强大的推理和代码能力</span>
+                      </div>
+                    </SelectItem>
                     <SelectItem value="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B">
                       <div className="flex flex-col">
                         <span className="font-medium">DeepSeek-R1-Distill-Qwen-32B</span>
@@ -1860,13 +1866,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                       <div className="flex flex-col">
                         <span className="font-medium">Qwen2.5-72B-Instruct</span>
                         <span className="text-xs text-gray-500">开源版本，72B参数</span>
-                      </div>
-                    </SelectItem>
-
-                    <SelectItem value="moonshotai/Kimi-K2-Instruct">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Kimi-K2-Instruct</span>
-                        <span className="text-xs text-gray-500">月之暗面Kimi大模型，支持长文本理解</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="deepseek-ai/DeepSeek-R1-0528">

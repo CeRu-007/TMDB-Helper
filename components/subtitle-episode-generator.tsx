@@ -4358,10 +4358,9 @@ function GenerationTab({
   const modelScopeModelOptions = [
     { value: "Qwen/Qwen3-32B", label: "Qwen3-32B (推荐)", description: "通义千问3代，32B参数，强大推理能力" },
     { value: "ZhipuAI/GLM-4.5", label: "GLM-4.5", description: "智谱AI旗舰模型，专为智能体设计" },
+    { value: "deepseek-ai/DeepSeek-V3.1", label: "DeepSeek-V3.1", description: "DeepSeek最新版本，强大的推理和代码能力" },
     { value: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B", label: "DeepSeek-R1-Distill-Qwen-32B", description: "DeepSeek R1蒸馏版本，32B参数，高效推理" },
     { value: "Qwen/Qwen2.5-72B-Instruct", label: "Qwen2.5-72B-Instruct", description: "开源版本，72B参数" },
-
-    { value: "moonshotai/Kimi-K2-Instruct", label: "Kimi-K2-Instruct", description: "月之暗面Kimi大模型，支持长文本理解" },
     { value: "deepseek-ai/DeepSeek-R1-0528", label: "DeepSeek-R1-0528", description: "DeepSeek R1思考模型，具备强大的推理能力" }
   ]
 

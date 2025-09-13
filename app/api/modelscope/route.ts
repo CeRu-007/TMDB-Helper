@@ -196,8 +196,8 @@ export async function POST(request: NextRequest) {
 
     const apiEndpoint = `${MODELSCOPE_API_BASE}/chat/completions`;
 
-    // 检查是否是需要特殊处理的思考模型（Qwen3-32B 和 DeepSeek-R1 系列）
-    const isThinkingModel = model.includes('Qwen3-32B') || model.includes('DeepSeek-R1');
+    // 检查是否是需要特殊处理的思考模型（Qwen3-32B 和 DeepSeek-R1/V3 系列）
+    const isThinkingModel = model.includes('Qwen3-32B') || model.includes('DeepSeek-R1') || model.includes('DeepSeek-V3');
 
     // 构建请求体
     const requestBody: any = {
@@ -418,7 +418,11 @@ export async function GET(request: NextRequest) {
         name: 'Qwen3-32B',
         description: '通义千问3代，32B参数，强大推理能力'
       },
-
+      {
+        id: 'deepseek-ai/DeepSeek-V3.1',
+        name: 'DeepSeek-V3.1',
+        description: 'DeepSeek V3.1思考模型，具备强大的推理和思考能力'
+      },
       {
         id: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B',
         name: 'DeepSeek-R1-Distill-Qwen-32B',
@@ -429,7 +433,6 @@ export async function GET(request: NextRequest) {
         name: 'Qwen2.5-72B-Instruct',
         description: '开源版本，72B参数'
       },
-
       {
         id: 'Qwen/Qwen2.5-14B-Instruct',
         name: 'Qwen2.5-14B-Instruct',
@@ -439,11 +442,6 @@ export async function GET(request: NextRequest) {
         id: 'Qwen/Qwen2.5-7B-Instruct',
         name: 'Qwen2.5-7B-Instruct',
         description: '开源版本，7B参数'
-      },
-      {
-        id: 'moonshotai/Kimi-K2-Instruct',
-        name: 'Kimi-K2-Instruct',
-        description: '月之暗面Kimi大模型，支持长文本理解'
       },
       {
         id: 'deepseek-ai/DeepSeek-R1-0528',
