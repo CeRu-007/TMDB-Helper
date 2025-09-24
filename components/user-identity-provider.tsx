@@ -78,18 +78,20 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
       if (isValidSession) {
         // 获取用户信息
         const info = UserManager.getUserInfo()
-        // 如果有认证用户信息，使用认证用户的显示名称
-        if (authUser) {
+        // 如果有认证用户信息且用户信息中显示名称是默认值，则使用认证用户的显示名称
+        if (authUser && info.displayName.startsWith('用户')) {
           info.displayName = authUser.username
+          UserManager.updateDisplayName(authUser.username)
         }
         setUserInfo(info)
         
       } else {
         // 创建新用户会话
         const info = UserManager.getUserInfo()
-        // 如果有认证用户信息，使用认证用户的显示名称
-        if (authUser) {
+        // 如果有认证用户信息且用户信息中显示名称是默认值，则使用认证用户的显示名称
+        if (authUser && info.displayName.startsWith('用户')) {
           info.displayName = authUser.username
+          UserManager.updateDisplayName(authUser.username)
         }
         setUserInfo(info)
         

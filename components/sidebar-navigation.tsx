@@ -74,7 +74,8 @@ const menuItems: MenuItem[] = [
     label: "分集简介",
     icon: <FileText className="h-4 w-4" />,
     submenu: [
-      { id: "episode-generator", label: "AI生成", icon: <Wand2 className="h-3 w-3" /> }
+      { id: "episode-generator", label: "AI生成", icon: <Wand2 className="h-3 w-3" /> },
+      { id: "ai-chat", label: "AI对话", icon: <Sparkles className="h-3 w-3" /> }
     ]
   },
   {

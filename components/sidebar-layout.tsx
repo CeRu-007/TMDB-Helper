@@ -6,6 +6,7 @@ import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
 import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
 import { IndependentMaintenance } from "@/components/independent-maintenance"
+import { AiChat } from "@/components/ai-chat"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -393,10 +394,18 @@ export function SidebarLayout({
         return (
           <div className="h-full">
             <SubtitleEpisodeGenerator
-              onOpenGlobalSettings={(section) => {
+              onOpenGlobalSettings={(section: string) => {
                 onShowSettingsDialog(section)
               }}
             />
+          </div>
+        )
+
+      case 'content-generation-ai-chat':
+        // AI对话
+        return (
+          <div className="h-full">
+            <AiChat />
           </div>
         )
 

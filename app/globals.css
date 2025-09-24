@@ -108,6 +108,20 @@
   border-color: hsl(var(--muted-foreground) / 0.4);
 }
 
+/* 添加加载动画定义 */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 /* 禁用Shift按下时的文本选择 */
 body.shift-select-mode {
   user-select: none;
