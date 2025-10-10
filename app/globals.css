@@ -244,3 +244,13 @@ body > [data-dropdown-menu="true"] {
   --primary: 330.4 81.2% 60.4%;
   --primary-foreground: 210 40% 98%;
 }
+
+/* 隐藏滚动条但保持滚动功能 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}

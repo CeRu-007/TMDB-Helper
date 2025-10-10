@@ -20,7 +20,8 @@ import {
   Download,
   Scissors,
   Wand2,
-  FileText
+  FileText,
+  Search
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -68,6 +69,11 @@ const menuItems: MenuItem[] = [
       { id: "recent", label: "近期开播", icon: <Play className="h-3 w-3" /> },
       { id: "streaming-nav", label: "平台导航", icon: <Film className="h-3 w-3" /> }
     ]
+  },
+  {
+    id: "image-recognition",
+    label: "影视识别",
+    icon: <Search className="h-4 w-4" />
   },
   {
     id: "content-generation",
@@ -198,8 +204,15 @@ export function SidebarNavigation({
         setHoveredMenuItem(null)
       }
     } else {
-      // 如果没有子菜单，切换展开状态
-      toggleMenu(menuId)
+      // 检查是否有子菜单
+      const menuItem = menuItems.find(item => item.id === menuId)
+      if (menuItem?.submenu && menuItem.submenu.length > 0) {
+        // 如果有子菜单，切换展开状态
+        toggleMenu(menuId)
+      } else {
+        // 如果没有子菜单，直接导航到该菜单
+        onMenuSelect(menuId, 'recognize') // 对于影视识别，使用固定的子菜单ID
+      }
     }
   }
 
@@ -230,7 +243,14 @@ export function SidebarNavigation({
                       ? "bg-blue-100 dark:bg-blue-900/50 border-r-2 border-r-blue-500"
                       : "hover:bg-gray-100 dark:hover:bg-gray-800"
                       }`}
-                    onClick={() => handleMenuClick(item.id, item.submenu?.[0]?.id)}
+                    onClick={() => {
+                      const menuItem = menuItems.find(m => m.id === item.id)
+                      if (menuItem?.submenu && menuItem.submenu.length > 0) {
+                        handleMenuClick(item.id, item.submenu[0].id)
+                      } else {
+                        handleMenuClick(item.id)
+                      }
+                    }}
                   >
                     {item.icon}
                     {/* 激活状态指示器 */}

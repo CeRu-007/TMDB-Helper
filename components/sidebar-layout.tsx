@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react"
 import { SidebarNavigation } from "@/components/sidebar-navigation"
-
+import { ImageRecognition } from "@/components/image-recognition/image-recognition"
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
 import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
 import { IndependentMaintenance } from "@/components/independent-maintenance"
@@ -406,6 +406,22 @@ export function SidebarLayout({
         return (
           <div className="h-full">
             <AiChat />
+          </div>
+        )
+
+      case 'image-recognition':
+        // 影视识别 - 直接导航，无子菜单
+        return (
+          <div className="h-full">
+            <ImageRecognition />
+          </div>
+        )
+
+      case 'image-recognition-recognize':
+        // 图像识别
+        return (
+          <div className="h-full">
+            <ImageRecognition />
           </div>
         )
 
@@ -979,8 +995,8 @@ export function SidebarLayout({
         {/* 主内容区域 - 桌面端避免被侧边栏遮挡 */}
         <main className={`flex-1 overflow-hidden `}>
           {/* 根据页面类型决定是否使用滚动容器 */}
-          {contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' ? (
-            // 缩略图相关页面：提供固定高度容器，让组件内部处理滚动
+          {contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'image-recognition-recognize' ? (
+            // 缩略图相关页面和图像识别页面：提供固定高度容器，让组件内部处理滚动
             <div className="h-full overflow-hidden">
               {renderContent()}
             </div>
