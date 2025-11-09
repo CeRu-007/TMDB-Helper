@@ -9,7 +9,7 @@
 本项目完全由AI生成，AI写的过程中产生了些许冗余代码，但目前并未影响使用。
 TMDB-Helper 旨在帮助用户高效地管理和维护 TMDB (The Movie Database) 上的电视剧词条。它提供了一个直观的用户界面，用户可以轻松追踪媒体内容的维护进度。
 
-<img width="2489" height="1367" alt="image" src="https://github.com/user-attachments/assets/6c87b5c6-fa22-4ae2-8171-f6035e88bf5c" />
+<img width="2489" height="1367" alt="image" src="https://github.com/user-attachments/assets/7dae1a8f-b7a8-4549-b944-fe1324accb92" />
 
 
 ## 主要特性
