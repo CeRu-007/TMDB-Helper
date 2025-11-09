@@ -254,3 +254,39 @@ body > [data-dropdown-menu="true"] {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Safari and Chrome */
 }
+
+/* 全局应用隐藏滚动条样式 */
+*::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+* {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* 特殊情况下需要显示滚动条的元素 */
+.scrollbar-show::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-show::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.scrollbar-show::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.scrollbar-show::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.scrollbar-show {
+  -ms-overflow-style: auto;
+  scrollbar-width: auto;
+}

@@ -36,6 +36,7 @@ import {
 import { useTheme } from "next-themes"
 import { LayoutPreferencesManager } from "@/lib/layout-preferences"
 import Image from "next/image"
+import { TMDBGuide } from "@/components/tmdb-guide"
 import StreamingPlatformNav from "@/components/streaming-platforms/streaming-platform-nav"
 
 export interface SidebarLayoutProps {
@@ -870,6 +871,10 @@ export function SidebarLayout({
       case 'thumbnails-crop':
         // 显示图片裁切内容
         return <ImageCropper />
+
+      // 编辑指南页面
+      case 'tmdb-guide':
+        return <TMDBGuide activeSection="general" />
 
       default:
         return (

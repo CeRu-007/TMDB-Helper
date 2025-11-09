@@ -21,7 +21,8 @@ import {
   Scissors,
   Wand2,
   FileText,
-  Search
+  Search,
+  BookOpen
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -69,6 +70,11 @@ const menuItems: MenuItem[] = [
       { id: "recent", label: "近期开播", icon: <Play className="h-3 w-3" /> },
       { id: "streaming-nav", label: "平台导航", icon: <Film className="h-3 w-3" /> }
     ]
+  },
+  {
+    id: "tmdb-guide",
+    label: "编辑指南",
+    icon: <BookOpen className="h-4 w-4" />
   },
   {
     id: "image-recognition",
@@ -211,7 +217,7 @@ export function SidebarNavigation({
         toggleMenu(menuId)
       } else {
         // 如果没有子菜单，直接导航到该菜单
-        onMenuSelect(menuId, 'recognize') // 对于影视识别，使用固定的子菜单ID
+        onMenuSelect(menuId)
       }
     }
   }
