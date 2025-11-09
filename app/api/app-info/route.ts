@@ -6,6 +6,33 @@ export async function GET() {
     // 获取版本描述信息
     const getVersionDescription = (version: string) => {
       switch (version) {
+        case '0.4.5':
+          return {
+            title: '新增AI对话功能与图像识别功能',
+            description: `主要更新：
+1. 批量安装 TMDB-Import 所需 Python 包
+• 优化安装流程，支持一键安装所有依赖
+
+2. 修复分集简介保存逻辑及风格提示词
+• 改进保存机制，确保数据完整性
+• 优化风格提示词，提升生成质量
+
+3. 新增 DeepSeek-V3.1 模型
+• 集成最新AI模型，增强处理能力
+
+4. feat (ai-chat): 新增 AI 对话功能及相关组件
+• 实现智能对话系统
+• 提供丰富的交互组件
+
+5. feat (图像识别): 新增影视图像识别功能及相关 API
+• 智能识别影视内容
+• 提供专用API接口
+
+6. feat (侧边栏): 添加 TMDB 编辑指南页面及导航项（预留）
+• 新增编辑指南页面
+• 完善导航结构`,
+            releaseDate: '2025-09-07'
+          };
         case '0.4.0':
           return {
             title: 'feat: 新增独立维护功能与 AI 分集简介 + 多维度系统优化',

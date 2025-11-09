@@ -1,6 +1,6 @@
 {
   "name": "tmdb-helper",
-  "version": "0.4.0",
+  "version": "0.4.5",
   "description": "Docker化的TMDB媒体管理助手 - 专为容器化部署设计的Next.js应用",
   "author": "TMDB Helper Team",
   "keywords": [
@@ -226,7 +226,7 @@
     },
     "extraMetadata": {
       "main": "electron/main.js",
-      "version": "0.4.0"
+      "version": "0.4.5"
     }
   },
   "electronMain": "electron/main.js"
