@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { StorageManager } from '@/lib/storage';
+import { ServerStorageManager } from '@/lib/server-storage-manager';
 import { TMDBItem } from '@/lib/storage';
 import { getUserIdFromRequest } from '@/lib/user-utils';
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
     console.log(`[API] 添加项目 - 用户ID: ${userId}`);
 
-    const success = await StorageManager.addItem(item);
+    const success = ServerStorageManager.addItem(item);
 
     if (success) {
       return NextResponse.json({ success: true, item, userId }, { status: 201 });
@@ -59,7 +59,7 @@ export async function PUT(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
     console.log(`[API] 更新项目 - 用户ID: ${userId}, 项目ID: ${item.id}`);
 
-    const success = await StorageManager.updateItem(item);
+    const success = ServerStorageManager.updateItem(item);
 
     if (success) {
       return NextResponse.json({ success: true, item, userId }, { status: 200 });
@@ -96,7 +96,7 @@ export async function DELETE(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
     console.log(`[API] 删除项目 - 用户ID: ${userId}, 项目ID: ${id}`);
 
-    const success = await StorageManager.deleteItem(id);
+    const success = ServerStorageManager.deleteItem(id);
 
     if (success) {
       return NextResponse.json({ success: true, userId }, { status: 200 });

@@ -231,56 +231,16 @@ export class StorageManager {
     return [];
   }
 
-  /**
-   * 直接从文件系统读取数据（服务器端）
-   */
-  private static async readItemsFromFileSystem(): Promise<TMDBItem[]> {
-    try {
-      // 确保只在服务器端执行
-      if (this.isClient()) {
-        console.warn('[StorageManager] 尝试在客户端环境中使用文件系统访问');
-        return [];
-      }
 
-      const fs = await import('fs');
-      const path = await import('path');
-      
-      // 构建文件路径
-      const DATA_DIR = path.join(process.cwd(), 'data');
-      const USERS_DIR = path.join(DATA_DIR, 'users');
-      const USER_DIR = path.join(USERS_DIR, 'user_admin_system');
-      const DATA_FILE = path.join(USER_DIR, 'tmdb_items.json');
-
-      // 检查文件是否存在
-      if (!fs.existsSync(DATA_FILE)) {
-        console.log(`[StorageManager] 数据文件不存在: ${DATA_FILE}`);
-        return [];
-      }
-
-      // 读取文件内容
-      const fileContent = fs.readFileSync(DATA_FILE, 'utf-8');
-      const items = JSON.parse(fileContent);
-
-      console.log(`[StorageManager] 成功从文件系统读取 ${items.length} 个词条`);
-      return items;
-    } catch (error) {
-      console.error(`[StorageManager] 从文件系统读取数据失败:`, error);
-      return [];
-    }
-  }
 
   /**
    * 带重试机制的获取items方法
+   * 注意：此方法现在完全通过API获取数据，不再直接访问文件系统
    */
   static async getItemsWithRetry(retries = this.MAX_RETRIES): Promise<TMDBItem[]> {
     // 首次调用时进行环境检�?
     if (retries === this.MAX_RETRIES) {
       this.checkDevelopmentEnvironment();
-    }
-
-    // 服务器端：直接读取文件系统
-    if (!this.isClient()) {
-      return this.readItemsFromFileSystem();
     }
 
     // 客户端：调用API
