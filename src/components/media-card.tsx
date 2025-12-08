@@ -114,10 +114,10 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
     <div className="cursor-pointer group">
       {/* 播出时间标签 - 电视剧和短剧只显示每日更新标签，其他分类显示日期时间 */}
       {showAirTime && (
-        <div className="mb-2 flex flex-wrap gap-1">
+        <div className="mb-2 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide">
           {/* 已完结条目显示完结日期标签 */}
           {item.status === "completed" ? (
-            <Badge className="bg-gray-600 text-white text-xs px-2 py-1 rounded-full">
+            <Badge className="bg-gray-600 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap">
               {getCompletionDate() ? `${getCompletionDate()} 完结` : "已完结"}
             </Badge>
           ) : (
@@ -125,11 +125,11 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
               {/* 电视剧和短剧显示每日更新标签和播出时间标签 */}
               {isDailyUpdate ? (
                 <>
-                <Badge className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                <Badge className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap">
                   <Zap className="h-3 w-3 mr-1 animate-pulse" />
                   每日更新
                 </Badge>
-                  <Badge className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                  <Badge className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap">
                     {getTimeOnly()}
                   </Badge>
                 </>
@@ -137,7 +137,7 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
                 <>
                   {/* 主要播出日标签 */}
                   <Badge
-                    className={`text-white text-xs px-2 py-1 rounded-full ${
+                    className={`text-white text-xs px-2 py-1 rounded-full whitespace-nowrap ${
                       // 如果是今天的播出日，使用特殊颜色
                       item.weekday === new Date().getDay() ? "bg-red-500 animate-pulse" : "bg-green-500"
                     }`}
@@ -148,7 +148,7 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
                   {/* 第二播出日标签（如果有） */}
                   {hasSecondWeekday && (
                     <Badge
-                      className={`text-white text-xs px-2 py-1 rounded-full ${
+                      className={`text-white text-xs px-2 py-1 rounded-full whitespace-nowrap ${
                         // 如果是今天的播出日，使用特殊颜色
                         item.secondWeekday === new Date().getDay() ? "bg-red-500 animate-pulse" : "bg-blue-500"
                       }`}
@@ -238,11 +238,11 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
       </div>
 
       {/* 标题和更新信息 - 移到海报容器外部，确保不受悬停效果影响 */}
-      <div className="mt-2 space-y-1 relative z-0">
+      <div className="mt-1 relative z-0">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
           {item.title}
         </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{getUpdateText()}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{getUpdateText()}</p>
       </div>
     </div>
   )
