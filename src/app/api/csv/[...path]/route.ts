@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseCsvContent } from '../../../../lib/csv-processor-client';
+import { parseCsvContent } from '@/lib/csv-processor-client';
 
 export async function GET(
   request: NextRequest,

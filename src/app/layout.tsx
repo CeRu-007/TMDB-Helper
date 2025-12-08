@@ -5,7 +5,11 @@ import type React from "react"
 import MidLayout from "./mid-layout"
 import { ErrorBoundary } from '@/components/error-boundary'
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: false
+})
 
 export const metadata: Metadata = {
   title: "TMDB维护助手",

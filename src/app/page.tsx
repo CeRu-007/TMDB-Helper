@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import type { MediaNewsType } from "../types/media-news"
+import type { MediaNewsType } from "@/types/media-news"
 
 import { useState, useEffect } from "react"
 import {
