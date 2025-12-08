@@ -180,6 +180,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [detailTab, setDetailTab] = useState("details")
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
+  const [isMarkingEpisode, setIsMarkingEpisode] = useState(false)
+  const [highlightedEpisode, setHighlightedEpisode] = useState<number | null>(null)
   // 全局外观设置（仅取本页需要的字段）
   const [appearanceSettings, setAppearanceSettings] = useState<{
     detailBackdropBlurEnabled?: boolean
@@ -343,11 +345,27 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   }, [open, contentRef.current])
 
   const handleEpisodeToggle = async (episodeNumber: number, completed: boolean, seasonNumber: number) => {
+    // 计算要操作的集数范围
+    const episodeNumbers: number[] = [episodeNumber]
+    let rangeInfo = `第${episodeNumber}集`
+    
+    // Shift多选逻辑：只有在按住Shift且已有最后点击的集数时才启用范围选择
+    if (isShiftPressed && lastClickedEpisode !== null && lastClickedEpisode !== episodeNumber) {
+      const start = Math.min(lastClickedEpisode, episodeNumber)
+      const end = Math.max(lastClickedEpisode, episodeNumber)
+      episodeNumbers.length = 0 // 清空单集数组
+      
+      for (let i = start; i <= end; i++) {
+        episodeNumbers.push(i)
+      }
+      rangeInfo = `第${start}-${end}集`
+    }
+
     // 添加视觉反馈
     if (completed) {
-      setCopyFeedback(`第${episodeNumber}集已标记为完成`)
+      setCopyFeedback(`${rangeInfo}已标记为完成`)
     } else {
-      setCopyFeedback(`第${episodeNumber}集已标记为未完成`)
+      setCopyFeedback(`${rangeInfo}已标记为未完成`)
     }
     setTimeout(() => setCopyFeedback(null), 1500)
 
@@ -360,19 +378,12 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         if (season.seasonNumber === seasonNumber) {
           let updatedEpisodes = [...season.episodes]
 
-          if (isShiftPressed && lastClickedEpisode !== null && lastClickedEpisode !== episodeNumber) {
-            const start = Math.min(lastClickedEpisode, episodeNumber)
-            const end = Math.max(lastClickedEpisode, episodeNumber)
-
-            updatedEpisodes = updatedEpisodes.map((ep) => {
-              if (ep.number >= start && ep.number <= end) {
-                return { ...ep, completed }
-              }
-              return ep
-            })
-          } else {
-            updatedEpisodes = updatedEpisodes.map((ep) => (ep.number === episodeNumber ? { ...ep, completed } : ep))
-          }
+          // 对每个要操作的集数进行更新
+          episodeNumbers.forEach(epNum => {
+            updatedEpisodes = updatedEpisodes.map((ep) => 
+              ep.number === epNum ? { ...ep, completed } : ep
+            )
+          })
 
           return { ...season, episodes: updatedEpisodes }
         }
@@ -430,14 +441,21 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     // 先更新本地状态，实现即时UI反馈
     setLocalItem(updatedItem)
-    setLastClickedEpisode(episodeNumber)
+    
+    // 只有在非Shift多选时才更新最后点击的集数
+    if (!(isShiftPressed && lastClickedEpisode !== null && lastClickedEpisode !== episodeNumber)) {
+      setLastClickedEpisode(episodeNumber)
+    }
+
+    // 为单集操作添加短暂的高亮效果
+    if (episodeNumbers.length === 1) {
+      setHighlightedEpisode(episodeNumbers[0])
+      setTimeout(() => setHighlightedEpisode(null), 500) // 500ms后清除高亮
+    }
 
     try {
-      // 调用API更新数据
-      const episodeNumbers = isShiftPressed && lastClickedEpisode !== null && lastClickedEpisode !== episodeNumber
-        ? Array.from({ length: Math.abs(episodeNumber - lastClickedEpisode) + 1 }, (_, i) =>
-            Math.min(lastClickedEpisode, episodeNumber) + i)
-        : [episodeNumber]
+      // 批量操作也不需要显示加载状态，因为速度很快
+      // setIsMarkingEpisode(true) // 移除加载状态
 
       const requestData = {
         itemId: updatedItem.id,
@@ -468,6 +486,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
       // API成功后，通知父组件更新全局状态
       onUpdate(updatedItem)
+      
+      // 清除加载状态
+      // setIsMarkingEpisode(false) // 移除加载状态
 
     } catch (error) {
       
@@ -475,6 +496,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setLocalItem(localItem)
       setCopyFeedback('更新失败，请重试')
       setTimeout(() => setCopyFeedback(null), 2000)
+      
+      // 清除加载状态
+      // setIsMarkingEpisode(false) // 移除加载状态
     }
   }
 
@@ -538,6 +562,105 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     // 再通知父组件
     onUpdate(updatedItem)
+  }
+
+  // 处理指定集数的批量标记
+  const handleBatchEpisodeToggle = async (seasonNumber: number, episodeNumbers: number[], completed: boolean) => {
+    // 添加视觉反馈
+    setCopyFeedback(`正在标记第${Math.min(...episodeNumbers)}-${Math.max(...episodeNumbers)}集${completed ? '为完成' : '为未完成'}`)
+    setTimeout(() => setCopyFeedback(null), 2000)
+
+    // 立即更新本地状态，实现即时UI反馈
+    let updatedItem = { ...localItem }
+
+    if (updatedItem.seasons && seasonNumber) {
+      // 多季模式
+      const updatedSeasons = updatedItem.seasons.map((season) => {
+        if (season.seasonNumber === seasonNumber) {
+          let updatedEpisodes = [...season.episodes]
+
+          // 对每个要操作的集数进行更新
+          episodeNumbers.forEach(epNum => {
+            updatedEpisodes = updatedEpisodes.map((ep) => 
+              ep.number === epNum ? { ...ep, completed } : ep
+            )
+          })
+
+          return { ...season, episodes: updatedEpisodes }
+        }
+        return season
+      })
+
+      // 更新扁平化的episodes数组
+      const allEpisodes = updatedSeasons.flatMap((season) =>
+        season.episodes.map((ep) => ({
+          ...ep,
+          seasonNumber: season.seasonNumber,
+        })),
+      )
+
+      updatedItem = {
+        ...updatedItem,
+        seasons: updatedSeasons,
+        episodes: allEpisodes,
+        updatedAt: new Date().toISOString(),
+      }
+    }
+
+    // 检查是否所有集数都已完成
+    const allCompleted = updatedItem.episodes?.every((ep) => ep.completed) && updatedItem.episodes.length > 0
+    if (allCompleted && updatedItem.status === "ongoing") {
+      updatedItem.status = "completed"
+      updatedItem.completed = true
+    } else if (!allCompleted && updatedItem.status === "completed") {
+      updatedItem.status = "ongoing"
+      updatedItem.completed = false
+    }
+
+    // 先更新本地状态
+    setLocalItem(updatedItem)
+
+    try {
+      // 批量操作也不需要显示加载状态，因为速度很快
+      // setIsMarkingEpisode(true) // 移除加载状态
+
+      const requestData = {
+        itemId: updatedItem.id,
+        seasonNumber: seasonNumber,
+        episodeNumbers: episodeNumbers,
+        completed: completed
+      }
+
+      const response = await fetch('/api/mark-episodes-completed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`API调用失败: ${response.status} ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      if (!result.success) {
+        throw new Error(result.error || 'API返回错误')
+      }
+
+      // API成功后，通知父组件更新全局状态
+      onUpdate(updatedItem)
+
+    } catch (error) {
+      // 如果API调用失败，回滚本地状态
+      setLocalItem(localItem)
+      setCopyFeedback('批量更新失败，请重试')
+      setTimeout(() => setCopyFeedback(null), 2000)
+    } finally {
+      // 清除加载状态
+      // setIsMarkingEpisode(false) // 移除加载状态
+    }
   }
 
   const handleMovieToggle = (completed: boolean) => {
@@ -1283,6 +1406,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             <div className="flex-1 pr-4">
 
               <DialogTitle className="text-xl flex items-center">
+                {isMarkingEpisode && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {localItem.mediaType === "movie" ? (
                   <Film className="mr-2 h-5 w-5" />
                 ) : (
@@ -2146,11 +2272,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                           if (currentSeason) {
                                             // 标记前10集为已完成
                                             const episodes = currentSeason.episodes.slice(0, 10);
-                                            episodes.forEach(ep => {
-                                              if (!ep.completed) {
-                                                handleEpisodeToggle(ep.number, true, selectedSeason!);
-                                              }
-                                            });
+                                            const uncompletedEpisodes = episodes.filter(ep => !ep.completed);
+                                            
+                                            if (uncompletedEpisodes.length > 0) {
+                                              // 批量标记未完成的集数
+                                              const episodeNumbers = uncompletedEpisodes.map(ep => ep.number);
+                                              handleBatchEpisodeToggle(selectedSeason!, episodeNumbers, true);
+                                            }
                                           }
                                         }}
                                         disabled={!currentSeason}
@@ -2168,6 +2296,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                             key={episode.number}
                                             id={`episode-${episode.number}-${selectedSeason}`}
                                             checked={episode.completed}
+                                            disabled={false} // 不再禁用，因为操作很快
                                             onCheckedChange={(checked) => {
                                               // 确保checked是布尔值
                                               const isChecked = checked === true;
@@ -2175,6 +2304,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                             }}
                                             onClick={() => setLastClickedEpisode(episode.number)}
                                             label={`${episode.number}`}
+                                            className={[
+                                              highlightedEpisode === episode.number ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
+                                            ].join(" ").trim()}
                                           />
                                         ))}
                                       </div>

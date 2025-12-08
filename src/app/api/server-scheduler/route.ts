@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readScheduledTasks, writeScheduledTasks } from '@/lib/server-scheduled-tasks';
-import { readItems } from '@/lib/server-storage';
+// import { readItems } from '@/lib/server-storage'; // 替换为StorageManager
+import { StorageManager } from '@/lib/storage';
 import { ScheduledTask, TMDBItem } from '@/lib/storage';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -97,7 +98,7 @@ class ServerScheduler {
       
       // 读取所有定时任务
       const tasks = readScheduledTasks();
-      const items = readItems();
+      const items = await StorageManager.getItemsWithRetry();
 
       if (tasks.length === 0) {
         

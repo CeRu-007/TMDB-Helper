@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeItems, readItems } from '@/lib/server-storage';
+// import { writeItems, readItems } from '@/lib/server-storage'; // 移除迁移功能
+import { StorageManager } from '@/lib/storage';
 import { TMDBItem } from '@/lib/storage';
 
 /**
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const serverItems = readItems();
+    const serverItems = await StorageManager.getItemsWithRetry();
     
     return NextResponse.json({
       success: true,

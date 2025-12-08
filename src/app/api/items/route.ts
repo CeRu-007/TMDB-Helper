@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readUserItems } from '@/lib/user-aware-storage';
+// import { readUserItems } from '@/lib/user-aware-storage'; // 替换为StorageManager
+import { StorageManager } from '@/lib/storage';
 import { getUserIdFromRequest } from '@/lib/user-utils';
 import { TMDBItem } from '@/lib/storage';
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     // 获取用户的项目数据
     let items: TMDBItem[] = [];
     try {
-      items = readUserItems(userId);
+      items = await StorageManager.getItemsWithRetry();
       
     } catch (error) {
       
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       case 'validate_consistency':
         // 数据一致性验证
         try {
-          const currentItems = readUserItems(userId);
+          const currentItems = await StorageManager.getItemsWithRetry();
           
           return NextResponse.json({
             success: true,
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
       case 'sync_check':
         // 同步检查
         try {
-          const currentItems = readUserItems(userId);
+          const currentItems = await StorageManager.getItemsWithRetry();
           
           return NextResponse.json({
             success: true,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserIdFromRequest } from '@/lib/user-utils'
-import { clearUserData } from '@/lib/user-aware-storage'
+// import { clearUserData } from '@/lib/user-aware-storage' // 替换为StorageManager
+import { StorageManager } from '@/lib/storage'
 
 /**
  * 清空用户存储数据
@@ -18,20 +19,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 清空用户数据
-    const success = clearUserData(userId)
-
-    if (success) {
-      
-      return NextResponse.json({
-        success: true,
-        message: '存储数据已清空'
-      })
-    } else {
-      return NextResponse.json({
-        success: false,
-        error: '清空存储数据失败'
-      }, { status: 500 })
-    }
+    // 注意：StorageManager当前没有实现clear功能，需要后续添加
+    return NextResponse.json({
+      success: false,
+      error: '清空存储功能暂未实现'
+    }, { status: 501 })
   } catch (error) {
     
     return NextResponse.json({

@@ -1,22 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readItems } from '@/lib/server-storage';
-import { readUserItems, migrateExistingData } from '@/lib/user-aware-storage';
+// import { readItems } from '@/lib/server-storage';
+// import { readUserItems, migrateExistingData } from '@/lib/user-aware-storage'; // 替换为StorageManager
+import { StorageManager } from '@/lib/storage';
 
 const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
 
 // GET /api/storage/items - 获取所有项目（管理员用户）
 export async function GET(request: NextRequest) {
   try {
-    
-    // 首次访问时尝试迁移现有数据到admin用户
-    try {
-      migrateExistingData(ADMIN_USER_ID);
-    } catch (migrationError) {
-      
-    }
-
     // 读取管理员的项目数据
-    const items = readUserItems(ADMIN_USER_ID);
+    const items = await StorageManager.getItemsWithRetry();
 
     return NextResponse.json({
       items,

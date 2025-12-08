@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addItem, updateItem, deleteItem } from '@/lib/server-storage';
-import { addUserItem, updateUserItem, deleteUserItem } from '@/lib/user-aware-storage';
+import { StorageManager } from '@/lib/storage';
 import { TMDBItem } from '@/lib/storage';
+import { getUserIdFromRequest } from '@/lib/user-utils';
 
 const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
 
-// POST /api/storage/item - 添加新项目（管理员用户）
+// POST /api/storage/item - 添加新项目
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
@@ -18,10 +18,14 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const success = addUserItem(ADMIN_USER_ID, item);
+    // 获取用户ID
+    const userId = await getUserIdFromRequest(request);
+    console.log(`[API] 添加项目 - 用户ID: ${userId}`);
+
+    const success = await StorageManager.addItem(item);
 
     if (success) {
-      return NextResponse.json({ success: true, item, userId: ADMIN_USER_ID }, { status: 201 });
+      return NextResponse.json({ success: true, item, userId }, { status: 201 });
     } else {
       return NextResponse.json({
         error: '添加项目失败',
@@ -38,7 +42,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/storage/item - 更新项目（管理员用户）
+// PUT /api/storage/item - 更新项目
 export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
@@ -51,10 +55,14 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const success = updateUserItem(ADMIN_USER_ID, item);
+    // 获取用户ID
+    const userId = await getUserIdFromRequest(request);
+    console.log(`[API] 更新项目 - 用户ID: ${userId}, 项目ID: ${item.id}`);
+
+    const success = await StorageManager.updateItem(item);
 
     if (success) {
-      return NextResponse.json({ success: true, item, userId: ADMIN_USER_ID }, { status: 200 });
+      return NextResponse.json({ success: true, item, userId }, { status: 200 });
     } else {
       return NextResponse.json({
         error: '更新项目失败，项目可能不存在',
@@ -71,7 +79,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE /api/storage/item - 删除项目（管理员用户）
+// DELETE /api/storage/item - 删除项目
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -84,10 +92,14 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const success = deleteUserItem(ADMIN_USER_ID, id);
+    // 获取用户ID
+    const userId = await getUserIdFromRequest(request);
+    console.log(`[API] 删除项目 - 用户ID: ${userId}, 项目ID: ${id}`);
+
+    const success = await StorageManager.deleteItem(id);
 
     if (success) {
-      return NextResponse.json({ success: true, userId: ADMIN_USER_ID }, { status: 200 });
+      return NextResponse.json({ success: true, userId }, { status: 200 });
     } else {
       return NextResponse.json({
         error: '删除项目失败，项目可能不存在',

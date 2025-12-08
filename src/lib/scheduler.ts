@@ -2,7 +2,7 @@ import { StorageManager, ScheduledTask, TMDBItem } from './storage';
 import { taskExecutionLogger } from './task-execution-logger'
 import { BrowserInterruptDetector, BrowserInterruptResult } from './browser-interrupt-detector';
 import { DistributedLock } from './distributed-lock';
-import { StorageSyncManager } from './storage-sync-manager';
+// import { StorageSyncManager } from './storage-sync-manager'; // 移除已删除的依赖
 import { realtimeSyncManager } from './realtime-sync-manager';
 import { ConflictDetector } from './conflict-detector';
 import { ConflictResolver } from './conflict-resolver';

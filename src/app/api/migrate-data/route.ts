@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { migrateExistingData, getAllUsers, getUserStats } from '@/lib/user-aware-storage';
+// import { migrateExistingData, getAllUsers, getUserStats } from '@/lib/user-aware-storage'; // 移除迁移功能
+// 使用默认的StorageManager
 import { getUserIdFromRequest } from '@/lib/user-utils';
 
 /**
@@ -76,21 +77,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 获取用户统计信息
-    const userStats = getUserStats(userId);
-    
-    // 获取所有用户列表（仅用于管理目的）
-    const allUsers = getAllUsers();
-    
+    // 统计功能已移除
     return NextResponse.json({
       success: true,
       userId,
-      userStats,
-      totalUsers: allUsers.length,
-      allUsers: allUsers.map(id => ({
-        userId: id,
-        stats: getUserStats(id)
-      }))
+      message: '数据统计功能已统一管理'
     });
   } catch (error) {
     

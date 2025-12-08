@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StorageManager, TMDBItem, Season, Episode, ScheduledTask } from '@/lib/storage';
-import { readItems } from '@/lib/server-storage';
+// import { readItems } from '@/lib/server-storage'; // 替换为StorageManager
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -546,7 +546,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         // 优先使用服务器端存储，确保数据一致性
         let items: TMDBItem[] = [];
         try {
-            items = readItems(); // 直接从服务器端文件读取
+            items = await StorageManager.getItemsWithRetry(); // 使用StorageManager
             
         } catch (serverError) {
             
@@ -929,7 +929,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         // 检查系统中是否有项目
         let items: TMDBItem[] = [];
         try {
-            items = readItems(); // 直接从服务器端文件读取
+            items = await StorageManager.getItemsWithRetry(); // 使用StorageManager
             
         } catch (serverError) {
             

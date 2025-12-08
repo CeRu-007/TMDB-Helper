@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readItems } from '@/lib/server-storage';
+// import { readItems } from '@/lib/server-storage'; // 替换为StorageManager
+import { StorageManager } from '@/lib/storage';
 import { readScheduledTasks } from '@/lib/server-scheduled-tasks';
 import { TMDBItem, ScheduledTask } from '@/lib/storage';
 
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     // 读取服务端项目数据
     let items: TMDBItem[] = [];
     try {
-      items = readItems();
+      items = await StorageManager.getItemsWithRetry();
       
     } catch (error) {
       
