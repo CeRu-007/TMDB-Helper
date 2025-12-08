@@ -3,7 +3,6 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import type React from "react"
 import MidLayout from "./mid-layout"
-import { ErrorBoundary } from '@/components/error-boundary'
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -35,9 +34,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/tmdb-helper-logo.png" />
       </head>
       <body className={inter.className}>
-        <ErrorBoundary>
-          <MidLayout>{children}</MidLayout>
-        </ErrorBoundary>
+        <MidLayout>{children}</MidLayout>
       </body>
     </html>
   )

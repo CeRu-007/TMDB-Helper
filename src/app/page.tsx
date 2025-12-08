@@ -46,7 +46,6 @@ import {
 import { log } from '@/lib/logger'
 import { handleError } from '@/lib/error-handler'
 import { perf } from '@/lib/performance-manager'
-import { ErrorBoundary } from '@/components/error-boundary'
 import { useMediaNews } from '@/hooks/use-media-news'
 import { useScheduledTasks } from '@/hooks/use-scheduled-tasks'
 import { WeekdayNavigation } from '@/components/home/weekday-navigation'
