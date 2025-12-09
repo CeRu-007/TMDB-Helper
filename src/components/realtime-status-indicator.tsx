@@ -149,7 +149,7 @@ export function RealtimeStatusIndicator({
     )
 }
 
-// 简化版状态指示器，用于移动端
+// 简化版状态指示器
 export function SimpleRealtimeStatusIndicator({
     isConnected,
     pendingOperations,

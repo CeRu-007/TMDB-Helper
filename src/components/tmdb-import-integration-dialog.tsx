@@ -2587,20 +2587,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         height: 200px;
         color: var(--muted-foreground);
       }
-
-      /* 响应式表格 */
-      @media (max-width: 768px) {
-        .csv-table-toolbar {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 8px;
-        }
-        
-        .csv-table-status {
-          justify-content: center;
-        }
-      }
-    `;
+      `;
     document.head.appendChild(globalStyle);
 
     // 在inTab模式下添加特定的样式

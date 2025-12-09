@@ -300,7 +300,7 @@ const StreamingPlatformNav: React.FC = () => {
           </div>
         </div>
 
-        {/* 平台网格 - 可拖拽排序，响应式网格布局 */}
+        {/* 平台网格 - 可拖拽排序 */}
         <div className="max-w-7xl mx-auto">
           <DndContext
             sensors={sensors}

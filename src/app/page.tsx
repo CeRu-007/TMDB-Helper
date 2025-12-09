@@ -885,7 +885,7 @@ export default function HomePage() {
 
     return (
       <div className={containerClasses}>
-        <div className="mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-6">
           <div className="flex justify-between items-center py-3">
             {/* 左侧：日期导航按钮 */}
             <div className="flex space-x-1 overflow-x-auto">
@@ -1084,7 +1084,7 @@ export default function HomePage() {
   // 区域选择导航栏
   const RegionNavigation = () => (
     <div className="mb-4 border-b border-blue-100/70 dark:border-blue-900/30 pb-3">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between">
           {/* 当前选中区域显示和切换按钮集成 */}
           <div className="flex items-center">
@@ -1269,7 +1269,7 @@ export default function HomePage() {
 
             {/* 内容展示区域 */}
             <div className="mt-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+              <div className="grid grid-cols-6 gap-6">
                 {getFilteredItems(filteredOngoingItems).map((item) => (
                   <MediaCard
                     key={item.id}
@@ -1308,7 +1308,7 @@ export default function HomePage() {
 
             {/* 内容展示区域 */}
             <div className="mt-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+              <div className="grid grid-cols-6 gap-6">
                 {getFilteredItems(filteredCompletedItems).map((item) => (
                   <MediaCard
                     key={item.id}
@@ -1337,8 +1337,8 @@ export default function HomePage() {
 
           <TabsContent value="upcoming">
             {/* 影视资讯内容头部 */}
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-              <div className="flex items-center mb-4 sm:mb-0">
+            <div className="flex flex-row justify-between items-center mb-6">
+              <div className="flex items-center mb-0">
                 <div className="relative mr-3">
                   <div className="absolute inset-0 bg-blue-500 blur-md opacity-20 rounded-full"></div>
                   <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-full text-white">
@@ -1444,7 +1444,7 @@ export default function HomePage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                <div className="grid grid-cols-6 gap-6">
                   {upcomingItems
                     .filter(upcomingItem => 
                       !items.some(item => 
@@ -1616,7 +1616,7 @@ export default function HomePage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                    <div className="grid grid-cols-6 gap-6">
                       {recentItems
                         .filter(recentItem => 
                           !items.some(item => 
@@ -2181,7 +2181,7 @@ export default function HomePage() {
 
                 {/* 内容展示区域 */}
                 <div className="mt-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                  <div className="grid grid-cols-6 gap-6">
                     {getFilteredItems(filteredOngoingItems).map((item) => (
                       <MediaCard
                         key={item.id}
@@ -2220,7 +2220,7 @@ export default function HomePage() {
 
                 {/* 内容展示区域 */}
                 <div className="mt-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                  <div className="grid grid-cols-6 gap-6">
                     {getFilteredItems(filteredCompletedItems).map((item) => (
                       <MediaCard
                         key={item.id}

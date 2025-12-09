@@ -172,7 +172,7 @@ body.shift-select-mode .episode-item:hover {
   pointer-events: auto !important;
 }
 
-/* 移动端用户抽屉菜单 */
+/* 用户抽屉菜单 */
 [data-user-drawer="true"] {
   z-index: 101 !important; /* 略高于下拉菜单 */
   isolation: isolate !important;

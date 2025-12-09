@@ -27,7 +27,7 @@ const categories = [
 ]
 
 export function HomeContent({ homeState, mediaNews }: HomeContentProps) {
-  const containerClasses = "mx-auto px-4 lg:px-8"
+  const containerClasses = "mx-auto px-6"
 
   return (
     <main className="flex-1">
@@ -36,7 +36,7 @@ export function HomeContent({ homeState, mediaNews }: HomeContentProps) {
           {/* 主要标签页 */}
           <Tabs value={homeState.activeTab} onValueChange={homeState.setActiveTab}>
             <div className="flex flex-row items-center justify-between gap-4 mb-6">
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-4">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="upcoming" className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4" />
                   <span>即将上线</span>

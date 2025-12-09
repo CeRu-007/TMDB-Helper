@@ -565,7 +565,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
   return (
     <div className="h-full independent-maintenance">
-      <div className="h-full flex flex-col lg:flex-row">
+      <div className="h-full flex flex-row">
         {/* 左侧区域 - 根据标签页显示不同内容 */}
         <div className="flex-1 bg-gray-900 dark:bg-gray-950 overflow-hidden min-w-0">
           <div className="h-full flex flex-col">
@@ -661,14 +661,14 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
           </div>
         </div>
 
-        {/* 右侧操作面板 - 响应式宽度 */}
-        <div className="w-full lg:w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
+        {/* 右侧操作面板 */}
+        <div className="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
         {/* 操作面板头部 */}
-        <div className="p-3 lg:p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             独立维护
           </h3>
-          <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             维护已完结但未跟踪的连载影视
           </p>
         </div>
@@ -676,13 +676,13 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         {/* 标签导航 */}
         <div className="px-3 lg:px-4 pt-3 lg:pt-4">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "process" | "edit")}>
-            <TabsList className="grid w-full grid-cols-2 h-9 lg:h-10">
-              <TabsTrigger value="process" className="flex items-center space-x-1 lg:space-x-2 text-xs lg:text-sm">
-                <Terminal className="h-3 w-3 lg:h-4 lg:w-4" />
+            <TabsList className="grid w-full grid-cols-2 h-10">
+              <TabsTrigger value="process" className="flex items-center space-x-2 text-sm">
+                <Terminal className="h-4 w-4" />
                 <span>处理</span>
               </TabsTrigger>
-              <TabsTrigger value="edit" className="flex items-center space-x-1 lg:space-x-2 text-xs lg:text-sm">
-                <FileText className="h-3 w-3 lg:h-4 lg:w-4" />
+              <TabsTrigger value="edit" className="flex items-center space-x-2 text-sm">
+                <FileText className="h-4 w-4" />
                 <span>编辑</span>
               </TabsTrigger>
             </TabsList>
@@ -740,13 +740,13 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     placeholder="https://example.com/show-page"
                     value={platformUrl}
                     onChange={(e) => handleUrlChange(e.target.value)}
-                    className="mt-1 h-7 lg:h-8 text-xs"
+                    className="mt-1 h-8 text-xs"
                     autoComplete="off"
                     data-form-type="other"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="tmdb-id" className="text-xs font-medium">
                       TMDB ID
@@ -757,7 +757,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       placeholder="例: 290854"
                       value={tmdbId}
                       onChange={(e) => setTmdbId(e.target.value)}
-                      className="mt-1 h-7 lg:h-8 text-xs"
+                      className="mt-1 h-8 text-xs"
                       autoComplete="off"
                       data-form-type="other"
                     />
@@ -775,7 +775,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                         max="20"
                         value={selectedSeason}
                         onChange={(e) => handleSeasonChange(e.target.value)}
-                        className="w-12 h-7 lg:h-8 text-xs"
+                        className="w-12 h-8 text-xs"
                       />
                       <span className="text-xs">季</span>
                     </div>
@@ -791,16 +791,16 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                 )}
 
                 {/* 操作按钮组 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     onClick={handlePlatformExtraction}
                     disabled={!platformUrl.trim() || isProcessing || isExecutingCommand}
-                    className="bg-green-600 hover:bg-green-700 h-8 lg:h-9 text-xs"
+                    className="bg-green-600 hover:bg-green-700 h-9 text-xs"
                   >
                     {isProcessing ? (
-                      <Loader2 className="h-3 w-3 lg:h-4 lg:w-4 mr-1 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                     ) : (
-                      <Zap className="h-3 w-3 lg:h-4 lg:w-4 mr-1" />
+                      <Zap className="h-4 w-4 mr-1" />
                     )}
                     播出平台抓取
                   </Button>
@@ -808,12 +808,12 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                   <Button
                     onClick={handleTmdbImport}
                     disabled={!tmdbId.trim() || isProcessing || isExecutingCommand}
-                    className="bg-blue-600 hover:bg-blue-700 h-8 lg:h-9 text-xs"
+                    className="bg-blue-600 hover:bg-blue-700 h-9 text-xs"
                   >
                     {isProcessing ? (
-                      <Loader2 className="h-3 w-3 lg:h-4 lg:w-4 mr-1 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                     ) : (
-                      <Download className="h-3 w-3 lg:h-4 lg:w-4 mr-1" />
+                      <Download className="h-4 w-4 mr-1" />
                     )}
                     执行TMDB导入
                   </Button>
@@ -823,7 +823,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                 <Button
                   onClick={handleLoadCsv}
                   variant="outline"
-                  className="w-full h-7 lg:h-8 text-xs"
+                  className="w-full h-8 text-xs"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   加载CSV文件
@@ -859,7 +859,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     <Button
                       onClick={() => sendQuickCommand("y")}
                       disabled={!currentProcessId}
-                      className="bg-green-600 hover:bg-green-700 h-6 lg:h-7 text-xs"
+                      className="bg-green-600 hover:bg-green-700 h-7 text-xs"
                     >
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       确认(Y)
@@ -867,7 +867,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     <Button
                       onClick={() => sendQuickCommand("n")}
                       disabled={!currentProcessId}
-                      className="bg-red-600 hover:bg-red-700 h-6 lg:h-7 text-xs"
+                      className="bg-red-600 hover:bg-red-700 h-7 text-xs"
                     >
                       <XCircle className="h-3 w-3 mr-1" />
                       取消(N)
@@ -875,7 +875,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     <Button
                       onClick={() => sendQuickCommand("w")}
                       disabled={!currentProcessId}
-                      className="bg-yellow-600 hover:bg-yellow-700 h-6 lg:h-7 text-xs"
+                      className="bg-yellow-600 hover:bg-yellow-700 h-7 text-xs"
                     >
                       <Clock className="h-3 w-3 mr-1" />
                       等待(W)
@@ -891,7 +891,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     onClick={clearTerminal}
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-6 lg:h-7 text-xs"
+                    className="flex-1 h-7 text-xs"
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
                     清空
@@ -904,7 +904,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     }}
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-6 lg:h-7 text-xs"
+                    className="flex-1 h-7 text-xs"
                   >
                     <Copy className="h-3 w-3 mr-1" />
                     复制
@@ -919,18 +919,18 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                 <Button
                   onClick={handleLoadCsv}
                   variant="outline"
-                  className="w-full h-8 lg:h-auto text-xs"
+                  className="w-full h-auto text-xs"
                 >
-                  <Upload className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
+                  <Upload className="h-4 w-4 mr-2" />
                   加载CSV文件
                 </Button>
 
                 <Button
                   onClick={handleSaveCsv}
                   disabled={!csvData}
-                  className="w-full h-8 lg:h-auto text-xs"
+                  className="w-full h-auto text-xs"
                 >
-                  <Save className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
+                  <Save className="h-4 w-4 mr-2" />
                   保存CSV文件
                 </Button>
               </div>
@@ -949,7 +949,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         </div>
 
         {/* 底部状态信息 */}
-        <div className="mt-auto p-3 lg:p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="mt-auto p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-xs text-gray-500 dark:text-gray-400">
             <p>状态: {isProcessing ? "处理中..." : "就绪"}</p>
             <p>模式: 独立维护</p>

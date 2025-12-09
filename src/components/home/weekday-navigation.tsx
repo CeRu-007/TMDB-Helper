@@ -1,4 +1,4 @@
-use client"
+"use client"
 
 import React from 'react'
 import { Button } from '@/components/ui/button'
@@ -34,7 +34,7 @@ export function WeekdayNavigation({
 
   return (
     <div className={containerClasses}>
-      <div className="mx-auto px-8">
+      <div className="mx-auto px-6">
         <div className="flex justify-between items-center py-3">
           {/* 左侧：日期导航按钮 */}
           <div className="flex space-x-1 overflow-x-auto">
