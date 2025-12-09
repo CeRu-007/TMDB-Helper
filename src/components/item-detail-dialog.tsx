@@ -140,9 +140,10 @@ interface ItemDetailDialogProps {
   onUpdate: (item: TMDBItem) => void
   onDelete: (id: string) => void
   onOpenScheduledTask?: (item: TMDBItem) => void
+  displayMode?: "dialog" | "inline"
 }
 
-export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, onOpenScheduledTask }: ItemDetailDialogProps) {
+export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, onOpenScheduledTask, displayMode = "dialog" }: ItemDetailDialogProps) {
   const [pythonCmd, setPythonCmd] = useState<string>(process.platform === 'win32' ? 'python' : 'python3')
   useEffect(() => {
     (async () => {
@@ -319,6 +320,170 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
   }, [])
 
+  useEffect(() => {
+    if (displayMode !== 'inline') return
+    const container = typeof document !== 'undefined' ? document.getElementById('main-content-container') : null
+    if (!container) return
+    if (open) {
+      // 保存 container 原始样式到 dataset，以便在 cleanup 或异常卸载时恢复（更健壮）
+      try {
+        container.dataset.tmhPrevOverflow = container.style.overflow || ''
+        container.dataset.tmhPrevHeight = container.style.height || ''
+        container.dataset.tmhManaged = '1'
+      } catch {}
+
+      // 应用必须的样式，阻止 body 滚动
+      container.style.overflow = 'hidden'
+      container.style.height = 'calc(100vh - 64px)'
+
+      const root = document.documentElement
+      const body = document.body
+      const savedScrollY = window.scrollY || window.pageYOffset || 0
+      const prevRootOverflow = root.style.overflow
+      const prevBodyOverflow = body.style.overflow
+      const prevBodyPosition = body.style.position
+      const prevBodyTop = body.style.top
+      const prevBodyWidth = body.style.width
+      const prevRootOverscroll = root.style.overscrollBehavior
+      const prevBodyOverscroll = body.style.overscrollBehavior
+
+      root.style.overflow = 'hidden'
+      body.style.overflow = 'hidden'
+      root.style.overscrollBehavior = 'none'
+      body.style.overscrollBehavior = 'none'
+      body.style.position = 'fixed'
+      body.style.top = `-${savedScrollY}px`
+      body.style.width = '100%'
+
+      const getScrollableAncestor = (start: Node, within: HTMLElement): HTMLElement | null => {
+        let el: HTMLElement | null = (start as HTMLElement)?.closest('*') as HTMLElement
+        while (el && within.contains(el)) {
+          const style = window.getComputedStyle(el)
+          const overflowY = style.overflowY
+          if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
+            return el
+          }
+          el = el.parentElement
+        }
+        return within
+      }
+
+      const canScroll = (el: HTMLElement | null, deltaY: number) => {
+        if (!el) return false
+        if (deltaY < 0) return el.scrollTop > 0
+        if (deltaY > 0) return el.scrollTop + el.clientHeight < el.scrollHeight - 1
+        return false
+      }
+
+      const wheelHandler = (e: WheelEvent) => {
+        if (!contentRef.current) return
+        const within = contentRef.current
+        const target = e.target as Node
+        const deltaY = e.deltaY
+        if (!within.contains(target)) {
+          e.preventDefault()
+          return
+        }
+        const scrollEl = getScrollableAncestor(target, within)
+        if (!canScroll(scrollEl, deltaY)) {
+          e.preventDefault()
+        }
+      }
+
+      const touchStartYRef = { current: 0 }
+      const touchStartHandler = (e: TouchEvent) => {
+        const t = e.touches[0]
+        if (t) touchStartYRef.current = t.clientY
+      }
+      const touchMoveHandler = (e: TouchEvent) => {
+        if (!contentRef.current) return
+        const within = contentRef.current
+        const target = e.target as Node
+        const t = e.touches[0]
+        const deltaY = t ? touchStartYRef.current - t.clientY : 0
+        if (!within.contains(target)) {
+          e.preventDefault()
+          return
+        }
+        const scrollEl = getScrollableAncestor(target, within)
+        if (!canScroll(scrollEl, deltaY)) {
+          e.preventDefault()
+        }
+      }
+
+      window.addEventListener('wheel', wheelHandler, { passive: false })
+      window.addEventListener('touchstart', touchStartHandler, { passive: true })
+      window.addEventListener('touchmove', touchMoveHandler, { passive: false })
+      return () => {
+        // 恢复 container 的原始样式（优先从 dataset 读取以防闭包丢失）
+        try {
+          const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
+          const prevHeight = container.dataset.tmhPrevHeight ?? ''
+          container.style.overflow = prevOverflow
+          container.style.height = prevHeight
+          // 清理 dataset 标记
+          delete container.dataset.tmhPrevOverflow
+          delete container.dataset.tmhPrevHeight
+          delete container.dataset.tmhManaged
+        } catch {}
+
+        root.style.overflow = prevRootOverflow
+        body.style.overflow = prevBodyOverflow
+        body.style.position = prevBodyPosition
+        body.style.top = prevBodyTop
+        body.style.width = prevBodyWidth
+        root.style.overscrollBehavior = prevRootOverscroll
+        body.style.overscrollBehavior = prevBodyOverscroll
+        try {
+          const y = parseInt((prevBodyTop || '0').replace(/[^-\d]/g, ''))
+          if (!isNaN(y) && y !== 0) {
+            window.scrollTo({ top: -y, behavior: 'auto' })
+          }
+        } catch {}
+        window.removeEventListener('wheel', wheelHandler as any)
+        window.removeEventListener('touchstart', touchStartHandler as any)
+        window.removeEventListener('touchmove', touchMoveHandler as any)
+      }
+    } else {
+      // 如果不是 open 状态，确保我们没有留下样式（只在本组件曾管理过时清理）
+      try {
+        if (container.dataset.tmhManaged) {
+          const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
+          const prevHeight = container.dataset.tmhPrevHeight ?? ''
+          container.style.overflow = prevOverflow
+          container.style.height = prevHeight
+          delete container.dataset.tmhPrevOverflow
+          delete container.dataset.tmhPrevHeight
+          delete container.dataset.tmhManaged
+        } else {
+          container.style.overflow = ''
+          container.style.height = ''
+        }
+      } catch {
+        container.style.overflow = ''
+        container.style.height = ''
+      }
+    }
+  }, [open, displayMode])
+
+  // 防御性修复：组件挂载时如果发现之前遗留的样式标记（例如热重载或异常卸载导致）且当前 dialog 未打开，尝试清理
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    try {
+      const container = document.getElementById('main-content-container')
+      if (!container) return
+      if (container.dataset.tmhManaged && !open) {
+        const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
+        const prevHeight = container.dataset.tmhPrevHeight ?? ''
+        container.style.overflow = prevOverflow
+        container.style.height = prevHeight
+        delete container.dataset.tmhPrevOverflow
+        delete container.dataset.tmhPrevHeight
+        delete container.dataset.tmhManaged
+      }
+    } catch {}
+  }, [])
+
   // 监听滚动事件，实现视差效果
   useEffect(() => {
     if (!open || !contentRef.current) return
@@ -343,6 +508,23 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       contentElement?.removeEventListener('scroll', handleScroll)
     }
   }, [open, contentRef.current])
+
+  useEffect(() => {
+    if (!contentRef.current) return
+    const el = contentRef.current
+    const updateOverflow = () => {
+      const needsScroll = el.scrollHeight > el.clientHeight + 1
+      el.style.overflowY = needsScroll ? 'auto' : 'hidden'
+    }
+    updateOverflow()
+    const ro = new ResizeObserver(updateOverflow)
+    ro.observe(el)
+    window.addEventListener('resize', updateOverflow)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', updateOverflow)
+    }
+  }, [open, displayMode])
 
   const handleEpisodeToggle = async (episodeNumber: number, completed: boolean, seasonNumber: number) => {
     // 计算要操作的集数范围
@@ -1361,10 +1543,15 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           className={cn(
-            "max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none"
+            displayMode === 'inline'
+              ? "inset-0 rounded-none max-w-none max-h-none w-full h-full translate-x-0 translate-y-0 p-0 bg-transparent border-none overscroll-none touch-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right"
+              : "max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none"
           )}
           ref={contentRef}
           showCloseButton={false}
+          showOverlay={displayMode !== 'inline'}
+          container={typeof document !== 'undefined' && displayMode === 'inline' ? document.getElementById('main-content-container') as HTMLElement : undefined}
+          position={displayMode === 'inline' ? 'absolute' : 'fixed'}
         >
 
           {/* 背景图 - 使用BackgroundImage组件，支持缓存避免重复加载 */}
@@ -1401,7 +1588,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           })()}
 
           {/* 内容层 - 添加相对定位和z-index确保内容在背景图上方 */}
-          <div className="relative z-10 h-full overflow-auto">
+          <div className="relative z-10 h-full overflow-y-auto overscroll-none">
           <DialogHeader className="p-6 pb-2 flex flex-row items-start justify-between">
             <div className="flex-1 pr-4">
 
@@ -1533,10 +1720,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 variant="outline"
                 size="icon"
                 className="h-8 w-8 transition-transform hover:scale-110"
-                title="关闭"
+                title={displayMode === 'inline' ? "返回" : "关闭"}
                 onClick={() => onOpenChange(false)}
               >
-                <X className="h-4 w-4" />
+                {displayMode === 'inline' ? <ArrowRightCircle className="h-4 w-4 rotate-180" /> : <X className="h-4 w-4" />}
               </Button>
             </div>
           </DialogHeader>

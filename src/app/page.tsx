@@ -2179,7 +2179,8 @@ export default function HomePage() {
           WeekdayNavigation={WeekdayNavigation}
         >
           {/* 词条维护内容 */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div id="main-content-container" className="relative">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             {/* 只保留词条维护相关的内容，移除TabsList */}
               <TabsContent value="ongoing">
                 {/* 周几导航栏 */}
@@ -2253,6 +2254,7 @@ export default function HomePage() {
                 </div>
               </TabsContent>
             </Tabs>
+          </div>
         </SidebarLayout>
 
         {/* Dialogs */}
@@ -2310,6 +2312,7 @@ export default function HomePage() {
               setScheduledTaskItem(item);
               setShowScheduledTaskDialog(true);
             }}
+            displayMode="inline"
           />
         )}
       </>
@@ -2451,7 +2454,7 @@ export default function HomePage() {
         </div>
 
         {/* 主内容 */}
-        <div className="pb-8">
+        <div id="main-content-container" className="relative pb-8">
           {renderContent()}
         </div>
       </div>
@@ -2495,21 +2498,6 @@ export default function HomePage() {
               title: "定时任务已保存",
               description: `任务 "${task.name}" 已成功保存`,
             });
-          }}
-        />
-      )}
-      {selectedItem && (
-        <ItemDetailDialog
-          item={selectedItem}
-          open={!!selectedItem}
-          onOpenChange={(open) => {
-            if (!open) setSelectedItem(null)
-          }}
-          onUpdate={handleUpdateItem}
-          onDelete={handleDeleteItem}
-          onOpenScheduledTask={(item) => {
-            setScheduledTaskItem(item);
-            setShowScheduledTaskDialog(true);
           }}
         />
       )}

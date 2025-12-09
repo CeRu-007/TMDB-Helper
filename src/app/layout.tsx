@@ -3,6 +3,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import type React from "react"
 import MidLayout from "./mid-layout"
+import Script from "next/script";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -35,7 +36,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <MidLayout>{children}</MidLayout>
-      </body>
+</body>
     </html>
   )
 }
