@@ -172,7 +172,11 @@ export function BackgroundImage({
               "w-full h-full object-cover opacity-100", // 立即显示，移除过渡效果
               "absolute inset-0"
             )}
-            style={{ objectPosition }}
+            style={{
+              objectPosition,
+              width: '100%',
+              height: '100%'
+            }}
             loading="eager"
             fetchPriority="high"
             decoding="async"

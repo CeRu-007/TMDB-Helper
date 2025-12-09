@@ -80,7 +80,7 @@ import { ClientConfigManager } from "@/lib/client-config-manager"
 import ImportDataDialog from "@/components/import-data-dialog"
 import ExportDataDialog from "@/components/export-data-dialog"
 import { SidebarLayout } from "@/components/sidebar-layout"
-import { LayoutPreferencesManager, type LayoutType } from "@/lib/layout-preferences"
+import { LayoutPreferencesManager } from "@/lib/layout-preferences"
 import { UserAvatar, useUser } from "@/components/user-identity-provider"
 import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
 
@@ -161,9 +161,7 @@ export default function HomePage() {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // 布局状态管理 - 现在只使用侧边栏布局
-  const currentLayout: LayoutType = 'sidebar'
-
+  
   // 使用增强的数据提供者获取数据和方法
   const { 
     items, 
@@ -629,7 +627,7 @@ export default function HomePage() {
     }
   }, []);
 
-  // 根据窗口大小调整布局
+  // 根据窗口大小调整
   useEffect(() => {
     if (windowSize.width > 0 && windowSize.height > 0) {
       // 可以根据窗口大小调整某些UI元素
@@ -874,7 +872,7 @@ export default function HomePage() {
   const filteredOngoingCount = filteredOngoingItems.length
   const filteredCompletedCount = filteredCompletedItems.length
 
-  // 周几导航栏 - 修复词条数量计算问题和侧边栏布局适配
+  // 周几导航栏
   const WeekdayNavigation = () => {
     // 根据当前活动标签页获取对应状态的词条
     const currentTabItems = activeTab === "ongoing" ? ongoingItems : completedItems
@@ -882,15 +880,12 @@ export default function HomePage() {
     // 先按分类筛选当前标签页的词条
     const filteredTabItems = filterItemsByCategory(currentTabItems)
 
-    // 根据布局类型调整样式 - 降低z-index确保不遮挡用户下拉菜单
-    const isInSidebar = currentLayout === 'sidebar'
-    const containerClasses = isInSidebar
-      ? "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10" // 侧边栏布局：降低到z-10
-      : "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-30" // 原始布局：保持z-30
+    // 调整样式确保不遮挡用户下拉菜单
+    const containerClasses = "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10"
 
     return (
       <div className={containerClasses}>
-        <div className={isInSidebar ? "mx-auto px-4 sm:px-6 lg:px-8" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"}>
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3">
             {/* 左侧：日期导航按钮 */}
             <div className="flex space-x-1 overflow-x-auto">
@@ -939,8 +934,8 @@ export default function HomePage() {
               })}
             </div>
 
-            {/* 右侧：状态选择器（仅在侧边栏布局中显示） */}
-            {isInSidebar && (
+            {/* 右侧：状态选择器 */}
+            { (
               <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">状态:</span>
                 <Select value={activeTab} onValueChange={setActiveTab}>
@@ -2124,9 +2119,7 @@ export default function HomePage() {
     };
   }, []); // 保持空依赖数组，因为我们不希望这个effect重新运行
 
-  // 如果是侧边栏布局，使用SidebarLayout组件
-  if (currentLayout === 'sidebar') {
-    return (
+  return (
       <>
         <SidebarLayout
           totalItems={totalItems}
@@ -2317,190 +2310,4 @@ export default function HomePage() {
         )}
       </>
     )
-  }
-
-  // 原始布局
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm border-b dark:border-gray-700 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              {/* Logo */}
-              <div className="group">
-                <Image
-                  src="/tmdb-helper-logo.png"
-                  alt="TMDB维护助手"
-                  width={160}
-                  height={60}
-                  className="h-14 w-auto object-contain transform group-hover:scale-105 transition duration-300"
-                  priority
-                />
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              {/* 桌面版操作按钮 */}
-              <div className="hidden md:flex md:items-center md:space-x-2">
-                <Button variant="outline" size="sm" onClick={() => setShowTasksDialog(true)}>
-                  <AlarmClock className="h-4 w-4 mr-2" />
-                  定时任务
-                </Button>
-                {runningTasks.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowExecutionLogs(true)}
-                    className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50"
-                  >
-                    <BarChart2 className="h-4 w-4 mr-2" />
-                    执行日志 ({runningTasks.length})
-                  </Button>
-                )}
-
-                <Button variant="outline" size="sm" onClick={() => setShowSettingsDialog(true)}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  设置
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-                {/* 用户头像 */}
-
-                {isInitialized && userInfo && (
-                  <div className="ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
-                    <UserAvatar
-                      onShowImportDialog={() => setShowImportDialog(true)}
-                      onShowExportDialog={() => setShowExportDialog(true)}
-                    />
-                  </div>
-                )}
-              </div>
-              {/* 移动端菜单已移除，项目不再支持移动端 */}
-
-              <Button
-                onClick={() => setShowAddDialog(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                <span>添加词条</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* 主内容区域 */}
-      <div className="max-w-7xl mx-auto px-4">
-        {/* 分类选择器 - 移到顶部 */}
-        <div className="py-4">
-          {/* 分类：统一样式（保留原桌面端样式，所有尺寸显示） */}
-          <div className="block">
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => {
-                const isSelected = selectedCategory === category.id;
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`flex items-center text-sm px-4 py-2.5 rounded-lg transition-all ${
-                      isSelected
-                        ? "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium shadow-sm border border-blue-200 dark:border-blue-800"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/60 border border-gray-100 dark:border-gray-800"
-                    }`}
-                  >
-                    <div className={`flex items-center justify-center h-7 w-7 rounded-lg mr-3 ${
-                      isSelected 
-                        ? "bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300" 
-                        : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
-                    }`}>
-                      <span className="h-4 w-4">{category.icon}</span>
-                    </div>
-                    <span className={isSelected ? "font-medium" : ""}>{category.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Bar - 统计卡片 */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <StatCard 
-            title="连载中"
-            value={filteredOngoingCount}
-            icon={<PlayCircle className="h-8 w-8" />}
-            bgClass="bg-gradient-to-r from-blue-500 to-blue-600"
-            iconClass="text-blue-200"
-          />
-          <StatCard 
-            title="已完结"
-            value={filteredCompletedCount}
-            icon={<CheckCircle2 className="h-8 w-8" />}
-            bgClass="bg-gradient-to-r from-green-500 to-green-600"
-            iconClass="text-green-200"
-          />
-          <StatCard 
-            title="总计"
-            value={filteredTotalItems}
-            icon={<Star className="h-8 w-8" />}
-            bgClass="bg-gradient-to-r from-purple-500 to-purple-600"
-            iconClass="text-purple-200"
-          />
-        </div>
-
-        {/* 主内容 */}
-        <div id="main-content-container" className="relative pb-8">
-          {renderContent()}
-        </div>
-      </div>
-
-      {/* Dialogs */}
-      <AddItemDialog 
-        open={showAddDialog} 
-        onOpenChange={setShowAddDialog} 
-        onAdd={handleAddItem} 
-      />
-      <SettingsDialog 
-        open={showSettingsDialog} 
-        onOpenChange={(open) => {
-          setShowSettingsDialog(open)
-          if (!open) {
-            setSettingsInitialSection(undefined)
-          }
-        }}
-        initialSection={settingsInitialSection}
-      />
-      <GlobalScheduledTasksDialog open={showTasksDialog} onOpenChange={setShowTasksDialog} />
-      <TaskExecutionLogsDialog
-        open={showExecutionLogs}
-        onOpenChange={setShowExecutionLogs}
-        runningTasks={runningTasks}
-      />
-      <ImportDataDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
-      <ExportDataDialog open={showExportDialog} onOpenChange={setShowExportDialog} />
-      {scheduledTaskItem && (
-        <ScheduledTaskDialog
-          item={scheduledTaskItem}
-          open={showScheduledTaskDialog}
-          onOpenChange={(open) => {
-            setShowScheduledTaskDialog(open);
-            if (!open) setScheduledTaskItem(null);
-          }}
-          onUpdate={handleUpdateItem}
-          onTaskSaved={(task) => {
-            
-            toast({
-              title: "定时任务已保存",
-              description: `任务 "${task.name}" 已成功保存`,
-            });
-          }}
-        />
-      )}
-    </div>
-  )
 }

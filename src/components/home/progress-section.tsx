@@ -11,15 +11,12 @@ import { useData } from '@/components/client-data-provider'
 import { TMDBItem } from '@/lib/storage'
 import MediaCard from '@/components/media-card'
 import { UseHomeStateReturn } from '@/hooks/use-home-state'
-import { LayoutType } from '@/lib/layout-preferences'
-
 interface ProgressSectionProps {
   homeState: UseHomeStateReturn
-  currentLayout: LayoutType
   categories: Array<{ id: string; name: string; icon: React.ReactNode }>
 }
 
-export function ProgressSection({ homeState, currentLayout, categories }: ProgressSectionProps) {
+export function ProgressSection({ homeState, categories }: ProgressSectionProps) {
   const { items, loading } = useData()
 
   // 根据分类筛选词条

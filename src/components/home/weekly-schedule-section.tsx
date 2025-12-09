@@ -6,15 +6,12 @@ import { useData } from '@/components/client-data-provider'
 import { TMDBItem } from '@/lib/storage'
 import MediaCard from '@/components/media-card'
 import { UseHomeStateReturn } from '@/hooks/use-home-state'
-import { LayoutType } from '@/lib/layout-preferences'
-
 interface WeeklyScheduleSectionProps {
   homeState: UseHomeStateReturn
-  currentLayout: LayoutType
   categories: Array<{ id: string; name: string; icon: React.ReactNode }>
 }
 
-export function WeeklyScheduleSection({ homeState, currentLayout, categories }: WeeklyScheduleSectionProps) {
+export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleSectionProps) {
   const { items, loading } = useData()
 
   // 根据分类筛选词条
@@ -147,7 +144,6 @@ export function WeeklyScheduleSection({ homeState, currentLayout, categories }: 
         selectedDayFilter={homeState.selectedDayFilter}
         onDayFilterChange={homeState.setSelectedDayFilter}
         filteredItems={ongoingItems}
-        currentLayout={currentLayout}
         categories={categories}
         selectedCategory={homeState.selectedCategory}
       />

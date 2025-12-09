@@ -1000,8 +1000,8 @@ export function SidebarLayout({
         {/* 主内容区域 - 桌面端避免被侧边栏遮挡 */}
         <main className={`flex-1 overflow-hidden `}>
           {/* 根据页面类型决定是否使用滚动容器 */}
-          {contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'image-recognition-recognize' ? (
-            // 缩略图相关页面和图像识别页面：提供固定高度容器，让组件内部处理滚动
+          {contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'image-recognition-recognize' || contentKey === 'maintenance-independent' ? (
+            // 缩略图相关页面、图像识别页面和独立维护页面：提供固定高度容器，让组件内部处理滚动
             <div className="h-full overflow-hidden">
               {renderContent()}
             </div>

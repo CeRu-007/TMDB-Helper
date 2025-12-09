@@ -7,15 +7,7 @@ import { safeJsonParse } from './utils'
  * 负责保存和读取用户的布局偏好设置
  */
 
-export type LayoutType = 'sidebar'
-
-// 布局显示名称映射
-export const LAYOUT_NAMES = {
-  sidebar: '侧边栏布局'
-} as const
-
 export interface LayoutPreferences {
-  layoutType: LayoutType
   sidebarCollapsed?: boolean
   lastUpdated: string
 }
@@ -46,17 +38,12 @@ export class LayoutPreferencesManager {
         if (data.success && data.value) {
           const preferences = safeJsonParse<LayoutPreferences>(data.value);
 
-          // 验证数据完整性并确保布局类型为sidebar
-          if (preferences?.layoutType && preferences?.lastUpdated) {
-            // 强制设置为sidebar布局
-            const validPreferences = {
-              ...preferences,
-              layoutType: 'sidebar' as const
-            }
+          // 验证数据完整性
+          if (preferences?.lastUpdated) {
             try {
-              localStorage.setItem(this.STORAGE_KEY, JSON.stringify(validPreferences))
+              localStorage.setItem(this.STORAGE_KEY, JSON.stringify(preferences))
             } catch {}
-            return validPreferences;
+            return preferences;
           }
         }
       }
@@ -69,12 +56,8 @@ export class LayoutPreferencesManager {
       const cached = localStorage.getItem(this.STORAGE_KEY)
       if (cached) {
         const pref = safeJsonParse<LayoutPreferences>(cached)
-        if (pref?.layoutType && pref?.lastUpdated) {
-          // 强制设置为sidebar布局
-          return {
-            ...pref,
-            layoutType: 'sidebar' as const
-          }
+        if (pref?.lastUpdated) {
+          return pref;
         }
       }
     } catch {}
@@ -127,11 +110,9 @@ export class LayoutPreferencesManager {
 
   /**
    * 获取默认布局偏好设置
-   * 默认使用侧边栏布局（sidebar）
    */
   static getDefaultPreferences(): LayoutPreferences {
     return {
-      layoutType: 'sidebar', // 侧边栏布局作为默认布局
       sidebarCollapsed: false,
       lastUpdated: new Date().toISOString()
     }

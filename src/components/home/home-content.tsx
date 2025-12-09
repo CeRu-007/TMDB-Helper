@@ -11,12 +11,9 @@ import { ProgressSection } from './progress-section'
 import { WeeklyScheduleSection } from './weekly-schedule-section'
 import { UseHomeStateReturn } from '@/hooks/use-home-state'
 import { UseMediaNewsReturn } from '@/hooks/use-media-news'
-import { LayoutType } from '@/lib/layout-preferences'
-
 interface HomeContentProps {
   homeState: UseHomeStateReturn
   mediaNews: UseMediaNewsReturn
-  currentLayout: LayoutType
 }
 
 const categories = [
@@ -29,11 +26,8 @@ const categories = [
 
 ]
 
-export function HomeContent({ homeState, mediaNews, currentLayout }: HomeContentProps) {
-  const isInSidebar = currentLayout === 'sidebar'
-  const containerClasses = isInSidebar 
-    ? "mx-auto px-4 lg:px-8" 
-    : "max-w-7xl mx-auto px-4 lg:px-8"
+export function HomeContent({ homeState, mediaNews }: HomeContentProps) {
+  const containerClasses = "mx-auto px-4 lg:px-8"
 
   return (
     <main className="flex-1">
@@ -132,7 +126,6 @@ export function HomeContent({ homeState, mediaNews, currentLayout }: HomeContent
             <TabsContent value="weekly" className="space-y-6">
               <WeeklyScheduleSection
                 homeState={homeState}
-                currentLayout={currentLayout}
                 categories={categories}
               />
             </TabsContent>
@@ -140,7 +133,6 @@ export function HomeContent({ homeState, mediaNews, currentLayout }: HomeContent
             <TabsContent value="progress" className="space-y-6">
               <ProgressSection
                 homeState={homeState}
-                currentLayout={currentLayout}
                 categories={categories}
               />
             </TabsContent>

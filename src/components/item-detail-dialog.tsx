@@ -1574,7 +1574,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               <BackgroundImage
                 src={backgroundImageUrl}
                 alt={localItem.title + (isUsingPoster ? " 海报背景" : " 背景图")}
-                className="absolute inset-0 z-0"
+                className={cn(
+                  "absolute inset-0 z-0",
+                  displayMode === 'inline' ? "w-screen h-screen" : "w-full h-full"
+                )}
                 objectPosition={`center ${20 + scrollPosition * 0.05}%`}
                 blur={appearanceSettings?.detailBackdropBlurEnabled ?? true}
                 blurIntensity={appearanceSettings?.detailBackdropBlurIntensity || 'medium'}

@@ -9,7 +9,6 @@ interface WeekdayNavigationProps {
   selectedDayFilter: "recent" | number
   onDayFilterChange: (filter: "recent" | number) => void
   filteredItems: TMDBItem[]
-  currentLayout: 'sidebar'
   categories: Array<{ id: string; name: string }>
   selectedCategory: string
 }
@@ -20,15 +19,10 @@ export function WeekdayNavigation({
   selectedDayFilter,
   onDayFilterChange,
   filteredItems,
-  currentLayout,
   categories,
   selectedCategory
 }: WeekdayNavigationProps) {
-  // 根据布局类型调整样式
-  const isInSidebar = currentLayout === 'sidebar'
-  const containerClasses = isInSidebar
-    ? "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10"
-    : "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-16 z-30"
+    const containerClasses = "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10"
 
   // 获取指定日期的词条数量
   const getItemsByDay = (items: TMDBItem[], day: number) => {
@@ -40,7 +34,7 @@ export function WeekdayNavigation({
 
   return (
     <div className={containerClasses}>
-      <div className={isInSidebar ? "mx-auto px-8" : "max-w-7xl mx-auto px-8"}>
+      <div className="mx-auto px-8">
         <div className="flex justify-between items-center py-3">
           {/* 左侧：日期导航按钮 */}
           <div className="flex space-x-1 overflow-x-auto">
