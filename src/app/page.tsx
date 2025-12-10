@@ -1271,12 +1271,13 @@ export default function HomePage() {
             <div className="mt-6">
               <div className="grid grid-cols-6 gap-6">
                 {getFilteredItems(filteredOngoingItems).map((item) => (
-                  <MediaCard
-                    key={item.id}
-                    item={item}
-                    onClick={() => setSelectedItem(item)}
-                    showAirTime={true} // 总是显示播出时间
-                  />
+                  <div key={item.id} className="transform scale-[0.98] origin-top-left">
+                    <MediaCard
+                      item={item}
+                      onClick={() => setSelectedItem(item)}
+                      showAirTime={true} // 总是显示播出时间
+                    />
+                  </div>
                 ))}
               </div>
 
@@ -1310,12 +1311,13 @@ export default function HomePage() {
             <div className="mt-6">
               <div className="grid grid-cols-6 gap-6">
                 {getFilteredItems(filteredCompletedItems).map((item) => (
-                  <MediaCard
-                    key={item.id}
-                    item={item}
-                    onClick={() => setSelectedItem(item)}
-                    showAirTime={true} // 总是显示播出时间
-                  />
+                  <div key={item.id} className="transform scale-[0.98] origin-top-left">
+                    <MediaCard
+                      item={item}
+                      onClick={() => setSelectedItem(item)}
+                      showAirTime={true} // 总是显示播出时间
+                    />
+                  </div>
                 ))}
               </div>
 
@@ -2183,12 +2185,13 @@ export default function HomePage() {
                 <div className="mt-6">
                   <div className="grid grid-cols-6 gap-6">
                     {getFilteredItems(filteredOngoingItems).map((item) => (
-                      <MediaCard
-                        key={item.id}
-                        item={item}
-                        onClick={() => setSelectedItem(item)}
-                        showAirTime={true} // 总是显示播出时间
-                      />
+                      <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
+                        <MediaCard
+                          item={item}
+                          onClick={() => setSelectedItem(item)}
+                          showAirTime={true} // 总是显示播出时间
+                        />
+                      </div>
                     ))}
                   </div>
 
@@ -2222,12 +2225,13 @@ export default function HomePage() {
                 <div className="mt-6">
                   <div className="grid grid-cols-6 gap-6">
                     {getFilteredItems(filteredCompletedItems).map((item) => (
-                      <MediaCard
-                        key={item.id}
-                        item={item}
-                        onClick={() => setSelectedItem(item)}
-                        showAirTime={true} // 总是显示播出时间
-                      />
+                      <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
+                        <MediaCard
+                          item={item}
+                          onClick={() => setSelectedItem(item)}
+                          showAirTime={true} // 总是显示播出时间
+                        />
+                      </div>
                     ))}
                   </div>
 

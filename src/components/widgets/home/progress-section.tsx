@@ -150,11 +150,12 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
           {ongoingItems.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
               {ongoingItems.map((item) => (
-                <MediaCard
-                  key={item.id}
-                  item={item}
-                  onClick={() => homeState.setSelectedItem(item)}
-                />
+                <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
+                  <MediaCard
+                    item={item}
+                    onClick={() => homeState.setSelectedItem(item)}
+                  />
+                </div>
               ))}
             </div>
           ) : (
@@ -171,11 +172,12 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
           {completedItems.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
               {completedItems.map((item) => (
-                <MediaCard
-                  key={item.id}
-                  item={item}
-                  onClick={() => homeState.setSelectedItem(item)}
-                />
+                <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
+                  <MediaCard
+                    item={item}
+                    onClick={() => homeState.setSelectedItem(item)}
+                  />
+                </div>
               ))}
             </div>
           ) : (

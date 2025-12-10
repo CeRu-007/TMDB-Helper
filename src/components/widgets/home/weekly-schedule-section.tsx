@@ -152,11 +152,12 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
       {filteredItems.length > 0 ? (
         <div className="grid grid-cols-4 gap-4">
           {filteredItems.map((item) => (
-            <MediaCard
-              key={item.id}
-              item={item}
-              onClick={() => homeState.setSelectedItem(item)}
-            />
+            <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
+              <MediaCard
+                item={item}
+                onClick={() => homeState.setSelectedItem(item)}
+              />
+            </div>
           ))}
         </div>
       ) : (
