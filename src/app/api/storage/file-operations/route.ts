@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { TMDBItem } from '@/lib/storage';
+import { TMDBItem } from '@/lib/data/storage';
 
 // 获取用户数据文件路径
 function getUserDataFile(userId?: string): string {

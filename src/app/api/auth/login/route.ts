@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthManager, LoginRequest } from '@/lib/auth-manager';
+import { AuthManager, LoginRequest } from '@/lib/auth/auth-manager';
 
 /**
  * POST /api/auth/login - 用户登录

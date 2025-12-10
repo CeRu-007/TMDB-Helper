@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/components/auth-provider'
-import { ClientConfigManager } from '@/lib/client-config-manager'
-import { saveRemember, loadRemember, clearRemember } from '@/lib/secure-remember'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useAuth } from '@/components/features/auth/auth-provider'
+import { ClientConfigManager } from '@/lib/utils/client-config-manager'
+import { saveRemember, loadRemember, clearRemember } from '@/lib/auth/secure-remember'
+import { Button } from '@/components/common/button'
+import { Input } from '@/components/common/input'
+import { Label } from '@/components/common/label'
+import { Checkbox } from '@/components/common/checkbox'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common/card'
+import { Alert, AlertDescription } from '@/components/common/alert'
 import {
   Eye,
   EyeOff,

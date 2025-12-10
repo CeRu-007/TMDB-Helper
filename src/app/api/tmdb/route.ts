@@ -1,57 +1,69 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { TMDBService } from '@/lib/tmdb'
+// API v2 TMDB Routes
+// This file serves as the entry point for TMDB-related API endpoints in v2
 
+import { NextRequest, NextResponse } from 'next/server';
+
+// Proxy handler for TMDB endpoints
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const action = searchParams.get('action')
-    const url = searchParams.get('url')
-    const query = searchParams.get('query')
-    const page = searchParams.get('page') || '1'
-    const forceRefresh = searchParams.get('forceRefresh') === 'true'
+  // Extract the subpath after /api/v2/tmdb/
+  const url = new URL(request.url);
+  const subpath = url.pathname.replace(/^\/api\/v2\/tmdb/, '');
 
-    switch (action) {
-      case 'getItemFromUrl': {
-        if (!url) {
-          return NextResponse.json({
-            success: false,
-            error: '缺少URL参数'
-          }, { status: 400 })
-        }
+  // Forward to the actual TMDB endpoint
+  const targetUrl = `${request.nextUrl.origin}/api/tmdb${subpath}`;
+  const newRequest = new NextRequest(targetUrl, {
+    method: request.method,
+    headers: request.headers,
+    body: request.body,
+  });
 
-        const data = await TMDBService.getItemFromUrl(url, forceRefresh)
-        return NextResponse.json({
-          success: true,
-          data
-        })
-      }
+  return fetch(newRequest);
+}
 
-      case 'search': {
-        if (!query) {
-          return NextResponse.json({
-            success: false,
-            error: '缺少查询参数'
-          }, { status: 400 })
-        }
+export async function POST(request: NextRequest) {
+  // Extract the subpath after /api/v2/tmdb/
+  const url = new URL(request.url);
+  const subpath = url.pathname.replace(/^\/api\/v2\/tmdb/, '');
 
-        const data = await TMDBService.search(query, parseInt(page))
-        return NextResponse.json({
-          success: true,
-          data
-        })
-      }
+  // Forward to the actual TMDB endpoint
+  const targetUrl = `${request.nextUrl.origin}/api/tmdb${subpath}`;
+  const newRequest = new NextRequest(targetUrl, {
+    method: request.method,
+    headers: request.headers,
+    body: request.body,
+  });
 
-      default:
-        return NextResponse.json({
-          success: false,
-          error: '不支持的操作'
-        }, { status: 400 })
-    }
-  } catch (error) {
-    
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : '未知错误'
-    }, { status: 500 })
-  }
+  return fetch(newRequest);
+}
+
+export async function PUT(request: NextRequest) {
+  // Extract the subpath after /api/v2/tmdb/
+  const url = new URL(request.url);
+  const subpath = url.pathname.replace(/^\/api\/v2\/tmdb/, '');
+
+  // Forward to the actual TMDB endpoint
+  const targetUrl = `${request.nextUrl.origin}/api/tmdb${subpath}`;
+  const newRequest = new NextRequest(targetUrl, {
+    method: request.method,
+    headers: request.headers,
+    body: request.body,
+  });
+
+  return fetch(newRequest);
+}
+
+export async function DELETE(request: NextRequest) {
+  // Extract the subpath after /api/v2/tmdb/
+  const url = new URL(request.url);
+  const subpath = url.pathname.replace(/^\/api\/v2\/tmdb/, '');
+
+  // Forward to the actual TMDB endpoint
+  const targetUrl = `${request.nextUrl.origin}/api/tmdb${subpath}`;
+  const newRequest = new NextRequest(targetUrl, {
+    method: request.method,
+    headers: request.headers,
+    body: request.body,
+  });
+
+  return fetch(newRequest);
 }

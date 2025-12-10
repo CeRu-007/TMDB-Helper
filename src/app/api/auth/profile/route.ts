@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthManager } from '@/lib/auth-manager';
-import { AuthMiddleware } from '@/lib/auth-middleware';
+import { AuthManager } from '@/lib/auth/auth-manager';
+import { AuthMiddleware } from '@/lib/auth/auth-middleware';
 
 /**
  * GET /api/auth/profile - 获取管理员信息

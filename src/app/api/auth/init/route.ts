@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthManager } from '@/lib/auth-manager';
+import { AuthManager } from '@/lib/auth/auth-manager';
 
 /**
  * GET /api/auth/init - 检查认证系统初始化状态

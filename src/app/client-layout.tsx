@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import { useEffect } from "react"
-import { taskScheduler } from "@/lib/scheduler"
+import { taskScheduler } from "@/lib/data/scheduler"
 
 export default function ClientLayout({
   children,

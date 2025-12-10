@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ServerConfigManager } from '@/lib/server-config-manager';
-import { fetchTmdbFeed } from '@/lib/tmdb-feed';
+import { ServerConfigManager } from '@/lib/data/server-config-manager';
+import { fetchTmdbFeed } from '@/lib/tmdb/tmdb-feed';
 
 // 统一使用共享模块获取 upcoming Feed，避免重复实现
 export async function GET(request: NextRequest) {

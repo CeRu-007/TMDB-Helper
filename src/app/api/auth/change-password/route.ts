@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthManager } from '@/lib/auth-manager';
-import { AuthMiddleware } from '@/lib/auth-middleware';
+import { AuthManager } from '@/lib/auth/auth-manager';
+import { AuthMiddleware } from '@/lib/auth/auth-middleware';
 
 /**
  * POST /api/auth/change-password - 修改管理员密码

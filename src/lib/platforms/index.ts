@@ -3,5 +3,5 @@ export * from './types'
 export * from './utils'
 
 // 导出常量数据
-export { streamingPlatforms, platformCategories } from '@/constants/platforms/streaming-platforms'
-export { streamingPlatformsNav, platformCategories as navCategories } from '@/constants/platforms/platform-navigation'
+export { streamingPlatforms, platformCategories } from '@/lib/media/streaming-platforms'
+export { streamingPlatformsNav, platformCategories as navCategories } from '@/lib/media/platform-navigation'

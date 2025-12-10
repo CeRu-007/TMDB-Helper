@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserIdFromRequest } from '@/lib/user-utils'
+import { getUserIdFromRequest } from '@/lib/auth/user-utils'
 // import { clearUserData } from '@/lib/user-aware-storage' // 替换为StorageManager
-import { StorageManager } from '@/lib/storage'
+import { StorageManager } from '@/lib/data/storage'
 
 /**
  * 清空用户存储数据

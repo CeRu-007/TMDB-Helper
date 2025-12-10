@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ServerStorageManager } from '@/lib/server-storage-manager';
+import { ServerStorageManager } from '@/lib/data/server-storage-manager';
 
 const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
 

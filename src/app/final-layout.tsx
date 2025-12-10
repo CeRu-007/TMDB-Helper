@@ -2,9 +2,9 @@
 
 import { useEffect } from "react"
 import { ThemeProvider } from "next-themes"
-import { DataProvider } from "@/components/client-data-provider"
-import { Toaster } from "@/components/ui/toaster"
-import { taskScheduler } from "@/lib/scheduler"
+import { DataProvider } from "@/components/features/auth/client-data-provider"
+import { Toaster } from "@/components/common/toaster"
+import { taskScheduler } from "@/lib/data/scheduler"
 
 export default function FinalLayout({
   children,

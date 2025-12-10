@@ -43,46 +43,46 @@ import {
 } from "lucide-react"
 
 // 导入新的工具和组件
-import { log } from '@/lib/logger'
-import { handleError } from '@/lib/error-handler'
-import { perf } from '@/lib/performance-manager'
-import { useMediaNews } from '@/hooks/use-media-news'
-import { useScheduledTasks } from '@/hooks/use-scheduled-tasks'
-import { WeekdayNavigation } from '@/components/home/weekday-navigation'
-import { MediaNewsSection } from '@/components/home/media-news-section'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { log } from '@/lib/utils/logger'
+import { handleError } from '@/lib/utils/error-handler'
+import { perf } from '@/lib/utils/performance-manager'
+import { useMediaNews } from '@/lib/hooks/use-media-news'
+import { useScheduledTasks } from '@/lib/hooks/use-scheduled-tasks'
+import { WeekdayNavigation } from '@/components/widgets/home/weekday-navigation'
+import { MediaNewsSection } from '@/components/widgets/home/media-news-section'
+import { Button } from "@/components/common/button"
+import { Card, CardContent } from "@/components/common/card"
+import { Badge } from "@/components/common/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
 import { useTheme } from "next-themes"
 import Link from "next/link"
 import Image from "next/image"
-import AddItemDialog from "@/components/add-item-dialog"
-import SettingsDialog from "@/components/settings-dialog"
-import ItemDetailDialog from "@/components/item-detail-dialog"
-import VideoThumbnailExtractor from "@/components/video-thumbnail-extractor"
-import { ImageCropper } from "@/components/image-cropper"
-import { InstantImage } from "@/components/InstantImage"
-import GlobalScheduledTasksDialog from "@/components/global-scheduled-tasks-dialog"
-import { TaskExecutionLogsDialog } from "@/components/task-execution-logs-dialog"
-import ScheduledTaskDialog from "@/components/scheduled-task-dialog"
-import { type TMDBItem, type ScheduledTask } from "@/lib/storage"
-import { taskScheduler } from "@/lib/scheduler"
-import MediaCard from "@/components/media-card"
-import { useIsClient } from "@/hooks/use-is-client"
-import { useData } from "@/components/client-data-provider"
-import { StatCard } from "@/components/ui/stat-card"
-import { StorageManager } from "@/lib/storage"
+import AddItemDialog from "@/components/features/dialogs/add-item-dialog"
+import SettingsDialog from "@/components/features/dialogs/settings-dialog"
+import ItemDetailDialog from "@/components/features/media/item-detail-dialog"
+import VideoThumbnailExtractor from "@/components/features/media/video-thumbnail-extractor"
+import { ImageCropper } from "@/components/features/media/image-cropper"
+import { InstantImage } from "@/components/features/media/InstantImage"
+import GlobalScheduledTasksDialog from "@/components/features/scheduled-tasks/global-scheduled-tasks-dialog"
+import { TaskExecutionLogsDialog } from "@/components/features/scheduled-tasks/task-execution-logs-dialog"
+import ScheduledTaskDialog from "@/components/features/scheduled-tasks/scheduled-task-dialog"
+import { type TMDBItem, type ScheduledTask } from "@/lib/data/storage"
+import { taskScheduler } from "@/lib/data/scheduler"
+import MediaCard from "@/components/features/media/media-card"
+import { useIsClient } from "@/lib/hooks/use-is-client"
+import { useData } from "@/components/features/auth/client-data-provider"
+import { StatCard } from "@/components/common/stat-card"
+import { StorageManager } from "@/lib/data/storage"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
-import { ClientConfigManager } from "@/lib/client-config-manager"
-import ImportDataDialog from "@/components/import-data-dialog"
-import ExportDataDialog from "@/components/export-data-dialog"
-import { SidebarLayout } from "@/components/sidebar-layout"
-import { LayoutPreferencesManager } from "@/lib/layout-preferences"
-import { UserAvatar, useUser } from "@/components/user-identity-provider"
-import { SubtitleEpisodeGenerator } from "@/components/subtitle-episode-generator"
+import { useToast } from "@/lib/hooks/use-toast"
+import { ClientConfigManager } from "@/lib/utils/client-config-manager"
+import ImportDataDialog from "@/components/features/data/import-data-dialog"
+import ExportDataDialog from "@/components/features/data/export-data-dialog"
+import { SidebarLayout } from "@/components/layouts/sidebar-layout"
+import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
+import { UserAvatar, useUser } from "@/components/features/auth/user-identity-provider"
+import { SubtitleEpisodeGenerator } from "@/components/features/media/subtitle-episode-generator"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 

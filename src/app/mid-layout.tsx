@@ -3,13 +3,13 @@
 import { ReactNode, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { ThemeProvider } from "next-themes"
-import { DataProvider } from "@/components/client-data-provider"
-import { UserIdentityProvider } from "@/components/user-identity-provider"
-import { AuthProvider, AuthGuard } from "@/components/auth-provider"
-import { Toaster } from "@/components/ui/toaster"
+import { DataProvider } from "@/components/features/auth/client-data-provider"
+import { UserIdentityProvider } from "@/components/features/auth/user-identity-provider"
+import { AuthProvider, AuthGuard } from "@/components/features/auth/auth-provider"
+import { Toaster } from "@/components/common/toaster"
 
 import { suppressRefWarnings } from "@/lib/utils"
-import { ConfigMigration } from "@/lib/config-migration"
+import { ConfigMigration } from "@/lib/utils/config-migration"
 
 export default function MidLayout({
   children,
