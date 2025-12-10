@@ -168,15 +168,14 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         throw new Error("请先在设置中配置TMDB-Import工具路径")
       }
 
-      // API /api/csv/read 已被删除，CSV功能已更新
-      // 为了向后兼容，返回空数组
-      const responseData = { success: true, files: [] }
+      // 调用CSV读取API
+      const response = await axios.post('/api/csv/read', { workingDirectory: savedTmdbImportPath })
       
-      if (!responseData.success) {
-        throw new Error(responseData.error || '读取CSV文件失败')
+      if (!response.data.success) {
+        throw new Error(response.data.error || '读取CSV文件失败')
       }
 
-      const csvData = responseData.data
+      const csvData = response.data.data
       
       // 确保数据格式正确 - 新API返回数组，需要转换为期望的格式
       const formattedCsvData = Array.isArray(csvData) ? { rows: csvData } : csvData
