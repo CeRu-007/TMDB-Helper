@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/common/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
 import { Badge } from "@/components/common/badge"
@@ -13,7 +13,6 @@ import {
   AlertCircle,
   GitBranch,
   Calendar,
-  MessageSquare,
   Loader2,
   Settings,
   Info
@@ -57,24 +56,18 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const { toast } = useToast()
 
-  // 缓存键
-  const CACHE_KEYS = {
-    VERSION_INFO: 'tmdb_import_version_info',
-    INSTALL_STATUS: 'tmdb_import_install_status',
-    CACHE_TIMESTAMP: 'tmdb_import_cache_timestamp'
-  }
+  // 使用 useRef 存储 onPathUpdate 的最新值，避免 useEffect 重复执行
+  const onPathUpdateRef = useRef(onPathUpdate)
+  onPathUpdateRef.current = onPathUpdate
 
-  // 缓存有效期（5分钟）
-  const CACHE_DURATION = 5 * 60 * 1000
-
-  // 从缓存加载数据（已禁用本地缓存，直接返回false）
-  const loadFromCache = () => false
-
-  // 保存到缓存（禁用）
-  const saveToCache = (versionData?: VersionInfo, statusData?: InstallStatus) => {}
-
-  // 清理缓存（禁用）
+  // 缓存功能已禁用，直接返回空函数
   const clearCache = () => {}
+
+  const saveToCache = (versionData?: VersionInfo | null, statusData?: InstallStatus | null) => {}
+
+  const loadFromCache = () => {
+    return false
+  }
 
   // 检查版本信息
   const checkVersion = async (showLoading = true) => {
@@ -113,8 +106,8 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
         setInstallStatus(result.data)
         saveToCache(versionInfo, result.data)
         // 如果已安装，通知父组件更新路径
-        if (result.data.installed && onPathUpdate) {
-          onPathUpdate(result.data.installPath)
+        if (result.data.installed && onPathUpdateRef.current) {
+          onPathUpdateRef.current(result.data.installPath)
         }
       }
     } catch (error) {
@@ -175,8 +168,8 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
       const credentialsPreserved = installResult.data?.credentialsPreserved
 
       let description = "TMDB-Import 已安装到最新版本"
-      if (installPath && onPathUpdate) {
-        onPathUpdate(installPath)
+      if (installPath && onPathUpdateRef.current) {
+        onPathUpdateRef.current(installPath)
         description = "TMDB-Import 已安装并自动配置路径"
       }
 
@@ -217,7 +210,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
     })
   }
 
-  // 初始化
+  // 初始化 - 使用 ref 避免依赖问题
   useEffect(() => {
     const initializeComponent = async () => {
       // 首先尝试从缓存加载
@@ -246,7 +239,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
     }
 
     initializeComponent()
-  }, [onPathUpdate])
+  }, []) // 移除 onPathUpdate 依赖，使用 ref 获取最新值
 
   return (
     <Card className="w-full">
@@ -264,9 +257,13 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
+            onClick={async () => {
               clearCache()
-              Promise.all([checkVersion(true), getInstallStatus(true)])
+              try {
+                await Promise.all([checkVersion(true), getInstallStatus(true)])
+              } catch (error) {
+                // 刷新失败，错误会在 checkVersion/getInstallStatus 中处理
+              }
             }}
             disabled={loading || updating}
           >

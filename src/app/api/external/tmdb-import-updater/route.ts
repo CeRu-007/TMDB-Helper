@@ -184,26 +184,92 @@ async function getStatus(): Promise<NextResponse> {
  * 获取GitHub最新提交信息
  */
 async function getLatestCommit() {
-  const url = `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/commits/master`
-  
-  const response = await fetch(url, {
-    headers: {
+  // 先尝试使用 GitHub API
+  try {
+    const url = `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/commits/master`
+
+    const headers: Record<string, string> = {
       'User-Agent': 'TMDB-Helper/1.0',
       'Accept': 'application/vnd.github.v3+json'
     }
-  })
 
-  if (!response.ok) {
+    // 如果有 GitHub token，添加到请求头
+    if (process.env.GITHUB_TOKEN) {
+      headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`
+    }
+
+    const response = await fetch(url, { headers })
+
+    if (response.ok) {
+      const commit: GitHubCommit = await response.json()
+
+      return {
+        commitSha: commit.sha,
+        commitDate: commit.commit.author.date,
+        commitMessage: commit.commit.message.split('\n')[0], // 只取第一行
+        htmlUrl: commit.html_url
+      }
+    }
+
+    // 如果是 403 (速率限制)，尝试使用 GitHub 的备用 API
+    if (response.status === 403) {
+      return await getLatestCommitFallback()
+    }
+
     throw new Error(`GitHub API请求失败: ${response.status} ${response.statusText}`)
+  } catch (error) {
+    // 如果是网络错误或速率限制，使用备用方案
+    if (error instanceof Error && error.message.includes('rate limit')) {
+      return await getLatestCommitFallback()
+    }
+    throw error
   }
+}
 
-  const commit: GitHubCommit = await response.json()
-  
-  return {
-    commitSha: commit.sha,
-    commitDate: commit.commit.author.date,
-    commitMessage: commit.commit.message.split('\n')[0], // 只取第一行
-    htmlUrl: commit.html_url
+/**
+ * 获取GitHub最新提交信息的备用方案（使用 GitHub Pages）
+ */
+async function getLatestCommitFallback() {
+  try {
+    // 使用 GitHub 的 commits 页面作为备用方案
+    const commitsUrl = `https://github.com/${GITHUB_REPO}/commits/master`
+
+    const response = await fetch(commitsUrl, {
+      headers: {
+        'User-Agent': 'TMDB-Helper/1.0',
+        'Accept': 'text/html'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`GitHub 页面请求失败: ${response.status} ${response.statusText}`)
+    }
+
+    const html = await response.text()
+
+    // 从 HTML 中提取最新提交信息
+    const shaMatch = html.match(/\/commit\/([a-f0-9]{40})/);
+    const dateMatch = html.match(/<relative-time datetime="([^"]+)"/);
+    const messageMatch = html.match(/<a class="Link--primary" href="\/[^\/]+\/[^\/]+\/commit\/[^"]+"[^>]*>([^<]+)<\/a>/);
+
+    if (!shaMatch || !dateMatch || !messageMatch) {
+      throw new Error('无法从 GitHub 页面解析提交信息')
+    }
+
+    return {
+      commitSha: shaMatch[1],
+      commitDate: new Date(dateMatch[1]).toISOString(),
+      commitMessage: messageMatch[1].trim(),
+      htmlUrl: `https://github.com/${GITHUB_REPO}/commit/${shaMatch[1]}`
+    }
+  } catch (error) {
+    // 如果备用方案也失败，返回一个默认值
+    return {
+      commitSha: 'unknown',
+      commitDate: new Date().toISOString(),
+      commitMessage: '无法检查更新（网络错误）',
+      htmlUrl: `https://github.com/${GITHUB_REPO}`
+    }
   }
 }
 

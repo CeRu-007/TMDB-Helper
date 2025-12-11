@@ -193,6 +193,24 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   // 使用新的图片预加载hook
   useItemImagesPreloader(item);
   
+  // Helper: 获取内联模式下应作为 portal 容器的元素
+  // 优先选择包裹 `#main-content-container` 的外层滚动容器（例如 class 包含 `overflow-y-auto` 的元素），
+  // 如果找不到则回退为 `#main-content-container` 本身。
+  const getInlineContainer = useCallback((): HTMLElement | null => {
+    if (typeof document === 'undefined') return null
+    const mainContent = document.getElementById('main-content-container')
+    if (!mainContent) return null
+
+    // 优先选择从 main-content-container 向上最近的 `.h-full.overflow-y-auto`，
+    // 这样可以确保我们只占满主内容区域而不是整个页面或侧边栏
+    const preferred = (mainContent as HTMLElement).closest('.h-full.overflow-y-auto') as HTMLElement | null
+    if (preferred) return preferred
+
+    // 回退：选择最近的 overflow-y-auto 祖先，或直接返回 main-content-container
+    const outer = (mainContent as HTMLElement).closest('.overflow-y-auto') as HTMLElement | null
+    return outer || (mainContent as HTMLElement)
+  }, [])
+  
   useEffect(() => {
     // 确保所有属性都被正确初始化，包括isDailyUpdate
     const initialEditData = {
@@ -322,19 +340,24 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
   useEffect(() => {
     if (displayMode !== 'inline') return
-    const container = typeof document !== 'undefined' ? document.getElementById('main-content-container') : null
+    const container = getInlineContainer()
     if (!container) return
     if (open) {
       // 保存 container 原始样式到 dataset，以便在 cleanup 或异常卸载时恢复（更健壮）
       try {
         container.dataset.tmhPrevOverflow = container.style.overflow || ''
         container.dataset.tmhPrevHeight = container.style.height || ''
+        container.dataset.tmhPrevPosition = container.style.position || ''
         container.dataset.tmhManaged = '1'
       } catch {}
 
       // 应用必须的样式，阻止 body 滚动
       container.style.overflow = 'hidden'
       container.style.height = 'calc(100vh - 64px)'
+      // 确保容器为定位容器，以便内部绝对定位的 DialogContent 能在此容器内铺满
+      try {
+        container.style.position = container.style.position || 'relative'
+      } catch {}
 
       const root = document.documentElement
       const body = document.body
@@ -419,11 +442,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         try {
           const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
           const prevHeight = container.dataset.tmhPrevHeight ?? ''
+          const prevPosition = container.dataset.tmhPrevPosition ?? ''
           container.style.overflow = prevOverflow
           container.style.height = prevHeight
+          if (prevPosition !== undefined) container.style.position = prevPosition
           // 清理 dataset 标记
           delete container.dataset.tmhPrevOverflow
           delete container.dataset.tmhPrevHeight
+          delete container.dataset.tmhPrevPosition
           delete container.dataset.tmhManaged
         } catch {}
 
@@ -450,10 +476,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         if (container.dataset.tmhManaged) {
           const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
           const prevHeight = container.dataset.tmhPrevHeight ?? ''
+          const prevPosition = container.dataset.tmhPrevPosition ?? ''
           container.style.overflow = prevOverflow
           container.style.height = prevHeight
+          if (prevPosition !== undefined) container.style.position = prevPosition
           delete container.dataset.tmhPrevOverflow
           delete container.dataset.tmhPrevHeight
+          delete container.dataset.tmhPrevPosition
           delete container.dataset.tmhManaged
         } else {
           container.style.overflow = ''
@@ -470,15 +499,18 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   useEffect(() => {
     if (typeof document === 'undefined') return
     try {
-      const container = document.getElementById('main-content-container')
+      const container = getInlineContainer()
       if (!container) return
       if (container.dataset.tmhManaged && !open) {
         const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
         const prevHeight = container.dataset.tmhPrevHeight ?? ''
+        const prevPosition = container.dataset.tmhPrevPosition ?? ''
         container.style.overflow = prevOverflow
         container.style.height = prevHeight
+        if (prevPosition !== undefined) container.style.position = prevPosition
         delete container.dataset.tmhPrevOverflow
         delete container.dataset.tmhPrevHeight
+        delete container.dataset.tmhPrevPosition
         delete container.dataset.tmhManaged
       }
     } catch {}
@@ -1550,7 +1582,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           ref={contentRef}
           showCloseButton={false}
           showOverlay={displayMode !== 'inline'}
-          container={typeof document !== 'undefined' && displayMode === 'inline' ? document.getElementById('main-content-container') as HTMLElement : undefined}
+          container={displayMode === 'inline' ? (getInlineContainer() ?? undefined) : undefined}
           position={displayMode === 'inline' ? 'absolute' : 'fixed'}
         >
 
