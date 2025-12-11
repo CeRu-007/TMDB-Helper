@@ -97,7 +97,7 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
   };
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full overflow-hidden" style={{ maxWidth: '100%' }}>
       {/* 工具栏 */}
       <div className="flex items-center justify-between p-2 border-b bg-muted/30">
         <div className="flex items-center space-x-2">
@@ -157,11 +157,11 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
       </div>
 
       {/* 表格区域 - 增强滚动容器 */}
-      <div className="flex-1 min-h-0 overflow-hidden csv-table-wrapper">
+      <div className="flex-1 min-h-0 overflow-hidden csv-table-wrapper relative">
         {/* 表格主体内容 */}
         <div className="h-full w-full min-h-0 overflow-hidden">
-          <BaseTMDBTable 
-            {...enhancedProps} 
+          <BaseTMDBTable
+            {...enhancedProps}
             showRowNumbers={config.showRowNumbers}
             showColumnOperations={config.showColumnOperations}
             showRowOperations={config.showRowOperations}

@@ -60,7 +60,6 @@ import Link from "next/link"
 import Image from "next/image"
 import AddItemDialog from "@/components/features/dialogs/add-item-dialog"
 import SettingsDialog from "@/components/features/dialogs/settings-dialog"
-import ItemDetailDialog from "@/components/features/media/item-detail-dialog"
 import VideoThumbnailExtractor from "@/components/features/media/video-thumbnail-extractor"
 import { ImageCropper } from "@/components/features/media/image-cropper"
 import { InstantImage } from "@/components/features/media/InstantImage"
@@ -2135,6 +2134,15 @@ export default function HomePage() {
           onShowExecutionLogs={() => setShowExecutionLogs(true)}
           onShowImportDialog={() => setShowImportDialog(true)}
           onShowExportDialog={() => setShowExportDialog(true)}
+          // 词条详情相关
+          selectedItem={selectedItem}
+          onSelectedItemChange={setSelectedItem}
+          onUpdateItem={handleUpdateItem}
+          onDeleteItem={handleDeleteItem}
+          onOpenScheduledTask={(item) => {
+            setScheduledTaskItem(item);
+            setShowScheduledTaskDialog(true);
+          }}
           // 影视资讯相关状态和函数
           upcomingItems={upcomingItems}
           recentItems={recentItems}
@@ -2165,7 +2173,9 @@ export default function HomePage() {
           setActiveTab={setActiveTab}
           setSelectedDayFilter={setSelectedDayFilter}
           setSelectedCategory={setSelectedCategory}
-          onItemClick={(item) => setSelectedItem(item)}
+          onItemClick={(item) => {
+            setSelectedItem(item);
+          }}
           // 组件引用
           RegionNavigation={RegionNavigation}
           ApiKeySetupGuide={ApiKeySetupGuide}
@@ -2294,22 +2304,6 @@ export default function HomePage() {
                 description: `任务 "${task.name}" 已成功保存`,
               });
             }}
-          />
-        )}
-        {selectedItem && (
-          <ItemDetailDialog
-            item={selectedItem}
-            open={!!selectedItem}
-            onOpenChange={(open) => {
-              if (!open) setSelectedItem(null)
-            }}
-            onUpdate={handleUpdateItem}
-            onDelete={handleDeleteItem}
-            onOpenScheduledTask={(item) => {
-              setScheduledTaskItem(item);
-              setShowScheduledTaskDialog(true);
-            }}
-            displayMode="inline"
           />
         )}
       </>

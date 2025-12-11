@@ -194,21 +194,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   useItemImagesPreloader(item);
   
   // Helper: 获取内联模式下应作为 portal 容器的元素
-  // 优先选择包裹 `#main-content-container` 的外层滚动容器（例如 class 包含 `overflow-y-auto` 的元素），
-  // 如果找不到则回退为 `#main-content-container` 本身。
+  // 使用 document.body 作为容器避免 aria-hidden 的 containment 问题
+  // 然后通过 CSS 和绝对定位来控制显示位置
   const getInlineContainer = useCallback((): HTMLElement | null => {
     if (typeof document === 'undefined') return null
-    const mainContent = document.getElementById('main-content-container')
-    if (!mainContent) return null
-
-    // 优先选择从 main-content-container 向上最近的 `.h-full.overflow-y-auto`，
-    // 这样可以确保我们只占满主内容区域而不是整个页面或侧边栏
-    const preferred = (mainContent as HTMLElement).closest('.h-full.overflow-y-auto') as HTMLElement | null
-    if (preferred) return preferred
-
-    // 回退：选择最近的 overflow-y-auto 祖先，或直接返回 main-content-container
-    const outer = (mainContent as HTMLElement).closest('.overflow-y-auto') as HTMLElement | null
-    return outer || (mainContent as HTMLElement)
+    return document.body
   }, [])
   
   useEffect(() => {
@@ -239,29 +229,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setCustomSeasonNumber(1)
     }
 
-    // 预加载背景图，确保打开对话框时立即显示
-    // 使用更积极的预加载策略，立即触发加载
+    // 优化图片预加载策略 - 只预加载当前视图需要的图片
+    // 优先预加载背景图（对用户体验最重要）
     if (item.backdropUrl) {
       const img = new Image();
       img.src = item.backdropUrl;
-    }
-    
-    // 预加载海报图
-    if (item.posterUrl) {
-      const img = new Image();
-      img.src = item.posterUrl;
-    }
-    
-    // 预加载标志图
-    if (item.logoUrl) {
-      const img = new Image();
-      img.src = item.logoUrl;
-    }
-    
-    // 预加载网络logo图
-    if (item.networkLogoUrl) {
-      const img = new Image();
-      img.src = item.networkLogoUrl;
     }
 
     // 读取全局外观设置
@@ -343,21 +315,25 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     const container = getInlineContainer()
     if (!container) return
     if (open) {
-      // 保存 container 原始样式到 dataset，以便在 cleanup 或异常卸载时恢复（更健壮）
+      // 获取主内容容器的位置信息
+      const mainContent = document.getElementById('main-content-container')
+      if (mainContent) {
+        const rect = mainContent.getBoundingClientRect()
+        // 设置 CSS 变量来定位 Dialog
+        container.style.setProperty('--dialog-left', `${rect.left}px`)
+        container.style.setProperty('--dialog-top', `${rect.top}px`)
+        container.style.setProperty('--dialog-width', `${rect.width}px`)
+        container.style.setProperty('--dialog-height', `${rect.height}px`)
+      }
+
+      // 保存 container 原始样式和属性到 dataset，以便在 cleanup 或异常卸载时恢复（更健壮）
       try {
         container.dataset.tmhPrevOverflow = container.style.overflow || ''
-        container.dataset.tmhPrevHeight = container.style.height || ''
-        container.dataset.tmhPrevPosition = container.style.position || ''
         container.dataset.tmhManaged = '1'
       } catch {}
 
       // 应用必须的样式，阻止 body 滚动
       container.style.overflow = 'hidden'
-      container.style.height = 'calc(100vh - 64px)'
-      // 确保容器为定位容器，以便内部绝对定位的 DialogContent 能在此容器内铺满
-      try {
-        container.style.position = container.style.position || 'relative'
-      } catch {}
 
       const root = document.documentElement
       const body = document.body
@@ -399,18 +375,56 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       }
 
       const wheelHandler = (e: WheelEvent) => {
+        // 总是阻止默认行为
+        e.preventDefault()
+
         if (!contentRef.current) return
-        const within = contentRef.current
-        const target = e.target as Node
-        const deltaY = e.deltaY
-        if (!within.contains(target)) {
-          e.preventDefault()
-          return
+
+        const target = e.target as Element
+
+        // 检查是否在可滚动的元素内
+        let scrollableElement: HTMLElement | null = null
+        let current = target as HTMLElement | null
+
+        // 向上遍历查找可滚动元素
+        while (current && current !== contentRef.current) {
+          const style = window.getComputedStyle(current)
+          const overflowY = style.overflowY
+
+          // 检查是否是可滚动元素
+          if ((overflowY === 'auto' || overflowY === 'scroll') &&
+              current.scrollHeight > current.clientHeight) {
+            scrollableElement = current
+            break
+          }
+
+          // 检查是否是 ScrollArea 的视口
+          if (current.hasAttribute('data-radix-scroll-area-viewport')) {
+            scrollableElement = current
+            break
+          }
+
+          current = current.parentElement
         }
-        const scrollEl = getScrollableAncestor(target, within)
-        if (!canScroll(scrollEl, deltaY)) {
-          e.preventDefault()
+
+        if (scrollableElement && contentRef.current.contains(scrollableElement)) {
+          // 在可滚动元素内，手动处理滚动
+          const deltaY = e.deltaY
+          const scrollTop = scrollableElement.scrollTop
+          const scrollHeight = scrollableElement.scrollHeight
+          const clientHeight = scrollableElement.clientHeight
+
+          // 检查是否可以滚动
+          if ((deltaY < 0 && scrollTop > 0) ||
+              (deltaY > 0 && scrollTop < scrollHeight - clientHeight)) {
+            // 可以滚动，更新滚动位置
+            scrollableElement.scrollTop += deltaY
+          }
         }
+
+        // 总是阻止冒泡
+        e.stopPropagation()
+        e.stopImmediatePropagation()
       }
 
       const touchStartYRef = { current: 0 }
@@ -419,24 +433,62 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         if (t) touchStartYRef.current = t.clientY
       }
       const touchMoveHandler = (e: TouchEvent) => {
+        // 总是阻止默认行为
+        e.preventDefault()
+
         if (!contentRef.current) return
-        const within = contentRef.current
-        const target = e.target as Node
-        const t = e.touches[0]
-        const deltaY = t ? touchStartYRef.current - t.clientY : 0
-        if (!within.contains(target)) {
-          e.preventDefault()
-          return
+
+        const target = e.target as Element
+        const deltaY = touchStartYRef.current - (e.touches[0]?.clientY || 0)
+
+        // 检查是否在可滚动的元素内
+        let scrollableElement: HTMLElement | null = null
+        let current = target as HTMLElement | null
+
+        // 向上遍历查找可滚动元素
+        while (current && current !== contentRef.current) {
+          const style = window.getComputedStyle(current)
+          const overflowY = style.overflowY
+
+          // 检查是否是可滚动元素
+          if ((overflowY === 'auto' || overflowY === 'scroll') &&
+              current.scrollHeight > current.clientHeight) {
+            scrollableElement = current
+            break
+          }
+
+          // 检查是否是 ScrollArea 的视口
+          if (current.hasAttribute('data-radix-scroll-area-viewport')) {
+            scrollableElement = current
+            break
+          }
+
+          current = current.parentElement
         }
-        const scrollEl = getScrollableAncestor(target, within)
-        if (!canScroll(scrollEl, deltaY)) {
-          e.preventDefault()
+
+        if (scrollableElement && contentRef.current.contains(scrollableElement)) {
+          // 在可滚动元素内，手动处理滚动
+          const scrollTop = scrollableElement.scrollTop
+          const scrollHeight = scrollableElement.scrollHeight
+          const clientHeight = scrollableElement.clientHeight
+
+          // 检查是否可以滚动
+          if ((deltaY < 0 && scrollTop > 0) ||
+              (deltaY > 0 && scrollTop < scrollHeight - clientHeight)) {
+            // 可以滚动，更新滚动位置
+            scrollableElement.scrollTop += deltaY
+            touchStartYRef.current = e.touches[0]?.clientY || 0
+          }
         }
+
+        // 总是阻止冒泡
+        e.stopPropagation()
+        e.stopImmediatePropagation()
       }
 
-      window.addEventListener('wheel', wheelHandler, { passive: false })
-      window.addEventListener('touchstart', touchStartHandler, { passive: true })
-      window.addEventListener('touchmove', touchMoveHandler, { passive: false })
+      window.addEventListener('wheel', wheelHandler, { passive: false, capture: true })
+      window.addEventListener('touchstart', touchStartHandler, { passive: true, capture: true })
+      window.addEventListener('touchmove', touchMoveHandler, { passive: false, capture: true })
       return () => {
         // 恢复 container 的原始样式（优先从 dataset 读取以防闭包丢失）
         try {
@@ -466,31 +518,28 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             window.scrollTo({ top: -y, behavior: 'auto' })
           }
         } catch {}
-        window.removeEventListener('wheel', wheelHandler as any)
-        window.removeEventListener('touchstart', touchStartHandler as any)
-        window.removeEventListener('touchmove', touchMoveHandler as any)
+        window.removeEventListener('wheel', wheelHandler as any, true)
+        window.removeEventListener('touchstart', touchStartHandler as any, true)
+        window.removeEventListener('touchmove', touchMoveHandler as any, true)
       }
     } else {
       // 如果不是 open 状态，确保我们没有留下样式（只在本组件曾管理过时清理）
       try {
         if (container.dataset.tmhManaged) {
           const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
-          const prevHeight = container.dataset.tmhPrevHeight ?? ''
-          const prevPosition = container.dataset.tmhPrevPosition ?? ''
           container.style.overflow = prevOverflow
-          container.style.height = prevHeight
-          if (prevPosition !== undefined) container.style.position = prevPosition
+          // 清理 CSS 变量
+          container.style.removeProperty('--dialog-left')
+          container.style.removeProperty('--dialog-top')
+          container.style.removeProperty('--dialog-width')
+          container.style.removeProperty('--dialog-height')
           delete container.dataset.tmhPrevOverflow
-          delete container.dataset.tmhPrevHeight
-          delete container.dataset.tmhPrevPosition
           delete container.dataset.tmhManaged
         } else {
           container.style.overflow = ''
-          container.style.height = ''
         }
       } catch {
         container.style.overflow = ''
-        container.style.height = ''
       }
     }
   }, [open, displayMode])
@@ -503,14 +552,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       if (!container) return
       if (container.dataset.tmhManaged && !open) {
         const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
-        const prevHeight = container.dataset.tmhPrevHeight ?? ''
-        const prevPosition = container.dataset.tmhPrevPosition ?? ''
         container.style.overflow = prevOverflow
-        container.style.height = prevHeight
-        if (prevPosition !== undefined) container.style.position = prevPosition
+        // 清理 CSS 变量
+        container.style.removeProperty('--dialog-left')
+        container.style.removeProperty('--dialog-top')
+        container.style.removeProperty('--dialog-width')
+        container.style.removeProperty('--dialog-height')
         delete container.dataset.tmhPrevOverflow
-        delete container.dataset.tmhPrevHeight
-        delete container.dataset.tmhPrevPosition
         delete container.dataset.tmhManaged
       }
     } catch {}
@@ -540,6 +588,32 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       contentElement?.removeEventListener('scroll', handleScroll)
     }
   }, [open, contentRef.current])
+
+  // 添加额外的滚动阻止
+  useEffect(() => {
+    if (!open || displayMode !== 'inline') return
+
+    // 阻止整个页面的滚动
+    const preventScroll = (e: Event) => {
+      e.preventDefault()
+      e.stopPropagation()
+      e.stopImmediatePropagation()
+    }
+
+    // 在内容容器上添加滚动监听
+    const contentElement = contentRef.current
+    if (contentElement) {
+      contentElement.addEventListener('wheel', preventScroll, { passive: false, capture: true })
+      contentElement.addEventListener('touchmove', preventScroll, { passive: false, capture: true })
+    }
+
+    return () => {
+      if (contentElement) {
+        contentElement.removeEventListener('wheel', preventScroll, true)
+        contentElement.removeEventListener('touchmove', preventScroll, true)
+      }
+    }
+  }, [open, displayMode])
 
   useEffect(() => {
     if (!contentRef.current) return
@@ -1455,42 +1529,35 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         };
       }
 
-      // 更新状态
-      setEditData(updatedData);
-
       // 将更新的数据应用到localItem，使背景图和其他数据立即生效
-      const newLocalItem = {
-        ...localItem,
-        backdropUrl: tmdbData.backdropUrl || localItem.backdropUrl,
-        backdropPath: tmdbData.backdropPath || localItem.backdropPath
+      const timestamp = Date.now(); // 添加时间戳强制重新加载图片
+
+      // 首先确保editData中保存的是原始URL（不带时间戳）
+      updatedData = {
+        ...updatedData,
+        backdropUrl: tmdbData.backdropUrl || updatedData.backdropUrl,
+        backdropPath: tmdbData.backdropPath || updatedData.backdropPath,
+        logoUrl: tmdbData.logoUrl || updatedData.logoUrl,
+        networkLogoUrl: tmdbData.networkLogoUrl || updatedData.networkLogoUrl,
+        networkId: tmdbData.networkId !== undefined ? tmdbData.networkId : updatedData.networkId,
+        networkName: tmdbData.networkName || updatedData.networkName,
+        overview: tmdbData.overview !== undefined ? (tmdbData.overview === null ? undefined : tmdbData.overview) : updatedData.overview
       };
 
-      // 更新简介
+      // 更新状态 - 现在updatedData包含了完整的更新数据
+      setEditData(updatedData);
 
-      if (tmdbData.overview !== undefined) {
-        newLocalItem.overview = tmdbData.overview === null ? undefined : tmdbData.overview;
-      }
-
-      // 更新标志
-      if (tmdbData.logoUrl) {
-        newLocalItem.logoUrl = tmdbData.logoUrl;
-      }
-
-      // 更新网络相关信息 - 第二处添加
-      if (editData.mediaType === "tv") {
-        if (tmdbData.networkId !== undefined) {
-          newLocalItem.networkId = tmdbData.networkId;
-        }
-
-        if (tmdbData.networkName) {
-          newLocalItem.networkName = tmdbData.networkName;
-        }
-
-        if (tmdbData.networkLogoUrl) {
-          newLocalItem.networkLogoUrl = tmdbData.networkLogoUrl;
-          
-        }
-      }
+      // 然后在localItem中使用带时间戳的URL用于立即显示
+      const newLocalItem = {
+        ...localItem,
+        backdropUrl: tmdbData.backdropUrl ? `${tmdbData.backdropUrl}?t=${timestamp}` : localItem.backdropUrl,
+        backdropPath: tmdbData.backdropPath || localItem.backdropPath,
+        logoUrl: tmdbData.logoUrl ? `${tmdbData.logoUrl}?t=${timestamp}` : localItem.logoUrl,
+        networkLogoUrl: tmdbData.networkLogoUrl ? `${tmdbData.networkLogoUrl}?t=${timestamp}` : localItem.networkLogoUrl,
+        networkId: tmdbData.networkId !== undefined ? tmdbData.networkId : localItem.networkId,
+        networkName: tmdbData.networkName || localItem.networkName,
+        overview: tmdbData.overview !== undefined ? (tmdbData.overview === null ? undefined : tmdbData.overview) : localItem.overview
+      };
 
       // 如果是电视剧且有季数据更新，也更新这部分
       if (editData.mediaType === "tv" && updatedData.seasons) {
@@ -1501,8 +1568,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
       setLocalItem(newLocalItem);
 
-      // 通知父组件更新
-      onUpdate(newLocalItem);
+      // 通知父组件更新 - 使用updatedData确保保存的是原始URL（不带时间戳）
+      onUpdate(updatedData);
 
       // 显示成功信息
       if (hasNewBackdrop) {
@@ -1557,17 +1624,22 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const isDailyUpdate = localItem.isDailyUpdate === true ||
     (localItem.isDailyUpdate === undefined && (localItem.category === "tv" || localItem.category === "short"));
 
-  // 添加预加载背景图的函数
+  // 优化预加载背景图的函数 - 只预加载最需要的尺寸
   const preloadBackdrop = (backdropPath: string | null | undefined) => {
     if (!backdropPath) return;
 
-    // 预加载不同尺寸的背景图
-    // 预加载背景图片（简化版本）
-    const sizes = ['w780', 'w1280', 'original'];
-    sizes.forEach(size => {
-      const img = new Image();
-      img.src = `https://image.tmdb.org/t/p/${size}${backdropPath}`;
-    });
+    // 只预加载当前设备最可能需要的尺寸
+    // 根据屏幕尺寸选择合适的图片大小
+    const isHighDensity = window.devicePixelRatio > 1;
+    const screenWidth = window.screen.width;
+    let optimalSize = 'w780'; // 默认尺寸
+
+    if (screenWidth > 1920 || isHighDensity) {
+      optimalSize = 'w1280';
+    }
+
+    const img = new Image();
+    img.src = `https://image.tmdb.org/t/p/${optimalSize}${backdropPath}`;
   };
 
   return (
@@ -1576,9 +1648,16 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         <DialogContent
           className={cn(
             displayMode === 'inline'
-              ? "inset-0 rounded-none max-w-none max-h-none w-full h-full translate-x-0 translate-y-0 p-0 bg-transparent border-none overscroll-none touch-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right"
-              : "max-w-7xl max-h-[95vh] overflow-hidden p-0 bg-transparent border-none"
+              ? "absolute rounded-none max-w-none h-[100vh] bg-transparent border-none overscroll-none touch-none"
+              : "max-w-7xl h-[85vh] overflow-hidden p-0 bg-transparent border-none"
           )}
+          style={displayMode === 'inline' ? {
+            left: 'var(--dialog-left, 0px)',
+            top: 'var(--dialog-top, 0px)',
+            width: 'var(--dialog-width, 100vw)',
+            height: 'var(--dialog-height, 100vh)',
+            transform: 'translate(0, 0)'
+          } : undefined}
           ref={contentRef}
           showCloseButton={false}
           showOverlay={displayMode !== 'inline'}
@@ -1623,7 +1702,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           })()}
 
           {/* 内容层 - 添加相对定位和z-index确保内容在背景图上方 */}
-          <div className="relative z-10 h-full overflow-y-auto overscroll-none">
+          <div className="relative z-10 h-full flex flex-col overflow-hidden overscroll-none" ref={contentRef}>
           <DialogHeader className="p-6 pb-2 flex flex-row items-start justify-between">
             <div className="flex-1 pr-4">
 
@@ -1764,11 +1843,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           </DialogHeader>
 
           {/* 新的网格布局 */}
-          <div className="p-6 pt-0 grid grid-cols-4 gap-6">
+          <div className="p-6 pt-0 grid grid-cols-4 gap-6 flex-1 overflow-hidden min-h-0">
             {/* 左侧：海报区域 */}
-            <div className="col-span-1 max-w-full overflow-hidden">
+            <div className="col-span-1 max-w-full overflow-hidden flex flex-col min-h-0">
               {/* 使用统一的容器结构避免切换时的闪烁 */}
-              <div className="h-[670px] flex flex-col pr-2">
+              <div className="flex-1 flex flex-col pr-2 min-h-0">
                 {/* 海报区域 - 使用固定高度比例 */}
                 <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
                   {localItem.posterUrl ? (
@@ -2177,7 +2256,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             </div>
 
             {/* 右侧：内容区域 */}
-            <div className="col-span-3">
+            <div className="col-span-3 flex flex-col min-h-0 overflow-hidden">
               {/* 操作按钮 */}
               <div className="flex flex-wrap gap-2 mb-4 items-center min-h-[40px]">
                 <Button
@@ -2197,8 +2276,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               </div>
 
               {/* 标签页切换 */}
-              <Tabs value={detailTab} onValueChange={setDetailTab}>
-                <TabsList className="grid w-full grid-cols-2">
+              <Tabs value={detailTab} onValueChange={setDetailTab} className="flex-1 flex flex-col min-h-0">
+                <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                   <TabsTrigger value="details" className="flex items-center transition-all duration-300">
                     <Info className="h-4 w-4 mr-2" />
                     详情
@@ -2210,8 +2289,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 </TabsList>
 
                 {/* 详情标签内容 */}
-                <TabsContent value="details" className="transition-opacity duration-300 ease-in-out">
-                  <ScrollArea className="h-[calc(95vh-300px)]">
+                <TabsContent value="details" className="transition-opacity duration-300 ease-in-out flex-1 min-h-0">
+                  <ScrollArea className="h-full">
                     <div className="space-y-6 pr-2">
                       {/* 剧集内容 */}
                       {localItem.mediaType === "movie" ? (
@@ -2597,9 +2676,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 </TabsContent>
 
                 {/* 集成工具标签内容 */}
-                <TabsContent value="integration" className="transition-opacity duration-300 ease-in-out">
-                  <ScrollArea className="h-[calc(95vh-300px)]">
-                    <div className="pr-2">
+                <TabsContent value="integration" className="transition-opacity duration-300 ease-in-out flex-1 min-h-0">
+                  <ScrollArea className="h-full">
+                    <div className="pr-2 w-full overflow-hidden min-w-0 max-w-full">
                       <TMDBImportIntegrationDialog
                         open={true}
                         onOpenChange={() => {}}

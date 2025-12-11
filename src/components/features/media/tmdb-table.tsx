@@ -1295,12 +1295,12 @@ const TMDBTableComponent = ({
       onDuplicateRow={duplicateRow}
       onDuplicateColumn={duplicateColumn}
     >
-      <div 
+      <div
         className={cn(
-          "tmdb-table", 
+          "tmdb-table",
           className,
           isAllRowsSelected && "selecting-all"
-        )} 
+        )}
         ref={tableRef}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
@@ -1335,37 +1335,9 @@ const TMDBTableComponent = ({
           </div>
         )}
 
-        {/* 测试按钮，仅用于开发调试 */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="absolute top-2 right-2 z-50">
-            <button
-              className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded"
-              onClick={() => {
-                
-                // 内联撤销函数
-                if (history.length === 0) {
-                  
-                  return;
-                }
-
-                // 获取最近的历史记录
-                const prevData = history[0];
-                
-                // 从历史记录中移除该记录并恢复数据
-                setHistory(prev => prev.slice(1));
-                setLocalData(prevData);
-                onDataChange?.(prevData);
-
-              }}
-            >
-              撤销(测试)
-            </button>
-          </div>
-        )}
-        
         <ScrollArea className="h-full w-full scroll-area-viewport">
-          <div className="relative w-fit min-w-full" style={{ paddingBottom: '1px' }}>
-            <Table>
+          <div className="relative w-full overflow-x-auto" style={{ paddingBottom: '1px' }}>
+            <Table className="w-full" style={{ tableLayout: 'auto', minWidth: '100%' }}>
             <TableHeader>
                 <TableRow>
                   {/* 行号列头 */}
@@ -1384,14 +1356,15 @@ const TMDBTableComponent = ({
                   )}
                   
                   {localData.headers.map((header, index) => (
-                    <TableHead 
+                    <TableHead
                       key={index}
-                      style={{ 
-                        width: columnWidths[index], 
-                        minWidth: columnWidths[index] 
-                      }}
                       data-column={header.toLowerCase().replace(/\s+/g, '_')}
                       className="relative group"
+                      style={{
+                        minWidth: '100px',
+                        maxWidth: '250px',
+                        width: `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <span className="truncate">{header}</span>
@@ -1529,7 +1502,7 @@ const TMDBTableComponent = ({
                     )}
                     
                     {row.map((cell, colIndex) => (
-                              <TableCell 
+                              <TableCell
                         key={colIndex}
                         className={cn(
                           isCellSelected(rowIndex, colIndex) && "bg-primary/20",
@@ -1537,13 +1510,18 @@ const TMDBTableComponent = ({
                           isDragging && canStartDragging && dragStart?.row === rowIndex && dragStart?.col === colIndex && "cursor-crosshair",
                           isShiftSelecting && "cursor-crosshair",
                           canStartDragging && isDragging && "cursor-crosshair",
-                          "relative select-none group/cell" // 添加select-none类以防止文本选择
+                          "relative select-none group/cell whitespace-nowrap overflow-hidden" // 添加文本控制类
                         )}
                         onClick={(e) => handleCellClick(rowIndex, colIndex, e)}
                         onDoubleClick={(e) => handleCellDoubleClick(rowIndex, colIndex, e)}
                         onMouseMove={(e) => handleMouseMove(rowIndex, colIndex, e)}
                         onMouseDown={(e) => handleCellMouseDown(rowIndex, colIndex, e)}
                         data-column={localData.headers[colIndex].toLowerCase().replace(/\s+/g, '_')}
+                        style={{
+                          minWidth: '100px',
+                          maxWidth: '250px',
+                          width: `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
+                        }}
                       >
                         <div className="relative w-full h-full">
                           {isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? (

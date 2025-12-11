@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { stringifyAuto } from '../readable-compact-json';
 
 /**
  * 自动优化工具
@@ -68,7 +67,7 @@ function optimizeJSONFile(filePath: string): {
       
       return null;
     }
-    const optimizedData = stringifyAuto(jsonData);
+    const optimizedData = JSON.stringify(jsonData, null, 2);
     
     // 写入优化后的文件
     fs.writeFileSync(filePath, optimizedData, 'utf-8');

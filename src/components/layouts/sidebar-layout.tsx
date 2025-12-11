@@ -38,6 +38,7 @@ import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
 import Image from "next/image"
 import { TMDBGuide } from "@/components/features/maintenance/tmdb-guide"
 import StreamingPlatformNav from "@/components/features/streaming-platforms/streaming-platform-nav"
+import ItemDetailDialog from "@/components/features/media/item-detail-dialog"
 
 export interface SidebarLayoutProps {
   children: React.ReactNode
@@ -50,6 +51,13 @@ export interface SidebarLayoutProps {
   onShowExecutionLogs: () => void
   onShowImportDialog: () => void
   onShowExportDialog: () => void
+  // 词条详情相关
+  selectedItem: any
+  onSelectedItemChange: (item: any | null) => void
+  onUpdateItem: (item: any) => void
+  onDeleteItem: (id: string) => void
+  onOpenScheduledTask?: (item: any) => void
+  onItemClick?: (item: any) => void
   // 影视资讯相关状态和函数
   upcomingItems: any[]
   recentItems: any[]
@@ -99,6 +107,13 @@ export function SidebarLayout({
   onShowExecutionLogs,
   onShowImportDialog,
   onShowExportDialog,
+  // 词条详情相关
+  selectedItem,
+  onSelectedItemChange,
+  onUpdateItem,
+  onDeleteItem,
+  onOpenScheduledTask,
+  onItemClick,
   // 影视资讯相关
   upcomingItems,
   recentItems,
@@ -129,7 +144,6 @@ export function SidebarLayout({
   setActiveTab,
   setSelectedDayFilter,
   setSelectedCategory,
-  onItemClick,
   // 组件
   RegionNavigation,
   ApiKeySetupGuide,
@@ -308,6 +322,11 @@ export function SidebarLayout({
 
   // 处理菜单选择
   const handleMenuSelect = (menuId: string, submenuId?: string) => {
+    // 如果选择的是词条维护相关菜单，清空选中的词条详情
+    if (menuId === 'maintenance') {
+      onSelectedItemChange(null)
+    }
+
     setActiveMenu(menuId)
     setActiveSubmenu(submenuId || '')
 
@@ -323,9 +342,27 @@ export function SidebarLayout({
     }
   }
 
+  // 处理词条点击，显示详情页面
+  const handleItemClick = (item: any) => {
+    // 调用父组件传递的 onItemClick 回调
+    if (onItemClick) {
+      onItemClick(item)
+    }
+    onSelectedItemChange(item)
+    // 可以设置一个特殊的内容键来标识这是详情页面
+    setContentKey('item-detail')
+  }
+
+  // 处理返回列表
+  const handleBackToList = () => {
+    onSelectedItemChange(null)
+    // 恢复到之前的菜单状态
+    setContentKey(activeMenu ? (activeSubmenu ? `${activeMenu}-${activeSubmenu}` : activeMenu) : 'maintenance-all')
+  }
+
   // 动态控制body的overflow属性，防止缩略图页面出现额外滚动条
   useEffect(() => {
-    const isThumbnailPage = contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop'
+    const isThumbnailPage = contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'item-detail'
 
     if (isThumbnailPage) {
       // 缩略图页面：隐藏body滚动条
@@ -353,7 +390,25 @@ export function SidebarLayout({
     return (
       <div className="max-w-7xl mx-auto px-8 py-4">
         {/* 内容展示区域 - 保持与原始布局一致的容器样式 */}
-        <div>
+        <div
+          onClick={(e) => {
+            // 检查点击的是否为 MediaCard
+            const target = e.target as HTMLElement
+            const mediaCard = target.closest('[data-media-card]')
+            if (mediaCard) {
+              // 从 data 属性中获取 item 信息
+              const itemData = mediaCard.getAttribute('data-item')
+              if (itemData) {
+                try {
+                  const item = JSON.parse(itemData)
+                  handleItemClick(item)
+                } catch (error) {
+
+                }
+              }
+            }
+          }}
+        >
           {/* 这里直接渲染原始的children内容，保持完整的功能 */}
           {/* children中已经包含了完整的空状态处理逻辑，无需重复渲染 */}
           {children}
@@ -373,6 +428,25 @@ export function SidebarLayout({
 
   // 渲染内容区域
   const renderContent = () => {
+    // 如果有选中的词条，显示词条详情页面
+    if (selectedItem && contentKey === 'item-detail') {
+      return (
+        <div className="h-full overflow-hidden">
+          <ItemDetailDialog
+            item={selectedItem}
+            open={true}
+            onOpenChange={(open) => {
+              if (!open) handleBackToList()
+            }}
+            onUpdate={onUpdateItem}
+            onDelete={onDeleteItem}
+            onOpenScheduledTask={onOpenScheduledTask}
+            displayMode="inline"
+          />
+        </div>
+      )
+    }
+
     // 根据选中的菜单项显示不同内容
     switch (contentKey) {
       case 'maintenance-all':
@@ -1000,10 +1074,15 @@ export function SidebarLayout({
         {/* 主内容区域 - 桌面端避免被侧边栏遮挡 */}
         <main className={`flex-1 overflow-hidden `}>
           {/* 根据页面类型决定是否使用滚动容器 */}
-          {contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'image-recognition-recognize' || contentKey === 'maintenance-independent' ? (
-            // 缩略图相关页面、图像识别页面和独立维护页面：提供固定高度容器，让组件内部处理滚动
+          {contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'image-recognition-recognize' || contentKey === 'maintenance-independent' || contentKey === 'item-detail' ? (
+            // 缩略图相关页面、图像识别页面、独立维护页面和词条详情页面：提供固定高度容器，让组件内部处理滚动
             <div className="h-full overflow-hidden">
-              {renderContent()}
+              <div
+                id="main-content-container"
+                className="h-full overflow-hidden relative"
+              >
+                {renderContent()}
+              </div>
             </div>
           ) : (
             // 其他页面（词条维护、影视资讯等）：使用标准滚动容器

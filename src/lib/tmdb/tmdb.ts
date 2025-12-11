@@ -109,7 +109,7 @@ export class TMDBService {
 
   // 客户端版本 - 只在浏览器环境中使用
   private static async getApiKeyClient(): Promise<string> {
-    const { ClientConfigManager } = await import('../client-config-manager');
+    const { ClientConfigManager } = await import('../utils/client-config-manager');
     const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
     if (!apiKey) {
       throw new Error("TMDB API密钥未设置，请在设置中配置");
@@ -379,10 +379,10 @@ export class TMDBService {
       // 记录API响应时间
       const endTime = performance.now();
       try {
-        const { PerformanceOptimizer } = await import('../performance-optimizer');
+        const { PerformanceOptimizer } = await import('../utils/performance-optimizer');
         PerformanceOptimizer.recordApiResponse(startTime, endTime);
       } catch (error) {
-        
+
       }
 
       if (!response.ok) {

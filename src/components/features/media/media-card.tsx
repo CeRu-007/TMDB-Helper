@@ -108,7 +108,11 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
   }
 
   return (
-    <div className="cursor-pointer group">
+    <div
+      className="cursor-pointer group"
+      data-media-card="true"
+      data-item={JSON.stringify(item)}
+    >
       {/* 播出时间标签 - 电视剧和短剧只显示每日更新标签，其他分类显示日期时间 */}
       {showAirTime && (
         <div className="mb-2 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide">

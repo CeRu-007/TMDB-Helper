@@ -169,10 +169,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const forceUpdate = () => setForceUpdateValue(val => val + 1)
   // 添加操作锁，防止按钮互相触发
   const [operationLock, setOperationLock] = useState<string | null>(null)
-  // 添加处理页面渲染计数器
-  const [processTabRenderCount, setProcessTabRenderCount] = useState(0)
-  // 添加编辑标签页渲染计数器
-  const [editTabRenderCount, setEditTabRenderCount] = useState(0)
   // 添加表格加载状态
   const [tableReady, setTableReady] = useState(false)
   // 判断是否为Windows环境（根据浏览器 userAgent 或 Node process.platform）
@@ -654,12 +650,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
         appendTerminalOutput("CSV文件读取成功", "success");
         
-        // 确保在处理页面时强制刷新处理页面内容
-        if (activeTab === "process") {
-          
-          setProcessTabRenderCount(prev => prev + 1);
-        }
-
+        
         return true;
         } catch (axiosError: any) {
           // 特殊处理404错误（文件不存在）
@@ -728,20 +719,15 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     updateStepStatus(1, "completed", `成功读取CSV文件，共${csvData.rows.length}行`);
     setShowCsvEditor(true);
 
-    // 确保在处理页面时强制刷新处理页面内容
-    if (activeTab === "process") {
-      
-      setProcessTabRenderCount(prev => prev + 1);
-    }
     // 确保在编辑页面时强制刷新编辑页面内容
-    else if (activeTab === "edit") {
-      
+    if (activeTab === "edit") {
+
       // 立即设置表格就绪状态
       setTableReady(true);
 
       // 延迟执行以确保DOM更新
       setTimeout(() => {
-        forceRefreshEditTab();
+        setTableReady(true);
       }, 100);
     }
   }
@@ -1706,11 +1692,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
               // 确保处理标签页内容正确显示
               if (activeTab === "process") {
-                
-                setProcessTabRenderCount(prev => prev + 1);
+                setTableReady(true);
               }
             } else {
-              
+
               // 在加载失败的情况下，初始化处理标签页
               setActiveTab("process");
             }
@@ -1749,10 +1734,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     setActiveTab(value)
 
-    // 如果切换到处理标签页，增加渲染计数以强制刷新内容
+    // 如果切换到处理标签页，确保表格状态正确
     if (value === "process") {
-      
-      setProcessTabRenderCount(prev => prev + 1)
+
+      setTableReady(true)
     }
     // 如果切换到编辑标签页，增加渲染计数以强制刷新内容
     else if (value === "edit") {
@@ -1768,7 +1753,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               if (success) {
                 
                 setTableReady(true);
-                forceRefreshEditTab();
               }
             }
           } catch (error) {
@@ -1778,7 +1762,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       } else {
         // 已有CSV数据，直接刷新编辑页面
         setTableReady(true);
-        forceRefreshEditTab();
       }
     }
   }
@@ -1807,12 +1790,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             </TabsList>
 
                       <div className="flex items-center space-x-2">
-                        {csvData && (
-                <Button variant="outline" size="sm" onClick={downloadCSV} className="flex items-center">
-                  <Download className="h-4 w-4 mr-2" />
-                  下载CSV
-                              </Button>
-              )}
                               <Button
                 variant="outline"
                                 size="sm"
@@ -1830,9 +1807,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         <TabsContent
           value="process"
           className="h-[calc(100%-48px)] overflow-hidden"
-          key={`process-tab-${processTabRenderCount}`}
         >
-          <div className="p-4 h-full overflow-y-auto space-y-4">
+          <div className="p-4 h-full overflow-y-auto space-y-4" style={{ maxHeight: 'calc(100vh - 200px)' }}>
             {/* TMDB导入命令区域 */}
                 <Card variant="frosted">
               <CardHeader className="pb-2">
@@ -1856,7 +1832,19 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     </Button>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <div>{displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}</div>
+                    <div className="flex-1 min-w-0 mr-2 overflow-hidden">
+                      <div className="font-mono text-xs"
+                           style={{
+                             textOverflow: 'ellipsis !important',
+                             whiteSpace: 'nowrap !important',
+                             overflow: 'hidden !important',
+                             width: '100% !important',
+                             maxWidth: '100%'
+                           }}
+                           title={displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
+                        {displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
+                      </div>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1869,7 +1857,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 </div>
 
                 {/* 配置和按钮区域 */}
-                <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-full">
                   {/* 左侧：URL和季数配置 */}
                   <div className="space-y-3">
                 <div>
@@ -1920,7 +1908,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   {/* 右侧：按钮区域 */}
                   <div className="flex flex-col justify-end space-y-2">
                     {/* 两个主要按钮 */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Button
                         onClick={(e) => startProcessing(e)}
                         disabled={operationLock === "platform" || !tmdbPathState || !platformUrl}
@@ -1977,7 +1965,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   </Alert>
                 )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-full overflow-hidden">
               {/* 步骤进度 */}
               <Card variant="frosted">
                 <CardHeader>
@@ -2077,7 +2065,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={forceRefreshProcessTab}
+                        onClick={() => setTableReady(!tableReady)}
                         title="如果内容不显示，请点击此按钮刷新"
                         className="h-7 text-xs"
                       >
@@ -2109,7 +2097,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 <CardContent className="p-0">
                   <div
                     ref={terminalRef}
-                    className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-[400px] max-h-[400px] overflow-y-auto whitespace-pre-wrap"
+                    className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-[300px] max-h-[300px] overflow-y-auto whitespace-pre-wrap"
                   >
                     {terminalOutput || (
                       <>
@@ -2185,10 +2173,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         {/* 编辑标签内容 */}
         <TabsContent
           value="edit"
-          className="h-[calc(100%-48px)] overflow-hidden bg-background/30 backdrop-blur-sm"
-          key={`edit-tab-${editTabRenderCount}`}
+          className="h-[calc(100%-48px)] overflow-hidden bg-background/30 backdrop-blur-sm w-full"
         >
-          <div className="h-full">
+          <div className="h-full w-full overflow-hidden" style={{ maxWidth: '100%' }}>
             {/* 添加调试状态显示 */}
             <div className="absolute top-1 right-1 z-50">
               <Badge
@@ -2203,49 +2190,47 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               >
                 表格状态: {tableReady ? "就绪" : "未准备"}
               </Badge>
-              <Badge
-                variant="outline"
-                className="text-xs mb-1 ml-1"
-              >
-                渲染计数: {editTabRenderCount}
-              </Badge>
-            </div>
+                          </div>
 
             {csvData ? (
               <div className="h-full flex flex-col">
                 {/* 编辑器使用提示 */}
-                <div className="flex flex-col">
-                  <div className="bg-background/50 backdrop-blur-md border-b px-4 py-3">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex flex-col flex-shrink-0">
+                  <div className="bg-background/50 backdrop-blur-md border-b sticky top-0 z-20">
+                    {/* 第一行：编辑模式切换 */}
+                    <div className="px-4 py-2 border-b border-border/50">
                       <div className="flex items-center gap-3">
                         <div className="bg-muted rounded-md p-0.5 flex items-center">
-                        <Button
-                          variant={editorMode === "enhanced" ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => handleEditorModeChange("enhanced")}
+                          <Button
+                            variant={editorMode === "enhanced" ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => handleEditorModeChange("enhanced")}
                             className="h-8 px-3 text-xs"
-                        >
-                          <TableIcon className="h-3.5 w-3.5 mr-1" />
-                          表格模式
-                        </Button>
-                        <Button
-                          variant={editorMode === "text" ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => handleEditorModeChange("text")}
-                          className="h-8 px-3 text-xs"
-                        >
-                          <FileText className="h-3.5 w-3.5 mr-1" />
-                          文本模式
-                        </Button>
+                          >
+                            <TableIcon className="h-3.5 w-3.5 mr-1" />
+                            表格模式
+                          </Button>
+                          <Button
+                            variant={editorMode === "text" ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => handleEditorModeChange("text")}
+                            className="h-8 px-3 text-xs"
+                          >
+                            <FileText className="h-3.5 w-3.5 mr-1" />
+                            文本模式
+                          </Button>
                         </div>
                       </div>
+                    </div>
 
-                      <div className="flex items-center gap-2">
+                    {/* 第二行：操作按钮 - 固定在左侧可视区域 */}
+                    <div className="px-4 py-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={forceRefreshEditTab}
-                          className="h-8 px-3 text-xs"
+                          onClick={() => setTableReady(!tableReady)}
+                          className="h-8 px-3 text-xs flex-shrink-0"
                         >
                           <RefreshCw className="h-3.5 w-3.5 mr-1" />
                           刷新视图
@@ -2256,7 +2241,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                           size="sm"
                           onClick={saveCsvChanges}
                           disabled={isSaving}
-                          className="h-8 px-3 text-xs"
+                          className="h-8 px-3 text-xs flex-shrink-0 bg-primary/10 border-primary/20"
                         >
                           {isSaving ? (
                             <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -2265,6 +2250,18 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                           )}
                           保存
                         </Button>
+
+                        {editorMode === "text" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={downloadCSV}
+                            className="h-8 px-3 text-xs flex-shrink-0"
+                          >
+                            <Download className="h-3.5 w-3.5 mr-1" />
+                            下载CSV
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2280,7 +2277,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={forceRefreshEditTab}
+                        onClick={() => setTableReady(!tableReady)}
                         className="mt-4"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
@@ -2291,10 +2288,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
                   {/* 表格编辑模式 */}
                   {editorMode === "enhanced" ? (
-                    <div className="h-full">
+                    <div className="h-full w-full overflow-hidden relative">
                       {tableReady && csvData ? (
                         <NewTMDBTable
-                          key={`tmdb-table-${editTabRenderCount}`}
+                          key="tmdb-table-main"
                           data={csvData}
                           onChange={handleCsvDataChange}
                           onSave={handleSaveEnhancedCSV}
@@ -2345,10 +2342,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     <Button onClick={() => setActiveTab("process")}>
                       <Terminal className="h-4 w-4 mr-2" />
                       返回处理页面
-                    </Button>
-                    <Button variant="outline" onClick={loadLocalCSVFile}>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      尝试加载CSV
                     </Button>
                   </div>
                 </div>
@@ -2719,7 +2712,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 渲染inTab模式内容
   const renderInTabContent = () => (
-    <div className="h-full flex flex-col bg-transparent backdrop-blur-md">
+    <div className="h-full flex flex-col bg-transparent backdrop-blur-md w-full overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
@@ -2739,26 +2732,17 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex items-center space-x-2">
-              {csvData && (
-              <Button variant="outline" size="sm" onClick={downloadCSV} className="h-8 text-xs">
-                  <Download className="h-4 w-4 mr-1" />
-                下载CSV
-                </Button>
-              )}
-            </div>
-          </div>
+                      </div>
         </div>
 
         {/* 处理标签内容 */}
         <TabsContent
           value="process"
           className="h-full overflow-hidden p-0 m-0 bg-transparent"
-          key={`process-tab-${processTabRenderCount}`}
         >
-          <div className="p-4 h-full overflow-y-auto space-y-4">
+          <div className="p-4 h-full overflow-y-auto space-y-4 max-w-full min-w-0">
             {/* TMDB导入命令区域 */}
-              <Card variant="frosted">
+              <Card variant="frosted" className="w-full min-w-0 overflow-hidden">
               <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center">
                   <Terminal className="h-4 w-4 mr-2" />
@@ -2767,9 +2751,21 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 </CardHeader>
               <CardContent>
                 {/* 命令显示区域 */}
-                <div className="bg-gray-900/90 text-green-400 p-3 rounded-md font-mono text-xs overflow-x-auto whitespace-pre">
+                <div className="bg-gray-900/90 text-green-400 p-3 rounded-md text-xs overflow-hidden w-full min-w-0">
                   <div className="flex items-center justify-between">
-                    <div>{generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}</div>
+                    <div className="flex-1 min-w-0 mr-2 overflow-hidden">
+                      <div className="font-mono text-xs"
+                           style={{
+                             textOverflow: 'ellipsis !important',
+                             whiteSpace: 'nowrap !important',
+                             overflow: 'hidden !important',
+                             width: '100% !important',
+                             maxWidth: '100%'
+                           }}
+                           title={generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}>
+                        {generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}
+                      </div>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -2780,7 +2776,19 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     </Button>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <div>{displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}</div>
+                    <div className="flex-1 min-w-0 mr-2 overflow-hidden">
+                      <div className="font-mono text-xs"
+                           style={{
+                             textOverflow: 'ellipsis !important',
+                             whiteSpace: 'nowrap !important',
+                             overflow: 'hidden !important',
+                             width: '100% !important',
+                             maxWidth: '100%'
+                           }}
+                           title={displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
+                        {displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
+                      </div>
+                    </div>
                                 <Button
                       variant="ghost"
                       size="sm"
@@ -2828,20 +2836,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   {/* 右侧：按钮区域 */}
                   <div className="flex flex-col justify-end space-y-2">
                     {/* 刷新按钮 */}
-                    <div className="flex items-center justify-end mb-1">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                        onClick={loadLocalCSVFile}
-                        disabled={operationLock !== null}
-                        className="h-7 text-xs"
-                        title="加载本地CSV文件"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                        加载CSV
-                                </Button>
-                              </div>
-                    {/* 两个主要按钮 */}
+                                        {/* 两个主要按钮 */}
                     <div className="grid grid-cols-2 gap-3">
                       <Button
                         onClick={(e) => startProcessing(e)}
@@ -2880,17 +2875,12 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   <div className="flex items-center">
                     <ActivityIcon className="h-4 w-4 mr-2" />
                     终端输出
-                    {processTabRenderCount > 0 && (
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        渲染: {processTabRenderCount}
-                      </Badge>
-                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
-                      onClick={forceRefreshProcessTab}
+                      onClick={() => setTableReady(!tableReady)}
                       title="如果内容不显示，请点击此按钮刷新"
                       className="h-7 text-xs"
                                 >
@@ -3019,15 +3009,13 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         {/* 编辑标签内容 */}
         <TabsContent
           value="edit"
-          className="h-full p-0 m-0 bg-transparent"
-          key={`edit-tab-${editTabRenderCount}`}
+          className="h-full p-0 m-0 bg-transparent w-full overflow-hidden"
         >
-            <div className="h-full flex flex-col">
+            <div className="h-full flex flex-col w-full overflow-hidden">
             {/* 编辑工具栏 */}
             <div className="border-b px-4 py-2 bg-background/30 backdrop-blur-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="bg-muted rounded-md p-0.5 flex items-center">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="bg-muted rounded-md p-0.5 flex items-center">
                   <Button
                       variant={editorMode === "enhanced" ? "default" : "ghost"}
                     size="sm"
@@ -3046,34 +3034,30 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       <FileText className="h-3.5 w-3.5 mr-1" />
                       文本模式
                     </Button>
-
-                          </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={saveCsvChanges}
-                    disabled={isSaving}
-                    className="h-7 px-2 text-xs"
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5 mr-1" />
-                    )}
-                    保存
-                  </Button>
-                </div>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={saveCsvChanges}
+                  disabled={isSaving}
+                  className="h-7 px-2 text-xs"
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5 mr-1" />
+                  )}
+                  保存
+                </Button>
               </div>
+            </div>
 
               {/* 编辑区域 */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
               {editorMode === "enhanced" && tableReady && csvData ? (
                       <NewTMDBTable
-                  key={`tmdb-table-tab-${Date.now()}`}
+                  key="tmdb-table-enhanced"
                         data={csvData}
                         onChange={handleCsvDataChange}
                         onSave={handleSaveEnhancedCSV}
@@ -3200,52 +3184,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
   }, [csvContent, editorMode, forceExpandEditor]);
 
-  // 监听Tab切换，特别是从编辑页面切换到处理页面的情况
-  useEffect(() => {
-    // 当从编辑页面切换到处理页面时
-    if (activeTab === "process") {
-      
-      // 更新渲染计数器，强制重新渲染处理页面内容
-      setProcessTabRenderCount(prev => prev + 1);
-    }
-  }, [activeTab]);
-
-  // 确保正确加载和显示CSV数据
-  useEffect(() => {
-    if (csvData && activeTab === "process") {
-      
-      // CSV数据存在且在处理页面，确保处理页面被正确渲染
-      setProcessTabRenderCount(prev => prev + 1);
-    }
-  }, [csvData, activeTab]);
-
-  // 添加一个函数来强制刷新处理页面内容
-  const forceRefreshProcessTab = useCallback(() => {
-    
-    setProcessTabRenderCount(prev => prev + 1);
-
-    // 延迟再次刷新，确保DOM已完全加载
-    setTimeout(() => {
-      setProcessTabRenderCount(prev => prev + 1);
-    }, 300);
-  }, []);
-
-  // 在组件挂载时执行一次处理页面内容刷新
-  useEffect(() => {
-    if (activeTab === "process") {
-      
-      forceRefreshProcessTab();
-    }
-  }, [forceRefreshProcessTab]);
-
-  // 确保TMDB导入命令显示正确
-  useEffect(() => {
-    if (activeTab === "process" && item && item.tmdbId) {
-      
-      forceRefreshProcessTab();
-    }
-  }, [item, activeTab, forceRefreshProcessTab]);
-
+  
+  
   // 添加加载本地CSV文件的函数
   const loadLocalCSVFile = useCallback(async () => {
     
@@ -3260,9 +3200,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             title: "加载成功",
             description: "本地CSV文件已成功加载",
           });
-          // 确保处理页面刷新
-          forceRefreshProcessTab();
-        } else {
+                  } else {
           appendTerminalOutput("加载本地CSV文件失败", "error");
           toast({
             title: "加载失败",
@@ -3287,20 +3225,20 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       });
       appendTerminalOutput("未找到TMDB-Import工具路径，请先配置", "error");
     }
-  }, [appendTerminalOutput, forceRefreshProcessTab, readCSVFile]);
+  }, [appendTerminalOutput, readCSVFile]);
 
   // 添加组件初始化钩子，确保页面打开时显示处理标签页
   useEffect(() => {
     // 当对话框打开时，强制设置为处理标签
     if (open) {
-      
+
       setActiveTab("process")
-      setProcessTabRenderCount(prev => prev + 1)
+      setTableReady(true)
 
       // 短暂延迟后再次确认是处理标签页
       setTimeout(() => {
         setActiveTab("process")
-        setProcessTabRenderCount(prev => prev + 1)
+        setTableReady(true)
         setIsDialogInitialized(true)
       }, 100)
     } else {
@@ -3309,37 +3247,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
   }, [open])
 
-  // 实时记录组件挂载状态 - 仅在开发环境下启用
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      
-    }
-  }, [open, activeTab, inTab, isDialogInitialized, csvData]); // 添加依赖数组，避免每次渲染都执行
-
-  // 添加函数来强制刷新编辑标签页内容
-  const forceRefreshEditTab = useCallback(() => {
-    
-    // 确保tableReady状态为true
-    setTableReady(true);
-
-    // 增加渲染计数
-    setEditTabRenderCount(prev => prev + 1);
-
-    // 简化刷新机制，减少不必要的延迟
-    const timer = setTimeout(() => {
-      setTableReady(true);
-      setEditTabRenderCount(prev => prev + 1);
-      
-      if (csvData) {
-        
-      } else {
-        
-      }
-    }, 100); // 减少延迟时间
-
-    return () => clearTimeout(timer);
-  }, [csvData]);
-
+  
+  
   // 确保编辑标签页能正确显示内容
   useEffect(() => {
     if (csvData && activeTab === "edit") {
@@ -3350,7 +3259,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       // 简化渲染逻辑，减少不必要的延迟
       const timer = setTimeout(() => {
         setTableReady(true);
-        setEditTabRenderCount(prev => prev + 1);
       }, 100); // 减少延迟时间
 
       return () => clearTimeout(timer);
@@ -3781,7 +3689,7 @@ logging_level = INFO
                   variant="outline"
                   size="sm"
                   className="h-8"
-                  onClick={forceRefreshProcessTab}
+                  onClick={() => setTableReady(!tableReady)}
                   title="如果页面不正常，点击刷新"
                 >
                   <RefreshCw className="h-4 w-4" />
