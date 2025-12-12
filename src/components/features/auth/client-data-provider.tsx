@@ -190,30 +190,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         )
       )
 
-      // 对于mark-episodes-completed类型的更新，我们跳过StorageManager调用
-      // 因为API已经直接更新了数据
-      const isEpisodeMarking = item.updatedAt && 
-        Math.abs(new Date(item.updatedAt).getTime() - Date.now()) < 5000 // 5秒内的更新
-      
-      if (!isEpisodeMarking) {
-        // 发送到服务器（非集数标记操作）
-        const success = await StorageManager.updateItem(item)
-        if (!success) {
-          throw new Error("更新项目失败")
-        }
-
-        // 通知其他客户端
-        await realtimeSyncManager.notifyDataChange({
-          type: 'item_updated',
-          data: item
-        })
-      } else {
-        // 对于集数标记操作，只通知其他客户端
-        await realtimeSyncManager.notifyDataChange({
-          type: 'item_updated',
-          data: item
-        })
+      // 发送到服务器更新
+      const success = await StorageManager.updateItem(item)
+      if (!success) {
+        throw new Error("更新项目失败")
       }
+
+      // 通知其他客户端
+      await realtimeSyncManager.notifyDataChange({
+        type: 'item_updated',
+        data: item
+      })
 
     } catch (err) {
       

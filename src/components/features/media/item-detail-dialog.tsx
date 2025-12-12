@@ -200,6 +200,59 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     if (typeof document === 'undefined') return null
     return document.body
   }, [])
+
+  // 直接保存项目到文件系统，绕过API调用
+  const saveItemDirectly = useCallback(async (updatedItem: TMDBItem): Promise<boolean> => {
+    try {
+      // 首先获取所有当前项目数据
+      const response = await fetch('/api/storage/file-operations', {
+        method: 'GET',
+        headers: {
+          'x-user-id': 'user_admin_system'
+        }
+      })
+
+      if (!response.ok) {
+        console.error('获取现有数据失败:', response.statusText)
+        return false
+      }
+
+      const data = await response.json()
+      const items: TMDBItem[] = data.items || []
+
+      // 查找并更新目标项目
+      const index = items.findIndex(i => i.id === updatedItem.id)
+      if (index !== -1) {
+        items[index] = updatedItem
+      } else {
+        items.push(updatedItem)
+      }
+
+      // 将更新后的数据写回文件
+      const writeResponse = await fetch('/api/storage/file-operations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': 'user_admin_system'
+        },
+        body: JSON.stringify({
+          items: items,
+          backup: true
+        })
+      })
+
+      if (!writeResponse.ok) {
+        console.error('保存数据失败:', writeResponse.statusText)
+        return false
+      }
+
+      console.log(`[DirectSave] 成功保存项目: ${updatedItem.title} (ID: ${updatedItem.id})`)
+      return true
+    } catch (error) {
+      console.error('直接保存项目失败:', error)
+      return false
+    }
+  }, [])
   
   useEffect(() => {
     // 确保所有属性都被正确初始化，包括isDailyUpdate
@@ -742,51 +795,26 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
 
     try {
-      // 批量操作也不需要显示加载状态，因为速度很快
-      // setIsMarkingEpisode(true) // 移除加载状态
-
-      const requestData = {
-        itemId: updatedItem.id,
-        seasonNumber: seasonNumber,
-        episodeNumbers: episodeNumbers,
-        completed: completed
+      // 直接操作文件系统保存更新
+      const success = await saveItemDirectly(updatedItem)
+      
+      if (!success) {
+        throw new Error('保存失败')
       }
 
-      const response = await fetch('/api/media/mark-episodes-completed', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData)
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        
-        throw new Error(`API调用失败: ${response.status} ${response.statusText}`)
-      }
-
-      const result = await response.json()
-      if (!result.success) {
-        
-        throw new Error(result.error || 'API返回错误')
-      }
-
-      // API成功后，通知父组件更新全局状态
+      // 保存成功后，通知父组件更新全局状态
       onUpdate(updatedItem)
       
-      // 清除加载状态
-      // setIsMarkingEpisode(false) // 移除加载状态
+      // 显示成功反馈
+      setCopyFeedback(`已标记 ${episodeNumbers.length} 个集数为${completed ? '已完成' : '未完成'}`)
+      setTimeout(() => setCopyFeedback(null), 2000)
 
     } catch (error) {
       
-      // 如果API调用失败，回滚本地状态
+      // 如果保存失败，回滚本地状态
       setLocalItem(localItem)
       setCopyFeedback('更新失败，请重试')
       setTimeout(() => setCopyFeedback(null), 2000)
-      
-      // 清除加载状态
-      // setIsMarkingEpisode(false) // 移除加载状态
     }
   }
 
@@ -909,45 +937,21 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     setLocalItem(updatedItem)
 
     try {
-      // 批量操作也不需要显示加载状态，因为速度很快
-      // setIsMarkingEpisode(true) // 移除加载状态
-
-      const requestData = {
-        itemId: updatedItem.id,
-        seasonNumber: seasonNumber,
-        episodeNumbers: episodeNumbers,
-        completed: completed
+      // 直接操作文件系统保存更新
+      const success = await saveItemDirectly(updatedItem)
+      
+      if (!success) {
+        throw new Error('保存失败')
       }
 
-      const response = await fetch('/api/media/mark-episodes-completed', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData)
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`API调用失败: ${response.status} ${response.statusText}`)
-      }
-
-      const result = await response.json()
-      if (!result.success) {
-        throw new Error(result.error || 'API返回错误')
-      }
-
-      // API成功后，通知父组件更新全局状态
+      // 保存成功后，通知父组件更新全局状态
       onUpdate(updatedItem)
 
     } catch (error) {
-      // 如果API调用失败，回滚本地状态
+      // 如果保存失败，回滚本地状态
       setLocalItem(localItem)
       setCopyFeedback('批量更新失败，请重试')
       setTimeout(() => setCopyFeedback(null), 2000)
-    } finally {
-      // 清除加载状态
-      // setIsMarkingEpisode(false) // 移除加载状态
     }
   }
 
