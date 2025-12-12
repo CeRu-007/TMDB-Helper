@@ -7,6 +7,7 @@ import { DataProvider } from "@/components/features/auth/client-data-provider"
 import { UserIdentityProvider } from "@/components/features/auth/user-identity-provider"
 import { AuthProvider, AuthGuard } from "@/components/features/auth/auth-provider"
 import { Toaster } from "@/components/common/toaster"
+import { ModelServiceProvider } from "@/lib/contexts/ModelServiceContext"
 
 import { suppressRefWarnings } from "@/lib/utils"
 import { ConfigMigration } from "@/lib/utils/config-migration"
@@ -43,8 +44,10 @@ export default function MidLayout({
           <AuthGuard>
             <UserIdentityProvider>
               <DataProvider>
-                {children}
-                <Toaster />
+                <ModelServiceProvider>
+                  {children}
+                  <Toaster />
+                </ModelServiceProvider>
               </DataProvider>
             </UserIdentityProvider>
           </AuthGuard>

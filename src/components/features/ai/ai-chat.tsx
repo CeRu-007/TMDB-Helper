@@ -40,47 +40,12 @@ import {
   Pause
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
+import { useModelService } from "@/lib/contexts/ModelServiceContext"
+import { chatSyncManager } from "@/lib/utils/chat-history-cache"
+import { Message, ChatHistory } from "@/types/ai-chat"
 
-// 消息类型定义
-interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-  type?: 'text' | 'file' | 'episode-summary'
-  fileName?: string
-  fileContent?: string
-  isStreaming?: boolean
-  // 引导Chips - 由模型返回的建议内容
-  suggestions?: string[]
-}
 
-// 对话历史类型定义
-interface ChatHistory {
-  id: string
-  title: string
-  messages: Message[]
-  createdAt: Date
-  updatedAt: Date
-}
-
-// 模型配置 - 根据魔搭社区API支持的模型
-const AVAILABLE_MODELS = [
-  {
-    id: 'deepseek-ai/DeepSeek-V3.1',
-    name: 'DeepSeek-V3.1',
-    description: '强大的推理和创作能力',
-    icon: '🧠',
-    isThinking: true // 支持思考模式
-  },
-  {
-    id: 'Qwen/Qwen3-Next-80B-A3B-Instruct',
-    name: 'Qwen3-Next-80B',
-    description: '优秀的中文理解能力',
-    icon: '🎯',
-    isThinking: false
-  }
-]
 
 // 支持的字幕文件格式
 const SUPPORTED_SUBTITLE_FORMATS = ['.srt', '.ass', '.vtt', '.ssa', '.sub']
@@ -264,15 +229,8 @@ const MessageItem = React.memo(({
                     setIsLoading(true)
                     
                     try {
-                      // 获取API配置
-                      const configResponse = await fetch('/api/system/config')
-                      const configData = await configResponse.json()
-                      
-                      if (!configData.success || !configData.fullConfig.modelScopeApiKey) {
-                        throw new Error('请先在设置中配置魔搭社区API密钥')
-                      }
-                      
-                      const config = configData.fullConfig
+                      // 获取模型信息
+                      const { apiKey, modelId } = await getModelInfo(selectedModel);
                       
                       // 构建对话历史
                       const conversationMessages = messages
@@ -292,9 +250,9 @@ const MessageItem = React.memo(({
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                         body: JSON.stringify({
-                          model: selectedModel,
+                          model: modelId, // 使用实际的模型ID
                           messages: conversationMessages,
-                          apiKey: config.modelScopeApiKey
+                          apiKey: apiKey
                         })
                       })
                       
@@ -308,13 +266,14 @@ const MessageItem = React.memo(({
                       }
                       
                       const reader = response.body.getReader();
-                      const decoder = new TextDecoder();
-                      let assistantAccumulated = '';
-                      let buffer = ''; // 用于累积token的缓冲区
-                      let lastUpdate = Date.now(); // 上次更新时间
-                      const BASE_UPDATE_INTERVAL = 50; // 基础更新间隔（毫秒）
-                      const BASE_BUFFER_SIZE = 10; // 基础缓冲区大小
-
+                            const decoder = new TextDecoder();
+                            let assistantAccumulated = '';
+                            let buffer = ''; // 用于累积token的缓冲区
+                            let lastUpdate = Date.now(); // 上次更新时间
+                            
+                            // 优化参数
+                            const UPDATE_INTERVAL = 30; // 更新间隔
+                            const BUFFER_SIZE = 2; // 缓冲区大小
                       try {
                         while (true) {
                           const { done, value } = await reader.read();
@@ -538,9 +497,9 @@ const MessageItem = React.memo(({
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                             body: JSON.stringify({
-                              model: selectedModel,
+                              model: (await getModelInfo(selectedModel)).modelId,
                               messages: conversationMessages,
-                              apiKey: config.modelScopeApiKey
+                              apiKey: (await getModelInfo(selectedModel)).apiKey
                             })
                           })
                           
@@ -785,9 +744,9 @@ const MessageItem = React.memo(({
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                             body: JSON.stringify({
-                              model: selectedModel,
+                              model: (await getModelInfo(selectedModel)).modelId,
                               messages: conversationMessages,
-                              apiKey: config.modelScopeApiKey
+                              apiKey: (await getModelInfo(selectedModel)).apiKey
                             })
                           })
                           
@@ -1023,9 +982,9 @@ const MessageItem = React.memo(({
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                             body: JSON.stringify({
-                              model: selectedModel,
+                              model: (await getModelInfo(selectedModel)).modelId,
                               messages: conversationMessages,
-                              apiKey: config.modelScopeApiKey
+                              apiKey: (await getModelInfo(selectedModel)).apiKey
                             })
                           })
                           
@@ -1358,15 +1317,10 @@ export function AiChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [isInterrupting, setIsInterrupting] = useState(false) // 新增：中断状态
   const [abortController, setAbortController] = useState<AbortController | null>(null) // 新增：AbortController实例
-  const [selectedModel, setSelectedModel] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const savedModel = localStorage.getItem('ai-chat-selected-model');
-      if (savedModel && AVAILABLE_MODELS.some(model => model.id === savedModel)) {
-        return savedModel;
-      }
-    }
-    return AVAILABLE_MODELS[0].id;
-  });
+
+  // 使用场景模型配置
+  const scenarioModels = useScenarioModels('ai_chat')
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([])
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -1391,7 +1345,48 @@ export function AiChat() {
   
   // 获取用户信息
   const { userInfo } = useUser()
+
+// 获取当前模型的API密钥和模型ID - 优化版本
+  const { getScenarioModels } = useModelService();
   
+  const getModelInfo = useCallback(async (modelId: string) => {
+    const currentModel = scenarioModels.availableModels.find(m => m.id === modelId);
+    if (!currentModel) {
+      throw new Error('请先选择一个AI模型');
+    }
+
+    // 获取AI聊天场景的提供商信息
+    const aiChatData = getScenarioModels('ai_chat');
+    const provider = aiChatData.providers.find(p => p.id === currentModel.providerId);
+    
+    if (!provider) {
+      throw new Error('找不到模型提供商配置');
+    }
+
+    const apiKey = provider.apiKey;
+    if (!apiKey) {
+      throw new Error('请先在模型服务中配置API密钥');
+    }
+
+    return {
+      apiKey,
+      modelId: currentModel.modelId || currentModel.id // 使用实际的模型ID
+    };
+  }, [scenarioModels, getScenarioModels]);
+
+  // 同步模型选择
+  useEffect(() => {
+    if (scenarioModels.availableModels.length > 0) {
+      // 如果没有选择的模型或选择的模型不在可用列表中，使用主模型
+      if (!selectedModel || !scenarioModels.availableModels.find(m => m.id === selectedModel)) {
+        const primaryModel = scenarioModels.getCurrentModel()
+        if (primaryModel) {
+          setSelectedModel(primaryModel.id)
+        }
+      }
+    }
+  }, [scenarioModels.availableModels, scenarioModels.primaryModelId, selectedModel])
+
   const [isDragOver, setIsDragOver] = useState(false)
   // 标题动画状态
   // 标题动画状态
@@ -1509,65 +1504,31 @@ export function AiChat() {
     };
   }, [abortController]);
 
-  // 保存选中的模型到localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('ai-chat-selected-model', selectedModel);
-    }
-  }, [selectedModel]);
 
-  // 加载对话历史
+
+  // 初始化缓存管理器并加载对话历史
   useEffect(() => {
-    loadChatHistories()
+    const initializeChat = async () => {
+      try {
+        // 确保缓存管理器已初始化
+        await chatSyncManager.getAllChatHistories()
+        // 加载对话历史
+        await loadChatHistories()
+      } catch (error) {
+        console.error('初始化聊天功能失败:', error)
+      }
+    }
+    
+    initializeChat()
   }, [])
 
-  // 从服务器加载对话历史
+  // 从缓存或服务器加载对话历史
   const loadChatHistories = async () => {
     try {
-      // 为聊天历史请求创建AbortController
-      const chatHistoriesAbortController = new AbortController();
-      
-      const response = await fetch('/api/ai/ai-chat', {
-        signal: chatHistoriesAbortController.signal
-      })
-      const result = await response.json()
-      
-      if (result.success && Array.isArray(result.data)) {
-        const histories = result.data.map((h: any) => ({
-          ...h,
-          createdAt: new Date(h.createdAt),
-          updatedAt: new Date(h.updatedAt),
-          messages: h.messages.map((m: any) => ({
-            ...m,
-            timestamp: new Date(m.timestamp)
-          }))
-        }))
-        setChatHistories(histories)
-      } else {
-        // 如果服务器加载失败，尝试从本地存储加载
-        const stored = localStorage.getItem('ai-chat-histories')
-        if (stored) {
-          const histories = JSON.parse(stored).map((h: any) => ({
-            ...h,
-            createdAt: new Date(h.createdAt),
-            updatedAt: new Date(h.updatedAt),
-            messages: h.messages.map((m: any) => ({
-              ...m,
-              timestamp: new Date(m.timestamp)
-            }))
-          }))
-          setChatHistories(histories)
-          // 同步到服务器
-          await saveChatHistories(histories)
-        }
-      }
+      // 使用缓存管理器智能加载
+      const histories = await chatSyncManager.getAllChatHistories()
+      setChatHistories(histories)
     } catch (error) {
-      // 检查是否是中断错误
-      if (error.name === 'AbortError') {
-        console.log('加载对话历史请求已被用户中断');
-        return;
-      }
-      
       console.error('加载对话历史失败:', error)
       // 降级到本地存储
       try {
@@ -1581,43 +1542,24 @@ export function AiChat() {
               ...m,
               timestamp: new Date(m.timestamp)
             }))
-          }))
+          })).sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()) // 按更新时间倒序排序
           setChatHistories(histories)
         }
       } catch (localError) {
-        console.error('本地存储加载也失败:', localError)
+        console.error('从本地存储加载失败:', localError)
       }
     }
   }
 
-  // 保存对话历史到服务器和本地存储
-  // 保存对话历史到服务器和本地存储
+  // 保存对话历史到缓存和服务器（优化版）
   const saveChatHistories = async (histories: ChatHistory[]) => {
     try {
-      // 先保存到本地存储作为备份
-      localStorage.setItem('ai-chat-histories', JSON.stringify(histories))
-      
-      // 然后保存到服务器
-      const response = await fetch('/api/ai/ai-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ histories })
-      })
-      
-      if (!response.ok) {
-        console.warn('服务器保存失败，已保存到本地存储')
+      // 使用缓存管理器批量更新
+      for (const history of histories) {
+        await chatSyncManager.queueUpdate(history)
       }
     } catch (error) {
-      // 检查是否是中断错误
-      if (error.name === 'AbortError') {
-        console.log('保存对话历史请求已被用户中断');
-        return;
-      }
-      
       console.error('保存对话历史失败:', error)
-      // 至少确保本地存储成功
       try {
         localStorage.setItem('ai-chat-histories', JSON.stringify(histories))
       } catch (localError) {
@@ -1679,31 +1621,18 @@ export function AiChat() {
     }
   }
 
-  // 删除对话
+  // 删除对话（优化版，使用缓存管理器）
   const deleteChat = async (chatId: string) => {
     try {
-      // 从服务器删除
-      const response = await fetch(`/api/ai/ai-chat?chatId=${chatId}`, {
-        method: 'DELETE'
-      })
-      
-      if (!response.ok) {
-        console.warn('服务器删除失败，仅从本地删除')
-      }
+      // 使用缓存管理器删除
+      await chatSyncManager.deleteChatHistory(chatId)
     } catch (error) {
-      // 检查是否是中断错误
-      if (error.name === 'AbortError') {
-        console.log('删除对话请求已被用户中断');
-        return;
-      }
-      
-      console.error('服务器删除失败:', error)
+      console.error('删除对话失败:', error)
     }
     
     // 从本地状态删除
     const updatedHistories = chatHistories.filter(h => h.id !== chatId)
     setChatHistories(updatedHistories)
-    saveChatHistories(updatedHistories)
     
     // 如果删除的是当前对话，返回空状态而不是创建新对话或切换到第一个历史对话
     if (currentChatId === chatId) {
@@ -1726,16 +1655,8 @@ export function AiChat() {
     
     while (retries <= maxRetries) {
       try {
-        // 获取API配置
-        const configResponse = await fetch('/api/system/config')
-        const configData = await configResponse.json()
-        
-        if (!configData.success || !configData.fullConfig.modelScopeApiKey) {
-          // 如果没有API密钥，不生成标题
-          throw new Error('API密钥未配置');
-        }
-        
-        const config = configData.fullConfig
+        // 获取模型信息
+        const { apiKey, modelId } = await getModelInfo(selectedModel);
 
         // 为标题生成请求创建AbortController
         const titleAbortController = abortController || new AbortController();
@@ -1747,9 +1668,9 @@ export function AiChat() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: selectedModel,
+            model: modelId,
             firstMessage: firstAssistantResponse,
-            apiKey: config.modelScopeApiKey
+            apiKey
           }),
           signal: titleAbortController.signal
         })
@@ -1811,7 +1732,7 @@ export function AiChat() {
   const lastTitleGenerationTime = useRef<number>(0);
   
   // 更新当前对话
-  // 更新当前对话
+  // 更新当前对话（优化版，使用缓存管理器）
   const updateCurrentChat = async (newMessages: Message[], chatId?: string) => {
     // 使用函数式更新确保使用最新的chatHistories和currentChatId状态
     setChatHistories(prevChatHistories => {
@@ -1865,7 +1786,8 @@ export function AiChat() {
               return chat
             })
             
-            saveChatHistories(updatedHistories);
+            // 使用缓存管理器异步更新，不阻塞UI
+            chatSyncManager.queueUpdate(updatedHistories.find(chat => chat.id === currentChatIdValue)!);
             return updatedHistories;
           }
           
@@ -1899,7 +1821,8 @@ export function AiChat() {
                 return chat
               })
               
-              saveChatHistories(updatedHistories);
+              // 使用缓存管理器异步更新，不阻塞UI
+              chatSyncManager.queueUpdate(updatedHistories.find(chat => chat.id === currentChatIdValue)!);
               return updatedHistories;
             });
           }).catch(error => {
@@ -1919,7 +1842,8 @@ export function AiChat() {
                 return chat
               })
               
-              saveChatHistories(updatedHistories);
+              // 使用缓存管理器异步更新，不阻塞UI
+              chatSyncManager.queueUpdate(updatedHistories.find(chat => chat.id === currentChatIdValue)!);
               return updatedHistories;
             });
           });
@@ -1937,7 +1861,8 @@ export function AiChat() {
             return chat
           })
           
-          saveChatHistories(updatedHistories);
+          // 使用缓存管理器异步更新，不阻塞UI
+          chatSyncManager.queueUpdate(updatedHistories.find(chat => chat.id === currentChatIdValue)!);
           return updatedHistories;
         }
       } else {
@@ -1954,7 +1879,8 @@ export function AiChat() {
           return chat
         })
         
-        saveChatHistories(updatedHistories);
+        // 使用缓存管理器异步更新，不阻塞UI
+        chatSyncManager.queueUpdate(updatedHistories.find(chat => chat.id === currentChatIdValue)!);
         return updatedHistories;
       }
       
@@ -2180,14 +2106,14 @@ ${subtitleContent}`
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
         body: JSON.stringify({
-          model: selectedModel,
+          model: (await getModelInfo(selectedModel)).modelId,
           messages: [
             {
               role: 'user',
               content: prompt
             }
           ],
-          apiKey: config.modelScopeApiKey
+          apiKey: (await getModelInfo(selectedModel)).apiKey
         }),
         signal: newAbortController.signal // 添加中断信号
       })
@@ -2442,14 +2368,14 @@ ${subtitleContent}
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
         body: JSON.stringify({
-          model: selectedModel,
+          model: (await getModelInfo(selectedModel)).modelId,
           messages: [
             {
               role: 'user',
               content: prompt
             }
           ],
-          apiKey: config.modelScopeApiKey
+          apiKey: (await getModelInfo(selectedModel)).apiKey
         }),
         signal: newAbortController.signal // 添加中断信号
       })
@@ -2706,14 +2632,14 @@ ${subtitleContent}
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: selectedModel,
+          model: (await getModelInfo(selectedModel)).modelId,
           messages: [
             {
               role: 'user',
               content: prompt
             }
           ],
-          apiKey: config.modelScopeApiKey
+          apiKey: (await getModelInfo(selectedModel)).apiKey
         }),
         signal: newAbortController.signal // 添加中断信号
       })
@@ -2856,14 +2782,14 @@ ${subtitleContent}
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
         body: JSON.stringify({
-          model: selectedModel,
+          model: (await getModelInfo(selectedModel)).modelId,
           messages: [
             {
               role: 'user',
               content: prompt
             }
           ],
-          apiKey: config.modelScopeApiKey
+          apiKey: (await getModelInfo(selectedModel)).apiKey
         }),
         signal: newAbortController.signal // 添加中断信号
       })
@@ -3118,14 +3044,14 @@ ${subtitleContent}
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
         body: JSON.stringify({
-          model: selectedModel,
+          model: (await getModelInfo(selectedModel)).modelId,
           messages: [
             {
               role: 'user',
               content: prompt
             }
           ],
-          apiKey: config.modelScopeApiKey
+          apiKey: (await getModelInfo(selectedModel)).apiKey
         }),
         signal: newAbortController.signal // 添加中断信号
       })
@@ -3332,9 +3258,9 @@ ${subtitleContent}
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
       body: JSON.stringify({
-        model: selectedModel,
+        model: (await getModelInfo(selectedModel)).modelId,
         messages,
-        apiKey: config.modelScopeApiKey
+        apiKey: (await getModelInfo(selectedModel)).apiKey
       }),
       signal: abortController.signal
     });
@@ -3528,15 +3454,8 @@ ${subtitleContent}
     });
 
     try {
-      // 获取API配置
-      const configResponse = await fetch('/api/system/config')
-      const configData = await configResponse.json()
-      
-      if (!configData.success || !configData.fullConfig.modelScopeApiKey) {
-        throw new Error('请先在设置中配置魔搭社区API密钥')
-      }
-      
-      const config = configData.fullConfig
+      // 获取模型信息
+      const { apiKey, modelId } = await getModelInfo(selectedModel);
 
       // 构建对话历史
       const conversationMessages = messages
@@ -3570,15 +3489,15 @@ ${userMessage.content}`
 
       // 使用流式端点，逐 token 追加
       console.log('发送流式请求到:', '/api/ai/ai-chat/stream');
-      console.log('请求参数:', { model: selectedModel, messagesCount: conversationMessages.length });
-      
+      console.log('请求参数:', { model: modelId, messagesCount: conversationMessages.length });
+
       const response = await fetch('/api/ai/ai-chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
         body: JSON.stringify({
-          model: selectedModel,
+          model: modelId,
           messages: conversationMessages,
-          apiKey: config.modelScopeApiKey
+          apiKey
         }),
         signal: newAbortController.signal
       });
@@ -3633,37 +3552,18 @@ ${userMessage.content}`
                 if (token) {
                   assistantAccumulated += token;
                   buffer += token;
-                  console.log('收到token:', token, '累积内容长度:', assistantAccumulated.length);
                   
-                  // 根据内容长度动态调整更新策略，但保持更流畅的更新频率
-                  const contentLength = assistantAccumulated.length;
-                  let updateInterval = BASE_UPDATE_INTERVAL;
-                  let bufferSize = BASE_BUFFER_SIZE;
-                  
-                  // 内容越多，适度增加更新间隔和缓冲区大小，但不过度增加
-                  if (contentLength > 1000) {
-                    updateInterval = 70;  // 减少间隔
-                    bufferSize = 15;     // 减少缓冲区
-                  }
-                  if (contentLength > 3000) {
-                    updateInterval = 100;
-                    bufferSize = 20;
-                  }
-                  if (contentLength > 5000) {
-                    updateInterval = 130; // 减少间隔
-                    bufferSize = 25;     // 减少缓冲区
-                  }
-                  
-                  // 检查是否需要更新UI，确保更流畅的体验
+                  // 优化更新策略
                   const now = Date.now();
+                  const timeSinceLastUpdate = now - lastUpdate;
+                  
+                  // 更新条件
                   const shouldUpdate = 
-                    buffer.length >= bufferSize || // 缓冲区满
-                    now - lastUpdate >= updateInterval || // 时间间隔到了
-                    contentLength < 100 || // 内容较少时保持流畅性
-                    (contentLength > 1000 && buffer.length >= 5); // 长内容时更频繁更新
+                    buffer.length >= BUFFER_SIZE || // 缓冲区满了
+                    timeSinceLastUpdate >= UPDATE_INTERVAL; // 时间间隔到了
                   
                   if (shouldUpdate) {
-                    // 实时更新消息 - 使用 flushSync 确保立即更新
+                    // 立即更新消息
                     flushSync(() => {
                       setMessages(prev => prev.map(m => {
                         if (m.id === assistantMessage.id) {
@@ -3672,20 +3572,13 @@ ${userMessage.content}`
                         return m;
                       }));
                     });
+                    
                     // 重置缓冲区和时间
                     buffer = '';
                     lastUpdate = now;
                     
-                    // 立即滚动到最新消息
-                    if (listRef.current) {
-                      // 使用requestAnimationFrame确保在下一帧执行滚动
-                      requestAnimationFrame(() => {
-                        if (listRef.current) {
-                          // 确保滚动到最新的消息项（当前消息列表长度减1）
-                          listRef.current.scrollToItem(messages.length - 1, "end");
-                        }
-                      });
-                    }
+                    // 滚动到最新消息
+                    scrollToLatestMessage();
                   }
                 }
               }
@@ -3693,21 +3586,6 @@ ${userMessage.content}`
               console.log('解析JSON失败:', dataStr, e);
             }
           }
-        }
-        
-        // 流结束时，确保所有内容都已更新到UI
-        if (buffer.length > 0) {
-          flushSync(() => {
-            setMessages(prev => prev.map(m => {
-              if (m.id === assistantMessage.id) {
-                return { ...m, content: assistantAccumulated, isStreaming: true };
-              }
-              return m;
-            }));
-          });
-          
-          // 立即滚动到最新消息
-          scrollToLatestMessage();
         }
       } finally {
         try { reader.releaseLock(); } catch {}
@@ -3859,10 +3737,10 @@ ${userMessage.content}`
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: selectedModel,
+          model: (await getModelInfo(selectedModel)).modelId,
           messages: finalMessages,
           lastMessage: lastMessage,
-          apiKey: config.modelScopeApiKey
+          apiKey: (await getModelInfo(selectedModel)).apiKey
         }),
         signal: suggestionsAbortController.signal
       })
@@ -4002,9 +3880,9 @@ ${userMessage.fileContent}
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: selectedModel,
+            model: (await getModelInfo(selectedModel)).modelId,
             messages: [{ role: 'user', content: prompt }],
-            apiKey: config.modelScopeApiKey
+            apiKey: (await getModelInfo(selectedModel)).apiKey
           }),
           signal: newAbortController.signal // 添加中断信号
         })
@@ -4023,9 +3901,9 @@ ${userMessage.fileContent}
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: selectedModel,
+            model: (await getModelInfo(selectedModel)).modelId,
             messages: conversationMessages,
-            apiKey: config.modelScopeApiKey
+            apiKey: (await getModelInfo(selectedModel)).apiKey
           }),
           signal: newAbortController.signal // 添加中断信号
         })
@@ -4321,9 +4199,9 @@ ${userMessage.fileContent}
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                             body: JSON.stringify({
-                              model: selectedModel,
+                              model: (await getModelInfo(selectedModel)).modelId,
                               messages: conversationMessages,
-                              apiKey: config.modelScopeApiKey
+                              apiKey: (await getModelInfo(selectedModel)).apiKey
                             })
                           })
                           
@@ -4589,9 +4467,9 @@ ${userMessage.fileContent}
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                                 body: JSON.stringify({
-                                  model: selectedModel,
+                                  model: (await getModelInfo(selectedModel)).modelId,
                                   messages: conversationMessages,
-                                  apiKey: config.modelScopeApiKey
+                                  apiKey: (await getModelInfo(selectedModel)).apiKey
                                 })
                               })
                               
@@ -4855,9 +4733,9 @@ ${userMessage.fileContent}
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                                 body: JSON.stringify({
-                                  model: selectedModel,
+                                  model: (await getModelInfo(selectedModel)).modelId,
                                   messages: conversationMessages,
-                                  apiKey: config.modelScopeApiKey
+                                  apiKey: (await getModelInfo(selectedModel)).apiKey
                                 })
                               })
                               
@@ -5117,9 +4995,9 @@ ${userMessage.fileContent}
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                                 body: JSON.stringify({
-                                  model: selectedModel,
+                                  model: (await getModelInfo(selectedModel)).modelId,
                                   messages: conversationMessages,
-                                  apiKey: config.modelScopeApiKey
+                                  apiKey: (await getModelInfo(selectedModel)).apiKey
                                 })
                               })
                               
@@ -5632,25 +5510,52 @@ ${userMessage.fileContent}
                     </Button>
 
                     {/* 模型选择按钮 */}
-                    <Select value={selectedModel} onValueChange={setSelectedModel}>
-                      <SelectTrigger className="h-10 px-3 py-2 border-none bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full data-[placeholder]:text-gray-500 focus:ring-0 focus:ring-offset-0 [&>svg]:w-4 [&>svg]:h-4 flex items-center gap-1 text-sm [&>svg]:text-gray-500">
-                        <span className="font-medium truncate max-w-[120px]">
-                          {AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent className="min-w-[200px]">
-                        {AVAILABLE_MODELS.map((model) => (
-                          <SelectItem key={model.id} value={model.id} className="py-1.5">
-                            <div className="flex items-center gap-2">
-                              <div>
-                                <div className="font-medium text-sm">{model.name}</div>
-                                <div className="text-xs text-gray-500 mt-0.5">{model.description}</div>
-                              </div>
+                    {scenarioModels.isLoading ? (
+                      <div className="h-10 px-3 py-2 flex items-center text-sm text-gray-500">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        加载中...
+                      </div>
+                    ) : scenarioModels.error ? (
+                      <div className="h-10 px-3 py-2 flex items-center text-sm text-red-500">
+                        <AlertCircle className="w-4 h-4 mr-2" />
+                        加载失败
+                      </div>
+                    ) : (
+                      <Select
+                        value={selectedModel}
+                        onValueChange={(value) => {
+                          setSelectedModel(value)
+                        }}
+                        disabled={scenarioModels.availableModels.length === 0}
+                      >
+                        <SelectTrigger className="h-10 px-3 py-2 border-none bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full data-[placeholder]:text-gray-500 focus:ring-0 focus:ring-offset-0 [&>svg]:w-4 [&>svg]:h-4 flex items-center gap-1 text-sm [&>svg]:text-gray-500">
+                          <span className="font-medium truncate max-w-[120px]">
+                            {scenarioModels.availableModels.find(m => m.id === selectedModel)?.displayName || '选择模型'}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent className="min-w-[200px]">
+                          {scenarioModels.availableModels.length === 0 ? (
+                            <div className="p-2 text-sm text-gray-500">
+                              暂无可用模型
                             </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          ) : (
+                            scenarioModels.getSelectedModels().map((model) => (
+                              <SelectItem key={model.id} value={model.id} className="py-1.5">
+                                <div className="flex items-center gap-2">
+                                  <div>
+                                    <div className="font-medium text-sm">{model.displayName}</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">{model.description || model.modelId}</div>
+                                  </div>
+                                  {model.id === scenarioModels.primaryModelId && (
+                                    <Badge variant="secondary" className="text-xs">主模型</Badge>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
 
                   {/* 右侧发送按钮 */}

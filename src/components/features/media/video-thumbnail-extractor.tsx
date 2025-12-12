@@ -54,6 +54,7 @@ import { Slider } from "@/components/common/slider"
 import { Switch } from "@/components/common/switch"
 import { Checkbox } from "@/components/common/checkbox"
 import { useToast } from "@/components/common/use-toast"
+import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/common/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/common/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover"
@@ -136,6 +137,9 @@ interface VideoThumbnailExtractorProps {
  * 这些错误不会影响运行时功能，可以安全忽略。
  */
 export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoThumbnailExtractorProps = {}) {
+  // 使用场景模型配置 - 缩略图AI筛选
+  const thumbnailModels = useScenarioModels('thumbnail_filter')
+  
   // 视频列表状态
   const [videos, setVideos] = useState<VideoFile[]>([])
 
@@ -560,7 +564,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
   }
 
   // AI帧筛选函数
-  const analyzeFrameWithAI = async (imageData: ImageData, apiKey: string, model: string): Promise<{
+  const analyzeFrameWithAI = async (imageData: ImageData, apiKey: string, model: string, apiBaseUrl: string = 'https://api.siliconflow.cn/v1'): Promise<{
     hasPeople: boolean;
     hasSubtitles: boolean;
     confidence: number;
@@ -578,7 +582,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
       const base64Image = canvas.toDataURL('image/jpeg', 0.9)
 
       // 构建API请求
-      const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+      const response = await fetch(`${apiBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -848,10 +852,27 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         processedFrames++
 
         // 如果启用了AI筛选，先进行AI分析
-        if (settings.enableAIFilter && settings.siliconFlowApiKey.trim()) {
+        if (settings.enableAIFilter && thumbnailModels.primaryModelId) {
           try {
+            // 获取场景配置
+            const scenarioResponse = await fetch('/api/model-service/scenario?scenario=thumbnail_filter')
+            const scenarioResult = await scenarioResponse.json()
             
-            const aiResult = await analyzeFrameWithAI(frame, settings.siliconFlowApiKey, settings.siliconFlowModel)
+            if (!scenarioResult.success || !scenarioResult.scenario) {
+              throw new Error('获取缩略图AI筛选场景配置失败')
+            }
+            
+            const primaryModel = scenarioResult.models.find((m: any) => m.id === thumbnailModels.primaryModelId)
+            if (!primaryModel) {
+              throw new Error('配置的模型不存在')
+            }
+            
+            const provider = scenarioResult.providers.find((p: any) => p.id === primaryModel.providerId)
+            if (!provider || !provider.apiKey) {
+              throw new Error('模型提供商未配置API密钥')
+            }
+            
+            const aiResult = await analyzeFrameWithAI(frame, provider.apiKey, primaryModel.modelId || primaryModel.id, provider.apiBaseUrl)
 
             // 只有包含人物且无字幕的帧才生成缩略图
             if (!aiResult.hasPeople || aiResult.hasSubtitles) {
@@ -920,6 +941,12 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
       // 如果AI筛选过于严格导致缩略图不足，尝试放宽条件
       if (settings.enableAIFilter && thumbnails.length < settings.thumbnailCount && frames.length > thumbnails.length) {
+        
+        // 检查是否配置了API密钥（兼容旧配置）
+        if (!settings.siliconFlowApiKey.trim()) {
+          console.warn('🔍 [Thumbnail] 备用AI筛选：未配置API密钥，跳过')
+          return
+        }
         
         // 对剩余的帧使用更宽松的条件（只要有人物，不管是否有字幕）
         for (let i = 0; i < frames.length && thumbnails.length < settings.thumbnailCount; i++) {

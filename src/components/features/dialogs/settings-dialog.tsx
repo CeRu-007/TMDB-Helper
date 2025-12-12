@@ -2,7 +2,7 @@
 
 import { useRef } from "react"
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/common/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/common/dialog"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
 import { Label } from "@/components/common/label"
@@ -15,6 +15,7 @@ import { Textarea } from "@/components/common/textarea"
 import { ScrollArea } from "@/components/common/scroll-area"
 import { useToast } from "@/lib/hooks/use-toast"
 import { useAuth } from "@/components/features/auth/auth-provider"
+import { useModelService } from "@/lib/contexts/ModelServiceContext"
 import { Slider } from "@/components/common/slider"
 import { Checkbox } from "@/components/common/checkbox"
 import {
@@ -43,12 +44,19 @@ import {
   GitBranch,
   ChevronDown,
   ChevronUp,
+  Plus,
+  Trash2,
+  Edit,
+  Check,
+  X,
 } from "lucide-react"
 import TMDBImportUpdater from "@/components/features/tmdb/tmdb-import-updater"
 import DependencyInstaller from "@/components/features/system/dependency-installer"
 import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import { safeJsonParse } from '@/lib/utils'
 import ConfigMigrationDialog from "./config-migration-dialog"
+import { ModelServiceConfig, ModelProvider, ModelConfig, UsageScenario } from '@/types/model-service'
+import { ModelServiceMigration } from '@/lib/utils/model-service-migration'
 
 interface SettingsDialogProps {
   open: boolean
@@ -104,9 +112,10 @@ interface VideoThumbnailSettings {
 export default function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
   const { toast } = useToast()
   const { changePassword } = useAuth()
+  const { updateScenario } = useModelService()
   
   // 确保 activeSection 始终有效且为字符串类型
-  const validSections = ['api', 'tools', 'video-thumbnail', 'general', 'appearance', 'security', 'help']
+  const validSections = ['api', 'model-service', 'tools', 'video-thumbnail', 'general', 'appearance', 'security', 'help']
   const validInitialSection = initialSection && 
     typeof initialSection === 'string' && 
     validSections.includes(initialSection) 
@@ -234,6 +243,35 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
   // 配置迁移对话框状态
   const [showMigrationDialog, setShowMigrationDialog] = useState(false)
+
+  // 模型服务状态
+  const [modelServiceTab, setModelServiceTab] = useState("providers")
+  const [modelServiceConfig, setModelServiceConfig] = useState<any>(null)
+  const [selectedProviderId, setSelectedProviderId] = useState<string>("")
+    
+  const [showProviderDialog, setShowProviderDialog] = useState(false)
+  const [editingProvider, setEditingProvider] = useState<ModelProvider | null>(null)
+  const [providerForm, setProviderForm] = useState({
+    name: "",
+    apiKey: "",
+    apiBaseUrl: "",
+  })
+  const [customProviders, setCustomProviders] = useState<ModelProvider[]>([])
+  const [testingConnection, setTestingConnection] = useState(false)
+  const [connectionTestResult, setConnectionTestResult] = useState<{success: boolean; message: string} | null>(null)
+  
+  const [configuredModels, setConfiguredModels] = useState<ModelConfig[]>([])
+  const [showModelDialog, setShowModelDialog] = useState(false)
+  const [showAvailableModelsDialog, setShowAvailableModelsDialog] = useState(false)
+  const [availableModels, setAvailableModels] = useState<any[]>([])
+  const [loadingModels, setLoadingModels] = useState(false)
+  const [modelForm, setModelForm] = useState({
+    modelId: "",
+    displayName: "",
+    capabilities: [] as string[]
+  })
+  const [scenarioSettings, setScenarioSettings] = useState<Record<string, {selectedModelIds: string[]; primaryModelId: string; parameters: any}>>({})
+  const [expandedScenario, setExpandedScenario] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -433,48 +471,67 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           }
         }
 
-        // 加载硅基流动API设置
-        const savedSiliconFlowSettings = await ClientConfigManager.getItem("siliconflow_api_settings")
-        if (savedSiliconFlowSettings) {
-          const settings = safeJsonParse<any>(savedSiliconFlowSettings)
-          if (settings) {
-            setSiliconFlowSettings(settings)
-          } else {
-            console.error('加载硅基流动API设置失败: 解析失败')
-          }
-        } else {
-          // 兼容旧的设置，从分集生成器和缩略图设置中迁移
-          const episodeApiKey = await ClientConfigManager.getItem('siliconflow_api_key')
-          const thumbnailSettings = await ClientConfigManager.getItem("video_thumbnail_settings")
-
-          let apiKey = episodeApiKey || ""
-          if (!apiKey && thumbnailSettings) {
-            const parsed = safeJsonParse<any>(thumbnailSettings)
-            if (parsed) {
-              apiKey = parsed.siliconFlowApiKey || ""
+        // 加载模型服务配置
+        try {
+          const response = await fetch('/api/model-service')
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success && data.config) {
+              setModelServiceConfig(data.config)
+              // 初始化相关状态
+              if (data.config.providers) {
+                const customProviders = data.config.providers.filter((p: any) => p.isBuiltIn === false)
+                setCustomProviders(customProviders)
+              }
+              if (data.config.models) {
+                setConfiguredModels(data.config.models)
+              }
+              // 初始化场景设置
+              if (data.config.scenarios) {
+                const initialScenarioSettings: Record<string, any> = {}
+                data.config.scenarios.forEach((scenario: any) => {
+                  initialScenarioSettings[scenario.type] = {
+                    selectedModelIds: scenario.selectedModelIds || [],
+                    primaryModelId: scenario.primaryModelId || '',
+                    parameters: scenario.parameters || {}
+                  }
+                })
+                setScenarioSettings(initialScenarioSettings)
+                console.log('✅ [Model Service] 场景设置已初始化')
+              }
+              console.log('✅ [Model Service] 模型服务配置已加载')
             }
           }
-
-          if (apiKey) {
-            setSiliconFlowSettings(prev => ({ ...prev, apiKey }))
-          }
+        } catch (error) {
+          console.error('加载模型服务配置失败:', error)
         }
 
-        // 加载魔搭社区API设置
-        const savedModelScopeSettings = await ClientConfigManager.getItem("modelscope_api_settings")
-        if (savedModelScopeSettings) {
-          const settings = safeJsonParse<any>(savedModelScopeSettings)
-          if (settings) {
-            setModelScopeSettings(settings)
-          } else {
-            console.error('加载魔搭社区API设置失败: 解析失败')
+        // 从新的模型服务系统加载API设置
+        try {
+          const modelServiceResponse = await fetch('/api/model-service')
+          if (modelServiceResponse.ok) {
+            const { config } = await modelServiceResponse.json()
+
+            // 查找硅基流动内置提供商的API密钥
+            const siliconflowProvider = config.providers?.find(p => p.type === 'siliconflow' && p.isBuiltIn)
+            if (siliconflowProvider) {
+              setSiliconFlowSettings({
+                apiKey: siliconflowProvider.apiKey || "",
+                thumbnailFilterModel: "Qwen/Qwen2.5-VL-32B-Instruct"
+              })
+            }
+
+            // 查找魔搭社区内置提供商的API密钥
+            const modelscopeProvider = config.providers?.find(p => p.type === 'modelscope' && p.isBuiltIn)
+            if (modelscopeProvider) {
+              setModelScopeSettings({
+                apiKey: modelscopeProvider.apiKey || "",
+                episodeGenerationModel: "Qwen/Qwen3-32B"
+              })
+            }
           }
-        } else {
-          // 兼容旧的设置
-          const modelScopeApiKey = await ClientConfigManager.getItem('modelscope_api_key')
-          if (modelScopeApiKey) {
-            setModelScopeSettings(prev => ({ ...prev, apiKey: modelScopeApiKey }))
-          }
+        } catch (error) {
+          console.warn('从模型服务系统加载API设置失败:', error)
         }
       } catch (error) {
         console.error('加载其他设置失败:', error)
@@ -511,6 +568,41 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             setTmdbImportPath(currentImportPath)
             console.log('✅ [TMDB Debug] 刷新后的导入路径:', currentImportPath)
           }
+
+          // 重新获取模型服务配置
+          try {
+            const response = await fetch('/api/model-service')
+            if (response.ok) {
+              const data = await response.json()
+              if (data.success && data.config) {
+                setModelServiceConfig(data.config)
+                // 刷新相关状态
+                if (data.config.providers) {
+                  const customProviders = data.config.providers.filter((p: any) => p.isBuiltIn === false)
+                  setCustomProviders(customProviders)
+                }
+                if (data.config.models) {
+                  setConfiguredModels(data.config.models)
+                }
+                // 刷新场景设置
+                if (data.config.scenarios) {
+                  const updatedScenarioSettings: Record<string, any> = {}
+                  data.config.scenarios.forEach((scenario: any) => {
+                    updatedScenarioSettings[scenario.type] = {
+                      selectedModelIds: scenario.selectedModelIds || [],
+                      primaryModelId: scenario.primaryModelId || '',
+                      parameters: scenario.parameters || {}
+                    }
+                  })
+                  setScenarioSettings(updatedScenarioSettings)
+                  console.log('✅ [Model Service] 场景设置已刷新')
+                }
+                console.log('✅ [Model Service] 模型服务配置已刷新')
+              }
+            }
+          } catch (error) {
+            console.error('刷新模型服务配置失败:', error)
+          }
         } catch (error) {
           console.error('❌ [TMDB Debug] 刷新配置失败:', error)
         }
@@ -519,6 +611,70 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       refreshConfig()
     }
   }, [open])
+
+  // 监听模型服务配置更新事件，同步场景设置
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handleConfigUpdate = async () => {
+      console.log('🔄 [Settings Dialog] 模型服务配置更新事件触发，同步场景设置')
+
+      try {
+        const response = await fetch('/api/model-service')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.config) {
+            // 更新配置状态
+            setConfiguredModels(data.config.models || [])
+            setCustomProviders(data.config.providers?.filter((p: any) => p.isBuiltIn === false) || [])
+
+            // 更新内置提供商的API密钥状态
+            const siliconflowProvider = data.config.providers?.find((p: any) => p.type === 'siliconflow' && p.isBuiltIn)
+            if (siliconflowProvider) {
+              setSiliconFlowSettings(prev => ({ ...prev, apiKey: siliconflowProvider.apiKey || '' }))
+            }
+
+            const modelscopeProvider = data.config.providers?.find((p: any) => p.type === 'modelscope' && p.isBuiltIn)
+            if (modelscopeProvider) {
+              setModelScopeSettings(prev => ({ ...prev, apiKey: modelscopeProvider.apiKey || '' }))
+            }
+
+            // 同步场景设置，使用 getScenarioModels 逻辑过滤无效模型
+            const updatedScenarioSettings: Record<string, any> = {}
+
+            data.config.scenarios.forEach((scenario: any) => {
+              // 过滤出实际存在的模型ID (复用 getScenarioModels 的逻辑)
+              const validModelIds = scenario.selectedModelIds?.filter((modelId: string) =>
+                data.config.models.some((model: any) => model.id === modelId)
+              ) || []
+
+              // 如果主模型不在有效列表中，则重新选择
+              const validPrimaryId = validModelIds.includes(scenario.primaryModelId || '')
+                ? scenario.primaryModelId
+                : validModelIds[0] || ''
+
+              updatedScenarioSettings[scenario.type] = {
+                selectedModelIds: validModelIds,
+                primaryModelId: validPrimaryId,
+                parameters: scenario.parameters || {}
+              }
+            })
+
+            setScenarioSettings(updatedScenarioSettings)
+            console.log('✅ [Settings Dialog] 场景设置已同步更新，无效模型已清理')
+          }
+        }
+      } catch (error) {
+        console.error('[Settings Dialog] 同步场景设置失败:', error)
+      }
+    }
+
+    window.addEventListener('model-service-config-updated', handleConfigUpdate)
+
+    return () => {
+      window.removeEventListener('model-service-config-updated', handleConfigUpdate)
+    }
+  }, [])
 
   // 监听initialSection变化，当对话框打开时设置活动页面
   useEffect(() => {
@@ -838,17 +994,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       isDockerEnv
     })
     
-    // 强制检查并修复activeSection
+    // 使用当前的activeSection
     let currentActiveSection = activeSection
-    if (!currentActiveSection || typeof currentActiveSection !== 'string' || currentActiveSection.trim() === '') {
-      console.warn('⚠️ [DEBUG] activeSection无效，强制设置为api:', {
-        原值: currentActiveSection,
-        类型: typeof currentActiveSection,
-        长度: currentActiveSection?.length
-      })
-      currentActiveSection = 'api'
-      setActiveSection('api')
-    }
     
     console.log('🎯 [DEBUG] 最终使用的activeSection:', currentActiveSection)
     
@@ -1016,6 +1163,82 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         case "video-thumbnail":
           console.log('🎥 [DEBUG] 保存视频缩略图设置')
           saveVideoThumbnailSettings()
+          break
+
+        case "model-service":
+          console.log('🤖 [DEBUG] 保存模型服务设置')
+
+          // 更新模型服务提供商配置
+          await Promise.all([
+            fetch('/api/model-service', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'update-provider',
+                data: {
+                  id: 'siliconflow-builtin',
+                  apiKey: siliconFlowSettings.apiKey
+                }
+              })
+            }),
+            fetch('/api/model-service', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'update-provider',
+                data: {
+                  id: 'modelscope-builtin',
+                  apiKey: modelScopeSettings.apiKey
+                }
+              })
+            })
+          ])
+
+          // 触发全局配置更新事件，通知页面刷新提供商数据
+          window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+
+          // 保存使用场景配置到模型服务
+          try {
+            const scenariosResponse = await fetch('/api/model-service')
+            const scenariosData = await scenariosResponse.json()
+
+            if (scenariosData.success && scenariosData.config.scenarios) {
+              // 获取当前场景设置并合并
+              const updatedScenarios = scenariosData.config.scenarios.map(scenario => {
+                const setting = scenarioSettings[scenario.type]
+                if (setting) {
+                  return {
+                    ...scenario,
+                    selectedModelIds: setting.selectedModelIds || [],
+                    primaryModelId: setting.primaryModelId || setting.selectedModelIds?.[0] || '',
+                    parameters: setting.parameters || {}
+                  }
+                }
+                return scenario
+              })
+
+              const saveResponse = await fetch('/api/model-service', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'update-scenarios',
+                  data: updatedScenarios
+                })
+              })
+
+              const saveResult = await saveResponse.json()
+              if (!saveResult.success) {
+                throw new Error(saveResult.error || '场景配置保存失败')
+              }
+              console.log('✅ [DEBUG] 场景配置保存成功')
+
+              // 触发全局事件通知模型服务配置已更新
+              window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+            }
+          } catch (error) {
+            console.error('❌ [DEBUG] 场景配置保存失败:', error)
+            throw new Error('场景配置保存失败')
+          }
           break
 
         case "tools":
@@ -1238,6 +1461,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       description: "TMDB API密钥设置"
     },
     {
+      id: "model-service",
+      label: "模型服务",
+      icon: Database,
+      description: "模型提供商和配置管理"
+    },
+    {
       id: "tools",
       label: "工具配置",
       icon: Terminal,
@@ -1280,6 +1509,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     switch (activeSection) {
       case "api":
         return renderApiSettings()
+      case "model-service":
+        return renderModelService()
       case "tools":
         return renderToolsSettings()
       case "video-thumbnail":
@@ -1304,47 +1535,11 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         <div>
           <h3 className="text-lg font-semibold mb-2">API配置</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-            配置各种API密钥以启用相关功能
+            配置TMDB API密钥以启用电影数据库功能
           </p>
         </div>
 
-        {/* API配置顶部导航 */}
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setApiActiveTab("tmdb")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${apiActiveTab === "tmdb"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-            >
-              TMDB API
-            </button>
-            <button
-              onClick={() => setApiActiveTab("siliconflow")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${apiActiveTab === "siliconflow"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-            >
-              硅基流动 API
-            </button>
-            <button
-              onClick={() => setApiActiveTab("modelscope")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${apiActiveTab === "modelscope"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-            >
-              魔搭社区 API
-            </button>
-          </nav>
-        </div>
-
-        {/* 根据选中的标签页显示不同内容 */}
-        {apiActiveTab === "tmdb" && renderTMDBApiSettings()}
-        {apiActiveTab === "siliconflow" && renderSiliconFlowApiSettings()}
-        {apiActiveTab === "modelscope" && renderModelScopeApiSettings()}
+        {renderTMDBApiSettings()}
       </div>
     )
   }
@@ -1500,26 +1695,1147 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     )
   }
 
+  // 模型服务设置
+  function renderModelService() {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">模型服务</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            管理AI模型提供商、模型配置和使用场景
+          </p>
+        </div>
+
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setModelServiceTab("providers")}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${modelServiceTab === "providers"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+            >
+              模型提供商
+            </button>
+            <button
+              onClick={() => setModelServiceTab("models")}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${modelServiceTab === "models"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+            >
+              模型配置
+            </button>
+            <button
+              onClick={() => setModelServiceTab("scenarios")}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${modelServiceTab === "scenarios"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+            >
+              使用场景
+            </button>
+          </nav>
+        </div>
+
+        {modelServiceTab === "providers" && renderModelProviders()}
+        {modelServiceTab === "models" && renderModelConfigs()}
+        {modelServiceTab === "scenarios" && renderUsageScenarios()}
+      </div>
+    )
+  }
+
+  const handleAddProvider = () => {
+    setEditingProvider(null)
+    setProviderForm({ name: "", apiKey: "", apiBaseUrl: "" })
+    setConnectionTestResult(null)
+    setShowProviderDialog(true)
+  }
+
+  const handleEditProvider = (provider: ModelProvider) => {
+    setEditingProvider(provider)
+    setProviderForm({
+      name: provider.name,
+      apiKey: provider.apiKey,
+      apiBaseUrl: provider.apiBaseUrl
+    })
+    setConnectionTestResult(null)
+    setShowProviderDialog(true)
+  }
+
+  const handleDeleteProvider = async (providerId: string) => {
+    if (!confirm("确定要删除此提供商吗?")) return
+
+    try {
+      await fetch('/api/model-service', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete-provider',
+          data: { id: providerId }
+        })
+      })
+
+      const newProviders = customProviders.filter(p => p.id !== providerId)
+      setCustomProviders(newProviders)
+      
+      // 触发模型服务配置更新事件，确保界面同步
+      window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+      
+      toast({ title: "删除成功", description: "提供商已从本地删除" })
+    } catch (error) {
+      console.error('删除提供商失败:', error)
+      toast({
+        title: "删除失败",
+        description: error instanceof Error ? error.message : '请稍后重试',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleSaveProvider = async () => {
+    if (!providerForm.name || !providerForm.apiKey || !providerForm.apiBaseUrl) {
+      toast({ title: "验证失败", description: "请填写所有必填字段", variant: "destructive" })
+      return
+    }
+
+    try {
+      let provider: ModelProvider
+
+      if (editingProvider) {
+        provider = {
+          ...editingProvider,
+          ...providerForm,
+          updatedAt: Date.now()
+        }
+        await fetch('/api/model-service', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update-provider',
+            data: provider
+          })
+        })
+        setCustomProviders(customProviders.map(p => p.id === editingProvider.id ? provider : p))
+        toast({ title: "更新成功", description: "提供商配置已更新到本地" })
+      } else {
+        provider = {
+          id: `custom-${Date.now()}`,
+          ...providerForm,
+          type: 'custom',
+          enabled: true,
+          isBuiltIn: false,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        }
+        await fetch('/api/model-service', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'add-provider',
+            data: provider
+          })
+        })
+        setCustomProviders([...customProviders, provider])
+        toast({ title: "添加成功", description: "自定义提供商已保存到本地" })
+      }
+      
+      // 触发模型服务配置更新事件，确保界面同步
+      window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+      
+      setShowProviderDialog(false)
+    } catch (error) {
+      console.error('保存提供商失败:', error)
+      toast({
+        title: "保存失败",
+        description: error instanceof Error ? error.message : '请稍后重试',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleTestConnection = async () => {
+    setTestingConnection(true)
+    setConnectionTestResult(null)
+    
+    try {
+      const response = await fetch('/api/model-service/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: providerForm.apiKey,
+          apiBaseUrl: providerForm.apiBaseUrl
+        })
+      })
+      
+      const result = await response.json()
+      setConnectionTestResult(result)
+      
+      if (result.success) {
+        toast({ title: "连接成功", description: result.message })
+      } else {
+        toast({ title: "连接失败", description: result.message, variant: "destructive" })
+      }
+    } catch (error) {
+      setConnectionTestResult({ success: false, message: "连接测试失败" })
+      toast({ title: "测试失败", description: "无法连接到服务器", variant: "destructive" })
+    } finally {
+      setTestingConnection(false)
+    }
+  }
+
+  
+  function renderModelProviders() {
+    return (
+      <div className="space-y-6 mt-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>内置提供商</CardTitle>
+              <Button onClick={handleAddProvider} size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                添加自定义提供商
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium">硅基流动</h4>
+                <Badge>内置</Badge>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">提供视觉和对话模型服务</p>
+              <div className="space-y-3">
+                <div>
+                  <Label>API密钥</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type={showSiliconFlowApiKey ? "text" : "password"}
+                      value={siliconFlowSettings.apiKey}
+                      onChange={(e) => setSiliconFlowSettings({...siliconFlowSettings, apiKey: e.target.value})}
+                      placeholder="输入硅基流动API密钥"
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowSiliconFlowApiKey(!showSiliconFlowApiKey)}
+                    >
+                      {showSiliconFlowApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label>API地址</Label>
+                  <Input
+                    value="https://api.siliconflow.cn/v1"
+                    disabled
+                    className="bg-gray-50 dark:bg-gray-900"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium">魔搭社区</h4>
+                <Badge>内置</Badge>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">提供对话和文本生成模型</p>
+              <div className="space-y-3">
+                <div>
+                  <Label>API密钥</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type={showModelScopeApiKey ? "text" : "password"}
+                      value={modelScopeSettings.apiKey}
+                      onChange={(e) => setModelScopeSettings({...modelScopeSettings, apiKey: e.target.value})}
+                      placeholder="输入魔搭社区API密钥"
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowModelScopeApiKey(!showModelScopeApiKey)}
+                    >
+                      {showModelScopeApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label>API地址</Label>
+                  <Input
+                    value="https://api-inference.modelscope.cn/v1"
+                    disabled
+                    className="bg-gray-50 dark:bg-gray-900"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 自定义提供商列表 */}
+        {customProviders.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">已添加的自定义提供商</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {customProviders
+                  .filter(provider => provider && provider.id && provider.name)
+                  .map(provider => (
+                  <div key={provider.id} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">{provider.name || '未知提供商'}</h4>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditProvider(provider)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteProvider(provider.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500">{provider.apiBaseUrl || '未知地址'}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Dialog open={showProviderDialog} onOpenChange={setShowProviderDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingProvider ? "编辑提供商" : "添加自定义提供商"}</DialogTitle>
+              <DialogDescription>
+                配置兼容OpenAI API的模型提供商
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="provider-name">提供商名称 *</Label>
+                <Input
+                  id="provider-name"
+                  value={providerForm.name}
+                  onChange={(e) => setProviderForm({...providerForm, name: e.target.value})}
+                  placeholder="例如: OpenAI"
+                />
+              </div>
+              <div>
+                <Label htmlFor="provider-url">API地址 *</Label>
+                <Input
+                  id="provider-url"
+                  value={providerForm.apiBaseUrl}
+                  onChange={(e) => setProviderForm({...providerForm, apiBaseUrl: e.target.value})}
+                  placeholder="https://api.openai.com/v1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="provider-key">API密钥 *</Label>
+                <Input
+                  id="provider-key"
+                  type="password"
+                  value={providerForm.apiKey}
+                  onChange={(e) => setProviderForm({...providerForm, apiKey: e.target.value})}
+                  placeholder="sk-..."
+                />
+              </div>
+              
+              {connectionTestResult && (
+                <div className={`p-3 rounded-lg ${connectionTestResult.success ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800'} border`}>
+                  <div className="flex items-start gap-2">
+                    {connectionTestResult.success ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
+                    )}
+                    <div>
+                      <p className={`text-sm font-medium ${connectionTestResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                        {connectionTestResult.success ? "连接成功" : "连接失败"}
+                      </p>
+                      <p className={`text-sm ${connectionTestResult.success ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                        {connectionTestResult.message}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleTestConnection}
+                  disabled={testingConnection || !providerForm.apiKey || !providerForm.apiBaseUrl}
+                  className="flex-1"
+                >
+                  {testingConnection ? "测试中..." : "测试连接"}
+                </Button>
+                <Button onClick={handleSaveProvider} className="flex-1">
+                  {editingProvider ? "更新" : "添加"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    )
+  }
+
+  const handleFetchModels = async (providerId: string) => {
+    setLoadingModels(true)
+    try {
+      let apiKey = ""
+      let apiBaseUrl = ""
+      
+      if (providerId === "siliconflow-builtin") {
+        apiKey = siliconFlowSettings.apiKey
+        apiBaseUrl = "https://api.siliconflow.cn/v1"
+      } else if (providerId === "modelscope-builtin") {
+        apiKey = modelScopeSettings.apiKey
+        apiBaseUrl = "https://api-inference.modelscope.cn/v1"
+      } else {
+        const provider = customProviders.find(p => p.id === providerId)
+        if (provider) {
+          apiKey = provider.apiKey
+          apiBaseUrl = provider.apiBaseUrl
+        }
+      }
+      
+      if (!apiKey) {
+        toast({ title: "错误", description: "请先配置API密钥", variant: "destructive" })
+        setLoadingModels(false)
+        return
+      }
+      
+      const response = await fetch('/api/model-service/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, apiBaseUrl })
+      })
+
+      const result = await response.json()
+      if (result.success && result.models) {
+        // 标准化模型数据格式
+        const normalizedModels = result.models.map((model: any) => ({
+          id: model.id || model.model,
+          object: model.object || 'model',
+          created: model.created || Date.now(),
+          owned_by: model.owned_by || providerId
+        }))
+        setAvailableModels(normalizedModels)
+        setShowAvailableModelsDialog(true)
+        toast({ title: "成功", description: `获取到 ${normalizedModels.length} 个模型` })
+      } else {
+        toast({ title: "失败", description: result.message || "获取模型列表失败", variant: "destructive" })
+      }
+    } catch (error) {
+      toast({ title: "错误", description: "获取模型列表失败", variant: "destructive" })
+    } finally {
+      setLoadingModels(false)
+    }
+  }
+
+  const handleAddModel = () => {
+    setModelForm({ modelId: "", displayName: "", capabilities: [] })
+    setShowModelDialog(true)
+  }
+
+  const handleSaveModel = async () => {
+    if (!modelForm.modelId || !selectedProviderId) {
+      toast({ title: "验证失败", description: "请填写必填字段", variant: "destructive" })
+      return
+    }
+
+    const newModel: ModelConfig = {
+      id: `model-${Date.now()}`,
+      providerId: selectedProviderId,
+      modelId: modelForm.modelId,
+      displayName: modelForm.displayName || modelForm.modelId,
+      capabilities: modelForm.capabilities,
+      enabled: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+
+    try {
+      // 调用API保存模型
+      const response = await fetch('/api/model-service', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add-model',
+          data: newModel
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setConfiguredModels([...configuredModels, newModel])
+          setShowModelDialog(false)
+          setModelForm({ modelId: "", displayName: "", capabilities: [] })
+
+          // 触发全局配置更新事件
+          window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+
+          toast({ title: "添加成功", description: "模型已保存到本地" })
+        } else {
+          throw new Error(result.error || '保存失败')
+        }
+      } else {
+        throw new Error('保存失败')
+      }
+    } catch (error) {
+      console.error('保存模型失败:', error)
+      toast({
+        title: "保存失败",
+        description: error instanceof Error ? error.message : '请稍后重试',
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleDeleteModel = async (modelId: string) => {
+    if (!confirm("确定要删除此模型吗?")) return
+
+    try {
+      const response = await fetch('/api/model-service', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete-model',
+          data: { id: modelId }
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setConfiguredModels(configuredModels.filter(m => m.id !== modelId))
+
+          // 触发全局配置更新事件
+          window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+
+          toast({ title: "删除成功", description: "模型已从本地删除" })
+        } else {
+          throw new Error(result.error || '删除失败')
+        }
+      } else {
+        throw new Error('删除失败')
+      }
+    } catch (error) {
+      console.error('删除模型失败:', error)
+      toast({
+        title: "删除失败",
+        description: error instanceof Error ? error.message : '请稍后重试',
+        variant: "destructive"
+      })
+    }
+  }
+
+  function renderModelConfigs() {
+    const allProviders = [
+      { id: "siliconflow-builtin", name: "硅基流动", type: "builtin" },
+      { id: "modelscope-builtin", name: "魔搭社区", type: "builtin" },
+      ...customProviders.filter(p => p && p.id && p.name && !["siliconflow-builtin", "modelscope-builtin"].includes(p.id))
+    ]
+
+    const allModels = configuredModels
+
+    // 获取所有提供商列表（供弹窗使用）
+    const getAllProviders = () => [
+      { id: "siliconflow-builtin", name: "硅基流动", type: "builtin" },
+      { id: "modelscope-builtin", name: "魔搭社区", type: "builtin" },
+      ...customProviders.filter(p => p && p.id && p.name && !["siliconflow-builtin", "modelscope-builtin"].includes(p.id))
+    ]
+
+    // 获取所有模型列表（供弹窗使用）
+    const getAllModels = () => configuredModels
+
+    return (
+      <div className="space-y-6 mt-6">
+        <div className="flex items-center gap-4">
+          <Select value={selectedProviderId} onValueChange={(value) => {
+          setSelectedProviderId(value)
+          // 切换提供商时清空可用模型列表
+          setAvailableModels([])
+        }}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="选择提供商" />
+            </SelectTrigger>
+            <SelectContent>
+              {allProviders.map(p => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Button
+            variant="outline"
+            onClick={() => selectedProviderId && handleFetchModels(selectedProviderId)}
+            disabled={!selectedProviderId || loadingModels}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loadingModels ? 'animate-spin' : ''}`} />
+            {loadingModels ? "获取中..." : "获取模型列表"}
+          </Button>
+
+          <Button onClick={handleAddModel} disabled={!selectedProviderId}>
+            <Plus className="h-4 w-4 mr-2" />
+            添加模型
+          </Button>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>已配置模型</CardTitle>
+            <p className="text-sm text-gray-500">管理可用的AI模型</p>
+          </CardHeader>
+          <CardContent>
+            {allModels.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Film className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>暂无配置的模型</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {allModels.map(model => {
+                  const provider = allProviders.find(p => p.id === model.providerId)
+
+                  return (
+                    <div key={`${model.id}-${model.providerId}`} className="p-3 border rounded flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{model.displayName}</p>
+                        </div>
+                        <p className="text-sm text-gray-500">{provider?.name} • {model.modelId}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-1">
+                          {model.capabilities?.map(cap => (
+                            <Badge key={cap} variant="outline" className="text-xs">{cap}</Badge>
+                          ))}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteModel(model.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 可用模型列表弹窗 */}
+        <Dialog open={showAvailableModelsDialog} onOpenChange={setShowAvailableModelsDialog}>
+          <DialogContent className="max-w-2xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>可用模型列表</DialogTitle>
+              <DialogDescription>
+                从 {(() => {
+                  const providers = [
+                    { id: "siliconflow-builtin", name: "硅基流动", type: "builtin" },
+                    { id: "modelscope-builtin", name: "魔搭社区", type: "builtin" },
+                    ...customProviders
+                  ]
+                  return providers.find(p => p.id === selectedProviderId)?.name
+                })()} 获取的模型
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {availableModels.map((model, index) => {
+                  const isAlreadyConfigured = configuredModels.some(m => m.modelId === model.id)
+                  return (
+                    <div
+                      key={index}
+                      className={`p-3 border rounded flex items-center justify-between transition-colors ${
+                        isAlreadyConfigured
+                          ? 'bg-gray-50 dark:bg-gray-900 opacity-60'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-900'
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{model.id}</p>
+                        {model.object && (
+                          <p className="text-xs text-gray-500">类型: {model.object}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isAlreadyConfigured ? (
+                          <Badge variant="secondary" className="text-xs">已添加</Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setModelForm({
+                                modelId: model.id,
+                                displayName: model.id,
+                                capabilities: []
+                              })
+                              setShowAvailableModelsDialog(false)
+                              setShowModelDialog(true)
+                            }}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            添加
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAvailableModelsDialog(false)}>
+                关闭
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showModelDialog} onOpenChange={setShowModelDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>添加模型</DialogTitle>
+              <DialogDescription>
+                从提供商添加新的AI模型
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {availableModels.length > 0 ? (
+                <div>
+                  <Label>从列表选择</Label>
+                  <Select
+                    value={modelForm.modelId}
+                    onValueChange={(value) => {
+                      const selected = availableModels.find(m => m.id === value)
+                      setModelForm({
+                        modelId: value,
+                        displayName: selected?.id || value,
+                        capabilities: []
+                      })
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择模型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableModels.map((model, index) => (
+                        <SelectItem key={`${model.id}-${index}`} value={model.id}>
+                          {model.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div>
+                  <Label>模型ID *</Label>
+                  <Input
+                    value={modelForm.modelId}
+                    onChange={(e) => setModelForm({...modelForm, modelId: e.target.value})}
+                    placeholder="例如: gpt-4"
+                  />
+                </div>
+              )}
+              
+              <div>
+                <Label>显示名称</Label>
+                <Input
+                  value={modelForm.displayName}
+                  onChange={(e) => setModelForm({...modelForm, displayName: e.target.value})}
+                  placeholder="可选,默认使用模型ID"
+                />
+              </div>
+              
+              <div>
+                <Label>模型能力</Label>
+                <div className="flex gap-2 mt-2">
+                  {['vision', 'chat', 'audio'].map(cap => (
+                    <Button
+                      key={cap}
+                      variant={modelForm.capabilities.includes(cap) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        const newCaps = modelForm.capabilities.includes(cap)
+                          ? modelForm.capabilities.filter(c => c !== cap)
+                          : [...modelForm.capabilities, cap]
+                        setModelForm({...modelForm, capabilities: newCaps})
+                      }}
+                    >
+                      {cap}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowModelDialog(false)}>
+                  取消
+                </Button>
+                <Button onClick={handleSaveModel}>
+                  添加
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    )
+  }
+
+  function renderUsageScenarios() {
+    const allModels = configuredModels
+    const allProviders = [
+      { id: "siliconflow-builtin", name: "硅基流动" },
+      { id: "modelscope-builtin", name: "魔搭社区" },
+      ...customProviders.filter(p => p && p.id && p.name)
+    ]
+
+    const scenarios: UsageScenario[] = [
+      {
+        type: 'thumbnail_filter',
+        label: '视频缩略图智能筛选',
+        description: '用于"视频缩略图提取"页面的AI智能筛选功能，自动识别包含人物且无字幕的优质帧',
+        requiredCapabilities: ['vision']
+      },
+      {
+        type: 'image_analysis',
+        label: '影视图像识别分析',
+        description: '用于"影视识别"页面的图像分析功能，识别影视作品海报、剧照并进行内容分析',
+        requiredCapabilities: ['vision']
+      },
+      {
+        type: 'speech_to_text',
+        label: '视频语音识别转文字',
+        description: '用于"分集简介-AI生成"页面的视频分析功能，将视频中的语音转换为文字用于生成简介',
+        requiredCapabilities: ['audio']
+      },
+      {
+        type: 'episode_generation',
+        label: '分集简介AI生成',
+        description: '用于"分集简介-AI生成"页面，基于视频内容或字幕生成精彩的分集简介',
+        requiredCapabilities: ['chat']
+      },
+      {
+        type: 'ai_chat',
+        label: 'AI智能对话助手',
+        description: '用于"分集简介-AI对话"页面，提供智能对话、问答和内容创作服务',
+        requiredCapabilities: ['chat']
+      }
+    ]
+
+    // 将保存函数暴露给父组件
+    if (typeof window !== 'undefined') {
+      (window as any).saveScenarioConfig = async () => {
+        try {
+          // 构建场景配置
+          const updatedScenarios = Object.entries(scenarioSettings).map(([type, setting]) => {
+            const baseScenario = scenarios.find(s => s.type === type)
+            return {
+              type,
+              label: baseScenario?.label || type,
+              description: baseScenario?.description || '',
+              selectedModelIds: setting.selectedModelIds || [],
+              primaryModelId: setting.primaryModelId || setting.selectedModelIds?.[0] || '',
+              requiredCapabilities: baseScenario?.requiredCapabilities || []
+            }
+          })
+
+          // 保存到服务器
+          const response = await fetch('/api/model-service', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'update-scenarios',
+              data: updatedScenarios
+            })
+          })
+
+          if (response.ok) {
+            return { success: true }
+          } else {
+            throw new Error('保存失败')
+          }
+        } catch (error) {
+          return { success: false, error: error instanceof Error ? error.message : '未知错误' }
+        }
+      }
+    }
+
+    const getCompatibleModels = (requiredCapabilities: string[]) => {
+      return allModels.filter(model =>
+        requiredCapabilities.every(cap => model.capabilities?.includes(cap))
+      )
+    }
+
+    // 事件处理函数
+    const handleModelToggle = async (scenarioType: string, modelId: string, checked: boolean) => {
+      const currentSetting = scenarioSettings[scenarioType]
+      const selectedModelIds = currentSetting?.selectedModelIds || []
+      const primaryModelId = currentSetting?.primaryModelId || selectedModelIds[0] || ""
+
+      let newSelectedIds: string[]
+      if (checked) {
+        newSelectedIds = [...selectedModelIds, modelId]
+      } else {
+        newSelectedIds = selectedModelIds.filter(id => id !== modelId)
+      }
+
+      // 如果移除的是主模型，则重新选择主模型
+      let newPrimaryId = primaryModelId
+      if (!checked && primaryModelId === modelId) {
+        newPrimaryId = newSelectedIds[0] || ""
+      }
+
+      // 更新本地状态
+      setScenarioSettings({
+        ...scenarioSettings,
+        [scenarioType]: {
+          ...currentSetting,
+          selectedModelIds: newSelectedIds,
+          primaryModelId: newPrimaryId,
+          parameters: currentSetting?.parameters || {}
+        }
+      })
+
+      // 立即同步到服务器
+      await updateScenario(scenarioType, newSelectedIds, newPrimaryId)
+    }
+
+    const handlePrimaryModelChange = async (scenarioType: string, modelId: string) => {
+      const currentSetting = scenarioSettings[scenarioType]
+      const selectedModelIds = currentSetting?.selectedModelIds || []
+
+      // 更新本地状态
+      setScenarioSettings({
+        ...scenarioSettings,
+        [scenarioType]: {
+          ...currentSetting,
+          primaryModelId: modelId
+        }
+      })
+
+      // 立即同步到服务器
+      await updateScenario(scenarioType, selectedModelIds, modelId)
+    }
+
+    const handleParameterChange = (scenarioType: string, parameter: string, value: any) => {
+      const currentSetting = scenarioSettings[scenarioType]
+      const selectedModelIds = currentSetting?.selectedModelIds || []
+      const primaryModelId = currentSetting?.primaryModelId || selectedModelIds[0] || ""
+
+      setScenarioSettings({
+        ...scenarioSettings,
+        [scenarioType]: {
+          ...currentSetting,
+          selectedModelIds,
+          primaryModelId,
+          parameters: {
+            ...currentSetting?.parameters,
+            [parameter]: value
+          }
+        }
+      })
+    }
+
+    return (
+      <div className="space-y-6 mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>功能场景配置</CardTitle>
+            <p className="text-sm text-gray-500">为每个功能选择使用的AI模型并配置参数</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {scenarios.map(scenario => {
+              const compatibleModels = getCompatibleModels(scenario.requiredCapabilities)
+              const currentSetting = scenarioSettings[scenario.type]
+              const isExpanded = expandedScenario === scenario.type
+              const rawSelectedModelIds = currentSetting?.selectedModelIds || []
+              const primaryModelId = currentSetting?.primaryModelId || rawSelectedModelIds[0] || ""
+
+              // 实时过滤出实际存在的模型ID
+              const selectedModelIds = rawSelectedModelIds.filter(modelId =>
+                allModels.some(model => model.id === modelId)
+              )
+
+              return (
+                <div key={scenario.type} className="border rounded-lg">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{scenario.label}</h4>
+                      <p className="text-sm text-gray-500">{scenario.description}</p>
+                      <div className="flex gap-1 mt-2">
+                        {scenario.requiredCapabilities.map(cap => (
+                          <Badge key={cap} variant="secondary" className="text-xs">{cap}</Badge>
+                        ))}
+                      </div>
+                      {selectedModelIds.length > 0 && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          已选择 {selectedModelIds.length} 个模型
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpandedScenario(isExpanded ? null : scenario.type)}
+                      >
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {isExpanded && (
+                    <div className="border-t p-4 bg-gray-50 dark:bg-gray-900/50 space-y-6">
+                      <div>
+                        <h5 className="font-medium text-sm mb-3">选择模型</h5>
+                        {compatibleModels.length === 0 ? (
+                          <div className="p-4 text-sm text-gray-500 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                            暂无兼容模型
+                          </div>
+                        ) : (
+                          <div className="space-y-3 max-h-60 overflow-y-auto">
+                            {compatibleModels.map(model => {
+                              const provider = allProviders.find(p => p.id === model.providerId)
+                              const isSelected = selectedModelIds.includes(model.id)
+                              const isPrimary = primaryModelId === model.id
+
+                              return (
+                                <div
+                                  key={`${model.id}-${scenario.type}`}
+                                  className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                                    isSelected
+                                      ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20'
+                                      : 'border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                  }`}
+                                  onClick={() => handleModelToggle(scenario.type, model.id, !isSelected)}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={(checked) => handleModelToggle(scenario.type, model.id, checked as boolean)}
+                                    />
+                                    <div>
+                                      <p className="font-medium text-sm">{model.displayName}</p>
+                                      <p className="text-xs text-gray-500">{provider?.name}</p>
+                                    </div>
+                                  </div>
+                                  {isSelected && (
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant={isPrimary ? "default" : "outline"}
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handlePrimaryModelChange(scenario.type, model.id)
+                                        }}
+                                      >
+                                        {isPrimary ? "主模型" : "设为主模型"}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {selectedModelIds.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-sm mb-3">模型参数</h5>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`${scenario.type}-temp`}>Temperature</Label>
+                              <div className="flex items-center gap-2">
+                                <Slider
+                                  id={`${scenario.type}-temp`}
+                                  min={0}
+                                  max={2}
+                                  step={0.1}
+                                  value={[currentSetting?.parameters?.temperature || 0.7]}
+                                  onValueChange={([value]) => {
+                                    handleParameterChange(scenario.type, 'temperature', value)
+                                  }}
+                                  className="flex-1"
+                                />
+                                <span className="text-sm w-12 text-right">
+                                  {currentSetting?.parameters?.temperature?.toFixed(1) || "0.7"}
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <Label htmlFor={`${scenario.type}-tokens`}>Max Tokens</Label>
+                              <Input
+                                id={`${scenario.type}-tokens`}
+                                type="number"
+                                value={currentSetting?.parameters?.max_tokens || 2048}
+                                onChange={(e) => {
+                                    handleParameterChange(scenario.type, 'max_tokens', parseInt(e.target.value))
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   // 硅基流动API设置
   function renderSiliconFlowApiSettings() {
     const saveSiliconFlowSettings = async () => {
       setSiliconFlowSaving(true)
       try {
-        // 检查是否在Docker环境中
-        const dockerConfigResponse = await fetch('/api/system/docker-config')
-        const dockerConfigData = await dockerConfigResponse.json()
+        // 从模型服务系统获取当前配置
+        const modelServiceResponse = await fetch('/api/model-service')
+        if (!modelServiceResponse.ok) {
+          throw new Error('获取模型服务配置失败')
+        }
 
-        if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-          // Docker环境：保存到服务器端文件系统
-          const saveResponse = await fetch('/api/system/docker-config', {
+        const { config } = await modelServiceResponse.json()
+
+        // 查找并更新硅基流动内置提供商
+        const siliconflowProvider = config.providers?.find(p => p.type === 'siliconflow' && p.isBuiltIn)
+        if (siliconflowProvider) {
+          siliconflowProvider.apiKey = siliconFlowSettings.apiKey
+          siliconflowProvider.updatedAt = Date.now()
+
+          // 保存更新后的配置
+          const saveResponse = await fetch('/api/model-service', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              siliconFlowApiKey: siliconFlowSettings.apiKey,
-              siliconFlowThumbnailModel: siliconFlowSettings.thumbnailFilterModel
-            })
+            body: JSON.stringify({ config })
           })
 
           const saveData = await saveResponse.json()
@@ -1527,24 +2843,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             throw new Error(saveData.error || '保存失败')
           }
         } else {
-          // 保存到服务端配置
-          await ClientConfigManager.setItem("siliconflow_api_settings", JSON.stringify(siliconFlowSettings))
-
-          // 同步更新到分集生成器的配置
-          await ClientConfigManager.setItem('siliconflow_api_key', siliconFlowSettings.apiKey)
-
-          // 同步更新到缩略图设置
-          const savedVideoSettings = await ClientConfigManager.getItem("video_thumbnail_settings")
-          if (savedVideoSettings) {
-            try {
-              const settings = JSON.parse(savedVideoSettings)
-              settings.siliconFlowApiKey = siliconFlowSettings.apiKey
-              settings.siliconFlowModel = siliconFlowSettings.thumbnailFilterModel
-              await ClientConfigManager.setItem("video_thumbnail_settings", JSON.stringify(settings))
-            } catch (error) {
-              console.error('同步缩略图设置失败:', error)
-            }
-          }
+          throw new Error('未找到硅基流动内置提供商')
         }
 
         // 触发自定义事件，通知其他组件设置已更改
@@ -1725,21 +3024,27 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     const saveModelScopeSettings = async () => {
       setModelScopeSaving(true)
       try {
-        // 检查是否在Docker环境中
-        const dockerConfigResponse = await fetch('/api/system/docker-config')
-        const dockerConfigData = await dockerConfigResponse.json()
+        // 从模型服务系统获取当前配置
+        const modelServiceResponse = await fetch('/api/model-service')
+        if (!modelServiceResponse.ok) {
+          throw new Error('获取模型服务配置失败')
+        }
 
-        if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-          // Docker环境：保存到服务器端文件系统
-          const saveResponse = await fetch('/api/system/docker-config', {
+        const { config } = await modelServiceResponse.json()
+
+        // 查找并更新魔搭社区内置提供商
+        const modelscopeProvider = config.providers?.find(p => p.type === 'modelscope' && p.isBuiltIn)
+        if (modelscopeProvider) {
+          modelscopeProvider.apiKey = modelScopeSettings.apiKey
+          modelscopeProvider.updatedAt = Date.now()
+
+          // 保存更新后的配置
+          const saveResponse = await fetch('/api/model-service', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              modelScopeApiKey: modelScopeSettings.apiKey,
-              modelScopeEpisodeModel: modelScopeSettings.episodeGenerationModel
-            })
+            body: JSON.stringify({ config })
           })
 
           const saveData = await saveResponse.json()
@@ -1747,17 +3052,16 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             throw new Error(saveData.error || '保存失败')
           }
         } else {
-          // 保存到服务端配置
-          await ClientConfigManager.setItem("modelscope_api_settings", JSON.stringify(modelScopeSettings))
-
-          // 同步更新到分集生成器的配置
-          await ClientConfigManager.setItem('modelscope_api_key', modelScopeSettings.apiKey)
+          throw new Error('未找到魔搭社区内置提供商')
         }
 
         // 触发自定义事件，通知其他组件设置已更改
         window.dispatchEvent(new CustomEvent('modelscope-settings-changed', {
           detail: modelScopeSettings
         }))
+
+        // 触发模型服务配置更新事件，确保界面同步
+        window.dispatchEvent(new CustomEvent('model-service-config-updated'))
 
         toast({
           title: "成功",
@@ -3316,19 +4620,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                       apiKeyLength: apiKey?.length || 0
                     })
                     
-                    // 如果用户不在API页面但是有API密钥输入，先切换到API页面
-                    if (activeSection !== 'api' && apiKey && 
-                        typeof apiKey === 'string' && 
-                        apiKey.trim() !== '' && 
-                        apiKey !== '***已配置***') {
-                      console.log('🔄 [DEBUG] 检测到API密钥输入，切换到API页面')
-                      setActiveSection('api')
-                      setTimeout(() => {
-                        handleSave()
-                      }, 100)
-                    } else {
-                      handleSave()
-                    }
+                    // 直接调用保存，不需要自动切换页面
+                    handleSave()
                   }}
                   disabled={saveStatus === "saving"}
                   className={saveStatus === "success" ? "bg-green-600 hover:bg-green-700" : ""}

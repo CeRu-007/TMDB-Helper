@@ -147,6 +147,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/common/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
 import { safeJsonParse } from "@/lib/utils"
 import { useToast } from "@/components/common/use-toast"
 import { VideoAnalyzer, VideoAnalysisResult } from "@/lib/media/video-analyzer"
@@ -370,6 +371,9 @@ export function SubtitleEpisodeGenerator({
   const [movieTitle, setMovieTitle] = useState('')
   const { toast } = useToast()
 
+  // 使用场景模型配置
+  const scenarioModels = useScenarioModels('episode_generation')
+
   // 余额不足弹窗状态
   const [showInsufficientBalanceDialog, setShowInsufficientBalanceDialog] = useState(false)
 
@@ -447,16 +451,45 @@ export function SubtitleEpisodeGenerator({
       try {
         console.log('🔧 [配置加载] 开始加载配置...')
         
+        // 从新的模型服务系统加载场景配置
+        let episodeGenerationModel = 'deepseek-ai/DeepSeek-V2.5' // 默认模型
+        let speechRecognitionModel = 'FunAudioLLM/SenseVoiceSmall' // 默认语音识别模型
+        
+        try {
+          // 加载分集生成模型配置
+          const episodeResponse = await fetch('/api/model-service/scenario?scenario=episode_generation')
+          const episodeResult = await episodeResponse.json()
+          
+          if (episodeResult.success && episodeResult.scenario && episodeResult.scenario.primaryModelId) {
+            episodeGenerationModel = episodeResult.scenario.primaryModelId
+            console.log('🔧 [配置加载] 从模型服务系统加载分集生成模型:', episodeGenerationModel)
+          }
+          
+          // 加载语音转文字模型配置
+          const speechResponse = await fetch('/api/model-service/scenario?scenario=speech_to_text')
+          const speechResult = await speechResponse.json()
+          
+          if (speechResult.success && speechResult.scenario && speechResult.scenario.primaryModelId) {
+            speechRecognitionModel = speechResult.scenario.primaryModelId
+            console.log('🔧 [配置加载] 从模型服务系统加载语音识别模型:', speechRecognitionModel)
+          }
+        } catch (error) {
+          console.warn('🔧 [配置加载] 从模型服务系统加载模型失败:', error)
+        }
+        
+        // 兼容旧的配置存储方式
         const provider = (await ClientConfigManager.getItem('episode_generator_api_provider')) || 'siliconflow'
         const settingsKey = provider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
         const settingsText = await ClientConfigManager.getItem(settingsKey)
-        let episodeGenerationModel = provider === 'siliconflow' ? 'deepseek-ai/DeepSeek-V2.5' : 'Qwen/Qwen3-32B'
         
-        if (settingsText) {
-          try { 
-            const s = JSON.parse(settingsText)
-            if (s.episodeGenerationModel) episodeGenerationModel = s.episodeGenerationModel 
-          } catch {}
+        // 如果新系统没有配置，则尝试从旧系统加载
+        if (episodeGenerationModel === 'deepseek-ai/DeepSeek-V2.5') {
+          if (settingsText) {
+            try { 
+              const s = JSON.parse(settingsText)
+              if (s.episodeGenerationModel) episodeGenerationModel = s.episodeGenerationModel 
+            } catch {}
+          }
         }
         
         const saved = await ClientConfigManager.getItem('episode_generator_config')
@@ -491,7 +524,7 @@ export function SubtitleEpisodeGenerator({
               selectedTitleStyle: parsed.selectedTitleStyle || 'location_skill',
               temperature: parsed.temperature || 0.7,
               includeOriginalTitle: parsed.includeOriginalTitle !== undefined ? parsed.includeOriginalTitle : true,
-              speechRecognitionModel: parsed.speechRecognitionModel || "FunAudioLLM/SenseVoiceSmall",
+              speechRecognitionModel: parsed.speechRecognitionModel || speechRecognitionModel,
               enableVideoAnalysis: parsed.enableVideoAnalysis || false,
               imitateConfig: parsed.imitateConfig || {
                 sampleContent: "",
@@ -507,7 +540,11 @@ export function SubtitleEpisodeGenerator({
           }
         } else {
           console.log('🔧 [配置加载] 未找到保存的配置，使用默认配置')
-          setConfig(prev => ({ ...prev, model: episodeGenerationModel }))
+          setConfig(prev => ({ 
+            ...prev, 
+            model: episodeGenerationModel,
+            speechRecognitionModel: speechRecognitionModel
+          }))
         }
         
         // 标记配置已初始化
@@ -931,13 +968,14 @@ export function SubtitleEpisodeGenerator({
   const generateEpisodeContentForStyle = async (episode: SubtitleEpisode, styleId: string): Promise<GenerationResult> => {
     const prompt = buildPromptForStyle(episode, config, styleId)
 
-    // 根据API提供商选择不同的端点和API密钥
-    const currentApiKey = apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey
-    const apiEndpoint = apiProvider === 'siliconflow' ? '/api/ai/siliconflow' : '/api/ai/modelscope'
-
-    if (!currentApiKey) {
-      throw new Error(`${apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}API密钥未配置`)
+    // 获取实际的模型ID
+    const selectedModel = scenarioModels.availableModels.find(m => m.id === config.model)
+    if (!selectedModel) {
+      throw new Error('未找到选中的模型配置')
     }
+
+    // 使用模型服务API端点
+    const apiEndpoint = '/api/model-service/chat/completions'
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
@@ -945,7 +983,7 @@ export function SubtitleEpisodeGenerator({
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: config.model,
+        modelId: selectedModel.id, // 使用模型的内部ID
         messages: [
           {
             role: "system",
@@ -957,8 +995,7 @@ export function SubtitleEpisodeGenerator({
           }
         ],
         temperature: config.temperature,
-        max_tokens: 800,
-        apiKey: currentApiKey
+        max_tokens: 800
       })
     })
 
@@ -995,6 +1032,10 @@ export function SubtitleEpisodeGenerator({
             if (isInsufficientBalanceError(errorData) || isInsufficientBalanceError(responseText)) {
               // 显示余额不足弹窗，不抛出错误
               setShowInsufficientBalanceDialog(true)
+              // 获取风格名称
+              const style = styleId ? GENERATION_STYLES.find(s => s.id === styleId) : null
+              const styleName = style?.name || ''
+
               // 返回一个特殊的结果，表示余额不足
               return {
                 episodeNumber: episode.episodeNumber,
@@ -1518,12 +1559,26 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
 
   // 批量生成
   const handleBatchGenerate = async () => {
-    const currentApiKey = apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey
-    if (!selectedFile || !currentApiKey) {
+    // 检查是否有选中的文件
+    if (!selectedFile) {
+      toast({
+        title: "请选择文件",
+        description: "请先选择要生成的字幕文件",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // 检查是否配置了模型服务
+    if (!scenarioModels.getCurrentModel()) {
       if (onOpenGlobalSettings) {
-        onOpenGlobalSettings('api')
+        onOpenGlobalSettings('model-service')
       } else {
-        
+        toast({
+          title: "未配置模型",
+          description: "请先在设置中配置AI模型",
+          variant: "destructive"
+        })
       }
       return
     }
@@ -1680,9 +1735,14 @@ ${selectedTextInfo.text}
       // 根据操作类型调整参数
       const operationConfig = getOperationConfig(operation)
 
-      // 根据API提供商选择不同的端点和API密钥
-      const currentApiKey = apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey
-      const apiEndpoint = apiProvider === 'siliconflow' ? '/api/ai/siliconflow' : '/api/ai/modelscope'
+      // 获取当前选中的模型
+      const selectedModel = scenarioModels.availableModels.find(m => m.id === config.model)
+      if (!selectedModel) {
+        throw new Error('未找到选中的模型配置')
+      }
+
+      // 使用模型服务API端点
+      const apiEndpoint = '/api/model-service/chat/completions'
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -1690,7 +1750,7 @@ ${selectedTextInfo.text}
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: config.model,
+          modelId: selectedModel.id,
           messages: [
             {
               role: "system",
@@ -1702,8 +1762,7 @@ ${selectedTextInfo.text}
             }
           ],
           temperature: operationConfig.temperature,
-          max_tokens: operationConfig.maxTokens,
-          apiKey: currentApiKey
+          max_tokens: operationConfig.maxTokens
         })
       })
 
@@ -2150,12 +2209,16 @@ ${selectedTextInfo.text}
 
   // 批量生成所有文件的简介
   const handleBatchGenerateAll = async () => {
-    const currentApiKey = apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey
-    if (!currentApiKey) {
+    // 检查是否配置了模型服务
+    if (!scenarioModels.getCurrentModel()) {
       if (onOpenGlobalSettings) {
-        onOpenGlobalSettings('api')
+        onOpenGlobalSettings('model-service')
       } else {
-        
+        toast({
+          title: "未配置模型",
+          description: "请先在设置中配置AI模型",
+          variant: "destructive"
+        })
       }
       return
     }
@@ -2414,7 +2477,7 @@ ${selectedTextInfo.text}
             onBatchGenerate={handleBatchGenerateAll}
             onBatchExport={handleExportResults}
             isGenerating={isGenerating}
-            apiConfigured={!!(apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey)}
+            apiConfigured={scenarioModels.availableModels.length > 0}
             hasResults={Object.values(generationResults).some(results => results.length > 0)}
             videoAnalysisResult={videoAnalysisResult}
             onShowAnalysisResult={() => setShowAnalysisResult(true)}
@@ -2430,7 +2493,7 @@ ${selectedTextInfo.text}
               isGenerating={isGenerating}
               progress={generationProgress}
               onGenerate={handleBatchGenerate}
-              apiConfigured={!!(apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey)}
+              apiConfigured={scenarioModels.availableModels.length > 0}
               onOpenGlobalSettings={onOpenGlobalSettings}
               onUpdateResult={(resultIndex, updatedResult) =>
                 handleUpdateResult(selectedFile.id, resultIndex, updatedResult)
@@ -2459,16 +2522,9 @@ ${selectedTextInfo.text}
         onOpenChange={setShowSettingsDialog}
         config={config}
         onConfigChange={setConfig}
-        apiConfigured={!!(apiProvider === 'siliconflow' ? siliconFlowApiKey : modelScopeApiKey)}
         onOpenGlobalSettings={onOpenGlobalSettings}
         setShouldReopenSettingsDialog={setShouldReopenSettingsDialog}
-        apiProvider={apiProvider}
-        onApiProviderChange={async (provider) => {
-          setApiProvider(provider)
-          await ClientConfigManager.setItem('episode_generator_api_provider', provider)
-        }}
-        siliconFlowApiKey={siliconFlowApiKey}
-        modelScopeApiKey={modelScopeApiKey}
+        scenarioModels={scenarioModels}
       />
 
       {/* 导出配置对话框 */}
@@ -4062,25 +4118,17 @@ function GenerationSettingsDialog({
   onOpenChange,
   config,
   onConfigChange,
-  apiConfigured,
   onOpenGlobalSettings,
   setShouldReopenSettingsDialog,
-  apiProvider,
-  onApiProviderChange,
-  siliconFlowApiKey,
-  modelScopeApiKey
+  scenarioModels
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   config: GenerationConfig
   onConfigChange: (config: GenerationConfig) => void
-  apiConfigured: boolean
   onOpenGlobalSettings?: (section: string) => void
   setShouldReopenSettingsDialog?: (value: boolean) => void
-  apiProvider: 'siliconflow' | 'modelscope'
-  onApiProviderChange: (provider: 'siliconflow' | 'modelscope') => void
-  siliconFlowApiKey: string
-  modelScopeApiKey: string
+  scenarioModels: ReturnType<typeof useScenarioModels>
 }) {
   const [activeTab, setActiveTab] = useState("generation")
   const { toast } = useToast()
@@ -4124,42 +4172,21 @@ function GenerationSettingsDialog({
         </DialogHeader>
 
         <div className="flex flex-col flex-1 min-h-0">
-          {/* API提供商选择和状态显示 */}
+          {/* 模型服务状态显示 */}
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4 flex-shrink-0 space-y-4">
-            {/* API提供商选择 */}
-            <div>
-              <Label className="text-sm font-medium mb-2 block">API提供商</Label>
-              <div className="flex space-x-2">
-                <Button
-                  variant={apiProvider === 'siliconflow' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => onApiProviderChange('siliconflow')}
-                  className="flex-1"
-                >
-                  硅基流动
-                </Button>
-                <Button
-                  variant={apiProvider === 'modelscope' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => onApiProviderChange('modelscope')}
-                  className="flex-1"
-                >
-                  魔搭社区
-                </Button>
-              </div>
-            </div>
-
-            {/* API状态显示 */}
+            {/* 模型服务状态 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {apiProvider === 'siliconflow' ? '硅基流动' : '魔搭社区'}API:
+                  模型服务状态:
                 </span>
-                <Badge variant={apiConfigured ? "default" : "destructive"}>
-                  {apiConfigured ? "已配置" : "未配置"}
+                <Badge variant={scenarioModels.availableModels.length > 0 ? "default" : "destructive"}>
+                  {scenarioModels.availableModels.length > 0 ? "已配置" : "未配置"}
                 </Badge>
-                {apiConfigured && (
-                  <span className="text-xs text-gray-500">当前模型: {config.model.split('/').pop()}</span>
+                {scenarioModels.availableModels.length > 0 && (
+                  <span className="text-xs text-gray-500">
+                    可用模型: {scenarioModels.availableModels.length} 个
+                  </span>
                 )}
               </div>
               <Button
@@ -4169,27 +4196,39 @@ function GenerationSettingsDialog({
                   if (onOpenGlobalSettings) {
                     // 设置标记，表示需要在全局设置关闭后重新打开此对话框
                     setShouldReopenSettingsDialog?.(true)
-                    onOpenGlobalSettings('api')
+                    onOpenGlobalSettings('model-service')
                     onOpenChange(false)
                   }
                 }}
               >
                 <Settings className="h-4 w-4 mr-2" />
-                配置API
+                配置模型服务
               </Button>
             </div>
 
-            {/* API密钥状态提示 */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center space-x-1">
-                <div className={`w-2 h-2 rounded-full ${siliconFlowApiKey ? 'bg-green-500' : 'bg-gray-300'}`} />
-                <span className="text-gray-600 dark:text-gray-400">硅基流动</span>
+            {/* 当前选中的模型信息 */}
+            {scenarioModels.getCurrentModel() && (
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Badge variant="secondary" className="text-xs">
+                    当前模型
+                  </Badge>
+                  <span className="text-sm font-medium">
+                    {scenarioModels.getCurrentModel()?.displayName}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    ({scenarioModels.getCurrentModel()?.modelId})
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center space-x-1">
-                <div className={`w-2 h-2 rounded-full ${modelScopeApiKey ? 'bg-green-500' : 'bg-gray-300'}`} />
-                <span className="text-gray-600 dark:text-gray-400">魔搭社区</span>
+            )}
+
+            {/* 提示信息 */}
+            {scenarioModels.availableModels.length === 0 && (
+              <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
+                请先在"设置 - 模型服务 - 使用场景"中为"分集生成"配置模型
               </div>
-            </div>
+            )}
           </div>
 
           {/* 标签页导航 */}
@@ -4241,7 +4280,7 @@ function GenerationSettingsDialog({
           {/* 标签页内容 - 可滚动区域 */}
           <div className="flex-1 overflow-y-auto min-h-0 pr-2">
             {activeTab === "generation" && (
-              <GenerationTab config={config} onConfigChange={onConfigChange} apiProvider={apiProvider} />
+              <GenerationTab config={config} onConfigChange={onConfigChange} />
             )}
             {activeTab === "titleStyle" && (
               <TitleStyleTab config={config} onConfigChange={onConfigChange} />
@@ -4339,38 +4378,19 @@ function GenerationSettingsDialog({
 // 生成设置标签页
 function GenerationTab({
   config,
-  onConfigChange,
-  apiProvider
+  onConfigChange
 }: {
   config: GenerationConfig
   onConfigChange: (config: GenerationConfig) => void
-  apiProvider: 'siliconflow' | 'modelscope'
 }) {
-  // 根据API提供商选择不同的模型选项
-  const siliconFlowModelOptions = [
-    { value: "deepseek-ai/DeepSeek-V2.5", label: "DeepSeek-V2.5 (推荐)", description: "高质量中文理解，适合内容生成" },
-    { value: "Qwen/Qwen2.5-72B-Instruct", label: "Qwen2.5-72B", description: "强大的推理能力，适合复杂任务" },
-    { value: "meta-llama/Meta-Llama-3.1-70B-Instruct", label: "Llama-3.1-70B", description: "平衡性能与效果" },
-    { value: "meta-llama/Meta-Llama-3.1-8B-Instruct", label: "Llama-3.1-8B", description: "快速响应，成本较低" },
-    { value: "internlm/internlm2_5-7b-chat", label: "InternLM2.5-7B", description: "轻量级模型，适合简单任务" }
-  ]
-
-  const modelScopeModelOptions = [
-    { value: "Qwen/Qwen3-32B", label: "Qwen3-32B (推荐)", description: "通义千问3代，32B参数，强大推理能力" },
-    { value: "ZhipuAI/GLM-4.5", label: "GLM-4.5", description: "智谱AI旗舰模型，专为智能体设计" },
-    { value: "deepseek-ai/DeepSeek-V3.1", label: "DeepSeek-V3.1", description: "DeepSeek最新版本，强大的推理和代码能力" },
-    { value: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B", label: "DeepSeek-R1-Distill-Qwen-32B", description: "DeepSeek R1蒸馏版本，32B参数，高效推理" },
-    { value: "Qwen/Qwen2.5-72B-Instruct", label: "Qwen2.5-72B-Instruct", description: "开源版本，72B参数" },
-    { value: "deepseek-ai/DeepSeek-R1-0528", label: "DeepSeek-R1-0528", description: "DeepSeek R1思考模型，具备强大的推理能力" }
-  ]
-
-  const modelOptions = apiProvider === 'siliconflow' ? siliconFlowModelOptions : modelScopeModelOptions
+  // 使用场景模型配置
+  const scenarioModels = useScenarioModels('episode_generation')
 
   // 保存模型配置到本地存储
   const handleModelChange = (newModel: string) => {
     // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
-      
+
       return
     }
 
@@ -4381,22 +4401,51 @@ function GenerationTab({
         model: newModel
       })
     } catch (error) {
-      
+
       return
     }
 
-    // 根据API提供商保存到不同的设置中
-    // 保存到服务端配置
-    (async () => {
+    // 保存到模型服务场景配置
+    ;(async () => {
       try {
-        const key = apiProvider === 'siliconflow' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
-        const existing = await ClientConfigManager.getItem(key)
-        const settings = existing ? JSON.parse(existing) : {}
-        settings.episodeGenerationModel = newModel
-        await ClientConfigManager.setItem(key, JSON.stringify(settings))
-        
+        // 获取当前场景配置
+        const response = await fetch('/api/model-service/scenario?scenario=episode_generation')
+        const result = await response.json()
+
+        if (result.success && result.scenario) {
+          const scenario = result.scenario
+          // 更新主模型ID
+          scenario.primaryModelId = newModel
+
+          // 保存场景配置
+          await fetch('/api/model-service', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'update-scenario',
+              data: scenario
+            })
+          })
+        }
       } catch (error) {
-        
+        console.error('保存场景配置失败:', error)
+      }
+    })()
+
+    // 保存到服务端配置（保留兼容性）
+    ;(async () => {
+      try {
+        // 获取当前模型的提供商
+        const currentModel = scenarioModels.availableModels.find(m => m.id === newModel)
+        if (currentModel) {
+          const key = currentModel.providerId === 'siliconflow-builtin' ? 'siliconflow_api_settings' : 'modelscope_api_settings'
+          const existing = await ClientConfigManager.getItem(key)
+          const settings = existing ? JSON.parse(existing) : {}
+          settings.episodeGenerationModel = newModel
+          await ClientConfigManager.setItem(key, JSON.stringify(settings))
+        }
+      } catch (error) {
+
       }
     })()
   }
@@ -4409,21 +4458,45 @@ function GenerationTab({
         <p className="text-xs text-gray-500 mt-1 mb-3">
           选择用于生成分集简介的AI模型，不同模型有不同的特点和效果
         </p>
-        <Select value={config.model} onValueChange={handleModelChange}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="选择AI模型" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px] overflow-y-auto">
-            {modelOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                <div className="flex flex-col">
-                  <span className="font-medium">{option.label}</span>
-                  <span className="text-xs text-gray-500">{option.description}</span>
+        {scenarioModels.isLoading ? (
+          <div className="flex items-center justify-center p-4 border rounded-lg">
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            <span className="text-sm text-gray-500">加载模型中...</span>
+          </div>
+        ) : scenarioModels.error ? (
+          <div className="flex items-center justify-center p-4 border rounded-lg">
+            <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+            <span className="text-sm text-red-500">加载失败: {scenarioModels.error}</span>
+          </div>
+        ) : (
+          <Select
+            value={config.model}
+            onValueChange={handleModelChange}
+            disabled={scenarioModels.availableModels.length === 0}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="选择AI模型" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px] overflow-y-auto">
+              {scenarioModels.availableModels.length === 0 ? (
+                <div className="p-2 text-sm text-gray-500">
+                  暂无可用模型，请先在模型服务中配置
                 </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              ) : (
+                scenarioModels.getSelectedModels().map((model) => (
+                  <SelectItem key={model.id} value={model.id}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{model.displayName}</span>
+                      {model.id === scenarioModels.primaryModelId && (
+                        <Badge variant="secondary" className="text-xs">主模型</Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* 简介字数范围 */}
@@ -5208,6 +5281,8 @@ function VideoAnalysisTab({
   config: GenerationConfig
   onConfigChange: (config: GenerationConfig) => void
 }) {
+  // 使用场景模型配置 - 语音转文字
+  const speechModels = useScenarioModels('speech_to_text')
   return (
     <div className="space-y-6">
       {/* 功能介绍 */}
@@ -5273,59 +5348,79 @@ function VideoAnalysisTab({
             </p>
           </div>
 
-          <Select
-            value={config.speechRecognitionModel || "FunAudioLLM/SenseVoiceSmall"}
-            onValueChange={(value) => {
-              if (typeof onConfigChange === 'function') {
-                onConfigChange({
-                  ...config,
-                  speechRecognitionModel: value
-                })
-              }
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="选择语音识别模型" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px] overflow-y-auto">
-              <SelectItem value="FunAudioLLM/SenseVoiceSmall">
-                <div className="flex flex-col">
-                  <span className="font-medium">SenseVoice-Small (推荐)</span>
-                  <span className="text-xs text-gray-500">高精度多语言语音识别，支持中英文，速度快</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="FunAudioLLM/SenseVoiceLarge">
-                <div className="flex flex-col">
-                  <span className="font-medium">SenseVoice-Large</span>
-                  <span className="text-xs text-gray-500">更高精度的语音识别，适合复杂音频环境</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="FunAudioLLM/CosyVoice-300M">
-                <div className="flex flex-col">
-                  <span className="font-medium">CosyVoice-300M</span>
-                  <span className="text-xs text-gray-500">轻量级语音识别模型，处理速度极快</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="FunAudioLLM/CosyVoice-300M-SFT">
-                <div className="flex flex-col">
-                  <span className="font-medium">CosyVoice-300M-SFT</span>
-                  <span className="text-xs text-gray-500">经过微调的轻量级模型，平衡速度与精度</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="FunAudioLLM/CosyVoice-300M-Instruct">
-                <div className="flex flex-col">
-                  <span className="font-medium">CosyVoice-300M-Instruct</span>
-                  <span className="text-xs text-gray-500">指令微调模型，适合特定场景语音识别</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="iic/SpeechT5">
-                <div className="flex flex-col">
-                  <span className="font-medium">SpeechT5</span>
-                  <span className="text-xs text-gray-500">通用语音处理模型，支持多种语音任务</span>
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          {speechModels.isLoading ? (
+            <div className="flex items-center justify-center p-4 border rounded-lg">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <span className="text-sm text-gray-500">加载模型中...</span>
+            </div>
+          ) : speechModels.error ? (
+            <div className="flex items-center justify-center p-4 border rounded-lg">
+              <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+              <span className="text-sm text-red-500">加载失败: {speechModels.error}</span>
+            </div>
+          ) : (
+            <Select
+              value={config.speechRecognitionModel || speechModels.primaryModelId || ""}
+              onValueChange={(value) => {
+                if (typeof onConfigChange === 'function') {
+                  onConfigChange({
+                    ...config,
+                    speechRecognitionModel: value
+                  })
+
+                  // 保存到模型服务场景配置
+                  ;(async () => {
+                    try {
+                      // 获取当前场景配置
+                      const response = await fetch('/api/model-service/scenario?scenario=speech_to_text')
+                      const result = await response.json()
+
+                      if (result.success && result.scenario) {
+                        const scenario = result.scenario
+                        // 更新主模型ID
+                        scenario.primaryModelId = value
+
+                        // 保存场景配置
+                        await fetch('/api/model-service', {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            action: 'update-scenario',
+                            data: scenario
+                          })
+                        })
+                      }
+                    } catch (error) {
+                      console.error('保存语音识别场景配置失败:', error)
+                    }
+                  })()
+                }
+              }}
+              disabled={speechModels.availableModels.length === 0}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="选择语音识别模型" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px] overflow-y-auto">
+                {speechModels.availableModels.length === 0 ? (
+                  <div className="p-2 text-sm text-gray-500">
+                    暂无可用模型，请先在模型服务中配置
+                  </div>
+                ) : (
+                  speechModels.getSelectedModels().map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{model.displayName}</span>
+                        {model.id === speechModels.primaryModelId && (
+                          <Badge variant="secondary" className="text-xs">主模型</Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          )}
 
           {/* 模型性能对比 */}
           <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">

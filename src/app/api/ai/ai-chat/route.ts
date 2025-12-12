@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
       const data = await fs.readFile(CHAT_HISTORY_FILE, 'utf-8')
       const histories = JSON.parse(data)
       
+      // 按更新时间倒序排序
+      histories.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      
       return NextResponse.json({
         success: true,
         data: histories

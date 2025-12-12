@@ -1,9 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ServerConfigManager } from '@/lib/data/server-config-manager'
-
-// 魔搭社区API配置
-const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1'
-const QWEN_VL_MODEL = 'Qwen/Qwen3-VL-235B-A22B-Instruct'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,34 +12,76 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 获取魔搭社区API密钥
-    const config = ServerConfigManager.getConfig()
-    const apiKey = config.modelScopeApiKey
-
-    if (!apiKey) {
+    // 从模型服务系统获取图像分析场景配置
+    const modelServiceResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/model-service/scenario?scenario=image_analysis`)
+    if (!modelServiceResponse.ok) {
       return NextResponse.json(
-        { error: '魔搭社区API密钥未配置，请在设置中配置' },
+        { error: '获取模型服务配置失败' },
+        { status: 500 }
+      )
+    }
+
+    const modelServiceData = await modelServiceResponse.json()
+    if (!modelServiceData.success || !modelServiceData.scenario || !modelServiceData.scenario.primaryModelId) {
+      return NextResponse.json(
+        { error: '图像分析场景未配置，请在模型服务-使用场景中配置模型' },
         { status: 400 }
       )
     }
 
-    // 验证API密钥格式
-    if (!apiKey.startsWith('ms-')) {
+    // 获取主模型和对应的提供商
+    const primaryModelId = modelServiceData.scenario.primaryModelId
+    const primaryModel = modelServiceData.models.find((m: any) => m.id === primaryModelId)
+    if (!primaryModel) {
       return NextResponse.json(
-        { 
-          error: 'API密钥格式不正确',
-          details: '请使用魔搭社区(ModelScope)的API密钥，格式应为ms-开头'
-        },
+        { error: '配置的模型不存在，请重新配置' },
         { status: 400 }
       )
+    }
+
+    const provider = modelServiceData.providers.find((p: any) => p.id === primaryModel.providerId)
+    if (!provider || !provider.apiKey) {
+      return NextResponse.json(
+        { error: '模型提供商未配置API密钥，请在设置中配置' },
+        { status: 400 }
+      )
+    }
+
+    const apiKey = provider.apiKey
+    const apiBaseUrl = provider.apiBaseUrl
+    const modelId = primaryModel.modelId || primaryModel.id  // 优先使用modelId，它是真实的模型名称
+
+    // 获取场景参数
+    const temperature = modelServiceData.scenario.parameters?.temperature || 0.7
+    const maxTokens = modelServiceData.scenario.parameters?.max_tokens || 2000
+
+    // 处理图像格式 - 魔搭社区API可能需要base64格式
+    let imageContent: any
+    if (image.startsWith('data:')) {
+      // 已经是data URL格式
+      imageContent = {
+        type: 'image_url',
+        image_url: {
+          url: image
+        }
+      }
+    } else {
+      // 如果是URL，保持原样
+      imageContent = {
+        type: 'image_url',
+        image_url: {
+          url: image
+        }
+      }
     }
 
     // 构建请求消息
     const messages = [{
       role: 'user',
-      content: [{
-        type: 'text',
-        text: `请详细分析这张图片，识别其中的影视作品相关信息。请按以下格式回答：
+      content: [
+        {
+          type: 'text',
+          text: `请详细分析这张图片，识别其中的影视作品相关信息。请按以下格式回答：
 
 1. 图片类型：（海报/剧照/背景图等）
 2. 主要内容：（详细描述图片中的人物、场景、文字等）
@@ -53,26 +90,23 @@ export async function POST(request: NextRequest) {
 5. 关键词：（用逗号分隔的关键词，用于搜索）
 
 请尽可能详细和准确地描述，这将用于在影视数据库中搜索匹配的作品。`
-      }, {
-        type: 'image_url',
-        image_url: {
-          url: image
-        }
-      }]
+        },
+        imageContent
+      ]
     }]
 
-    // 调用魔搭社区API
-    const response = await fetch(`${MODELSCOPE_API_BASE}/chat/completions`, {
+    // 调用模型API
+    const response = await fetch(`${apiBaseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: QWEN_VL_MODEL,
+        model: modelId,
         messages: messages,
-        max_tokens: 2000,
-        temperature: 0.7
+        max_tokens: maxTokens,
+        temperature: temperature
       })
     })
 

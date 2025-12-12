@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 const MODELSCOPE_API_BASE = "https://api-inference.modelscope.cn/v1";
+const SILICONFLOW_API_BASE = "https://api.siliconflow.cn/v1";
 
 // 将上游 SSE 原样透传给客户端，客户端解析 data: 行提取 delta
 export async function POST(request: NextRequest) {
@@ -14,14 +15,19 @@ export async function POST(request: NextRequest) {
         headers: { "Content-Type": "application/json" },
       });
     }
-    if (!apiKey.startsWith("ms-")) {
-      return new Response(
-        JSON.stringify({
-          error: "API密钥格式不正确",
-          details: "请使用魔搭社区(ModelScope)的API密钥，格式应为ms-开头",
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+
+    // 根据API密钥格式确定提供商
+    let apiBase: string;
+
+    if (apiKey.startsWith("sk-")) {
+      // SiliconFlow API密钥
+      apiBase = SILICONFLOW_API_BASE;
+    } else if (apiKey.startsWith("ms-")) {
+      // ModelScope API密钥
+      apiBase = MODELSCOPE_API_BASE;
+    } else {
+      // 兼容旧版本，如果密钥格式不明确，尝试ModelScope
+      apiBase = MODELSCOPE_API_BASE;
     }
     if (!model || !messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "缺少必要参数或消息格式错误" }), {
@@ -48,7 +54,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const upstream = await fetch(`${MODELSCOPE_API_BASE}/chat/completions`, {
+    const upstream = await fetch(`${apiBase}/chat/completions`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -68,27 +74,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 直接将上游 SSE 文本透传为 text/event-stream，便于前端逐行解析
+    // Cherry Studio风格的优化流式处理
     const stream = new ReadableStream({
       async start(controller) {
         const reader = upstream.body!.getReader();
         const encoder = new TextEncoder();
 
         try {
-          // 发送握手注释，确保浏览器尽快进入流模式
-          controller.enqueue(encoder.encode(": stream start\n\n"));
+          // 立即发送握手信号，减少延迟
+          controller.enqueue(encoder.encode(": ping\n\n"));
+          
+          let chunkBuffer = new Uint8Array(0);
+          const processChunk = (chunk: Uint8Array) => {
+            // 优化：直接透传，避免不必要的处理
+            controller.enqueue(chunk);
+          };
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            // 直接透传
-            controller.enqueue(value);
+            
+            processChunk(value);
           }
 
-          // 结束标记
+          // 发送完成信号
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         } catch (e: any) {
-          // 以 SSE 事件形式传递错误
+          // 优化错误处理
           const err = typeof e?.message === "string" ? e.message : "stream error";
           controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify(err)}\n\n`));
         } finally {
