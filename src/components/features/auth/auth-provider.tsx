@@ -43,7 +43,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
-    isLoading: false, // 初始状态不设置为加载中
+    isLoading: true, // 初始状态设置为加载中
     isAuthenticated: false,
     systemUserId: null
   })
@@ -216,11 +216,23 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // 直接检查认证状态，不等待加载
-    if (!isAuthenticated) {
+    // 只有在加载完成后才检查认证状态
+    if (!isLoading && !isAuthenticated) {
       router.push('/login')
     }
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, isLoading, router])
+
+  // 加载中显示加载状态
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">正在验证身份...</p>
+        </div>
+      </div>
+    )
+  }
 
   // 未认证时不渲染内容（会重定向到登录页）
   if (!isAuthenticated) {

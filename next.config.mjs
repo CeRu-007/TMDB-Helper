@@ -18,6 +18,32 @@ const nextConfig = {
   },
   
   webpack: (config, { isServer }) => {
+    // 优化chunk加载
+    config.optimization = {
+      ...config.optimization,
+      splitChunks: {
+        chunks: 'all',
+        cacheGroups: {
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: -10,
+            chunks: 'all',
+          },
+        },
+      },
+    }
+    
+    // 解决chunk加载问题
+    if (!isServer) {
+      config.output.publicPath = '/_next/';
+    }
+    
     return config;
   },
   

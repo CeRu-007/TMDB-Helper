@@ -8,7 +8,7 @@ import Script from "next/script";
 const inter = Inter({ 
   subsets: ["latin"],
   display: 'swap',
-  preload: false
+  preload: true
 })
 
 export const metadata: Metadata = {
