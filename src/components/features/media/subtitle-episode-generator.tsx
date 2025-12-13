@@ -444,12 +444,23 @@ export function SubtitleEpisodeGenerator({
 
   // 配置是否已初始化的标记
   const [configInitialized, setConfigInitialized] = useState(false)
+  
+  // 跟踪已输出的日志，避免重复输出
+  const loggedRef = useRef({
+    configLoading: false,
+    configSaving: false,
+    configInitialized: false
+  })
 
   // 首次从服务端加载分集生成配置与模型
   React.useEffect(() => {
     (async () => {
       try {
-        console.log('🔧 [配置加载] 开始加载配置...')
+        // 只在首次加载时输出日志
+        if (!loggedRef.current.configLoading) {
+          console.log('🔧 [配置加载] 开始加载配置...')
+          loggedRef.current.configLoading = true
+        }
         
         // 从新的模型服务系统加载场景配置
         let episodeGenerationModel = 'deepseek-ai/DeepSeek-V2.5' // 默认模型
@@ -549,7 +560,10 @@ export function SubtitleEpisodeGenerator({
         
         // 标记配置已初始化
         setConfigInitialized(true)
-        console.log('🔧 [配置加载] 配置初始化完成')
+        if (!loggedRef.current.configInitialized) {
+          console.log('🔧 [配置加载] 配置初始化完成')
+          loggedRef.current.configInitialized = true
+        }
       } catch (e) {
         console.error('🔧 [配置加载] 加载配置时出错:', e)
         setConfigInitialized(true)
@@ -561,10 +575,15 @@ export function SubtitleEpisodeGenerator({
   React.useEffect(() => {
     // 只有在配置初始化完成后才进行保存
     if (!configInitialized) {
-      console.log('🔧 [配置保存] 配置尚未初始化，跳过保存')
+      if (!loggedRef.current.configSaving) {
+        console.log('🔧 [配置保存] 配置尚未初始化，跳过保存')
+        loggedRef.current.configSaving = true
+      }
       return
     }
 
+    // 重置保存日志标记，允许后续保存时输出
+    loggedRef.current.configSaving = false
     console.log('🔧 [配置保存] 配置发生变化，准备保存:', config)
 
     // 延迟保存，避免频繁保存

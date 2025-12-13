@@ -1,11 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { cn } from '@/lib/utils'
-import { enhancedImageCache } from '@/lib/media/enhanced-image-cache'
-
-// 添加版本标识，帮助追踪更新
-const TMDB_IMAGE_DIRECT_VERSION = '1.0.0';
 
 interface BackgroundImageProps {
   src: string | undefined
@@ -21,21 +17,8 @@ interface BackgroundImageProps {
   refreshKey?: string | number
 }
 
-// 使用增强的图片缓存管理器
-const imageCache = enhancedImageCache;
-
-// 从原始URL中提取缓存键
-function getCacheKey(src: string): string {
-  if (src.includes('image.tmdb.org')) {
-    // 对于直接TMDB URL，提取路径
-    const pathMatch = src.match(/\/t\/p\/[^/]+(.+)$/);
-    return pathMatch ? `tmdb:${pathMatch[1]}` : src;
-  }
-  return src;
-}
-
 /**
- * 背景图组件，优化加载体验，实现立即显示效果
+ * 简化的背景图组件，移除缓存功能
  */
 export function BackgroundImage({
   src,
@@ -52,16 +35,6 @@ export function BackgroundImage({
 }: BackgroundImageProps) {
   const [error, setError] = useState(false)
   const [imageSrc, setImageSrc] = useState<string | undefined>(undefined)
-  
-  // 使用ref跟踪组件挂载状态，避免内存泄漏
-  const isMounted = useRef(true);
-  
-  // 组件卸载时清理
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
 
   // 根据设备屏幕宽度选择合适的图片尺寸
   useEffect(() => {
@@ -72,13 +45,6 @@ export function BackgroundImage({
 
     // 检查refreshKey是否包含时间戳信息（用于判断是否需要强制刷新）
     const shouldForceRefresh = forceRefresh || (refreshKey && String(refreshKey).includes('_') && String(refreshKey).split('_')[1]?.length > 8)
-
-    // 使用缓存键检查图片是否已经在缓存中
-    const cacheKey = getCacheKey(src);
-    if (imageCache.has(cacheKey) && !shouldForceRefresh) {
-      setImageSrc(src);
-      return;
-    }
 
     // 处理TMDB图片URL
     if (src.includes('image.tmdb.org')) {
@@ -119,34 +85,6 @@ export function BackgroundImage({
     }
   }, [src, fallbackSrc, forceRefresh, refreshKey])
 
-  // 预加载图片
-  useEffect(() => {
-    if (!imageSrc) return;
-
-    const cacheKey = getCacheKey(imageSrc);
-
-    // 检查图片是否已在缓存中
-    if (imageCache.has(cacheKey)) {
-      return;
-    }
-
-    const img = new Image();
-
-    img.onload = () => {
-      if (isMounted.current) {
-        imageCache.set(cacheKey, img);
-      }
-    };
-
-    img.onerror = () => {
-      if (isMounted.current) {
-        setError(true);
-      }
-    };
-
-    img.src = imageSrc;
-  }, [imageSrc]);
-
   // 根据模糊强度设置不同的模糊值和透明度
   const getBlurSettings = () => {
     switch(blurIntensity) {
@@ -164,12 +102,11 @@ export function BackgroundImage({
     <div className={cn("relative overflow-hidden", className)}>
       {imageSrc && !error ? (
         <>
-          {/* 高质量图片 - 立即显示，移除渐进式加载 */}
           <img
             src={imageSrc}
             alt={alt}
             className={cn(
-              "w-full h-full object-cover opacity-100", // 立即显示，移除过渡效果
+              "w-full h-full object-cover",
               "absolute inset-0"
             )}
             style={{
@@ -180,12 +117,6 @@ export function BackgroundImage({
             loading="eager"
             fetchPriority="high"
             decoding="async"
-            onLoad={() => {
-              const cacheKey = getCacheKey(imageSrc);
-              const img = new window.Image();
-              img.src = imageSrc;
-              imageCache.set(cacheKey, img);
-            }}
             onError={() => {
               setError(true);
             }}

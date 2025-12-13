@@ -157,76 +157,25 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     }
   }, [setSelectedResult, setDetailLoading, setFormData, setTmdbSeasons, setBackdropUrl, setBackdropPath])
   
-  // 处理预填充数据
+  // 处理对话框打开时的初始化
   useEffect(() => {
     if (open) {
-      // 检查localStorage中是否有预填充数据
-      const prefilledDataStr = localStorage.getItem('tmdb_prefilled_data');
-      if (prefilledDataStr) {
-        try {
-          const prefilledData = JSON.parse(prefilledDataStr);
-          
-          // 设置搜索查询为标题
-          setSearchQuery(prefilledData.title);
-          
-          // 创建一个更详细的搜索结果
-          const mockResult: TMDBSearchResult = {
-            id: Number(prefilledData.id || 0),
-            title: prefilledData.title,
-            name: prefilledData.title, // 确保TV类型也显示标题
-            media_type: prefilledData.media_type as "movie" | "tv",
-            poster_path: prefilledData.poster_path,
-            release_date: prefilledData.release_date,
-            first_air_date: prefilledData.media_type === 'tv' ? prefilledData.release_date : undefined,
-            overview: prefilledData.overview,
-            vote_average: prefilledData.vote_average,
-            original_language: prefilledData.original_language
-          };
-          
-          // 设置搜索结果
-          setSearchResults([mockResult]);
-          
-          // 设置选中结果
-          setSelectedResult(mockResult);
-          
-          // 手动获取详细信息
-          const tmdbUrl = `https://www.themoviedb.org/${mockResult.media_type}/${mockResult.id}`;
-          setDetailLoading(true);
-          
-          fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}`)
-            .then(response => response.json())
-            .then(result => {
-              const tmdbData = result.success ? result.data : null
-              if (tmdbData) {
-                // 更新表单数据
-                setFormData(prev => ({
-                  ...prev,
-                  // 只有在用户没有手动设置总集数时才使用TMDB数据
-                  totalEpisodes: isManualTotalEpisodes ? prev.totalEpisodes : (tmdbData.totalEpisodes || prev.totalEpisodes),
-                  platformUrl: prev.platformUrl || tmdbData.platformUrl || "",
-                  weekday: tmdbData.weekday !== undefined ? tmdbData.weekday : prev.weekday,
-                  category: prev.category || tmdbData.recommendedCategory || (mockResult.media_type === "movie" ? "movie" : "tv") as CategoryType
-                }));
-                
-                // 设置季数据用于预览
-                if (tmdbData.seasons) {
-                  setTmdbSeasons(tmdbData.seasons);
-                }
-              }
-            })
-            .catch(error => {
-              
-            })
-            .finally(() => {
-              setDetailLoading(false);
-              // 清除localStorage中的预填充数据
-              localStorage.removeItem('tmdb_prefilled_data');
-            });
-        } catch (error) {
-          
-          localStorage.removeItem('tmdb_prefilled_data');
-        }
-      }
+      // 重置表单状态
+      setSearchQuery("");
+      setSearchResults([]);
+      setSelectedResult(null);
+      setFormData({
+        title: "",
+        mediaType: "movie" as MediaType,
+        weekday: -1,
+        secondWeekday: -1,
+        airTime: "18:00",
+        totalEpisodes: 1,
+        platformUrl: "",
+        category: "",
+        isDailyUpdate: false
+      });
+      setIsManualTotalEpisodes(false);
     }
   }, [open]);
   

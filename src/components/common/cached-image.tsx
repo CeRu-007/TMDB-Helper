@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { enhancedImageCache } from '@/lib/media/enhanced-image-cache'
 
 interface CachedImageProps {
   src: string
@@ -16,21 +15,8 @@ interface CachedImageProps {
   fallbackElement?: React.ReactNode
 }
 
-// 使用增强的图片缓存管理器
-const imageCache = enhancedImageCache;
-
-// 从URL中提取缓存键
-function getCacheKey(src: string): string {
-  if (src.includes('image.tmdb.org')) {
-    // 对于TMDB URL，提取路径
-    const pathMatch = src.match(/\/t\/p\/[^/]+(.+)$/);
-    return pathMatch ? `tmdb:${pathMatch[1]}` : src;
-  }
-  return src;
-}
-
 /**
- * 缓存图片组件，优化加载体验，实现立即显示效果
+ * 简化的图片组件，移除缓存功能
  */
 export function CachedImage({
   src,
@@ -43,74 +29,7 @@ export function CachedImage({
   onLoad,
   fallbackElement
 }: CachedImageProps) {
-  const [loaded, setLoaded] = useState(true) // 默认为true，立即显示
   const [error, setError] = useState(false)
-  const [imageSrc, setImageSrc] = useState<string | undefined>(undefined)
-  
-  // 使用ref跟踪组件挂载状态，避免内存泄漏
-  const isMounted = useRef(true);
-  
-  // 组件卸载时清理
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // 处理图片源变化
-  useEffect(() => {
-    if (!src) {
-      setImageSrc(undefined)
-      return
-    }
-
-    // 使用缓存键检查图片是否已经在缓存中
-    const cacheKey = getCacheKey(src);
-    if (imageCache.has(cacheKey)) {
-      setImageSrc(src);
-      setLoaded(true);
-      return;
-    }
-
-    setImageSrc(src);
-    setLoaded(true); // 立即设置为已加载状态
-    setError(false);
-  }, [src])
-
-  // 预加载图片
-  useEffect(() => {
-    if (!imageSrc) return;
-
-    const cacheKey = getCacheKey(imageSrc);
-
-    // 检查图片是否已在缓存中
-    if (imageCache.has(cacheKey)) {
-      return;
-    }
-
-    const img = new Image();
-
-    img.onload = () => {
-      if (isMounted.current) {
-        imageCache.set(cacheKey, img);
-      }
-    };
-
-    img.onerror = () => {
-      if (isMounted.current) {
-        setError(true);
-      }
-    };
-
-    img.src = imageSrc;
-  }, [imageSrc]);
-
-  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    const cacheKey = getCacheKey(imageSrc || '');
-    const img = e.target as HTMLImageElement;
-    imageCache.set(cacheKey, img);
-    onLoad?.(e);
-  };
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setError(true);
@@ -121,22 +40,15 @@ export function CachedImage({
     return <>{fallbackElement}</>;
   }
 
-  if (!imageSrc) {
-    return null;
-  }
-
   return (
     <img
-      src={imageSrc}
+      src={src}
       alt={alt}
-      className={cn(
-        "opacity-100", // 始终显示，移除过渡效果
-        className
-      )}
+      className={cn(className)}
       style={style}
       loading={loading}
       decoding={decoding}
-      onLoad={handleLoad}
+      onLoad={onLoad}
       onError={handleError}
     />
   );

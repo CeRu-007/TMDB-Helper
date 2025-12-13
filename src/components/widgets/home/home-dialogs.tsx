@@ -44,6 +44,7 @@ export function HomeDialogs({ homeState }: HomeDialogsProps) {
       <SettingsDialog
         open={homeState.showSettingsDialog}
         onOpenChange={homeState.setShowSettingsDialog}
+        initialSection="api"
       />
 
       {/* 词条详情对话框 */}

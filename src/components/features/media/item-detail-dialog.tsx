@@ -1674,15 +1674,20 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             const backgroundImageUrl = localItem.backdropUrl || localItem.posterUrl;
             const isUsingPoster = !localItem.backdropUrl && localItem.posterUrl;
 
-            // 调试日志：显示背景图使用情况
-            if (backgroundImageUrl) {
-              console.log("🖼️ [词条详情] 背景图信息:", {
-                title: localItem.title,
-                hasBackdrop: !!localItem.backdropUrl,
-                hasPoster: !!localItem.posterUrl,
-                isUsingPoster,
-                backgroundImageUrl: backgroundImageUrl.substring(0, 50) + "..."
-              });
+            // 调试日志：显示背景图使用情况（只在首次加载时输出）
+            if (backgroundImageUrl && typeof window !== 'undefined') {
+              // 使用localItem.id作为唯一标识符
+              const logKey = `bg-image-logged-${localItem.id}`
+              if (!sessionStorage.getItem(logKey)) {
+                console.log("🖼️ [词条详情] 背景图信息:", {
+                  title: localItem.title,
+                  hasBackdrop: !!localItem.backdropUrl,
+                  hasPoster: !!localItem.posterUrl,
+                  isUsingPoster,
+                  backgroundImageUrl: backgroundImageUrl.substring(0, 50) + "..."
+                });
+                sessionStorage.setItem(logKey, 'true')
+              }
             }
 
             return backgroundImageUrl ? (
@@ -2681,20 +2686,18 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
                 {/* 集成工具标签内容 */}
                 <TabsContent value="integration" className="transition-opacity duration-300 ease-in-out flex-1 min-h-0">
-                  <ScrollArea className="h-full">
-                    <div className="pr-2 w-full overflow-hidden min-w-0 max-w-full">
-                      <TMDBImportIntegrationDialog
-                        open={true}
-                        onOpenChange={() => {}}
-                        item={localItem}
-                        onItemUpdate={(updatedItem) => {
-                          setLocalItem(updatedItem)
-                          onUpdate(updatedItem)
-                        }}
-                        inTab={true}
-                      />
-                    </div>
-                  </ScrollArea>
+                  <div className="pr-2 w-full h-full overflow-hidden min-w-0 max-w-full">
+                    <TMDBImportIntegrationDialog
+                      open={true}
+                      onOpenChange={() => {}}
+                      item={localItem}
+                      onItemUpdate={(updatedItem) => {
+                        setLocalItem(updatedItem)
+                        onUpdate(updatedItem)
+                      }}
+                      inTab={true}
+                    />
+                  </div>
                 </TabsContent>
               </Tabs>
               </div>

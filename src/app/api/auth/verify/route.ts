@@ -14,11 +14,25 @@ export async function GET(request: NextRequest) {
 
     // 如果是桌面应用，直接返回认证成功
     if (isElectron) {
-      
-      // 确保管理员用户存在
+      // 同步初始化，避免异步等待
       if (!AuthManager.hasAdminUser()) {
-        
-        await AuthManager.initializeFromEnv();
+        // 使用同步方式创建默认用户，避免异步等待
+        try {
+          require('fs').mkdirSync(require('path').join(process.cwd(), 'data', 'auth'), { recursive: true });
+          const authFile = require('path').join(process.cwd(), 'data', 'auth', 'admin.json');
+          if (!require('fs').existsSync(authFile)) {
+            const defaultUser = {
+              id: 'admin',
+              username: 'admin',
+              passwordHash: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6QJw/2Ej7W', // admin
+              createdAt: new Date().toISOString(),
+              sessionExpiryDays: 15
+            };
+            require('fs').writeFileSync(authFile, JSON.stringify(defaultUser, null, 2));
+          }
+        } catch (error) {
+          // 如果同步创建失败，继续使用空用户
+        }
       }
 
       const adminUser = AuthManager.getAdminUser();

@@ -19,6 +19,7 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/common/card"
+import { ScrollArea } from "@/components/common/scroll-area"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
 import { Label } from "@/components/common/label"
@@ -2740,7 +2741,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
           value="process"
           className="h-full overflow-hidden p-0 m-0 bg-transparent"
         >
-          <div className="p-4 h-full overflow-y-auto space-y-4 max-w-full min-w-0">
+          <ScrollArea className="h-full w-full">
+            <div className="p-4 space-y-4 max-w-full min-w-0">
             {/* TMDB导入命令区域 */}
               <Card variant="frosted" className="w-full min-w-0 overflow-hidden">
               <CardHeader className="pb-2">
@@ -3003,7 +3005,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 )}
               </CardContent>
             </Card>
-                            </div>
+            </div>
+          </ScrollArea>
         </TabsContent>
 
         {/* 编辑标签内容 */}

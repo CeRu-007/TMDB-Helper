@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/common/dialog"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
@@ -115,21 +115,32 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const { updateScenario } = useModelService()
   
   // 确保 activeSection 始终有效且为字符串类型
-  const validSections = ['api', 'model-service', 'tools', 'video-thumbnail', 'general', 'appearance', 'security', 'help']
-  const validInitialSection = initialSection && 
+  const validSections = useMemo(() => ['api', 'model-service', 'tools', 'video-thumbnail', 'general', 'appearance', 'security', 'help'], [])
+  const validInitialSection = useMemo(() => 
+    initialSection && 
     typeof initialSection === 'string' && 
     validSections.includes(initialSection) 
     ? initialSection 
-    : 'api'
+    : 'api', [initialSection, validSections])
   
-  console.log('🚀 [DEBUG] SettingsDialog 初始化:', { 
-    initialSection, 
-    initialSectionType: typeof initialSection,
-    validInitialSection,
-    validSections,
-    open 
-  })
+  // 只在开发环境且组件首次挂载时输出日志
+  if (process.env.NODE_ENV === 'development') {
+    const isFirstRender = useRef(true)
+    if (isFirstRender.current) {
+      console.log('🚀 [DEBUG] SettingsDialog 初始化:', { 
+        initialSection, 
+        initialSectionType: typeof initialSection,
+        validInitialSection,
+        validSections,
+        open 
+      })
+      isFirstRender.current = false
+    }
+  }
   
+  // 跟踪是否首次渲染，避免重复日志
+  const isFirstRenderRef = useRef(true)
+
   const [activeSection, setActiveSection] = useState<string>(validInitialSection)
   const [activeToolTab, setActiveToolTab] = useState<'management' | 'config' | 'dependencies'>('management')
 
@@ -167,6 +178,18 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+
+  // 只在开发环境且组件首次挂载时输出日志
+  if (process.env.NODE_ENV === 'development' && isFirstRenderRef.current) {
+    console.log('🚀 [DEBUG] SettingsDialog 初始化:', { 
+      initialSection, 
+      initialSectionType: typeof initialSection,
+      validInitialSection,
+      validSections,
+      open 
+    })
+    isFirstRenderRef.current = false
+  }
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordChangeLoading, setPasswordChangeLoading] = useState(false)
@@ -679,11 +702,14 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // 监听initialSection变化，当对话框打开时设置活动页面
   useEffect(() => {
     if (open && initialSection && typeof initialSection === 'string') {
-      console.log('🔄 [DEBUG] useEffect设置activeSection:', {
-        initialSection,
-        type: typeof initialSection,
-        isValidSection: validSections.includes(initialSection)
-      })
+      // 只在开发环境且section实际有效时输出日志
+      if (process.env.NODE_ENV === 'development' && validSections.includes(initialSection)) {
+        console.log('🔄 [DEBUG] useEffect设置activeSection:', {
+          initialSection,
+          type: typeof initialSection,
+          isValidSection: validSections.includes(initialSection)
+        })
+      }
       
       // 确保只设置有效的section
       if (validSections.includes(initialSection)) {

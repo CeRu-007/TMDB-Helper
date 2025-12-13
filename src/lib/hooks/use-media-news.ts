@@ -5,6 +5,7 @@ import { log } from '@/lib/utils/logger'
 import { handleError, retryOperation } from '@/lib/utils/error-handler'
 import { perf } from '@/lib/utils/performance-manager'
 import { ClientConfigManager } from '@/lib/utils/client-config-manager'
+import { REGIONS } from '@/lib/constants/regions'
 
 interface MediaNewsItem {
   id: string
@@ -34,15 +35,6 @@ interface UseMediaNewsReturn {
   refreshData: () => Promise<void>
 }
 
-const REGIONS = [
-  { id: "CN", name: "中国大陆" },
-  { id: "HK", name: "香港" },
-  { id: "TW", name: "台湾" },
-  { id: "JP", name: "日本" },
-  { id: "KR", name: "韩国" },
-  { id: "US", name: "美国" },
-  { id: "GB", name: "英国" },
-]
 
 export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn {
   const [upcomingItems, setUpcomingItems] = useState<MediaNewsItem[]>([])

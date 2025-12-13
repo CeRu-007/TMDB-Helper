@@ -41,7 +41,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       devTools: isDev, // 只在开发环境启用
       webSecurity: !isDev, // 生产环境启用web安全
-      backgroundThrottling: false, // 禁用后台节流以提高性能
+      backgroundThrottling: true, // 启用后台节流以节省内存
       spellcheck: false, // 禁用拼写检查
       enableWebSQL: false, // 禁用WebSQL
       experimentalFeatures: false, // 禁用实验性功能
@@ -214,6 +214,15 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+  
+  // 添加定期垃圾回收（仅生产环境）
+  if (!isDev) {
+    setInterval(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.executeJavaScript('if (window.gc) window.gc()');
+      }
+    }, 300000); // 每5分钟执行一次垃圾回收
+  }
 }
 
 // 启动 Next.js 服务器
@@ -484,11 +493,17 @@ app.whenReady().then(async () => {
       // 禁用硬件加速（如果遇到GPU问题）
       // app.disableHardwareAcceleration();
 
-      // 限制子进程数量
-      app.commandLine.appendSwitch('max_old_space_size', '512'); // 限制V8内存
-      app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512');
-
+      // 降低内存限制到256MB
+      app.commandLine.appendSwitch('max_old_space_size', '256');
+      app.commandLine.appendSwitch('js-flags', '--max-old-space-size=256');
+      
+      // 添加垃圾回收优化
+      app.commandLine.appendSwitch('expose-gc'); // 暴露垃圾回收
+      app.commandLine.appendSwitch('optimize-for-size'); // 优化内存占用
+      
       // 禁用不必要的功能
+      app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor');
+      app.commandLine.appendSwitch('disable-gpu'); // 如果不需要GPU加速
       app.commandLine.appendSwitch('disable-background-timer-throttling');
       app.commandLine.appendSwitch('disable-renderer-backgrounding');
       app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');

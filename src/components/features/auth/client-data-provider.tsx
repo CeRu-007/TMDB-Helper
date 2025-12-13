@@ -36,7 +36,7 @@ export function useData() {
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<TMDBItem[]>([]) // 项目数据
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // 保留状态但不使用
   const [error, setError] = useState<string | null>(null)
   const [initialized, setInitialized] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
@@ -47,7 +47,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const loadData = async () => {
     if (!isClient) return
     
-    setLoading(true)
     setError(null)
     
     try {
@@ -58,8 +57,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       
       setError("加载数据失败，请刷新页面重试")
-    } finally {
-      setLoading(false)
     }
   }
 

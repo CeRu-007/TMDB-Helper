@@ -5,7 +5,6 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeHighlight from "rehype-highlight"
 import remarkBreaks from "remark-breaks"
-import "highlight.js/styles/github.css"
 
 interface MarkdownProps {
   children: string

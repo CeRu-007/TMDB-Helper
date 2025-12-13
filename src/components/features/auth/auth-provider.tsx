@@ -54,6 +54,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * 检查认证状态
    */
   const checkAuth = async () => {
+    // 检查是否是桌面应用环境
+    const isElectron = typeof window !== 'undefined' && (
+      navigator.userAgent.includes('Electron') ||
+      navigator.userAgent.includes('TMDB-Helper-Electron') ||
+      process.env.ELECTRON_BUILD === 'true'
+    );
+
+    // 桌面应用环境下直接设置为已认证状态
+    if (isElectron) {
+      setAuthState({
+        user: {
+          id: 'admin',
+          username: 'admin',
+          lastLoginAt: new Date().toISOString()
+        },
+        isLoading: false,
+        isAuthenticated: true,
+        systemUserId: 'user_admin_system'
+      });
+      return;
+    }
+
+    // 非桌面应用环境下进行正常的认证验证
     try {
       const response = await fetch('/api/auth/verify', {
         method: 'GET',
