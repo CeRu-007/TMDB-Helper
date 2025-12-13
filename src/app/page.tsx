@@ -73,9 +73,7 @@ export default function HomePage() {
   const [mediaNewsType, setMediaNewsType] = useState<'upcoming' | 'recent'>('upcoming')
   const mediaNews = useMediaNews(selectedRegion)
 
-  // 定时任务相关
-  const taskScheduler = require("@/lib/data/scheduler").taskScheduler
-  const StorageManager = require("@/lib/data/storage").StorageManager
+  
 
   // 使用增强的数据提供者获取数据和方法
   const {
@@ -106,35 +104,7 @@ export default function HomePage() {
   const filteredOngoingCount = filteredOngoingItems.length
   const filteredCompletedCount = filteredCompletedItems.length
 
-  // 监控正在运行的任务 - 延迟初始化
-  useEffect(() => {
-    if (!isClientEnv) return
 
-    // 延迟5秒后再开始监控任务，避免影响页面初始加载
-    const initTimer = setTimeout(() => {
-      const updateRunningTasks = async () => {
-        try {
-          const allTasks = await StorageManager.getScheduledTasks()
-          const running = allTasks.filter((task: any) =>
-            task.isRunning || taskScheduler.isTaskRunning(task.id)
-          )
-          homeState.setRunningTasks(running)
-        } catch (error) {
-          console.error('更新运行中任务失败:', error)
-        }
-      }
-
-      // 初始加载
-      updateRunningTasks()
-
-      // 每30秒检查一次正在运行的任务
-      const interval = setInterval(updateRunningTasks, 30000)
-
-      return () => clearInterval(interval)
-    }, 5000)
-
-    return () => clearTimeout(initTimer)
-  }, [isClientEnv])
 
   // 获取最终筛选后的词条
   const getFinalFilteredItems = (items: any[]) => {
@@ -153,9 +123,8 @@ export default function HomePage() {
     }
 
     return (
-      <div className="container mx-auto p-4 max-w-7xl">
-        <Tabs value={homeState.activeTab} onValueChange={homeState.setActiveTab} className="w-full">
-
+        <div className="w-full h-full">
+          <Tabs value={homeState.activeTab} onValueChange={homeState.setActiveTab} className="w-full h-full overflow-hidden">
           <TabsContent value="ongoing">
             <WeekdayNavigation
               selectedDayFilter={homeState.selectedDayFilter}
@@ -167,7 +136,7 @@ export default function HomePage() {
               onActiveTabChange={homeState.setActiveTab}
               currentDay={currentDay}
             />
-            <div className="mt-6">
+            <div className="mt-6 overflow-y-auto">
               <div className="grid grid-cols-6 gap-6">
                 {getFinalFilteredItems(ongoingItems).map((item) => (
                   <div key={item.id} className="transform scale-[0.98] origin-top-left">
@@ -213,7 +182,7 @@ export default function HomePage() {
               onActiveTabChange={homeState.setActiveTab}
               currentDay={currentDay}
             />
-            <div className="mt-6">
+            <div className="mt-6 overflow-y-auto">
               <div className="grid grid-cols-6 gap-6">
                 {getFinalFilteredItems(completedItems).map((item) => (
                   <div key={item.id} className="transform scale-[0.98] origin-top-left">
@@ -243,7 +212,7 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="upcoming">
-            <div className="flex flex-row justify-between items-center mb-6">
+            <div className="flex flex-row justify-between items-center mb-4 overflow-y-auto max-h-[calc(100vh-250px)]">
               <div className="flex items-center mb-0">
                 <div className="relative mr-3">
                   <div className="absolute inset-0 bg-blue-500 blur-md opacity-20 rounded-full"></div>
@@ -298,7 +267,7 @@ export default function HomePage() {
               items={items}
             />
 
-            <div>
+            <div className="overflow-y-auto">
               {/* 影视资讯内容渲染... */}
               {mediaNewsType === 'upcoming' ? (
                 mediaNews.loadingUpcoming ? (
@@ -340,7 +309,7 @@ export default function HomePage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-6 gap-6">
+                  <div className="grid grid-cols-6 gap-6 overflow-y-auto max-h-[calc(100vh-350px)]">
                     {mediaNews.upcomingItems
                       .filter(upcomingItem =>
                         !items.some(item =>
@@ -383,7 +352,7 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="content-generation">
-            <div className="h-[calc(100vh-200px)]">
+            <div className="min-h-0">
               <SubtitleEpisodeGenerator
                 onOpenGlobalSettings={(section) => {
                   homeState.setSettingsInitialSection(section)
@@ -397,17 +366,17 @@ export default function HomePage() {
             <Tabs defaultValue="extract" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="extract">分集图片提取</TabsTrigger>
-                <TabsTrigger value="crop">分集图片裁切</TabsTrigger>
+                <TabsTrigger value="crop">海报背景裁切</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="extract" className="mt-6">
+              <TabsContent value="extract" className="mt-4">
                 <VideoThumbnailExtractor onOpenGlobalSettings={(section) => {
                   homeState.setSettingsInitialSection(section)
                   homeState.setShowSettingsDialog(true)
                 }} />
               </TabsContent>
 
-              <TabsContent value="crop" className="mt-6">
+              <TabsContent value="crop" className="min-h-0">
                 <ImageCropper />
               </TabsContent>
             </Tabs>
@@ -501,7 +470,7 @@ export default function HomePage() {
         WeekdayNavigation={() => <div>WeekdayNavigation</div>}
       >
         {/* 词条维护内容 */}
-        <div id="main-content-container" className="relative">
+        <div id="main-content-container" className="relative min-h-0">
           {renderContent()}
         </div>
       </SidebarLayout>

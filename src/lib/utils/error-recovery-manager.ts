@@ -225,7 +225,7 @@ class ErrorRecoveryManager {
 
         case 'sync':
           // 重新发送同步请求
-          if (errorContext.context?.event) {
+          if (errorContext.context?.event && typeof errorContext.context.event === 'object') {
             await realtimeSyncManager.notifyDataChange(errorContext.context.event)
             return true
           }

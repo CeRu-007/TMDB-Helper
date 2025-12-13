@@ -11,67 +11,30 @@ const nextConfig = {
   // 启用 App Router 优化
   serverExternalPackages: ['sharp', 'canvas'],
   
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
   
   images: {
     unoptimized: process.env.STATIC_EXPORT === 'true' || process.env.ELECTRON_BUILD === 'true',
-    domains: ['image.tmdb.org'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'image.tmdb.org',
+        pathname: '/**',
+      },
+    ],
   },
   
-  webpack: (config, { isServer, dev }) => {
-    // 开发环境性能优化
-    if (dev) {
-      // 开发环境文件监听优化
-      config.watchOptions = {
-        ignored: /node_modules/,
-        aggregateTimeout: 200, // 减少到200ms
-        poll: false
-      }
-
-      // 开发环境禁用压缩和优化
-      if (isServer) {
-        config.optimization.minimize = false
-        config.optimization.concatenateModules = false
-      }
-      
-      // 客户端也禁用一些优化
-      if (!isServer) {
-        config.optimization.minimize = false
-        config.optimization.splitChunks = {
-          chunks: 'all',
-          minSize: 20000,
-          maxSize: 244000,
-        }
-      }
-      
-      // 减少解析开销
-      config.resolve.symlinks = false
-    }
-    
-    // 生产环境优化
-    if (!dev) {
-      config.optimization.usedExports = true;
-      config.optimization.sideEffects = false;
-    }
-    
-    // 解决chunk加载问题
-    if (!isServer) {
-      config.output.publicPath = '/_next/';
-    }
-    
-    return config;
-  },
+  // 移除 webpack 配置，使用 Turbopack
+  // 添加空的 turbopack 配置以修复构建错误
+  turbopack: {},
   
+  // 编译器配置
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn'],
     } : false,
-    // 开发环境也移除部分 console
     emotion: true,
   },
 }

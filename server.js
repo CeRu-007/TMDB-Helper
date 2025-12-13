@@ -60,17 +60,17 @@ app.prepare().then(() => {
       // 处理页面路由
       await handle(req, res, parsedUrl);
     } catch (err) {
-      
+      console.error('Server error:', err);
       res.statusCode = 500;
       res.end('Internal Server Error');
     }
   })
   .once('error', (err) => {
-    
+    console.error('Server startup error:', err);
     process.exit(1);
   })
   .listen(port, () => {
-
+    console.log(`> Ready on http://${hostname}:${port}`);
     console.log('ready'); // Electron 主进程会监听这个输出
   });
 });

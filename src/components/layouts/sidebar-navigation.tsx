@@ -96,7 +96,7 @@ const menuItems: MenuItem[] = [
     icon: <Image className="h-4 w-4" />,
     submenu: [
       { id: "extract", label: "分集图片提取", icon: <Download className="h-3 w-3" /> },
-      { id: "crop", label: "分集图片裁切", icon: <Scissors className="h-3 w-3" /> }
+      { id: "crop", label: "海报背景裁切", icon: <Scissors className="h-3 w-3" /> }
     ]
   }
 ]

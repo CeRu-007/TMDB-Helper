@@ -388,7 +388,7 @@ export function SidebarLayout({
   // 渲染词条维护内容
   const renderMaintenanceContent = (categoryId: string) => {
     return (
-      <div className="max-w-7xl mx-auto px-8 py-4">
+      <div className="max-w-7xl mx-auto px-8 py-4 h-full overflow-y-auto">
         {/* 内容展示区域 - 保持与原始布局一致的容器样式 */}
         <div
           onClick={(e) => {
@@ -944,7 +944,11 @@ export function SidebarLayout({
 
       case 'thumbnails-crop':
         // 显示图片裁切内容
-        return <ImageCropper />
+        return (
+          <div className="h-full w-full overflow-hidden">
+            <ImageCropper />
+          </div>
+        )
 
       // 编辑指南页面
       case 'tmdb-guide':
@@ -1073,25 +1077,16 @@ export function SidebarLayout({
 
         {/* 主内容区域 - 桌面端避免被侧边栏遮挡 */}
         <main className={`flex-1 overflow-hidden `}>
-          {/* 根据页面类型决定是否使用滚动容器 */}
-          {contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'image-recognition-recognize' || contentKey === 'maintenance-independent' || contentKey === 'item-detail' ? (
-            // 缩略图相关页面、图像识别页面、独立维护页面和词条详情页面：提供固定高度容器，让组件内部处理滚动
-            <div className="h-full overflow-hidden">
-              <div
-                id="main-content-container"
-                className="h-full overflow-hidden relative"
-              >
-                {renderContent()}
-              </div>
-            </div>
-          ) : (
-            // 其他页面（词条维护、影视资讯等）：使用标准滚动容器
-            <div className="h-full overflow-hidden">
-              <div className="h-full overflow-y-auto">
-                {renderContent()}
-              </div>
-            </div>
-          )}
+          <div
+            id="main-content-container"
+            className={`h-full relative ${
+              contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'item-detail'
+                ? 'overflow-hidden'
+                : 'overflow-y-auto'
+            }`}
+          >
+            {renderContent()}
+          </div>
         </main>
       </div>
     </div>
