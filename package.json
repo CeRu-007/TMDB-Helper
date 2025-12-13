@@ -94,7 +94,7 @@
     "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
     "lucide-react": "^0.522.0",
-    "next": "15.2.4",
+    "next": "15.2.8",
     "next-themes": "0.3.0",
     "papaparse": "^5.5.3",
     "rc-util": "^5.38.1",
