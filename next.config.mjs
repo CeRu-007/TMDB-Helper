@@ -6,18 +6,7 @@ const nextConfig = {
   // 开发环境快速启动优化
   experimental: {
     optimizePackageImports: ['lucide-react'],
-    // 启用并行构建
-    parallelServerBuildTraces: true,
-    parallelServerCompiles: true,
   },
-  
-  // 开发环境优化
-  devIndicators: {
-    buildActivity: false, // 禁用构建活动指示器
-  },
-  
-  // 减少编译开销
-  swcMinify: true,
   
   // 启用 App Router 优化
   serverExternalPackages: ['sharp', 'canvas'],

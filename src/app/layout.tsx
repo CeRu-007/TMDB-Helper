@@ -29,14 +29,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/tmdb-helper-logo.png" type="image/png" />
-        <link rel="shortcut icon" href="/tmdb-helper-logo.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/tmdb-helper-logo.png" />
-      </head>
       <body className={inter.className}>
         <MidLayout>{children}</MidLayout>
-</body>
+      </body>
     </html>
   )
 }
