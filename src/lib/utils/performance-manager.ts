@@ -180,7 +180,6 @@ class PerformanceManager {
   endTiming(label: string): number {
     const startTime = this.timers.get(label)
     if (!startTime) {
-      log.warn('PerformanceManager', `未找到计时器: ${label}`)
       return 0
     }
 
