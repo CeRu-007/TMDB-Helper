@@ -47,8 +47,8 @@ TMDB-Import-master/
 .kiro/
 .codebuddy/
 
-# Local data files
-data/
+# Local data files (only root directory)
+/data/
 
 # Prisma generated files
 lib/generated/
