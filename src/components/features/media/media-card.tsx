@@ -125,39 +125,39 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
             <>
               {/* 电视剧和短剧显示每日更新标签和播出时间标签 */}
               {isDailyUpdate ? (
-                <>
                 <Badge className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap">
                   <Zap className="h-3 w-3 mr-1 animate-pulse" />
-                  每日更新
+                  每日 {getTimeOnly()}
                 </Badge>
-                  <Badge className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap">
-                    {getTimeOnly()}
-                  </Badge>
-                </>
               ) : (
-                <>
-                  {/* 主要播出日标签 */}
-                  <Badge
-                    className={`text-white text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                      // 如果是今天的播出日，使用特殊颜色
-                      item.weekday === new Date().getDay() ? "bg-red-500 animate-pulse" : "bg-green-500"
-                    }`}
-                  >
-                    {getAirTime(item.weekday)}
-                  </Badge>
-
-                  {/* 第二播出日标签（如果有） */}
-                  {hasSecondWeekday && (
-                    <Badge
-                      className={`text-white text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                        // 如果是今天的播出日，使用特殊颜色
-                        item.secondWeekday === new Date().getDay() ? "bg-red-500 animate-pulse" : "bg-blue-500"
-                      }`}
-                    >
-                      {getAirTime(item.secondWeekday as number)}
-                    </Badge>
-                  )}
-                </>
+                // 合并显示所有播出日
+                <Badge
+                  className={`text-white text-xs px-2 py-1 rounded-full whitespace-nowrap ${
+                    // 如果任何一个播出日是今天，使用特殊颜色
+                    (item.weekday === new Date().getDay() || (hasSecondWeekday && item.secondWeekday === new Date().getDay()))
+                      ? "bg-red-500 animate-pulse" 
+                      : "bg-green-500"
+                  }`}
+                >
+                  {/* 获取所有播出日的星期几（不包含时间） */}
+                  {(() => {
+                    const airTime = item.airTime || "19:00";
+                    const weekdays = [];
+                    
+                    // 处理主要播出日
+                    const adjustedWeekday1 = item.weekday === 0 ? 6 : item.weekday - 1;
+                    weekdays.push(WEEKDAYS[adjustedWeekday1]);
+                    
+                    // 处理第二播出日
+                    if (hasSecondWeekday) {
+                      const adjustedWeekday2 = item.secondWeekday === 0 ? 6 : (item.secondWeekday as number) - 1;
+                      weekdays.push(WEEKDAYS[adjustedWeekday2]);
+                    }
+                    
+                    // 返回合并后的字符串
+                    return `${weekdays.join('')} ${airTime}`;
+                  })()}
+                </Badge>
               )}
             </>
           )}
