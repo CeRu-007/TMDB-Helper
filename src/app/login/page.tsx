@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useAuth } from '@/components/features/auth/auth-provider'
 import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import { saveRemember, loadRemember, clearRemember } from '@/lib/auth/secure-remember'
@@ -9,7 +10,6 @@ import { Button } from '@/components/common/button'
 import { Input } from '@/components/common/input'
 import { Label } from '@/components/common/label'
 import { Checkbox } from '@/components/common/checkbox'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common/card'
 import { Alert, AlertDescription } from '@/components/common/alert'
 import {
   Eye,
@@ -18,26 +18,28 @@ import {
   User,
   AlertCircle,
   Film,
-  Database,
-  Play,
-  Clapperboard,
-  Circle,
-  Square
+  LogIn
 } from 'lucide-react'
 
-/**
- * 登录页面组件
- */
 export default function LoginPage() {
   const [username, setUsername] = useState('')
-  // 记住我：记录最近一次登录的用户名
+  const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [isInitializing, setIsInitializing] = useState(true)
+
+  const { login, isAuthenticated } = useAuth()
+  const router = useRouter()
+
   useEffect(() => {
     (async () => {
       const savedUser = await ClientConfigManager.getItem('last_login_username')
       if (savedUser) setUsername(savedUser)
     })()
   }, [])
-  // 恢复“记住我”勾选状态
+
   useEffect(() => {
     (async () => {
       const remember = await ClientConfigManager.getItem('last_login_remember_me')
@@ -45,7 +47,6 @@ export default function LoginPage() {
     })()
   }, [])
 
-  // 从本地安全存储恢复用户名/密码/勾选
   useEffect(() => {
     (async () => {
       const r = await loadRemember()
@@ -55,19 +56,6 @@ export default function LoginPage() {
     })()
   }, [])
 
-  const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [isInitializing, setIsInitializing] = useState(true)
-
-  const { login, isAuthenticated, checkAuth } = useAuth()
-  const router = useRouter()
-
-  /**
-   * 检查认证系统初始化状态
-   */
   useEffect(() => {
     const checkInitialization = async () => {
       try {
@@ -75,7 +63,6 @@ export default function LoginPage() {
         const data = await response.json()
 
         if (!data.initialized) {
-          // 自动初始化认证系统
           await fetch('/api/auth/init', { method: 'POST' })
         }
       } catch (error) {
@@ -88,18 +75,12 @@ export default function LoginPage() {
     checkInitialization()
   }, [])
 
-  /**
-   * 如果已认证，重定向到主页
-   */
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/')
     }
   }, [isAuthenticated, router])
 
-  /**
-   * 处理登录表单提交
-   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -109,7 +90,6 @@ export default function LoginPage() {
       const success = await login(username, password, rememberMe)
 
       if (success) {
-        // 成功后按勾选状态记录/清除本地加密密码（不阻塞登录流程）
         try {
           if (rememberMe) {
             void saveRemember(username, password, true)
@@ -122,278 +102,183 @@ export default function LoginPage() {
         setError('用户名或密码错误')
       }
     } catch (error) {
-      setError('登录失败，请稍后重试')
+      setError('登录失败,请稍后重试')
     } finally {
       setIsLoading(false)
     }
   }
 
-  // 初始化中显示加载状态
   if (isInitializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">正在初始化系统...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/30 border-t-primary mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400 text-lg font-medium">正在初始化系统...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* 动态背景 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-        {/* 电影胶片装饰 */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10">
-          <div className="absolute top-10 left-10 w-8 h-8 border-2 border-white rounded-full film-hole"></div>
-          <div className="absolute top-20 left-16 w-6 h-6 border-2 border-white rounded-full film-hole"></div>
-          <div className="absolute top-32 left-8 w-4 h-4 border-2 border-white rounded-full film-hole"></div>
-          <div className="absolute bottom-20 right-10 w-8 h-8 border-2 border-white rounded-full film-hole"></div>
-          <div className="absolute bottom-32 right-16 w-6 h-6 border-2 border-white rounded-full film-hole"></div>
-          <div className="absolute bottom-44 right-8 w-4 h-4 border-2 border-white rounded-full film-hole"></div>
-        </div>
-
-        {/* 数据流动效果 */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent data-flow"></div>
-          <div className="absolute top-2/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent data-flow"></div>
-          <div className="absolute top-3/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent data-flow"></div>
-        </div>
-
-        {/* 背景粒子效果 */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="particle"></div>
-          <div className="particle"></div>
-          <div className="particle"></div>
-          <div className="particle"></div>
-          <div className="particle"></div>
-          <div className="particle"></div>
-          <div className="particle"></div>
-          <div className="particle"></div>
-          <div className="particle"></div>
-        </div>
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      {/* 背景装饰 */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
       </div>
 
-      {/* 主要内容 */}
+      {/* 网格背景 */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+
+      {/* 主内容 */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+        <div className="w-full max-w-md">
+          {/* Logo和标题 */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl mb-4 overflow-hidden">
+              <Image 
+                src="/images/tmdb-helper-logo-new.png" 
+                alt="TMDB Helper Logo" 
+                width={64} 
+                height={64}
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <h1 className="text-2xl font-light tracking-wide text-slate-800 dark:text-slate-100 mb-2">
+              TMDB Helper
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              影视数据维护助手
+            </p>
+          </div>
 
-          {/* 左侧：品牌展示区域 */}
-          <div className="hidden lg:block text-white space-y-8">
-            {/* 主标题 */}
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-4xl font-bold gradient-text">
-                  TMDB Helper
-                </h1>
-                <p className="text-xl text-blue-200 font-medium">
-                  您的专属TMDB词条管理助手
-                </p>
-              </div>
-
-              <p className="text-lg text-gray-300 leading-relaxed">
-                专业的影视数据库管理工具，让您轻松追踪、维护和管理您关注的电影与电视剧词条信息。
+          {/* 登录卡片 */}
+          <div className="glass-card rounded-2xl p-8 shadow-xl">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-1">
+                欢迎回来
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                输入您的凭据以访问您的账户
               </p>
             </div>
 
-            {/* 功能特色展示 */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="feature-card flex items-center space-x-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                  <Film className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">影视追踪</h3>
-                  <p className="text-sm text-gray-300">实时跟踪维护影视</p>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* 错误提示 */}
+              {error && (
+                <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                  <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <AlertDescription className="text-red-600 dark:text-red-400">{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* 用户名 */}
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 text-sm font-medium">
+                  用户名
+                </Label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10 pointer-events-none">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="请输入用户名"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="pl-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
+                    required
+                    disabled={isLoading}
+                  />
                 </div>
               </div>
 
-              <div className="feature-card flex items-center space-x-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                  <Database className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">数据管理</h3>
-                  <p className="text-sm text-gray-300">词条信息维护</p>
+              {/* 密码 */}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 text-sm font-medium">
+                  密码
+                </Label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10 pointer-events-none">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="请输入密码"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
+                    required
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors z-10"
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
 
-              <div className="feature-card flex items-center space-x-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                  <Play className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">定时任务</h3>
-                  <p className="text-sm text-gray-300">自动化数据处理</p>
-                </div>
+              {/* 记住我 */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onCheckedChange={async (checked) => {
+                    const v = Boolean(checked)
+                    setRememberMe(v)
+                    await ClientConfigManager.setItem('last_login_remember_me', v ? '1' : '0')
+                    if (!v) {
+                      clearRemember()
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="border-slate-300 dark:border-slate-600 data-[state=checked]:bg-slate-900 dark:data-[state=checked]:bg-slate-100 data-[state=checked]:border-slate-900 dark:data-[state=checked]:border-slate-100 focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+                <Label htmlFor="rememberMe" className="text-slate-600 dark:text-slate-400 text-sm cursor-pointer">
+                  记住登录状态
+                </Label>
               </div>
 
-              <div className="feature-card flex items-center space-x-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                  <Clapperboard className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">批量处理</h3>
-                  <p className="text-sm text-gray-300">高效数据操作</p>
-                </div>
-              </div>
+              {/* 登录按钮 */}
+              <Button
+                type="submit"
+                className="w-full h-11 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-medium transition-colors focus-visible:ring-0 focus-visible:ring-offset-0"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white dark:border-slate-900/30 dark:border-t-slate-900 mr-2"></div>
+                    正在登录...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="h-5 w-5 mr-2" />
+                    登录
+                  </>
+                )}
+              </Button>
+            </form>
+
+            {/* 底部提示 */}
+            <div className="mt-6 text-center">
+              <p className="text-slate-500 dark:text-slate-400 text-xs flex items-center justify-center gap-1">
+                <Film className="h-3 w-3" />
+                Powered by TMDB API
+              </p>
             </div>
           </div>
 
-          {/* 右侧：登录表单 */}
-          <div className="w-full max-w-md mx-auto">
-            <Card className="bg-white dark:bg-gray-900 shadow-2xl border-0 overflow-hidden card-float">
-              {/* 卡片顶部装饰 */}
-              <div className="h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-
-              <CardHeader className="text-center space-y-6 pt-8">
-                <div className="space-y-2">
-                  <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                    欢迎回来
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400 flex items-center justify-center space-x-2">
-                    <Clapperboard className="w-4 h-4" />
-                    <span>登录您的TMDB管理中心</span>
-                  </CardDescription>
-                </div>
-              </CardHeader>
-
-              <CardContent className="px-8 pb-8">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* 错误提示 */}
-                  {error && (
-                    <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-900/20">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription className="text-red-700 dark:text-red-300">{error}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* 用户名输入 */}
-                  <div className="space-y-2">
-                    <Label htmlFor="username" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      用户名
-                    </Label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-20 pointer-events-none">
-                        <User
-                          className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200"
-                          style={{
-                            filter: 'none',
-                            backdropFilter: 'none',
-                            isolation: 'isolate'
-                          }}
-                        />
-                      </div>
-                      <Input
-                        id="username"
-                        type="text"
-                        placeholder="请输入管理员用户名"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="pl-11 h-12 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200 group"
-                        required
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-
-                  {/* 密码输入 */}
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      密码
-                    </Label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-20 pointer-events-none">
-                        <Lock
-                          className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200"
-                          style={{
-                            filter: 'none',
-                            backdropFilter: 'none',
-                            isolation: 'isolate'
-                          }}
-                        />
-                      </div>
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="请输入密码"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-11 pr-11 h-12 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200 group"
-                        required
-                        disabled={isLoading}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-all duration-200 z-20"
-                        disabled={isLoading}
-                        style={{
-                          filter: 'none',
-                          backdropFilter: 'none',
-                          isolation: 'isolate'
-                        }}
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 记住我 */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox
-                        id="rememberMe"
-                        checked={rememberMe}
-                        onCheckedChange={async (checked) => {
-                          const v = Boolean(checked)
-                          setRememberMe(v)
-                          // 同步记录用户偏好
-                          await ClientConfigManager.setItem('last_login_remember_me', v ? '1' : '0')
-                          if (!v) {
-                            clearRemember()
-                          }
-                        }}
-                        disabled={isLoading}
-                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <Label htmlFor="rememberMe" className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
-                        记住我的登录状态
-                      </Label>
-                    </div>
-                  </div>
-
-                  {/* 登录按钮 */}
-                  <Button
-                    type="submit"
-                    className="w-full h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 hover:from-blue-700 hover:via-purple-700 hover:to-blue-800 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] login-button"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                        正在登录...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-5 w-5 mr-2" />
-                        进入管理中心
-                      </>
-                    )}
-                  </Button>
-                </form>
-
-                {/* 底部装饰 */}
-                <div className="mt-6 text-center">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center space-x-1">
-                    <Film className="h-3 w-3" />
-                    <span>Powered by TMDB API</span>
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* 版权信息 */}
+          <p className="text-center text-slate-500 dark:text-slate-400 text-xs mt-6">
+            © 2024 TMDB Helper. All rights reserved.
+          </p>
         </div>
       </div>
     </div>
