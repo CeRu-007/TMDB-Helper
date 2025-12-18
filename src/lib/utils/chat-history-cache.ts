@@ -55,12 +55,6 @@ class ChatHistoryCache {
       request.onsuccess = () => {
         const result = request.result
         if (result) {
-          // 检查缓存是否过期（30分钟）
-          const isExpired = Date.now() - result.cachedAt > 30 * 60 * 1000
-          if (isExpired) {
-            resolve(null)
-            return
-          }
           // 移除缓存标记
           const { cachedAt, ...chatHistory } = result
           resolve(chatHistory)
@@ -82,18 +76,13 @@ class ChatHistoryCache {
       request.onerror = () => reject(request.error)
       request.onsuccess = () => {
         const results = request.result
-        const validChats = results
-          .filter(result => {
-            // 过滤过期的缓存
-            const isExpired = Date.now() - result.cachedAt > 30 * 60 * 1000
-            return !isExpired
-          })
+        const chats = results
           .map(result => {
             const { cachedAt, ...chatHistory } = result
             return chatHistory
           })
           .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()) // 按更新时间倒序排序
-        resolve(validChats)
+        resolve(chats)
       }
     })
   }
@@ -195,18 +184,31 @@ class ChatSyncManager {
   }
 
   async getAllChatHistories(): Promise<ChatHistory[]> {
-    // 先尝试从缓存获取
-    const cachedChats = await this.cache.getAllCachedChats()
-    
-    // 如果有缓存数据，先返回缓存，然后异步更新
-    if (cachedChats.length > 0) {
-      // 异步从服务器获取最新数据
-      this.fetchFromServerAndUpdateCache()
-      return cachedChats
-    }
+    try {
+      // 先尝试从缓存获取
+      const cachedChats = await this.cache.getAllCachedChats()
+      
+      // 如果有缓存数据，先返回缓存，然后异步更新
+      if (cachedChats.length > 0) {
+        // 异步从服务器获取最新数据
+        this.fetchFromServerAndUpdateCache().catch(error => {
+          console.warn('异步更新缓存失败:', error)
+        })
+        return cachedChats
+      }
 
-    // 缓存为空，直接从服务器获取
-    return this.fetchFromServer()
+      // 缓存为空，直接从服务器获取
+      return await this.fetchFromServer()
+    } catch (error) {
+      console.error('获取聊天历史时发生错误:', error)
+      // 尝试直接从服务器获取作为最后的备选方案
+      try {
+        return await this.fetchFromServer()
+      } catch (serverError) {
+        console.error('从服务器获取数据也失败:', serverError)
+        return []
+      }
+    }
   }
 
   private async fetchFromServer(): Promise<ChatHistory[]> {
@@ -231,13 +233,23 @@ class ChatSyncManager {
           }
           
           return histories
+        } else {
+          console.warn('服务器返回的数据格式不正确:', result)
         }
+      } else {
+        console.warn('服务器响应错误:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('从服务器获取聊天历史失败:', error)
     }
 
-    return []
+    // API失败时，尝试从缓存返回现有数据
+    try {
+      return await this.cache.getAllCachedChats()
+    } catch (cacheError) {
+      console.error('从缓存获取数据也失败:', cacheError)
+      return []
+    }
   }
 
   private async fetchFromServerAndUpdateCache(): Promise<void> {
@@ -255,8 +267,8 @@ class ChatSyncManager {
     await this.cache.init()
     
     try {
-      const transaction = this.cache.db!.transaction(['chatHistories'], 'readwrite')
-      const store = transaction.objectStore('chatHistories')
+      const transaction = this.cache.db!.transaction([this.cache.STORE_NAME], 'readwrite')
+      const store = transaction.objectStore(this.cache.STORE_NAME)
       await store.delete(chatId)
     } catch (error) {
       console.error('从缓存删除失败:', error)

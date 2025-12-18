@@ -8,6 +8,10 @@ export interface Message {
   fileContent?: string
   isStreaming?: boolean
   suggestions?: string[]
+  rating?: 'like' | 'dislike' | null
+  isEdited?: boolean
+  originalContent?: string
+  canContinue?: boolean
 }
 
 export interface ChatHistory {

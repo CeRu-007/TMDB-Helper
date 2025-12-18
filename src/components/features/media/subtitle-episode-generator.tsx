@@ -396,6 +396,45 @@ export function SubtitleEpisodeGenerator({
     return false
   }
 
+  // 检测是否是配额超限错误
+  const isQuotaExceededError = (error: any): boolean => {
+    if (typeof error === 'string') {
+      return error.includes('exceeded today\'s quota') ||
+             error.includes('quota exceeded') ||
+             error.includes('配额已用完') ||
+             error.includes('今日配额已用尽')
+    }
+
+    if (error && typeof error === 'object') {
+      const errorStr = JSON.stringify(error).toLowerCase()
+      const basicCheck = errorStr.includes('exceeded today\'s quota') ||
+                        errorStr.includes('quota exceeded') ||
+                        errorStr.includes('daily quota') ||
+                        errorStr.includes('rate limit') ||
+                        error.errorType === 'QUOTA_EXCEEDED'
+      
+      if (basicCheck) {
+        return true
+      }
+      
+      // 检查嵌套在details字段中的错误
+      if (error.details) {
+        if (typeof error.details === 'string') {
+          return error.details.toLowerCase().includes('exceeded today\'s quota') ||
+                 error.details.toLowerCase().includes('quota exceeded')
+        }
+        
+        if (typeof error.details === 'object') {
+          const detailsStr = JSON.stringify(error.details).toLowerCase()
+          return detailsStr.includes('exceeded today\'s quota') ||
+                 detailsStr.includes('quota exceeded')
+        }
+      }
+    }
+
+    return false
+  }
+
   // 更新生成结果的函数
   const handleUpdateResult = useCallback((fileId: string, resultIndex: number, updatedResult: Partial<GenerationResult>) => {
     setGenerationResults(prev => {
@@ -1033,7 +1072,25 @@ export function SubtitleEpisodeGenerator({
           try {
             errorData = JSON.parse(responseText)
             
-            errorMessage = errorData.error || errorMessage
+            // 尝试从不同的字段获取错误信息
+            if (errorData.error) {
+              errorMessage = errorData.error
+            }
+            
+            // 如果有details字段，尝试解析其中的错误信息
+            if (errorData.details) {
+              try {
+                const detailsData = JSON.parse(errorData.details)
+                if (detailsData.errors && detailsData.errors.message) {
+                  errorMessage = detailsData.errors.message
+                }
+              } catch (detailsParseError) {
+                // 如果details不是JSON，直接使用
+                if (typeof errorData.details === 'string') {
+                  errorMessage = errorData.details
+                }
+              }
+            }
           } catch (parseError) {
             
             errorMessage = `API返回非JSON响应: ${responseText.substring(0, 100)}`
@@ -1043,7 +1100,30 @@ export function SubtitleEpisodeGenerator({
           if (response.status === 401) {
             errorMessage = 'API密钥无效，请检查配置'
           } else if (response.status === 429) {
-            errorMessage = 'API调用频率过高，请稍后重试'
+            // 检查是否是配额超限错误
+            if (isQuotaExceededError(errorData) || isQuotaExceededError(responseText)) {
+              // 获取风格名称
+              const style = styleId ? GENERATION_STYLES.find(s => s.id === styleId) : null
+              const styleName = style?.name || ''
+              
+              // 返回一个特殊的结果，表示配额超限
+              return {
+                episodeNumber: episode.episodeNumber,
+                originalTitle: episode.title || `第${episode.episodeNumber}集`,
+                generatedTitle: `第${episode.episodeNumber}集`,
+                generatedSummary: '今日API配额已用完，请明天再试',
+                confidence: 0,
+                wordCount: 0,
+                generationTime: Date.now(),
+                model: config.model,
+                styles: styleId ? [styleId] : config.selectedStyles,
+                styleId: styleId,
+                styleName: styleName,
+                error: 'QUOTA_EXCEEDED'
+              }
+            } else {
+              errorMessage = 'API调用频率过高，请稍后重试'
+            }
           } else if (response.status === 500) {
             errorMessage = '服务器内部错误，请稍后重试'
           } else if (response.status === 403) {

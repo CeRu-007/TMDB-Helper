@@ -1,10 +1,9 @@
 "use client"
 
 import React from "react"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import rehypeHighlight from "rehype-highlight"
-import remarkBreaks from "remark-breaks"
+import MarkdownPreview from '@uiw/react-markdown-preview'
+import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 
 interface MarkdownProps {
   children: string
@@ -20,77 +19,164 @@ export function Markdown({ children, className = "" }: MarkdownProps) {
     .replace(/([^\n])\n([^\n])/g, '$1\n$2') // 保持单个换行符
   
   return (
-    <div className={`markdown-content ${className}`}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkBreaks]}
-        rehypePlugins={[rehypeHighlight]}
-        components={{
-          // 处理标题
-          h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />,
-          h2: ({ node, ...props }) => <h2 className="text-xl font-semibold mt-3 mb-2" {...props} />,
-          h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-3 mb-1.5" {...props} />,
-          h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-2.5 mb-1.5" {...props} />,
-          h5: ({ node, ...props }) => <h5 className="text-sm font-semibold mt-2 mb-1" {...props} />,
-          h6: ({ node, ...props }) => <h6 className="text-xs font-semibold mt-2 mb-1" {...props} />,
-          
-          // 处理段落 - 添加更好的行高和间距，特别适合分集简介
-          p: ({ node, ...props }) => <p className="leading-relaxed mb-3 last:mb-0 text-gray-800 dark:text-gray-200" {...props} />,
-          
-          // 处理链接
-          a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" {...props} />,
-          
-          // 处理列表 - 改进间距
-          ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-3 ml-4 space-y-1" {...props} />,
-          ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-3 ml-4 space-y-1" {...props} />,
-          li: ({ node, ...props }) => <li className="mb-0.5" {...props} />,
-          
-          // 处理代码块 - 改进样式
-          pre: ({ node, ...props }) => <pre className="rounded-lg p-4 mb-3 overflow-x-auto bg-gray-50 dark:bg-gray-800" {...props} />,
-          code: ({ node, inline, ...props }) => {
-            if (inline) {
-              return <code className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-sm font-mono" {...props} />
-            }
-            return <code className="text-sm font-mono" {...props} />
-          },
-          
-          // 处理引用块 - 改进样式
-          blockquote: ({ node, ...props }) => (
-            <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-600 dark:text-gray-400 my-3 py-1" {...props} />
-          ),
-          
-          // 处理表格 - 改进样式
-          table: ({ node, ...props }) => (
-            <div className="overflow-x-auto my-3">
-              <table className="min-w-full border border-gray-300 dark:border-gray-700 rounded-lg" {...props} />
-            </div>
-          ),
-          thead: ({ node, ...props }) => <thead className="bg-gray-100 dark:bg-gray-800" {...props} />,
-          th: ({ node, ...props }) => (
-            <th className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left font-semibold" {...props} />
-          ),
-          td: ({ node, ...props }) => (
-            <td className="border border-gray-300 dark:border-gray-700 px-4 py-2" {...props} />
-          ),
-          tr: ({ node, ...props }) => (
-            <tr className="hover:bg-gray-50 dark:hover:bg-gray-800" {...props} />
-          ),
-          
-          // 处理分隔线
-          hr: ({ node, ...props }) => <hr className="my-4 border-gray-300 dark:border-gray-700" {...props} />,
-          
-          // 处理图片
-          img: ({ node, ...props }) => <img className="max-w-full h-auto rounded-lg my-3" {...props} />,
-          
-          // 处理强调文本
-          strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
-          em: ({ node, ...props }) => <em className="italic" {...props} />,
-          
-          // 处理换行符 - 确保单个换行符被正确渲染
-          br: ({ node, ...props }) => <br {...props} />,
-        }}
-      >
-        {processedContent}
-      </ReactMarkdown>
-    </div>
+    <>
+      {/* 自定义样式来覆盖默认的间距 */}
+      <style jsx>{`
+        :global(.wmde-markdown) {
+          --base-size-16: 1rem;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          font-size: 16px;
+          line-height: 1.6;
+          color: #333;
+          border: none !important;
+        }
+        :global(.wmde-markdown *) {
+          border: none !important;
+        }
+        :global(.wmde-markdown p) {
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.75rem !important;
+          line-height: 1.6;
+          font-weight: 400;
+          color: inherit;
+        }
+        :global(.wmde-markdown strong) {
+          font-weight: 600;
+          color: inherit;
+        }
+        :global(.wmde-markdown em) {
+          font-style: italic;
+          color: inherit;
+        }
+        :global(.wmde-markdown code) {
+          font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+          font-size: 0.9em;
+          background-color: rgba(175, 184, 193, 0.2);
+          padding: 0.125rem 0.25rem;
+          border-radius: 0.25rem;
+          color: inherit;
+        }
+        :global(.wmde-markdown pre) {
+          font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+          background-color: #f6f8fa;
+          border-radius: 0.375rem;
+          padding: 1rem;
+          overflow-x: auto;
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.75rem !important;
+        }
+        :global(.wmde-markdown pre code) {
+          background-color: transparent;
+          padding: 0;
+        }
+        :global(.wmde-markdown h1) {
+          margin-top: 1.25rem !important;
+          margin-bottom: 0.75rem !important;
+          font-weight: 600;
+          font-size: 1.75rem;
+          line-height: 1.25;
+          color: inherit;
+        }
+        :global(.wmde-markdown h2) {
+          margin-top: 1rem !important;
+          margin-bottom: 0.75rem !important;
+          font-weight: 600;
+          font-size: 1.5rem;
+          line-height: 1.25;
+          color: inherit;
+        }
+        :global(.wmde-markdown h3) {
+          margin-top: 0.875rem !important;
+          margin-bottom: 0.5rem !important;
+          font-weight: 600;
+          font-size: 1.25rem;
+          line-height: 1.25;
+          color: inherit;
+        }
+        :global(.wmde-markdown ul) {
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.75rem !important;
+          padding-left: 1.5rem;
+          color: inherit;
+        }
+        :global(.wmde-markdown ol) {
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.75rem !important;
+          padding-left: 1.5rem;
+          color: inherit;
+        }
+        :global(.wmde-markdown li) {
+          margin-top: 0.25rem !important;
+          margin-bottom: 0.25rem !important;
+          color: inherit;
+        }
+        :global(.wmde-markdown li > p) {
+          margin-top: 0.25rem !important;
+          margin-bottom: 0.25rem !important;
+          color: inherit;
+        }
+        :global(.wmde-markdown blockquote) {
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.75rem !important;
+          padding-left: 1rem;
+          border-left: 0.25rem solid #d1d5db;
+          color: #6b7280;
+          font-style: italic;
+        }
+        :global(.wmde-markdown table) {
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.75rem !important;
+          border-collapse: collapse;
+          width: 100%;
+        }
+        :global(.wmde-markdown hr) {
+          display: none !important;
+        }
+        :global(.wmde-markdown .anchor) {
+          display: none !important;
+        }
+        :global(.wmde-markdown h1 .anchor),
+        :global(.wmde-markdown h2 .anchor),
+        :global(.wmde-markdown h3 .anchor),
+        :global(.wmde-markdown h4 .anchor),
+        :global(.wmde-markdown h5 .anchor),
+        :global(.wmde-markdown h6 .anchor) {
+          display: none !important;
+        }
+        :global(.wmde-markdown h1 a[href^="#"]),
+        :global(.wmde-markdown h2 a[href^="#"]),
+        :global(.wmde-markdown h3 a[href^="#"]),
+        :global(.wmde-markdown h4 a[href^="#"]),
+        :global(.wmde-markdown h5 a[href^="#"]),
+        :global(.wmde-markdown h6 a[href^="#"]) {
+          display: none !important;
+        }
+        
+        /* 暗色模式样式 */
+        :global(.dark .wmde-markdown) {
+          color: #e5e7eb;
+        }
+        :global(.dark .wmde-markdown code) {
+          background-color: rgba(55, 65, 81, 0.5);
+        }
+        :global(.dark .wmde-markdown pre) {
+          background-color: #1f2937;
+        }
+        :global(.dark .wmde-markdown blockquote) {
+          border-left-color: #4b5563;
+          color: #9ca3af;
+        }
+      `}</style>
+      <div className={`markdown-content ${className}`}>
+        <MarkdownPreview
+          source={processedContent}
+          className="wmde-markdown"
+          wrapperElement={{
+            "data-color-mode": undefined // 让它自动跟随系统主题
+          }}
+          remarkPlugins={[remarkGfm, remarkBreaks]}
+        />
+      </div>
+    </>
   )
 }

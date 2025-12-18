@@ -130,8 +130,13 @@ export function SmartAvatar({
 
     // 检查图片是否已在缓存中
     if (avatarCache.has(cacheKey)) {
-      setLoaded(true);
-      return;
+      // 使用setTimeout避免同步更新导致的渲染问题
+      const timeoutId = setTimeout(() => {
+        if (isMounted.current) {
+          setLoaded(true);
+        }
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
 
     const img = new Image();
