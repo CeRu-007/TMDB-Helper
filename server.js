@@ -45,6 +45,13 @@ app.prepare().then(() => {
       const parsedUrl = parse(req.url, true);
       const { pathname, query } = parsedUrl;
 
+      // SSE流式API特殊处理
+      if (pathname.includes('/stream')) {
+        res.shouldKeepAlive = true;
+        res.useChunkedEncodingByDefault = true;
+        res.setHeader('X-Accel-Buffering', 'no');
+      }
+
       // 处理静态文件
       if (pathname.startsWith('/_next/static/') || pathname.startsWith('/static/')) {
         await handle(req, res, parsedUrl);

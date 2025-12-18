@@ -74,38 +74,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Cherry Studio风格的优化流式处理
     const stream = new ReadableStream({
       async start(controller) {
         const reader = upstream.body!.getReader();
         const encoder = new TextEncoder();
 
         try {
-          // 立即发送握手信号，减少延迟
           controller.enqueue(encoder.encode(": ping\n\n"));
           
-          let chunkBuffer = new Uint8Array(0);
-          const processChunk = (chunk: Uint8Array) => {
-            // 优化：直接透传，避免不必要的处理
-            controller.enqueue(chunk);
-          };
-
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             
-            processChunk(value);
+            controller.enqueue(value);
           }
 
-          // 发送完成信号
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.enqueue(encoder.encode("\ndata: [DONE]\n\n"));
         } catch (e: any) {
-          // 优化错误处理
           const err = typeof e?.message === "string" ? e.message : "stream error";
-          controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify(err)}\n\n`));
+          controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ error: err })}\n\n`));
         } finally {
           controller.close();
-          reader.releaseLock();
+          try {
+            reader.releaseLock();
+          } catch {}
         }
       },
     });
@@ -115,8 +107,10 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "text/event-stream; charset=utf-8",
         "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
-        "X-Accel-Buffering": "no", // for nginx
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+        "Content-Encoding": "none",
+        "Transfer-Encoding": "chunked",
       },
     });
   } catch (error: any) {

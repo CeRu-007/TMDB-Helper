@@ -181,21 +181,25 @@ const useStreamResponse = () => {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let assistantAccumulated = '';
+    let lineBuffer = '';
     let buffer = '';
-    let lastUpdate = Date.now();
-    const BASE_UPDATE_INTERVAL = 50;
-    const BASE_BUFFER_SIZE = 10;
 
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        
         const chunk = decoder.decode(value, { stream: true });
+        lineBuffer += chunk;
 
-        const lines = chunk.split('\n');
+        const lines = lineBuffer.split('\n');
+        lineBuffer = lines.pop() || '';
+
         for (const line of lines) {
           const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith(':') || !trimmed.startsWith('data:')) continue;
+          if (!trimmed || trimmed.startsWith(':')) continue;
+          
+          if (!trimmed.startsWith('data:')) continue;
 
           const dataStr = trimmed.slice(5).trim();
           if (dataStr === '[DONE]') continue;
@@ -203,52 +207,24 @@ const useStreamResponse = () => {
           try {
             const parsed = JSON.parse(dataStr);
             const delta = parsed?.choices?.[0]?.delta;
-            if (delta) {
-              const token = delta.content || '';
-              if (token) {
-                assistantAccumulated += token;
-                buffer += token;
-                
-                const contentLength = assistantAccumulated.length;
-                let updateInterval = BASE_UPDATE_INTERVAL;
-                let bufferSize = BASE_BUFFER_SIZE;
-                
-                if (contentLength > 1000) {
-                  updateInterval = 70;
-                  bufferSize = 15;
-                }
-                if (contentLength > 3000) {
-                  updateInterval = 100;
-                  bufferSize = 20;
-                }
-                if (contentLength > 5000) {
-                  updateInterval = 130;
-                  bufferSize = 25;
-                }
-                
-                const now = Date.now();
-                const shouldUpdate = 
-                  buffer.length >= bufferSize ||
-                  now - lastUpdate >= updateInterval ||
-                  contentLength < 100 ||
-                  (contentLength > 1000 && buffer.length >= 5);
-                
-                if (shouldUpdate) {
-                  flushSync(() => {
-                    setMessages(prev => prev.map(m =>
-                      m.id === messageId
-                        ? { ...m, content: assistantAccumulated, isStreaming: true }
-                        : m
-                    ));
-                  });
-                  buffer = '';
-                  lastUpdate = now;
-                  scrollToLatestMessage();
-                }
+            if (delta?.content) {
+              assistantAccumulated += delta.content;
+              buffer += delta.content;
+              
+              if (buffer.length >= 2) {
+                flushSync(() => {
+                  setMessages(prev => prev.map(m =>
+                    m.id === messageId
+                      ? { ...m, content: assistantAccumulated, isStreaming: true }
+                      : m
+                  ));
+                });
+                buffer = '';
+                scrollToLatestMessage();
               }
             }
           } catch (e) {
-            console.log('解析JSON失败:', dataStr, e);
+            console.warn('SSE解析失败，跳过此行:', dataStr.substring(0, 100));
           }
         }
       }
@@ -265,7 +241,11 @@ const useStreamResponse = () => {
       
       return assistantAccumulated;
     } finally {
-      try { reader.releaseLock(); } catch {}
+      try { 
+        if (reader.locked) {
+          reader.releaseLock(); 
+        }
+      } catch {}
     }
   }, []);
 
@@ -441,8 +421,10 @@ export function AiChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isInterrupting, setIsInterrupting] = useState(false) // 新增：中断状态
-  const [abortController, setAbortController] = useState<AbortController | null>(null) // 新增：AbortController实例
+  const [isInterrupting, setIsInterrupting] = useState(false)
+  const [mainAbortController, setMainAbortController] = useState<AbortController | null>(null)
+  const titleAbortControllerRef = useRef<AbortController | null>(null)
+  const suggestionsAbortControllerRef = useRef<AbortController | null>(null)
 
   // 使用场景模型配置
   const scenarioModels = useScenarioModels('ai_chat')
@@ -555,18 +537,10 @@ export function AiChat() {
 
   // 滚动到最新消息
   const scrollToLatestMessage = useCallback(() => {
-    if (messages.length > 0) {
-      // 使用requestAnimationFrame确保在下一帧执行滚动
-      requestAnimationFrame(() => {
-        scrollToBottom(true)
-      })
-      
-      // 额外添加一个延迟滚动，确保内容完全渲染
-      setTimeout(() => {
-        scrollToBottom(true)
-      }, 50)
-    }
-  }, [messages.length, scrollToBottom])
+    requestAnimationFrame(() => {
+      scrollToBottom(true)
+    })
+  }, [scrollToBottom])
 
   // 统一的消息滚动处理
   useEffect(() => {
@@ -588,11 +562,31 @@ export function AiChat() {
   // 组件卸载时清理
   useEffect(() => {
     return () => {
-      if (abortController) {
-        abortController.abort();
+      try {
+        if (mainAbortController && !mainAbortController.signal.aborted) {
+          mainAbortController.abort('Component unmounted');
+        }
+      } catch (e) {
+        console.debug('mainAbortController cleanup error:', e);
+      }
+      
+      try {
+        if (titleAbortControllerRef.current && !titleAbortControllerRef.current.signal.aborted) {
+          titleAbortControllerRef.current.abort('Component unmounted');
+        }
+      } catch (e) {
+        console.debug('titleAbortController cleanup error:', e);
+      }
+      
+      try {
+        if (suggestionsAbortControllerRef.current && !suggestionsAbortControllerRef.current.signal.aborted) {
+          suggestionsAbortControllerRef.current.abort('Component unmounted');
+        }
+      } catch (e) {
+        console.debug('suggestionsAbortController cleanup error:', e);
       }
     };
-  }, [abortController]);
+  }, [mainAbortController]);
 
 
 
@@ -753,8 +747,11 @@ export function AiChat() {
         // 获取模型信息
         const { apiKey, modelId } = await getModelInfo(selectedModel);
 
-        // 为标题生成请求创建AbortController
-        const titleAbortController = abortController || new AbortController();
+        // 为标题生成请求创建独立的AbortController
+        if (titleAbortControllerRef.current && !titleAbortControllerRef.current.signal.aborted) {
+          titleAbortControllerRef.current.abort('New title generation started');
+        }
+        titleAbortControllerRef.current = new AbortController();
 
         // 使用与流式输出相同的API端点生成标题
         const response = await fetch('/api/media/generate-title', {
@@ -767,7 +764,7 @@ export function AiChat() {
             firstMessage: firstAssistantResponse,
             apiKey
           }),
-          signal: titleAbortController.signal
+          signal: titleAbortControllerRef.current.signal
         })
 
         if (!response.ok) {
@@ -801,13 +798,14 @@ export function AiChat() {
         return data.data.title;
       } catch (error: any) {
         // 检查是否是中断错误
-        if (error.name === 'AbortError') {
+        if (error?.name === 'AbortError') {
           // 重新抛出中断错误
           throw error;
         }
         
         // 如果是429错误且还有重试次数，继续重试
-        if (error.message.includes('429') && retries < maxRetries) {
+        const errorMessage = error?.message || String(error);
+        if (errorMessage.includes('429') && retries < maxRetries) {
           retries++;
           const delay = Math.pow(2, retries - 1) * 1000;
           console.log(`标题生成遇到429错误，${delay}ms后进行第${retries}次重试`);
@@ -921,6 +919,13 @@ export function AiChat() {
               return updatedHistories;
             });
           }).catch(error => {
+            // 忽略组件卸载导致的中断错误
+            const errorMessage = error?.message || String(error);
+            if (error?.name === 'AbortError' || errorMessage.includes('Component unmounted') || errorMessage.includes('aborted')) {
+              console.log('标题生成被中断（组件卸载或新请求）');
+              return;
+            }
+            
             // 如果标题生成失败，只更新消息，不更新标题
             console.error('标题生成失败:', error);
             
@@ -1186,23 +1191,28 @@ export function AiChat() {
     setIsInterrupting(false)
 
     const newAbortController = new AbortController();
-    setAbortController(newAbortController);
+    setMainAbortController(newAbortController);
 
     try {
       const apiConfig = await getConfig(newAbortController);
       
       const prompt = config.promptBuilder(subtitleContent, fileName)
+      const modelInfo = await getModelInfo(selectedModel);
 
       const response = await fetch('/api/ai/ai-chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
         body: JSON.stringify({
-          model: (await getModelInfo(selectedModel)).modelId,
+          model: modelInfo.modelId,
           messages: [{ role: 'user', content: prompt }],
-          apiKey: (await getModelInfo(selectedModel)).apiKey
+          apiKey: modelInfo.apiKey
         }),
         signal: newAbortController.signal
       })
+
+      if (response.status === 429) {
+        throw new Error('当前模型已达到调用上限，请切换其他模型或稍后再试');
+      }
 
       if (!response.ok || !response.body) {
         let errMsg = `${config.errorPrefix}失败`;
@@ -1275,7 +1285,7 @@ export function AiChat() {
     } finally {
       setIsLoading(false)
       setIsInterrupting(false)
-      setAbortController(null)
+      setMainAbortController(null)
     }
   }, [currentChatId, messages, selectedModel, createNewChat, getConfig, getModelInfo, processStream, scrollToLatestMessage, updateCurrentChat])
 
@@ -1331,10 +1341,13 @@ export function AiChat() {
     const defaultSuggestions = ['深入探讨剧情细节', '了解世界观设定', '探索相关作品']
     
     try {
-      const configAbortController = abortController || new AbortController();
+      if (suggestionsAbortControllerRef.current && !suggestionsAbortControllerRef.current.signal.aborted) {
+        suggestionsAbortControllerRef.current.abort('New suggestions request started');
+      }
+      suggestionsAbortControllerRef.current = new AbortController();
       
       const configResponse = await fetch('/api/system/config', {
-        signal: configAbortController.signal
+        signal: suggestionsAbortControllerRef.current.signal
       })
       const configData = await configResponse.json()
       
@@ -1359,8 +1372,6 @@ export function AiChat() {
         ? recentMessages 
         : [{ role: 'user', content: '开始对话' }]
 
-      const suggestionsAbortController = abortController || new AbortController();
-
       const response = await fetch('/api/ai/suggestions', {
         method: 'POST',
         headers: {
@@ -1372,7 +1383,7 @@ export function AiChat() {
           lastMessage: lastMessage,
           apiKey: (await getModelInfo(selectedModel)).apiKey
         }),
-        signal: suggestionsAbortController.signal
+        signal: suggestionsAbortControllerRef.current.signal
       })
 
       if (!response.ok) {
@@ -1485,7 +1496,7 @@ export function AiChat() {
     setIsInterrupting(false)
 
     const newAbortController = new AbortController();
-    setAbortController(newAbortController);
+    setMainAbortController(newAbortController);
 
     try {
       const { apiKey, modelId } = await getModelInfo(selectedModel);
@@ -1526,6 +1537,10 @@ ${userContent}`
         signal: newAbortController.signal
       })
 
+      if (response.status === 429) {
+        throw new Error('当前模型已达到调用上限，请切换其他模型或稍后再试');
+      }
+
       if (!response.ok || !response.body) {
         let errMsg = 'AI回复失败';
         try {
@@ -1559,35 +1574,40 @@ ${userContent}`
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        const interruptedMessages = updatedMessages.map(msg => {
-          if (msg.id === assistantMessage.id) {
-            return {
-              ...msg,
-              content: '回复已被用户中断',
-              isStreaming: false
+        setMessages(prevMessages => {
+          const interruptedMessages = prevMessages.map(msg => {
+            if (msg.id === assistantMessage.id) {
+              const currentContent = msg.content || '';
+              return {
+                ...msg,
+                content: currentContent || '回复已被用户中断',
+                isStreaming: false
+              }
             }
-          }
-          return msg
+            return msg
+          })
+          updateCurrentChat(interruptedMessages, chatId)
+          return interruptedMessages
         })
-        setMessages(interruptedMessages)
-        updateCurrentChat(interruptedMessages, chatId)
         toast.info('已中断AI回复')
       } else {
         console.error('AI回复失败:', error)
         
-        const errorMessages = updatedMessages.map(msg => {
-          if (msg.id === assistantMessage.id) {
-            return {
-              ...msg,
-              content: `AI回复时出现错误：${error.message}`,
-              isStreaming: false
+        setMessages(prevMessages => {
+          const errorMessages = prevMessages.map(msg => {
+            if (msg.id === assistantMessage.id) {
+              const currentContent = msg.content || '';
+              return {
+                ...msg,
+                content: currentContent || `AI回复时出现错误：${error.message}`,
+                isStreaming: false
+              }
             }
-          }
-          return msg
+            return msg
+          })
+          updateCurrentChat(errorMessages, chatId)
+          return errorMessages
         })
-
-        setMessages(errorMessages)
-        updateCurrentChat(errorMessages, chatId)
 
         toast.error('发送失败', {
           description: error.message
@@ -1596,18 +1616,18 @@ ${userContent}`
     } finally {
       setIsLoading(false)
       setIsInterrupting(false)
-      setAbortController(null)
+      setMainAbortController(null)
     }
   }, [currentChatId, messages, selectedModel, createNewChat, getModelInfo, processStream, scrollToLatestMessage, updateCurrentChat])
 
   // 中断AI生成
   const handleInterrupt = useCallback(() => {
-    if (abortController) {
+    if (mainAbortController && !mainAbortController.signal.aborted) {
       setIsInterrupting(true)
-      abortController.abort()
+      mainAbortController.abort('User interrupted')
       toast.info('正在停止生成...')
     }
-  }, [abortController])
+  }, [mainAbortController])
 
   // 消息编辑状态
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
@@ -1711,7 +1731,7 @@ ${userContent}`
     setIsInterrupting(false)
 
     const newAbortController = new AbortController()
-    setAbortController(newAbortController)
+    setMainAbortController(newAbortController)
 
     try {
       const { apiKey, modelId } = await getModelInfo(selectedModel)
@@ -1740,6 +1760,10 @@ ${userContent}`
         }),
         signal: newAbortController.signal
       })
+
+      if (response.status === 429) {
+        throw new Error('当前模型已达到调用上限，请切换其他模型或稍后再试');
+      }
 
       if (!response.ok || !response.body) {
         let errMsg = '继续生成失败'
@@ -1776,35 +1800,40 @@ ${userContent}`
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        const interruptedMessages = updatedMessages.map(msg => {
-          if (msg.id === newAssistantMessage.id) {
-            return {
-              ...msg,
-              content: '回复已被用户中断',
-              isStreaming: false
+        setMessages(prevMessages => {
+          const interruptedMessages = prevMessages.map(msg => {
+            if (msg.id === newAssistantMessage.id) {
+              const currentContent = msg.content || '';
+              return {
+                ...msg,
+                content: currentContent || '回复已被用户中断',
+                isStreaming: false
+              }
             }
-          }
-          return msg
+            return msg
+          })
+          updateCurrentChat(interruptedMessages)
+          return interruptedMessages
         })
-        setMessages(interruptedMessages)
-        updateCurrentChat(interruptedMessages)
         toast.info('已中断AI回复')
       } else {
         console.error('继续生成失败:', error)
         
-        const errorMessages = updatedMessages.map(msg => {
-          if (msg.id === newAssistantMessage.id) {
-            return {
-              ...msg,
-              content: `继续生成时出现错误：${error.message}`,
-              isStreaming: false
+        setMessages(prevMessages => {
+          const errorMessages = prevMessages.map(msg => {
+            if (msg.id === newAssistantMessage.id) {
+              const currentContent = msg.content || '';
+              return {
+                ...msg,
+                content: currentContent || `继续生成时出现错误：${error.message}`,
+                isStreaming: false
+              }
             }
-          }
-          return msg
+            return msg
+          })
+          updateCurrentChat(errorMessages)
+          return errorMessages
         })
-
-        setMessages(errorMessages)
-        updateCurrentChat(errorMessages)
 
         toast.error('继续生成失败', {
           description: error.message
@@ -1813,7 +1842,7 @@ ${userContent}`
     } finally {
       setIsLoading(false)
       setIsInterrupting(false)
-      setAbortController(null)
+      setMainAbortController(null)
     }
   }, [messages, selectedModel, getModelInfo, processStream, scrollToLatestMessage, fetchSuggestions, updateCurrentChat])
 
@@ -1959,7 +1988,7 @@ ${userContent}`
     setIsInterrupting(false)
 
     const newAbortController = new AbortController()
-    setAbortController(newAbortController)
+    setMainAbortController(newAbortController)
 
     try {
       const { apiKey, modelId } = await getModelInfo(selectedModel)
@@ -1972,7 +2001,6 @@ ${userContent}`
           content: m.content
         }))
 
-      // 使用流式API重新生成
       const response = await fetch('/api/ai/ai-chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
@@ -1983,6 +2011,10 @@ ${userContent}`
         }),
         signal: newAbortController.signal
       })
+
+      if (response.status === 429) {
+        throw new Error('当前模型已达到调用上限，请切换其他模型或稍后再试');
+      }
 
       if (!response.ok || !response.body) {
         let errMsg = '重新生成失败'
@@ -2018,33 +2050,38 @@ ${userContent}`
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        const interruptedMessages = updatedMessages.map(msg => {
-          if (msg.id === newAssistantMessage.id) {
-            return { ...msg, content: '回复已被用户中断', isStreaming: false }
-          }
-          return msg
+        setMessages(prevMessages => {
+          const interruptedMessages = prevMessages.map(msg => {
+            if (msg.id === newAssistantMessage.id) {
+              const currentContent = msg.content || '';
+              return { ...msg, content: currentContent || '回复已被用户中断', isStreaming: false }
+            }
+            return msg
+          })
+          updateCurrentChat(interruptedMessages)
+          return interruptedMessages
         })
-        setMessages(interruptedMessages)
-        updateCurrentChat(interruptedMessages)
         toast.info('已中断AI回复')
       } else {
         console.error('重新生成失败:', error)
         
-        const errorMessages = updatedMessages.map(msg => {
-          if (msg.id === newAssistantMessage.id) {
-            return { ...msg, content: `重新生成时出现错误：${error.message}`, isStreaming: false }
-          }
-          return msg
+        setMessages(prevMessages => {
+          const errorMessages = prevMessages.map(msg => {
+            if (msg.id === newAssistantMessage.id) {
+              const currentContent = msg.content || '';
+              return { ...msg, content: currentContent || `重新生成时出现错误：${error.message}`, isStreaming: false }
+            }
+            return msg
+          })
+          updateCurrentChat(errorMessages)
+          return errorMessages
         })
-
-        setMessages(errorMessages)
-        updateCurrentChat(errorMessages)
         toast.error('重新生成失败', { description: error.message })
       }
     } finally {
       setIsLoading(false)
       setIsInterrupting(false)
-      setAbortController(null)
+      setMainAbortController(null)
     }
   }
 
@@ -2258,41 +2295,29 @@ ${userContent}`
                         <span className="font-medium">{message.fileName}</span>
                       </div>
                       <div className="break-words text-gray-900 dark:text-gray-100 leading-relaxed">
-                        {message.isStreaming ? (
-                          <div>
-                            <Markdown>{message.content}</Markdown>
-                            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
-                              <Loader2 className="w-4 h-4 animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                              <span>正在生成回复...</span>
-                            </div>
+                        <Markdown>{message.content}</Markdown>
+                        {message.isStreaming && (
+                          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
+                            <Loader2 className="w-4 h-4 animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                            <span>正在生成回复...</span>
                           </div>
-                        ) : (
-                          <div>
-                            <Markdown>{message.content}</Markdown>
-                            {message.isEdited && (
-                              <span className="text-xs text-gray-400 ml-2">(已编辑)</span>
-                            )}
-                          </div>
+                        )}
+                        {!message.isStreaming && message.isEdited && (
+                          <span className="text-xs text-gray-400 ml-2">(已编辑)</span>
                         )}
                       </div>
                     </div>
                   ) : (
                     <div className="break-words text-gray-900 dark:text-gray-100 leading-relaxed">
-                      {message.isStreaming ? (
-                        <div>
-                          <Markdown>{message.content}</Markdown>
-                          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
-                            <Loader2 className="w-4 h-4 animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                            <span>正在生成回复...</span>
-                          </div>
+                      <Markdown>{message.content}</Markdown>
+                      {message.isStreaming && (
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
+                          <Loader2 className="w-4 h-4 animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                          <span>正在生成回复...</span>
                         </div>
-                      ) : (
-                        <div>
-                          <Markdown>{message.content}</Markdown>
-                          {message.isEdited && (
-                            <span className="text-xs text-gray-400 ml-2">(已编辑)</span>
-                          )}
-                        </div>
+                      )}
+                      {!message.isStreaming && message.isEdited && (
+                        <span className="text-xs text-gray-400 ml-2">(已编辑)</span>
                       )}
                     </div>
                   )}

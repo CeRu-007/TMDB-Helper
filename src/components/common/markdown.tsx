@@ -10,13 +10,16 @@ interface MarkdownProps {
   className?: string
 }
 
-export function Markdown({ children, className = "" }: MarkdownProps) {
+export const Markdown = React.memo(function Markdown({ children, className = "" }: MarkdownProps) {
   // 针对分集简介等AI生成内容的特殊处理
   // 1. 将单个换行符替换为<br>标签以强制换行（更适合AI生成的文本）
   // 2. 保留多个连续换行符作为段落分隔
-  const processedContent = children
-    .replace(/\n\s*\n/g, '\n\n') // 标准化段落分隔（多个换行符）
-    .replace(/([^\n])\n([^\n])/g, '$1\n$2') // 保持单个换行符
+  const processedContent = React.useMemo(() => 
+    children
+      .replace(/\n\s*\n/g, '\n\n') // 标准化段落分隔（多个换行符）
+      .replace(/([^\n])\n([^\n])/g, '$1\n$2'), // 保持单个换行符
+    [children]
+  );
   
   return (
     <>
@@ -172,11 +175,20 @@ export function Markdown({ children, className = "" }: MarkdownProps) {
           source={processedContent}
           className="wmde-markdown"
           wrapperElement={{
-            "data-color-mode": undefined // 让它自动跟随系统主题
+            "data-color-mode": undefined
           }}
           remarkPlugins={[remarkGfm, remarkBreaks]}
+          rehypeRewrite={(node: any) => {
+            if (node.type === 'element' && node.tagName === 'a') {
+              node.properties = { ...node.properties, target: '_blank', rel: 'noopener noreferrer' };
+            }
+          }}
+          skipHtml={false}
+          disableCopy={false}
         />
       </div>
     </>
   )
-}
+}, (prevProps, nextProps) => {
+  return prevProps.children === nextProps.children && prevProps.className === nextProps.className;
+});
