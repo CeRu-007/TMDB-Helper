@@ -267,18 +267,27 @@ class ChatSyncManager {
     await this.cache.init()
     
     try {
-      const transaction = this.cache.db!.transaction([this.cache.STORE_NAME], 'readwrite')
-      const store = transaction.objectStore(this.cache.STORE_NAME)
-      await store.delete(chatId)
+      await new Promise<void>((resolve, reject) => {
+        const transaction = this.cache.db!.transaction([this.cache.STORE_NAME], 'readwrite')
+        const store = transaction.objectStore(this.cache.STORE_NAME)
+        const request = store.delete(chatId)
+        
+        request.onerror = () => reject(request.error)
+        request.onsuccess = () => resolve()
+      })
     } catch (error) {
       console.error('从缓存删除失败:', error)
     }
 
     // 从服务器删除
     try {
-      await fetch(`/api/ai/ai-chat/${chatId}`, {
+      const response = await fetch(`/api/ai/ai-chat/${chatId}`, {
         method: 'DELETE'
       })
+      
+      if (!response.ok) {
+        console.error('从服务器删除失败:', response.status, response.statusText)
+      }
     } catch (error) {
       console.error('从服务器删除失败:', error)
     }
