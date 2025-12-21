@@ -687,19 +687,32 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
   const handleEpisodeToggle = async (episodeNumber: number, completed: boolean, seasonNumber: number) => {
     // 计算要操作的集数范围
-    const episodeNumbers: number[] = [episodeNumber]
-    let rangeInfo = `第${episodeNumber}集`
+    let episodeNumbers: number[] = []
+    let rangeInfo = ''
     
-    // Shift多选逻辑：只有在按住Shift且已有最后点击的集数时才启用范围选择
-    if (isShiftPressed && lastClickedEpisode !== null && lastClickedEpisode !== episodeNumber) {
-      const start = Math.min(lastClickedEpisode, episodeNumber)
-      const end = Math.max(lastClickedEpisode, episodeNumber)
-      episodeNumbers.length = 0 // 清空单集数组
-      
-      for (let i = start; i <= end; i++) {
-        episodeNumbers.push(i)
+    // Shift多选逻辑：按住Shift时进行范围选择
+    if (isShiftPressed) {
+      if (lastClickedEpisode === null) {
+        // 第一次点击，只记录起点，不执行更新
+        setLastClickedEpisode(episodeNumber)
+        setCopyFeedback(`已选择起点：第${episodeNumber}集`)
+        setTimeout(() => setCopyFeedback(null), 1000)
+        return
+      } else {
+        // 第二次点击，执行范围选择
+        const start = Math.min(lastClickedEpisode, episodeNumber)
+        const end = Math.max(lastClickedEpisode, episodeNumber)
+        
+        for (let i = start; i <= end; i++) {
+          episodeNumbers.push(i)
+        }
+        rangeInfo = `第${start}-${end}集`
+        setLastClickedEpisode(null) // 重置
       }
-      rangeInfo = `第${start}-${end}集`
+    } else {
+      // 普通点击，立即更新当前集数
+      episodeNumbers = [episodeNumber]
+      rangeInfo = `第${episodeNumber}集`
     }
 
     // 添加视觉反馈
@@ -880,80 +893,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     onUpdate(updatedItem)
   }
 
-  // 处理指定集数的批量标记
-  const handleBatchEpisodeToggle = async (seasonNumber: number, episodeNumbers: number[], completed: boolean) => {
-    // 添加视觉反馈
-    setCopyFeedback(`正在标记第${Math.min(...episodeNumbers)}-${Math.max(...episodeNumbers)}集${completed ? '为完成' : '为未完成'}`)
-    setTimeout(() => setCopyFeedback(null), 2000)
-
-    // 立即更新本地状态，实现即时UI反馈
-    let updatedItem = { ...localItem }
-
-    if (updatedItem.seasons && seasonNumber) {
-      // 多季模式
-      const updatedSeasons = updatedItem.seasons.map((season) => {
-        if (season.seasonNumber === seasonNumber) {
-          let updatedEpisodes = [...season.episodes]
-
-          // 对每个要操作的集数进行更新
-          episodeNumbers.forEach(epNum => {
-            updatedEpisodes = updatedEpisodes.map((ep) => 
-              ep.number === epNum ? { ...ep, completed } : ep
-            )
-          })
-
-          return { ...season, episodes: updatedEpisodes }
-        }
-        return season
-      })
-
-      // 更新扁平化的episodes数组
-      const allEpisodes = updatedSeasons.flatMap((season) =>
-        season.episodes.map((ep) => ({
-          ...ep,
-          seasonNumber: season.seasonNumber,
-        })),
-      )
-
-      updatedItem = {
-        ...updatedItem,
-        seasons: updatedSeasons,
-        episodes: allEpisodes,
-        updatedAt: new Date().toISOString(),
-      }
-    }
-
-    // 检查是否所有集数都已完成
-    const allCompleted = updatedItem.episodes?.every((ep) => ep.completed) && updatedItem.episodes.length > 0
-    if (allCompleted && updatedItem.status === "ongoing") {
-      updatedItem.status = "completed"
-      updatedItem.completed = true
-    } else if (!allCompleted && updatedItem.status === "completed") {
-      updatedItem.status = "ongoing"
-      updatedItem.completed = false
-    }
-
-    // 先更新本地状态
-    setLocalItem(updatedItem)
-
-    try {
-      // 直接操作文件系统保存更新
-      const success = await saveItemDirectly(updatedItem)
-      
-      if (!success) {
-        throw new Error('保存失败')
-      }
-
-      // 保存成功后，通知父组件更新全局状态
-      onUpdate(updatedItem)
-
-    } catch (error) {
-      // 如果保存失败，回滚本地状态
-      setLocalItem(localItem)
-      setCopyFeedback('批量更新失败，请重试')
-      setTimeout(() => setCopyFeedback(null), 2000)
-    }
-  }
+  
 
   const handleMovieToggle = (completed: boolean) => {
     const updatedItem = {
@@ -2552,51 +2492,10 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                   <>
                                     {/* 批量操作说明 */}
                                     <div className="mb-2 text-xs text-muted-foreground">
-                                      提示: 按住Shift键可以批量选择剧集
+                                      提示: 按住Shift键点击首尾集数可批量选择
                                     </div>
 
-                                    {/* 快速批量操作 */}
-                                    <div className="mb-3 flex flex-wrap gap-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          if (currentSeason) {
-                                            const episodes = currentSeason.episodes;
-                                            // 找到第一个未完成的集数
-                                            const firstIncomplete = episodes.find(ep => !ep.completed);
-                                            if (firstIncomplete) {
-                                              handleEpisodeToggle(firstIncomplete.number, true, selectedSeason!);
-                                            }
-                                          }
-                                        }}
-                                        disabled={!currentSeason}
-                                      >
-                                        <Plus className="h-3 w-3 mr-1" />
-                                        标记下一集
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          if (currentSeason) {
-                                            // 标记前10集为已完成
-                                            const episodes = currentSeason.episodes.slice(0, 10);
-                                            const uncompletedEpisodes = episodes.filter(ep => !ep.completed);
-                                            
-                                            if (uncompletedEpisodes.length > 0) {
-                                              // 批量标记未完成的集数
-                                              const episodeNumbers = uncompletedEpisodes.map(ep => ep.number);
-                                              handleBatchEpisodeToggle(selectedSeason!, episodeNumbers, true);
-                                            }
-                                          }
-                                        }}
-                                        disabled={!currentSeason}
-                                      >
-                                        <CheckSquare className="h-3 w-3 mr-1" />
-                                        标记前10集
-                                      </Button>
-                                    </div>
+                                    
 
                                     {/* 剧集网格 */}
                                     {currentSeason && currentSeason.episodes && currentSeason.episodes.length > 0 ? (
