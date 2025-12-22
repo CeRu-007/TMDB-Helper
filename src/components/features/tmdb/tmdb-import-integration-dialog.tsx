@@ -114,6 +114,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // 用于跟踪行数变化的ref
+  const prevLineCountRef = useRef<number>(0)
   // 服务端路径状态（仅用于显示/按钮启用判断）
   const [tmdbPathState, setTmdbPathState] = useState<string | null>(null)
   useEffect(() => {
@@ -1378,7 +1380,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     globalStyle.textContent = `
       .csv-text-editor {
         width: 100%;
-        height: 100%;
+        height: auto; /* 改为自动高度，根据内容调整 */
         resize: none;
         border: none;
         background-color: transparent;
@@ -1386,9 +1388,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         white-space: pre;
         overflow-wrap: normal;
         overflow-x: auto;
-        overflow-y: auto;
-        min-height: 80vh; /* 增加最小高度到80vh */
-        padding-bottom: 30px; /* 减少底部内边距，但仍确保最后几行内容可见 */
+        overflow-y: auto; /* 确保垂直滚动 */
+        min-height: 70vh; /* 减少最小高度，避免过度占用空间 */
+        max-height: none; /* 移除最大高度限制 */
+        padding-bottom: 50px; /* 增加底部内边距，确保最后几行内容可见 */
         display: block; /* 确保元素正确显示 */
         font-size: 20px; /* 保持合适的字体大小 */
         line-height: 2.0; /* 略微减小行高，显示更多内容 */
@@ -1401,6 +1404,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         padding-left: 50px; /* 增加左侧内边距，确保行号与内容对齐 */
         padding-right: 20px; /* 右侧内边距 */
         tab-size: 4; /* 设置制表符大小 */
+        scrollbar-width: thin; /* Firefox滚动条样式 */
+        scrollbar-gutter: stable; /* 为滚动条预留空间，避免布局偏移 */
       }
 
       .csv-text-editor-container {
@@ -1410,13 +1415,16 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        min-height: 80vh; /* 增加最小高度到80vh */
-        height: 98vh; /* 增加默认视口高度利用率到98% */
-        overflow: auto; /* 允许滚动 */
+        min-height: 70vh; /* 减少最小高度 */
+        height: auto; /* 改为自动高度 */
+        max-height: none; /* 移除最大高度限制 */
+        overflow-y: auto; /* 明确设置垂直滚动 */
+        overflow-x: hidden; /* 隐藏水平滚动，由textarea处理 */
         margin-bottom: 2px; /* 进一步减少底部边距 */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* 添加轻微阴影，提升视觉效果 */
         background-color: #fcfcfc; /* 轻微的背景色，提高可读性 */
         padding: 0; /* 移除容器内边距，由文本编辑器控制内边距 */
+        scrollbar-width: thin; /* Firefox滚动条样式 */
       }
 
       .csv-line-numbers {
@@ -2084,15 +2092,15 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                         isSaving={isSaving}
                       />
               ) : editorMode === "text" ? (
-                <div className="h-full flex flex-col">
+                <div className="h-full flex flex-col csv-text-editor-container">
                   <textarea
                     ref={textareaRef}
                     value={csvContent}
                     onChange={(e) => setCsvContent(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 p-4 font-mono text-xs resize-none focus:outline-none bg-background/40 backdrop-blur-md csv-text-editor"
+                    className="flex-1 font-mono text-xs resize-none focus:outline-none bg-background/40 backdrop-blur-md csv-text-editor"
                     placeholder="CSV内容..."
-                    style={{ minHeight: "70vh", lineHeight: 1.6 }}
+                    style={{ lineHeight: 1.6 }}
                   ></textarea>
                 </div>
               ) : (
@@ -2109,29 +2117,43 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 自动调整编辑器高度的函数
   const adjustEditorHeight = useCallback(() => {
-    // 获取编辑器容器
+    // 获取编辑器容器和文本区域
     const container = document.querySelector('.csv-text-editor-container');
-    if (!container) return;
+    const textEditor = document.querySelector('.csv-text-editor');
+    if (!container || !textEditor) return;
+
+    // 保存当前滚动位置
+    const currentScrollPosition = (container as HTMLElement).scrollTop;
 
     // 获取页面顶部到容器顶部的距离
     const containerRect = container.getBoundingClientRect();
     const containerTop = containerRect.top;
 
-    // 计算可用高度（视口高度减去容器顶部位置，几乎不留边距，最大化利用空间）
-    const availableHeight = window.innerHeight - containerTop - 2; // 减少边距到2px
+    // 计算可用高度（视口高度减去容器顶部位置）
+    const availableHeight = window.innerHeight - containerTop - 10; // 保留10px边距
 
-    // 设置容器高度，确保最小高度不低于800px，提供更大的显示区域
-    const optimalHeight = Math.max(800, availableHeight);
-    (container as HTMLElement).style.height = `${optimalHeight}px`;
+    // 计算内容实际高度
+    const lineCount = csvContent.split('\n').length;
+    const contentHeight = lineCount * 32 + 100; // 每行约32px + 额外空间
 
-    // 同时调整文本区域高度
-    const textEditor = document.querySelector('.csv-text-editor');
-    if (textEditor) {
-      (textEditor as HTMLElement).style.minHeight = `${optimalHeight}px`;
-    }
+    // 使用较大的可用高度或内容高度，但不限制最大高度
+    const optimalHeight = Math.max(availableHeight, contentHeight);
+    
+    // 设置容器为自动高度，让内容决定实际高度
+    (container as HTMLElement).style.height = 'auto';
+    (container as HTMLElement).style.minHeight = `${Math.min(availableHeight, 600)}px`;
+    (container as HTMLElement).style.maxHeight = 'none';
 
-    // 更新编辑器高度状态
-      }, []);
+    // 设置文本区域样式
+    (textEditor as HTMLElement).style.height = 'auto';
+    (textEditor as HTMLElement).style.minHeight = `${Math.min(availableHeight, 600)}px`;
+    (textEditor as HTMLElement).style.maxHeight = 'none';
+
+    // 恢复滚动位置
+    setTimeout(() => {
+      (container as HTMLElement).scrollTop = currentScrollPosition;
+    }, 10);
+  }, [csvContent]);
 
   // 在组件挂载和窗口大小变化时调整编辑器高度
   useEffect(() => {
@@ -2141,17 +2163,22 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     const timer = setTimeout(() => {
       adjustEditorHeight();
 
-      // 添加窗口大小变化事件监听器
-      window.addEventListener('resize', adjustEditorHeight);
-
-      // 定期检查并调整高度，确保编辑器始终填充可用空间
-      const intervalTimer = setInterval(() => {
+      // 添加窗口大小变化事件监听器，但保持滚动位置
+      window.addEventListener('resize', () => {
+        // 保存当前滚动位置
+        const container = document.querySelector('.csv-text-editor-container');
+        const textEditor = document.querySelector('.csv-text-editor');
+        const scrollPosition = container ? (container as HTMLElement).scrollTop : 0;
+        
         adjustEditorHeight();
-      }, 1000); // 每秒检查一次
-
-      return () => {
-        clearInterval(intervalTimer);
-      };
+        
+        // 恢复滚动位置
+        setTimeout(() => {
+          if (container) {
+            (container as HTMLElement).scrollTop = scrollPosition;
+          }
+        }, 50);
+      });
     }, 300);
 
     return () => {
@@ -2168,35 +2195,57 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     if (!container || !textEditor) return;
 
-    // 计算内容高度（文本行数 * 行高）
+    // 保存当前滚动位置
+    const currentScrollPosition = (container as HTMLElement).scrollTop;
+
+    // 计算内容实际高度（文本行数 * 行高）
     const lineCount = csvContent.split('\n').length;
     const lineHeight = isCompactMode ? 1.7 : 2.2; // 更新与编辑器匹配的行高
     const fontSize = isCompactMode ? 17 : 20; // 更新与编辑器匹配的字体大小
-    // 为每行分配更多空间，确保内容完全显示
-    const contentHeight = lineCount * lineHeight * fontSize + 100; // 减少额外边距到100px
+    
+    // 计算内容所需的最小高度，添加额外的padding确保最后几行内容可见
+    const contentHeight = lineCount * lineHeight * fontSize + 150; // 增加底部padding到150px
 
     // 获取视口高度
     const viewportHeight = window.innerHeight;
-
-    // 设置容器高度为内容高度和视口高度的较大值，增加视口高度利用率
-    const optimalHeight = Math.max(contentHeight, viewportHeight * 0.98);
-
-    // 应用高度
-    (container as HTMLElement).style.height = `${optimalHeight}px`;
-    (textEditor as HTMLElement).style.minHeight = `${optimalHeight}px`;
-
-    // 更新编辑器高度状态
     
+    // 使用内容实际高度，确保所有内容都能显示和滚动
+    // 不再限制最大高度，允许内容超出视口高度以支持滚动
+    const optimalHeight = Math.max(contentHeight, viewportHeight * 0.9);
+
+    // 应用高度样式
+    (container as HTMLElement).style.height = `${optimalHeight}px`;
+    (container as HTMLElement).style.maxHeight = 'none'; // 移除最大高度限制
+    (container as HTMLElement).style.overflowY = 'auto'; // 确保容器可垂直滚动
+    
+    (textEditor as HTMLElement).style.minHeight = `${optimalHeight}px`;
+    (textEditor as HTMLElement).style.height = 'auto'; // 让textarea根据内容自动调整高度
+    (textEditor as HTMLElement).style.overflowY = 'auto'; // 确保文本区域可垂直滚动
+
     // 确保文本区域有足够的宽度，防止水平滚动
     (textEditor as HTMLElement).style.width = '100%';
     (textEditor as HTMLElement).style.maxWidth = 'none';
+    
+    // 添加底部padding确保最后几行内容完全可见
+    (textEditor as HTMLElement).style.paddingBottom = '50px';
+
+    // 恢复滚动位置
+    setTimeout(() => {
+      (container as HTMLElement).scrollTop = currentScrollPosition;
+    }, 10);
   }, [csvContent, isCompactMode]);
 
-  // 在CSV内容变化时调用强制扩展函数
+  // 在CSV内容变化时调用强制扩展函数，但减少调用频率
   useEffect(() => {
     if (editorMode === 'text' && csvContent) {
-      // 延迟执行以确保DOM已更新
-      setTimeout(forceExpandEditor, 100);
+      // 只在内容长度发生显著变化时才调整高度
+      const lineCount = csvContent.split('\n').length;
+      
+      if (Math.abs(lineCount - prevLineCountRef.current) > 5) {
+        // 延迟执行以确保DOM已更新
+        setTimeout(forceExpandEditor, 100);
+        prevLineCountRef.current = lineCount;
+      }
     }
   }, [csvContent, editorMode, forceExpandEditor]);
 
