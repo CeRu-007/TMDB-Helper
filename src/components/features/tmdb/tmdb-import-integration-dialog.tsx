@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import React, { useState, useRef, useEffect, useCallback } from "react"
 import {
   Dialog,
   DialogContent,
@@ -28,16 +28,13 @@ import { useToast } from "@/components/common/use-toast"
 import {
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Terminal,
   Copy,
   Download,
   FileText,
   Loader2,
-  Wrench,
   Zap,
   RefreshCw,
-  Bug,
   Send,
   Table as TableIcon,
   Save,
@@ -45,7 +42,6 @@ import {
   Maximize2,
   Activity as ActivityIcon,
   Trash,
-  AlertTriangle,
   CircleDashed
 } from "lucide-react"
 import path from "path"
@@ -55,7 +51,6 @@ import { NewTMDBTable } from "@/components/features/media/new-tmdb-table"
 import { TMDBItem } from "@/lib/data/storage"
 import { parseCsvContent, serializeCsvData, processOverviewColumn, CSVData as CSVDataType } from "@/lib/data/csv-processor-client"
 import { validateCsvData, fixCsvData } from "@/lib/data/csv-validator"
-import { Alert, AlertDescription } from "@/components/common/alert"
 import FixTMDBImportBugDialog from "../dialogs/fix-tmdb-import-bug-dialog"
 import axios from "axios"
 import { ClientConfigManager } from "@/lib/utils/client-config-manager"
@@ -71,39 +66,10 @@ interface TMDBImportIntegrationDialogProps {
   inTab?: boolean // 是否在标签页中显示
 }
 
-interface ImportStep {
-  id: string
-  title: string
-  description: string
-  status: "pending" | "running" | "completed" | "error" | "skipped"
-  output?: string
-  error?: string
-}
 
 // 重用从csv-processor导入的CSVDataType类型
 type CSVData = CSVDataType;
 
-// 处理步骤配置
-const STEPS: ImportStep[] = [
-  {
-    id: "platform-extract",
-    title: "播出平台抓取",
-    description: "从播出平台抓取元数据并生成import.csv",
-    status: "pending",
-  },
-  {
-    id: "csv-review",
-    title: "CSV文件检查",
-    description: "检查和编辑生成的import.csv文件",
-    status: "pending",
-  },
-  {
-    id: "tmdb-import",
-    title: "TMDB导入",
-    description: "从TMDB获取剧集数据并更新CSV",
-    status: "pending",
-  },
-]
 
 export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, onItemUpdate, inTab = false }: TMDBImportIntegrationDialogProps) {
   const [selectedSeason, setSelectedSeason] = useState<number>(1)
@@ -133,14 +99,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   const [displayedTMDBCommand, setDisplayedTMDBCommand] = useState("")
   const [activeTab, setActiveTab] = useState<string>("process") // 默认显示处理标签
-  // 添加一个标记记录组件是否已初始化
-  const [isDialogInitialized, setIsDialogInitialized] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [currentStep, setCurrentStep] = useState(0)
-  const [steps, setSteps] = useState<ImportStep[]>([...STEPS])
   const [csvData, setCsvData] = useState<CSVData | null>(null)
   const [csvContent, setCsvContent] = useState<string>("")
-  const [showCsvEditor, setShowCsvEditor] = useState(false)
   const [terminalOutput, setTerminalOutput] = useState("")
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
@@ -148,11 +108,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const [isExecutingCommand, setIsExecutingCommand] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const [terminalInput, setTerminalInput] = useState("")
-  const [commandTimeout, setCommandTimeout] = useState(300000) // 5分钟默认超时
   const [currentProcessId, setCurrentProcessId] = useState<string | null>(null)
-  const [lastError, setLastError] = useState<string | null>(null)
   const [showFixBugDialog, setShowFixBugDialog] = useState(false)
-  const [hasNoneTypeError, setHasNoneTypeError] = useState(false)
   const [editorMode, setEditorMode] = useState<"enhanced" | "text">("enhanced")
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
@@ -166,14 +123,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     })()
   }, [open])
 
-  const [, setForceUpdateValue] = useState(0)
-  const forceUpdate = () => setForceUpdateValue(val => val + 1)
   // 添加操作锁，防止按钮互相触发
   const [operationLock, setOperationLock] = useState<string | null>(null)
   // 添加表格加载状态
   const [tableReady, setTableReady] = useState(false)
-  // 判断是否为Windows环境（根据浏览器 userAgent 或 Node process.platform）
-  const isWindows: boolean = typeof navigator !== 'undefined' ? /Windows/i.test(navigator.userAgent) : (typeof process !== 'undefined' && process.platform === 'win32');
 
   // 统一获取 TMDB-Import 工具路径：服务端配置为唯一来源
   const getTmdbImportPath = useCallback(async (): Promise<string | null> => {
@@ -187,76 +140,16 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
   }, []);
 
-  // 计算行号区域的宽度
-  const getLineNumbersWidth = (lineCount: number) => {
-    // 根据行数计算行号区域的宽度，增加宽度以避免文本遮挡
-    if (lineCount < 100) return 60; // 1-99行
-    if (lineCount < 1000) return 70; // 100-999行
-    if (lineCount < 10000) return 80; // 1000-9999行
-    return 90; // 10000+行
-  };
-
-  // 计算编辑器的最佳高度
-  const calculateOptimalEditorHeight = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      // 获取视窗高度
-      const viewportHeight = window.innerHeight;
-      // 预留顶部导航栏、工具栏等元素的空间
-      const reservedSpace = 100; // 减少预留空间，增加编辑器高度
-      // 计算可用高度，并留出一点底部边距
-      const availableHeight = viewportHeight - reservedSpace - 5; // 减少底部边距
-      // 确保最小高度不低于800px
-      return Math.max(800, availableHeight);
-    }
-    return 800; // 增加默认高度
-  }, []);
-
-  // 在组件中添加行号宽度的状态
-  const [lineNumbersWidth, setLineNumbersWidth] = useState(50);
-  // 添加编辑器高度状态
-  const [editorHeight, setEditorHeight] = useState(calculateOptimalEditorHeight());
-
-  // 在csvContent变化时更新行号宽度
-  useEffect(() => {
-    const lineCount = csvContent.split('\n').length;
-    setLineNumbersWidth(getLineNumbersWidth(lineCount));
-  }, [csvContent]);
-
-  // 监听窗口大小变化，动态调整编辑器高度
-  useEffect(() => {
-    const handleResize = () => {
-      if (typeof window !== 'undefined') {
-        const viewportHeight = window.innerHeight;
-        const reservedSpace = 100;
-        const availableHeight = viewportHeight - reservedSpace - 5;
-        setEditorHeight(Math.max(800, availableHeight));
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', handleResize);
-      // 初始化时计算一次
-      handleResize();
-
-      return () => {
-        window.removeEventListener('resize', handleResize);
-      };
-    }
-  }, []); // 移除依赖，避免频繁重新创建事件监听器
-
+  
+  
+  
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight
     }
   }, [terminalOutput])
 
-  // 检测错误类型
-  useEffect(() => {
-    if (lastError && lastError.includes("TypeError: argument of type 'NoneType' is not iterable")) {
-      setHasNoneTypeError(true)
-    }
-  }, [lastError])
-
+  
   // 当item变化时，更新platformUrl
   useEffect(() => {
     if (item && item.platformUrl) {
@@ -291,64 +184,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     setDisplayedTMDBCommand(tmdbCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`)
   }, [selectedSeason, item])
 
-  // 缓存计算结果，避免重复计算
-  const memoizedValues = useMemo(() => {
-    return {
-      hasCSVData: !!csvData,
-      csvRowCount: csvData?.rows?.length || 0,
-      csvColCount: csvData?.headers?.length || 0,
-      isProcessTab: activeTab === "process",
-      isEditTab: activeTab === "edit",
-      canShowTable: csvData && tableReady && (activeTab === "edit" || inTab)
-    }
-  }, [csvData, tableReady, activeTab, inTab])
-
-  // 检测错误类型并提供解决方案
-  const analyzeError = (errorText: string) => {
-    if (errorText.includes("TypeError: argument of type 'NoneType' is not iterable")) {
-      return {
-        type: "code_bug",
-        title: "TMDB-Import代码错误",
-        description: "检测到episode.name为None时的类型错误",
-        solutions: [
-          "这是TMDB-Import工具的一个已知bug",
-          "需要修改common.py文件中的filter_by_name函数",
-          "建议联系TMDB-Import项目维护者报告此问题",
-        ],
-        fixCode: `# 在 common.py 的 filter_by_name 函数中修改第83行:
-# 原代码: if word and word in episode.name:
-# 修改为: if word and episode.name and word in episode.name:`,
-      }
-    }
-
-    if (errorText.includes("HTTP 500") || errorText.includes("HTTP 503")) {
-      return {
-        type: "server_error",
-        title: "服务器错误",
-        description: "目标网站服务器返回错误",
-        solutions: ["检查网站是否可正常访问", "稍后重试", "尝试使用其他URL"],
-      }
-    }
-
-    if (errorText.includes("timeout") || errorText.includes("超时")) {
-      return {
-        type: "timeout",
-        title: "执行超时",
-        description: "命令执行时间过长",
-        solutions: ["增加超时时间设置", "检查网络连接", "尝试使用更稳定的网络环境"],
-      }
-    }
-
-    return null
-  }
-
-  // 停止命令执行
-  const stopCommandExecution = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-  }
-
+  
+  
+  
   // 发送终端输入
   const sendTerminalInput = async () => {
     if (!terminalInput.trim() || !currentProcessId) return
@@ -484,9 +322,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const executeCommandWithStream = async (command: string, workingDirectory: string) => {
     setIsExecutingCommand(true)
     setCurrentProcessId(null)
-    setLastError(null)
-    setHasNoneTypeError(false)
-    abortControllerRef.current = new AbortController()
+        abortControllerRef.current = new AbortController()
 
     try {
       const response = await fetch("/api/commands/execute-command-interactive", {
@@ -497,7 +333,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         body: JSON.stringify({
           command,
           workingDirectory,
-          timeout: commandTimeout,
+          timeout: 300000, // 5分钟默认超时
         }),
         signal: abortControllerRef.current.signal,
       })
@@ -555,12 +391,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                    data.message.includes("user data directory is already in use"))) {
                 appendTerminalOutput(`检测到Edge浏览器会话创建失败，可能需要关闭现有Edge进程`, "warning")
                 hasError = true
-                setLastError(data.message)
               }
 
               if (data.type === "close" && data.exitCode !== 0) {
                 hasError = true
-                setLastError(errorText)
               }
             } catch (e) {
               // 忽略解析错误
@@ -608,8 +442,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 从CSV文件读取数据
   const readCSVFile = async (workingDirectory: string): Promise<boolean> => {
     try {
-      setIsProcessing(true);
-      
+            
       try {
         // 使用API路由读取CSV文件
 
@@ -662,7 +495,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             appendTerminalOutput("1. 首先运行播出平台命令获取基本信息", "info");
             appendTerminalOutput("2. 然后运行TMDB命令获取详细元数据", "info");
             appendTerminalOutput("3. 命令执行成功后会自动生成import.csv文件", "info");
-            setLastError(errorMessage);
 
             // 静默处理错误，不抛出异常
             
@@ -673,7 +505,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             appendTerminalOutput("1. 首先运行播出平台命令获取基本信息", "info");
             appendTerminalOutput("2. 然后运行TMDB命令获取详细元数据", "info");
             appendTerminalOutput("3. 命令执行成功后会自动生成import.csv文件", "info");
-            setLastError(errorMessage);
 
             // 静默处理错误，不抛出异常
             
@@ -681,7 +512,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             // 其他错误
             const errorMessage = axiosError.message || '未知错误';
             appendTerminalOutput(`读取CSV文件失败: ${errorMessage}`, "error");
-            setLastError(errorMessage);
             
           }
 
@@ -689,50 +519,20 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         }
       } catch (error: any) {
         // 捕获并处理所有其他错误
-        
+
         appendTerminalOutput(`读取CSV文件过程中出错: ${error.message || '未知错误'}`, "error");
-        setLastError(error.message || '未知错误');
         return false;
       }
     } catch (outerError: any) {
       // 捕获所有可能的外部错误
-      
+
       appendTerminalOutput("读取CSV文件时出现未预期的错误，请检查控制台日志", "error");
-      setLastError(outerError.message || '未知错误');
       return false;
     } finally {
-      setIsProcessing(false);
-    }
+          }
   };
 
-  // 处理读取到的CSV数据
-  const handleCsvDataAfterRead = (csvData: CSVDataType) => {
-    
-    // 设置CSV数据
-    setCsvData(csvData)
-
-    // 将csvData对象转换为CSV文本
-    const csvText = serializeCsvData(csvData)
-    setCsvContent(fixCsvTextEncoding(csvText))
-
-    // 更新UI状态
-    appendTerminalOutput(`CSV文件读取成功，共${csvData.rows.length}行`, "success");
-    updateStepStatus(1, "completed", `成功读取CSV文件，共${csvData.rows.length}行`);
-    setShowCsvEditor(true);
-
-    // 确保在编辑页面时强制刷新编辑页面内容
-    if (activeTab === "edit") {
-
-      // 立即设置表格就绪状态
-      setTableReady(true);
-
-      // 延迟执行以确保DOM更新
-      setTimeout(() => {
-        setTableReady(true);
-      }, 100);
-    }
-  }
-
+  
   // 开始处理流程
   const startProcessing = async (e?: React.MouseEvent) => {
     // 防止事件冒泡
@@ -772,16 +572,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     // 操作锁已经设置为"platform"，不需要再设置isProcessing
     setTerminalOutput("")
-    setCurrentStep(0)
-    setLastError(null)
-    setHasNoneTypeError(false)
-
-    // Reset step status
-    setSteps(STEPS.map((step) => ({ ...step, status: "pending" })))
 
     try {
       // Step 1: Platform extraction
-      updateStepStatus(0, "running")
       const command = generatePlatformCommand()
 
       appendTerminalOutput(`切换到工作目录: ${savedTmdbImportPath}`, "info")
@@ -790,35 +583,31 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       const result = await executeCommandWithStream(command, savedTmdbImportPath)
 
       if (!result.success) {
-        updateStepStatus(0, "error", undefined, "命令执行失败")
         appendTerminalOutput(`播出平台数据抓取失败，错误信息: ${result.errorText || "未知错误"}`, "error");
         return
       }
 
-      updateStepStatus(0, "completed", "播出平台数据抓取完成")
+      appendTerminalOutput("播出平台数据抓取完成", "success")
 
       // Step 2: CSV file check
-      setCurrentStep(1)
-      updateStepStatus(1, "running")
-
       const csvRead = await readCSVFile(savedTmdbImportPath)
       if (csvRead) {
         try {
-          updateStepStatus(1, "completed", "CSV文件读取完成")
+          appendTerminalOutput("CSV文件读取完成", "success")
         } catch (error) {
-          
-          updateStepStatus(1, "completed", "CSV文件读取完成")
+
+          appendTerminalOutput("CSV文件读取完成", "success")
         }
 
-        setShowCsvEditor(false) // 默认显示表格视图
+         // 默认显示表格视图
         setEditorMode("enhanced") // 默认使用增强编辑器
         appendTerminalOutput("💡 现在可以在CSV文件管理中查看和编辑文件", "info")
       } else {
-        updateStepStatus(1, "error", undefined, "CSV文件读取失败")
+        appendTerminalOutput("CSV文件读取失败", "error")
       }
     } catch (error) {
-      
-      updateStepStatus(currentStep, "error", undefined, error instanceof Error ? error.message : "未知错误")
+
+      appendTerminalOutput(`处理出错: ${error instanceof Error ? error.message : "未知错误"}`, "error")
     } finally {
       // 释放操作锁
       setOperationLock(null);
@@ -828,318 +617,43 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
   }
 
-  // 更新步骤状态
-  const updateStepStatus = (stepIndex: number, status: ImportStep["status"], output?: string, error?: string) => {
-    setSteps((prev) => prev.map((step, index) => (index === stepIndex ? { ...step, status, output, error } : step)))
-  }
+  
+  // 通用错误处理辅助函数
+  const handleSaveError = (error: any, appendTerminalOutput: (text: string, type: "info" | "success" | "error" | "warning" | "stdout" | "stderr") => void, toast: any) => {
+    // 提供更友好的错误消息
+    let errorMessage = error.message || '未知错误';
+    let errorTitle = "保存失败";
 
-  // 添加一个函数用于修复中文乱码
-  const fixChineseEncoding = (text: string): string => {
-    // 尝试修复常见的中文乱码问题
-    // 这种方法不能解决所有乱码问题，但可以处理一些常见情况
-    try {
-      // 检查是否包含常见的乱码字符组合
-      if (/[\u00e0-\u00ef][\u00bc-\u00bf][\u0080-\u00bf]/.test(text)) {
-        // 尝试修复UTF-8被错误解析为Latin1的情况
-        return decodeURIComponent(escape(text));
-      }
-    } catch (e) {
-      
+    // 处理特定类型的错误
+    if (errorMessage.includes('无法验证文件是否写入')) {
+      errorMessage = '无法确认文件是否成功保存。请检查文件权限和磁盘空间。';
+      errorTitle = "验证失败";
+    } else if (errorMessage.includes('EACCES')) {
+      errorMessage = '没有足够的权限写入文件。请检查文件权限设置。';
+      errorTitle = "权限错误";
+    } else if (errorMessage.includes('ENOSPC')) {
+      errorMessage = '磁盘空间不足，无法保存文件。';
+      errorTitle = "存储错误";
     }
-    return text;
+
+    appendTerminalOutput(`保存CSV文件失败: ${errorMessage}`, "error");
+    toast({
+      title: errorTitle,
+      description: `保存操作未完成: ${errorMessage}`,
+      variant: "destructive",
+      duration: 5000,
+    });
+
+    return { errorMessage, errorTitle };
   };
 
-  // 修复CSV文本内容中的中文乱码
-  const fixCsvTextEncoding = (text: string): string => {
-    try {
-      // 检查是否需要修复
-      if (!/[\u00e0-\u00ff]{2,}|[\ufffd]/.test(text)) {
-        return text; // 没有明显的乱码特征，直接返回
-      }
-
-      // 特殊字符替换映射表 - 不包含可能影响CSV结构的字符
-      const specialCharMap: Record<string, string> = {
-        "\ufffd": "", // Unicode替换字符，通常表示无法解码的字符
-        "Â": "",      // 常见乱码前缀
-        "â": "",      // 常见乱码前缀
-        "Ã": "",      // 常见乱码前缀
-        "ã": "",      // 常见乱码前缀
-        "Å": "",      // 常见乱码前缀
-        "å": "",      // 常见乱码前缀
-        // 可以根据需要添加更多映射
-      };
-
-      // 分行处理，保护CSV结构
-      const lines = text.split('\n');
-      const fixedLines = lines.map(line => {
-        // 使用引号状态追踪器来防止修改引号内的逗号
-        let insideQuotes = false;
-        let result = '';
-
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-
-          // 追踪引号状态
-          if (char === '"') {
-            // 检查是否是转义引号 ("")
-            if (i + 1 < line.length && line[i + 1] === '"') {
-              result += '""'; // 保留转义引号
-              i++; // 跳过下一个引号
-            } else {
-              insideQuotes = !insideQuotes;
-              result += char;
-            }
-          }
-          // 保护逗号，特别是引号内的逗号
-          else if (char === ',') {
-            result += char; // 总是保留逗号，它们是CSV结构的关键
-          }
-          // 处理可能的乱码字符
-          else if (!insideQuotes && Object.keys(specialCharMap).includes(char)) {
-            result += specialCharMap[char];
-          }
-          // 尝试修复UTF-8错误解析为Latin1的情况，但只在非引号内时
-          else if (!insideQuotes && /[\u00e0-\u00ff]{2}/.test(char + (line[i+1] || ''))) {
-            try {
-              // 只处理当前字符，避免越界
-              const fixed = decodeURIComponent(escape(char));
-              if (fixed && fixed !== char) {
-                result += fixed;
-              } else {
-                result += char;
-              }
-            } catch {
-              result += char;
-            }
-          }
-          // 其他字符保持不变
-          else {
-            result += char;
-          }
-        }
-
-        return result;
-      });
-
-      return fixedLines.join('\n');
-    } catch (e) {
-      
-    }
-
-    // 如果所有方法都失败，返回原文本
-    return text;
-  };
-
-  // 添加终端输出
-  const appendTerminalOutput = (
-    text: string,
-    type: "info" | "success" | "error" | "warning" | "stdout" | "stderr" = "info",
-  ) => {
-    const timestamp = new Date().toLocaleTimeString()
-    let prefix = ""
-
-    switch (type) {
-      case "success":
-        prefix = "✓ "
-        break
-      case "error":
-      case "stderr":
-        prefix = "✗ "
-        break
-      case "warning":
-        prefix = "⚠️ "
-        break
-      case "info":
-        prefix = "ℹ️ "
-        break
-      default:
-        prefix = ""
-    }
-
-    // 修复可能的中文乱码
-    const fixedText = type === "stderr" || type === "stdout" ? fixChineseEncoding(text) : text;
-
-    setTerminalOutput((prev) => prev + `[${timestamp}] ${prefix}${fixedText}\n`)
-  }
-
-  // 处理增强型CSV编辑器的保存
-  const handleSaveEnhancedCSV = async () => {
-    try {
-      if (!csvData) {
-        toast({
-          title: "错误",
-          description: "没有CSV数据可保存",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // 设置保存中状态，更新UI反馈
-      setIsSaving(true);
-      setIsProcessing(true);
-      appendTerminalOutput("正在保存增强型CSV编辑器的更改...", "info");
-
-      // 获取当前工作目录（兼容服务端配置回填）
-      const tmdbImportPath = await getTmdbImportPath();
-      if (!tmdbImportPath) {
-        throw new Error("未找到TMDB-Import工具路径");
-      }
-
-      const importCsvPath = path.join(tmdbImportPath, 'import.csv');
-
-      // 处理overview列，确保格式正确
-      const processedData = processOverviewColumn(csvData);
-
-      // 使用API路由保存CSV文件
-      const response = await axios.post('/api/csv/save', {
-        filePath: importCsvPath,
-        data: processedData
-      });
-
-      if (!response.data.success) {
-        throw new Error(response.data.error || '保存CSV文件失败');
-      }
-
-      // 确保文件确实被写入
-      const verifyResponse = await axios.post('/api/csv/verify', {
-        filePath: importCsvPath
-      });
-
-      if (!verifyResponse.data.success || !verifyResponse.data.exists) {
-        throw new Error('文件保存失败：无法验证文件是否写入');
-      }
-
-      appendTerminalOutput(`CSV文件已成功保存到 ${importCsvPath}`, "success");
-      toast({
-        title: "保存成功",
-        description: "CSV文件已保存，可以继续操作",
-      });
-
-      // 更新UI状态
-      setShowCsvEditor(false);
-      setActiveTab("process");
-      return true;
-    } catch (error: any) {
-      
-      // 提供更友好的错误消息
-      let errorMessage = error.message || '未知错误';
-      let errorTitle = "保存失败";
-
-      // 处理特定类型的错误
-      if (errorMessage.includes('无法验证文件是否写入')) {
-        errorMessage = '无法确认文件是否成功保存。请检查文件权限和磁盘空间。';
-        errorTitle = "验证失败";
-      } else if (errorMessage.includes('EACCES')) {
-        errorMessage = '没有足够的权限写入文件。请检查文件权限设置。';
-        errorTitle = "权限错误";
-      } else if (errorMessage.includes('ENOSPC')) {
-        errorMessage = '磁盘空间不足，无法保存文件。';
-        errorTitle = "存储错误";
-      }
-
-      appendTerminalOutput(`保存CSV文件失败: ${errorMessage}`, "error");
-      toast({
-        title: errorTitle,
-        description: `保存操作未完成: ${errorMessage}`,
-        variant: "destructive",
-        duration: 5000,
-      });
-      return false;
-    } finally {
-      setIsSaving(false);
-      setIsProcessing(false);
-    }
-  };
-
-  // 处理单行CSV编辑器的保存
-  const handleSaveSingleLineCSV = async () => {
-    try {
-      appendTerminalOutput("解析单行编辑器CSV内容...", "info");
-
-      // 解析CSV内容
-      const newData = parseCsvContent(csvContent);
-
-      // 验证解析后的数据
-      const validationResult = validateCsvData(newData);
-      if (!validationResult.valid) {
-        appendTerminalOutput(`CSV数据结构有问题: ${validationResult.errors.join(", ")}`, "warning");
-
-        // 尝试修复数据
-        appendTerminalOutput("尝试修复CSV数据结构...", "info");
-        const fixedData = fixCsvData(newData);
-        setCsvData(fixedData);
-      } else {
-        setCsvData(newData);
-      }
-
-      // 获取当前工作目录（兼容服务端配置回填）
-      const tmdbImportPath = await getTmdbImportPath();
-      if (!tmdbImportPath) {
-        throw new Error("未找到TMDB-Import工具路径");
-      }
-
-      const importCsvPath = path.join(tmdbImportPath, 'import.csv');
-
-      // 处理overview列，确保格式正确
-      const processedData = processOverviewColumn(newData);
-
-      // 使用API路由保存CSV文件
-      const response = await axios.post('/api/csv/save', {
-        filePath: importCsvPath,
-        data: processedData
-      });
-
-      if (!response.data.success) {
-        throw new Error(response.data.error || '保存CSV文件失败');
-      }
-
-      // 确保文件确实被写入
-      const verifyResponse = await axios.post('/api/csv/verify', {
-        filePath: importCsvPath
-      });
-
-      if (!verifyResponse.data.success || !verifyResponse.data.exists) {
-        throw new Error('文件保存失败：无法验证文件是否写入');
-      }
-
-      appendTerminalOutput("CSV文件保存成功", "success");
-      toast({
-        title: "成功",
-        description: "CSV文件已保存",
-      });
-
-      // 更新UI状态
-      setShowCsvEditor(false);
-      setActiveTab("process");
-    } catch (error: any) {
-      // 提供更友好的错误消息
-      let errorMessage = error.message || '未知错误';
-      let errorTitle = "错误";
-
-      // 处理特定类型的错误
-      if (errorMessage.includes('无法验证文件是否写入')) {
-        errorMessage = '无法确认文件是否成功保存。请检查文件权限和磁盘空间。';
-        errorTitle = "验证失败";
-      } else if (errorMessage.includes('EACCES')) {
-        errorMessage = '没有足够的权限写入文件。请检查文件权限设置。';
-        errorTitle = "权限错误";
-      } else if (errorMessage.includes('ENOSPC')) {
-        errorMessage = '磁盘空间不足，无法保存文件。';
-        errorTitle = "存储错误";
-      }
-
-      appendTerminalOutput(`保存CSV文件失败: ${errorMessage}`, "error");
-      toast({
-        title: errorTitle,
-        description: `保存CSV文件失败: ${errorMessage}`,
-        variant: "destructive",
-        duration: 5000,
-      });
-    }
-  };
-
-  // 保存CSV文本编辑器修改
-  const saveCsvChanges = async () => {
+  // 统一的CSV保存函数
+  const saveCSV = async (options: {
+    mode: "enhanced" | "text",
+    onSuccess?: (message: string) => void,
+    showSuccessNotification?: boolean,
+    skipDataParsing?: boolean
+  }): Promise<boolean> => {
     try {
       if (!csvData) {
         toast({
@@ -1152,8 +666,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       // 设置保存中状态，提供视觉反馈
       setIsSaving(true);
-      setIsProcessing(true);
-      appendTerminalOutput("正在保存CSV文件...", "info");
+      const saveMessage = options.mode === "enhanced" ? "正在保存增强型CSV编辑器的更改..." : "正在保存CSV文件...";
+      appendTerminalOutput(saveMessage, "info");
 
       // 获取当前工作目录（兼容服务端配置回填）
       const tmdbImportPath = await getTmdbImportPath();
@@ -1163,9 +677,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       const importCsvPath = path.join(tmdbImportPath, 'import.csv');
 
-      // 对于文本模式，需要先将文本解析为CSV数据结构
+      // 处理数据准备
       let dataToSave = csvData;
-      if (editorMode === "text" && csvContent) {
+      if (options.mode === "text" && !options.skipDataParsing && csvContent) {
         try {
           // 解析文本内容为CSV数据
           dataToSave = parseCsvContent(csvContent);
@@ -1200,13 +714,175 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       }
 
       appendTerminalOutput(`CSV文件已成功保存到 ${importCsvPath}`, "success");
-      toast({
-        title: "保存成功",
-        description: "CSV文件已保存，修改已应用",
-        duration: 3000,
-      });
 
-      // 在保存成功后显示一个临时提示
+      // 成功处理
+      if (options.showSuccessNotification !== false) {
+        toast({
+          title: "保存成功",
+          description: options.mode === "enhanced" ? "CSV文件已保存，可以继续操作" : "CSV文件已保存，修改已应用",
+          ...(options.mode === "text" && { duration: 3000 }),
+        });
+      }
+
+      // 调用成功回调
+      if (options.onSuccess) {
+        options.onSuccess(`CSV文件已成功保存到 ${importCsvPath}`);
+      }
+
+      // 对于增强模式，切换到处理标签页
+      if (options.mode === "enhanced") {
+        setActiveTab("process");
+      }
+
+      return true;
+    } catch (error: any) {
+      handleSaveError(error, appendTerminalOutput, toast);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 统一的编码修复函数
+  const fixEncoding = (text: string, preserveCsvStructure: boolean = true): string => {
+    try {
+      // 检查是否需要修复
+      if (!/[\u00e0-\u00ff]{2,}|[\ufffd]/.test(text)) {
+        return text; // 没有明显的乱码特征，直接返回
+      }
+
+      let result = text;
+
+      // 简单修复UTF-8被错误解析为Latin1的情况
+      try {
+        if (/[\u00e0-\u00ef][\u00bc-\u00bf][\u0080-\u00bf]/.test(text)) {
+          result = decodeURIComponent(escape(text));
+        }
+      } catch (e) {
+        // 如果简单修复失败，继续使用复杂修复
+      }
+
+      // 如果需要保护CSV结构，使用高级修复逻辑
+      if (preserveCsvStructure) {
+        // 特殊字符替换映射表 - 不包含可能影响CSV结构的字符
+        const specialCharMap: Record<string, string> = {
+          "\ufffd": "", // Unicode替换字符，通常表示无法解码的字符
+          "Â": "",      // 常见乱码前缀
+          "â": "",      // 常见乱码前缀
+          "Ã": "",      // 常见乱码前缀
+          "ã": "",      // 常见乱码前缀
+          "Å": "",      // 常见乱码前缀
+          "å": "",      // 常见乱码前缀
+          // 可以根据需要添加更多映射
+        };
+
+        // 分行处理，保护CSV结构
+        const lines = result.split('\n');
+        const fixedLines = lines.map(line => {
+          // 使用引号状态追踪器来防止修改引号内的逗号
+          let insideQuotes = false;
+          let processedLine = '';
+
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+
+            // 追踪引号状态
+            if (char === '"') {
+              // 检查是否是转义引号 ("")
+              if (i + 1 < line.length && line[i + 1] === '"') {
+                processedLine += '""'; // 保留转义引号
+                i++; // 跳过下一个引号
+              } else {
+                insideQuotes = !insideQuotes;
+                processedLine += char;
+              }
+            }
+            // 保护逗号，特别是引号内的逗号
+            else if (char === ',') {
+              processedLine += char; // 总是保留逗号，它们是CSV结构的关键
+            }
+            // 处理可能的乱码字符
+            else if (!insideQuotes && Object.keys(specialCharMap).includes(char)) {
+              processedLine += specialCharMap[char] || char;
+            }
+            // 尝试修复UTF-8错误解析为Latin1的情况，但只在非引号内时
+            else if (!insideQuotes && /[\u00e0-\u00ff]{2}/.test(char + (line[i+1] || ''))) {
+              try {
+                // 只处理当前字符，避免越界
+                const fixed = decodeURIComponent(escape(char));
+                if (fixed && fixed !== char) {
+                  processedLine += fixed;
+                } else {
+                  processedLine += char;
+                }
+              } catch {
+                processedLine += char;
+              }
+            }
+            // 其他字符保持不变
+            else {
+              processedLine += char;
+            }
+          }
+
+          return processedLine;
+        });
+
+        return fixedLines.join('\n');
+      }
+
+      return result;
+    } catch (e) {
+
+    }
+
+    // 如果所有方法都失败，返回原文本
+    return text;
+  };
+
+  // 添加终端输出
+  const appendTerminalOutput = (
+    text: string,
+    type: "info" | "success" | "error" | "warning" | "stdout" | "stderr" = "info",
+  ) => {
+    const timestamp = new Date().toLocaleTimeString()
+    let prefix = ""
+
+    switch (type) {
+      case "success":
+        prefix = "✓ "
+        break
+      case "error":
+      case "stderr":
+        prefix = "✗ "
+        break
+      case "warning":
+        prefix = "⚠️ "
+        break
+      case "info":
+        prefix = "ℹ️ "
+        break
+      default:
+        prefix = ""
+    }
+
+    // 修复可能的中文乱码
+    const fixedText = type === "stderr" || type === "stdout" ? fixEncoding(text, false) : text;
+
+    setTerminalOutput((prev) => prev + `[${timestamp}] ${prefix}${fixedText}\n`)
+  }
+
+  // 处理增强型CSV编辑器的保存
+  const handleSaveEnhancedCSV = async () => {
+    return await saveCSV({ mode: "enhanced" });
+  };
+
+  // 保存CSV文本编辑器修改
+  const saveCsvChanges = async () => {
+    const result = await saveCSV({ mode: "text" });
+
+    // 在保存成功后显示一个临时提示（仅用于文本模式）
+    if (result) {
       const statusText = document.createElement('div');
       statusText.textContent = '✓ 已保存';
       statusText.style.position = 'fixed';
@@ -1224,39 +900,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       setTimeout(() => {
         document.body.removeChild(statusText);
       }, 2000);
-
-      return true;
-    } catch (error: any) {
-      
-      // 提供更友好的错误消息
-      let errorMessage = error.message || '未知错误';
-      let errorTitle = "保存失败";
-
-      // 处理特定类型的错误
-      if (errorMessage.includes('无法验证文件是否写入')) {
-        errorMessage = '无法确认文件是否成功保存。请检查文件权限和磁盘空间。';
-        errorTitle = "验证失败";
-      } else if (errorMessage.includes('EACCES')) {
-        errorMessage = '没有足够的权限写入文件。请检查文件权限设置。';
-        errorTitle = "权限错误";
-      } else if (errorMessage.includes('ENOSPC')) {
-        errorMessage = '磁盘空间不足，无法保存文件。';
-        errorTitle = "存储错误";
-      }
-
-      appendTerminalOutput(`保存CSV文件失败: ${errorMessage}`, "error");
-      toast({
-        title: errorTitle,
-        description: `保存操作未完成: ${errorMessage}`,
-        variant: "destructive",
-        duration: 5000,
-      });
-      return false;
-    } finally {
-      // 恢复状态
-      setIsSaving(false);
-      setIsProcessing(false);
     }
+
+    return result;
   };
 
   // 复制到剪贴板
@@ -1270,64 +916,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
   }
 
-  // 下载CSV文件
-  const downloadCSV = () => {
-    if (!csvData) return
-
-    try {
-      appendTerminalOutput("处理CSV数据准备下载...", "info")
-
-      // 验证数据结构
-      const validationResult = validateCsvData(csvData)
-      if (!validationResult.valid) {
-        appendTerminalOutput(`⚠️ CSV数据结构有问题: ${validationResult.errors.map(e => e.message).join(", ")}`, "warning")
-        appendTerminalOutput("尝试修复CSV数据结构...", "info")
-      }
-
-      // 处理overview列并规范化数据
-      let processedData = processOverviewColumn(csvData)
-      processedData = validationResult.valid ? processedData : fixCsvData(processedData)
-
-      // 检查是否有显式空值标记
-      let hasExplicitEmpty = false;
-      for (const row of processedData.rows) {
-        if (row.some(cell => cell === EXPLICIT_EMPTY_VALUE)) {
-          hasExplicitEmpty = true;
-          break;
-        }
-      }
-
-      if (hasExplicitEmpty) {
-        appendTerminalOutput("ℹ️ CSV文件包含显式空值标记，这些单元格在下载时会转换为空字符串", "info");
-      }
-
-      // 转换为CSV字符串
-      const content = serializeCsvData(processedData)
-
-      // 检查生成的内容是否正确
-      const lines = content.trim().split('\n')
-      if (lines.length < 2 || !lines[0].includes(',')) {
-        appendTerminalOutput("⚠️ 生成的CSV内容无效，已中止下载", "warning")
-        return
-      }
-
-      // 创建Blob对象并下载
-    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
-    link.download = "import.csv"
-    link.click()
-    URL.revokeObjectURL(link.href)
-
-    appendTerminalOutput("✓ CSV文件已下载到本地", "success")
-      appendTerminalOutput("✓ 已清理overview列中的换行符", "success")
-      appendTerminalOutput("✓ 已规范化CSV数据结构", "success")
-    } catch (error) {
-      
-      appendTerminalOutput(`⚠️ 下载CSV文件失败: ${error instanceof Error ? error.message : "未知错误"}`, "error")
-    }
-  }
-
+  
   // 手动执行TMDB导入
   const executeTMDBExtraction = async (e?: React.MouseEvent) => {
     // 防止事件冒泡
@@ -1353,13 +942,11 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     try {
       // 更新UI状态
       appendTerminalOutput("准备执行TMDB导入命令...", "info");
-      updateStepStatus(2, "running", "正在准备执行TMDB导入...");
 
       // 获取TMDB-Import工具路径（兼容服务端配置回填）
       const tmdbImportPath = await getTmdbImportPath();
       if (!tmdbImportPath) {
         appendTerminalOutput("未找到TMDB-Import工具路径，请先配置", "error");
-        updateStepStatus(2, "error", undefined, "未找到TMDB-Import工具路径");
         toast({
           title: "配置缺失",
           description: "未找到TMDB-Import工具路径，请在设置中配置",
@@ -1372,7 +959,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       const tmdbCommand = generateTMDBCommand(selectedSeason);
       if (!tmdbCommand) {
         appendTerminalOutput("生成TMDB命令失败，请检查剧集ID和季数", "error");
-        updateStepStatus(2, "error", undefined, "生成TMDB命令失败");
         return;
       }
 
@@ -1380,7 +966,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       const cmdParts = tmdbCommand.split(' ');
       if (cmdParts.length < 3) {
         appendTerminalOutput("命令格式错误", "error");
-        updateStepStatus(2, "error", undefined, "命令格式错误");
         return;
       }
 
@@ -1400,7 +985,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       // 根据执行结果更新状态
       if (result.success) {
         appendTerminalOutput("TMDB导入命令执行成功", "success");
-        updateStepStatus(2, "completed", "TMDB导入命令已执行完成");
         toast({
           title: "命令已执行",
           description: "TMDB导入命令已成功执行",
@@ -1408,7 +992,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       } else {
         const errorMsg = result.errorText || "未知错误";
         appendTerminalOutput(`TMDB导入命令执行失败: ${errorMsg}`, "error");
-        updateStepStatus(2, "error", undefined, `TMDB导入命令执行失败: ${errorMsg}`);
         toast({
           title: "执行失败",
           description: "TMDB导入命令执行失败，请查看终端输出了解详细信息",
@@ -1416,9 +999,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         });
       }
     } catch (error: any) {
-      
+
       appendTerminalOutput(`执行出错: ${error.message || '未知错误'}`, "error");
-      updateStepStatus(2, "error", undefined, `执行出错: ${error.message || '未知错误'}`);
       toast({
         title: "执行出错",
         description: error.message || "未知错误",
@@ -1430,25 +1012,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
   };
 
-  // 获取步骤状态图标
-  const getStepStatusIcon = (status: ImportStep["status"]) => {
-    switch (status) {
-      case "pending":
-        return <div className="w-4 h-4 rounded-full border-2 border-gray-300"></div>
-      case "running":
-        return <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-      case "completed":
-        return <CheckCircle2 className="w-4 h-4 text-green-600" />
-      case "error":
-        return <XCircle className="w-4 h-4 text-red-600" />
-      default:
-        return <div className="w-4 h-4 rounded-full border-2 border-gray-300"></div>
-    }
-  }
-
-  // 分析当前错误
-  const currentErrorAnalysis = lastError ? analyzeError(lastError) : null
-
+  
+  
   // 处理编辑器模式切换
   const handleEditorModeChange = (mode: "enhanced" | "text") => {
     // 如果从表格模式切换到文本模式，需要将csvData转换为文本
@@ -1456,9 +1021,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       // 将csvData转换为CSV文本并修复可能的编码问题
       const rawCsvText = serializeCsvData(csvData)
       // 多次尝试修复乱码，有些复杂的乱码可能需要多次处理
-      let fixedCsvText = fixCsvTextEncoding(rawCsvText)
+      let fixedCsvText = fixEncoding(rawCsvText)
       // 再次尝试修复，处理可能遗漏的乱码
-      fixedCsvText = fixCsvTextEncoding(fixedCsvText)
+      fixedCsvText = fixEncoding(fixedCsvText)
       setCsvContent(fixedCsvText)
 
       // 如果检测到并修复了乱码，显示提示
@@ -1514,9 +1079,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     if (!csvContent) return
 
     // 多次尝试修复乱码
-    let fixedCsvContent = fixCsvTextEncoding(csvContent)
+    let fixedCsvContent = fixEncoding(csvContent)
     // 再次尝试修复，处理可能遗漏的乱码
-    fixedCsvContent = fixCsvTextEncoding(fixedCsvContent)
+    fixedCsvContent = fixEncoding(fixedCsvContent)
 
     if (fixedCsvContent !== csvContent) {
       setCsvContent(fixedCsvContent)
@@ -1613,7 +1178,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     // 取消快捷键: Esc
     else if (e.key === "Escape") {
       e.preventDefault();
-      setShowCsvEditor(false);
+      ;
     }
 
     // Tab键处理：插入4个空格而不是切换焦点
@@ -1657,10 +1222,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   }, []);
 
   // 调试函数
-  const debugState = () => {
-    
-  }
-
   // 确保表格组件只有在完全准备好后才会渲染
   useEffect(() => {
     if (csvData && (activeTab === "edit" || inTab)) {
@@ -1766,594 +1327,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       }
     }
   }
-
-  // 渲染主要内容
-  const renderContent = () => (
-    <>
-      {/* 使用标签式布局 */}
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="w-full h-full"
-        defaultValue="process"
-      >
-        <div className="border-b">
-          <div className="flex items-center justify-between px-6 py-2">
-            <TabsList>
-              <TabsTrigger value="process" className="flex items-center">
-                <Terminal className="h-4 w-4 mr-2" />
-                处理
-              </TabsTrigger>
-              <TabsTrigger value="edit" className="flex items-center">
-                        <FileText className="h-4 w-4 mr-2" />
-                编辑
-              </TabsTrigger>
-            </TabsList>
-
-                      <div className="flex items-center space-x-2">
-                              <Button
-                variant="outline"
-                                size="sm"
-                onClick={() => setShowFixBugDialog(true)}
-                className="flex items-center"
-                              >
-                <Wrench className="h-4 w-4 mr-2" />
-                Bug修复
-                              </Button>
-                            </div>
-                      </div>
-                </div>
-
-        {/* 处理标签内容 */}
-        <TabsContent
-          value="process"
-          className="h-[calc(100%-48px)] overflow-hidden"
-        >
-          <div className="p-4 h-full overflow-y-auto space-y-4" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-            {/* TMDB导入命令区域 */}
-                <Card variant="frosted">
-              <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                  <Terminal className="h-4 w-4 mr-2" />
-                  TMDB导入命令
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {/* 命令显示区域 */}
-                <div className="bg-gray-900 text-green-400 p-3 rounded-md font-mono text-sm overflow-x-auto whitespace-pre">
-                  <div className="flex items-center justify-between">
-                    <div>{generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}</div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6"
-                      onClick={() => copyToClipboard(generatePlatformCommand(), "播出平台命令")}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="flex-1 min-w-0 mr-2 overflow-hidden">
-                      <div className="font-mono text-xs"
-                           style={{
-                             textOverflow: 'ellipsis !important',
-                             whiteSpace: 'nowrap !important',
-                             overflow: 'hidden !important',
-                             width: '100% !important',
-                             maxWidth: '100%'
-                           }}
-                           title={displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
-                        {displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6"
-                      onClick={() => copyToClipboard(generateTMDBCommand(selectedSeason), "TMDB命令")}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* 配置和按钮区域 */}
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-full">
-                  {/* 左侧：URL和季数配置 */}
-                  <div className="space-y-3">
-                <div>
-                  <Label htmlFor="platform-url">播出平台URL</Label>
-                  <Input
-                    id="platform-url"
-                    value={platformUrl}
-                    onChange={(e) => setPlatformUrl(e.target.value)}
-                    placeholder="https://example.com/show-page"
-                    className="mt-1"
-                  />
-                </div>
-                    <div className="flex items-center gap-3">
-                <div>
-                        <Label>TMDB季</Label>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className="text-sm">第</span>
-                  <Input
-                    type="number"
-                            min="1"
-                            max="20"
-                            value={selectedSeason}
-                            onChange={(e) => handleSeasonChange(e.target.value)}
-                            className="w-16 h-8"
-                          />
-                          <span className="text-sm">季</span>
-                        </div>
-                </div>
-
-                      <div className="flex items-center space-x-2 mt-6">
-                    <Badge variant={tmdbPathState ? "default" : "secondary"}>
-                          {tmdbPathState ? "工具路径已配置" : "未配置工具路径"}
-                    </Badge>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={loadLocalCSVFile}
-                          disabled={operationLock !== null}
-                          className="h-7"
-                          title="加载本地CSV文件"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5" />
-                        </Button>
-                  </div>
-                    </div>
-                </div>
-
-                  {/* 右侧：按钮区域 */}
-                  <div className="flex flex-col justify-end space-y-2">
-                    {/* 两个主要按钮 */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Button
-                        onClick={(e) => startProcessing(e)}
-                        disabled={operationLock === "platform" || !tmdbPathState || !platformUrl}
-                        className="bg-green-600 hover:bg-green-700 h-12"
-                  >
-                    {operationLock === "platform" ? (
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    ) : (
-                      <Zap className="h-5 w-5 mr-2" />
-                    )}
-                        播出平台抓取
-                  </Button>
-                      <Button
-                        onClick={(e) => executeTMDBExtraction(e)}
-                        disabled={operationLock === "tmdb" || csvData === null}
-                        className="bg-blue-600 hover:bg-blue-700 h-12"
-                      >
-                        {operationLock === "tmdb" ? (
-                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                        ) : (
-                        <Download className="h-5 w-5 mr-2" />
-                        )}
-                        执行TMDB导入
-                      </Button>
-                  </div>
-                </div>
-                  </div>
-              </CardContent>
-            </Card>
-
-                {/* 错误分析和解决方案 */}
-                {hasNoneTypeError && (
-              <Alert className="bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 mb-6">
-                    <Bug className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    <AlertDescription>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <strong className="text-red-800 dark:text-red-200">TMDB-Import代码错误</strong>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowFixBugDialog(true)}
-                            className="h-7 bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800 border-red-300 dark:border-red-700"
-                          >
-                            <Wrench className="h-3 w-3 mr-1" />
-                            <span className="text-xs">自动修复</span>
-                          </Button>
-                        </div>
-                        <p className="text-red-700 dark:text-red-300 text-sm">
-                          检测到episode.name为None时的类型错误。这是TMDB-Import工具的一个已知bug，需要修改common.py文件。
-                        </p>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-full overflow-hidden">
-              {/* 步骤进度 */}
-              <Card variant="frosted">
-                <CardHeader>
-                  <CardTitle className="text-base">处理步骤</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {steps.map((step, index) => (
-                      <div key={step.id} className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 mt-1">{getStepStatusIcon(step.status)}</div>
-                        <div className="flex-1 min-w-0">
-                          <h4
-                            className={`text-sm font-medium ${
-                              step.status === "completed"
-                                ? "text-green-700 dark:text-green-300"
-                                : step.status === "error"
-                                  ? "text-red-700 dark:text-red-300"
-                                  : step.status === "running"
-                                    ? "text-blue-700 dark:text-blue-300"
-                                    : "text-gray-700 dark:text-gray-300"
-                            }`}
-                          >
-                            {step.title}
-                          </h4>
-                          <p className="text-xs text-gray-500 mt-1">{step.description}</p>
-                          {step.output && (
-                            <div className="text-xs text-green-600 dark:text-green-400 mt-1">✓ {step.output}</div>
-                          )}
-                          {step.error && (
-                            <div className="text-xs text-red-600 dark:text-red-400 mt-1">✗ {step.error}</div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* 步骤操作区域 */}
-                  {csvData && steps[1].status === "completed" && (
-                    <div className="mt-6 border-t pt-4">
-                      <div className="flex flex-col space-y-2">
-                        <h4 className="text-sm font-medium">执行下一步骤</h4>
-
-                        <div className="flex items-center space-x-2">
-                          <div>
-                            <Label htmlFor="direct-season" className="text-xs">TMDB季数</Label>
-                            <Input
-                              id="direct-season"
-                              type="number"
-                              min="1"
-                              value={selectedSeason}
-                              onChange={(e) => handleSeasonChange(e.target.value)}
-                              className="w-16 h-7 text-xs"
-                            />
-                          </div>
-
-                          <Button
-                            size="sm"
-                            onClick={(e) => executeTMDBExtraction(e)}
-                            disabled={operationLock === "tmdb" || steps[2].status === "running"}
-                            className="bg-blue-600 hover:bg-blue-700 h-7"
-                          >
-                            {operationLock === "tmdb" ? (
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            ) : (
-                            <Download className="h-3 w-3 mr-1" />
-                            )}
-                            <span className="text-xs">执行TMDB导入</span>
-                          </Button>
-                        </div>
-
-                        {steps[2].status === "completed" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setActiveTab("edit")}
-                            className="h-7"
-                          >
-                            <FileText className="h-3 w-3 mr-1" />
-                            <span className="text-xs">查看更新后的CSV</span>
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* 步骤进度和终端输出区域 */}
-              <Card variant="frosted">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center justify-between">
-                    <div className="flex items-center">
-                      <ActivityIcon className="h-4 w-4 mr-2" />
-                      终端输出
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setTableReady(!tableReady)}
-                        title="如果内容不显示，请点击此按钮刷新"
-                        className="h-7 text-xs"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                        刷新视图
-                        </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={loadLocalCSVFile}
-                        disabled={operationLock !== null}
-                        className="h-7 text-xs"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                        刷新数据
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setTerminalOutput("")}
-                        disabled={operationLock !== null}
-                        className="h-7"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div
-                    ref={terminalRef}
-                    className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-[300px] max-h-[300px] overflow-y-auto whitespace-pre-wrap"
-                  >
-                    {terminalOutput || (
-                      <>
-                        等待开始处理...
-                        {csvData && (
-                          <div className="mt-2 text-yellow-300">
-                            提示：如果内容显示不正确，请尝试点击上方的"刷新"按钮重新加载CSV数据。
-                  </div>
-                        )}
-                        {!csvData && (
-                          <div className="mt-2 text-yellow-300">
-                            未检测到CSV数据，请先加载CSV文件或执行播出平台抓取。
-                          </div>
-                        )}
-                      </>
-                    )}
-            </div>
-
-            {/* 交互按钮区域 */}
-            {isExecutingCommand && (
-                    <div className="p-4 border-t">
-                        <div className="flex items-center justify-between">
-            <div className="text-sm flex items-center">
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              <span className="text-blue-600 dark:text-blue-400">
-                正在执行命令... {currentProcessId ?
-                  <span className="text-green-600 dark:text-green-400">(进程ID: {currentProcessId})</span> :
-                  <span className="text-yellow-600 dark:text-yellow-400">(等待进程ID...)</span>
-                }
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-                          <Button
-                variant="default"
-                            size="sm"
-                onClick={() => sendQuickCommand("y")}
-                disabled={!isExecutingCommand || !currentProcessId}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-1" />
-                确认 (Y)
-                          </Button>
-                          <Button
-                variant="default"
-                            size="sm"
-                onClick={() => sendQuickCommand("w")}
-                disabled={!isExecutingCommand || !currentProcessId}
-                className="bg-yellow-600 hover:bg-yellow-700 h-7 text-xs"
-              >
-                <CircleDashed className="h-3 w-3 mr-1" />
-                等待
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => sendQuickCommand("n")}
-                disabled={!isExecutingCommand || !currentProcessId}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                <XCircle className="h-4 w-4 mr-1" />
-                取消 (N)
-                          </Button>
-                        </div>
-                  </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-                      </div>
-        </TabsContent>
-
-        {/* 编辑标签内容 */}
-        <TabsContent
-          value="edit"
-          className="h-[calc(100%-48px)] overflow-hidden bg-background/30 backdrop-blur-sm w-full"
-        >
-          <div className="h-full w-full overflow-hidden" style={{ maxWidth: '100%' }}>
-            {/* 添加调试状态显示 */}
-            <div className="absolute top-1 right-1 z-50">
-              <Badge
-                variant={csvData ? "outline" : "destructive"}
-                className="text-xs mb-1"
-              >
-                CSV数据: {csvData ? "已加载" : "未加载"}
-              </Badge>
-              <Badge
-                variant={tableReady ? "outline" : "destructive"}
-                className="text-xs mb-1 ml-1"
-              >
-                表格状态: {tableReady ? "就绪" : "未准备"}
-              </Badge>
-                          </div>
-
-            {csvData ? (
-              <div className="h-full flex flex-col">
-                {/* 编辑器使用提示 */}
-                <div className="flex flex-col flex-shrink-0">
-                  <div className="bg-background/50 backdrop-blur-md border-b sticky top-0 z-20">
-                    {/* 第一行：编辑模式切换 */}
-                    <div className="px-4 py-2 border-b border-border/50">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-muted rounded-md p-0.5 flex items-center">
-                          <Button
-                            variant={editorMode === "enhanced" ? "default" : "ghost"}
-                            size="sm"
-                            onClick={() => handleEditorModeChange("enhanced")}
-                            className="h-8 px-3 text-xs"
-                          >
-                            <TableIcon className="h-3.5 w-3.5 mr-1" />
-                            表格模式
-                          </Button>
-                          <Button
-                            variant={editorMode === "text" ? "default" : "ghost"}
-                            size="sm"
-                            onClick={() => handleEditorModeChange("text")}
-                            className="h-8 px-3 text-xs"
-                          >
-                            <FileText className="h-3.5 w-3.5 mr-1" />
-                            文本模式
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 第二行：操作按钮 - 固定在左侧可视区域 */}
-                    <div className="px-4 py-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setTableReady(!tableReady)}
-                          className="h-8 px-3 text-xs flex-shrink-0"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                          刷新视图
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={saveCsvChanges}
-                          disabled={isSaving}
-                          className="h-8 px-3 text-xs flex-shrink-0 bg-primary/10 border-primary/20"
-                        >
-                          {isSaving ? (
-                            <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                          ) : (
-                            <Save className="h-3.5 w-3.5 mr-1" />
-                          )}
-                          保存
-                        </Button>
-
-                        {editorMode === "text" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={downloadCSV}
-                            className="h-8 px-3 text-xs flex-shrink-0"
-                          >
-                            <Download className="h-3.5 w-3.5 mr-1" />
-                            下载CSV
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 编辑区域 */}
-                <div className="flex-1 overflow-hidden relative">
-                  {/* 添加加载状态覆盖层 */}
-                  {(!tableReady || !csvData) && (
-                    <div className="absolute inset-0 bg-background/70 backdrop-blur-md flex flex-col items-center justify-center z-10">
-                      <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
-                      <p className="text-sm text-muted-foreground">正在准备编辑器...</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setTableReady(!tableReady)}
-                        className="mt-4"
-                      >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        手动刷新
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* 表格编辑模式 */}
-                  {editorMode === "enhanced" ? (
-                    <div className="h-full w-full overflow-hidden relative">
-                      {tableReady && csvData ? (
-                        <NewTMDBTable
-                          key="tmdb-table-main"
-                          data={csvData}
-                          onChange={handleCsvDataChange}
-                          onSave={handleSaveEnhancedCSV}
-                          onCancel={() => {}}
-                          height="100%"
-                          isSaving={isSaving}
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">正在加载表格数据...</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : editorMode === "text" ? (
-                    <div className="h-full flex flex-col">
-                      <textarea
-                        ref={textareaRef}
-                        value={csvContent}
-                        onChange={(e) => setCsvContent(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        className="flex-1 p-4 font-mono text-xs resize-none focus:outline-none bg-white/80 dark:bg-black/80 backdrop-blur-sm csv-text-editor"
-                        placeholder="CSV内容..."
-                        style={{ minHeight: "70vh", lineHeight: 1.6 }}
-                      ></textarea>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <AlertCircle className="h-8 w-8 mx-auto mb-4 text-orange-500" />
-                        <p className="text-sm">未知的编辑器模式</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center p-8">
-                <div className="max-w-md text-center">
-                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
-                  <h3 className="text-lg font-semibold mb-2">未检测到CSV数据</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    请先加载CSV文件或执行播出平台抓取，然后再尝试编辑。
-                  </p>
-                  <div className="flex gap-4 justify-center">
-                    <Button onClick={() => setActiveTab("process")}>
-                      <Terminal className="h-4 w-4 mr-2" />
-                      返回处理页面
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </>
-  )
-
   // 添加CSS样式
   useEffect(() => {
     // 添加全局样式
@@ -2732,8 +1705,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 编辑
               </TabsTrigger>
             </TabsList>
-
-                      </div>
+          </div>
         </div>
 
         {/* 处理标签内容 */}
@@ -2864,9 +1836,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                         )}
                         执行TMDB导入
                       </Button>
-                  </div>
                     </div>
-                      </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -3116,8 +2088,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
 
     // 更新编辑器高度状态
-    setEditorHeight(optimalHeight);
-  }, []);
+      }, []);
 
   // 在组件挂载和窗口大小变化时调整编辑器高度
   useEffect(() => {
@@ -3172,8 +2143,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     (textEditor as HTMLElement).style.minHeight = `${optimalHeight}px`;
 
     // 更新编辑器高度状态
-    setEditorHeight(optimalHeight);
-
+    
     // 确保文本区域有足够的宽度，防止水平滚动
     (textEditor as HTMLElement).style.width = '100%';
     (textEditor as HTMLElement).style.maxWidth = 'none';
@@ -3242,12 +2212,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       setTimeout(() => {
         setActiveTab("process")
         setTableReady(true)
-        setIsDialogInitialized(true)
-      }, 100)
+              }, 100)
     } else {
       // 对话框关闭时，重置初始化状态
-      setIsDialogInitialized(false)
-    }
+          }
   }, [open])
 
   
@@ -3300,369 +2268,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     onItemUpdate?.(updatedItem);
   };
 
-  // 检查并关闭Edge浏览器实例
-  const checkAndCloseEdgeBrowser = async () => {
-    try {
-      appendTerminalOutput(`检查是否有Edge浏览器实例正在运行...`, "info");
-
-      // 根据环境判断是否为Windows（前端无法可靠访问process.platform）
-      const isWindows = typeof navigator !== "undefined" ? /Windows/i.test(navigator.userAgent) : (typeof process !== "undefined" && process.platform === "win32");
-
-      if (isWindows) {
-        // 在Windows上使用多种方式检测Edge进程
-
-        // 方法1：使用tasklist命令查找Edge进程
-        const checkEdgeCmd = `tasklist /FI "IMAGENAME eq msedge.exe" /FO CSV`;
-        const edgeCheckResult = await executeCommandWithStream(checkEdgeCmd, process.cwd());
-
-        // 注意：tasklist命令的输出在Windows上通常写入stdout而非stderr
-        const outputText = edgeCheckResult.stdoutText || edgeCheckResult.errorText || "";
-        
-        appendTerminalOutput(`Edge检测结果: ${outputText.length > 100 ? outputText.substring(0, 100) + "..." : outputText}`, "info");
-
-        const hasEdgeProcess = outputText.toLowerCase().includes("msedge.exe");
-
-        // 方法2：使用wmic命令查找Edge进程（备用方法）
-        if (!hasEdgeProcess) {
-          appendTerminalOutput(`使用备用方法检测Edge进程...`, "info");
-          const wmicCheckCmd = `wmic process where "name='msedge.exe'" get processid`;
-          const wmicResult = await executeCommandWithStream(wmicCheckCmd, process.cwd());
-          const wmicOutput = wmicResult.stdoutText || wmicResult.errorText || "";
-
-          if (wmicOutput.toLowerCase().includes("processid") && wmicOutput.trim().split("\n").length > 1) {
-            appendTerminalOutput(`通过WMIC检测到Edge进程`, "warning");
-            
-          }
-        }
-
-        // 无论检测结果如何，都尝试关闭Edge进程，确保环境干净
-        appendTerminalOutput(`尝试关闭所有Edge浏览器实例...`, "info");
-
-        // 首先使用taskkill命令关闭Edge进程
-        const killEdgeCmd = `taskkill /F /IM msedge.exe /T`;
-        const killResult = await executeCommandWithStream(killEdgeCmd, process.cwd());
-
-        // 等待一小段时间确保进程完全关闭
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // 再次检查是否还有Edge进程
-        const recheckCmd = `tasklist /FI "IMAGENAME eq msedge.exe" /FO CSV`;
-        const recheckResult = await executeCommandWithStream(recheckCmd, process.cwd());
-        const recheckOutput = recheckResult.stdoutText || recheckResult.errorText || "";
-
-        if (recheckOutput.toLowerCase().includes("msedge.exe")) {
-          // 如果还有Edge进程，尝试使用更强力的方式关闭
-          appendTerminalOutput(`仍检测到Edge进程，尝试使用更强力的方式关闭...`, "warning");
-
-          // 使用wmic命令强制终止Edge进程
-          const wmicKillCmd = `wmic process where "name='msedge.exe'" call terminate`;
-          await executeCommandWithStream(wmicKillCmd, process.cwd());
-
-          // 再次等待确保进程关闭
-          await new Promise(resolve => setTimeout(resolve, 1500));
-
-          // 最后一次检查
-          const finalCheckCmd = `tasklist /FI "IMAGENAME eq msedge.exe" /FO CSV`;
-          const finalCheckResult = await executeCommandWithStream(finalCheckCmd, process.cwd());
-          const finalCheckOutput = finalCheckResult.stdoutText || finalCheckResult.errorText || "";
-
-          if (finalCheckOutput.toLowerCase().includes("msedge.exe")) {
-            appendTerminalOutput(`警告: 无法完全关闭所有Edge进程，可能会影响执行`, "warning");
-            return false;
-          } else {
-            appendTerminalOutput(`成功关闭所有Edge浏览器实例`, "success");
-            return true;
-          }
-        } else {
-          appendTerminalOutput(`成功关闭Edge浏览器实例`, "success");
-          return true;
-        }
-      } else {
-        // 非Windows系统使用ps命令
-        const checkEdgeCmd = `ps -ef | grep -i edge | grep -v grep`;
-        const edgeCheckResult = await executeCommandWithStream(checkEdgeCmd, process.cwd());
-
-        // 在非Windows系统中，输出通常在stderr中
-        const outputText = edgeCheckResult.stdoutText || edgeCheckResult.errorText || "";
-
-        if (outputText.toLowerCase().includes("edge")) {
-          appendTerminalOutput(`检测到Edge浏览器实例正在运行`, "warning");
-          appendTerminalOutput(`尝试关闭Edge浏览器实例...`, "info");
-
-          // 使用pkill命令关闭Edge进程
-          const killEdgeCmd = `pkill -f edge`;
-          const killResult = await executeCommandWithStream(killEdgeCmd, process.cwd());
-
-          // 等待一小段时间确保进程完全关闭
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          // 再次检查是否还有Edge进程
-          const recheckCmd = `ps -ef | grep -i edge | grep -v grep`;
-          const recheckResult = await executeCommandWithStream(recheckCmd, process.cwd());
-          const recheckOutput = recheckResult.stdoutText || recheckResult.errorText || "";
-
-          if (recheckOutput.toLowerCase().includes("edge")) {
-            // 如果还有Edge进程，尝试使用更强力的方式关闭
-            appendTerminalOutput(`仍检测到Edge进程，尝试使用更强力的方式关闭...`, "warning");
-
-            // 使用kill -9命令强制终止Edge进程
-            const forceKillCmd = `pkill -9 -f edge`;
-            await executeCommandWithStream(forceKillCmd, process.cwd());
-
-            // 再次等待确保进程关闭
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // 最后一次检查
-            const finalCheckCmd = `ps -ef | grep -i edge | grep -v grep`;
-            const finalCheckResult = await executeCommandWithStream(finalCheckCmd, process.cwd());
-            const finalCheckOutput = finalCheckResult.stdoutText || finalCheckResult.errorText || "";
-
-            if (finalCheckOutput.toLowerCase().includes("edge")) {
-              appendTerminalOutput(`警告: 无法完全关闭所有Edge进程，可能会影响执行`, "warning");
-              return false;
-            } else {
-              appendTerminalOutput(`成功关闭所有Edge浏览器实例`, "success");
-              return true;
-            }
-          } else {
-            appendTerminalOutput(`成功关闭Edge浏览器实例`, "success");
-            return true;
-          }
-        } else {
-          appendTerminalOutput(`未检测到运行中的Edge浏览器实例`, "success");
-          return true;
-        }
-      }
-    } catch (error: any) {
-      appendTerminalOutput(`检查Edge浏览器实例时出错: ${error.message || "未知错误"}`, "warning");
-      
-      return true; // 出错时也继续执行
-    }
-  }
-
-  // 准备独立的Selenium目录（简化版临时目录方案）
-  const prepareSeleniumDirectory = async (workingDirectory: string): Promise<boolean> => {
-    try {
-      appendTerminalOutput(`准备独立的Selenium目录...`, "info");
-
-      // 创建唯一的Selenium目录名称
-      const timestamp = new Date().getTime();
-      const randomString = Math.random().toString(36).substring(2, 8);
-      const seleniumDirName = `Selenium_${timestamp}_${randomString}`;
-
-      // 在工作目录中创建独立的Selenium目录
-      const seleniumDirPath = isWindows
-        ? `${workingDirectory}\\${seleniumDirName}`
-        : `${workingDirectory}/${seleniumDirName}`;
-
-      // 创建Selenium目录
-      const mkdirCmd = isWindows
-        ? `mkdir "${seleniumDirPath}"`
-        : `mkdir -p "${seleniumDirPath}"`;
-
-      appendTerminalOutput(`创建独立的Selenium目录: ${seleniumDirPath}`, "info");
-      const mkdirResult = await executeCommandWithStream(mkdirCmd, process.cwd());
-
-      if (!mkdirResult.success) {
-        appendTerminalOutput(`创建独立的Selenium目录失败，将使用默认目录`, "warning");
-        return false;
-      }
-
-      // 创建或修改配置文件，指定使用独立的Selenium目录
-      const configContent = `[DEFAULT]
-encoding = utf-8-sig
-browser = edge
-save_user_profile = false
-backdrop_forced_upload = false
-logging_level = INFO
-selenium_dir = ${seleniumDirPath}
-`;
-
-      // 写入配置文件
-      const configFilePath = isWindows
-        ? `${workingDirectory}\\config.ini`
-        : `${workingDirectory}/config.ini`;
-
-      const response = await fetch("/api/files/write-file", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          filePath: configFilePath,
-          content: configContent,
-        }),
-      });
-
-      if (response.ok) {
-        appendTerminalOutput(`成功创建配置文件，使用独立的Selenium目录`, "success");
-        return true;
-      } else {
-        const errorData = await response.json();
-        appendTerminalOutput(`创建配置文件失败: ${errorData.error || "未知错误"}`, "error");
-        return false;
-      }
-    } catch (error: any) {
-      appendTerminalOutput(`准备独立的Selenium目录时出错: ${error.message || "未知错误"}`, "error");
-      
-      return false;
-    }
-  }
-
-  // 创建临时工作目录
-  const createTempWorkingDirectory = async (originalDirectory: string): Promise<string> => {
-    try {
-      appendTerminalOutput(`准备创建临时工作目录...`, "info");
-
-      // 创建唯一的临时目录名称
-      const timestamp = new Date().getTime();
-      const randomString = Math.random().toString(36).substring(2, 8);
-      const tempDirName = `tmdb_temp_${timestamp}_${randomString}`;
-
-      // 在用户临时目录中创建临时目录（避免系统临时目录的权限问题）
-      // Windows: %USERPROFILE%\AppData\Local\Temp
-      // Linux/Mac: /tmp
-      const userTempDir = isWindows
-        ? `${process.env.USERPROFILE || "C:\\Users\\Public"}\\AppData\\Local\\Temp`
-        : "/tmp";
-
-      appendTerminalOutput(`使用用户临时目录: ${userTempDir}`, "info");
-
-      const tempDirPath = isWindows
-        ? `${userTempDir}\\${tempDirName}`
-        : `${userTempDir}/${tempDirName}`;
-
-      // 创建临时目录
-      const mkdirCmd = isWindows
-        ? `mkdir "${tempDirPath}"`
-        : `mkdir -p "${tempDirPath}"`;
-
-      appendTerminalOutput(`创建临时目录: ${tempDirPath}`, "info");
-      const mkdirResult = await executeCommandWithStream(mkdirCmd, process.cwd());
-
-      if (!mkdirResult.success) {
-        appendTerminalOutput(`创建临时目录失败，将使用原始目录`, "warning");
-        return originalDirectory;
-      }
-
-      // 复制必要的文件到临时目录
-      appendTerminalOutput(`复制必要文件到临时目录...`, "info");
-
-      // 复制config.ini（如果存在）
-      const checkConfigCmd = isWindows
-        ? `if exist "${originalDirectory}\\config.ini" echo exists`
-        : `test -f "${originalDirectory}/config.ini" && echo exists`;
-
-      const configCheckResult = await executeCommandWithStream(checkConfigCmd, process.cwd());
-
-      if (configCheckResult.stdoutText?.includes("exists") || configCheckResult.errorText?.includes("exists")) {
-        const copyConfigCmd = isWindows
-          ? `copy "${originalDirectory}\\config.ini" "${tempDirPath}\\config.ini" /Y`
-          : `cp "${originalDirectory}/config.ini" "${tempDirPath}/config.ini"`;
-
-        await executeCommandWithStream(copyConfigCmd, process.cwd());
-        appendTerminalOutput(`已复制config.ini文件`, "info");
-      }
-
-      // 复制import.csv（如果存在）
-      const checkCsvCmd = isWindows
-        ? `if exist "${originalDirectory}\\import.csv" echo exists`
-        : `test -f "${originalDirectory}/import.csv" && echo exists`;
-
-      const csvCheckResult = await executeCommandWithStream(checkCsvCmd, process.cwd());
-
-      if (csvCheckResult.stdoutText?.includes("exists") || csvCheckResult.errorText?.includes("exists")) {
-        const copyCsvCmd = isWindows
-          ? `copy "${originalDirectory}\\import.csv" "${tempDirPath}\\import.csv" /Y`
-          : `cp "${originalDirectory}/import.csv" "${tempDirPath}/import.csv"`;
-
-        await executeCommandWithStream(copyCsvCmd, process.cwd());
-        appendTerminalOutput(`已复制import.csv文件`, "info");
-      }
-
-      // 创建Python模块链接（Windows上使用复制，Linux上使用符号链接）
-      if (isWindows) {
-        // Windows上复制整个tmdb-import目录
-        const copyPythonModuleCmd = `xcopy "${originalDirectory}\\tmdb-import" "${tempDirPath}\\tmdb-import" /E /I /H /Y`;
-        await executeCommandWithStream(copyPythonModuleCmd, process.cwd());
-      } else {
-        // Linux上创建符号链接
-        const createPythonLinkCmd = `ln -s "${originalDirectory}/tmdb-import" "${tempDirPath}/tmdb-import"`;
-        await executeCommandWithStream(createPythonLinkCmd, process.cwd());
-      }
-
-      appendTerminalOutput(`临时工作目录创建成功: ${tempDirPath}`, "success");
-      return tempDirPath;
-    } catch (error: any) {
-      appendTerminalOutput(`创建临时工作目录时出错: ${error.message || "未知错误"}`, "error");
-      
-      return originalDirectory; // 出错时使用原始目录
-    }
-  }
-
-  // 创建临时配置文件
-  const createTempConfig = async (workingDirectory: string) => {
-    try {
-      appendTerminalOutput(`准备创建临时配置文件...`, "info");
-
-      // 检查是否存在原始配置文件
-      const checkConfigCmd = isWindows
-        ? `if exist "${workingDirectory}\\config.ini" echo exists`
-        : `test -f "${workingDirectory}/config.ini" && echo exists`;
-
-      const configCheckResult = await executeCommandWithStream(checkConfigCmd, process.cwd());
-
-      // 如果存在原始配置文件，创建备份
-      if (configCheckResult.success && (configCheckResult.errorText || "").includes("exists")) {
-        appendTerminalOutput(`检测到原始配置文件，创建备份...`, "info");
-
-        const backupCmd = isWindows
-          ? `copy "${workingDirectory}\\config.ini" "${workingDirectory}\\config.ini.bak"`
-          : `cp "${workingDirectory}/config.ini" "${workingDirectory}/config.ini.bak"`;
-
-        await executeCommandWithStream(backupCmd, process.cwd());
-      }
-
-      // 创建增强版临时配置文件内容，添加更多Edge浏览器相关配置
-      const configContent = `[DEFAULT]
-encoding = utf-8-sig
-browser = edge
-save_user_profile = false
-backdrop_forced_upload = false
-logging_level = INFO
-`;
-
-      // 写入临时配置文件，使用正确的路径分隔符
-      const configFilePath = isWindows
-        ? `${workingDirectory}\\config.ini`
-        : `${workingDirectory}/config.ini`;
-
-      const response = await fetch("/api/files/write-file", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          filePath: configFilePath,
-          content: configContent,
-        }),
-      });
-
-      if (response.ok) {
-        appendTerminalOutput(`成功创建临时配置文件，已禁用用户配置文件保存功能`, "success");
-        return true;
-      } else {
-        const errorData = await response.json();
-        appendTerminalOutput(`创建临时配置文件失败: ${errorData.error || "未知错误"}`, "error");
-        return false;
-      }
-    } catch (error: any) {
-      appendTerminalOutput(`创建临时配置文件时出错: ${error.message || "未知错误"}`, "error");
-      
-      return false;
-    }
-  }
-
+  
+  
+  
   return (
     <>
       {/* 根据是否在标签页中决定是否使用Dialog组件 */}
@@ -3714,7 +2322,7 @@ logging_level = INFO
             </DialogHeader>
 
             {/* 主要内容区域 */}
-            {renderContent()}
+            {renderInTabContent()}
         </DialogContent>
       </Dialog>
       )}
@@ -3723,14 +2331,6 @@ logging_level = INFO
       <FixTMDBImportBugDialog
         open={showFixBugDialog}
         onOpenChange={setShowFixBugDialog}
-        onCopyFix={() => {
-          toast({
-            title: "修复代码已复制",
-            description: "已复制到剪贴板，可粘贴到common.py文件中",
-          });
-          setCopyFeedback("修复代码已复制到剪贴板");
-          setTimeout(() => setCopyFeedback(null), 3000);
-        }}
       />
 
       {/* 复制反馈 */}
@@ -3746,5 +2346,4 @@ logging_level = INFO
   )
 }
 
-  // 搜索相关函数已简化
-
+  
