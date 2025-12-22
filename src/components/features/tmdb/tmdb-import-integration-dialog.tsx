@@ -679,20 +679,26 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       // 处理数据准备
       let dataToSave = csvData;
-      if (options.mode === "text" && !options.skipDataParsing && csvContent) {
-        try {
-          // 解析文本内容为CSV数据
-          dataToSave = parseCsvContent(csvContent);
-          // 更新组件状态中的CSV数据，确保其他功能也能使用最新数据
-          setCsvData(dataToSave);
-          appendTerminalOutput("成功解析文本内容为CSV数据", "success");
-        } catch (error: any) {
-          throw new Error(`CSV文本格式有误，无法解析: ${error instanceof Error ? error.message : '未知错误'}`);
+      if (options.mode === "text") {
+        // 文本模式总是优先使用当前文本内容
+        if (!options.skipDataParsing && csvContent !== undefined) {
+          try {
+            // 解析文本内容为CSV数据
+            dataToSave = parseCsvContent(csvContent);
+            // 更新组件状态中的CSV数据，确保其他功能也能使用最新数据
+            setCsvData(dataToSave);
+            appendTerminalOutput("成功解析文本内容为CSV数据", "success");
+          } catch (error: any) {
+            throw new Error(`CSV文本格式有误，无法解析: ${error instanceof Error ? error.message : '未知错误'}`);
+          }
+        } else if (csvContent === undefined || csvContent.trim() === '') {
+          // 如果文本内容为空，使用原始数据
+          appendTerminalOutput("文本内容为空，使用现有CSV数据", "warning");
         }
       }
 
       // 处理overview列，确保格式正确
-      const processedData = processOverviewColumn(dataToSave);
+      const processedData = processOverviewData(dataToSave);
 
       // 使用API路由保存CSV文件
       const response = await axios.post('/api/csv/save', {
@@ -741,6 +747,37 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // 处理整个CSV数据中的overview列
+  const processOverviewData = (data: CSVDataType): CSVDataType => {
+    if (!data || !data.headers || !data.rows) {
+      return data;
+    }
+
+    const overviewIndex = data.headers.findIndex((header: string) =>
+      header.toLowerCase().includes('overview') ||
+      header.toLowerCase().includes('描述') ||
+      header.toLowerCase().includes('简介')
+    );
+
+    if (overviewIndex === -1) {
+      return data;
+    }
+
+    // 处理每一行的overview列
+    const processedRows = data.rows.map((row: string[]) => {
+      const newRow = [...row];
+      if (newRow[overviewIndex]) {
+        newRow[overviewIndex] = processOverviewColumn(newRow[overviewIndex]);
+      }
+      return newRow;
+    });
+
+    return {
+      ...data,
+      rows: processedRows
+    };
   };
 
   // 统一的编码修复函数
@@ -879,7 +916,11 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 保存CSV文本编辑器修改
   const saveCsvChanges = async () => {
-    const result = await saveCSV({ mode: "text" });
+    // 确保保存当前文本内容
+    const result = await saveCSV({
+      mode: "text",
+      skipDataParsing: false // 强制解析文本内容
+    });
 
     // 在保存成功后显示一个临时提示（仅用于文本模式）
     if (result) {
@@ -898,7 +939,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       // 在几秒钟后移除提示
       setTimeout(() => {
-        document.body.removeChild(statusText);
+        if (document.body.contains(statusText)) {
+          document.body.removeChild(statusText);
+        }
       }, 2000);
     }
 

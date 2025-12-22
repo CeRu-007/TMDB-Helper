@@ -9,7 +9,7 @@ import { Toggle } from "@/components/common/toggle"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/common/tooltip"
 import { Separator } from "@/components/common/separator"
 import { TableHelpTooltip } from "../../common/table-help-tooltip"
-import { Trash2 } from "lucide-react"
+import { Trash2, Save } from "lucide-react"
 
 // 导入CSV数据类型
 import { CSVData as CSVDataType } from "@/lib/csv-processor"
@@ -151,7 +151,21 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
               <span>保存中...</span>
             </div>
           )}
-          
+
+          {/* 保存按钮 */}
+          {props.onSave && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={props.onSave}
+              disabled={props.isSaving}
+              className="h-7 px-2 text-xs"
+            >
+              <Save className="h-3.5 w-3.5 mr-1" />
+              保存
+            </Button>
+          )}
+
           <TableHelpTooltip />
         </div>
       </div>
