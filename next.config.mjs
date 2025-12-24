@@ -28,9 +28,39 @@ const nextConfig = {
     ],
   },
   
-  // 移除 webpack 配置，使用 Turbopack
-  // 添加空的 turbopack 配置以修复构建错误
-  turbopack: {},
+  // 添加 webpack 配置来处理 ChunkLoadError
+  webpack: (config, { isServer }) => {
+    // 优化代码块分割
+    config.optimization = {
+      ...config.optimization,
+      splitChunks: {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      },
+    }
+    
+    // 解决开发环境中的热重载问题
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      }
+    }
+    
+    return config
+  },
   
   // 编译器配置
   compiler: {
