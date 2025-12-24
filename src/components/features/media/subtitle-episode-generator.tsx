@@ -96,7 +96,6 @@ import {
   Copy,
   RefreshCw,
   Sparkles,
-  BookOpen,
   Film,
   CheckCircle,
   Edit,
@@ -109,13 +108,6 @@ import {
   Plus,
   ArrowRight,
   MessageCircle,
-  Feather,
-  RotateCcw,
-  List,
-  Edit3,
-  EyeOff,
-  Eye,
-  Scale,
   MoreHorizontal
 } from "lucide-react"
 import { Button } from "@/components/common/button"
@@ -148,7 +140,6 @@ import {
 } from "@/components/common/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
-import { safeJsonParse } from "@/lib/utils"
 import { useToast } from "@/components/common/use-toast"
 import { VideoAnalyzer, VideoAnalysisResult } from "@/lib/media/video-analyzer"
 import { VideoAnalysisFeedback, VideoAnalysisStep, createDefaultAnalysisSteps, updateStepStatus } from "@/components/features/media/video-analysis-feedback"
@@ -483,24 +474,12 @@ export function SubtitleEpisodeGenerator({
 
   // 配置是否已初始化的标记
   const [configInitialized, setConfigInitialized] = useState(false)
-  
-  // 跟踪已输出的日志，避免重复输出
-  const loggedRef = useRef({
-    configLoading: false,
-    configSaving: false,
-    configInitialized: false
-  })
 
   // 首次从服务端加载分集生成配置与模型
   React.useEffect(() => {
     (async () => {
       try {
-        // 只在首次加载时输出日志
-        if (!loggedRef.current.configLoading) {
-          console.log('🔧 [配置加载] 开始加载配置...')
-          loggedRef.current.configLoading = true
-        }
-        
+                
         // 从新的模型服务系统加载场景配置
         let episodeGenerationModel = 'deepseek-ai/DeepSeek-V2.5' // 默认模型
         let speechRecognitionModel = 'FunAudioLLM/SenseVoiceSmall' // 默认语音识别模型
@@ -512,16 +491,14 @@ export function SubtitleEpisodeGenerator({
           
           if (episodeResult.success && episodeResult.scenario && episodeResult.scenario.primaryModelId) {
             episodeGenerationModel = episodeResult.scenario.primaryModelId
-            console.log('🔧 [配置加载] 从模型服务系统加载分集生成模型:', episodeGenerationModel)
           }
-          
+
           // 加载语音转文字模型配置
           const speechResponse = await fetch('/api/model-service/scenario?scenario=speech_to_text')
           const speechResult = await speechResponse.json()
-          
+
           if (speechResult.success && speechResult.scenario && speechResult.scenario.primaryModelId) {
             speechRecognitionModel = speechResult.scenario.primaryModelId
-            console.log('🔧 [配置加载] 从模型服务系统加载语音识别模型:', speechRecognitionModel)
           }
         } catch (error) {
           console.warn('🔧 [配置加载] 从模型服务系统加载模型失败:', error)
@@ -543,12 +520,10 @@ export function SubtitleEpisodeGenerator({
         }
         
         const saved = await ClientConfigManager.getItem('episode_generator_config')
-        console.log('🔧 [配置加载] 从服务端获取的配置:', saved)
-        
+
         if (saved) {
           try {
             const parsed = JSON.parse(saved)
-            console.log('🔧 [配置加载] 解析后的配置:', parsed)
             
             // 处理标题风格的兼容性
             if (parsed.selectedTitleStyles && Array.isArray(parsed.selectedTitleStyles)) {
@@ -581,28 +556,22 @@ export function SubtitleEpisodeGenerator({
                 generateCount: 3
               }
             }
-            
-            console.log('🔧 [配置加载] 最终配置:', completeConfig)
+
             setConfig(completeConfig)
           } catch (e) {
             console.error('🔧 [配置加载] 解析配置失败:', e)
             setConfig(prev => ({ ...prev, model: episodeGenerationModel }))
           }
         } else {
-          console.log('🔧 [配置加载] 未找到保存的配置，使用默认配置')
-          setConfig(prev => ({ 
-            ...prev, 
+          setConfig(prev => ({
+            ...prev,
             model: episodeGenerationModel,
             speechRecognitionModel: speechRecognitionModel
           }))
         }
-        
+
         // 标记配置已初始化
         setConfigInitialized(true)
-        if (!loggedRef.current.configInitialized) {
-          console.log('🔧 [配置加载] 配置初始化完成')
-          loggedRef.current.configInitialized = true
-        }
       } catch (e) {
         console.error('🔧 [配置加载] 加载配置时出错:', e)
         setConfigInitialized(true)
@@ -614,16 +583,8 @@ export function SubtitleEpisodeGenerator({
   React.useEffect(() => {
     // 只有在配置初始化完成后才进行保存
     if (!configInitialized) {
-      if (!loggedRef.current.configSaving) {
-        console.log('🔧 [配置保存] 配置尚未初始化，跳过保存')
-        loggedRef.current.configSaving = true
-      }
       return
     }
-
-    // 重置保存日志标记，允许后续保存时输出
-    loggedRef.current.configSaving = false
-    console.log('🔧 [配置保存] 配置发生变化，准备保存:', config)
 
     // 延迟保存，避免频繁保存
     const timeoutId = setTimeout(async () => {
@@ -631,19 +592,11 @@ export function SubtitleEpisodeGenerator({
         // 排除模型字段，因为模型是从全局设置中获取的
         const { model, ...configWithoutModel } = config
         const configJson = JSON.stringify(configWithoutModel)
-        
-        console.log('🔧 [配置保存] 开始保存配置到服务端:', configJson)
-        
+
         // 使用 ClientConfigManager 保存配置
-        const success = await ClientConfigManager.setItem('episode_generator_config', configJson)
-        
-        if (success) {
-          console.log('🔧 [配置保存] 配置保存成功')
-        } else {
-          console.error('🔧 [配置保存] 配置保存失败')
-        }
+        await ClientConfigManager.setItem('episode_generator_config', configJson)
       } catch (error) {
-        console.error('🔧 [配置保存] 保存配置时出错:', error)
+        console.error('保存配置时出错:', error)
       }
     }, 500)
 
@@ -1169,15 +1122,6 @@ export function SubtitleEpisodeGenerator({
       throw new Error(result.error || 'API调用失败')
     }
 
-    console.log('API响应数据结构:', {
-      hasData: !!result.data,
-      dataKeys: result.data ? Object.keys(result.data) : [],
-      content: result.data?.content,
-      contentType: typeof result.data?.content,
-      contentLength: result.data?.content?.length,
-      service: result.data?.service
-    })
-
     const content = result.data.content
 
     if (!content) {
@@ -1546,14 +1490,7 @@ ${config.customPrompt ? `\n## 额外要求\n${config.customPrompt}` : ''}`
     const style = styleId ? GENERATION_STYLES.find(s => s.id === styleId) : null
     const styleName = style?.name || ''
 
-    console.log('开始解析生成的内容:', {
-      content: content.substring(0, 500) + (content.length > 500 ? '...' : ''),
-      contentLength: content.length,
-      episodeNumber: episode.episodeNumber,
-      styleId,
-      styleName
-    })
-
+          
     try {
       const parsed = JSON.parse(content)
       
@@ -2461,8 +2398,7 @@ ${selectedTextInfo.text}
       // 计算总体统计
       const allResultsFlat = Object.values(allResults).flat()
       
-      console.log(`成功：${allResultsFlat.filter(r => r.confidence > 0).length} 集，失败：${allResultsFlat.filter(r => r.confidence === 0).length} 集`)
-
+      
       // 生成完成后，自动选择合适的文件显示结果
       if (validFiles.length > 0) {
         if (!selectedFile) {
@@ -3303,8 +3239,7 @@ const ResultsDisplay: React.FC<{
         setSelectionEnd(endIndex)
         setSelectionHighlight({ start: startIndex, end: endIndex })
 
-        console.log('单词选择:', { text: clickedText.trim(), start: startIndex, end: endIndex })
-      }
+              }
     }
   }
 
@@ -3400,27 +3335,6 @@ const ResultsDisplay: React.FC<{
       })
     })
 
-    // 持续清除浏览器选择
-    const clearSelectionInterval = setInterval(() => {
-      if (window.getSelection) {
-        const selection = window.getSelection()
-        if (selection && selection.rangeCount > 0) {
-          selection.removeAllRanges()
-        }
-      }
-    }, 50)
-
-    // 清理函数
-    const cleanup = () => {
-      eventTypes.forEach(eventType => {
-        document.removeEventListener(eventType, globalEventBlocker, { capture: true })
-        window.removeEventListener(eventType, globalEventBlocker, { capture: true })
-      })
-      clearInterval(clearSelectionInterval)
-    }
-
-    return cleanup
-
     // ESC键处理
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && rewritingIndex !== null) {
@@ -3434,6 +3348,10 @@ const ResultsDisplay: React.FC<{
 
     // 清理函数
     return () => {
+      eventTypes.forEach(eventType => {
+        document.removeEventListener(eventType, globalEventBlocker, { capture: true })
+        window.removeEventListener(eventType, globalEventBlocker, { capture: true })
+      })
       document.removeEventListener('keydown', handleKeyDown, { capture: true })
 
       // 最终清理
