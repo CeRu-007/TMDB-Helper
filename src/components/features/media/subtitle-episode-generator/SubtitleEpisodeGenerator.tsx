@@ -171,36 +171,15 @@ export function SubtitleEpisodeGenerator({
         </div>
       )}
 
-      {/* 头部工具栏 */}
-      <div className="flex-shrink-0 p-4 border-b border-blue-100/50 dark:border-blue-900/30 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-500 blur-md opacity-20 rounded-full"></div>
-              <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-full text-white">
-                <Sparkles className="h-5 w-5" />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-                AI分集简介生成器
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                基于硅基流动AI模型，智能生成分集标题和剧情简介
-              </p>
-            </div>
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".srt,.vtt,.ass,.ssa"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </div>
-      </div>
+      {/* 文件输入 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".srt,.vtt,.ass,.ssa"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
 
       {/* 主要内容区域 */}
       <div className="flex-1 flex overflow-hidden">
