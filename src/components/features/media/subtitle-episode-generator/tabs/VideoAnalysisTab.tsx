@@ -35,10 +35,10 @@ export function VideoAnalysisTab({
           </div>
           <div>
             <h3 className="font-medium text-purple-900 dark:text-purple-100 mb-2">
-              AI视频分析功能
+              AI音频转写功能
             </h3>
             <p className="text-sm text-purple-800 dark:text-purple-200 leading-relaxed">
-              通过AI技术自动分析视频内容，提取音频进行语音识别，生成高质量的分集简介。
+              通过AI技术自动提取视频中的音频并进行语音识别，生成高质量的分集简介。
               支持YouTube、Bilibili等主流视频平台。
             </p>
           </div>
@@ -50,7 +50,7 @@ export function VideoAnalysisTab({
         <div>
           <Label className="text-sm font-medium">功能控制</Label>
           <p className="text-xs text-gray-500 mt-1 mb-3">
-            启用或关闭AI视频分析功能
+            启用或关闭AI音频转写功能
           </p>
         </div>
 
@@ -69,7 +69,7 @@ export function VideoAnalysisTab({
           />
           <div className="flex-1">
             <Label htmlFor="enableVideoAnalysis" className="text-sm font-medium cursor-pointer">
-              启用AI视频分析功能
+              启用AI音频转写功能
             </Label>
             <p className="text-xs text-gray-500 mt-1">
               开启后可以通过视频URL直接生成分集简介
@@ -226,7 +226,7 @@ export function VideoAnalysisTab({
                 使用注意事项
               </p>
               <ul className="space-y-1 list-disc list-inside">
-                <li>视频分析功能需要消耗较多API额度，建议合理使用</li>
+                <li>音频转写功能需要消耗较多API额度，建议合理使用</li>
                 <li>音频质量会影响语音识别准确度，建议选择清晰的视频</li>
                 <li>长视频处理时间较长，请耐心等待分析完成</li>
                 <li>生成的内容仅供参考，请根据实际情况进行调整</li>
@@ -244,7 +244,7 @@ export function VideoAnalysisTab({
               <div className="space-y-2">
                 <div className="flex items-start space-x-2">
                   <span className="flex-shrink-0 w-5 h-5 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                  <span>在主界面选择"视频分析"选项卡</span>
+                  <span>在主界面选择"音频转写"选项卡</span>
                 </div>
                 <div className="flex items-start space-x-2">
                   <span className="flex-shrink-0 w-5 h-5 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
@@ -270,7 +270,7 @@ export function VideoAnalysisTab({
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <Film className="h-8 w-8 text-gray-400" />
           </div>
-          <p className="text-gray-500 dark:text-gray-400 mb-2">视频分析功能未启用</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-2">音频转写功能未启用</p>
           <p className="text-xs text-gray-400 dark:text-gray-500">
             启用后可以通过视频URL直接生成分集简介
           </p>

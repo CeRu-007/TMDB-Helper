@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const execAsync = promisify(exec);
 
-// 视频分析结果接口（简化为音频分析）
+// 音频转写结果接口
 interface VideoAnalysisResult {
   success: boolean;
   data?: {
@@ -386,7 +386,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : '视频分析失败'
+      error: error instanceof Error ? error.message : '音频转写失败'
     }, { status: 500 });
   }
 }

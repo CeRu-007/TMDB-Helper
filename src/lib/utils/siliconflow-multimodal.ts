@@ -220,7 +220,7 @@ export class SiliconFlowMultimodal {
       })
       .join('\n');
 
-    const prompt = `基于以下视频分析内容，生成一个精彩的分集简介：
+    const prompt = `基于以下音频转写内容，生成一个精彩的分集简介：
 
 视频画面分析：
 ${frameDescriptions}

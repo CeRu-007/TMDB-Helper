@@ -1,6 +1,6 @@
 /**
- * 视频分析工具类
- * 提供视频下载、帧提取、AI分析等功能
+ * 音频转写工具类
+ * 提供视频下载、音频提取、语音识别等功能
  */
 
 export interface VideoAnalysisOptions {
@@ -77,13 +77,13 @@ export class VideoAnalyzer {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '视频分析失败');
+        throw new Error(errorData.error || '音频转写失败');
       }
 
       const result = await response.json();
-      
+
       if (!result.success) {
-        throw new Error(result.error || '视频分析失败');
+        throw new Error(result.error || '音频转写失败');
       }
 
       return result.data;
@@ -243,7 +243,7 @@ export class VideoAnalyzer {
   }
 
   /**
-   * 将视频分析结果转换为简介生成所需的格式
+   * 将音频转写结果转换为简介生成所需的格式
    */
   static convertToEpisodeContent(analysis: VideoAnalysisResult, format: 'markdown' | 'srt' | 'text' = 'text'): string {
     // 根据格式返回相应的结构化内容
@@ -303,7 +303,7 @@ export class VideoAnalyzer {
 }
 
 /**
- * 视频分析错误类
+ * 音频转写错误类
  */
 export class VideoAnalysisError extends Error {
   constructor(

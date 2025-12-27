@@ -79,7 +79,7 @@ export function FileList({
             )}
           </Button>
 
-          {/* 视频分析结果按钮 */}
+          {/* 音频转写结果按钮 */}
           {videoAnalysisResult && onShowAnalysisResult && (
             <Button
               onClick={onShowAnalysisResult}
@@ -89,7 +89,7 @@ export function FileList({
               size="sm"
             >
               <Film className="h-4 w-4 mr-2" />
-              查看视频分析结果
+              查看音频转写结果
             </Button>
           )}
 

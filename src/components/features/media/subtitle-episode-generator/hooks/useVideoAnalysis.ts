@@ -16,12 +16,12 @@ export function useVideoAnalysis(
   const [movieTitle, setMovieTitle] = useState('')
   const { toast } = useToast()
 
-  // 处理视频分析
+  // 处理音频转写
   const handleVideoAnalysis = useCallback(async (videoUrl: string) => {
     if (!siliconFlowApiKey) {
       toast({
         title: "需要配置API密钥",
-        description: "视频分析功能需要硅基流动API密钥，请先在设置中配置",
+        description: "音频转写功能需要硅基流动API密钥，请先在设置中配置",
         variant: "destructive"
       })
       return
@@ -31,27 +31,27 @@ export function useVideoAnalysis(
     setVideoAnalysisProgress(0)
 
     try {
-      // 创建视频分析器，传递语音识别模型配置
+      // 创建音频转写器，传递语音识别模型配置
       const analyzer = new VideoAnalyzer(siliconFlowApiKey, {
         speechRecognitionModel: config.speechRecognitionModel || 'FunAudioLLM/SenseVoiceSmall'
       })
 
-      // 开始分析
+      // 开始转写
       const result = await analyzer.analyzeVideo(videoUrl)
 
-      // 保存分析结果并显示
+      // 保存转写结果并显示
       setVideoAnalysisResult(result)
       setShowAnalysisResult(true)
 
       toast({
-        title: "视频分析完成",
-        description: "AI已成功分析视频内容，点击查看详细结果",
+        title: "音频转写完成",
+        description: "AI已成功转写音频内容，点击查看详细结果",
       })
 
     } catch (error) {
-      console.error('视频分析失败:', error)
+      console.error('音频转写失败:', error)
       toast({
-        title: "视频分析失败",
+        title: "音频转写失败",
         description: error instanceof Error ? error.message : '未知错误',
         variant: "destructive"
       })
@@ -102,7 +102,7 @@ export function useVideoAnalysis(
     };
   }, [])
 
-  // 为视频分析结果生成简介
+  // 为音频转写结果生成简介
   const handleGenerateEpisodeFromVideo = useCallback((
     videoAnalysisResult: VideoAnalysisResult,
     setSubtitleFiles: (files: SubtitleFile[]) => void,
@@ -112,13 +112,13 @@ export function useVideoAnalysis(
     setGenerationResults: (results: Record<string, any[]>) => void
   ) => {
     if (videoAnalysisResult) {
-      // 将视频分析结果转换为字幕文件格式
+      // 将音频转写结果转换为字幕文件格式
       const episodeContent = VideoAnalyzer.convertToEpisodeContent(videoAnalysisResult)
 
       // 创建虚拟字幕文件
       const videoFile: SubtitleFile = {
         id: `video-${Date.now()}`,
-        name: videoAnalysisResult.videoInfo.title || '视频分析结果',
+        name: videoAnalysisResult.videoInfo.title || '音频转写结果',
         size: episodeContent.length,
         uploadTime: new Date(),
         episodes: [{
@@ -136,7 +136,7 @@ export function useVideoAnalysis(
 
       // 自动开始生成简介
       setTimeout(() => {
-        // 直接生成简介，不需要检查API密钥（视频分析已经验证过了）
+        // 直接生成简介，不需要检查API密钥（音频转写已经验证过了）
         if (videoFile.episodes.length > 0) {
           setIsGenerating(true)
           setGenerationProgress(0)

@@ -54,9 +54,9 @@ export interface GenerationConfig {
   customPrompt?: string
   temperature: number
   includeOriginalTitle: boolean
-  // 视频分析配置
+  // 音频转写配置
   speechRecognitionModel?: string // 语音识别模型
-  enableVideoAnalysis?: boolean // 是否启用视频分析
+  enableVideoAnalysis?: boolean // 是否启用音频转写
   // 模仿风格配置
   imitateConfig?: {
     sampleContent: string // 需要模仿的样本内容
@@ -80,7 +80,7 @@ export interface StyleOption {
   isExclusive?: boolean // 是否为互斥风格（如模仿风格）
 }
 
-// 视频分析相关类型（从 VideoAnalysisFeedback 组件导入）
+// 音频转写相关类型（从 VideoAnalysisFeedback 组件导入）
 export interface VideoAnalysisStep {
   id: string
   name: string

@@ -82,9 +82,9 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
       setAnalysisSteps(prev => updateStepStatus(prev, 'generate', 'completed', '简介生成完成'))
 
     } catch (error) {
-      console.error('视频分析失败:', error)
+      console.error('音频转写失败:', error)
       const errorMessage = error instanceof Error ? error.message : '未知错误'
-      setAnalysisError(`视频分析失败: ${errorMessage}`)
+      setAnalysisError(`音频转写失败: ${errorMessage}`)
 
       // 标记当前步骤为失败
       setAnalysisSteps(prev => {
@@ -171,7 +171,7 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                   )}
                 >
                   <Film className="h-4 w-4 inline mr-2" />
-                  视频分析
+                  音频转写
                 </button>
               </div>
             </div>
@@ -239,11 +239,11 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
 
           {activeTab === 'video' && (
             <>
-              {/* 视频分析说明 */}
+              {/* 音频转写说明 */}
               <div className="bg-purple-50/50 dark:bg-purple-950/30 rounded-lg p-4 mb-6 text-left">
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
                   <Film className="h-4 w-4 mr-2 text-purple-500" />
-                  视频分析
+                  音频转写
                 </h4>
                 <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-start space-x-2">
@@ -337,7 +337,7 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                 </div>
               </div>
 
-              {/* 视频分析反馈 */}
+              {/* 音频转写反馈 */}
               <VideoAnalysisFeedback
                 isAnalyzing={isAnalyzing}
                 steps={analysisSteps}

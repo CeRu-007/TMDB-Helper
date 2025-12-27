@@ -26,10 +26,10 @@ export function VideoAnalysisResultDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Film className="h-5 w-5" />
-            <span>视频分析结果</span>
+            <span>音频转写结果</span>
           </DialogTitle>
           <DialogDescription>
-            AI已完成视频音频分析，您可以查看详细结果
+            AI已完成音频转写，您可以查看详细结果
           </DialogDescription>
         </DialogHeader>
 

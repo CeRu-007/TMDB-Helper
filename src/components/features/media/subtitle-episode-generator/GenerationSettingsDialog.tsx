@@ -169,7 +169,7 @@ export function GenerationSettingsDialog({
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                 }`}
               >
-                视频分析设置
+                音频转写设置
               </button>
             </nav>
           </div>
@@ -237,7 +237,7 @@ export function GenerationSettingsDialog({
                 <div className="text-sm">
                   {config.enableVideoAnalysis ? (
                     <span className="text-purple-700 dark:text-purple-300">
-                      ✅ 视频分析功能已启用，模型：
+                      ✅ 音频转写功能已启用，模型：
                       {(() => {
                         const modelName = config.speechRecognitionModel || 'FunAudioLLM/SenseVoiceSmall';
                         if (modelName.includes('SenseVoiceSmall')) return 'SenseVoice-Small';
@@ -250,7 +250,7 @@ export function GenerationSettingsDialog({
                       })()}
                     </span>
                   ) : (
-                    <span className="text-gray-500">视频分析功能未启用</span>
+                    <span className="text-gray-500">音频转写功能未启用</span>
                   )}
                 </div>
               )}

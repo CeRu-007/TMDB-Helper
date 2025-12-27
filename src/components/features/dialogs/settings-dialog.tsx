@@ -2553,7 +2553,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       {
         type: 'speech_to_text',
         label: '视频语音识别转文字',
-        description: '用于"分集简介-AI生成"页面的视频分析功能，将视频中的语音转换为文字用于生成简介',
+        description: '用于"分集简介-AI生成"页面的音频转写功能，将视频中的语音转换为文字用于生成简介',
         requiredCapabilities: ['audio']
       },
       {
