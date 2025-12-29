@@ -5,6 +5,7 @@ import { SidebarNavigation } from "@/components/layouts/sidebar-navigation"
 import { ImageRecognition } from "@/components/features/image-recognition/image-recognition"
 import { UserAvatar, useUser } from "@/components/features/auth/user-identity-provider"
 import { SubtitleEpisodeGenerator } from "@/components/features/media/subtitle-episode-generator"
+import { HardSubtitleExtractor } from "@/components/features/media/hard-subtitle-extractor"
 import { IndependentMaintenance } from "@/components/features/maintenance/independent-maintenance"
 import { AiChat } from "@/components/features/ai/ai-chat"
 import { Button } from "@/components/common/button"
@@ -385,6 +386,21 @@ export function SidebarLayout({
     }
   }, [activeMenu, activeSubmenu, setSelectedCategory])
 
+  // 监听从硬字幕提取页面跳转到AI生成页面的事件
+  useEffect(() => {
+    const handleNavigateToEpisodeGenerator = () => {
+      setActiveMenu('content-generation')
+      setActiveSubmenu('episode-generator')
+      setContentKey('content-generation-episode-generator')
+    }
+
+    window.addEventListener('navigate-to-episode-generator', handleNavigateToEpisodeGenerator)
+
+    return () => {
+      window.removeEventListener('navigate-to-episode-generator', handleNavigateToEpisodeGenerator)
+    }
+  }, [])
+
   // 渲染词条维护内容
   const renderMaintenanceContent = (categoryId: string) => {
     return (
@@ -481,6 +497,14 @@ export function SidebarLayout({
         return (
           <div className="h-full">
             <AiChat />
+          </div>
+        )
+
+      case 'content-generation-hard-subtitle-extract':
+        // 硬字幕提取
+        return (
+          <div className="h-full">
+            <HardSubtitleExtractor />
           </div>
         )
 

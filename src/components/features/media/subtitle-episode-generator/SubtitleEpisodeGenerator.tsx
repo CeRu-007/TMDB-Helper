@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/common/button"
 import { Upload, Sparkles, AlertCircle } from "lucide-react"
 import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
+import { useToast } from "@/components/common/use-toast"
 
 // 导入类型和常量
 import { ExportConfig } from './types'
@@ -35,6 +36,9 @@ export function SubtitleEpisodeGenerator({
 } = {}) {
   // 文件输入引用
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Toast hook
+  const { toast } = useToast()
 
   // 导出配置状态
   const [exportConfig, setExportConfig] = useState<ExportConfig>({
@@ -70,6 +74,7 @@ export function SubtitleEpisodeGenerator({
     dragCounter,
     setSubtitleFiles,
     setSelectedFile,
+    processFiles,
     handleFileUpload,
     handleDragEnter,
     handleDragLeave,
@@ -134,6 +139,32 @@ export function SubtitleEpisodeGenerator({
       window.removeEventListener('global-settings-closed', handleGlobalSettingsClose)
     }
   }, [shouldReopenSettingsDialog])
+
+  // 检查是否有待导入的字幕数据（从硬字幕提取页面跳转过来）
+  useEffect(() => {
+    try {
+      const pendingImport = localStorage.getItem('pending-subtitle-import')
+      if (pendingImport) {
+        const { content, fileName } = JSON.parse(pendingImport)
+
+        // 创建一个 File 对象
+        const file = new File([content], fileName, { type: 'text/plain' })
+
+        // 自动处理文件上传
+        processFiles([file])
+
+        // 清除 localStorage 中的待导入数据
+        localStorage.removeItem('pending-subtitle-import')
+
+        toast({
+          title: "字幕已自动导入",
+          description: `${fileName} 已成功导入`,
+        })
+      }
+    } catch (error) {
+      console.error('自动导入字幕失败:', error)
+    }
+  }, [processFiles, toast])
 
   // 显示导出对话框
   const handleExportResults = () => {

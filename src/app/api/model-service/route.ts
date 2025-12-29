@@ -82,16 +82,13 @@ export async function PUT(request: NextRequest) {
         break
       case 'update-scenario':
       case 'update-scenarios':
-        // 如果data是数组，则更新所有场景
         if (Array.isArray(data)) {
-          // 替换所有场景
+          // 合并场景：只更新数组中指定的场景，保留其他场景不变
           await ModelServiceStorage.updateScenarios(data)
-          console.log('Updated scenarios:', data.length, 'scenarios')
+          console.log('Merged scenarios:', data.length, 'scenarios updated')
         } else {
           // 单个场景更新
-          const scenarios = currentConfig.scenarios.filter(s => s.type !== data.type)
-          scenarios.push(data)
-          await ModelServiceStorage.updateScenarios(scenarios)
+          await ModelServiceStorage.updateScenarios([data])
         }
         break
       default:

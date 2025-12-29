@@ -92,6 +92,15 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
       selectedModelIds: [],
       primaryModelId: '',
     },
+    {
+      type: 'subtitle_ocr',
+      label: '硬字幕OCR识别',
+      description:
+        '用于"硬字幕提取"页面，通过多模态视觉模型识别视频帧中的硬字幕文本',
+      requiredCapabilities: ['vision'],
+      selectedModelIds: [],
+      primaryModelId: '',
+    },
   ],
   version: '1.0.0',
   lastUpdated: Date.now(),
@@ -115,13 +124,31 @@ export class ModelServiceStorage {
       const config = JSON.parse(data);
 
       // 确保配置有所有必需的字段
-      return {
+      const result = {
         providers: config.providers || [],
         models: config.models || [],
         scenarios: config.scenarios || [],
         version: config.version || '1.0.0',
         lastUpdated: config.lastUpdated || Date.now(),
-      };
+      }
+
+      // 检查并补充缺失的默认场景
+      const existingTypes = new Set(result.scenarios.map(s => s.type))
+      let needsSave = false
+
+      for (const defaultScenario of DEFAULT_CONFIG.scenarios) {
+        if (!existingTypes.has(defaultScenario.type)) {
+          result.scenarios.push(defaultScenario)
+          needsSave = true
+        }
+      }
+
+      // 如果有新增场景，保存配置
+      if (needsSave) {
+        await this.saveConfig(result)
+      }
+
+      return result
     } catch (error) {
       console.warn('读取模型服务配置失败，创建默认配置:', error);
 
@@ -262,11 +289,34 @@ export class ModelServiceStorage {
     await this.saveConfig(config);
   }
 
-  // 更新场景配置
+  // 更新场景配置 - 合并场景而不是替换
   static async updateScenarios(scenarios: UsageScenario[]): Promise<void> {
-    const config = await this.getConfig();
-    config.scenarios = scenarios;
-    await this.saveConfig(config);
+    const config = await this.getConfig()
+    const existingTypes = new Set(config.scenarios.map(s => s.type))
+    
+    // 合并场景：保留原有场景，更新传入的场景，添加新场景
+    const updatedScenarios = [...config.scenarios]
+    
+    for (const scenario of scenarios) {
+      const existingIndex = updatedScenarios.findIndex(s => s.type === scenario.type)
+      if (existingIndex >= 0) {
+        // 更新现有场景
+        updatedScenarios[existingIndex] = {
+          ...updatedScenarios[existingIndex],
+          ...scenario,
+          // 保留原有场景中可能存在的额外字段
+          selectedModelIds: scenario.selectedModelIds ?? updatedScenarios[existingIndex].selectedModelIds,
+          primaryModelId: scenario.primaryModelId ?? updatedScenarios[existingIndex].primaryModelId,
+          parameters: scenario.parameters ?? updatedScenarios[existingIndex].parameters
+        }
+      } else {
+        // 添加新场景
+        updatedScenarios.push(scenario)
+      }
+    }
+    
+    config.scenarios = updatedScenarios
+    await this.saveConfig(config)
   }
 
   // 创建默认配置（不进行任何迁移）

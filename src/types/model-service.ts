@@ -31,6 +31,7 @@ export type UsageScenarioType =
   | 'speech_to_text'
   | 'episode_generation'
   | 'ai_chat'
+  | 'subtitle_ocr'
 
 export interface UsageScenario {
   type: UsageScenarioType

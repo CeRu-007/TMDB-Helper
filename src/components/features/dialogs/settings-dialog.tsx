@@ -2567,6 +2567,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         label: 'AI智能对话助手',
         description: '用于"分集简介-AI对话"页面，提供智能对话、问答和内容创作服务',
         requiredCapabilities: ['chat']
+      },
+      {
+        type: 'subtitle_ocr',
+        label: '硬字幕OCR识别',
+        description: '用于"硬字幕提取"页面，通过多模态视觉模型识别视频帧中的硬字幕文本',
+        requiredCapabilities: ['vision']
       }
     ]
 

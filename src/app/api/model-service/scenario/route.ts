@@ -18,18 +18,21 @@ export async function GET(request: NextRequest) {
     // 获取场景配置
     const scenarioConfig = modelServiceConfig.scenarios?.find((s: any) => s.type === scenario)
 
-    if (!scenarioConfig || !scenarioConfig.primaryModelId) {
+    if (!scenarioConfig) {
       return NextResponse.json({
-        success: true,
-        models: [],
-        providers: []
-      })
+        success: false,
+        error: `场景 '${scenario}' 不存在`
+      }, { status: 404 })
     }
 
-    // 获取该场景的模型 - 使用 selectedModelIds 数组
+    // 获取该场景的模型 - 同时使用 selectedModelIds 和 primaryModelId
     const selectedModelIds = scenarioConfig.selectedModelIds || []
+    const primaryModelId = scenarioConfig.primaryModelId
+
+    // 合并所有模型ID，确保 primaryModelId 被包含
+    const allModelIds = [...new Set([...selectedModelIds, primaryModelId].filter(Boolean))]
     const models = modelServiceConfig.models.filter((model: any) =>
-      selectedModelIds.includes(model.id)
+      allModelIds.includes(model.id)
     )
 
     // 获取相关的提供商信息

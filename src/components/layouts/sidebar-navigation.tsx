@@ -22,7 +22,8 @@ import {
   Wand2,
   FileText,
   Search,
-  BookOpen
+  BookOpen,
+  Type
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/common/button"
@@ -87,7 +88,8 @@ const menuItems: MenuItem[] = [
     icon: <FileText className="h-4 w-4" />,
     submenu: [
       { id: "episode-generator", label: "AI生成", icon: <Wand2 className="h-3 w-3" /> },
-      { id: "ai-chat", label: "AI对话", icon: <Sparkles className="h-3 w-3" /> }
+      { id: "ai-chat", label: "AI对话", icon: <Sparkles className="h-3 w-3" /> },
+      { id: "hard-subtitle-extract", label: "硬字幕提取", icon: <Type className="h-3 w-3" /> }
     ]
   },
   {
