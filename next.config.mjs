@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: process.env.STATIC_EXPORT === 'true' ? 'export' : undefined,
+  output: process.env.STATIC_EXPORT === 'true' ? 'export' :
+          process.env.OUTPUT_STANDALONE === 'true' ? 'standalone' : undefined,
   trailingSlash: process.env.STATIC_EXPORT === 'true' || process.env.ELECTRON_BUILD === 'true',
   
   compress: true,

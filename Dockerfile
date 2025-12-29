@@ -39,7 +39,8 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# 构建 Next.js 应用
+# 构建 Next.js 应用（启用standalone输出）
+ENV OUTPUT_STANDALONE=true
 RUN npm run build
 
 # 生产运行时镜像
