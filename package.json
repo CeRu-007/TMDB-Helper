@@ -1,6 +1,6 @@
 {
   "name": "tmdb-helper",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "description": "功能强大的 TMDB 媒体维护助手 - 支持 Web、Electron 桌面端和 Docker 部署",
   "author": "TMDB Helper Team",
   "keywords": [
@@ -217,7 +217,7 @@
     },
     "extraMetadata": {
       "main": "electron/main.js",
-      "version": "0.4.5"
+      "version": "0.5.0"
     }
   },
   "electronMain": "electron/main.js"
