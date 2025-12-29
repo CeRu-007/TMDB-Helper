@@ -80,10 +80,10 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
         ? latestSeason.episodes.filter((ep) => ep.completed).length
         : 0
 
-      return `更新至第${latestSeasonCompletedEpisodes}集`
+      return `维护至第${latestSeasonCompletedEpisodes}集`
     }
     // 单季剧集显示总进度
-    return `更新至第${completedEpisodes}集`
+    return `维护至第${completedEpisodes}集`
   }
 
   // 获取完结日期（取updatedAt）
