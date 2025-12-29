@@ -5,31 +5,6 @@ const path = require('path');
 
 console.log('🔧 开始优化构建...');
 
-// 不需要清理文件，使用排除规则即可
-
-// 优化 Next.js 构建
-function optimizeNextBuild() {
-  const nextConfigPath = path.join(process.cwd(), 'next.config.mjs');
-  
-  if (fs.existsSync(nextConfigPath)) {
-    let config = fs.readFileSync(nextConfigPath, 'utf8');
-    
-    // 添加优化配置
-    if (!config.includes('compress: true')) {
-      config = config.replace(
-        'const nextConfig = {',
-        `const nextConfig = {
-  compress: true,
-  poweredByHeader: false,
-  generateEtags: false,`
-      );
-      
-      fs.writeFileSync(nextConfigPath, config);
-      console.log('✅ 优化了 Next.js 配置');
-    }
-  }
-}
-
 // 创建 .electronignore 文件
 function createElectronIgnore() {
   const electronIgnoreContent = `
@@ -93,36 +68,6 @@ node_modules/@typescript-eslint/
   console.log('✅ 创建了 .electronignore 文件');
 }
 
-// 整合所有优化功能
-function integratedOptimization() {
-  const packagePath = path.join(process.cwd(), 'package.json');
-  const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-
-  // 确保构建配置包含所有必要文件
-  if (packageJson.build && packageJson.build.files) {
-    const requiredFiles = [
-      'public/tmdb-helper-logo.png',
-      'public/images/tmdb-helper-logo-new.png',
-      'public/placeholder*.png',
-      'public/placeholder*.svg',
-      'public/placeholder*.jpg'
-    ];
-
-    let updated = false;
-    requiredFiles.forEach(file => {
-      if (!packageJson.build.files.includes(file)) {
-        packageJson.build.files.push(file);
-        updated = true;
-      }
-    });
-
-    if (updated) {
-      fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
-      console.log('✅ 更新了构建文件配置');
-    }
-  }
-}
-
 // 主函数
 function main() {
   try {
@@ -133,9 +78,6 @@ function main() {
       console.log('📦 使用排除规则优化打包体积');
       console.log('📦 TMDB-Import-master 已从打包中排除');
       console.log('📦 .next/standalone/node_modules/.pnpm 已从打包中排除');
-
-      // 整合所有优化
-      integratedOptimization();
     }
 
     createElectronIgnore();

@@ -3,7 +3,7 @@ const nextConfig = {
   output: process.env.STATIC_EXPORT === 'true' ? 'export' : undefined,
   trailingSlash: process.env.STATIC_EXPORT === 'true' || process.env.ELECTRON_BUILD === 'true',
   
-  compress: false,
+  compress: true,
   
   // 开发环境快速启动优化
   experimental: {

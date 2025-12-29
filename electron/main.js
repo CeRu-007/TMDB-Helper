@@ -40,17 +40,16 @@ function createWindow() {
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.js'),
       devTools: isDev, // 只在开发环境启用
-      webSecurity: !isDev, // 生产环境启用web安全
+      webSecurity: true, // 始终启用web安全
       backgroundThrottling: true, // 启用后台节流以节省内存
       spellcheck: false, // 禁用拼写检查
       enableWebSQL: false, // 禁用WebSQL
       experimentalFeatures: false, // 禁用实验性功能
       v8CacheOptions: 'code', // 启用V8代码缓存
-      sandbox: false // 生产环境可考虑启用沙盒
+      sandbox: true // 启用进程沙盒提升安全性
     },
     icon: path.join(__dirname, '../public/images/tmdb-helper-logo-new.png'),
     show: false,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     // 性能优化选项
     useContentSize: true,
     enableLargerThanScreen: false
@@ -114,7 +113,24 @@ function createWindow() {
 
   // 添加页面加载事件监听
   mainWindow.webContents.on('did-finish-load', () => {
-    
+
+  });
+
+  // 添加内容安全策略（CSP）
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+          "style-src 'self' 'unsafe-inline'; " +
+          "img-src 'self' data: blob: https:; " +
+          "font-src 'self' data:; " +
+          "connect-src 'self' http://localhost:* ws://localhost:*;"
+        ]
+      }
+    });
   });
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
@@ -329,6 +345,12 @@ function startNextServer() {
 
 // 创建应用菜单
 function createMenu() {
+  // 只在开发环境创建菜单，生产环境隐藏菜单栏
+  if (!isDev) {
+    Menu.setApplicationMenu(null);
+    return;
+  }
+
   const template = [
     {
       label: '文件',
@@ -490,20 +512,15 @@ app.whenReady().then(async () => {
   try {
     // 生产环境性能优化
     if (!isDev) {
-      // 禁用硬件加速（如果遇到GPU问题）
-      // app.disableHardwareAcceleration();
+      // 提高内存限制到1024MB，避免内存不足导致崩溃
+      app.commandLine.appendSwitch('max_old_space_size', '1024');
+      app.commandLine.appendSwitch('js-flags', '--max-old_space_size=1024');
 
-      // 降低内存限制到256MB
-      app.commandLine.appendSwitch('max_old_space_size', '256');
-      app.commandLine.appendSwitch('js-flags', '--max-old-space-size=256');
-      
       // 添加垃圾回收优化
       app.commandLine.appendSwitch('expose-gc'); // 暴露垃圾回收
       app.commandLine.appendSwitch('optimize-for-size'); // 优化内存占用
-      
+
       // 禁用不必要的功能
-      app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor');
-      app.commandLine.appendSwitch('disable-gpu'); // 如果不需要GPU加速
       app.commandLine.appendSwitch('disable-background-timer-throttling');
       app.commandLine.appendSwitch('disable-renderer-backgrounding');
       app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
@@ -558,4 +575,36 @@ ipcMain.handle('get-app-data-path', () => {
 
 ipcMain.handle('get-app-version', () => {
   return app.getVersion();
+});
+
+// 窗口控制
+ipcMain.on('window-minimize', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.on('window-maximize', () => {
+  if (mainWindow) {
+    mainWindow.maximize();
+  }
+});
+
+ipcMain.on('window-unmaximize', () => {
+  if (mainWindow) {
+    mainWindow.unmaximize();
+  }
+});
+
+ipcMain.on('window-close', () => {
+  if (mainWindow) {
+    mainWindow.close();
+  }
+});
+
+ipcMain.handle('window-is-maximized', () => {
+  if (mainWindow) {
+    return mainWindow.isMaximized();
+  }
+  return false;
 });
