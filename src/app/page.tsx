@@ -137,7 +137,7 @@ export default function HomePage() {
               currentDay={currentDay}
             />
             <div className="mt-6 overflow-y-auto">
-              <div className="grid grid-cols-6 gap-6">
+              <div className="grid grid-cols-6 gap-x-6 gap-y-4">
                 {getFinalFilteredItems(ongoingItems).map((item) => (
                   <div key={item.id} className="transform scale-[0.98] origin-top-left">
                     <MediaCard
@@ -183,7 +183,7 @@ export default function HomePage() {
               currentDay={currentDay}
             />
             <div className="mt-6 overflow-y-auto">
-              <div className="grid grid-cols-6 gap-6">
+              <div className="grid grid-cols-6 gap-x-6 gap-y-4">
                 {getFinalFilteredItems(completedItems).map((item) => (
                   <div key={item.id} className="transform scale-[0.98] origin-top-left">
                     <MediaCard
