@@ -41,7 +41,7 @@ import {
   Minimize2,
   Maximize2,
   Activity as ActivityIcon,
-  Trash,
+  Square,
   CircleDashed
 } from "lucide-react"
 import path from "path"
@@ -108,7 +108,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const [isExecutingCommand, setIsExecutingCommand] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const [terminalInput, setTerminalInput] = useState("")
-  const [currentProcessId, setCurrentProcessId] = useState<string | null>(null)
+  const [currentProcessId, setCurrentProcessId] = useState<number | null>(null)
   const [showFixBugDialog, setShowFixBugDialog] = useState(false)
   const [editorMode, setEditorMode] = useState<"enhanced" | "text">("enhanced")
   const { toast } = useToast()
@@ -127,8 +127,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 添加操作锁，防止按钮互相触发
   const [operationLock, setOperationLock] = useState<string | null>(null)
-  // 添加表格加载状态
-  const [tableReady, setTableReady] = useState(false)
+
 
   // 统一获取 TMDB-Import 工具路径：服务端配置为唯一来源
   const getTmdbImportPath = useCallback(async (): Promise<string | null> => {
@@ -395,8 +394,14 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 hasError = true
               }
 
-              if (data.type === "close" && data.exitCode !== 0) {
-                hasError = true
+              // 处理进程关闭事件
+              if (data.type === "close") {
+                // 如果状态是terminated，表示进程被用户主动终止，不视为错误
+                if (data.status === "terminated") {
+                  hasError = false
+                } else if (data.exitCode !== 0) {
+                  hasError = true
+                }
               }
             } catch (e) {
               // 忽略解析错误
@@ -422,7 +427,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       }
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
-        appendTerminalOutput("命令执行已取消", "error")
+        // AbortError通常是由于用户主动终止进程，不显示为错误
+        appendTerminalOutput("命令执行已终止", "info")
         return { success: false, error: "用户取消", errorText: "用户取消", stdoutText: "" }
       }
       const errorMessage = error instanceof Error ? error.message : "未知错误"
@@ -438,6 +444,34 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       setIsExecutingCommand(false)
       abortControllerRef.current = null
       // 不要在这里清除currentProcessId，让它保持到下一个命令执行
+    }
+  }
+
+  // 终止正在运行的进程
+  const terminateProcess = async () => {
+    if (!currentProcessId) {
+      appendTerminalOutput("⚠️ 没有正在运行的进程", "warning");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/commands/terminate-process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ processId: currentProcessId }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        appendTerminalOutput(`✓ 进程 ${currentProcessId} 已终止`, "success");
+        setIsExecutingCommand(false);
+        setCurrentProcessId(null);
+      } else {
+        appendTerminalOutput(`✗ ${data.error}`, "error");
+      }
+    } catch (error) {
+      appendTerminalOutput(`✗ 终止进程时出错: ${error instanceof Error ? error.message : "未知错误"}`, "error");
     }
   }
 
@@ -585,6 +619,11 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       const result = await executeCommandWithStream(command, savedTmdbImportPath)
 
       if (!result.success) {
+        // 如果是用户主动终止，不显示为错误
+        if (result.error === "用户取消") {
+          appendTerminalOutput(`播出平台数据抓取已终止`, "info");
+          return
+        }
         appendTerminalOutput(`播出平台数据抓取失败，错误信息: ${result.errorText || "未知错误"}`, "error");
         return
       }
@@ -1035,13 +1074,22 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
           description: "TMDB导入命令已成功执行",
         });
       } else {
-        const errorMsg = result.errorText || "未知错误";
-        appendTerminalOutput(`TMDB导入命令执行失败: ${errorMsg}`, "error");
-        toast({
-          title: "执行失败",
-          description: "TMDB导入命令执行失败，请查看终端输出了解详细信息",
-          variant: "destructive",
-        });
+        // 如果是用户主动终止，不显示为错误
+        if (result.error === "用户取消") {
+          appendTerminalOutput("TMDB导入命令已终止", "info");
+          toast({
+            title: "命令已终止",
+            description: "TMDB导入命令已被终止",
+          });
+        } else {
+          const errorMsg = result.errorText || "未知错误";
+          appendTerminalOutput(`TMDB导入命令执行失败: ${errorMsg}`, "error");
+          toast({
+            title: "执行失败",
+            description: "TMDB导入命令执行失败，请查看终端输出了解详细信息",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error: any) {
 
@@ -1270,14 +1318,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 确保表格组件只有在完全准备好后才会渲染
   useEffect(() => {
     if (csvData && (activeTab === "edit" || inTab)) {
-      // 延迟加载表格组件
-      setTableReady(false)
-      const timer = setTimeout(() => {
-        setTableReady(true)
-        
-      }, 50) // 减少延迟时间，提高响应性
-
-      return () => clearTimeout(timer)
+      // 表格组件现在直接渲染，不需要延迟加载
+      
     }
   }, [csvData, activeTab, inTab])
 
@@ -1299,7 +1341,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
               // 确保处理标签页内容正确显示
               if (activeTab === "process") {
-                setTableReady(true);
+                
               }
             } else {
 
@@ -1343,8 +1385,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     // 如果切换到处理标签页，确保表格状态正确
     if (value === "process") {
-
-      setTableReady(true)
+      
     }
     // 如果切换到编辑标签页，增加渲染计数以强制刷新内容
     else if (value === "edit") {
@@ -1357,20 +1398,18 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             const savedTmdbImportPath = await getTmdbImportPath();
             if (savedTmdbImportPath) {
               const success = await readCSVFile(savedTmdbImportPath);
-              if (success) {
-                
-                setTableReady(true);
-              }
-            }
-          } catch (error) {
-            
-          }
-        })();
-      } else {
-        // 已有CSV数据，直接刷新编辑页面
-        setTableReady(true);
-      }
-    }
+                              if (success) {
+                                
+                              }
+                          }
+                        } catch (error) {
+                          
+                        }
+                      })();
+                    } else {
+                      // 已有CSV数据，直接刷新编辑页面
+                      
+                    }    }
   }
   // 添加CSS样式
   useEffect(() => {
@@ -1902,16 +1941,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     终端输出
                   </div>
                   <div className="flex items-center space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                      onClick={() => setTableReady(!tableReady)}
-                      title="如果内容不显示，请点击此按钮刷新"
-                      className="h-7 text-xs"
-                                >
-                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                      刷新视图
-                                </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -1925,11 +1954,13 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setTerminalOutput("")}
-                      disabled={operationLock !== null}
-                      className="h-7"
+                      onClick={terminateProcess}
+                      disabled={!isExecutingCommand}
+                      className="h-7 text-xs"
+                      title="终止正在运行的命令"
                     >
-                      <Trash className="h-4 w-4" />
+                      <Square className="h-3.5 w-3.5 mr-1" />
+                      终止
                     </Button>
                   </div>
                 </CardTitle>
@@ -2081,7 +2112,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
               {/* 编辑区域 */}
             <div className="flex-1 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
-              {editorMode === "enhanced" && tableReady && csvData ? (
+              {editorMode === "enhanced" && csvData ? (
                       <NewTMDBTable
                   key="tmdb-table-enhanced"
                         data={csvData}
@@ -2298,12 +2329,11 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     if (open) {
 
       setActiveTab("process")
-      setTableReady(true)
 
       // 短暂延迟后再次确认是处理标签页
       setTimeout(() => {
         setActiveTab("process")
-        setTableReady(true)
+              
               }, 100)
     } else {
       // 对话框关闭时，重置初始化状态
@@ -2312,22 +2342,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   
   
-  // 确保编辑标签页能正确显示内容
-  useEffect(() => {
-    if (csvData && activeTab === "edit") {
-      
-      // 立即设置表格就绪状态
-      setTableReady(true);
-
-      // 简化渲染逻辑，减少不必要的延迟
-      const timer = setTimeout(() => {
-        setTableReady(true);
-      }, 100); // 减少延迟时间
-
-      return () => clearTimeout(timer);
-    }
-  }, [csvData, activeTab]);
-
   // 处理季数变化
   const handleSeasonChange = (newSeasonValue: string | number) => {
     const season = Number.parseInt(String(newSeasonValue)) || 1
@@ -2392,16 +2406,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   variant="outline"
                   size="sm"
                   className="h-8"
-                  onClick={() => setTableReady(!tableReady)}
-                  title="如果页面不正常，点击刷新"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
                   onClick={() => setIsFullscreen(!isFullscreen)}
+                  title={isFullscreen ? '退出全屏' : '全屏'}
                 >
                   {isFullscreen ? (
                     <Minimize2 className="h-4 w-4" />

@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
 
         // 获取优化后的环境变量
         const optimizedEnv = getPythonEnv();
-        
+
         // 创建子进程，确保stdin是pipe模式
         const childProcess = spawn(mainCommand, args, {
           cwd: workingDirectory,
@@ -322,20 +322,30 @@ export async function POST(request: NextRequest) {
 
         // 处理进程关闭
         childProcess.on("close", (code) => {
-          
+
           // 从活动进程列表中移除
           if (global.activeProcesses && childProcess.pid) {
             global.activeProcesses.delete(childProcess.pid);
-            
+
             console.log(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
           }
-          
+
           // 发送关闭消息
-          const closeStatus = code === 0 ? "success" : "error";
-          const closeMessage = code === 0 
-            ? `命令执行成功完成，退出码: ${code}` 
-            : `命令执行失败，退出码: ${code}`;
-          
+          let closeStatus = "success";
+          let closeMessage = "";
+
+          // 检查进程是否被终止
+          if (code === null) {
+            closeStatus = "terminated";
+            closeMessage = "命令执行已被终止";
+          } else if (code === 0) {
+            closeStatus = "success";
+            closeMessage = `命令执行成功完成，退出码: ${code}`;
+          } else {
+            closeStatus = "error";
+            closeMessage = `命令执行失败，退出码: ${code}`;
+          }
+
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
@@ -347,9 +357,9 @@ export async function POST(request: NextRequest) {
               })}\n\n`,
             ),
           )
-          
-          // 如果是错误退出，提供额外信息
-          if (code !== 0) {
+
+          // 如果是被终止，不显示额外信息
+          if (closeStatus !== "terminated" && code !== 0) {
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
@@ -360,7 +370,7 @@ export async function POST(request: NextRequest) {
               ),
             )
           }
-          
+
           controller.close()
         })
 
