@@ -153,7 +153,21 @@ export function SidebarLayout({
   WeekdayNavigation
 }: SidebarLayoutProps) {
   const { theme, setTheme } = useTheme()
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // 从 localStorage 同步读取初始状态，避免闪烁
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tmdb_helper_layout_preferences')
+        if (cached) {
+          const pref = JSON.parse(cached)
+          if (pref?.lastUpdated && pref?.sidebarCollapsed !== undefined) {
+            return pref.sidebarCollapsed
+          }
+        }
+      } catch {}
+    }
+    return false
+  })
   const [activeMenu, setActiveMenu] = useState<string>('maintenance')
   const [activeSubmenu, setActiveSubmenu] = useState<string>('all')
   const [contentKey, setContentKey] = useState<string>('maintenance-all')
@@ -178,13 +192,18 @@ export function SidebarLayout({
     setSidebarCollapsed(newCollapsed)
 
     try {
-      await LayoutPreferencesManager.setSidebarCollapsed(newCollapsed)
-    } catch (error) {
-      
-      // 如果保存失败，恢复原状态
-      setSidebarCollapsed(sidebarCollapsed)
-    }
-  }
+
+            await LayoutPreferencesManager.setSidebarCollapsed(newCollapsed)
+
+          } catch (error) {
+
+            
+
+            // 如果保存失败，恢复原状态
+
+            setSidebarCollapsed(sidebarCollapsed)
+
+          }  }
 
   // 定义与原始布局完全一致的区域常量
   const REGIONS = [
