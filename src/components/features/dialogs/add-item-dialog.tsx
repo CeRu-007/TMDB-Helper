@@ -123,11 +123,20 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       const tmdbData = data.success ? data.data : null
 
       if (tmdbData) {
+        // 计算总集数：如果有多季数据，计算所有季的总集数
+        let calculatedTotalEpisodes = formData.totalEpisodes;
+        if (tmdbData.totalEpisodes) {
+          calculatedTotalEpisodes = tmdbData.totalEpisodes;
+        }
+        if (tmdbData.seasons && tmdbData.seasons.length > 0) {
+          calculatedTotalEpisodes = tmdbData.seasons.reduce((sum: number, season: any) => sum + (season.totalEpisodes || 0), 0);
+        }
+
         // 更新表单数据
         setFormData((prev) => ({
           ...prev,
           // 只有在用户没有手动设置总集数时才使用TMDB数据
-          totalEpisodes: isManualTotalEpisodes ? prev.totalEpisodes : (tmdbData.totalEpisodes || prev.totalEpisodes),
+          totalEpisodes: isManualTotalEpisodes ? prev.totalEpisodes : calculatedTotalEpisodes,
           platformUrl: prev.platformUrl || tmdbData.platformUrl || "",
           weekday: tmdbData.weekday !== undefined ? tmdbData.weekday : prev.weekday,
           // 根据标签自动设置推荐分类
@@ -609,46 +618,68 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                       <div
                         key={`${result.media_type}-${result.id}`}
                         className={cn(
-                          "flex items-center p-2 rounded-md cursor-pointer transition-all hover:bg-accent/60",
+                          "p-2 rounded-md cursor-pointer transition-all hover:bg-accent/60",
                           selectedResult?.id === result.id && "bg-primary/15 border border-primary/30"
                         )}
                         onClick={() => handleSelectResult(result)}
                       >
-                        <div className="flex-shrink-0 w-10 h-14 bg-muted rounded overflow-hidden mr-3">
-                          {result.poster_path ? (
-                            <img
-                              src={`https://image.tmdb.org/t/p/w92${result.poster_path}`}
-                              alt={getDisplayTitle(result)}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Tv className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-xs truncate">{getDisplayTitle(result)}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <span>{result.media_type === "movie" ? "电影" : "剧集"}</span>
-                            <span>•</span>
-                            <span>{formatDate(result.release_date || result.first_air_date)}</span>
-                            {result.vote_average && (
-                              <>
-                                <span>•</span>
-                                <Star className="h-2 w-2 text-yellow-500" />
-                                <span>{result.vote_average.toFixed(1)}</span>
-                              </>
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 w-10 h-14 bg-muted rounded overflow-hidden mr-3">
+                            {result.poster_path ? (
+                              <img
+                                src={`https://image.tmdb.org/t/p/w92${result.poster_path}`}
+                                alt={getDisplayTitle(result)}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Tv className="h-4 w-4 text-muted-foreground" />
+                              </div>
                             )}
                           </div>
-                        </div>
-                        <div className="flex-shrink-0 flex items-center gap-1">
-                          {result.backdrop_path && (
-                            <ImageIcon className="h-2.5 w-2.5 text-blue-500" />
-                          )}
-                          {selectedResult?.id === result.id && (
-                            <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-xs truncate">{getDisplayTitle(result)}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 flex-wrap">
+                              <span>{result.media_type === "movie" ? "电影" : "剧集"}</span>
+                              <span>•</span>
+                              <span>{formatDate(result.release_date || result.first_air_date)}</span>
+                              {result.vote_average && (
+                                <>
+                                  <span>•</span>
+                                  <Star className="h-2 w-2 text-yellow-500" />
+                                  <span>{result.vote_average.toFixed(1)}</span>
+                                </>
+                              )}
+                              {selectedResult?.id === result.id && (
+                                <>
+                                  <span>•</span>
+                                  <a
+                                    href={`https://www.themoviedb.org/${result.media_type}/${result.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <ExternalLink className="h-2.5 w-2.5" />
+                                    <span>TMDB: {result.id}</span>
+                                  </a>
+                                </>
+                              )}
+                            </div>
+                            {selectedResult?.id === result.id && result.overview && (
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                                {result.overview}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex-shrink-0 flex items-center gap-1">
+                            {result.backdrop_path && (
+                              <ImageIcon className="h-2.5 w-2.5 text-blue-500" />
+                            )}
+                            {selectedResult?.id === result.id && (
+                              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -679,42 +710,6 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
           {selectedResult && (
             <div className="bg-gradient-to-br from-muted/10 to-muted/20 p-3 rounded-lg border">
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* 预览卡片 */}
-                {showPreviewCard && (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-xs font-medium text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                        <Info className="h-3 w-3" />
-                        TMDB详情
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowPreviewCard(false)}
-                        className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
-                      >
-                        ×
-                      </Button>
-                    </div>
-                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                      <p><strong>ID:</strong> {selectedResult.id}</p>
-                      <p><strong>标题:</strong> {getDisplayTitle(selectedResult)}</p>
-                      <p><strong>类型:</strong> {selectedResult.media_type === 'movie' ? '电影' : '剧集'}</p>
-                      <p><strong>TMDB链接:</strong>{' '}
-                        <a
-                          href={`https://www.themoviedb.org/${selectedResult.media_type}/${selectedResult.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          查看TMDB页面
-                        </a>
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {/* 基本信息行 */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-3">
@@ -751,7 +746,14 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
                   {selectedResult.media_type === "tv" && (
                     <div className="space-y-3">
-                      <Label htmlFor="totalEpisodes" className="text-sm font-medium">总集数</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="totalEpisodes" className="text-sm font-medium">总集数</Label>
+                        {tmdbSeasons && tmdbSeasons.length > 1 && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            共 {tmdbSeasons.length} 季
+                          </span>
+                        )}
+                      </div>
                       <Input
                         id="totalEpisodes"
                         type="number"
@@ -768,6 +770,20 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                         }}
                         className="h-10"
                       />
+                      {/* 季数信息展示 - 使用紧凑的标签式设计 */}
+                      {tmdbSeasons && tmdbSeasons.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {tmdbSeasons.map((season: any, index: number) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="text-[10px] h-5 px-2 py-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400"
+                            >
+                              S{season.seasonNumber} {season.totalEpisodes || 0}集
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
