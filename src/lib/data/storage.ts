@@ -58,35 +58,33 @@ export interface ScheduledTask {
 
 export class StorageManager {
   // Item management methods (from ItemManager)
-  static getItemsWithRetry = ItemManager.getItemsWithRetry;
-  static getItems = ItemManager.getItems;
-  static addItem = ItemManager.addItem;
-  static updateItem = ItemManager.updateItem;
-  static deleteItem = ItemManager.deleteItem;
-  static findItemById = ItemManager.findItemById;
-  static hasAnyItems = ItemManager.hasAnyItems;
+  static getItemsWithRetry = (...args: Parameters<typeof ItemManager.getItemsWithRetry>) => ItemManager.getItemsWithRetry(...args);
+  static getItems = (...args: Parameters<typeof ItemManager.getItems>) => ItemManager.getItems(...args);
+  static addItem = (...args: Parameters<typeof ItemManager.addItem>) => ItemManager.addItem(...args);
+  static updateItem = (...args: Parameters<typeof ItemManager.updateItem>) => ItemManager.updateItem(...args);
+  static deleteItem = (...args: Parameters<typeof ItemManager.deleteItem>) => ItemManager.deleteItem(...args);
+  static findItemById = (...args: Parameters<typeof ItemManager.findItemById>) => ItemManager.findItemById(...args);
+  static hasAnyItems = (...args: Parameters<typeof ItemManager.hasAnyItems>) => ItemManager.hasAnyItems(...args);
 
   // Task management methods (from TaskManager)
-  static getScheduledTasks = TaskManager.getScheduledTasks;
-  static addScheduledTask = TaskManager.addScheduledTask;
-  static updateScheduledTask = TaskManager.updateScheduledTask;
-  static deleteScheduledTask = TaskManager.deleteScheduledTask;
-  static getRelatedScheduledTasks = TaskManager.getRelatedScheduledTasks;
-  static getItemScheduledTasks = TaskManager.getItemScheduledTasks;
-  static forceRefreshScheduledTasks = TaskManager.forceRefreshScheduledTasks;
-  static clearScheduledTasksCache = TaskManager.clearScheduledTasksCache;
+  static getScheduledTasks = (...args: Parameters<typeof TaskManager.getScheduledTasks>) => TaskManager.getScheduledTasks(...args);
+  static addScheduledTask = (...args: Parameters<typeof TaskManager.addScheduledTask>) => TaskManager.addScheduledTask(...args);
+  static updateScheduledTask = (...args: Parameters<typeof TaskManager.updateScheduledTask>) => TaskManager.updateScheduledTask(...args);
+  static deleteScheduledTask = (...args: Parameters<typeof TaskManager.deleteScheduledTask>) => TaskManager.deleteScheduledTask(...args);
+  static getRelatedScheduledTasks = (...args: Parameters<typeof TaskManager.getRelatedScheduledTasks>) => TaskManager.getRelatedScheduledTasks(...args);
+  static getItemScheduledTasks = (...args: Parameters<typeof TaskManager.getItemScheduledTasks>) => TaskManager.getItemScheduledTasks(...args);
+  static forceRefreshScheduledTasks = (...args: Parameters<typeof TaskManager.forceRefreshScheduledTasks>) => TaskManager.forceRefreshScheduledTasks(...args);
+  static clearScheduledTasksCache = (...args: Parameters<typeof TaskManager.clearScheduledTasksCache>) => TaskManager.clearScheduledTasksCache(...args);
 
   // Import/Export methods (from ImportExportManager)
-  static exportData = ImportExportManager.exportData;
-  static validateImportData = ImportExportManager.validateImportData;
-  static importData = ImportExportManager.importData;
-  static debugImport = ImportExportManager.debugImport;
+  static exportData = (...args: Parameters<typeof ImportExportManager.exportData>) => ImportExportManager.exportData(...args);
+  static validateImportData = (...args: Parameters<typeof ImportExportManager.validateImportData>) => ImportExportManager.validateImportData(...args);
+  static importData = (...args: Parameters<typeof ImportExportManager.importData>) => ImportExportManager.importData(...args);
+  static debugImport = (...args: Parameters<typeof ImportExportManager.debugImport>) => ImportExportManager.debugImport(...args);
 
   // Task association methods (from TaskAssociationManager)
-  static validateAndFixTaskAssociations =
-    TaskAssociationManager.validateAndFixTaskAssociations;
-  static fixScheduledTaskAssociations =
-    TaskAssociationManager.fixScheduledTaskAssociations;
+  static validateAndFixTaskAssociations = (...args: Parameters<typeof TaskAssociationManager.validateAndFixTaskAssociations>) => TaskAssociationManager.validateAndFixTaskAssociations(...args);
+  static fixScheduledTaskAssociations = (...args: Parameters<typeof TaskAssociationManager.fixScheduledTaskAssociations>) => TaskAssociationManager.fixScheduledTaskAssociations(...args);
 
   /**
    * 检查当前环境是否为客户端

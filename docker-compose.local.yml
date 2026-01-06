@@ -38,9 +38,6 @@ services:
       - PORT=4949
       - HOSTNAME=0.0.0.0
 
-      # TMDB API 配置（可选）
-      # - TMDB_API_KEY=your_tmdb_api_key_here
-
     volumes:
       # 绑定挂载到宿主机目录 
       - ./data:/app/data

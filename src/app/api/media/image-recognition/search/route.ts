@@ -19,11 +19,11 @@ export async function POST(request: NextRequest) {
 
     // 获取TMDB API密钥
     const config = ServerConfigManager.getConfig()
-    const apiKey = config.tmdbApiKey || process.env.TMDB_API_KEY
+    const apiKey = process.env.TMDB_API_KEY || config.tmdbApiKey
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'TMDB API密钥未配置，请在设置中配置' },
+        { error: 'TMDB API密钥未配置' },
         { status: 400 }
       )
     }

@@ -145,7 +145,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!isClient) return
 
     try {
-      
       // 发送到服务器
       const success = await StorageManager.addItem(item)
       if (!success) {
@@ -162,8 +161,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       })
 
     } catch (err) {
-      
       setError("添加项目失败")
+      throw err // 重新抛出错误，让调用者知道添加失败
     }
   }
 

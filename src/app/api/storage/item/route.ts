@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
 
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
-    console.log(`[API] 添加项目 - 用户ID: ${userId}`);
 
     const success = ServerStorageManager.addItem(item);
 
@@ -33,7 +32,8 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
   } catch (error) {
-    
+    console.error('[API] 添加项目错误:', error);
+
     return NextResponse.json({
       error: '服务器内部错误',
       success: false,
