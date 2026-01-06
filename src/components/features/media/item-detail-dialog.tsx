@@ -2420,14 +2420,13 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     onClick={refreshSeasonFromTMDB}
                                     disabled={isRefreshingTMDBData || !editData.tmdbId}
                                     title="刷新TMDB数据、背景图、标志、网络logo和简介"
-                                    className="w-full"
                                   >
                                     {isRefreshingTMDBData ? (
                                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                     ) : (
                                       <RefreshCw className="h-4 w-4 mr-2" />
                                     )}
-                                    刷新TMDB数据、标志、网络logo和简介
+                                    刷新TMDB数据
                                   </Button>
 
                                   {/* 只在编辑模式下显示添加新季区域 */}
