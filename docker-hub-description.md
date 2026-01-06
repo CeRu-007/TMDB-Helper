@@ -93,7 +93,6 @@ volumes:
 | `JWT_SECRET` | `your_jwt_secret_key` | JWT密钥 |
 | `SESSION_EXPIRY_DAYS` | `15` | 会话有效期（天） |
 | `PORT` | `4949` | 应用端口 |
-| `TMDB_API_KEY` | - | TMDB API密钥（可选） |
 
 ## 📋 系统要求
 

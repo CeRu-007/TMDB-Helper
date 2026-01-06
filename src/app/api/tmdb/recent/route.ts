@@ -5,11 +5,12 @@ import { fetchTmdbFeed } from '@/lib/tmdb/tmdb-feed';
 // 统一使用共享模块获取 recent Feed，避免重复实现
 export async function GET(request: NextRequest) {
   try {
-    const config = ServerConfigManager.getConfig();
-    const apiKey = config.tmdbApiKey;
+    // 优先使用环境变量中的密钥,其次使用用户配置的密钥
+    const apiKey = process.env.TMDB_API_KEY || ServerConfigManager.getConfig().tmdbApiKey;
+
     if (!apiKey) {
       return NextResponse.json(
-        { success: false, error: 'TMDB API密钥未配置，请在设置中配置并保存' },
+        { success: false, error: 'TMDB API密钥未配置' },
         { status: 400 }
       );
     }
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     const result = await fetchTmdbFeed('recent', { region, language }, apiKey);
     return NextResponse.json(result);
   } catch (error: any) {
-    
+
     return NextResponse.json(
       { success: false, error: `获取TMDB近期开播内容失败: ${error.message}` },
       { status: 500 }

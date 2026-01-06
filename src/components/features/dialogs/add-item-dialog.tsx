@@ -366,8 +366,6 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       if (!tmdbData) {
         throw new Error("无法获取词条详细信息")
       }
-
-      // 调试日志：检查获取到的数据
       
       // 如果缺少关键图片信息，尝试强制刷新获取
       const missingImages = [];
@@ -487,8 +485,6 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         updatedAt: new Date().toISOString(),
       }
 
-      // 调试日志：检查最终创建的词条数据
-      
       // 检查重复项目
       const existingItems = await StorageManager.getItemsWithRetry();
       const duplicateItem = existingItems.find(item =>
@@ -497,7 +493,6 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       );
 
       if (duplicateItem) {
-        
         // 显示重复提示
         toast({
           title: "⚠️ 词条已存在",
@@ -510,7 +505,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
         return;
       }
 
-      onAdd(newItem)
+      await onAdd(newItem)
 
       // 显示成功提示
       toast({
@@ -523,7 +518,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       onOpenChange(false)
       resetForm()
     } catch (error) {
-      
+      console.error('[添加词条] 添加失败:', error);
+
       toast({
         title: "添加失败",
         description: error instanceof Error ? error.message : "未知错误",

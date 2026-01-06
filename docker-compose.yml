@@ -35,9 +35,6 @@ services:
       - PORT=4949
       - HOSTNAME=0.0.0.0
 
-      # TMDB API 配置（可选）
-      # - TMDB_API_KEY=your_tmdb_api_key_here
-
       # 数据库配置（如果需要）
       # - DATABASE_URL=your_database_url_here
 

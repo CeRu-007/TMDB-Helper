@@ -158,7 +158,6 @@ docker run -d \
 | `NODE_ENV` | `production` | Node.js 环境 |
 | `PORT` | `4949` | 应用端口 |
 | `HOSTNAME` | `0.0.0.0` | 绑定主机 |
-| `TMDB_API_KEY` | - | TMDB API 密钥（可选） |
 
 #### Docker Compose 配置示例
 

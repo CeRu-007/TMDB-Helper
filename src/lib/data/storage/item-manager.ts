@@ -130,6 +130,7 @@ export class ItemManager {
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
           throw new Error(
             `API请求失败: ${response.status} ${response.statusText}`,
           );
@@ -137,6 +138,7 @@ export class ItemManager {
 
         return true;
       } catch (error) {
+        console.error('[ItemManager] 添加项目失败:', error);
         return false;
       }
     }
