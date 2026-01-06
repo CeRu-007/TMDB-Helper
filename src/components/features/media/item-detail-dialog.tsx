@@ -1272,6 +1272,26 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
   }
 
+  // 处理标记下一集
+  const handleMarkNextEpisode = () => {
+    if (!selectedSeason || !currentSeason || !currentSeason.episodes) {
+      setCopyFeedback('当前季没有集数')
+      setTimeout(() => setCopyFeedback(null), 1500)
+      return
+    }
+
+    // 找到第一个未完成的集数
+    const nextEpisode = currentSeason.episodes.find(ep => !ep.completed)
+    if (!nextEpisode) {
+      setCopyFeedback('当前季所有集数已完成')
+      setTimeout(() => setCopyFeedback(null), 1500)
+      return
+    }
+
+    // 标记该集数为已完成
+    handleEpisodeToggle(nextEpisode.number, true, selectedSeason)
+  }
+
   // 添加handleDeleteSeason函数
   const handleDeleteSeason = (seasonNumber: number) => {
     // 设置要删除的季数并显示确认对话框
@@ -2361,25 +2381,39 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                     <CheckSquare className="h-4 w-4 mr-2" />
                                     全选/全不选
                                   </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleResetSeason}
-                                    title="重置季"
-                                  >
-                                    <RotateCcw className="h-4 w-4 mr-2" />
-                                    重置
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDeleteSeason(selectedSeason)}
-                                    title="删除季"
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    删除季
-                                  </Button>
+                                  {!editing ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={handleMarkNextEpisode}
+                                      title="标记下一集为已完成"
+                                    >
+                                      <ArrowRightCircle className="h-4 w-4 mr-2" />
+                                      标记下一集
+                                    </Button>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleResetSeason}
+                                        title="重置季"
+                                      >
+                                        <RotateCcw className="h-4 w-4 mr-2" />
+                                        重置
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDeleteSeason(selectedSeason)}
+                                        title="删除季"
+                                        className="text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        删除季
+                                      </Button>
+                                    </>
+                                  )}
                                   <Button
                                     variant="outline"
                                     size="sm"
