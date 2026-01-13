@@ -3,7 +3,7 @@
  * 提供简单的CSV解析和序列化功能，供前端组件使用
  */
 
-import type { CSVData } from '@/types/csv';
+import type { CSVData } from '@/types/csv-editor';
 
 /**
  * 解析CSV内容为结构化数据

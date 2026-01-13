@@ -33,7 +33,7 @@ import DateIntervalDialog from "@/components/features/dialogs/date-interval-dial
 import MinutesDialog from "@/components/features/dialogs/minutes-dialog"
 import NumberRangeDialog from "@/components/features/dialogs/number-range-dialog"
 import { isDateColumn, isTimeColumn, isNumericColumn, isValidDateString, generateNumberSequence } from "@/lib/utils/date-utils"
-import { CSVData } from "@/lib/csv-processor"
+import type { CSVData } from "@/types/csv-editor"
 
 export interface TableContextMenuProps {
   children: React.ReactNode

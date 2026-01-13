@@ -49,7 +49,7 @@ import path from "path"
 // 导入新版表格组件
 import { NewTMDBTable } from "@/components/features/media/new-tmdb-table"
 import { TMDBItem } from "@/lib/data/storage"
-import { parseCsvContent, serializeCsvData, processOverviewColumn, CSVData as CSVDataType } from "@/lib/data/csv-processor-client"
+import { parseCsvContent, serializeCsvData, processOverviewColumn, CSVData } from "@/lib/data/csv-processor-client"
 import { validateCsvData, fixCsvData } from "@/lib/data/csv-validator"
 import FixTMDBImportBugDialog from "../dialogs/fix-tmdb-import-bug-dialog"
 import axios from "axios"
@@ -65,10 +65,6 @@ interface TMDBImportIntegrationDialogProps {
   onItemUpdate?: (item: TMDBItem) => void
   inTab?: boolean // 是否在标签页中显示
 }
-
-
-// 重用从csv-processor导入的CSVDataType类型
-type CSVData = CSVDataType;
 
 
 export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, onItemUpdate, inTab = false }: TMDBImportIntegrationDialogProps) {
@@ -110,7 +106,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const [terminalInput, setTerminalInput] = useState("")
   const [currentProcessId, setCurrentProcessId] = useState<number | null>(null)
   const [showFixBugDialog, setShowFixBugDialog] = useState(false)
-  const [editorMode, setEditorMode] = useState<"enhanced" | "text">("enhanced")
+  const [editorMode, setEditorMode] = useState<"table" | "text">("table")
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -1108,7 +1104,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   
   
   // 处理编辑器模式切换
-  const handleEditorModeChange = (mode: "enhanced" | "text") => {
+  const handleEditorModeChange = (mode: "table" | "text") => {
     // 如果从表格模式切换到文本模式，需要将csvData转换为文本
     if (mode === "text" && editorMode !== "text" && csvData) {
       // 将csvData转换为CSV文本并修复可能的编码问题
@@ -1776,7 +1772,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 渲染inTab模式内容
   const renderInTabContent = () => (
-    <div className="h-full flex flex-col bg-transparent backdrop-blur-md w-full overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
+    <div className="h-full flex flex-col bg-transparent backdrop-blur-md w-full overflow-hidden overscroll-none touch-none" style={{ maxWidth: '100%', width: '100%' }}>
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
@@ -2066,17 +2062,17 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         {/* 编辑标签内容 */}
         <TabsContent
           value="edit"
-          className="h-full p-0 m-0 bg-transparent w-full overflow-hidden"
+          className="h-full p-0 m-0 bg-transparent w-full"
         >
             <div className="h-full flex flex-col w-full overflow-hidden">
             {/* 编辑工具栏 */}
-            <div className="border-b px-4 py-2 bg-background/30 backdrop-blur-md">
+            <div className="border-b px-4 py-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="bg-muted rounded-md p-0.5 flex items-center">
                   <Button
-                      variant={editorMode === "enhanced" ? "default" : "ghost"}
+                      variant={editorMode === "table" ? "default" : "ghost"}
                     size="sm"
-                      onClick={() => handleEditorModeChange("enhanced")}
+                      onClick={() => handleEditorModeChange("table")}
                       className="h-7 px-2 text-xs"
                     >
                       <TableIcon className="h-3.5 w-3.5 mr-1" />
@@ -2111,27 +2107,26 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             </div>
 
               {/* 编辑区域 */}
-            <div className="flex-1 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
-              {editorMode === "enhanced" && csvData ? (
+            <div className="flex-1 min-h-0 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
+              {editorMode === "table" && csvData ? (
                       <NewTMDBTable
-                  key="tmdb-table-enhanced"
                         data={csvData}
                         onChange={handleCsvDataChange}
                         onSave={handleSaveEnhancedCSV}
                         onCancel={() => {}}
+                        className="h-full w-full"
                         height="100%"
                         isSaving={isSaving}
                       />
               ) : editorMode === "text" ? (
-                <div className="h-full flex flex-col csv-text-editor-container">
+                <div className="flex-1 min-h-0 p-4">
                   <textarea
                     ref={textareaRef}
                     value={csvContent}
                     onChange={(e) => setCsvContent(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 font-mono text-xs resize-none focus:outline-none bg-background/40 backdrop-blur-md csv-text-editor"
+                    className="w-full h-full font-mono text-sm resize-none focus:outline-none bg-transparent"
                     placeholder="CSV内容..."
-                    style={{ lineHeight: 1.6 }}
                   ></textarea>
                 </div>
               ) : (
@@ -2362,16 +2357,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 处理CSV数据变更
   const handleCsvDataChange = (newData: CSVDataType) => {
-    // 更新CSV数据
+    // 只更新CSV数据，不进行其他操作
     setCsvData(newData);
-
-    // 更新CSV内容（用于文本编辑模式）
-    const serialized = serializeCsvData(newData);
-    setCsvContent(serialized);
-
-    // 标记数据已修改
-    const updatedItem = { ...item, notes: item.notes || "数据已修改" };
-    onItemUpdate?.(updatedItem);
   };
 
   

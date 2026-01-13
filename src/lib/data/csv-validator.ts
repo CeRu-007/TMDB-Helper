@@ -3,7 +3,7 @@
  * 用于验证和修复CSV数据结构问题
  */
 
-import { CSVData } from './csv-processor';
+import type { CSVData } from '@/types/csv-editor';
 
 // 验证结果类型
 export interface ValidationResult {

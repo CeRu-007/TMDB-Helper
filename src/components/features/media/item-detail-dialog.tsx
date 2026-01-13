@@ -2618,7 +2618,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
                 {/* 集成工具标签内容 */}
                 <TabsContent value="integration" className="transition-opacity duration-300 ease-in-out flex-1 min-h-0">
-                  <div className="pr-2 w-full h-full overflow-hidden min-w-0 max-w-full">
+                  <div className="pr-2 w-full h-full min-w-0 max-w-full">
                     <TMDBImportIntegrationDialog
                       open={true}
                       onOpenChange={() => {}}
