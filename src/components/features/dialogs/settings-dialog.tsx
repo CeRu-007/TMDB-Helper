@@ -1014,7 +1014,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           break
 
         default:
-          console.warn('⚠️ [DEBUG] 未知的activeSection:', currentActiveSection)
+          console.warn('⚠️ [DEBUG] 未知的activeSection:', activeSection)
           console.log('⚠️ [DEBUG] 尝试作为API设置处理...')
           // 如果是未知的section，尝试作为API配置处理
           if (apiKey && apiKey.trim() !== '') {
@@ -2132,6 +2132,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       let newPrimaryId = primaryModelId
       if (!checked && primaryModelId === modelId) {
         newPrimaryId = newSelectedIds[0] || ""
+      }
+      // 如果添加模型且当前没有主模型，则自动将新模型设为主模型
+      else if (checked && !primaryModelId) {
+        newPrimaryId = modelId
       }
 
       // 更新本地状态
