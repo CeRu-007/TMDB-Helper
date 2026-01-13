@@ -1976,7 +1976,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             </div>
 
               {/* 编辑区域 */}
-            <div className="flex-1 min-h-0 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
+            <div className="flex-1 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
               {editorMode === "table" && csvData ? (
                       <NewTMDBTable
                         data={csvData}
@@ -1988,14 +1988,15 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                         isSaving={isSaving}
                       />
               ) : editorMode === "text" ? (
-                <div className="flex-1 min-h-0 p-4">
+                <div className="h-full flex flex-col csv-text-editor-container">
                   <textarea
                     ref={textareaRef}
                     value={csvContent}
                     onChange={(e) => setCsvContent(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="w-full h-full font-mono text-sm resize-none focus:outline-none bg-transparent"
+                    className="flex-1 font-mono text-xs resize-none focus:outline-none bg-background/40 backdrop-blur-md csv-text-editor"
                     placeholder="CSV内容..."
+                    style={{ lineHeight: 1.6 }}
                   ></textarea>
                 </div>
               ) : (

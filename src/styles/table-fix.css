@@ -58,7 +58,14 @@
 
 /* 优化滚动性能 */
 .tmdb-table [data-radix-scroll-area-viewport] {
-  scroll-behavior: smooth;
+  will-change: scroll-position;
+  contain: strict;
+  scroll-behavior: auto !important;
+}
+
+/* 强制 ScrollArea 使用原生滚动 */
+.tmdb-table [data-radix-scroll-area-viewport] > div {
+  scroll-behavior: auto !important;
 }
 
 /* 确保表格行在选中状态下正确显示 */
@@ -69,4 +76,61 @@
 /* 修复可能的高度塌陷问题 */
 .csv-table-wrapper > div {
   min-height: 100%;
+}
+
+/* 优化表格单元格编辑体验 */
+.tmdb-table td input[type="text"] {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  background-color: hsl(var(--background));
+  border: 2px solid hsl(var(--primary));
+  border-radius: 4px;
+  padding: 4px 8px;
+  outline: none;
+  transition: all 0.15s ease;
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+.tmdb-table td input[type="text"]:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
+}
+
+.tmdb-table td input[type="text"]::placeholder {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.7;
+}
+
+/* 单元格悬停效果优化 */
+.tmdb-table td:hover:not(:has(input)) {
+  background-color: hsl(var(--accent) / 0.3) !important;
+}
+
+/* 编辑中的单元格高亮 */
+.tmdb-table td:has(input) {
+  background-color: hsl(var(--background));
+  padding: 0;
+}
+
+.tmdb-table td:has(input) input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
+
+[data-radix-scroll-area-viewport] > div {
+  padding-bottom: 4px;
+}
+
+/* 优化表格滚动性能 */
+.tmdb-table table {
+  will-change: transform;
+}
+
+/* 优化单元格渲染 */
+.tmdb-table td {
+  contain: layout style paint;
 }
