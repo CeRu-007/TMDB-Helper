@@ -31,7 +31,8 @@ import {
 } from "lucide-react"
 import DateIntervalDialog from "@/components/features/dialogs/date-interval-dialog"
 import MinutesDialog from "@/components/features/dialogs/minutes-dialog"
-import { isDateColumn, isTimeColumn, isValidDateString } from "@/lib/utils/date-utils"
+import NumberRangeDialog from "@/components/features/dialogs/number-range-dialog"
+import { isDateColumn, isTimeColumn, isNumericColumn, isValidDateString, generateNumberSequence } from "@/lib/utils/date-utils"
 import { CSVData } from "@/lib/csv-processor"
 
 export interface TableContextMenuProps {
@@ -71,6 +72,8 @@ export default function TableContextMenu({
   const [dateDialogOpen, setDateDialogOpen] = useState(false)
   // 分钟设置对话框状态
   const [minutesDialogOpen, setMinutesDialogOpen] = useState(false)
+  // 数字范围填充对话框状态
+  const [numberDialogOpen, setNumberDialogOpen] = useState(false)
   
   // 检查选中的单元格是否在同一列
   const isSameColumn = () => {
@@ -174,6 +177,35 @@ export default function TableContextMenu({
           row: cell.row,
           col: colIndex,
           value: updatedTimes[index]
+        })
+      }
+    })
+    
+    onCellsUpdate(updates)
+  }
+  
+  // 检查选中的列是否是数字列
+  const isSelectedNumericColumn = () => {
+    if (!isSameColumn()) return false
+    
+    const values = getSelectedValues()
+    return isNumericColumn(values)
+  }
+  
+  // 处理数字范围填充
+  const handleNumberSequence = (numbers: string[]) => {
+    if (numbers.length === 0 || !isSameColumn()) return
+    
+    const colIndex = selectedCells[0].col
+    const updates: { row: number, col: number, value: string }[] = []
+    
+    // 为每个选中的单元格应用递进数字
+    selectedCells.forEach((cell, index) => {
+      if (index < numbers.length) {
+        updates.push({
+          row: cell.row,
+          col: colIndex,
+          value: numbers[index]
         })
       }
     })
@@ -297,6 +329,15 @@ export default function TableContextMenu({
             <span>日期递进...</span>
           </ContextMenuItem>
           
+          {/* 数字范围填充 */}
+          <ContextMenuItem
+            onClick={() => setNumberDialogOpen(true)}
+            disabled={!isSelectedNumericColumn() || selectedCells.length <= 1}
+          >
+            <ArrowDownUp className="mr-2 h-4 w-4" />
+            <span>数字范围填充...</span>
+          </ContextMenuItem>
+          
           {/* 分钟操作 */}
           <ContextMenuItem
             onClick={() => setMinutesDialogOpen(true)}
@@ -315,6 +356,14 @@ export default function TableContextMenu({
         startDate={getFirstValidDate()}
         count={selectedCells.length}
         onApply={handleDateSequence}
+      />
+      
+      {/* 数字范围填充对话框 */}
+      <NumberRangeDialog
+        open={numberDialogOpen}
+        onOpenChange={setNumberDialogOpen}
+        count={selectedCells.length}
+        onApply={handleNumberSequence}
       />
       
       {/* 分钟设置对话框 */}
