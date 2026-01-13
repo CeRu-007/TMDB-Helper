@@ -28,10 +28,7 @@ import {
 } from "@/components/common/dropdown-menu"
 
 // 导入CSV数据类型
-export interface CSVData {
-  headers: string[]
-  rows: string[][]
-}
+import type { CSVData } from "@/types/csv-editor"
 
 // 表格属性接口
 export interface TMDBTableProps {

@@ -37,4 +37,4 @@ export interface ScrollState {
   showIndicator: boolean
 }
 
-export type EditorMode = 'simple' | 'enhanced' | 'text' 
+export type EditorMode = 'table' | 'text' 

@@ -12,13 +12,12 @@ import { TableHelpTooltip } from "../../common/table-help-tooltip"
 import { Trash2, Save } from "lucide-react"
 
 // 导入CSV数据类型
-import { CSVData as CSVDataType } from "@/lib/csv-processor"
-export type CSVData = CSVDataType
+import type { CSVData } from "@/types/csv-editor"
 
 // 导入TMDBTableProps类型并扩展
 import type { TMDBTableProps } from "@/components/features/media/tmdb-table"
 export interface NewTMDBTableProps extends TMDBTableProps {
-  onChange?: (newData: CSVDataType) => void
+  onChange?: (newData: CSVData) => void
   onSave?: () => Promise<boolean | undefined>
   onCancel?: () => void
   height?: string
