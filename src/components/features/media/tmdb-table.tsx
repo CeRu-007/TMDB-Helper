@@ -388,9 +388,12 @@ const TMDBTableComponent = ({
     // 设置活动单元格
     setActiveCell({ row, col })
     
-    // 如果正在编辑，先结束编辑
+    // 如果正在编辑，只有点击其他单元格时才结束编辑
     if (isEditing) {
-      finishEditing()
+      if (editCell?.row !== row || editCell?.col !== col) {
+        finishEditing()
+      }
+      return
     }
     
     // 如果按住Ctrl键，添加或移除选中单元格
@@ -1301,7 +1304,6 @@ const TMDBTableComponent = ({
         ref={tableRef}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        onSelect={(e) => e.preventDefault()}
         onMouseDown={handleMouseDown}
       >
         {/* 批量操作工具栏 */}
@@ -1333,8 +1335,8 @@ const TMDBTableComponent = ({
         )}
 
         <ScrollArea className="h-full w-full scroll-area-viewport">
-          <div className="relative w-full overflow-x-auto" style={{ paddingBottom: '1px' }}>
-            <Table className="w-full" style={{ tableLayout: 'auto', minWidth: '100%' }}>
+          <div className="relative w-full" style={{ paddingBottom: '4px' }}>
+            <Table className="w-full" style={{ tableLayout: 'fixed', minWidth: '100%' }}>
             <TableHeader>
                 <TableRow>
                   {/* 行号列头 */}
@@ -1507,12 +1509,17 @@ const TMDBTableComponent = ({
                           isDragging && canStartDragging && dragStart?.row === rowIndex && dragStart?.col === colIndex && "cursor-crosshair",
                           isShiftSelecting && "cursor-crosshair",
                           canStartDragging && isDragging && "cursor-crosshair",
-                          "relative select-none group/cell whitespace-nowrap overflow-hidden" // 添加文本控制类
+                          isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? "relative whitespace-nowrap overflow-hidden" : "relative select-none whitespace-nowrap overflow-hidden cursor-text hover:bg-accent/30 transition-colors"
                         )}
                         onClick={(e) => handleCellClick(rowIndex, colIndex, e)}
                         onDoubleClick={(e) => handleCellDoubleClick(rowIndex, colIndex, e)}
                         onMouseMove={(e) => handleMouseMove(rowIndex, colIndex, e)}
-                        onMouseDown={(e) => handleCellMouseDown(rowIndex, colIndex, e)}
+                        onMouseDown={(e) => {
+                          // 如果正在编辑这个单元格，不处理鼠标按下事件
+                          if (!(isEditing && editCell?.row === rowIndex && editCell?.col === colIndex)) {
+                            handleCellMouseDown(rowIndex, colIndex, e)
+                          }
+                        }}
                         data-column={localData.headers[colIndex].toLowerCase().replace(/\s+/g, '_')}
                         style={{
                           minWidth: '100px',
@@ -1520,34 +1527,23 @@ const TMDBTableComponent = ({
                           width: `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
                         }}
                       >
-                        <div className="relative w-full h-full">
-                          {isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? (
+                        {isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? (
                             <input
                               ref={editInputRef}
-                              className="w-full h-full p-1 border border-primary rounded focus:ring-2 focus:ring-primary/50 focus:outline-none bg-background"
+                              className="w-full h-full px-2 py-1 border-2 border-primary rounded focus:ring-2 focus:ring-primary/50 focus:outline-none bg-background text-sm absolute inset-0"
                               value={editCell.value}
                               onChange={handleEditInputChange}
                               onKeyDown={handleEditInputKeyDown}
                               onBlur={finishEditing}
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onMouseUp={(e) => e.stopPropagation()}
+                              autoFocus
+                              style={{ zIndex: 50 }}
                             />
                           ) : (
-                            <>
-                              <div className="truncate pr-6">{cell}</div>
-                              {/* 单元格编辑按钮 */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 p-0 opacity-0 group-hover/cell:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditing(rowIndex, colIndex);
-                                }}
-                              >
-                                <Edit3 className="h-3 w-3" />
-                              </Button>
-                            </>
-                        )}
-                        </div>
+                            <div className="truncate px-2 py-1 text-sm h-full">{cell}</div>
+                          )}
                   </TableCell>
                   ))}
                 </TableRow>

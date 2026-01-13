@@ -172,14 +172,12 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
       {/* 表格区域 - 增强滚动容器 */}
       <div className="flex-1 min-h-0 overflow-hidden csv-table-wrapper relative">
         {/* 表格主体内容 */}
-        <div className="h-full w-full min-h-0 overflow-hidden">
-          <BaseTMDBTable
-            {...enhancedProps}
-            showRowNumbers={config.showRowNumbers}
-            showColumnOperations={config.showColumnOperations}
-            showRowOperations={config.showRowOperations}
-          />
-        </div>
+        <BaseTMDBTable
+          {...enhancedProps}
+          showRowNumbers={config.showRowNumbers}
+          showColumnOperations={config.showColumnOperations}
+          showRowOperations={config.showRowOperations}
+        />
         
         {/* 滚动提示器 - 视觉反馈区域 */}
         <div className="csv-scroll-indicators">
