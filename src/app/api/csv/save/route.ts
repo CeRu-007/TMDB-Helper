@@ -44,9 +44,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'CSV文件保存成功',
-      filePath,
-      fileExists,
-      fileSize: fileStats?.size
+      filePath
     });
 
   } catch (error) {

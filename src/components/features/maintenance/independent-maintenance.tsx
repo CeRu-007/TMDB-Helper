@@ -11,7 +11,7 @@ import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
 import { Label } from "@/components/common/label"
 import { Badge } from "@/components/common/badge"
-import { useToast } from "@/components/common/use-toast"
+import { useToast } from "@/lib/hooks/use-toast"
 import { ClientConfigManager } from "@/lib/utils/client-config-manager"
 import axios from "axios"
 import path from "path"
@@ -69,7 +69,6 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   const [csvData, setCsvData] = useState<CSVData | null>(null)
   const [editorMode, setEditorMode] = useState<"table" | "text">("table")
   const [csvContent, setCsvContent] = useState("")
-  const [isSaving, setIsSaving] = useState(false)
   const [currentProcessId, setCurrentProcessId] = useState<string | null>(null)
   const [isExecutingCommand, setIsExecutingCommand] = useState(false)
   const terminalRef = useRef<HTMLDivElement>(null)
@@ -462,36 +461,15 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
   // 保存CSV文件 - 使用统一的保存函数
   const handleSaveCsv = useCallback(async () => {
-    if (isSaving) {
-      return
-    }
-
-    if (!csvData) {
-      toast({
-        title: "错误",
-        description: "没有可保存的CSV数据",
-        variant: "destructive"
-      })
-      return
-    }
-
-    setIsSaving(true)
-
-    try {
-      const success = await saveCSV({
-        csvData,
-        csvContent,
-        editorMode,
-        tmdbImportPath: await getTmdbImportPath(),
-        appendTerminalOutput,
-        toast,
-        showSuccessNotification: true
-      })
-    } catch (error) {
-      console.error('saveCSV error:', error)
-    } finally {
-      setIsSaving(false)
-    }
+    const success = await saveCSV({
+      csvData,
+      csvContent,
+      editorMode,
+      tmdbImportPath: await getTmdbImportPath(),
+      appendTerminalOutput,
+      toast,
+      showSuccessNotification: true
+    })
   }, [csvData, csvContent, editorMode, getTmdbImportPath, appendTerminalOutput, toast])
 
   return (
@@ -858,20 +836,11 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
                 <Button
                   onClick={handleSaveCsv}
-                  disabled={!csvData || isSaving}
-                  className="w-full h-auto text-xs"
+                  disabled={!csvData}
+                  className="w-full h-auto text-xs hover:bg-primary/90 active:bg-primary/80 transition-colors"
                 >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      保存中...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      保存CSV文件
-                    </>
-                  )}
+                  <Save className="h-4 w-4 mr-2" />
+                  保存CSV文件
                 </Button>
               </div>
 

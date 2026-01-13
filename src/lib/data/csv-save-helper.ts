@@ -128,10 +128,7 @@ export async function saveCSV(options: {
       data: processedData
     })
 
-    console.log('Save response:', response.data)
-
     if (!response.data.success) {
-      console.error('Save failed:', response.data)
       throw new Error(response.data.error || '保存CSV文件失败')
     }
 
@@ -141,7 +138,6 @@ export async function saveCSV(options: {
     })
 
     if (!verifyResponse.data.success || !verifyResponse.data.exists) {
-      console.error('Verify failed:', verifyResponse.data)
       throw new Error('文件保存失败：无法验证文件是否写入')
     }
 
@@ -162,9 +158,7 @@ export async function saveCSV(options: {
 
     return true
   } catch (error: any) {
-    console.error('Save error:', error)
     handleSaveError(error, options.appendTerminalOutput, options.toast)
-    console.log('Returning false')
     return false
   }
 }
