@@ -35,7 +35,8 @@ import {
 
 // 导入现有的集成工具组件
 import { NewTMDBTable } from "@/components/features/media/new-tmdb-table"
-import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
+import { parseCsvContent, CSVData } from "@/lib/data/csv-processor-client"
+import { saveCSV } from "@/lib/data/csv-save-helper"
 
 interface IndependentMaintenanceProps {
   onShowSettingsDialog?: (section?: string) => void
@@ -68,6 +69,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   const [csvData, setCsvData] = useState<CSVData | null>(null)
   const [editorMode, setEditorMode] = useState<"table" | "text">("table")
   const [csvContent, setCsvContent] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
   const [currentProcessId, setCurrentProcessId] = useState<string | null>(null)
   const [isExecutingCommand, setIsExecutingCommand] = useState(false)
   const terminalRef = useRef<HTMLDivElement>(null)
@@ -458,9 +460,12 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
     }
   }, [appendTerminalOutput])
 
-  // 保存CSV文件
-  // 保存CSV文件 - 复用词条详情页面的实现逻辑
+  // 保存CSV文件 - 使用统一的保存函数
   const handleSaveCsv = useCallback(async () => {
+    if (isSaving) {
+      return
+    }
+
     if (!csvData) {
       toast({
         title: "错误",
@@ -470,83 +475,22 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
       return
     }
 
+    setIsSaving(true)
+
     try {
-      setIsProcessing(true)
-      appendTerminalOutput("正在保存CSV文件...", "info")
-
-      // 获取TMDB-Import工具路径
-      const tmdbImportPath = await getTmdbImportPath()
-      if (!tmdbImportPath) {
-        throw new Error("请先在设置中配置TMDB-Import工具路径")
-      }
-
-      const importCsvPath = path.join(tmdbImportPath, 'import.csv')
-
-      // 对于文本模式，需要先将文本解析为CSV数据结构
-      let dataToSave = csvData
-      if (editorMode === "text" && csvContent) {
-        try {
-          // 解析文本内容为CSV数据
-          dataToSave = parseCsvContent(csvContent)
-          // 更新组件状态中的CSV数据，确保其他功能也能使用最新数据
-          setCsvData(dataToSave)
-          appendTerminalOutput("成功解析文本内容为CSV数据", "success")
-        } catch (parseError) {
-          throw new Error(`解析CSV文本失败: ${parseError instanceof Error ? parseError.message : '未知错误'}`)
-        }
-      }
-
-      // 使用API路由保存CSV文件
-      const response = await axios.post('/api/csv/save', {
-        filePath: importCsvPath,
-        data: dataToSave
+      const success = await saveCSV({
+        csvData,
+        csvContent,
+        editorMode,
+        tmdbImportPath: await getTmdbImportPath(),
+        appendTerminalOutput,
+        toast,
+        showSuccessNotification: true
       })
-
-      if (!response.data.success) {
-        throw new Error(response.data.error || '保存CSV文件失败')
-      }
-
-      // 确保文件确实被写入
-      const verifyResponse = await axios.post('/api/csv/verify', {
-        filePath: importCsvPath
-      })
-
-      if (!verifyResponse.data.success || !verifyResponse.data.exists) {
-        throw new Error('文件保存失败：无法验证文件是否写入')
-      }
-
-      appendTerminalOutput("CSV文件保存成功", "success")
-      toast({
-        title: "保存成功",
-        description: `CSV文件已保存到 ${importCsvPath}`
-      })
-
-    } catch (error: any) {
-      // 提供更友好的错误消息
-      let errorMessage = error.message || '未知错误'
-      let errorTitle = "保存失败"
-
-      // 处理特定类型的错误
-      if (errorMessage.includes('无法验证文件是否写入')) {
-        errorMessage = '无法确认文件是否成功保存。请检查文件权限和磁盘空间。'
-        errorTitle = "验证失败"
-      } else if (errorMessage.includes('EACCES')) {
-        errorMessage = '没有足够的权限写入文件。请检查文件权限设置。'
-        errorTitle = "权限错误"
-      } else if (errorMessage.includes('ENOSPC')) {
-        errorMessage = '磁盘空间不足，无法保存文件。'
-        errorTitle = "存储错误"
-      }
-
-      appendTerminalOutput(`保存CSV文件失败: ${errorMessage}`, "error")
-      toast({
-        title: errorTitle,
-        description: errorMessage,
-        variant: "destructive",
-        duration: 5000,
-      })
+    } catch (error) {
+      console.error('saveCSV error:', error)
     } finally {
-      setIsProcessing(false)
+      setIsSaving(false)
     }
   }, [csvData, csvContent, editorMode, getTmdbImportPath, appendTerminalOutput, toast])
 
@@ -610,7 +554,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       <div className="flex-1 min-h-0 overflow-hidden">
                         <NewTMDBTable
                           data={csvData}
-                          onDataChange={setCsvData}
+                          onChange={setCsvData}
                           className="h-full w-full"
                           height="100%"
                         />
@@ -914,11 +858,20 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
                 <Button
                   onClick={handleSaveCsv}
-                  disabled={!csvData}
+                  disabled={!csvData || isSaving}
                   className="w-full h-auto text-xs"
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  保存CSV文件
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      保存CSV文件
+                    </>
+                  )}
                 </Button>
               </div>
 
