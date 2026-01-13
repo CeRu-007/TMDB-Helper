@@ -221,3 +221,57 @@ export function formatShortTimeDescription(releaseDate: string, isUpcoming: bool
     }
   }
 }
+
+/**
+ * 判断字符串是否为有效的正整数
+ * @param value 字符串值
+ * @returns 是否为有效正整数
+ */
+export function isValidPositiveInteger(value: string): boolean {
+  if (!value || value.trim() === '') return false;
+  
+  // 检查是否为纯数字且大于0
+  const num = parseInt(value, 10);
+  return !isNaN(num) && num > 0 && value === String(num);
+}
+
+/**
+ * 检查列是否可能是数字列（正整数）
+ * @param values 列值数组
+ * @returns 是否为数字列
+ */
+export function isNumericColumn(values: string[]): boolean {
+  if (!values || values.length === 0) return false;
+  
+  const nonEmptyValues = values.filter(v => v.trim() !== '');
+  if (nonEmptyValues.length === 0) return false;
+  
+  const sampleSize = Math.min(10, nonEmptyValues.length);
+  const validNumbers = nonEmptyValues
+    .slice(0, sampleSize)
+    .filter(v => isValidPositiveInteger(v));
+  
+  return validNumbers.length >= sampleSize * 0.5;
+}
+
+/**
+ * 生成数字序列
+ * @param startValue 起始值
+ * @param count 需要生成的数字数量
+ * @param step 步长
+ * @returns 数字序列（字符串数组）
+ */
+export function generateNumberSequence(
+  startValue: number,
+  count: number,
+  step: number = 1
+): string[] {
+  const result: string[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    const value = startValue + (i * step);
+    result.push(String(value));
+  }
+  
+  return result;
+}
