@@ -10,6 +10,8 @@ export async function POST(request: NextRequest) {
   try {
     const { filePath, data } = await request.json();
 
+    console.log('[API] CSV保存请求:', { filePath, dataType: typeof data, dataKeys: data ? Object.keys(data) : null });
+
     if (!filePath) {
       return NextResponse.json({
         success: false,
@@ -26,7 +28,10 @@ export async function POST(request: NextRequest) {
 
     // 确保目录存在
     const dir = path.dirname(filePath);
+    console.log('[API] 目录:', dir, '存在:', fs.existsSync(dir));
+    
     if (!fs.existsSync(dir)) {
+      console.log('[API] 创建目录:', dir);
       fs.mkdirSync(dir, { recursive: true });
     }
 
@@ -39,7 +44,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'CSV文件保存成功',
-      filePath
+      filePath,
+      fileExists,
+      fileSize: fileStats?.size
     });
 
   } catch (error) {

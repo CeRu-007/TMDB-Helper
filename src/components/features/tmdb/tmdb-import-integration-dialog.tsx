@@ -49,7 +49,8 @@ import path from "path"
 // 导入新版表格组件
 import { NewTMDBTable } from "@/components/features/media/new-tmdb-table"
 import { TMDBItem } from "@/lib/data/storage"
-import { parseCsvContent, serializeCsvData, processOverviewColumn, CSVData } from "@/lib/data/csv-processor-client"
+import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
+import { saveCSV, handleSaveError } from "@/lib/data/csv-save-helper"
 import { validateCsvData, fixCsvData } from "@/lib/data/csv-validator"
 import FixTMDBImportBugDialog from "../dialogs/fix-tmdb-import-bug-dialog"
 import axios from "axios"
@@ -654,167 +655,35 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
   }
 
-  
   // 通用错误处理辅助函数
-  const handleSaveError = (error: any, appendTerminalOutput: (text: string, type: "info" | "success" | "error" | "warning" | "stdout" | "stderr") => void, toast: any) => {
-    // 提供更友好的错误消息
-    let errorMessage = error.message || '未知错误';
-    let errorTitle = "保存失败";
-
-    // 处理特定类型的错误
-    if (errorMessage.includes('无法验证文件是否写入')) {
-      errorMessage = '无法确认文件是否成功保存。请检查文件权限和磁盘空间。';
-      errorTitle = "验证失败";
-    } else if (errorMessage.includes('EACCES')) {
-      errorMessage = '没有足够的权限写入文件。请检查文件权限设置。';
-      errorTitle = "权限错误";
-    } else if (errorMessage.includes('ENOSPC')) {
-      errorMessage = '磁盘空间不足，无法保存文件。';
-      errorTitle = "存储错误";
-    }
-
-    appendTerminalOutput(`保存CSV文件失败: ${errorMessage}`, "error");
-    toast({
-      title: errorTitle,
-      description: `保存操作未完成: ${errorMessage}`,
-      variant: "destructive",
-      duration: 5000,
-    });
-
-    return { errorMessage, errorTitle };
-  };
+  const handleSaveErrorWrapper = (error: any) => {
+    handleSaveError(error, appendTerminalOutput, toast)
+  }
 
   // 统一的CSV保存函数
-  const saveCSV = async (options: {
+  const saveCSVWrapper = async (options: {
     mode: "enhanced" | "text",
     onSuccess?: (message: string) => void,
     showSuccessNotification?: boolean,
     skipDataParsing?: boolean
   }): Promise<boolean> => {
-    try {
-      if (!csvData) {
-        toast({
-          title: "错误",
-          description: "没有CSV数据可保存",
-          variant: "destructive",
-        });
-        return false;
-      }
+    const success = await saveCSV({
+      csvData,
+      csvContent,
+      editorMode: options.mode === "enhanced" ? "table" : "text",
+      tmdbImportPath: await getTmdbImportPath(),
+      appendTerminalOutput,
+      toast,
+      onSuccess: options.onSuccess,
+      showSuccessNotification: options.showSuccessNotification,
+      skipDataParsing: options.skipDataParsing
+    })
 
-      // 设置保存中状态，提供视觉反馈
-      setIsSaving(true);
-      const saveMessage = options.mode === "enhanced" ? "正在保存增强型CSV编辑器的更改..." : "正在保存CSV文件...";
-      appendTerminalOutput(saveMessage, "info");
-
-      // 获取当前工作目录（兼容服务端配置回填）
-      const tmdbImportPath = await getTmdbImportPath();
-      if (!tmdbImportPath) {
-        throw new Error("未找到TMDB-Import工具路径");
-      }
-
-      const importCsvPath = path.join(tmdbImportPath, 'import.csv');
-
-      // 处理数据准备
-      let dataToSave = csvData;
-      if (options.mode === "text") {
-        // 文本模式总是优先使用当前文本内容
-        if (!options.skipDataParsing && csvContent !== undefined) {
-          try {
-            // 解析文本内容为CSV数据
-            dataToSave = parseCsvContent(csvContent);
-            // 更新组件状态中的CSV数据，确保其他功能也能使用最新数据
-            setCsvData(dataToSave);
-            appendTerminalOutput("成功解析文本内容为CSV数据", "success");
-          } catch (error: any) {
-            throw new Error(`CSV文本格式有误，无法解析: ${error instanceof Error ? error.message : '未知错误'}`);
-          }
-        } else if (csvContent === undefined || csvContent.trim() === '') {
-          // 如果文本内容为空，使用原始数据
-          appendTerminalOutput("文本内容为空，使用现有CSV数据", "warning");
-        }
-      }
-
-      // 处理overview列，确保格式正确
-      const processedData = processOverviewData(dataToSave);
-
-      // 使用API路由保存CSV文件
-      const response = await axios.post('/api/csv/save', {
-        filePath: importCsvPath,
-        data: processedData
-      });
-
-      if (!response.data.success) {
-        throw new Error(response.data.error || '保存CSV文件失败');
-      }
-
-      // 确保文件确实被写入
-      const verifyResponse = await axios.post('/api/csv/verify', {
-        filePath: importCsvPath
-      });
-
-      if (!verifyResponse.data.success || !verifyResponse.data.exists) {
-        throw new Error('文件保存失败：无法验证文件是否写入');
-      }
-
-      appendTerminalOutput(`CSV文件已成功保存到 ${importCsvPath}`, "success");
-
-      // 成功处理
-      if (options.showSuccessNotification !== false) {
-        toast({
-          title: "保存成功",
-          description: options.mode === "enhanced" ? "CSV文件已保存，可以继续操作" : "CSV文件已保存，修改已应用",
-          ...(options.mode === "text" && { duration: 3000 }),
-        });
-      }
-
-      // 调用成功回调
-      if (options.onSuccess) {
-        options.onSuccess(`CSV文件已成功保存到 ${importCsvPath}`);
-      }
-
-      // 对于增强模式，切换到处理标签页
-      if (options.mode === "enhanced") {
-        setActiveTab("process");
-      }
-
-      return true;
-    } catch (error: any) {
-      handleSaveError(error, appendTerminalOutput, toast);
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // 处理整个CSV数据中的overview列
-  const processOverviewData = (data: CSVDataType): CSVDataType => {
-    if (!data || !data.headers || !data.rows) {
-      return data;
+    if (success && options.mode === "enhanced") {
+      setActiveTab("process")
     }
 
-    const overviewIndex = data.headers.findIndex((header: string) =>
-      header.toLowerCase().includes('overview') ||
-      header.toLowerCase().includes('描述') ||
-      header.toLowerCase().includes('简介')
-    );
-
-    if (overviewIndex === -1) {
-      return data;
-    }
-
-    // 处理每一行的overview列
-    const processedRows = data.rows.map((row: string[]) => {
-      const newRow = [...row];
-      if (newRow[overviewIndex]) {
-        newRow[overviewIndex] = processOverviewColumn(newRow[overviewIndex]);
-      }
-      return newRow;
-    });
-
-    return {
-      ...data,
-      rows: processedRows
-    };
+    return success
   };
 
   // 统一的编码修复函数
@@ -948,13 +817,13 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 处理增强型CSV编辑器的保存
   const handleSaveEnhancedCSV = async () => {
-    return await saveCSV({ mode: "enhanced" });
+    return await saveCSVWrapper({ mode: "enhanced" });
   };
 
   // 保存CSV文本编辑器修改
   const saveCsvChanges = async () => {
     // 确保保存当前文本内容
-    const result = await saveCSV({
+    const result = await saveCSVWrapper({
       mode: "text",
       skipDataParsing: false // 强制解析文本内容
     });
