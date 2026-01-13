@@ -13,6 +13,7 @@
   [![Electron](https://img.shields.io/badge/Electron-33.4.11-9FEAF9.svg)](https://www.electronjs.org/)
 
   [功能特性](#-功能特性) · [快速开始](#-快速开始) · [部署指南](#-部署指南) · [贡献指南](#-贡献指南)
+<img width="2489" height="1352" alt="image" src="https://github.com/user-attachments/assets/7a599a85-3a42-4d31-a4a8-6ba0569d2093" />
 
 </div>
 
