@@ -100,18 +100,54 @@ export function extractMinutes(timeStr: string): number | null {
 }
 
 /**
+ * 判断字符串是否为纯数字的分钟数
+ * @param timeStr 时间字符串，如 "45"、"60"
+ */
+export function isValidMinutesOnly(timeStr: string): boolean {
+  if (!timeStr) return false;
+  
+  const regex = /^\d+$/;
+  return regex.test(timeStr);
+}
+
+/**
+ * 从纯数字分钟字符串中提取分钟
+ * @param timeStr 纯数字的分钟字符串，如 "45"、"60"
+ */
+export function extractMinutesFromNumber(timeStr: string): number | null {
+  if (!isValidMinutesOnly(timeStr)) return null;
+  
+  return parseInt(timeStr, 10);
+}
+
+/**
+ * 设置纯数字分钟字符串的值
+ * @param timeStr 纯数字的分钟字符串，如 "45"、"60"
+ * @param minutes 要设置的分钟值（0-59）
+ */
+export function setMinutesFromNumber(timeStr: string, minutes: number): string {
+  const validMinutes = Math.max(0, Math.min(59, minutes));
+  return String(validMinutes);
+}
+
+/**
  * 设置时间字符串的分钟部分
- * @param timeStr 时间字符串，格式为HH:MM或H:MM
+ * @param timeStr 时间字符串，格式为HH:MM、H:MM或纯数字（如 "45"）
  * @param minutes 要设置的分钟值（0-59）
  */
 export function setTimeMinutes(timeStr: string, minutes: number): string {
-  if (!hasTimeMinutes(timeStr)) return timeStr;
+  if (hasTimeMinutes(timeStr)) {
+    // 处理 HH:MM 格式
+    const validMinutes = Math.max(0, Math.min(59, minutes));
+    const parts = timeStr.split(':');
+    return `${parts[0]}:${String(validMinutes).padStart(2, '0')}`;
+  } else if (isValidMinutesOnly(timeStr)) {
+    // 处理纯数字格式
+    const validMinutes = Math.max(0, Math.min(59, minutes));
+    return String(validMinutes);
+  }
   
-  // 确保分钟值在有效范围内
-  const validMinutes = Math.max(0, Math.min(59, minutes));
-  
-  const parts = timeStr.split(':');
-  return `${parts[0]}:${String(validMinutes).padStart(2, '0')}`;
+  return timeStr;
 }
 
 /**
@@ -152,7 +188,7 @@ export function isTimeColumn(values: string[]): boolean {
   const sampleSize = Math.min(10, nonEmptyValues.length);
   const validTimes = nonEmptyValues
     .slice(0, sampleSize)
-    .filter(v => hasTimeMinutes(v));
+    .filter(v => hasTimeMinutes(v) || isValidMinutesOnly(v));
 
   // 如果至少50%的样本是有效时间，则认为是时间列
   return validTimes.length >= sampleSize * 0.5;
