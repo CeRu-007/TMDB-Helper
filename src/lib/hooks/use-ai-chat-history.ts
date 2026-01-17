@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { ChatHistory, Message } from '@/types/ai-chat'
 import { chatSyncManager } from '@/lib/utils/chat-history-cache'
+import { storageService } from '../storage/storage-service'
 
 export const useAiChatHistory = (
   messages: Message[],
@@ -16,7 +17,7 @@ export const useAiChatHistory = (
     } catch (error) {
       console.error('加载对话历史失败:', error)
       try {
-        const stored = localStorage.getItem('ai-chat-histories')
+        const stored = storageService.get<string>('ai-chat-histories', '')
         if (stored) {
           const histories = JSON.parse(stored).map((h: any) => ({
             ...h,
@@ -43,7 +44,7 @@ export const useAiChatHistory = (
     } catch (error) {
       console.error('保存对话历史失败:', error)
       try {
-        localStorage.setItem('ai-chat-histories', JSON.stringify(histories))
+        storageService.set('ai-chat-histories', histories)
       } catch (localError) {
         console.error('本地存储保存也失败:', localError)
       }

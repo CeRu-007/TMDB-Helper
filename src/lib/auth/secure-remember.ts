@@ -3,6 +3,8 @@
 // Uses Web Crypto (AES-GCM) if available; falls back to no-op for password
 // to avoid insecure plaintext storage unless explicitly allowed.
 
+import { storageService } from '../storage/storage-service'
+
 const USERNAME_KEY = 'last_login_username'
 const PASSWORD_KEY = 'last_login_password_enc'
 const REMEMBER_KEY = 'last_login_remember_me'
@@ -31,18 +33,18 @@ export async function saveRemember(username: string, password: string, remember:
   try {
     // username & remember flag saved plainly to config API (already implemented elsewhere),
     // but we still mirror username locally for faster prefill.
-    localStorage.setItem(USERNAME_KEY, username)
-    localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0')
+    storageService.set(USERNAME_KEY, username)
+    storageService.set(REMEMBER_KEY, remember ? '1' : '0')
 
     if (!remember) {
-      localStorage.removeItem(PASSWORD_KEY)
+      storageService.remove(PASSWORD_KEY)
       return
     }
 
     const key = await getKey()
     if (!key) {
       // No secure crypto; do not store password to avoid plaintext risk
-      localStorage.removeItem(PASSWORD_KEY)
+      storageService.remove(PASSWORD_KEY)
       return
     }
 
@@ -55,19 +57,19 @@ export async function saveRemember(username: string, password: string, remember:
     combined.set(iv, 0)
     combined.set(new Uint8Array(ct), iv.length)
     const b64 = btoa(String.fromCharCode(...combined))
-    localStorage.setItem(PASSWORD_KEY, b64)
+    storageService.set(PASSWORD_KEY, b64)
   } catch (e) {
-    
+
   }
 }
 
 export async function loadRemember(): Promise<{ username: string; password: string; remember: boolean; }>{
   if (!isBrowser()) return { username: '', password: '', remember: false }
   try {
-    const username = localStorage.getItem(USERNAME_KEY) || ''
-    const remember = localStorage.getItem(REMEMBER_KEY) === '1'
+    const username = storageService.get<string>(USERNAME_KEY, '')
+    const remember = storageService.get<string>(REMEMBER_KEY, '0') === '1'
 
-    const enc = localStorage.getItem(PASSWORD_KEY)
+    const enc = storageService.get<string>(PASSWORD_KEY, '')
     if (!remember || !enc) return { username, password: '', remember }
 
     const key = await getKey()
@@ -80,15 +82,15 @@ export async function loadRemember(): Promise<{ username: string; password: stri
     const password = new TextDecoder().decode(pt)
     return { username, password, remember }
   } catch (e) {
-    
-    return { username: localStorage.getItem(USERNAME_KEY) || '', password: '', remember: localStorage.getItem(REMEMBER_KEY) === '1' }
+
+    return { username: storageService.get<string>(USERNAME_KEY, ''), password: '', remember: storageService.get<string>(REMEMBER_KEY, '0') === '1' }
   }
 }
 
 export function clearRemember(): void {
   if (!isBrowser()) return
   try {
-    localStorage.removeItem(PASSWORD_KEY)
+    storageService.remove(PASSWORD_KEY)
     // keep username and remember flag behavior aligned with UI choices
   } catch {}
 }
