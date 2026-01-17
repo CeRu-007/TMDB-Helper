@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes"
 import { DataProvider } from "@/components/features/auth/client-data-provider"
 import { Toaster } from "@/components/common/toaster"
 import { taskScheduler } from "@/lib/data/scheduler"
+import { logger } from "@/lib/utils/logger"
 
 export default function FinalLayout({
   children,
@@ -14,8 +15,8 @@ export default function FinalLayout({
   // 初始化任务调度器
   useEffect(() => {
     taskScheduler.initialize()
-      .then(() => console.log("任务调度器初始化完成"))
-      .catch(error => console.error("任务调度器初始化失败:", error))
+      .then(() => logger.info('TaskScheduler', '任务调度器初始化完成'))
+      .catch(error => logger.error('TaskScheduler', '任务调度器初始化失败', error))
   }, [])
 
   return (
