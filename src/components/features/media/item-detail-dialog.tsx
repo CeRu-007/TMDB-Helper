@@ -118,6 +118,7 @@ import { CachedImage } from "@/components/common/cached-image"
 import { useItemImagesPreloader } from "@/lib/hooks/useItemImagesPreloader"
 
 import { ClientConfigManager } from "@/lib/utils/client-config-manager"
+import { LanguageSelector } from "@/components/common/language-selector"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -172,6 +173,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [isRefreshingTMDBData, setIsRefreshingTMDBData] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [customSeasonNumber, setCustomSeasonNumber] = useState(1)
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
   const [showMetadataDialog, setShowMetadataDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showFixBugDialog, setShowFixBugDialog] = useState(false)
@@ -329,7 +331,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   // 监听季数变化，更新TMDB命令
   useEffect(() => {
     setTmdbCommands(generateTmdbImportCommands())
-  }, [customSeasonNumber])
+  }, [customSeasonNumber, selectedLanguage])
 
   // 监听键盘事件
   useEffect(() => {
@@ -428,16 +430,29 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       }
 
       const wheelHandler = (e: WheelEvent) => {
+        const target = e.target as Element
+
+        // 检查是否在 Select/Popover 等弹出组件内，如果是则跳过拦截
+        let current = target as HTMLElement | null
+        while (current) {
+          // 检查是否是 Radix UI 的 Select 或 Popover 内容
+          if (current.hasAttribute('data-radix-select-content') ||
+              current.hasAttribute('data-radix-popover-content') ||
+              current.closest('[data-radix-select-content]') ||
+              current.closest('[data-radix-popover-content]')) {
+            return // 让 Select/Popover 自己处理滚动
+          }
+          current = current.parentElement
+        }
+
         // 总是阻止默认行为
         e.preventDefault()
 
         if (!contentRef.current) return
 
-        const target = e.target as Element
-
         // 检查是否在可滚动的元素内
         let scrollableElement: HTMLElement | null = null
-        let current = target as HTMLElement | null
+        current = target as HTMLElement | null
 
         // 向上遍历查找可滚动元素
         while (current && current !== contentRef.current) {
@@ -486,17 +501,31 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         if (t) touchStartYRef.current = t.clientY
       }
       const touchMoveHandler = (e: TouchEvent) => {
+        const target = e.target as Element
+
+        // 检查是否在 Select/Popover 等弹出组件内，如果是则跳过拦截
+        let current = target as HTMLElement | null
+        while (current) {
+          // 检查是否是 Radix UI 的 Select 或 Popover 内容
+          if (current.hasAttribute('data-radix-select-content') ||
+              current.hasAttribute('data-radix-popover-content') ||
+              current.closest('[data-radix-select-content]') ||
+              current.closest('[data-radix-popover-content]')) {
+            return // 让 Select/Popover 自己处理滚动
+          }
+          current = current.parentElement
+        }
+
         // 总是阻止默认行为
         e.preventDefault()
 
         if (!contentRef.current) return
 
-        const target = e.target as Element
         const deltaY = touchStartYRef.current - (e.touches[0]?.clientY || 0)
 
         // 检查是否在可滚动的元素内
         let scrollableElement: HTMLElement | null = null
-        let current = target as HTMLElement | null
+        current = target as HTMLElement | null
 
         // 向上遍历查找可滚动元素
         while (current && current !== contentRef.current) {
@@ -648,6 +677,27 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     // 阻止整个页面的滚动
     const preventScroll = (e: Event) => {
+      const target = e.target as Element
+
+      // 检查是否在 Select/Popover 等弹出组件内
+      let current = target as HTMLElement | null
+      while (current) {
+        // 检查是否是 Radix UI 的 Select 或 Popover 内容
+        if (current.hasAttribute('data-radix-select-content') ||
+            current.hasAttribute('data-radix-popover-content') ||
+            current.hasAttribute('data-radix-select-viewport') ||
+            current.hasAttribute('data-radix-popover-viewport') ||
+            current.closest('[data-radix-select-content]') ||
+            current.closest('[data-radix-popover-content]') ||
+            current.closest('[data-radix-select-viewport]') ||
+            current.closest('[data-radix-popover-viewport]') ||
+            current.closest('[role="listbox"]') ||
+            current.closest('[role="list"]')) {
+          return // 让 Select/Popover 自己处理滚动
+        }
+        current = current.parentElement
+      }
+
       e.preventDefault()
       e.stopPropagation()
       e.stopImmediatePropagation()
@@ -1135,9 +1185,8 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
 
     // TMDB抓取命令
     if (item.tmdbId) {
-      const language = "zh-CN"
       if (item.mediaType === "tv") {
-        const tmdbCommand = `${pythonCmd} -m tmdb-import "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${language}"`
+        const tmdbCommand = `${pythonCmd} -m tmdb-import "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${selectedLanguage}"`
         commands.push({
           type: "tmdb",
           title: `上传至TMDB第${customSeasonNumber}季`,
@@ -1146,7 +1195,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           icon: <Terminal className="h-4 w-4" />,
         })
       } else if (item.mediaType === "movie") {
-        const tmdbCommand = `${pythonCmd} -m tmdb-import "https://www.themoviedb.org/movie/${item.tmdbId}?language=${language}"`
+        const tmdbCommand = `${pythonCmd} -m tmdb-import "https://www.themoviedb.org/movie/${item.tmdbId}?language=${selectedLanguage}"`
         commands.push({
           type: "tmdb",
           title: `上传至TMDB电影`,
@@ -1158,6 +1207,14 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
 
     return commands
+  }
+
+  // 处理语言变化
+  const handleLanguageChange = (languageCode: string) => {
+    setSelectedLanguage(languageCode)
+
+    // 更新TMDB命令
+    setTmdbCommands(generateTmdbImportCommands())
   }
 
   // 添加新季函数

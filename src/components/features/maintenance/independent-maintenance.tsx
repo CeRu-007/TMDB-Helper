@@ -37,6 +37,7 @@ import {
 import { NewTMDBTable } from "@/components/features/media/new-tmdb-table"
 import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
 import { saveCSV } from "@/lib/data/csv-save-helper"
+import { LanguageSelector } from "@/components/common/language-selector"
 
 interface IndependentMaintenanceProps {
   onShowSettingsDialog?: (section?: string) => void
@@ -61,6 +62,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   const [selectedPlatform, setSelectedPlatform] = useState("")
   const [tmdbId, setTmdbId] = useState("")
   const [selectedSeason, setSelectedSeason] = useState<number>(1)
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
   const [isProcessing, setIsProcessing] = useState(false)
   const [terminalOutput, setTerminalOutput] = useState<string[]>([
     "$ 独立维护模式已启动",
@@ -143,10 +145,9 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   // 生成TMDB抓取命令
   const generateTMDBCommand = useCallback((season: number) => {
     if (!tmdbId) return ""
-    const language = "zh-CN"
-    const tmdbUrl = `https://www.themoviedb.org/tv/${tmdbId}/season/${season}?language=${language}`
+    const tmdbUrl = `https://www.themoviedb.org/tv/${tmdbId}/season/${season}?language=${selectedLanguage}`
     return `python -m tmdb-import "${tmdbUrl}"`
-  }, [tmdbId])
+  }, [tmdbId, selectedLanguage])
 
   // 处理季数变化
   const handleSeasonChange = useCallback((newSeasonValue: string | number) => {
@@ -155,6 +156,13 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
       setSelectedSeason(season)
       appendTerminalOutput(`季数已更新为第${season}季`, "info")
     }
+  }, [appendTerminalOutput])
+
+  // 处理语言变化
+  const handleLanguageChange = useCallback((languageCode: string) => {
+    setSelectedLanguage(languageCode)
+
+    appendTerminalOutput(`语言已更新为 ${languageCode}`, "info")
   }, [appendTerminalOutput])
 
   // 加载CSV文件 - 复用词条详情页面的实现逻辑
@@ -687,6 +695,18 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                         className="w-12 h-8 text-xs"
                       />
                       <span className="text-xs">季</span>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">
+                      语言
+                    </Label>
+                    <div className="flex items-center mt-1">
+                      <LanguageSelector
+                        value={selectedLanguage}
+                        onChange={handleLanguageChange}
+                        size="sm"
+                      />
                     </div>
                   </div>
                 </div>
