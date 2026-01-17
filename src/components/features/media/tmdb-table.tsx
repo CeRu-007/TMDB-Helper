@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/common/scroll-area"
 import { Button } from "@/components/common/button"
 import { cn } from "@/lib/utils"
 import TableContextMenu from "../../common/table-context-menu"
+import BatchInsertRowDialog from "../dialogs/batch-insert-row-dialog"
 import { 
   Plus, 
   Minus, 
@@ -145,6 +146,11 @@ const TMDBTableComponent = ({
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
   // 全选状态
   const [isAllRowsSelected, setIsAllRowsSelected] = useState(false)
+  // 批量插入行对话框状态
+  const [showBatchInsertDialog, setShowBatchInsertDialog] = useState(false)
+  const [batchInsertCount, setBatchInsertCount] = useState<number>(1)
+  const [batchInsertPosition, setBatchInsertPosition] = useState<'before' | 'after'>('after')
+  const [targetRowIndex, setTargetRowIndex] = useState<number>(-1)
   
   // 使用useRef存储最新状态，避免事件监听器频繁重新创建
   const stateRef = useRef({
@@ -1138,6 +1144,84 @@ const TMDBTableComponent = ({
     onDataChange?.(newData);
   };
 
+  // 批量插入行函数
+  const batchInsertRows = (index: number, count: number, position: 'before' | 'after' = 'after') => {
+    if (count <= 0) return;
+    
+    saveToHistory(localData);
+    
+    const insertIndex = position === 'before' ? index : index + 1;
+    const newData = { ...localData };
+    
+    // 检测 episode_number 列的位置
+    const episodeColumnIndex = newData.headers.findIndex(
+      header => header.toLowerCase() === 'episode_number'
+    );
+    
+    // 检测 runtime 列的位置
+    const runtimeColumnIndex = newData.headers.findIndex(
+      header => header.toLowerCase() === 'runtime'
+    );
+    
+    // 计算现有数据的最大 episode_number 值
+    let maxEpisodeNumber = 0;
+    if (episodeColumnIndex !== -1) {
+      for (const row of newData.rows) {
+        const episodeValue = row[episodeColumnIndex]?.trim();
+        const episodeNum = parseInt(episodeValue, 10);
+        if (!isNaN(episodeNum) && episodeNum > maxEpisodeNumber) {
+          maxEpisodeNumber = episodeNum;
+        }
+      }
+    }
+    
+    // 获取上一行的值（用于复制 runtime 列）
+    const prevRowIndex = insertIndex - 1;
+    const prevRow = prevRowIndex >= 0 && prevRowIndex < newData.rows.length ? newData.rows[prevRowIndex] : null;
+    
+    // 创建新行
+    const newRows: string[][] = [];
+    for (let i = 0; i < count; i++) {
+      const newRow = new Array(newData.headers.length).fill('');
+      
+      // 填充 episode_number 列（自动递增）
+      if (episodeColumnIndex !== -1) {
+        maxEpisodeNumber++;
+        newRow[episodeColumnIndex] = maxEpisodeNumber.toString();
+      }
+      
+      // 填充 runtime 列（复制上一行的值）
+      if (runtimeColumnIndex !== -1 && prevRow) {
+        newRow[runtimeColumnIndex] = prevRow[runtimeColumnIndex];
+      }
+      
+      newRows.push(newRow);
+    }
+    
+    // 插入新行
+    newData.rows = [
+      ...newData.rows.slice(0, insertIndex),
+      ...newRows,
+      ...newData.rows.slice(insertIndex)
+    ];
+    
+    setLocalData(newData);
+    onDataChange?.(newData);
+  };
+
+  // 处理批量插入行对话框打开
+  const handleBatchInsertRow = (index: number, position: 'before' | 'after', count: number) => {
+    setTargetRowIndex(index);
+    setBatchInsertPosition(position);
+    setBatchInsertCount(count);
+    setShowBatchInsertDialog(true);
+  };
+
+  // 处理批量插入行应用
+  const handleBatchInsertApply = (count: number, position: 'before' | 'after') => {
+    batchInsertRows(targetRowIndex, count, position);
+  };
+
   const deleteRow = (index: number) => {
     if (localData.rows.length <= 1) return; // 至少保留一行
     
@@ -1294,6 +1378,7 @@ const TMDBTableComponent = ({
       onDeleteColumn={deleteColumn}
       onDuplicateRow={duplicateRow}
       onDuplicateColumn={duplicateColumn}
+      onBatchInsertRow={handleBatchInsertRow}
     >
       <div
         className={cn(
@@ -1553,6 +1638,13 @@ const TMDBTableComponent = ({
       </div>
         </ScrollArea>
         </div>
+      
+      {/* 批量插入行对话框 */}
+      <BatchInsertRowDialog
+        open={showBatchInsertDialog}
+        onOpenChange={setShowBatchInsertDialog}
+        onApply={handleBatchInsertApply}
+      />
     </TableContextMenu>
   )
 }
