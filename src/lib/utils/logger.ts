@@ -31,7 +31,29 @@ class Logger {
 
   private constructor() {
     this.isDevelopment = process.env.NODE_ENV === 'development'
-    this.logLevel = this.isDevelopment ? LogLevel.DEBUG : LogLevel.WARN
+    
+    // Support LOG_LEVEL environment variable
+    const envLogLevel = process.env.LOG_LEVEL?.toUpperCase()
+    switch (envLogLevel) {
+      case 'DEBUG':
+        this.logLevel = LogLevel.DEBUG
+        break
+      case 'INFO':
+        this.logLevel = LogLevel.INFO
+        break
+      case 'WARN':
+        this.logLevel = LogLevel.WARN
+        break
+      case 'ERROR':
+        this.logLevel = LogLevel.ERROR
+        break
+      case 'NONE':
+        this.logLevel = LogLevel.NONE
+        break
+      default:
+        // Default: DEBUG in development, WARN in production
+        this.logLevel = this.isDevelopment ? LogLevel.DEBUG : LogLevel.WARN
+    }
   }
 
   static getInstance(): Logger {
@@ -43,6 +65,34 @@ class Logger {
 
   setLogLevel(level: LogLevel): void {
     this.logLevel = level
+  }
+
+  getLogLevel(): LogLevel {
+    return this.logLevel
+  }
+
+  /**
+   * Initialize log level from environment variable
+   * Call this at application startup to ensure proper log level
+   */
+  static initializeFromEnv(): void {
+    const instance = Logger.getInstance()
+    const envLogLevel = process.env.LOG_LEVEL?.toUpperCase()
+    
+    if (envLogLevel) {
+      const levelMap: Record<string, LogLevel> = {
+        'DEBUG': LogLevel.DEBUG,
+        'INFO': LogLevel.INFO,
+        'WARN': LogLevel.WARN,
+        'ERROR': LogLevel.ERROR,
+        'NONE': LogLevel.NONE
+      }
+      
+      if (levelMap[envLogLevel] !== undefined) {
+        instance.setLogLevel(levelMap[envLogLevel])
+        console.log(`[Logger] Log level set to ${envLogLevel} from environment`)
+      }
+    }
   }
 
   private shouldLog(level: LogLevel): boolean {
