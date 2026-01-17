@@ -1,6 +1,7 @@
 "use client"
 
 import { v4 as uuidv4 } from "uuid";
+import { storageService } from "../storage/storage-service";
 
 /**
  * 用户管理器 - 处理用户身份识别和会话管理
@@ -77,7 +78,7 @@ export class UserManager {
     }
 
     const adminUserId = 'user_admin_system';
-    localStorage.setItem(this.USER_ID_KEY, adminUserId);
+    storageService.set(this.USER_ID_KEY, adminUserId);
     this.setCookie(this.SESSION_COOKIE_NAME, adminUserId, 365);
   }
 
@@ -102,7 +103,7 @@ export class UserManager {
       userId = 'user_' + uuidv4().replace(/-/g, '').substring(0, 16);
 
       // 保存到 localStorage 和 cookie
-      localStorage.setItem(this.USER_ID_KEY, userId);
+      storageService.set(this.USER_ID_KEY, userId);
       this.setCookie(this.SESSION_COOKIE_NAME, userId, 365); // 保存1年
     }
 
