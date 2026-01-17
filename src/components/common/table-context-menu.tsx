@@ -50,6 +50,7 @@ export interface TableContextMenuProps {
   onDeleteColumn?: (index: number) => void
   onDuplicateRow?: (index: number) => void
   onDuplicateColumn?: (index: number) => void
+  onBatchInsertRow?: (index: number, position: 'before' | 'after', count: number) => void
 }
 
 export default function TableContextMenu({
@@ -66,7 +67,8 @@ export default function TableContextMenu({
   onInsertColumn,
   onDeleteColumn,
   onDuplicateRow,
-  onDuplicateColumn
+  onDuplicateColumn,
+  onBatchInsertRow
 }: TableContextMenuProps) {
   // 日期间隔对话框状态
   const [dateDialogOpen, setDateDialogOpen] = useState(false)
@@ -99,7 +101,7 @@ export default function TableContextMenu({
   
   // 获取选中单元格的行索引
   const getSelectedRow = () => {
-    if (!isSameRow()) return -1
+    if (selectedCells.length === 0) return -1
     return selectedCells[0].row
   }
   
@@ -258,6 +260,18 @@ export default function TableContextMenu({
               >
                 <Plus className="mr-2 h-4 w-4" />
                 在下方插入行
+              </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => {
+                  const rowIndex = getSelectedRow()
+                  if (rowIndex >= 0 && onBatchInsertRow) {
+                    onBatchInsertRow(rowIndex, 'after', 1)
+                  }
+                }}
+                disabled={selectedCells.length === 0 || !onBatchInsertRow}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                批量插入行...
               </ContextMenuItem>
               <ContextMenuItem
                 onClick={() => onDuplicateRow?.(getSelectedRow())}
