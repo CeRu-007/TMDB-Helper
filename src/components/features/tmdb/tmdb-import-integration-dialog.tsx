@@ -1683,15 +1683,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 {/* 命令显示区域 */}
                 <div className="bg-gray-900/90 text-green-400 p-3 rounded-md text-xs overflow-hidden w-full min-w-0">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0 mr-2 overflow-hidden">
-                      <div className="font-mono text-xs"
-                           style={{
-                             textOverflow: 'ellipsis !important',
-                             whiteSpace: 'nowrap !important',
-                             overflow: 'hidden !important',
-                             width: '100% !important',
-                             maxWidth: '100%'
-                           }}
+                    <div className="flex-1 min-w-0 mr-2 w-0">
+                      <div className="font-mono text-xs truncate"
                            title={generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}>
                         {generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}
                       </div>
@@ -1706,15 +1699,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     </Button>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <div className="flex-1 min-w-0 mr-2 overflow-hidden">
-                      <div className="font-mono text-xs"
-                           style={{
-                             textOverflow: 'ellipsis !important',
-                             whiteSpace: 'nowrap !important',
-                             overflow: 'hidden !important',
-                             width: '100% !important',
-                             maxWidth: '100%'
-                           }}
+                    <div className="flex-1 min-w-0 mr-2 w-0">
+                      <div className="font-mono text-xs truncate"
                            title={displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
                         {displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
                       </div>

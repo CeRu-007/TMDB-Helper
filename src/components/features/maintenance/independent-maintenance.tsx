@@ -606,10 +606,10 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
             <TabsContent value="process" className="mt-3 lg:mt-4 space-y-3 lg:space-y-4">
               {/* 命令显示区域 */}
-              <div className="bg-gray-900 text-green-400 p-2 lg:p-3 rounded-md font-mono text-xs overflow-x-auto">
+              <div className="bg-gray-900 text-green-400 p-2 lg:p-3 rounded-md font-mono text-xs overflow-hidden">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 truncate text-xs">{generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}</div>
+                    <div className="flex-1 w-0 truncate text-xs">{generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}</div>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -626,7 +626,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     </Button>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 truncate text-xs">{generateTMDBCommand(selectedSeason) || `python -m tmdb-import "https://www.themoviedb.org/tv/${tmdbId || 'TMDB_ID'}/season/${selectedSeason}?language=zh-CN"`}</div>
+                    <div className="flex-1 w-0 truncate text-xs">{generateTMDBCommand(selectedSeason) || `python -m tmdb-import "https://www.themoviedb.org/tv/${tmdbId || 'TMDB_ID'}/season/${selectedSeason}?language=zh-CN"`}</div>
                     <Button
                       variant="ghost"
                       size="sm"
