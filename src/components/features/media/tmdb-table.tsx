@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/common/dropdown-menu"
 
+
 // 导入CSV数据类型
 import type { CSVData } from "@/types/csv-editor"
 
@@ -57,6 +58,26 @@ interface ClipboardData {
 
 // 拖拽框选配置
 const DEBOUNCE_DELAY = 16; // 鼠标移动防抖延迟，单位毫秒（约60fps）
+
+/**
+ * 验证字符串是否为有效URL
+ */
+function isValidUrl(str: string): boolean {
+  if (!str || typeof str !== 'string') return false;
+  try {
+    const url = new URL(str);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 判断是否为backdrop列
+ */
+function isBackdropColumn(columnName: string): boolean {
+  return columnName.toLowerCase() === 'backdrop';
+}
 
 /**
  * 防抖函数 - 用于优化频繁触发的事件
@@ -1585,34 +1606,61 @@ const TMDBTableComponent = ({
                       </TableCell>
                     )}
                     
-                    {row.map((cell, colIndex) => (
-                              <TableCell
-                        key={colIndex}
-                        className={cn(
-                          isCellSelected(rowIndex, colIndex) && "bg-primary/20",
-                          isActiveCell(rowIndex, colIndex) && "ring-2 ring-primary",
-                          isDragging && canStartDragging && dragStart?.row === rowIndex && dragStart?.col === colIndex && "cursor-crosshair",
-                          isShiftSelecting && "cursor-crosshair",
-                          canStartDragging && isDragging && "cursor-crosshair",
-                          isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? "relative whitespace-nowrap overflow-hidden" : "relative select-none whitespace-nowrap overflow-hidden cursor-text hover:bg-accent/30 transition-colors"
-                        )}
-                        onClick={(e) => handleCellClick(rowIndex, colIndex, e)}
-                        onDoubleClick={(e) => handleCellDoubleClick(rowIndex, colIndex, e)}
-                        onMouseMove={(e) => handleMouseMove(rowIndex, colIndex, e)}
-                        onMouseDown={(e) => {
-                          // 如果正在编辑这个单元格，不处理鼠标按下事件
-                          if (!(isEditing && editCell?.row === rowIndex && editCell?.col === colIndex)) {
-                            handleCellMouseDown(rowIndex, colIndex, e)
-                          }
-                        }}
-                        data-column={localData.headers[colIndex].toLowerCase().replace(/\s+/g, '_')}
-                        style={{
-                          minWidth: '100px',
-                          maxWidth: '250px',
-                          width: `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
-                        }}
-                      >
-                        {isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? (
+                    {row.map((cell, colIndex) => {
+                      const columnName = localData.headers[colIndex];
+                      const isBackdrop = isBackdropColumn(columnName);
+                      const isUrl = isValidUrl(cell);
+                      const shouldShowUrlFeatures = isBackdrop && isUrl && !(isEditing && editCell?.row === rowIndex && editCell?.col === colIndex);
+
+                      const handleUrlClick = (e: React.MouseEvent) => {
+                        if ((e.ctrlKey || e.metaKey) && shouldShowUrlFeatures) {
+                          e.stopPropagation();
+                          window.open(cell, '_blank', 'noopener,noreferrer');
+                        } else {
+                          handleCellClick(rowIndex, colIndex, e);
+                        }
+                      };
+
+                      const cellContent = (
+                        <div
+                          className={cn(
+                            "truncate px-2 py-1 text-sm h-full",
+                            shouldShowUrlFeatures && "hover:text-primary hover:underline cursor-pointer transition-colors"
+                          )}
+                          title={shouldShowUrlFeatures ? "按住Ctrl点击查看图片" : undefined}
+                        >
+                          {cell}
+                        </div>
+                      );
+
+                      return (
+                        <TableCell
+                          key={colIndex}
+                          className={cn(
+                            isCellSelected(rowIndex, colIndex) && "bg-primary/20",
+                            isActiveCell(rowIndex, colIndex) && "ring-2 ring-primary",
+                            isDragging && canStartDragging && dragStart?.row === rowIndex && dragStart?.col === colIndex && "cursor-crosshair",
+                            isShiftSelecting && "cursor-crosshair",
+                            canStartDragging && isDragging && "cursor-crosshair",
+                            isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? "relative whitespace-nowrap overflow-hidden" : "relative select-none whitespace-nowrap overflow-hidden cursor-text hover:bg-accent/30 transition-colors"
+                          )}
+                          onClick={handleUrlClick}
+                          onDoubleClick={(e) => handleCellDoubleClick(rowIndex, colIndex, e)}
+                          onMouseMove={(e) => handleMouseMove(rowIndex, colIndex, e)}
+                          onMouseDown={(e) => {
+                            // 如果正在编辑这个单元格，不处理鼠标按下事件
+                            if (!(isEditing && editCell?.row === rowIndex && editCell?.col === colIndex)) {
+                              handleCellMouseDown(rowIndex, colIndex, e)
+                            }
+                          }}
+                          data-column={columnName.toLowerCase().replace(/\s+/g, '_')}
+                          style={{
+                            minWidth: '100px',
+                            maxWidth: '250px',
+                            width: `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
+                          }}
+                        >
+                          {isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? (
                             <input
                               ref={editInputRef}
                               className="w-full h-full px-2 py-1 border-2 border-primary rounded focus:ring-2 focus:ring-primary/50 focus:outline-none bg-background text-sm absolute inset-0"
@@ -1627,10 +1675,11 @@ const TMDBTableComponent = ({
                               style={{ zIndex: 50 }}
                             />
                           ) : (
-                            <div className="truncate px-2 py-1 text-sm h-full">{cell}</div>
+                            cellContent
                           )}
-                  </TableCell>
-                  ))}
+                        </TableCell>
+                      );
+                    })}
                 </TableRow>
                 ))}
             </TableBody>
