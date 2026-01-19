@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { ThemeProvider } from "next-themes"
 import { DataProvider } from "@/components/features/auth/client-data-provider"
 import { Toaster } from "@/components/common/toaster"
-import { taskScheduler } from "@/lib/data/scheduler"
+import { taskScheduler } from "@/lib/data/task-scheduler"
 import { logger } from "@/lib/utils/logger"
 
 export default function FinalLayout({

@@ -3,7 +3,7 @@
  * 用于帮助用户从旧版本迁移到新版本
  */
 
-import { SecureConfigManager } from './secure-config-manager';
+import { SecureConfigManager } from '@/lib/auth/secure-config-manager';
 
 export class MigrationHelper {
   private static readonly MIGRATION_KEY = 'tmdb_migration_status';

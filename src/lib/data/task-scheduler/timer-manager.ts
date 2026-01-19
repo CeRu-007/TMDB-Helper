@@ -283,4 +283,22 @@ export class TimerManager {
     // For now just return false
     return false;
   }
+
+  /**
+   * Validate all timers
+   */
+  public async validateAllTimers(): Promise<void> {
+    try {
+      const tasks = await StorageManager.getScheduledTasks();
+      const enabledTasks = tasks.filter((task) => task.enabled);
+
+      for (const task of enabledTasks) {
+        if (!this.timers.has(task.id)) {
+          this.scheduleTask(task);
+        }
+      }
+    } catch (error) {
+      console.error('[TimerManager] 验证所有定时器时出错:', error);
+    }
+  }
 }

@@ -3,7 +3,7 @@
  * 负责解决定时任务的冲突，提供多种解决策略
  */
 
-import { ScheduledTask } from '@/types/scheduled-task';
+import { ScheduledTask } from '@/lib/data/storage';
 import { ConflictInfo } from './conflict-detector';
 
 export interface Resolution {

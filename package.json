@@ -1,7 +1,7 @@
 {
   "name": "tmdb-helper",
   "version": "0.5.2",
-  "description": "功能强大�?TMDB 媒体维护助手 - 支持 Web、Electron 桌面端和 Docker 部署",
+  "description": "功能强大�?TMDB 媒体维护助手 - 支持 Web、Electron 桌面端和 Docker 部署",
   "author": "TMDB Helper Team",
   "keywords": [
     "tmdb",
@@ -91,7 +91,7 @@
     "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
     "lucide-react": "^0.522.0",
-    "next": "15.2.4",
+    "next": "15.2.6",
     "next-themes": "0.4.6",
     "rc-util": "^5.38.1",
     "react": "^18.3.1",

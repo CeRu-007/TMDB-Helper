@@ -54,7 +54,7 @@ import {
   RefreshCcw,
 } from "lucide-react"
 import { StorageManager, TMDBItem, ScheduledTask } from "@/lib/data/storage"
-import { taskScheduler } from "@/lib/data/scheduler"
+import { taskScheduler } from "@/lib/data/task-scheduler"
 import { toast } from "@/components/common/use-toast"
 import { ToastAction } from "@/components/common/toast"
 import ScheduledTaskDialog from "./scheduled-task-dialog"

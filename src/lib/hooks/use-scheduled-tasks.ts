@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ScheduledTask } from '@/lib/data/storage'
 import { StorageManager } from '@/lib/data/storage'
-import { taskScheduler } from '@/lib/data/scheduler'
+import { taskScheduler } from '@/lib/data/task-scheduler'
 import { log } from '@/lib/utils/logger'
 import { handleError } from '@/lib/utils/error-handler'
 import { perf } from '@/lib/utils/performance-manager'

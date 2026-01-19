@@ -301,10 +301,16 @@ export class ServerConfigManager {
 
         let attempts = 0;
         while (this.isLoading && attempts < 50) {
-          // 最多等待5秒
-          require('child_process').execSync('timeout /t 0 /nobreak', {
-            stdio: 'ignore',
-          });
+          // 最多等待5秒，使用异步等待而不是同步命令
+          const { execSync } = require('child_process');
+          try {
+            execSync('timeout /t 0 /nobreak', {
+              stdio: 'ignore',
+              timeout: 100 // 添加超时限制
+            });
+          } catch (e) {
+            // 忽略超时错误
+          }
           attempts++;
         }
         if (this.configCache) {

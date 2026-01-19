@@ -3,7 +3,7 @@
  * 负责检测定时任务的时间冲突和资源冲突
  */
 
-import { ScheduledTask } from '@/types/scheduled-task';
+import { ScheduledTask } from '@/lib/data/storage';
 
 export interface ConflictInfo {
   taskId: string;

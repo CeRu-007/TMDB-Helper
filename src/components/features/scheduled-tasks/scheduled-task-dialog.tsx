@@ -44,7 +44,7 @@ import {
 } from "lucide-react"
 import { v4 as uuidv4 } from "uuid"
 import { StorageManager, TMDBItem, ScheduledTask } from "@/lib/data/storage"
-import { taskScheduler } from "@/lib/data/scheduler"
+import { taskScheduler } from "@/lib/data/task-scheduler"
 import { toast } from "@/components/common/use-toast"
 
 interface ScheduledTaskDialogProps {

@@ -65,6 +65,19 @@ export class TaskManager {
   }
 
   /**
+   * Get a task by ID
+   */
+  public async getTaskById(taskId: string): Promise<ScheduledTask | undefined> {
+    try {
+      const tasks = await StorageManager.getScheduledTasks();
+      return tasks.find((t) => t.id === taskId);
+    } catch (error) {
+      console.error(`[TaskManager] 获取任务失败:`, error);
+      return undefined;
+    }
+  }
+
+  /**
    * Run a task immediately
    */
   public async runTaskNow(
