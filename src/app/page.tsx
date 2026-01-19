@@ -40,7 +40,7 @@ import MediaCard from "@/components/features/media/media-card"
 
 // 导入对话框组件
 import AddItemDialog from "@/components/features/dialogs/add-item-dialog"
-import SettingsDialog from "@/components/features/dialogs/settings-dialog"
+import SettingsDialog from "@/components/features/dialogs/settings-dialog/SettingsDialog"
 import GlobalScheduledTasksDialog from "@/components/features/scheduled-tasks/global-scheduled-tasks-dialog"
 import { TaskExecutionLogsDialog } from "@/components/features/scheduled-tasks/task-execution-logs-dialog"
 import ScheduledTaskDialog from "@/components/features/scheduled-tasks/scheduled-task-dialog"

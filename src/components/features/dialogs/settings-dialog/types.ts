@@ -55,3 +55,73 @@ export interface SettingsPanelProps {
   onSave?: () => void
   onConfigChange?: (config: any) => void
 }
+
+// API配置相关类型
+export interface ApiSettings {
+  tmdb?: TMDBConfig
+  siliconFlow?: {
+    apiKey: string
+    thumbnailFilterModel: string
+  }
+  modelScope?: {
+    apiKey: string
+    episodeGenerationModel: string
+  }
+}
+
+// 模型服务相关类型
+export interface ModelServiceTabState {
+  activeTab: 'providers' | 'models' | 'scenarios'
+}
+
+export interface ProviderForm {
+  name: string
+  apiKey: string
+  apiBaseUrl: string
+}
+
+export interface ConnectionTestResult {
+  success: boolean
+  message: string
+}
+
+export interface ModelForm {
+  modelId: string
+  displayName: string
+  capabilities: string[]
+}
+
+export interface ScenarioSettings {
+  [key: string]: {
+    selectedModelIds: string[]
+    primaryModelId: string
+    parameters: any
+  }
+}
+
+// 工具设置相关类型
+export interface ToolsTabState {
+  activeTab: 'management' | 'config' | 'dependencies'
+}
+
+// 帮助与支持相关类型
+export interface HelpTabState {
+  activeTab: 'about' | 'help' | 'feedback'
+}
+
+export interface AppInfo {
+  name: string
+  version: string
+  versionInfo: {
+    title: string
+    description: string
+    releaseDate: string
+  }
+}
+
+// 密码修改相关类型
+export interface PasswordForm {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}

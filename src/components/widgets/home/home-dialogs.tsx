@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import AddItemDialog from '@/components/features/dialogs/add-item-dialog'
-import SettingsDialog from '@/components/features/dialogs/settings-dialog'
+import SettingsDialog from '@/components/features/dialogs/settings-dialog/SettingsDialog'
 import ItemDetailDialog from '@/components/features/media/item-detail-dialog'
 import ScheduledTaskDialog from '@/components/features/scheduled-tasks/scheduled-task-dialog'
 import GlobalScheduledTasksDialog from '@/components/features/scheduled-tasks/global-scheduled-tasks-dialog'
