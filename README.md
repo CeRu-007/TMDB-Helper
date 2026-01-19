@@ -6,7 +6,7 @@
 
   **功能强大的 TMDB 媒体维护助手 - 支持 Web、Electron 桌面端和 Docker 部署**
 
-  [![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/CeRu-007/TMDB-Helper)
+  [![Version](https://img.shields.io/badge/version-0.5.2-blue.svg)](https://github.com/CeRu-007/TMDB-Helper)
   [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
   [![Docker](https://img.shields.io/badge/docker-supported-brightgreen.svg)](https://hub.docker.com/r/ceru007/tmdb-helper)
   [![Next.js](https://img.shields.io/badge/Next.js-15.2.4-black.svg)](https://nextjs.org/)

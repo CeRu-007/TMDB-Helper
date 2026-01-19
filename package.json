@@ -217,7 +217,7 @@
     },
     "extraMetadata": {
       "main": "electron/main.js",
-      "version": "0.5.0"
+      "version": "0.5.2"
     }
   },
   "electronMain": "electron/main.js"
