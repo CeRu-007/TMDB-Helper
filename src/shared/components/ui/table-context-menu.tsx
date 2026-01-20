@@ -29,10 +29,9 @@ import {
   Columns,
   Rows
 } from "lucide-react"
-// TODO: 这些对话框组件需要重新创建
-// import DateIntervalDialog from "@/features/dialogs/date-interval-dialog"
-// import MinutesDialog from "@/features/dialogs/minutes-dialog"
-// import NumberRangeDialog from "@/features/dialogs/number-range-dialog"
+import DateIntervalDialog from "@/shared/components/ui/date-interval-dialog"
+import MinutesDialog from "@/shared/components/ui/minutes-dialog"
+import NumberRangeDialog from "@/shared/components/ui/number-range-dialog"
 import { isDateColumn, isTimeColumn, isNumericColumn, isValidDateString, generateNumberSequence } from "@/shared/lib/utils/date-utils"
 import type { CSVData } from "@/types/csv-editor"
 
