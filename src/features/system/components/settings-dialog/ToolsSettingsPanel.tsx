@@ -114,29 +114,25 @@ export default function ToolsSettingsPanel({
               </p>
 
               <div className="space-y-3">
-                <div className="flex space-x-2">
-                  <Input
-                    id="tmdbImportPath"
-                    value={tmdbImportPath}
-                    onChange={(e) => setTmdbImportPath(e.target.value)}
-                    placeholder="例如: D:\TMDB-Import-master 或自定义路径"
-                    className="flex-1"
-                    disabled={isDockerEnv}
-                  />
-                  {!isDockerEnv && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const path = prompt("请输入TMDB-Import工具路径:", tmdbImportPath)
-                        if (path) setTmdbImportPath(path)
-                      }}
-                    >
-                      <FolderOpen className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-
+                                  <div className="flex space-x-2">
+                                    <Input
+                                      id="tmdbImportPath"
+                                      value={tmdbImportPath}
+                                      onChange={(e) => setTmdbImportPath(e.target.value)}
+                                      placeholder="例如: D:\TMDB-Import-master 或自定义路径"
+                                      className="flex-1"
+                                    />
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const path = prompt("请输入TMDB-Import工具路径:", tmdbImportPath)
+                                        if (path) setTmdbImportPath(path)
+                                      }}
+                                    >
+                                      <FolderOpen className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                 {tmdbImportPath && (
                   <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
@@ -217,7 +213,7 @@ export default function ToolsSettingsPanel({
                     <Label className="text-sm font-medium">编码</Label>
                     <Select
                       value={tmdbConfig.encoding}
-                      onValueChange={(value) => setTmdbConfig({ ...tmdbConfig, encoding: value })}
+                      onValueChange={(value) => setTmdbConfig(prev => ({ ...prev, encoding: value }))}
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue />
@@ -234,7 +230,7 @@ export default function ToolsSettingsPanel({
                     <Label className="text-sm font-medium">日志级别</Label>
                     <Select
                       value={tmdbConfig.logging_level}
-                      onValueChange={(value) => setTmdbConfig({ ...tmdbConfig, logging_level: value })}
+                      onValueChange={(value) => setTmdbConfig(prev => ({ ...prev, logging_level: value }))}
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue />
@@ -264,7 +260,7 @@ export default function ToolsSettingsPanel({
                     <Switch
                       id="save_user_profile"
                       checked={tmdbConfig.save_user_profile}
-                      onCheckedChange={(checked) => setTmdbConfig({ ...tmdbConfig, save_user_profile: checked })}
+                      onCheckedChange={(checked) => setTmdbConfig(prev => ({ ...prev, save_user_profile: checked }))}
                     />
                     <Label htmlFor="save_user_profile" className="text-sm font-medium">
                       保存用户配置文件
@@ -282,7 +278,7 @@ export default function ToolsSettingsPanel({
                       <Label className="text-sm text-gray-600 dark:text-gray-400">用户名</Label>
                       <Input
                         value={tmdbConfig.tmdb_username}
-                        onChange={(e) => setTmdbConfig({ ...tmdbConfig, tmdb_username: e.target.value })}
+                        onChange={(e) => setTmdbConfig(prev => ({ ...prev, tmdb_username: e.target.value }))}
                         placeholder="TMDB用户名"
                         className="mt-1"
                       />
@@ -294,7 +290,7 @@ export default function ToolsSettingsPanel({
                         <Input
                           type={showTmdbPassword ? "text" : "password"}
                           value={tmdbConfig.tmdb_password}
-                          onChange={(e) => setTmdbConfig({ ...tmdbConfig, tmdb_password: e.target.value })}
+                          onChange={(e) => setTmdbConfig(prev => ({ ...prev, tmdb_password: e.target.value }))}
                           placeholder="TMDB密码"
                           className="pr-10"
                         />
@@ -321,7 +317,7 @@ export default function ToolsSettingsPanel({
                     <Switch
                       id="backdrop_forced_upload"
                       checked={tmdbConfig.backdrop_forced_upload}
-                      onCheckedChange={(checked) => setTmdbConfig({ ...tmdbConfig, backdrop_forced_upload: checked })}
+                      onCheckedChange={(checked) => setTmdbConfig(prev => ({ ...prev, backdrop_forced_upload: checked }))}
                     />
                     <Label htmlFor="backdrop_forced_upload" className="text-sm font-medium">
                       强制上传背景图
@@ -332,7 +328,7 @@ export default function ToolsSettingsPanel({
                     <Label className="text-sm font-medium">过滤词 (用逗号分隔)</Label>
                     <Textarea
                       value={tmdbConfig.filter_words}
-                      onChange={(e) => setTmdbConfig({ ...tmdbConfig, filter_words: e.target.value })}
+                      onChange={(e) => setTmdbConfig(prev => ({ ...prev, filter_words: e.target.value }))}
                       placeholder="番外,加更"
                       className="mt-1 h-20 resize-none"
                     />
