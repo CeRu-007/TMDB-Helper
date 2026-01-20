@@ -2,6 +2,9 @@
  * 工具设置面板
  */
 
+"use client"
+
+import { useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -48,6 +51,33 @@ export default function ToolsSettingsPanel({
   saveTmdbConfig,
   isDockerEnv
 }: ToolsSettingsPanelProps) {
+  // 提取保存TMDB导入路径的逻辑
+  const saveTmdbImportPath = useCallback(async (path: string) => {
+    try {
+      const success = await ClientConfigManager.setItem("tmdb_import_path", path)
+      if (!success) {
+        console.error('保存TMDB-Import路径失败')
+      }
+    } catch (error) {
+      console.error('保存TMDB-Import路径时出错:', error)
+    }
+  }, [])
+
+  // 处理路径输入框失焦事件
+  const handlePathBlur = useCallback(async () => {
+    if (tmdbImportPath) {
+      await saveTmdbImportPath(tmdbImportPath)
+    }
+  }, [tmdbImportPath, saveTmdbImportPath])
+
+  // 处理路径选择按钮点击
+  const handlePathSelect = useCallback(async () => {
+    const path = prompt("请输入TMDB-Import工具路径:", tmdbImportPath)
+    if (path) {
+      setTmdbImportPath(path)
+      await saveTmdbImportPath(path)
+    }
+  }, [tmdbImportPath, setTmdbImportPath, saveTmdbImportPath])
   return (
     <div className="space-y-6">
       <div>
@@ -97,7 +127,7 @@ export default function ToolsSettingsPanel({
           <TMDBImportUpdater
             onPathUpdate={async (path) => {
               setTmdbImportPath(path)
-              await ClientConfigManager.setItem("tmdb_import_path", path)
+              await saveTmdbImportPath(path)
             }}
           />
 
@@ -119,16 +149,14 @@ export default function ToolsSettingsPanel({
                                       id="tmdbImportPath"
                                       value={tmdbImportPath}
                                       onChange={(e) => setTmdbImportPath(e.target.value)}
+                                      onBlur={handlePathBlur}
                                       placeholder="例如: D:\TMDB-Import-master 或自定义路径"
                                       className="flex-1"
                                     />
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => {
-                                        const path = prompt("请输入TMDB-Import工具路径:", tmdbImportPath)
-                                        if (path) setTmdbImportPath(path)
-                                      }}
+                                      onClick={handlePathSelect}
                                     >
                                       <FolderOpen className="h-4 w-4" />
                                     </Button>

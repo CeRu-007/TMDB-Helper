@@ -274,7 +274,24 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         }
 
         // 加载TMDB导入路径
-        const savedTmdbImportPath = await ClientConfigManager.getItem("tmdb_import_path")
+        let savedTmdbImportPath = await ClientConfigManager.getItem("tmdb_import_path")
+
+        // 如果ClientConfigManager失败，尝试从localStorage fallback
+        if (!savedTmdbImportPath && typeof window !== "undefined") {
+          const localPath = localStorage.getItem("tmdb_import_path")
+          if (localPath) {
+            console.log('🔄 [SettingsDialog] 从localStorage恢复tmdb_import_path配置')
+            savedTmdbImportPath = localPath
+            // 自动迁移到ClientConfigManager
+            try {
+              await ClientConfigManager.setItem("tmdb_import_path", localPath)
+              console.log('✅ [SettingsDialog] 已迁移tmdb_import_path到ClientConfigManager')
+            } catch (error) {
+              console.warn('⚠️ [SettingsDialog] 迁移tmdb_import_path到ClientConfigManager失败:', error)
+            }
+          }
+        }
+
         const finalImportPath = dockerImportPath || savedTmdbImportPath || ''
         setTmdbImportPath(finalImportPath)
         if (finalImportPath) {
@@ -429,47 +446,61 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       const refreshConfig = async () => {
         try {
           ClientConfigManager.clearCache()
+
+          // 刷新TMDB导入路径
           const currentImportPath = await ClientConfigManager.getItem("tmdb_import_path")
           if (currentImportPath) {
             setTmdbImportPath(currentImportPath)
           }
 
-          try {
-            const response = await fetch('/api/model-service')
-            if (response.ok) {
-              const data = await response.json()
-              if (data.success && data.config) {
-                setModelServiceConfig(data.config)
-                if (data.config.providers) {
-                  setCustomProviders(data.config.providers.filter((p: any) => p.isBuiltIn === false))
-                }
-                if (data.config.models) {
-                  setConfiguredModels(data.config.models)
-                }
-                if (data.config.scenarios) {
-                  const updatedScenarioSettings: ScenarioSettings = {}
-                  data.config.scenarios.forEach((scenario: any) => {
-                    updatedScenarioSettings[scenario.type] = {
-                      selectedModelIds: scenario.selectedModelIds || [],
-                      primaryModelId: scenario.primaryModelId || '',
-                      parameters: scenario.parameters || {}
-                    }
-                  })
-                  setScenarioSettings(updatedScenarioSettings)
-                }
-              }
-            }
-          } catch (error) {
-            console.warn('刷新模型服务配置失败:', error)
-            // 不抛出错误，继续执行
-          }
+          // 刷新模型服务配置
+          await refreshModelServiceConfig()
         } catch (error) {
           console.error('刷新配置失败:', error)
         }
       }
+
       refreshConfig()
     }
   }, [open])
+
+  // 提取模型服务配置刷新逻辑
+  const refreshModelServiceConfig = useCallback(async () => {
+    try {
+      const response = await fetch('/api/model-service')
+      if (!response.ok) return
+
+      const data = await response.json()
+      if (!data.success || !data.config) return
+
+      setModelServiceConfig(data.config)
+
+      // 更新自定义提供商
+      if (data.config.providers) {
+        setCustomProviders(data.config.providers.filter((p: any) => !p.isBuiltIn))
+      }
+
+      // 更新配置的模型
+      if (data.config.models) {
+        setConfiguredModels(data.config.models)
+      }
+
+      // 更新场景设置
+      if (data.config.scenarios) {
+        const updatedScenarioSettings: ScenarioSettings = {}
+        data.config.scenarios.forEach((scenario: any) => {
+          updatedScenarioSettings[scenario.type] = {
+            selectedModelIds: scenario.selectedModelIds || [],
+            primaryModelId: scenario.primaryModelId || '',
+            parameters: scenario.parameters || {}
+          }
+        })
+        setScenarioSettings(updatedScenarioSettings)
+      }
+    } catch (error) {
+      console.warn('刷新模型服务配置失败:', error)
+    }
+  }, [])
 
   // 监听模型服务配置更新事件
   useEffect(() => {
@@ -533,55 +564,33 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     setValidationMessage("")
 
     try {
-      switch (activeSection) {
-        case "general":
-          console.log('🗺️ [DEBUG] 保存通用设置')
-          saveGeneralSettings()
-          break
-
-        case "appearance":
-          console.log('🎨 [DEBUG] 保存外观设置')
-          saveAppearanceSettings()
-          break
-
-        case "video-thumbnail":
-          console.log('🎥 [DEBUG] 保存视频缩略图设置')
-          saveVideoThumbnailSettings()
-          break
-
-        case "model-service":
-          console.log('🤖 [DEBUG] 保存模型服务设置')
-          // 模型服务设置已经在面板内部处理
-          toast({ title: "成功", description: "模型服务设置已保存" })
-          break
-
-        case "tools":
-          console.log('🔧 [DEBUG] 保存工具设置')
-          // 工具设置已经在面板内部处理
-          toast({ title: "成功", description: "工具设置已保存" })
-          break
-
-        case "security":
-          console.log('🔒 [DEBUG] 保存账户安全设置')
-          // 账户安全设置已经在面板内部处理
-          toast({ title: "成功", description: "安全设置已保存" })
-          break
-
-        default:
-          console.warn('⚠️ [DEBUG] 未知的activeSection:', activeSection)
-          break
+      // 定义各设置面板的保存行为
+      const saveActions = {
+        "general": () => saveGeneralSettings(),
+        "appearance": () => saveAppearanceSettings(),
+        "video-thumbnail": () => saveVideoThumbnailSettings(),
+        "model-service": () => toast({ title: "成功", description: "模型服务设置已保存" }),
+        "tools": () => toast({ title: "成功", description: "工具设置已保存" }),
+        "security": () => toast({ title: "成功", description: "安全设置已保存" })
       }
 
-      console.log('✅ [DEBUG] 保存成功，设置成功状态')
+      const saveAction = saveActions[activeSection as keyof typeof saveActions]
+      if (saveAction) {
+        saveAction()
+      } else {
+        console.warn('未知的设置面板:', activeSection)
+      }
+
       setSaveStatus("success")
       setValidationMessage("设置已成功保存")
 
+      // 2秒后重置状态
       setTimeout(() => {
         setSaveStatus("idle")
         setValidationMessage("")
       }, 2000)
     } catch (error) {
-      console.error('❌ [DEBUG] handleSave函数总体失败:', error)
+      console.error('保存设置失败:', error)
       setSaveStatus("error")
       setValidationMessage("保存失败，请重试")
     }
@@ -664,26 +673,59 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
     setConfigLoading(true)
     try {
-      const response = await fetch(`/api/external/tmdb-config?path=${encodeURIComponent(path)}`)
+      const response = await fetch(`/api/external/tmdb-config?path=${encodeURIComponent(path)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store'
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('加载TMDB配置失败:', response.status, errorText)
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
 
       if (data.success && data.config) {
+        // 使用默认值合并配置
+        const defaultConfig = {
+          encoding: 'utf-8-sig',
+          logging_level: 'INFO',
+          save_user_profile: true,
+          tmdb_username: '',
+          tmdb_password: '',
+          backdrop_forced_upload: false,
+          filter_words: ''
+        }
+
         setTmdbConfig({
-          encoding: data.config.encoding || 'utf-8-sig',
-          logging_level: data.config.logging_level || 'INFO',
+          ...defaultConfig,
+          ...data.config,
           save_user_profile: data.config.save_user_profile !== false,
-          tmdb_username: data.config.tmdb_username || '',
-          tmdb_password: data.config.tmdb_password || '',
-          backdrop_forced_upload: data.config.backdrop_forced_upload === true,
-          filter_words: data.config.filter_words || ''
+          backdrop_forced_upload: data.config.backdrop_forced_upload === true
+        })
+      } else {
+        console.warn('TMDB配置API返回失败:', data.error)
+        toast({
+          title: "警告",
+          description: data.error || "TMDB配置数据无效",
+          variant: "destructive"
         })
       }
     } catch (error) {
-      console.error('加载TMDB配置失败:', error)
+      console.error('加载TMDB配置失败，可能是服务不可用:', error)
+      toast({
+        title: "错误",
+        description: "加载TMDB配置失败，请检查TMDB-Import路径是否正确",
+        variant: "destructive"
+      })
     } finally {
       setConfigLoading(false)
     }
-  }, [])
+  }, [toast])
 
   // 保存TMDB配置
   const saveTmdbConfig = useCallback(async () => {
@@ -709,6 +751,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         })
       })
 
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('保存TMDB配置失败:', response.status, errorText)
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
 
       if (data.success) {
@@ -720,10 +768,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         throw new Error(data.error || '保存失败')
       }
     } catch (error) {
-      console.error('保存TMDB配置失败:', error)
+      console.error('保存TMDB配置失败，可能是服务不可用:', error)
       toast({
         title: "错误",
-        description: `保存TMDB配置失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        description: `保存TMDB配置失败: ${error instanceof Error ? error.message : '服务不可用'}`,
         variant: "destructive",
       })
     } finally {
@@ -734,20 +782,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // 保存通用设置
   const saveGeneralSettings = useCallback(async () => {
     try {
-      const dockerConfigResponse = await fetch('/api/system/docker-config')
-      const dockerConfigData = await dockerConfigResponse.json()
+      const isDocker = await checkDockerEnvironment()
 
-      if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-        const saveResponse = await fetch('/api/system/docker-config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ generalSettings })
-        })
-
-        const saveData = await saveResponse.json()
-        if (!saveData.success) {
-          throw new Error(saveData.error || '保存失败')
-        }
+      if (isDocker) {
+        await saveDockerConfig({ generalSettings })
       } else {
         await ClientConfigManager.setItem("general_settings", JSON.stringify(generalSettings))
       }
@@ -757,6 +795,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         description: "通用设置已保存",
       })
     } catch (error) {
+      console.error('保存通用设置失败:', error)
       toast({
         title: "错误",
         description: "保存通用设置失败",
@@ -768,20 +807,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // 保存外观设置
   const saveAppearanceSettings = useCallback(async () => {
     try {
-      const dockerConfigResponse = await fetch('/api/system/docker-config')
-      const dockerConfigData = await dockerConfigResponse.json()
+      const isDocker = await checkDockerEnvironment()
 
-      if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-        const saveResponse = await fetch('/api/system/docker-config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ appearanceSettings })
-        })
-
-        const saveData = await saveResponse.json()
-        if (!saveData.success) {
-          throw new Error(saveData.error || '保存失败')
-        }
+      if (isDocker) {
+        await saveDockerConfig({ appearanceSettings })
       } else {
         await ClientConfigManager.setItem("appearance_settings", JSON.stringify(appearanceSettings))
       }
@@ -792,6 +821,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         description: "外观设置已保存并应用",
       })
     } catch (error) {
+      console.error('保存外观设置失败:', error)
       toast({
         title: "错误",
         description: "保存外观设置失败",
@@ -803,20 +833,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // 保存视频缩略图设置
   const saveVideoThumbnailSettings = useCallback(async () => {
     try {
-      const dockerConfigResponse = await fetch('/api/system/docker-config')
-      const dockerConfigData = await dockerConfigResponse.json()
+      const isDocker = await checkDockerEnvironment()
 
-      if (dockerConfigData.success && dockerConfigData.config.isDockerEnvironment) {
-        const saveResponse = await fetch('/api/system/docker-config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ videoThumbnailSettings })
-        })
-
-        const saveData = await saveResponse.json()
-        if (!saveData.success) {
-          throw new Error(saveData.error || '保存失败')
-        }
+      if (isDocker) {
+        await saveDockerConfig({ videoThumbnailSettings })
       } else {
         await ClientConfigManager.setItem("video_thumbnail_settings", JSON.stringify(videoThumbnailSettings))
       }
@@ -826,6 +846,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         description: "视频缩略图设置已保存",
       })
     } catch (error) {
+      console.error('保存视频缩略图设置失败:', error)
       toast({
         title: "错误",
         description: "保存视频缩略图设置失败",
@@ -885,6 +906,32 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       setPasswordChangeLoading(false)
     }
   }, [passwordForm, changePassword, toast])
+
+  // 检查是否为Docker环境
+  const checkDockerEnvironment = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/system/docker-config')
+      const data = await response.json()
+      return data.success && data.config?.isDockerEnvironment
+    } catch (error) {
+      console.warn('检查Docker环境失败:', error)
+      return false
+    }
+  }, [])
+
+  // 保存Docker配置
+  const saveDockerConfig = useCallback(async (configData: any) => {
+    const response = await fetch('/api/system/docker-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(configData)
+    })
+
+    const data = await response.json()
+    if (!data.success) {
+      throw new Error(data.error || '保存失败')
+    }
+  }, [])
 
   const handleOpenChange = (newOpen: boolean) => {
     onOpenChange(newOpen)
