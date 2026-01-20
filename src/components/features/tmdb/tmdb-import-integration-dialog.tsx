@@ -47,7 +47,7 @@ import {
 import path from "path"
 
 // 导入新版表格组件
-import { NewTMDBTable } from "@/components/features/media/new-tmdb-table"
+import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
 import { TMDBItem } from "@/lib/data/storage"
 import { LanguageSelector } from "@/components/common/language-selector"
 import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"

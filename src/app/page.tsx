@@ -48,9 +48,9 @@ import ImportDataDialog from "@/components/features/data/import-data-dialog"
 import ExportDataDialog from "@/components/features/data/export-data-dialog"
 
 // 导入其他功能组件
-import { SubtitleEpisodeGenerator } from "@/components/features/media/subtitle-episode-generator"
-import VideoThumbnailExtractor from "@/components/features/media/video-thumbnail-extractor"
-import { ImageCropper } from "@/components/features/media/image-cropper"
+import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
+import VideoThumbnailExtractor from "@/features/image-processing/components/video-thumbnail-extractor"
+import { ImageCropper } from "@/features/image-processing/components/image-cropper"
 
 // 导入 home 组件
 import { ErrorState } from "@/components/features/home/error-state"

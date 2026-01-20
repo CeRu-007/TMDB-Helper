@@ -9,7 +9,7 @@ import { CheckCircle2, PlayCircle, Clock, Star } from 'lucide-react'
 import { WeekdayNavigation } from './weekday-navigation'
 import { useData } from '@/components/features/auth/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
-import MediaCard from '@/components/features/media/media-card'
+import MediaCard from '@/features/media-maintenance/components/media-card'
 import { UseHomeStateReturn } from '@/lib/hooks/use-home-state'
 interface ProgressSectionProps {
   homeState: UseHomeStateReturn

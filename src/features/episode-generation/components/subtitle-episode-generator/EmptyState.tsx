@@ -14,8 +14,8 @@ import { Input } from "@/components/common/input"
 import { Label } from "@/components/common/label"
 import { cn } from "@/lib/utils"
 import { VideoAnalyzer } from "@/lib/media/video-analyzer"
-import { VideoAnalysisStep, createDefaultAnalysisSteps, updateStepStatus } from "@/components/features/media/video-analysis-feedback"
-import { VideoAnalysisFeedback } from "@/components/features/media/video-analysis-feedback"
+import { VideoAnalysisStep, createDefaultAnalysisSteps, updateStepStatus } from "@/features/episode-generation/components/video-analysis-feedback"
+import { VideoAnalysisFeedback } from "@/features/episode-generation/components/video-analysis-feedback"
 import { EmptyStateProps } from './types'
 
 export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {

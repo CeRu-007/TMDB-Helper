@@ -34,7 +34,7 @@ import {
 } from "lucide-react"
 
 // 导入现有的集成工具组件
-import { NewTMDBTable } from "@/components/features/media/new-tmdb-table"
+import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
 import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
 import { saveCSV } from "@/lib/data/csv-save-helper"
 import { LanguageSelector } from "@/components/common/language-selector"

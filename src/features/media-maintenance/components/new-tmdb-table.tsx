@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { TMDBTable as BaseTMDBTable } from "@/components/features/media/tmdb-table"
+import { TMDBTable as BaseTMDBTable } from "@/features/media-maintenance/components/tmdb-table/tmdb-table"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/common/button"
 import { Grid, LayoutGrid } from "lucide-react"
