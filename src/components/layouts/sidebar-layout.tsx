@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, Suspense } from "react"
 import { SidebarNavigation } from "@/components/layouts/sidebar-navigation"
-import { ImageRecognition } from "@/components/features/image-recognition/image-recognition"
-import { UserAvatar, useUser } from "@/components/features/auth/user-identity-provider"
+import { ImageRecognition } from "@/features/image-processing/components/image-recognition"
+import { UserAvatar, useUser } from "@/shared/components/user-identity-provider"
 import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
 import { HardSubtitleExtractor } from "@/features/image-processing/components/hard-subtitle-extractor"
-import { IndependentMaintenance } from "@/components/features/maintenance/independent-maintenance"
+import { IndependentMaintenance } from "@/features/media-maintenance/components/independent-maintenance"
 import { AiChat } from "@/features/ai/components/ai-chat"
 import { Button } from "@/components/common/button"
 import { Badge } from "@/components/common/badge"
@@ -37,9 +37,9 @@ import {
 import { useTheme } from "next-themes"
 import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
 import Image from "next/image"
-import { TMDBGuide } from "@/components/features/maintenance/tmdb-guide"
+import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
 import StreamingPlatformNav from "@/features/streaming-nav/components/streaming-platform-nav"
-import ItemDetailDialog from "@/components/features/media/item-detail-dialog"
+import ItemDetailDialog from "@/features/media-maintenance/components/item-detail-dialog"
 
 export interface SidebarLayoutProps {
   children: React.ReactNode
