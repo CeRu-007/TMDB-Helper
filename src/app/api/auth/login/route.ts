@@ -10,11 +10,17 @@ export async function POST(request: NextRequest) {
     const body: LoginRequest = await request.json();
     const { username, password, rememberMe = false } = body;
 
-    // 获取客户端 IP
-    const clientIp = RateLimiter.getClientIp(request);
+    // 验证输入（在速率限制检查之前，避免空输入也消耗尝试次数）
+    if (!username || !password) {
+      return NextResponse.json(
+        { success: false, error: '用户名或密码错误' },
+        { status: 401 }
+      );
+    }
 
-    // 检查速率限制
-    const rateLimitResult = RateLimiter.check(clientIp);
+    // 检查速率限制（使用用户名 + IP 组合作为标识符）
+    const identifier = RateLimiter.getIdentifier(username, request);
+    const rateLimitResult = RateLimiter.check(identifier);
     if (!rateLimitResult.allowed) {
       const lockedMinutes = Math.ceil((rateLimitResult.lockedUntil! - Date.now()) / (60 * 1000));
       return NextResponse.json(
@@ -28,14 +34,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证输入
-    if (!username || !password) {
-      return NextResponse.json(
-        { success: false, error: '用户名或密码错误' },
-        { status: 401 }
-      );
-    }
-
     // 验证登录
     const user = await AuthManager.validateLogin(username, password);
     if (!user) {
@@ -43,14 +41,14 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: '用户名或密码错误',
-          remainingAttempts: rateLimitResult.remainingAttempts - 1
+          remainingAttempts: rateLimitResult.remainingAttempts
         },
         { status: 401 }
       );
     }
 
     // 登录成功，重置速率限制
-    RateLimiter.reset(clientIp);
+    RateLimiter.reset(identifier);
 
     // 生成JWT Token
     const token = AuthManager.generateToken(user, rememberMe);
@@ -84,6 +82,7 @@ export async function POST(request: NextRequest) {
     return response;
 
   } catch (error) {
+    console.error('[Auth] 登录失败:', error);
 
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },

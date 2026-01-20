@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    
+    console.error('[Auth] 验证认证失败:', error);
+
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }

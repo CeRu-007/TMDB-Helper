@@ -123,25 +123,47 @@ export class RateLimiter {
    * @returns IP 地址字符串
    */
   static getClientIp(request: Request): string {
-    // 尝试从各种请求头中获取真实 IP
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    if (forwardedFor) {
-      // x-forwarded-for 可能包含多个 IP，取第一个
-      return forwardedFor.split(',')[0].trim();
+    // 检查是否配置了可信代理
+    const trustProxy = process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1';
+
+    if (trustProxy) {
+      // 仅在配置了可信代理时使用请求头
+      const forwardedFor = request.headers.get('x-forwarded-for');
+      if (forwardedFor) {
+        // x-forwarded-for 可能包含多个 IP，取第一个（客户端IP）
+        // 格式: clientIP, proxy1IP, proxy2IP
+        const ips = forwardedFor.split(',').map(ip => ip.trim());
+        return ips[ips.length - 1]; // 取最后一个（最接近服务器的代理）
+      }
+
+      const realIp = request.headers.get('x-real-ip');
+      if (realIp) {
+        return realIp;
+      }
+
+      const cfConnectingIp = request.headers.get('cf-connecting-ip');
+      if (cfConnectingIp) {
+        return cfConnectingIp;
+      }
     }
 
-    const realIp = request.headers.get('x-real-ip');
-    if (realIp) {
-      return realIp;
-    }
-
-    const cfConnectingIp = request.headers.get('cf-connecting-ip');
-    if (cfConnectingIp) {
-      return cfConnectingIp;
-    }
-
-    // 如果没有找到，返回默认值
+    // 如果没有配置可信代理或没有找到请求头，返回默认值
+    // 注意：Next.js 的 Request 对象不直接提供 socket 信息
+    // 在生产环境中，应该配置反向代理并设置 TRUST_PROXY=true
     return 'unknown';
+  }
+
+  /**
+   * 生成速率限制标识符
+   * 使用用户名 + IP 组合作为标识符，即使 IP 可伪造也能提供基本防护
+   * @param username 用户名
+   * @param request Next.js 请求对象
+   * @returns 标识符字符串
+   */
+  static getIdentifier(username: string, request: Request): string {
+    const ip = RateLimiter.getClientIp(request);
+    // 使用用户名 + IP 组合，即使 IP 被伪造，攻击者也需要针对每个用户名单独尝试
+    return `${username}:${ip}`;
   }
 }
 

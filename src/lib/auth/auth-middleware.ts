@@ -35,7 +35,8 @@ export class AuthMiddleware {
       };
 
     } catch (error) {
-      
+      console.error('[Auth] 认证中间件错误:', error);
+
       return { success: false, error: '服务器内部错误' };
     }
   }
