@@ -1,11 +1,11 @@
-import React from "react"
+﻿import React from "react"
 import {
   Film,
   Settings,
   Sparkles
 } from "lucide-react"
-import { Button } from "@/components/common/button"
-import { Progress } from "@/components/common/progress"
+import { Button } from "@/shared/components/ui/button"
+import { Progress } from "@/shared/components/ui/progress"
 import { cn } from "@/lib/utils"
 import { WorkAreaProps } from './types'
 import { truncateFileName } from './utils'

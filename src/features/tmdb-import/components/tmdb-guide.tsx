@@ -1,11 +1,11 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect, useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Badge } from "@/components/common/badge"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/tabs"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Badge } from "@/shared/components/ui/badge"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import { 
   BookOpen, 
   Film, 

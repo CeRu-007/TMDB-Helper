@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { imageCache } from '@/lib/media/imageCache'
+﻿import { useEffect } from 'react'
+import { imageCache } from '@/features/image-processing/lib/imageCache'
 
 interface UseImagePreloaderOptions {
   urls: string[]

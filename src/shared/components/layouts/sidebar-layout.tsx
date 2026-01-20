@@ -1,16 +1,16 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect, Suspense } from "react"
-import { SidebarNavigation } from "@/components/layouts/sidebar-navigation"
+import { SidebarNavigation } from "@/shared/components/layouts/sidebar-navigation"
 import { ImageRecognition } from "@/features/image-processing/components/image-recognition"
 import { UserAvatar, useUser } from "@/shared/components/user-identity-provider"
 import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
 import { HardSubtitleExtractor } from "@/features/image-processing/components/hard-subtitle-extractor"
 import { IndependentMaintenance } from "@/features/media-maintenance/components/independent-maintenance"
 import { AiChat } from "@/features/ai/components/ai-chat"
-import { Button } from "@/components/common/button"
-import { Badge } from "@/components/common/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
+import { Button } from "@/shared/components/ui/button"
+import { Badge } from "@/shared/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import {
   Settings,
   Plus,
@@ -35,7 +35,7 @@ import {
   ChevronDown
 } from "lucide-react"
 import { useTheme } from "next-themes"
-import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
+import { LayoutPreferencesManager } from "@/shared/lib/utils/layout-preferences"
 import Image from "next/image"
 import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
 import StreamingPlatformNav from "@/features/streaming-nav/components/streaming-platform-nav"

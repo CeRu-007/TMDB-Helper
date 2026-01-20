@@ -1,12 +1,12 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Badge } from "@/components/common/badge"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Alert, AlertDescription } from "@/components/common/alert"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Badge } from "@/shared/components/ui/badge"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Alert, AlertDescription } from "@/shared/components/ui/alert"
 import {
   AlertTriangle,
   CheckCircle2,
@@ -19,7 +19,7 @@ import {
   Wrench,
   X
 } from "lucide-react"
-import { toast } from "@/components/common/use-toast"
+import { toast } from "@/shared/components/ui/use-toast"
 
 interface FixTMDBImportBugDialogProps {
   open: boolean

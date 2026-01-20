@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 操作队列管理器
  * 处理高频操作的去重、合并和排队，防止并发冲突
  */
@@ -6,7 +6,7 @@
 'use client';
 
 import { TMDBItem } from './storage';
-import { DistributedLock } from '@/lib/utils/distributed-lock';
+import { DistributedLock } from '@/shared/lib/utils/distributed-lock';
 
 export interface QueuedOperation {
   id: string;

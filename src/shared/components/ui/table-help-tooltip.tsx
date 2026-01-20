@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React from "react"
 import {
@@ -6,8 +6,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/common/tooltip"
-import { Button } from "@/components/common/button"
+} from "@/shared/components/ui/tooltip"
+import { Button } from "@/shared/components/ui/button"
 import { HelpCircle } from "lucide-react"
 
 export function TableHelpTooltip() {

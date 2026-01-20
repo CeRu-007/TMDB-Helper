@@ -1,17 +1,17 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
-import { Switch } from "@/components/common/switch"
-import { ModernTimePicker } from "@/components/common/modern-time-picker"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/common/card"
-import { Badge } from "@/components/common/badge"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Switch } from "@/shared/components/ui/switch"
+import { ModernTimePicker } from "@/shared/components/ui/modern-time-picker"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/shared/components/ui/card"
+import { Badge } from "@/shared/components/ui/badge"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 
 import {
   AlertDialog,
@@ -22,7 +22,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/common/alert-dialog"
+} from "@/shared/components/ui/alert-dialog"
 import {
   Clock,
   Calendar,
@@ -45,7 +45,7 @@ import {
 import { v4 as uuidv4 } from "uuid"
 import { StorageManager, TMDBItem, ScheduledTask } from "@/lib/data/storage"
 import { taskScheduler } from "@/lib/data/task-scheduler"
-import { toast } from "@/components/common/use-toast"
+import { toast } from "@/shared/components/ui/use-toast"
 
 interface ScheduledTaskDialogProps {
   item: TMDBItem

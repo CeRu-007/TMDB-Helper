@@ -1,16 +1,16 @@
-/**
+﻿/**
  * 视频缩略图设置面板
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Switch } from "@/components/common/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
-import { Slider } from "@/components/common/slider"
-import { Checkbox } from "@/components/common/checkbox"
-import { Badge } from "@/components/common/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Switch } from "@/shared/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Slider } from "@/shared/components/ui/slider"
+import { Checkbox } from "@/shared/components/ui/checkbox"
+import { Badge } from "@/shared/components/ui/badge"
 import { Film, Settings, Info } from "lucide-react"
 import type { VideoThumbnailSettings, ApiSettings } from "./types"
 

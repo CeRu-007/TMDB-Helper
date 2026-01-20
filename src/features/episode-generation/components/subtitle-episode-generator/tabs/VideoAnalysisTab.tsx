@@ -1,15 +1,15 @@
-import React from "react"
+﻿import React from "react"
 import {
   Film,
   Loader2,
   AlertCircle
 } from "lucide-react"
-import { Label } from "@/components/common/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
-import { Checkbox } from "@/components/common/checkbox"
-import { Badge } from "@/components/common/badge"
+import { Label } from "@/shared/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Checkbox } from "@/shared/components/ui/checkbox"
+import { Badge } from "@/shared/components/ui/badge"
 import { GenerationConfig } from '../types'
-import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
+import { useScenarioModels } from "@/shared/lib/hooks/useScenarioModels"
 
 interface VideoAnalysisTabProps {
   config: GenerationConfig

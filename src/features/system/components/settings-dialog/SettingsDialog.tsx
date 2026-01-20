@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 设置对话框主组件
  * 
  * 使用复合模式组织各个设置面板
@@ -7,13 +7,13 @@
 "use client"
 
 import { useRef, useState, useEffect, useMemo, useCallback } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/common/dialog"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Button } from "@/components/common/button"
-import { useToast } from "@/lib/hooks/use-toast"
-import { useAuth } from "@/components/features/auth/auth-provider"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Button } from "@/shared/components/ui/button"
+import { useToast } from "@/shared/lib/hooks/use-toast"
+import { useAuth } from "@/shared/components/auth-provider"
 import { useModelService } from "@/lib/contexts/ModelServiceContext"
-import { ClientConfigManager } from '@/lib/utils/client-config-manager'
+import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
 import { safeJsonParse } from '@/lib/utils'
 import { ModelProvider, ModelConfig } from '@/types/model-service'
 import { SettingsMenu } from "./SettingsMenu"

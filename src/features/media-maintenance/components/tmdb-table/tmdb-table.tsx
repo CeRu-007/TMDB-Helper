@@ -1,9 +1,9 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Button } from "@/components/common/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/lib/utils"
 import TableContextMenu from "../../common/table-context-menu"
 import BatchInsertRowDialog from "../dialogs/batch-insert-row-dialog"
@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/common/dropdown-menu"
+} from "@/shared/components/ui/dropdown-menu"
 
 
 // 导入CSV数据类型

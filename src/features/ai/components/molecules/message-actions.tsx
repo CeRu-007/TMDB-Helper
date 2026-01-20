@@ -1,5 +1,5 @@
-import React from 'react'
-import { Button } from "@/components/common/button"
+﻿import React from 'react'
+import { Button } from "@/shared/components/ui/button"
 import { Copy, Edit2, Trash2, RotateCcw, ThumbsUp, ThumbsDown, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 

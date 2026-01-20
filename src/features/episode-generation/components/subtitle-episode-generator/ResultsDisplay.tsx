@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react"
+﻿import React, { useState, useRef, useEffect } from "react"
 import {
   Edit,
   Check,
@@ -13,16 +13,16 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react"
-import { Button } from "@/components/common/button"
-import { Badge } from "@/components/common/badge"
-import { Textarea } from "@/components/common/textarea"
+import { Button } from "@/shared/components/ui/button"
+import { Badge } from "@/shared/components/ui/badge"
+import { Textarea } from "@/shared/components/ui/textarea"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/common/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/common/tooltip"
+} from "@/shared/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { ResultsDisplayProps, EnhanceOperation } from './types'
 import { truncateFileName, getOperationName } from './utils'

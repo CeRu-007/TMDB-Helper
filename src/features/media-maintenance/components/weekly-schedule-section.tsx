@@ -1,8 +1,8 @@
-"use client"
+﻿"use client"
 
 import React from 'react'
 import { WeekdayNavigation } from './weekday-navigation'
-import { useData } from '@/components/features/auth/client-data-provider'
+import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
 import MediaCard from '@/features/media-maintenance/components/media-card'
 import { UseHomeStateReturn } from '@/features/media-maintenance/lib/hooks/use-home-state'

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import type React from "react"
 import { useState, useEffect } from "react"
@@ -18,34 +18,34 @@ import {
 } from "lucide-react"
 
 // 导入 hooks
-import { useHomeState } from '@/lib/hooks/use-home-state'
-import { useCategoryFilter } from '@/lib/hooks/use-category-filter'
-import { useWeekdayFilter } from '@/lib/hooks/use-weekday-filter'
-import { useCurrentDay } from '@/lib/hooks/use-current-day'
-import { useMediaNews } from '@/lib/hooks/use-media-news'
-import { useData } from "@/components/features/auth/client-data-provider"
-import { useToast } from "@/lib/hooks/use-toast"
+import { useHomeState } from '@/features/media-maintenance/lib/hooks/use-home-state'
+import { useCategoryFilter } from '@/features/media-maintenance/lib/hooks/use-category-filter'
+import { useWeekdayFilter } from '@/features/media-maintenance/lib/hooks/use-weekday-filter'
+import { useCurrentDay } from '@/features/media-maintenance/lib/hooks/use-current-day'
+import { useMediaNews } from '@/features/media-maintenance/lib/hooks/use-media-news'
+import { useData } from "@/shared/components/client-data-provider"
+import { useToast } from "@/shared/lib/hooks/use-toast"
 
 // 导入常量
 import { categories } from '@/lib/constants/categories'
 
 // 导入组件
-import { SidebarLayout } from "@/components/layouts/sidebar-layout"
-import { WeekdayNavigation } from '@/components/widgets/home/weekday-navigation'
-import { RegionNavigation } from '@/components/features/home/region-navigation'
-import { Button } from "@/components/common/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/tabs"
-import { Badge } from "@/components/common/badge"
-import MediaCard from "@/components/features/media/media-card"
+import { SidebarLayout } from "@/shared/components/layouts/sidebar-layout"
+import { WeekdayNavigation } from '@/features/media-maintenance/components/weekday-navigation'
+import { RegionNavigation } from '@/features/media-news/components/region-navigation'
+import { Button } from "@/shared/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
+import { Badge } from "@/shared/components/ui/badge"
+import MediaCard from "@/features/media-maintenance/components/media-card"
 
 // 导入对话框组件
-import AddItemDialog from "@/components/features/dialogs/add-item-dialog"
-import SettingsDialog from "@/components/features/dialogs/settings-dialog/SettingsDialog"
-import GlobalScheduledTasksDialog from "@/components/features/scheduled-tasks/global-scheduled-tasks-dialog"
-import { TaskExecutionLogsDialog } from "@/components/features/scheduled-tasks/task-execution-logs-dialog"
-import ScheduledTaskDialog from "@/components/features/scheduled-tasks/scheduled-task-dialog"
-import ImportDataDialog from "@/components/features/data/import-data-dialog"
-import ExportDataDialog from "@/components/features/data/export-data-dialog"
+import AddItemDialog from "@/features/media-maintenance/components/add-item-dialog"
+import SettingsDialog from "@/features/system/components/settings-dialog/SettingsDialog"
+import GlobalScheduledTasksDialog from "@/features/scheduled-tasks/components/global-scheduled-tasks-dialog/global-scheduled-tasks-dialog"
+import { TaskExecutionLogsDialog } from "@/features/scheduled-tasks/components/task-execution-logs-dialog"
+import ScheduledTaskDialog from "@/features/scheduled-tasks/components/scheduled-task-dialog"
+import ImportDataDialog from "@/features/data-management/components/import-data-dialog"
+import ExportDataDialog from "@/features/data-management/components/export-data-dialog"
 
 // 导入其他功能组件
 import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
@@ -53,8 +53,8 @@ import VideoThumbnailExtractor from "@/features/image-processing/components/vide
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"
 
 // 导入 home 组件
-import { ErrorState } from "@/components/features/home/error-state"
-import { EmptyState } from "@/components/features/home/empty-state"
+import { ErrorState } from "@/features/media-maintenance/components/error-state"
+import { EmptyState } from "@/features/media-maintenance/components/empty-state"
 
 // 判断当前环境是否为客户端
 const isClientEnv = typeof window !== 'undefined'

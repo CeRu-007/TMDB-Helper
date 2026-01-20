@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo } from 'react';
 import { ExternalLink, Filter, TrendingUp, Star, Globe, Play, Sparkles, GripVertical, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/common/button';
+import { Button } from '@/shared/components/ui/button';
 import PlatformLogo from './platform-logo';
 import SmartTooltip from './smart-tooltip';
 import { 
@@ -11,7 +11,7 @@ import {
   getFilteredPlatforms, 
   type CategoryType, 
   type Platform 
-} from '@/lib/media/platform-data';
+} from '@/features/image-processing/lib/platform-data';
 import {
   DndContext,
   closestCenter,

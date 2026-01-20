@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { autoOptimizeAllUsers } from '@/lib/utils/auto-optimize';
+﻿import { NextRequest, NextResponse } from 'next/server';
+import { autoOptimizeAllUsers } from '@/shared/lib/utils/auto-optimize';
 
 /**
  * 自动优化API

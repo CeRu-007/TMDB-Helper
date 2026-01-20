@@ -1,9 +1,9 @@
-"use client"
+﻿"use client"
 
 import React from 'react'
-import { Button } from '@/components/common/button'
-import { Badge } from '@/components/common/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/common/select'
+import { Button } from '@/shared/components/ui/button'
+import { Badge } from '@/shared/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { TMDBItem } from '@/lib/data/storage'
 import { WEEKDAYS } from '@/lib/constants/weekdays'
 import { Calendar, Clock, CheckCircle2 } from 'lucide-react'

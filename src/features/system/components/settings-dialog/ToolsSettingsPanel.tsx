@@ -1,20 +1,20 @@
-/**
+﻿/**
  * 工具设置面板
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Switch } from "@/components/common/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
-import { Textarea } from "@/components/common/textarea"
-import { Separator } from "@/components/common/separator"
-import { Badge } from "@/components/common/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Switch } from "@/shared/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Textarea } from "@/shared/components/ui/textarea"
+import { Separator } from "@/shared/components/ui/separator"
+import { Badge } from "@/shared/components/ui/badge"
 import { Terminal, FolderOpen, FileText, RefreshCw, Save, Info, Eye, EyeOff, AlertCircle } from "lucide-react"
-import TMDBImportUpdater from "@/components/features/tmdb/tmdb-import-updater"
-import DependencyInstaller from "@/components/features/system/dependency-installer"
-import { ClientConfigManager } from '@/lib/utils/client-config-manager'
+import TMDBImportUpdater from "@/features/tmdb/tmdb-import-updater"
+import DependencyInstaller from "@/features/system/dependency-installer"
+import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
 import type { TMDBConfig, ToolsTabState } from "./types"
 
 interface ToolsSettingsPanelProps {

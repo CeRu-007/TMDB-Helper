@@ -1,12 +1,12 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect } from "react"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Slider } from "@/components/common/slider"
-import { Switch } from "@/components/common/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Slider } from "@/shared/components/ui/slider"
+import { Switch } from "@/shared/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Upload, Link, Settings, Volume2, Image, Clock, CheckCircle, Loader2, X } from "lucide-react"
 
 interface BoundingBox {

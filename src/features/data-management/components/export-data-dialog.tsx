@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import {
@@ -6,24 +6,24 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/common/dialog';
-import { Button } from '@/components/common/button';
-import { Label } from '@/components/common/label';
-import { Checkbox } from '@/components/common/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/common/radio-group';
+} from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { Label } from '@/shared/components/ui/label';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/shared/components/ui/radio-group';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/common/card';
-import { Badge } from '@/components/common/badge';
-import { Alert, AlertDescription } from '@/components/common/alert';
+} from '@/shared/components/ui/card';
+import { Badge } from '@/shared/components/ui/badge';
+import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 import { Download, FileText, Database, Settings, Info } from 'lucide-react';
-import { useData } from '@/components/features/auth/client-data-provider';
+import { useData } from '@/shared/components/client-data-provider';
 import { StorageManager, TMDBItem, ScheduledTask } from '@/lib/data/storage';
-import { useToast } from '@/lib/hooks/use-toast';
+import { useToast } from '@/shared/lib/hooks/use-toast';
 import { dataRecoveryManager } from '@/lib/data/data-recovery-manager';
 
 interface ExportDataDialogProps {

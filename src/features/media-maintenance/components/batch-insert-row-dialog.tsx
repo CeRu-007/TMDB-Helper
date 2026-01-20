@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -8,11 +8,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { RadioGroup, RadioGroupItem } from "@/components/common/radio-group"
+} from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group"
 
 export interface BatchInsertRowDialogProps {
   open: boolean

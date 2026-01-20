@@ -1,18 +1,18 @@
-import React from "react"
+﻿import React from "react"
 import {
   Loader2,
   AlertCircle,
   Copy
 } from "lucide-react"
-import { Label } from "@/components/common/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
-import { Slider } from "@/components/common/slider"
-import { Checkbox } from "@/components/common/checkbox"
-import { Textarea } from "@/components/common/textarea"
-import { Badge } from "@/components/common/badge"
-import { ClientConfigManager } from '@/lib/utils/client-config-manager'
+import { Label } from "@/shared/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Slider } from "@/shared/components/ui/slider"
+import { Checkbox } from "@/shared/components/ui/checkbox"
+import { Textarea } from "@/shared/components/ui/textarea"
+import { Badge } from "@/shared/components/ui/badge"
+import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
 import { GenerationConfig } from '../types'
-import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
+import { useScenarioModels } from "@/shared/lib/hooks/useScenarioModels"
 
 interface GenerationTabProps {
   config: GenerationConfig

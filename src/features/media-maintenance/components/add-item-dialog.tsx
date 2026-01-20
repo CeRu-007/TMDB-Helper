@@ -1,17 +1,17 @@
-"use client"
+﻿"use client"
 
 import type React from "react"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
-import { Badge, badgeVariants } from "@/components/common/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { BackgroundImage } from "@/components/common/background-image"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Badge, badgeVariants } from "@/shared/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { BackgroundImage } from "@/shared/components/ui/background-image"
 import { 
   Tv, 
   Search, 
@@ -32,9 +32,9 @@ import {
 import type { TMDBItem, Season, Episode } from "@/lib/data/storage"
 import { StorageManager } from "@/lib/data/storage"
 import { cn } from "@/lib/utils"
-import { Checkbox } from "@/components/common/checkbox"
+import { Checkbox } from "@/shared/components/ui/checkbox"
 import { useToast } from "@/shared/lib/hooks/use-toast"
-import { ClientConfigManager } from "@/lib/utils/client-config-manager"
+import { ClientConfigManager } from "@/shared/lib/utils/client-config-manager"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六"]
 

@@ -1,13 +1,13 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button } from "@/components/common/button"
-import { Badge } from "@/components/common/badge"
-import { Progress } from "@/components/common/progress"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Separator } from "@/components/common/separator"
-import { useToast } from "@/lib/hooks/use-toast"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Badge } from "@/shared/components/ui/badge"
+import { Progress } from "@/shared/components/ui/progress"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Separator } from "@/shared/components/ui/separator"
+import { useToast } from "@/shared/lib/hooks/use-toast"
 import {
   CheckCircle2,
   AlertCircle,

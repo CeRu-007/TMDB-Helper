@@ -1,14 +1,14 @@
-"use client"
+﻿"use client"
 
 import React from "react"
-import { Badge } from "@/components/common/badge"
-import { Button } from "@/components/common/button"
+import { Badge } from "@/shared/components/ui/badge"
+import { Button } from "@/shared/components/ui/button"
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from "@/components/common/tooltip"
+} from "@/shared/components/ui/tooltip"
 import {
     Wifi,
     WifiOff,

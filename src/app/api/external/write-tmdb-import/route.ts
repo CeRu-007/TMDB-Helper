@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { writeFileSync } from 'fs'
 import { join } from 'path'
 import { ServerConfigManager } from '@/lib/data/server-config-manager'

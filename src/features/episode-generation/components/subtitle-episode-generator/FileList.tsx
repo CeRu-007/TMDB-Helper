@@ -1,4 +1,4 @@
-import React from "react"
+﻿import React from "react"
 import {
   Upload,
   FileText,
@@ -12,11 +12,11 @@ import {
   XCircle,
   Clock
 } from "lucide-react"
-import { Button } from "@/components/common/button"
-import { Card, CardContent } from "@/components/common/card"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Badge } from "@/components/common/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/common/tooltip"
+import { Button } from "@/shared/components/ui/button"
+import { Card, CardContent } from "@/shared/components/ui/card"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Badge } from "@/shared/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { FileListProps } from './types'
 import { truncateFileName } from './utils'

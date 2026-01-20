@@ -1,13 +1,13 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect } from 'react'
 import { AlertTriangle, CheckCircle, RefreshCw, Download, Trash2, Info } from 'lucide-react'
-import { Button } from '@/components/common/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common/card'
-import { Badge } from '@/components/common/badge'
-import { Alert, AlertDescription } from '@/components/common/alert'
-import { Separator } from '@/components/common/separator'
-import { useToast } from '@/lib/hooks/use-toast'
+import { Button } from '@/shared/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Badge } from '@/shared/components/ui/badge'
+import { Alert, AlertDescription } from '@/shared/components/ui/alert'
+import { Separator } from '@/shared/components/ui/separator'
+import { useToast } from '@/shared/lib/hooks/use-toast'
 import { dataRecoveryManager, DataValidationResult } from '@/lib/data/data-recovery-manager'
 import { StorageManager } from '@/lib/data/storage'
 

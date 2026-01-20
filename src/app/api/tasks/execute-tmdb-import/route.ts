@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs'
-import { BrowserInterruptDetector } from '@/lib/utils/browser-interrupt-detector';
+import { BrowserInterruptDetector } from '@/shared/lib/utils/browser-interrupt-detector';
 
 import { ServerConfigManager } from '@/lib/data/server-config-manager'
 

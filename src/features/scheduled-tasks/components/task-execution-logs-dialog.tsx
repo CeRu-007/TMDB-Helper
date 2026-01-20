@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect, useCallback } from "react"
 import {
@@ -6,12 +6,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/common/dialog"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Progress } from "@/components/common/progress"
-import { Badge } from "@/components/common/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button } from "@/components/common/button"
+} from "@/shared/components/ui/dialog"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Progress } from "@/shared/components/ui/progress"
+import { Badge } from "@/shared/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
 import {
   CheckCircle2,
   XCircle,

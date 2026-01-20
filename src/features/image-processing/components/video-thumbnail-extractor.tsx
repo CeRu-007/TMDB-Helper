@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import {
@@ -41,27 +41,27 @@ import {
   LayoutGrid,
   LayoutList
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button, buttonVariants } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Progress } from "@/components/common/progress"
-import { Badge } from "@/components/common/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/tabs"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
-import { Slider } from "@/components/common/slider"
-import { Switch } from "@/components/common/switch"
-import { Checkbox } from "@/components/common/checkbox"
-import { useToast } from "@/components/common/use-toast"
-import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/common/dialog"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/common/tooltip"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/common/dropdown-menu"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button, buttonVariants } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Progress } from "@/shared/components/ui/progress"
+import { Badge } from "@/shared/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Slider } from "@/shared/components/ui/slider"
+import { Switch } from "@/shared/components/ui/switch"
+import { Checkbox } from "@/shared/components/ui/checkbox"
+import { useToast } from "@/shared/components/ui/use-toast"
+import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/shared/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { ToggleGroup, ToggleGroupItem } from "@/components/common/toggle-group"
-import { ImageProcessor } from "@/lib/media/image-processor-class"
+import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/toggle-group"
+import { ImageProcessor } from "@/features/image-processing/lib/image-processor-class"
 
 // 视频文件接口
 interface VideoFile {

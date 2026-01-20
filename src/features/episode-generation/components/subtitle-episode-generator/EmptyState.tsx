@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+﻿import React, { useState } from "react"
 import {
   Upload,
   Film,
@@ -9,9 +9,9 @@ import {
   Loader2,
   FileText
 } from "lucide-react"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
 import { cn } from "@/lib/utils"
 import { VideoAnalyzer } from "@/lib/media/video-analyzer"
 import { VideoAnalysisStep, createDefaultAnalysisSteps, updateStepStatus } from "@/features/episode-generation/components/video-analysis-feedback"

@@ -1,9 +1,9 @@
-"use client"
+﻿"use client"
 
 import React from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/common/select'
-import { Button } from '@/components/common/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { Button } from '@/shared/components/ui/button'
 import { Plus, Calendar, Film, CalendarRange, BarChart2 } from 'lucide-react'
 import { WeekdayNavigation } from './weekday-navigation'
 import { MediaNewsSection } from './media-news-section'

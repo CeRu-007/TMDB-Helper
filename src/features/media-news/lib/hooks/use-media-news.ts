@@ -1,10 +1,10 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { log } from '@/lib/utils/logger'
-import { handleError, retryOperation } from '@/lib/utils/error-handler'
-import { perf } from '@/lib/utils/performance-manager'
-import { ClientConfigManager } from '@/lib/utils/client-config-manager'
+import { log } from '@/shared/lib/utils/logger'
+import { handleError, retryOperation } from '@/shared/lib/utils/error-handler'
+import { perf } from '@/shared/lib/utils/performance-manager'
+import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
 import { REGIONS } from '@/lib/constants/regions'
 
 interface MediaNewsItem {

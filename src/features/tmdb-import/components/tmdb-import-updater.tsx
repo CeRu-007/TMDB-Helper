@@ -1,11 +1,11 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Button } from "@/components/common/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Badge } from "@/components/common/badge"
-import { Progress } from "@/components/common/progress"
-import { useToast } from "@/lib/hooks/use-toast"
+import { Button } from "@/shared/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Badge } from "@/shared/components/ui/badge"
+import { Progress } from "@/shared/components/ui/progress"
+import { useToast } from "@/shared/lib/hooks/use-toast"
 import {
   Download,
   RefreshCw,

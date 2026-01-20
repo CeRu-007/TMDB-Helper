@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import {
@@ -6,23 +6,23 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/common/dialog';
-import { Button } from '@/components/common/button';
-import { Input } from '@/components/common/input';
-import { Label } from '@/components/common/label';
-import { Alert, AlertDescription } from '@/components/common/alert';
-import { Progress } from '@/components/common/progress';
+} from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Alert, AlertDescription } from '@/shared/components/ui/alert';
+import { Progress } from '@/shared/components/ui/progress';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/common/card';
-import { Badge } from '@/components/common/badge';
+} from '@/shared/components/ui/card';
+import { Badge } from '@/shared/components/ui/badge';
 import { Upload, FileText, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { StorageManager } from '@/lib/data/storage';
-import { useData } from '@/components/features/auth/client-data-provider';
+import { useData } from '@/shared/components/client-data-provider';
 
 interface ImportDataDialogProps {
   open: boolean;

@@ -1,18 +1,18 @@
-/**
+﻿/**
  * 模型服务设置面板
  */
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Switch } from "@/components/common/switch"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/common/dialog"
-import { Badge } from "@/components/common/badge"
-import { Checkbox } from "@/components/common/checkbox"
-import { Slider } from "@/components/common/slider"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Switch } from "@/shared/components/ui/switch"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/shared/components/ui/dialog"
+import { Badge } from "@/shared/components/ui/badge"
+import { Checkbox } from "@/shared/components/ui/checkbox"
+import { Slider } from "@/shared/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Database, Plus, Trash2, Edit, Eye, EyeOff, CheckCircle2, AlertCircle, RefreshCw, ChevronUp, ChevronDown, Film } from "lucide-react"
 import type { 
   ModelServiceTabState,

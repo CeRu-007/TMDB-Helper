@@ -1,5 +1,5 @@
-import { useCallback } from 'react'
-import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
+﻿import { useCallback } from 'react'
+import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
 import { GenerationConfig } from '../types'
 import { GENERATION_STYLES } from '../constants'
 import { buildPromptForStyle, parseGeneratedContent } from '../utils'

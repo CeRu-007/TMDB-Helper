@@ -1,10 +1,10 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
-import { Badge } from "@/components/common/badge"
+import { Badge } from "@/shared/components/ui/badge"
 import { ExternalLink, MousePointer2, Zap } from "lucide-react"
 import type { TMDBItem } from "@/lib/data/storage"
-import { Button } from "@/components/common/button"
+import { Button } from "@/shared/components/ui/button"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 

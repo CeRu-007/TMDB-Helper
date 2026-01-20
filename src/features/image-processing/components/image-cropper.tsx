@@ -1,13 +1,13 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/common/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/common/dialog"
-import { Switch } from "@/components/common/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
-import { Badge } from "@/components/common/badge"
-import { Progress } from "@/components/common/progress"
-import { useToast } from "@/lib/hooks/use-toast"
+import { Button } from "@/shared/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"
+import { Switch } from "@/shared/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Badge } from "@/shared/components/ui/badge"
+import { Progress } from "@/shared/components/ui/progress"
+import { useToast } from "@/shared/lib/hooks/use-toast"
 import { VisualCropEditor } from "./visual-crop-editor"
 import {
   Upload,

@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 智能帧选择器
  * 整合多层级分析策略，优化帧选择效果
  */
 
 import type { EnhancedFrameAnalysis } from './enhanced-frame-analyzer';
-import { SiliconFlowAPI, FrameAnalysisResult } from '@/lib/utils/siliconflow-api';
+import { SiliconFlowAPI, FrameAnalysisResult } from '@/shared/lib/utils/siliconflow-api';
 
 export interface SmartSelectionOptions {
   targetCount: number;

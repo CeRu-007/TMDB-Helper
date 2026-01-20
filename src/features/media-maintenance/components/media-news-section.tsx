@@ -1,11 +1,11 @@
-"use client"
+﻿"use client"
 
 import React from 'react'
-import { Card, CardContent } from '@/components/common/card'
-import { Badge } from '@/components/common/badge'
-import { Button } from '@/components/common/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/common/select'
-import { Alert, AlertDescription } from '@/components/common/alert'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { Badge } from '@/shared/components/ui/badge'
+import { Button } from '@/shared/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { 
   Loader2, 
   RefreshCw, 

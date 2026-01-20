@@ -1,13 +1,13 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { TMDBTable as BaseTMDBTable } from "@/features/media-maintenance/components/tmdb-table/tmdb-table"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/common/button"
+import { Button } from "@/shared/components/ui/button"
 import { Grid, LayoutGrid } from "lucide-react"
-import { Toggle } from "@/components/common/toggle"
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/common/tooltip"
-import { Separator } from "@/components/common/separator"
+import { Toggle } from "@/shared/components/ui/toggle"
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/shared/components/ui/tooltip"
+import { Separator } from "@/shared/components/ui/separator"
 import { TableHelpTooltip } from "../../common/table-help-tooltip"
 import { Trash2, Save } from "lucide-react"
 
@@ -15,7 +15,7 @@ import { Trash2, Save } from "lucide-react"
 import type { CSVData } from "@/types/csv-editor"
 
 // 导入TMDBTableProps类型并扩展
-import type { TMDBTableProps } from "@/components/features/media/tmdb-table"
+import type { TMDBTableProps } from "@/features/media-maintenance/components/tmdb-table/tmdb-table"
 export interface NewTMDBTableProps extends TMDBTableProps {
   onChange?: (newData: CSVData) => void
   onSave?: () => Promise<boolean | undefined>

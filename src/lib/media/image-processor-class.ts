@@ -1,11 +1,11 @@
-/**
+﻿/**
  * ImageProcessor类 - 图像处理工具
  * 使用单例模式实现，确保整个应用中只有一个实例
  * 集成硅基流动AI模型进行智能帧分析
  */
 
-import { log } from '@/lib/utils/logger'
-import { SiliconFlowAPI, FrameAnalysisResult, createSiliconFlowAPI } from '@/lib/utils/siliconflow-api'
+import { log } from '@/shared/lib/utils/logger'
+import { SiliconFlowAPI, FrameAnalysisResult, createSiliconFlowAPI } from '@/shared/lib/utils/siliconflow-api'
 import type { SmartSelectionOptions } from './smart-frame-selector'
 
 // 定义Worker类型

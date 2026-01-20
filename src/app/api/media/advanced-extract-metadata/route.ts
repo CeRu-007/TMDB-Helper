@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+﻿import { type NextRequest, NextResponse } from "next/server"
 import type { AdvancedExtractedMetadata, ExtractionConfig } from "@/lib/data/advanced-metadata-extractor"
 
 export async function POST(request: NextRequest) {

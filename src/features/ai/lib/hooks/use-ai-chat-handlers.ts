@@ -1,6 +1,6 @@
-import { useCallback } from 'react'
+﻿import { useCallback } from 'react'
 import { Message } from '@/types/ai-chat'
-import { validateSuggestions } from '@/lib/utils/ai-chat-helpers'
+import { validateSuggestions } from '@/features/ai/lib/utils/ai-chat-helpers'
 
 interface UseAiChatHandlersProps {
   messages: Message[]

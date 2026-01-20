@@ -1,12 +1,12 @@
-/**
+﻿/**
  * 通用设置面板
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Switch } from "@/components/common/switch"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Switch } from "@/shared/components/ui/switch"
 import { Database, Globe, Settings } from "lucide-react"
 import type { GeneralSettings } from "./types"
 

@@ -1,8 +1,8 @@
-"use client"
+﻿"use client"
 
 import React from 'react'
-import { Button } from '@/components/common/button'
-import { Badge } from '@/components/common/badge'
+import { Button } from '@/shared/components/ui/button'
+import { Badge } from '@/shared/components/ui/badge'
 import { 
   Settings, 
   AlarmClock, 
@@ -13,7 +13,7 @@ import {
   Moon
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { UserAvatar, useUser } from '@/components/features/auth/user-identity-provider'
+import { UserAvatar, useUser } from '@/shared/components/user-identity-provider'
 
 interface HomeHeaderProps {
   runningTasksCount: number

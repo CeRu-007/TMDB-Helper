@@ -1,14 +1,14 @@
-"use client"
+﻿"use client"
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react"
 import { createPortal } from "react-dom"
-import ImportDataDialog from "@/components/features/data/import-data-dialog"
-import ExportDataDialog from "@/components/features/data/export-data-dialog"
+import ImportDataDialog from "@/features/data/import-data-dialog"
+import ExportDataDialog from "@/features/data/export-data-dialog"
 import { UserManager, UserInfo } from "@/lib/auth/user-manager"
 import { formatUserDateTime } from "@/lib/utils"
-import { useAuth } from "@/components/features/auth/auth-provider"
-import { useIsClient } from "@/lib/hooks/use-is-client"
-import { useData } from "@/components/features/auth/client-data-provider"
+import { useAuth } from "@/shared/components/auth-provider"
+import { useIsClient } from "@/shared/lib/hooks/use-is-client"
+import { useData } from "@/shared/components/client-data-provider"
 import { useTheme } from "next-themes"
 import {
   User,
@@ -27,8 +27,8 @@ import {
   Sidebar
 } from "lucide-react"
 
-import { useToast } from "@/lib/hooks/use-toast"
-import { UserAvatarImage } from "@/components/common/smart-avatar"
+import { useToast } from "@/shared/lib/hooks/use-toast"
+import { UserAvatarImage } from "@/shared/components/ui/smart-avatar"
 
 /**
  * 用户身份提供者组件

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 设置对话框的左侧导航菜单
  */
 
@@ -11,8 +11,8 @@ import {
   Shield,
   HelpCircle,
 } from "lucide-react"
-import { Button } from "@/components/common/button"
-import { ScrollArea } from "@/components/common/scroll-area"
+import { Button } from "@/shared/components/ui/button"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
 
 interface SettingsMenuProps {
   activeSection: string

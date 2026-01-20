@@ -1,14 +1,14 @@
-import React, { useState } from "react"
+﻿import React, { useState } from "react"
 import {
   Download,
   Loader2,
   CheckCircle,
   XCircle
 } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
-import { Checkbox } from "@/components/common/checkbox"
-import { Label } from "@/components/common/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
+import { Checkbox } from "@/shared/components/ui/checkbox"
+import { Label } from "@/shared/components/ui/label"
 import { ExportConfigDialogProps } from './types'
 
 export function ExportConfigDialog({

@@ -1,11 +1,11 @@
-/**
+﻿/**
  * 账户安全设置面板
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
 import { Shield, Eye, EyeOff } from "lucide-react"
 import type { PasswordForm } from "./types"
 

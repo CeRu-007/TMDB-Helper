@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import { Button } from "@/components/common/button"
+import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Clock } from "lucide-react"
 

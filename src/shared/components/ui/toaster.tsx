@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import { useToast } from "@/lib/hooks/use-toast"
+import { useToast } from "@/shared/lib/hooks/use-toast"
 import {
   Toast,
   ToastClose,
@@ -8,7 +8,7 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from "@/components/common/toast"
+} from "@/shared/components/ui/toast"
 import { AlarmClock, CheckCircle2, Info, AlertTriangle, XCircle } from "lucide-react"
 
 export function Toaster() {

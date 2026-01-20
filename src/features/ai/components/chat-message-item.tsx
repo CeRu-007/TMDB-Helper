@@ -1,5 +1,5 @@
-import React from 'react'
-import { UserAvatarImage } from "@/components/common/smart-avatar"
+﻿import React from 'react'
+import { UserAvatarImage } from "@/shared/components/ui/smart-avatar"
 import { Bot } from "lucide-react"
 import { Message } from "@/types/ai-chat"
 import { MessageContent } from "./molecules/message-content"

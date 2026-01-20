@@ -1,15 +1,15 @@
-import React, { useState } from "react"
+﻿import React, { useState } from "react"
 import {
   Settings,
   Loader2,
   AlertCircle
 } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
-import { Badge } from "@/components/common/badge"
-import { useToast } from "@/components/common/use-toast"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
+import { Badge } from "@/shared/components/ui/badge"
+import { useToast } from "@/shared/components/ui/use-toast"
 import { EpisodeConfigClient } from "@/lib/media/episode-config-client"
-import { ClientConfigManager } from '@/lib/utils/client-config-manager'
+import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
 import { GenerationSettingsDialogProps } from './types'
 import { GENERATION_STYLES, TITLE_STYLES } from './constants'
 import { GenerationTab } from './tabs/GenerationTab'

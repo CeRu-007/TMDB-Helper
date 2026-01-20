@@ -1,13 +1,13 @@
-"use client"
+﻿"use client"
 
 import React from 'react'
-import { Card, CardContent } from '@/components/common/card'
-import { Badge } from '@/components/common/badge'
-import { Progress } from '@/components/common/progress'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/tabs'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { Badge } from '@/shared/components/ui/badge'
+import { Progress } from '@/shared/components/ui/progress'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { CheckCircle2, PlayCircle, Clock, Star } from 'lucide-react'
 import { WeekdayNavigation } from './weekday-navigation'
-import { useData } from '@/components/features/auth/client-data-provider'
+import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
 import MediaCard from '@/features/media-maintenance/components/media-card'
 import { UseHomeStateReturn } from '@/features/media-maintenance/lib/hooks/use-home-state'

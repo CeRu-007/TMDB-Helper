@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TaskExecutor - 任务执行协调器
  * 负责任务执行的协调、重试逻辑和错误处理
  */
@@ -6,7 +6,7 @@
 import { ScheduledTask, TMDBItem } from '../storage';
 import { StorageManager } from '../storage';
 import { taskExecutionLogger } from '../task-execution-logger';
-import { DistributedLock } from '@/lib/utils/distributed-lock';
+import { DistributedLock } from '@/shared/lib/utils/distributed-lock';
 import { TMDBImportWorkflow } from './tmdb-import-workflow';
 
 /**

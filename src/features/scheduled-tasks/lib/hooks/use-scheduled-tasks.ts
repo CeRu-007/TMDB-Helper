@@ -1,12 +1,12 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback } from 'react'
 import { ScheduledTask } from '@/lib/data/storage'
 import { StorageManager } from '@/lib/data/storage'
 import { taskScheduler } from '@/lib/data/task-scheduler'
-import { log } from '@/lib/utils/logger'
-import { handleError } from '@/lib/utils/error-handler'
-import { perf } from '@/lib/utils/performance-manager'
+import { log } from '@/shared/lib/utils/logger'
+import { handleError } from '@/shared/lib/utils/error-handler'
+import { perf } from '@/shared/lib/utils/performance-manager'
 
 interface UseScheduledTasksReturn {
   runningTasks: ScheduledTask[]

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import {
@@ -6,13 +6,13 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger
-} from "@/components/common/tabs"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Badge } from "@/components/common/badge"
+} from "@/shared/components/ui/tabs"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Badge } from "@/shared/components/ui/badge"
 import { useToast } from "@/shared/lib/hooks/use-toast"
-import { ClientConfigManager } from "@/lib/utils/client-config-manager"
+import { ClientConfigManager } from "@/shared/lib/utils/client-config-manager"
 import axios from "axios"
 import path from "path"
 import "@/styles/table-fix.css"
@@ -37,7 +37,7 @@ import {
 import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
 import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
 import { saveCSV } from "@/lib/data/csv-save-helper"
-import { LanguageSelector } from "@/components/common/language-selector"
+import { LanguageSelector } from "@/shared/components/ui/language-selector"
 
 interface IndependentMaintenanceProps {
   onShowSettingsDialog?: (section?: string) => void

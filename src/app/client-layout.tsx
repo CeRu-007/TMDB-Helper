@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { taskScheduler } from "@/lib/data/task-scheduler"
-import { logger } from "@/lib/utils/logger"
+import { logger } from "@/shared/lib/utils/logger"
 
 export default function ClientLayout({
   children,

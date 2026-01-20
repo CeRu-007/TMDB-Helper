@@ -1,15 +1,15 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useCallback, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/card'
-import { Button } from '@/components/common/button'
-import { Progress } from '@/components/common/progress'
-import { Badge } from '@/components/common/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/common/select'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Button } from '@/shared/components/ui/button'
+import { Progress } from '@/shared/components/ui/progress'
+import { Badge } from '@/shared/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Upload, Monitor, Search, Star, ExternalLink, Loader2, Image as ImageIcon, AlertCircle, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
-import { Switch } from '@/components/common/switch'
-import { toast } from '@/lib/hooks/use-toast'
+import { Switch } from '@/shared/components/ui/switch'
+import { toast } from '@/shared/lib/hooks/use-toast'
 import { cn } from '@/lib/utils'
 
 interface AnalysisProgress {

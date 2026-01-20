@@ -1,9 +1,9 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
-import { Button } from "@/components/common/button"
-import { Textarea } from "@/components/common/textarea"
-import { ScrollArea } from "@/components/common/scroll-area"
+import { Button } from "@/shared/components/ui/button"
+import { Textarea } from "@/shared/components/ui/textarea"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Download, Trash2, Edit3, Save, X, Type, Sparkles } from "lucide-react"
 
 interface SubtitleEntry {

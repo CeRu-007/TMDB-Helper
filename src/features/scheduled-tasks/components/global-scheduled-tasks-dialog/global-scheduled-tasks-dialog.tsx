@@ -1,13 +1,13 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
 
-import { Badge } from "@/components/common/badge"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/tabs"
+import { Badge } from "@/shared/components/ui/badge"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +17,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/common/alert-dialog"
+} from "@/shared/components/ui/alert-dialog"
 import {
   AlarmClock,
   Play,
@@ -55,8 +55,8 @@ import {
 } from "lucide-react"
 import { StorageManager, TMDBItem, ScheduledTask } from "@/lib/data/storage"
 import { taskScheduler } from "@/lib/data/task-scheduler"
-import { toast } from "@/components/common/use-toast"
-import { ToastAction } from "@/components/common/toast"
+import { toast } from "@/shared/components/ui/use-toast"
+import { ToastAction } from "@/shared/components/ui/toast"
 import ScheduledTaskDialog from "./scheduled-task-dialog"
 import { TaskExecutionLogsDialog } from "./task-execution-logs-dialog"
 
@@ -67,13 +67,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/common/select"
+} from "@/shared/components/ui/select"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/common/tooltip"
+} from "@/shared/components/ui/tooltip"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,8 +81,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/common/dropdown-menu"
-import { Progress } from "@/components/common/progress"
+} from "@/shared/components/ui/dropdown-menu"
+import { Progress } from "@/shared/components/ui/progress"
 import {
   Command,
   CommandEmpty,
@@ -90,7 +90,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/common/command"
+} from "@/shared/components/ui/command"
 import { cn } from "@/lib/utils"
 
 interface GlobalScheduledTasksDialogProps {

@@ -1,13 +1,13 @@
-import React from "react"
+﻿import React from "react"
 import {
   Film,
   Wand2,
   CheckCircle2
 } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
-import { Label } from "@/components/common/label"
-import { Input } from "@/components/common/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
+import { Label } from "@/shared/components/ui/label"
+import { Input } from "@/shared/components/ui/input"
 import { VideoAnalysisResultDialogProps } from './types'
 
 export function VideoAnalysisResultDialog({

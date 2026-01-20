@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import {
@@ -6,25 +6,25 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle
-} from "@/components/common/dialog"
+} from "@/shared/components/ui/dialog"
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger
-} from "@/components/common/tabs"
+} from "@/shared/components/ui/tabs"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle
-} from "@/components/common/card"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Badge } from "@/components/common/badge"
-import { useToast } from "@/components/common/use-toast"
+} from "@/shared/components/ui/card"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Badge } from "@/shared/components/ui/badge"
+import { useToast } from "@/shared/components/ui/use-toast"
 import {
   CheckCircle2,
   XCircle,
@@ -49,13 +49,13 @@ import path from "path"
 // 导入新版表格组件
 import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
 import { TMDBItem } from "@/lib/data/storage"
-import { LanguageSelector } from "@/components/common/language-selector"
+import { LanguageSelector } from "@/shared/components/ui/language-selector"
 import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
 import { saveCSV, handleSaveError } from "@/lib/data/csv-save-helper"
 import { validateCsvData, fixCsvData } from "@/lib/data/csv-validator"
 import FixTMDBImportBugDialog from "../dialogs/fix-tmdb-import-bug-dialog"
 import axios from "axios"
-import { ClientConfigManager } from "@/lib/utils/client-config-manager"
+import { ClientConfigManager } from "@/shared/lib/utils/client-config-manager"
 
 // 定义显式空值标记常量
 export const EXPLICIT_EMPTY_VALUE = "__EMPTY__"

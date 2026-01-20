@@ -1,5 +1,5 @@
-import React from "react"
-import { useToast } from "@/components/common/use-toast"
+﻿import React from "react"
+import { useToast } from "@/shared/components/ui/use-toast"
 import { GenerationConfig } from '../types'
 import { GENERATION_STYLES } from '../constants'
 

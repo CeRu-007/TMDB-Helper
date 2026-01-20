@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect, useRef, useCallback } from "react"
 import {
@@ -26,8 +26,8 @@ import {
   Type
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/common/button"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/common/collapsible"
+import { Button } from "@/shared/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible"
 
 export interface SidebarNavigationProps {
   onMenuSelect: (menuId: string, submenuId?: string) => void

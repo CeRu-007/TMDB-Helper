@@ -1,16 +1,16 @@
-"use client"
+﻿"use client"
 
 import { ReactNode, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { ThemeProvider } from "next-themes"
-import { DataProvider } from "@/components/features/auth/client-data-provider"
-import { UserIdentityProvider } from "@/components/features/auth/user-identity-provider"
-import { AuthProvider, AuthGuard } from "@/components/features/auth/auth-provider"
-import { Toaster } from "@/components/common/toaster"
+import { DataProvider } from "@/shared/components/client-data-provider"
+import { UserIdentityProvider } from "@/shared/components/user-identity-provider"
+import { AuthProvider, AuthGuard } from "@/shared/components/auth-provider"
+import { Toaster } from "@/shared/components/ui/toaster"
 import { ModelServiceProvider } from "@/lib/contexts/ModelServiceContext"
 
 import { suppressRefWarnings } from "@/lib/utils"
-import { ConfigMigration } from "@/lib/utils/config-migration"
+import { ConfigMigration } from "@/shared/lib/utils/config-migration"
 
 export default function MidLayout({
   children,

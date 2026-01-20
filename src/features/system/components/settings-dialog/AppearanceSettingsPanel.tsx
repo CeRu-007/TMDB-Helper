@@ -1,12 +1,12 @@
-/**
+﻿/**
  * 外观设置面板
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button } from "@/components/common/button"
-import { Label } from "@/components/common/label"
-import { Switch } from "@/components/common/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Label } from "@/shared/components/ui/label"
+import { Switch } from "@/shared/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Palette, Sun, Moon, Monitor } from "lucide-react"
 import type { AppearanceSettings } from "./types"
 

@@ -1,15 +1,15 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import { Globe } from "lucide-react"
-import { Button } from "@/components/common/button"
+import { Button } from "@/shared/components/ui/button"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/common/select"
+} from "@/shared/components/ui/select"
 
 export interface Language {
   name: string

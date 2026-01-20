@@ -1,10 +1,10 @@
-"use client"
+﻿"use client"
 
 import React from "react"
 import { AlertCircle, CheckCircle2, Loader2, XCircle, Clock, Film, Wand2, FileText } from "lucide-react"
-import { Progress } from "@/components/common/progress"
-import { Alert, AlertDescription } from "@/components/common/alert"
-import { Badge } from "@/components/common/badge"
+import { Progress } from "@/shared/components/ui/progress"
+import { Alert, AlertDescription } from "@/shared/components/ui/alert"
+import { Badge } from "@/shared/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 export interface VideoAnalysisStep {

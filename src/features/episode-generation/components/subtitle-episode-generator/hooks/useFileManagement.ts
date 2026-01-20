@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { useToast } from '@/components/common/use-toast'
+﻿import { useState, useCallback } from 'react'
+import { useToast } from '@/shared/components/ui/use-toast'
 import { SubtitleFile } from '../types'
 import { parseSubtitleFile } from '../utils'
 

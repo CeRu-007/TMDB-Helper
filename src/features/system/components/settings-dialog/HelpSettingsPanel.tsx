@@ -1,9 +1,9 @@
-/**
+﻿/**
  * 帮助与支持面板
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { Button } from "@/components/common/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
 import { Info, HelpCircle, ExternalLink, ChevronUp, ChevronDown } from "lucide-react"
 import type { AppInfo, HelpTabState } from "./types"
 

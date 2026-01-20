@@ -1,18 +1,18 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from 'react'
-import AddItemDialog from '@/components/features/dialogs/add-item-dialog'
-import SettingsDialog from '@/components/features/dialogs/settings-dialog/SettingsDialog'
-import ItemDetailDialog from '@/components/features/media/item-detail-dialog'
-import ScheduledTaskDialog from '@/components/features/scheduled-tasks/scheduled-task-dialog'
-import GlobalScheduledTasksDialog from '@/components/features/scheduled-tasks/global-scheduled-tasks-dialog'
-import { TaskExecutionLogsDialog } from '@/components/features/scheduled-tasks/task-execution-logs-dialog'
-import ImportDataDialog from '@/components/features/data/import-data-dialog'
-import ExportDataDialog from '@/components/features/data/export-data-dialog'
+import AddItemDialog from '@/features/media-maintenance/components/add-item-dialog'
+import SettingsDialog from '@/features/system/components/settings-dialog/SettingsDialog'
+import ItemDetailDialog from '@/features/media-maintenance/components/item-detail-dialog'
+import ScheduledTaskDialog from '@/features/scheduled-tasks/components/scheduled-task-dialog'
+import GlobalScheduledTasksDialog from '@/features/scheduled-tasks/components/global-scheduled-tasks-dialog/global-scheduled-tasks-dialog'
+import { TaskExecutionLogsDialog } from '@/features/scheduled-tasks/components/task-execution-logs-dialog'
+import ImportDataDialog from '@/features/data-management/components/import-data-dialog'
+import ExportDataDialog from '@/features/data-management/components/export-data-dialog'
 import { UseHomeStateReturn } from '@/features/media-maintenance/lib/hooks/use-home-state'
-import { useData } from '@/components/features/auth/client-data-provider'
+import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
-import { toast } from '@/components/common/use-toast'
+import { toast } from '@/shared/components/ui/use-toast'
 
 interface HomeDialogsProps {
   homeState: UseHomeStateReturn

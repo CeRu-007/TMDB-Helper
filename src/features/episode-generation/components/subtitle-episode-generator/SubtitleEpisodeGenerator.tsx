@@ -1,12 +1,12 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { TooltipProvider } from "@/components/common/tooltip"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
+import { TooltipProvider } from "@/shared/components/ui/tooltip"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
 import { Upload, Sparkles, AlertCircle } from "lucide-react"
-import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
-import { useToast } from "@/components/common/use-toast"
+import { useScenarioModels } from "@/shared/lib/hooks/useScenarioModels"
+import { useToast } from "@/shared/components/ui/use-toast"
 
 // 导入类型和常量
 import { ExportConfig } from './types'

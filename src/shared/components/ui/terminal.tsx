@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from "react"
-import { Input } from "@/components/common/input"
-import { Button } from "@/components/common/button"
-import { ScrollArea } from "@/components/common/scroll-area"
+﻿import React, { useState, useRef, useEffect, useCallback } from "react"
+import { Input } from "@/shared/components/ui/input"
+import { Button } from "@/shared/components/ui/button"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import {
   ChevronRight,
@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/common/dropdown-menu"
+} from "@/shared/components/ui/dropdown-menu"
 
 interface TerminalProps {
   processId: number | null

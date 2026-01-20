@@ -1,7 +1,7 @@
-import React, { useRef } from 'react'
-import { Button } from "@/components/common/button"
-import { Badge } from "@/components/common/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
+﻿import React, { useRef } from 'react'
+import { Button } from "@/shared/components/ui/button"
+import { Badge } from "@/shared/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { AutoResizeTextarea } from "./auto-resize-textarea"
 import {
   Send,
@@ -14,7 +14,7 @@ import {
   Upload
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { SUPPORTED_SUBTITLE_FORMATS } from "@/lib/utils/ai-chat-constants"
+import { SUPPORTED_SUBTITLE_FORMATS } from "@/features/ai/lib/utils/ai-chat-constants"
 
 interface ChatInputProps {
   inputValue: string

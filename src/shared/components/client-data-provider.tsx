@@ -1,7 +1,7 @@
-"use client"
+﻿"use client"
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
-import { useIsClient } from "@/lib/hooks/use-is-client"
+import { useIsClient } from "@/shared/lib/hooks/use-is-client"
 import { StorageManager, TMDBItem } from "@/lib/data/storage"
 import { realtimeSyncManager } from "@/lib/data/realtime-sync-manager"
 

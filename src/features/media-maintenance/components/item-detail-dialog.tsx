@@ -1,19 +1,19 @@
 ﻿"use client"
 
 import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react"
-import { useData } from "@/components/features/auth/client-data-provider"
-import { RealtimeStatusIndicator } from "@/components/common/realtime-status-indicator"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/common/dialog"
-import { Button } from "@/components/common/button"
-import { Badge } from "@/components/common/badge"
-import { Progress } from "@/components/common/progress"
-import { Checkbox, EpisodeCheckbox } from "@/components/common/checkbox"
-import { Input } from "@/components/common/input"
-import { Label } from "@/components/common/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/card"
-import { ScrollArea } from "@/components/common/scroll-area"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/tabs"
+import { useData } from "@/shared/components/client-data-provider"
+import { RealtimeStatusIndicator } from "@/shared/components/ui/realtime-status-indicator"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/components/ui/dialog"
+import { Button } from "@/shared/components/ui/button"
+import { Badge } from "@/shared/components/ui/badge"
+import { Progress } from "@/shared/components/ui/progress"
+import { Checkbox, EpisodeCheckbox } from "@/shared/components/ui/checkbox"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogNoOverlay,
   AlertDialogNoOverlayContent,
-} from "@/components/common/alert-dialog"
+} from "@/shared/components/ui/alert-dialog"
 import {
   Copy,
   ExternalLink,
@@ -101,24 +101,24 @@ import {
   Play,
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/data/storage"
-import TMDBImportIntegrationDialog from "@/components/features/tmdb/tmdb-import-integration-dialog"
-import ScheduledTaskDialog from "@/components/features/scheduled-tasks/scheduled-task-dialog"
+import TMDBImportIntegrationDialog from "@/features/tmdb/tmdb-import-integration-dialog"
+import ScheduledTaskDialog from "@/features/scheduled-tasks/scheduled-task-dialog"
 import type { TMDBSeasonData, BackdropSize } from "@/lib/tmdb/tmdb-types"
-import FixTMDBImportBugDialog from "@/components/features/dialogs/fix-tmdb-import-bug-dialog"
-import { toast } from "@/components/common/use-toast"
+import FixTMDBImportBugDialog from "@/features/tmdb-import/components/fix-tmdb-import-bug-dialog"
+import { toast } from "@/shared/components/ui/use-toast"
 import { StorageManager } from "@/lib/data/storage"
 
 import { getPlatformInfo } from "@/lib/utils"
-import { PlatformLogo } from "@/components/common/platform-icon"
+import { PlatformLogo } from "@/shared/components/ui/platform-icon"
 import { Skeleton } from "./ui/skeleton"
 import { cn } from "@/lib/utils"
 import { safeJsonParse } from "@/lib/utils"
-import { BackgroundImage } from "@/components/common/background-image"
-import { CachedImage } from "@/components/common/cached-image"
-import { useItemImagesPreloader } from "@/lib/hooks/useItemImagesPreloader"
+import { BackgroundImage } from "@/shared/components/ui/background-image"
+import { CachedImage } from "@/shared/components/ui/cached-image"
+import { useItemImagesPreloader } from "@/shared/lib/hooks/useItemImagesPreloader"
 
-import { ClientConfigManager } from "@/lib/utils/client-config-manager"
-import { LanguageSelector } from "@/components/common/language-selector"
+import { ClientConfigManager } from "@/shared/lib/utils/client-config-manager"
+import { LanguageSelector } from "@/shared/components/ui/language-selector"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
