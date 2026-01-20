@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import { useState, useCallback, useRef } from "react"
-import { VideoProcessor, type ProcessProgress } from "@/features/image-processing/lib/video-processor"
+import { VideoProcessor, type ProcessProgress } from "@/lib/media/video-processor"
 
 interface BoundingBox {
   id: string

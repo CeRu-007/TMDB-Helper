@@ -57,8 +57,8 @@ import { StorageManager, TMDBItem, ScheduledTask } from "@/lib/data/storage"
 import { taskScheduler } from "@/lib/data/task-scheduler"
 import { toast } from "@/shared/components/ui/use-toast"
 import { ToastAction } from "@/shared/components/ui/toast"
-import ScheduledTaskDialog from "./scheduled-task-dialog"
-import { TaskExecutionLogsDialog } from "./task-execution-logs-dialog"
+import ScheduledTaskDialog from "../scheduled-task-dialog"
+import { TaskExecutionLogsDialog } from "../task-execution-logs-dialog"
 
 import { v4 as uuidv4 } from "uuid"
 import { 

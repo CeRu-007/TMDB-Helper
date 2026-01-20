@@ -1,4 +1,4 @@
-﻿import StreamingPlatformNav from '@/features/streaming-platforms/streaming-platform-nav';
+﻿import StreamingPlatformNav from '@/features/streaming-nav/components/streaming-platform-nav';
 
 export default function StreamingNavPage() {
   return <StreamingPlatformNav />;

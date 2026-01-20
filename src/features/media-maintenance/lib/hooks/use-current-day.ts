@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useIsClient } from './use-is-client'
+import { useIsClient } from '@/shared/lib/hooks/use-is-client'
 
 export interface UseCurrentDayReturn {
   currentDay: number

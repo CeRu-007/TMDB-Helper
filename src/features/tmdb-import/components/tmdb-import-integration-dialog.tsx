@@ -53,7 +53,7 @@ import { LanguageSelector } from "@/shared/components/ui/language-selector"
 import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
 import { saveCSV, handleSaveError } from "@/lib/data/csv-save-helper"
 import { validateCsvData, fixCsvData } from "@/lib/data/csv-validator"
-import FixTMDBImportBugDialog from "../dialogs/fix-tmdb-import-bug-dialog"
+import FixTMDBImportBugDialog from "./fix-tmdb-import-bug-dialog"
 import axios from "axios"
 import { ClientConfigManager } from "@/shared/lib/utils/client-config-manager"
 

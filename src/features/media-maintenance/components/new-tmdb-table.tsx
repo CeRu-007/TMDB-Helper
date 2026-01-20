@@ -8,7 +8,7 @@ import { Grid, LayoutGrid } from "lucide-react"
 import { Toggle } from "@/shared/components/ui/toggle"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/shared/components/ui/tooltip"
 import { Separator } from "@/shared/components/ui/separator"
-import { TableHelpTooltip } from "../../common/table-help-tooltip"
+import { TableHelpTooltip } from "../../../shared/components/ui/table-help-tooltip"
 import { Trash2, Save } from "lucide-react"
 
 // 导入CSV数据类型

@@ -5,7 +5,7 @@
  */
 
 import { log } from '@/shared/lib/utils/logger'
-import { SiliconFlowAPI, FrameAnalysisResult, createSiliconFlowAPI } from '@/shared/lib/utils/siliconflow-api'
+import { SiliconFlowAPI, FrameAnalysisResult, createSiliconFlowAPI } from '@/lib/utils/siliconflow-api'
 import type { SmartSelectionOptions } from './smart-frame-selector'
 
 // 定义Worker类型

@@ -61,7 +61,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/toggle-group"
-import { ImageProcessor } from "@/features/image-processing/lib/image-processor-class"
+import { ImageProcessor } from "@/lib/media/image-processor-class"
 
 // 视频文件接口
 interface VideoFile {

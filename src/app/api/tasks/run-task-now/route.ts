@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server"
-import { taskScheduler } from "@/lib/data/scheduler"
+import { taskScheduler } from "@/lib/data/task-scheduler/scheduler"
 
 /**
  * POST /api/tasks/run-task-now - 立即执行指定的定时任务

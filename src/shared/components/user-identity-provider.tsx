@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react"
 import { createPortal } from "react-dom"
-import ImportDataDialog from "@/features/data/import-data-dialog"
-import ExportDataDialog from "@/features/data/export-data-dialog"
+import ImportDataDialog from "@/features/data-management/components/import-data-dialog"
+import ExportDataDialog from "@/features/data-management/components/export-data-dialog"
 import { UserManager, UserInfo } from "@/lib/auth/user-manager"
 import { formatUserDateTime } from "@/lib/utils"
 import { useAuth } from "@/shared/components/auth-provider"

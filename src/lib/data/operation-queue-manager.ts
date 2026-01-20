@@ -6,7 +6,7 @@
 'use client';
 
 import { TMDBItem } from './storage';
-import { DistributedLock } from '@/shared/lib/utils/distributed-lock';
+import { DistributedLock } from '@/lib/utils/distributed-lock';
 
 export interface QueuedOperation {
   id: string;

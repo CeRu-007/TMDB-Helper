@@ -1,7 +1,7 @@
 ﻿import fs from 'fs';
 import path from 'path';
 import { ScheduledTask } from './storage';
-import { stringifyAuto } from '@/shared/lib/utils/readable-compact-json';
+import { stringifyAuto } from '@/lib/utils/readable-compact-json';
 
 // 获取用户数据目录
 function getUserDataDir(userId: string = 'user_admin_system'): string {

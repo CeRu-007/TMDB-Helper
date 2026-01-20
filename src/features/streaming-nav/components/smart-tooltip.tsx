@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { type Platform } from '@/features/image-processing/lib/platform-data';
+import { type Platform } from '@/lib/media/platform-data';
 
 interface SmartTooltipProps {
   platform: Platform;

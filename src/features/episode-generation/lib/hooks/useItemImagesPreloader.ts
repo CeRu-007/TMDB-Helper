@@ -1,5 +1,5 @@
 ﻿import { useEffect } from 'react'
-import { imagePreloaderService } from '@/features/image-processing/lib/image-preloader-service'
+import { imagePreloaderService } from '@/lib/media/image-preloader-service'
 
 interface ItemImages {
   backdropUrl?: string

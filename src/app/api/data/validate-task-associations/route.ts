@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-import { taskScheduler } from '@/lib/data/scheduler';
+import { taskScheduler } from '@/lib/data/task-scheduler/scheduler';
 
 /**
  * POST /api/validate-task-associations - 验证和修复所有任务的关联

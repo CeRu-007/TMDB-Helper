@@ -11,7 +11,7 @@ import {
   getFilteredPlatforms, 
   type CategoryType, 
   type Platform 
-} from '@/features/image-processing/lib/platform-data';
+} from '@/lib/media/platform-data';
 import {
   DndContext,
   closestCenter,

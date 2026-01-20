@@ -9,7 +9,7 @@ import { TaskManager } from './task-manager';
 import { TimerManager } from './timer-manager';
 import { ProjectManager } from './project-manager';
 import { TaskExecutor } from './task-executor';
-import { DistributedLock } from '@/shared/lib/utils/distributed-lock';
+import { DistributedLock } from '@/lib/utils/distributed-lock';
 import { configManager } from '@/shared/lib/utils/config-manager';
 import { performanceMonitor } from '@/shared/lib/utils/performance-monitor';
 // import { StorageSyncManager } from '../storage-sync-manager'; // 该模块不存在，已注释

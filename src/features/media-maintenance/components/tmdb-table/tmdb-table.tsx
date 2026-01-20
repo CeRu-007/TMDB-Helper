@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/lib/utils"
-import TableContextMenu from "../../common/table-context-menu"
-import BatchInsertRowDialog from "../dialogs/batch-insert-row-dialog"
+import TableContextMenu from "../../../../shared/components/ui/table-context-menu"
+import BatchInsertRowDialog from "../batch-insert-row-dialog"
 import { 
   Plus, 
   Minus, 
