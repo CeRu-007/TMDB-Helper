@@ -47,13 +47,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
     systemUserId: null
   })
-  
+
+  const [skipAuthCheck, setSkipAuthCheck] = useState(false)
+
   const router = useRouter()
 
   /**
    * 检查认证状态
    */
   const checkAuth = async () => {
+    if (skipAuthCheck) {
+      return
+    }
+
     // 检查是否是桌面应用环境
     const isElectron = typeof window !== 'undefined' && (
       navigator.userAgent.includes('Electron') ||
@@ -104,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         systemUserId: null
       })
     } catch (error) {
-      
+
       setAuthState({
         user: null,
         isLoading: false,
@@ -117,65 +123,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /**
    * 用户登录
    */
-  const login = async (username: string, password: string, rememberMe: boolean = false): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ username, password, rememberMe })
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        // 异步记录最近一次成功登录的用户名（仅用户名；密码只在本地安全存储）
-        try {
-          void fetch('/api/system/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', key: 'last_login_username', value: username }) })
-        } catch {}
-        setAuthState({
-          user: data.user,
-          isLoading: false,
-          isAuthenticated: true,
-          systemUserId: 'user_admin_system' // 固定的系统用户ID
+    const login = async (username: string, password: string, rememberMe: boolean = false): Promise<boolean> => {
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({ username, password, rememberMe })
         })
-        return true
-      } else {
-        
+  
+        const data = await response.json()
+  
+        if (response.ok && data.success) {
+          // 异步记录最近一次成功登录的用户名（仅用户名；密码只在本地安全存储）
+          try {
+            void fetch('/api/system/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set', key: 'last_login_username', value: username }) })
+          } catch {}
+          setSkipAuthCheck(true)
+          setAuthState({
+            user: data.user,
+            isLoading: false,
+            isAuthenticated: true,
+            systemUserId: 'user_admin_system'
+          })
+          return true
+        } else {
+  
+          return false
+        }
+      } catch (error) {
+  
         return false
       }
-    } catch (error) {
-      
-      return false
     }
-  }
-
   /**
    * 用户登出
    */
-  const logout = async () => {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
+    const logout = async () => {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        })
+      } catch (error) {
+  
+      }
+  
+      setSkipAuthCheck(false)
+      setAuthState({
+        user: null,
+        isLoading: false,
+        isAuthenticated: false,
+        systemUserId: null
       })
-    } catch (error) {
-      
+  
+      router.push('/login')
     }
-
-    setAuthState({
-      user: null,
-      isLoading: false,
-      isAuthenticated: false,
-      systemUserId: null
-    })
-
-    // 重定向到登录页
-    router.push('/login')
-  }
-
   /**
    * 修改密码
    */
