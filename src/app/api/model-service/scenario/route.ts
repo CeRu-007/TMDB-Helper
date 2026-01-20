@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { ModelServiceStorage } from '@/lib/data/model-service-storage'
 
 export async function GET(request: NextRequest) {

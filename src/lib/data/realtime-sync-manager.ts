@@ -1,11 +1,11 @@
-/**
+﻿/**
  * 实时同步管理器
  * 负责处理客户端与服务端的实时数据同步
  */
 
 import { TMDBItem, ScheduledTask } from './storage';
-import { performanceMonitor } from '@/lib/utils/performance-monitor';
-import { errorRecoveryManager } from '@/lib/utils/error-recovery-manager';
+import { performanceMonitor } from '@/shared/lib/utils/performance-monitor';
+import { errorRecoveryManager } from '@/shared/lib/utils/error-recovery-manager';
 
 export type DataChangeEvent = {
   type:

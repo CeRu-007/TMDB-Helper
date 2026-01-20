@@ -1,16 +1,16 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { useAuth } from '@/components/features/auth/auth-provider'
-import { ClientConfigManager } from '@/lib/utils/client-config-manager'
+import { useAuth } from '@/shared/components/auth-provider'
+import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
 import { saveRemember, loadRemember, clearRemember } from '@/lib/auth/secure-remember'
-import { Button } from '@/components/common/button'
-import { Input } from '@/components/common/input'
-import { Label } from '@/components/common/label'
-import { Checkbox } from '@/components/common/checkbox'
-import { Alert, AlertDescription } from '@/components/common/alert'
+import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
+import { Checkbox } from '@/shared/components/ui/checkbox'
+import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import {
   Eye,
   EyeOff,

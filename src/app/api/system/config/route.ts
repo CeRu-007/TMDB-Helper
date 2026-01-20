@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { ServerConfigManager, ServerConfig } from '@/lib/data/server-config-manager'
 
 // 配置缓存机制

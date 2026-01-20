@@ -1,11 +1,11 @@
-"use client"
+﻿"use client"
 
 import { useEffect } from "react"
 import { ThemeProvider } from "next-themes"
-import { DataProvider } from "@/components/features/auth/client-data-provider"
-import { Toaster } from "@/components/common/toaster"
+import { DataProvider } from "@/shared/components/client-data-provider"
+import { Toaster } from "@/shared/components/ui/toaster"
 import { taskScheduler } from "@/lib/data/task-scheduler"
-import { logger } from "@/lib/utils/logger"
+import { logger } from "@/shared/lib/utils/logger"
 
 export default function FinalLayout({
   children,

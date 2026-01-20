@@ -1,9 +1,9 @@
-'use client'
+﻿'use client'
 
 import { useEffect } from 'react'
-import { Button } from "@/components/common/button"
+import { Button } from "@/shared/components/ui/button"
 import Link from "next/link"
-import { logger } from "@/lib/utils/logger"
+import { logger } from "@/shared/lib/utils/logger"
 
 export default function Error({
   error,

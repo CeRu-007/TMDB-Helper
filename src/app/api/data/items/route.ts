@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 // import { readUserItems } from '@/lib/user-aware-storage'; // 替换为StorageManager
 import { StorageManager } from '@/lib/data/storage';
 import { getUserIdFromRequest } from '@/lib/auth/user-utils';
