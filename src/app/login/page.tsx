@@ -97,6 +97,7 @@ export default function LoginPage() {
             clearRemember()
           }
         } catch {}
+        await new Promise(resolve => setTimeout(resolve, 100))
         router.replace('/')
       } else {
         setError('用户名或密码错误')
