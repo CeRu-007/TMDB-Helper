@@ -10,22 +10,7 @@ export class AuthMiddleware {
    */
   static async verifyRequest(request: NextRequest): Promise<{ success: boolean; userId?: string; error?: string }> {
     try {
-      // 检查是否是桌面应用环境
-      const userAgent = request.headers.get('user-agent') || '';
-      const isElectron = userAgent.includes('Electron') ||
-                        userAgent.includes('TMDB-Helper-Electron') ||
-                        process.env.ELECTRON_BUILD === 'true';
-
-      // 如果是桌面应用，直接返回认证成功
-      if (isElectron) {
-        
-        return {
-          success: true,
-          userId: AuthManager.getSystemUserId()
-        };
-      }
-
-      // 非桌面应用的正常认证流程
+      // 获取 token
       const token = request.cookies.get('auth-token')?.value;
 
       if (!token) {
@@ -44,9 +29,9 @@ export class AuthMiddleware {
         return { success: false, error: '用户不存在' };
       }
 
-      return { 
-        success: true, 
-        userId: AuthManager.getSystemUserId() 
+      return {
+        success: true,
+        userId: AuthManager.getSystemUserId()
       };
 
     } catch (error) {

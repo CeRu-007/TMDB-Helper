@@ -1,31 +1,74 @@
 // Client-side secure remember utility (username/password)
 // Stores data only in the browser; never sends password to server.
-// Uses Web Crypto (AES-GCM) if available; falls back to no-op for password
-// to avoid insecure plaintext storage unless explicitly allowed.
+// Uses Web Crypto (AES-GCM) with user-specific key derivation for enhanced security.
 
 import { storageService } from '../storage/storage-service'
 
 const USERNAME_KEY = 'last_login_username'
 const PASSWORD_KEY = 'last_login_password_enc'
 const REMEMBER_KEY = 'last_login_remember_me'
+const USER_SALT_KEY = 'tmdb_helper_user_salt'
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined' && typeof window.crypto !== 'undefined'
 }
 
+/**
+ * 获取或生成用户特定的盐值
+ */
+function getUserSalt(): string {
+  if (!isBrowser()) return ''
+
+  let salt = storageService.get<string>(USER_SALT_KEY, '')
+  if (!salt) {
+    // 生成随机盐值
+    const array = new Uint8Array(32)
+    window.crypto.getRandomValues(array)
+    salt = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+    storageService.set(USER_SALT_KEY, salt)
+  }
+  return salt
+}
+
+/**
+ * 派生用户特定的加密密钥
+ * 使用 PBKDF2 从用户盐值和 origin 派生密钥
+ */
 async function getKey(): Promise<CryptoKey | null> {
   if (!isBrowser() || !window.crypto?.subtle) return null
-  // Derive a per-origin key using a static salt; in real-world, derive from a user secret
-  const base = `${location.origin}-tmdb-helper-remember`
-  const enc = new TextEncoder().encode(base)
-  const hash = await window.crypto.subtle.digest('SHA-256', enc)
-  return window.crypto.subtle.importKey(
-    'raw',
-    hash,
-    { name: 'AES-GCM' },
-    false,
-    ['encrypt', 'decrypt']
-  )
+
+  try {
+    const salt = getUserSalt()
+    if (!salt) return null
+
+    // 使用 origin + 用户盐值作为基础
+    const base = `${location.origin}-${salt}`
+    const enc = new TextEncoder().encode(base)
+
+    // 使用 PBKDF2 派生密钥，增加计算成本以提高安全性
+    const keyMaterial = await window.crypto.subtle.importKey(
+      'raw',
+      enc,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveKey']
+    )
+
+    return window.crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: enc,
+        iterations: 100000, // 高迭代次数增加暴力破解难度
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    )
+  } catch (error) {
+    return null
+  }
 }
 
 export async function saveRemember(username: string, password: string, remember: boolean): Promise<void> {

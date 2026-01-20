@@ -40,9 +40,54 @@ export interface LoginRequest {
 export class AuthManager {
   private static readonly AUTH_DIR = path.join(process.cwd(), 'data', 'auth');
   private static readonly AUTH_FILE = path.join(AuthManager.AUTH_DIR, 'admin.json');
-  private static readonly JWT_SECRET = process.env.JWT_SECRET || 'tmdb-helper-default-secret-change-in-production';
+  private static _jwtSecret: string | null = null;
   private static readonly DEFAULT_SESSION_EXPIRY_DAYS = 15;
   private static readonly ADMIN_USER_ID = 'admin';
+
+  /**
+   * 获取 JWT Secret，强制要求在生产环境中配置
+   */
+  private static getJwtSecret(): string {
+    // 使用缓存避免重复计算
+    if (AuthManager._jwtSecret !== null) {
+      return AuthManager._jwtSecret;
+    }
+
+    const secret = process.env.JWT_SECRET;
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (!secret) {
+      if (isProduction) {
+        throw new Error(
+          'JWT_SECRET environment variable is required in production. ' +
+          'Please set a strong, random secret key.'
+        );
+      }
+      // 开发环境使用警告但允许运行（仅用于开发）
+      console.warn(
+        'WARNING: Using default JWT_SECRET for development only. ' +
+        'Set JWT_SECRET environment variable for production use.'
+      );
+      AuthManager._jwtSecret = 'tmdb-helper-dev-secret-change-in-production';
+      return AuthManager._jwtSecret;
+    }
+
+    // 检查是否使用了默认的弱密钥
+    if (secret === 'tmdb-helper-default-secret-change-in-production') {
+      if (isProduction) {
+        throw new Error(
+          'JWT_SECRET must be changed from the default value in production. ' +
+          'Please set a strong, random secret key.'
+        );
+      }
+      console.warn(
+        'WARNING: Using default JWT_SECRET. This is insecure for production.'
+      );
+    }
+
+    AuthManager._jwtSecret = secret;
+    return AuthManager._jwtSecret;
+  }
 
   /**
    * 确保认证目录存在
@@ -193,7 +238,7 @@ export class AuthManager {
       username: user.username
     };
 
-    return jwt.sign(payload, AuthManager.JWT_SECRET, { expiresIn });
+    return jwt.sign(payload, AuthManager.getJwtSecret(), { expiresIn });
   }
 
   /**
@@ -201,10 +246,10 @@ export class AuthManager {
    */
   static verifyToken(token: string): AuthToken | null {
     try {
-      const decoded = jwt.verify(token, AuthManager.JWT_SECRET) as AuthToken;
+      const decoded = jwt.verify(token, AuthManager.getJwtSecret()) as AuthToken;
       return decoded;
     } catch (error) {
-      
+
       return null;
     }
   }
@@ -232,15 +277,18 @@ export class AuthManager {
   /**
    * 初始化管理员用户（从环境变量）
    * 行为：
-   * - 若不存在管理员用户：优先用环境变量创建，否则创建默认 admin/admin
+   * - 若不存在管理员用户：
+   *   - 生产环境：必须使用环境变量创建
+   *   - 开发环境：优先使用环境变量，否则使用默认 admin/admin
    * - 若已存在管理员用户且提供了环境变量：
    *   - 如 ADMIN_FORCE_OVERRIDE=true，或用户名不同，或密码不同，则用环境变量覆盖并保存
    */
   static async initializeFromEnv(): Promise<boolean> {
     const envUsername = process.env.ADMIN_USERNAME;
     const envPassword = process.env.ADMIN_PASSWORD;
-    const forceOverride = (process.env.ADMIN_FORCE_OVERRIDE || '').toLowerCase() === 'true'
-
+    const forceOverride = (process.env.ADMIN_FORCE_OVERRIDE || '').toLowerCase() === 'true';
+    const isProduction = process.env.NODE_ENV === 'production';
+  
     // 已存在用户时，根据环境变量决定是否覆盖
     if (AuthManager.hasAdminUser()) {
       if (envUsername || envPassword) {
@@ -249,7 +297,7 @@ export class AuthManager {
           let needOverride = forceOverride
           let nextUsername = current.username
           let nextPasswordHash = current.passwordHash
-
+  
           if (!needOverride) {
             try {
               const usernameDiffers = !!envUsername && current.username !== envUsername
@@ -259,12 +307,12 @@ export class AuthManager {
               needOverride = true
             }
           }
-
+  
           if (needOverride) {
-            
+  
             if (envUsername) nextUsername = envUsername
             if (envPassword) nextPasswordHash = await bcrypt.hash(envPassword, 12)
-
+  
             const updated: AdminUser = {
               ...current,
               id: AuthManager.ADMIN_USER_ID,
@@ -280,20 +328,28 @@ export class AuthManager {
       }
       return true
     }
-
-    // 不存在用户：优先用环境变量创建
-    if (envUsername && envPassword) {
-      
-      return await AuthManager.createAdminUser(envUsername, envPassword);
+  
+    // 不存在用户：根据环境决定创建方式
+    if (!envUsername || !envPassword) {
+      if (isProduction) {
+        // 生产环境必须配置环境变量
+        throw new Error(
+          'ADMIN_USERNAME and ADMIN_PASSWORD environment variables are required in production. ' +
+          'Please set these variables to initialize the admin user.'
+        );
+      }
+  
+      // 开发环境使用默认凭据
+      console.warn(
+        'WARNING: Creating default admin user (admin/admin) for development. ' +
+        'Set ADMIN_USERNAME and ADMIN_PASSWORD environment variables for production use.'
+      );
+      return await AuthManager.createAdminUser('admin', 'admin');
     }
-
-    // 创建默认管理员用户
-    console.log('创建默认管理员用户 (admin/admin)...');
-    
-    return await AuthManager.createAdminUser('admin', 'admin');
-  }
-
-  /**
+  
+    // 使用环境变量创建
+    return await AuthManager.createAdminUser(envUsername, envPassword);
+  }  /**
    * 更改管理员密码
    */
   static async changePassword(currentPassword: string, newPassword: string): Promise<boolean> {

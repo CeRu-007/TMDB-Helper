@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthManager, LoginRequest } from '@/lib/auth/auth-manager';
+import { RateLimiter } from '@/lib/auth/rate-limiter';
 
 /**
  * POST /api/auth/login - 用户登录
@@ -9,11 +10,29 @@ export async function POST(request: NextRequest) {
     const body: LoginRequest = await request.json();
     const { username, password, rememberMe = false } = body;
 
+    // 获取客户端 IP
+    const clientIp = RateLimiter.getClientIp(request);
+
+    // 检查速率限制
+    const rateLimitResult = RateLimiter.check(clientIp);
+    if (!rateLimitResult.allowed) {
+      const lockedMinutes = Math.ceil((rateLimitResult.lockedUntil! - Date.now()) / (60 * 1000));
+      return NextResponse.json(
+        {
+          success: false,
+          error: '登录尝试次数过多，请稍后再试',
+          lockedUntil: rateLimitResult.lockedUntil,
+          lockedMinutes
+        },
+        { status: 429 }
+      );
+    }
+
     // 验证输入
     if (!username || !password) {
       return NextResponse.json(
-        { success: false, error: '用户名和密码不能为空' },
-        { status: 400 }
+        { success: false, error: '用户名或密码错误' },
+        { status: 401 }
       );
     }
 
@@ -21,10 +40,17 @@ export async function POST(request: NextRequest) {
     const user = await AuthManager.validateLogin(username, password);
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '用户名或密码错误' },
+        {
+          success: false,
+          error: '用户名或密码错误',
+          remainingAttempts: rateLimitResult.remainingAttempts - 1
+        },
         { status: 401 }
       );
     }
+
+    // 登录成功，重置速率限制
+    RateLimiter.reset(clientIp);
 
     // 生成JWT Token
     const token = AuthManager.generateToken(user, rememberMe);
@@ -58,7 +84,7 @@ export async function POST(request: NextRequest) {
     return response;
 
   } catch (error) {
-    
+
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
       { status: 500 }
