@@ -33,7 +33,7 @@ import type { TMDBItem, Season, Episode } from "@/lib/data/storage"
 import { StorageManager } from "@/lib/data/storage"
 import { cn } from "@/lib/utils"
 import { Checkbox } from "@/components/common/checkbox"
-import { useToast } from "@/lib/hooks/use-toast"
+import { useToast } from "@/shared/lib/hooks/use-toast"
 import { ClientConfigManager } from "@/lib/utils/client-config-manager"
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六"]
