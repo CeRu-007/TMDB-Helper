@@ -131,8 +131,8 @@ export const useSubtitleTask = ({
       scrollToLatestMessage();
       toast.success(config.successMessage)
 
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         const interruptedMessages = updatedMessages.map(msg => {
           if (msg.id === assistantMessage.id) {
             return {

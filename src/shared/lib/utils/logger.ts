@@ -16,7 +16,7 @@ export interface LogEntry {
   level: LogLevel
   category: string
   message: string
-  data?: any
+  data?: unknown
   stack?: string
 }
 
@@ -112,7 +112,7 @@ class Logger {
     }
   }
 
-  debug(category: string, message: string, data?: any): void {
+  debug(category: string, message: string, data?: unknown): void {
     if (!this.shouldLog(LogLevel.DEBUG)) return
     
     const entry: LogEntry = {
@@ -130,7 +130,7 @@ class Logger {
     }
   }
 
-  info(category: string, message: string, data?: any): void {
+  info(category: string, message: string, data?: unknown): void {
     if (!this.shouldLog(LogLevel.INFO)) return
     
     const entry: LogEntry = {
@@ -148,7 +148,7 @@ class Logger {
     }
   }
 
-  warn(category: string, message: string, data?: any): void {
+  warn(category: string, message: string, data?: unknown): void {
     if (!this.shouldLog(LogLevel.WARN)) return
     
     const entry: LogEntry = {
@@ -204,7 +204,7 @@ class Logger {
   }
 
   // 节流日志方法，避免重复输出
-  throttledDebug(category: string, message: string, throttleMs?: number, data?: any): void {
+  throttledDebug(category: string, message: string, throttleMs?: number, data?: unknown): void {
     const throttle = throttleMs || this.defaultThrottleMs
     const key = `${category}:${message}`
     const now = Date.now()
@@ -232,13 +232,13 @@ export const logger = Logger.getInstance()
 
 // 便捷方法
 export const log = {
-  debug: (category: string, message: string, data?: any) => logger.debug(category, message, data),
-  info: (category: string, message: string, data?: any) => logger.info(category, message, data),
-  warn: (category: string, message: string, data?: any) => logger.warn(category, message, data),
-  error: (category: string, message: string, error?: any) => logger.error(category, message, error),
+  debug: (category: string, message: string, data?: unknown) => logger.debug(category, message, data),
+  info: (category: string, message: string, data?: unknown) => logger.info(category, message, data),
+  warn: (category: string, message: string, data?: unknown) => logger.warn(category, message, data),
+  error: (category: string, message: string, error?: unknown) => logger.error(category, message, error),
   time: (category: string, label: string) => logger.time(category, label),
   timeEnd: (category: string, label: string) => logger.timeEnd(category, label),
-  throttledDebug: (category: string, message: string, throttleMs?: number, data?: any) => 
+  throttledDebug: (category: string, message: string, throttleMs?: number, data?: unknown) => 
     logger.throttledDebug(category, message, throttleMs, data),
   shouldLogThrottled: (category: string, message: string, throttleMs?: number) => 
     logger.shouldLogThrottled(category, message, throttleMs)

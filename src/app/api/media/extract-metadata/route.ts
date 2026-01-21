@@ -1,13 +1,33 @@
 ﻿import { type NextRequest, NextResponse } from "next/server"
 import type { ExtractedMetadata } from "@/lib/data/metadata-extractor"
-import { getPlatformParser } from "@/lib/data/platform-parsers"
+import { getPlatformParser, PlatformParser } from "@/lib/data/platform-parsers"
+import { ApiResponse } from "@/types/common"
+
+// JSON-LD 数据结构类型
+interface JsonLdPerson {
+  name: string;
+}
+
+interface JsonLdData {
+  director?: JsonLdPerson | JsonLdPerson[];
+  actor?: JsonLdPerson | JsonLdPerson[];
+  duration?: string;
+  [key: string]: unknown;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const { url, platform } = await request.json()
 
     if (!url) {
-      return NextResponse.json({ error: "URL is required" }, { status: 400 })
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: "URL is required",
+          data: null
+        },
+        { status: 400 }
+      )
     }
 
     // 获取平台特定的解析器
@@ -19,26 +39,35 @@ export async function POST(request: NextRequest) {
     // 计算置信度
     const confidence = calculateConfidence(metadata, parser !== null)
 
-    return NextResponse.json({
+    return NextResponse.json<ApiResponse<{
+      metadata: ExtractedMetadata;
+      platform: string;
+      confidence: number;
+      parser: string;
+    }>>({
       success: true,
-      metadata,
-      platform,
-      confidence,
-      parser: parser?.name || "通用解析器",
+      data: {
+        metadata,
+        platform,
+        confidence,
+        parser: parser?.name || "通用解析器",
+      }
     })
   } catch (error) {
-    
-    return NextResponse.json(
+    const errorMessage = error instanceof Error ? error.message : "元数据提取失败"
+
+    return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
-        error: error instanceof Error ? error.message : "元数据提取失败",
+        error: errorMessage,
+        data: null,
       },
       { status: 500 },
     )
   }
 }
 
-async function extractMetadataFromUrl(url: string, platform: string, parser: any): Promise<ExtractedMetadata> {
+async function extractMetadataFromUrl(url: string, platform: string, parser: PlatformParser | null): Promise<ExtractedMetadata> {
   try {
     // 获取页面内容
     const response = await fetch(url, {
@@ -147,14 +176,14 @@ function parseGenericMetadata(html: string, platform: string, url: string): Extr
 
           if (data.director) {
             metadata.director = Array.isArray(data.director)
-              ? data.director.map((d: any) => d.name || d)
-              : [data.director.name || data.director]
+              ? data.director.map((d: JsonLdPerson) => d.name || String(d))
+              : [data.director.name || String(data.director)]
           }
 
           if (data.actor) {
             metadata.cast = Array.isArray(data.actor)
-              ? data.actor.map((a: any) => a.name || a)
-              : [data.actor.name || data.actor]
+              ? data.actor.map((a: JsonLdPerson) => a.name || String(a))
+              : [data.actor.name || String(data.actor)]
           }
 
           if (data.duration) {

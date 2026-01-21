@@ -508,19 +508,19 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
           variant: 'success',
           icon: <AlarmClock className="h-4 w-4" />
         });
-      } catch (fetchError: any) {
+      } catch (fetchError: unknown) {
         // 清除超时计时器
         clearTimeout(timeoutId);
 
         // 检查是否是超时错误
-        if (fetchError.name === 'AbortError') {
-          
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+
           throw new Error("请求超时（3分钟），请检查网络连接或稍后再试");
         }
 
         throw fetchError; // 重新抛出以便外层catch处理
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       
       // 更新任务的失败状态
       try {
@@ -561,7 +561,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
   }
 
   // 更新任务字段
-  const updateTaskField = (field: string, value: any) => {
+  const updateTaskField = (field: string, value: unknown) => {
     if (!currentTask) return
 
     // 获取当前值进行比较

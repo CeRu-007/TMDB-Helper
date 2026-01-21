@@ -12,7 +12,7 @@ interface ErrorContext {
   error: Error
   timestamp: number
   retryCount: number
-  context?: any
+  context?: Record<string, unknown>
 }
 
 interface RecoveryStrategy {
@@ -121,7 +121,7 @@ class ErrorRecoveryManager {
   public async handleError(
     error: Error,
     type: ErrorContext['type'] = 'unknown',
-    context?: any
+    context?: Record<string, unknown>
   ): Promise<boolean> {
     const errorContext: ErrorContext = {
       type,

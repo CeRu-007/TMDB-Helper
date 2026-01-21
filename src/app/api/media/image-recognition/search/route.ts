@@ -1,5 +1,31 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { ServerConfigManager } from '@/lib/data/server-config-manager'
+import { ApiResponse } from '@/types/common'
+
+// 请求接口
+interface ImageSearchRequest {
+  description: string
+  keywords?: string[]
+}
+
+// TMDB 结果接口
+interface TMDBResult {
+  id: number
+  title?: string
+  name?: string
+  overview: string
+  poster_path?: string
+  backdrop_path?: string
+  release_date?: string
+  first_air_date?: string
+  vote_average?: number
+  media_type: 'movie' | 'tv'
+}
+
+// 搜索结果接口
+interface SearchResult extends TMDBResult {
+  matchScore: number
+}
 
 // TMDB API配置
 const TMDB_API_BASE = 'https://api.tmdb.org/3'
@@ -7,12 +33,16 @@ const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await request.json() as ImageSearchRequest
     const { description, keywords } = body
 
     if (!description && (!keywords || keywords.length === 0)) {
-      return NextResponse.json(
-        { error: '描述或关键词未提供' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: '描述或关键词未提供',
+          data: null
+        },
         { status: 400 }
       )
     }
@@ -22,15 +52,19 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.TMDB_API_KEY || config.tmdbApiKey
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'TMDB API密钥未配置' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: 'TMDB API密钥未配置',
+          data: null
+        },
         { status: 400 }
       )
     }
 
     // 构建搜索查询
     const searchQueries = buildSearchQueries(description, keywords)
-    const allResults: any[] = []
+    const allResults: TMDBResult[] = []
 
     // 对每个查询进行搜索
     for (const query of searchQueries) {
@@ -65,17 +99,24 @@ export async function POST(request: NextRequest) {
       source: 'tmdb' as const
     }))
 
-    return NextResponse.json({
+    return NextResponse.json<ApiResponse<{
+      movies: SearchResult[]
+    }>>({
       success: true,
-      movies: movies.slice(0, 20) // 限制返回结果数量
+      data: {
+        movies: movies.slice(0, 20) // 限制返回结果数量
+      }
     })
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Search error:', error)
-    return NextResponse.json(
-      { 
+    const errorMessage = error instanceof Error ? error.message : '未知错误'
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
         error: '搜索失败',
-        details: error instanceof Error ? error.message : '未知错误'
+        data: null,
+        details: errorMessage
       },
       { status: 500 }
     )
@@ -160,7 +201,7 @@ async function searchTMDB(type: 'movie' | 'tv', query: string, apiKey: string) {
   }
 
   const data = await response.json()
-  return data.results?.map((item: any) => ({
+  return data.results?.map((item: TMDBResult) => ({
     ...item,
     media_type: type,
     searchQuery: query
@@ -168,7 +209,7 @@ async function searchTMDB(type: 'movie' | 'tv', query: string, apiKey: string) {
 }
 
 // 去重结果
-function deduplicateResults(results: any[]): any[] {
+function deduplicateResults(results: TMDBResult[]): TMDBResult[] {
   const seen = new Set()
   return results.filter(result => {
     const key = `${result.media_type}-${result.id}`
@@ -181,7 +222,7 @@ function deduplicateResults(results: any[]): any[] {
 }
 
 // 对结果进行排序和评分
-function rankResults(results: any[], description: string, keywords: string[]): any[] {
+function rankResults(results: TMDBResult[], description: string, keywords: string[]): SearchResult[] {
   return results.map(result => {
     let matchScore = 0
 

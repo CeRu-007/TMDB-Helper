@@ -1,6 +1,13 @@
 ﻿'use client';
 
 import React, { useState } from 'react';
+
+// Basic item type for import/export operations
+interface ImportItem {
+  id: string;
+  title?: string;
+  [key: string]: unknown;
+}
 import {
   Dialog,
   DialogContent,
@@ -41,6 +48,89 @@ interface ImportPreview {
   data?: {
     version?: string;
     exportDate?: string;
+  };
+}
+
+// 辅助函数：检查数据是否重复
+async function checkForDuplicateItems(importItems: ImportItem[]): Promise<{ isDuplicate: boolean; message: string }> {
+  try {
+    const currentItems = await StorageManager.getItemsWithRetry();
+
+    // 早期返回：如果没有当前项目或导入项目，不重复
+    if (currentItems.length === 0 || importItems.length === 0) {
+      return { isDuplicate: false, message: '' };
+    }
+
+    // 早期返回：如果项目数量不同，不重复
+    if (currentItems.length !== importItems.length) {
+      return { isDuplicate: false, message: '' };
+    }
+
+    // 比较项目ID
+    const currentIds = currentItems.map((item) => item.id).sort();
+    const importIds = importItems.map((item) => item.id).sort();
+
+    const isDuplicate = JSON.stringify(currentIds) === JSON.stringify(importIds);
+    const message = isDuplicate
+      ? `导入的数据与当前数据完全一致（${importItems.length} 个项目）`
+      : '';
+
+    return { isDuplicate, message };
+  } catch (error) {
+    // 如果检查失败，假设不重复
+    return { isDuplicate: false, message: '' };
+  }
+}
+
+// 辅助函数：解析导入数据
+function parseImportData(data: string): ImportItem[] {
+  let parsedData: unknown;
+
+  try {
+    parsedData = JSON.parse(data);
+  } catch (error) {
+    throw new Error('JSON 格式无效');
+  }
+
+  // 早期返回：检查数据格式
+  if (Array.isArray(parsedData)) {
+    return parsedData as ImportItem[];
+  }
+
+  if (parsedData && typeof parsedData === 'object' && 'items' in parsedData && Array.isArray(parsedData.items)) {
+    return parsedData.items as ImportItem[];
+  }
+
+  throw new Error('数据格式不正确');
+}
+
+// 辅助函数：执行导入操作
+async function performImport(items: ImportItem[]): Promise<{ success: boolean; itemCount: number }> {
+  // 使用新的文件操作API直接导入
+  const response = await fetch('/api/storage/file-operations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      items,
+      backup: true, // 自动备份原文件
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`导入失败: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || '导入失败');
+  }
+
+  return {
+    success: true,
+    itemCount: result.itemCount || items.length,
   };
 }
 
@@ -85,38 +175,28 @@ export default function ImportDataDialog({
     reader.onload = async (e) => {
       try {
         const data = e.target?.result as string;
-
         const validation = StorageManager.validateImportData(data);
 
-        // 如果基本验证通过，进行重复数据检测
-        let isDuplicate = false;
-        let duplicateInfo = '';
-
-        if (validation.isValid && validation.data?.items) {
-          try {
-            const currentItems = await StorageManager.getItemsWithRetry();
-            if (currentItems.length > 0 && validation.data.items.length > 0) {
-              // 简单比较项目数量和第一个项目的ID
-              if (currentItems.length === validation.data.items.length) {
-                const currentIds = currentItems.map((item) => item.id).sort();
-                const importIds = validation.data.items
-                  .map((item) => item.id)
-                  .sort();
-
-                if (JSON.stringify(currentIds) === JSON.stringify(importIds)) {
-                  isDuplicate = true;
-                  duplicateInfo = `导入的数据与当前数据完全一致（${validation.data.items.length} 个项目）`;
-                }
-              }
-            }
-          } catch (error) {}
+        // 早期返回：如果验证失败，直接设置预览
+        if (!validation.isValid) {
+          setPreview({
+            isValid: false,
+            error: validation.error,
+            stats: validation.stats,
+          });
+          return;
         }
 
+        // 检查重复数据
+        const { isDuplicate, message } = validation.data?.items
+          ? await checkForDuplicateItems(validation.data.items)
+          : { isDuplicate: false, message: '' };
+
         setPreview({
-          isValid: validation.isValid,
+          isValid: true,
           error: isDuplicate
-            ? `注意：${duplicateInfo}。您可以选择继续导入以确保数据一致性。`
-            : validation.error,
+            ? `注意：${message}。您可以选择继续导入以确保数据一致性。`
+            : undefined,
           stats: validation.stats,
           data: validation.data
             ? {
@@ -143,85 +223,57 @@ export default function ImportDataDialog({
     setImportProgress(0);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result as string;
+      // 读取文件内容
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = () => reject(new Error('文件读取失败'));
+        reader.readAsText(file);
+      });
 
-          setImportStep('正在解析文件...');
-          setImportProgress(10);
+      setImportStep('正在解析文件...');
+      setImportProgress(10);
 
-          // 解析数据
-          const parsedData = JSON.parse(data);
-          let items: any[] = [];
+      // 解析数据
+      const items = parseImportData(data);
 
-          // 检查数据格式
-          if (Array.isArray(parsedData)) {
-            items = parsedData;
-          } else if (parsedData.items && Array.isArray(parsedData.items)) {
-            items = parsedData.items;
-          } else {
-            throw new Error('数据格式不正确');
-          }
+      setImportStep(`准备导入 ${items.length} 个项目...`);
+      setImportProgress(30);
 
-          setImportStep(`准备导入 ${items.length} 个项目...`);
-          setImportProgress(30);
+      setImportStep('正在备份原数据...');
+      setImportProgress(50);
 
-          // 使用新的文件操作API直接导入
-          setImportStep('正在备份原数据...');
-          const response = await fetch('/api/storage/file-operations', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              items,
-              backup: true, // 自动备份原文件
-            }),
-          });
+      setImportStep('正在写入数据文件...');
+      setImportProgress(70);
 
-          setImportStep('正在写入数据文件...');
-          setImportProgress(70);
+      // 执行导入
+      const importResult = await performImport(items);
 
-          const result = await response.json();
+      setImportStep('导入完成！');
+      setImportProgress(100);
 
-          setImportStep('导入完成！');
-          setImportProgress(100);
+      setImportResult({
+        success: true,
+        stats: {
+          itemsImported: importResult.itemCount,
+          tasksImported: 0,
+          itemsSkipped: 0,
+          tasksSkipped: 0,
+        },
+      });
 
-          if (result.success) {
-            setImportResult({
-              success: true,
-              stats: {
-                itemsImported: result.itemCount,
-                tasksImported: 0,
-                itemsSkipped: 0,
-                tasksSkipped: 0,
-              },
-            });
+      // 延迟刷新页面，让用户看到成功信息
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
 
-            // 延迟刷新页面，让用户看到成功信息
-            setTimeout(() => {
-              window.location.reload();
-            }, 2000);
-          } else {
-            throw new Error(result.error || '导入失败');
-          }
-        } catch (error) {
-          setImportStep('导入失败');
-          setImportResult({
-            success: false,
-            error: error instanceof Error ? error.message : '导入失败',
-          });
-        } finally {
-          setImporting(false);
-        }
-      };
-      reader.readAsText(file);
     } catch (error) {
+      setImportStep('导入失败');
       setImportResult({
         success: false,
         error: error instanceof Error ? error.message : '导入失败',
       });
+    } finally {
       setImporting(false);
     }
   };

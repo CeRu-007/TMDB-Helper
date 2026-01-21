@@ -39,9 +39,9 @@ export function processOverviewData(data: CSVData): CSVData {
 /**
  * 处理保存错误
  */
-export function handleSaveError(error: any, appendTerminalOutput: (text: string, type: any) => void, toast: any) {
+export function handleSaveError(error: unknown, appendTerminalOutput: (text: string, type: 'info' | 'success' | 'warning' | 'error') => void, toast: (options: { title: string; description: string; variant?: 'default' | 'destructive'; duration?: number }) => void) {
   // 提供更友好的错误消息
-  let errorMessage = error.message || '未知错误'
+  let errorMessage = error instanceof Error ? error.message : '未知错误'
   let errorTitle = "保存失败"
 
   // 处理特定类型的错误
@@ -73,8 +73,8 @@ export async function saveCSV(options: {
   csvContent?: string
   editorMode?: "table" | "text"
   tmdbImportPath: string | null
-  appendTerminalOutput: (text: string, type: any) => void
-  toast: any
+  appendTerminalOutput: (text: string, type: 'info' | 'success' | 'warning' | 'error') => void
+  toast: (options: { title: string; description: string; variant?: 'default' | 'destructive'; duration?: number }) => void
   onSuccess?: (message: string) => void
   showSuccessNotification?: boolean
   skipDataParsing?: boolean
@@ -110,7 +110,7 @@ export async function saveCSV(options: {
           // 解析文本内容为CSV数据
           dataToSave = parseCsvContent(options.csvContent)
           options.appendTerminalOutput("成功解析文本内容为CSV数据", "success")
-        } catch (error: any) {
+        } catch (error: unknown) {
           throw new Error(`CSV文本格式有误，无法解析: ${error instanceof Error ? error.message : '未知错误'}`)
         }
       } else if (options.csvContent === undefined || options.csvContent.trim() === '') {
@@ -157,7 +157,7 @@ export async function saveCSV(options: {
     }
 
     return true
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleSaveError(error, options.appendTerminalOutput, options.toast)
     return false
   }

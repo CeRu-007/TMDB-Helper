@@ -3,6 +3,31 @@ import { StorageManager, ScheduledTask, TMDBItem } from '@/lib/data/storage';
 // import { readItems } from '@/lib/server-storage'; // 替换为StorageManager
 import { readScheduledTasks } from '@/lib/data/server-scheduled-tasks';
 
+// 类型定义
+interface TaskInfo {
+  id: string;
+  name: string;
+  itemTitle: string;
+  enabled: boolean;
+  lastRun?: string;
+  nextRun?: string;
+}
+
+interface ProjectInfo {
+  id: string;
+  title: string;
+  status: string;
+  completed: boolean;
+  isCompleted?: boolean;
+}
+
+interface CleanupCandidate {
+  task: TaskInfo;
+  project: ProjectInfo | null;
+  shouldDelete: boolean;
+  reason?: string;
+}
+
 /**
  * 清理已完结项目的定时任务API
  */
@@ -98,11 +123,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }))
     });
 
-  } catch (error: any) {
-    
-    return NextResponse.json({ 
+  } catch (error: unknown) {
+
+    return NextResponse.json({
       success: false,
-      error: '清理已完结项目定时任务失败', 
+      error: '清理已完结项目定时任务失败',
       message: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
@@ -135,7 +160,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       task.enabled && task.action.autoDeleteWhenCompleted
     );
 
-    const cleanupCandidates: any[] = [];
+    const cleanupCandidates: CleanupCandidate[] = [];
 
     // 检查每个任务对应的项目状态
     for (const task of autoDeleteTasks) {
@@ -188,11 +213,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       candidates: cleanupCandidates
     });
 
-  } catch (error: any) {
-    
-    return NextResponse.json({ 
+  } catch (error: unknown) {
+
+    return NextResponse.json({
       success: false,
-      error: '获取可清理任务信息失败', 
+      error: '获取可清理任务信息失败',
       message: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }

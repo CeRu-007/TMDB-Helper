@@ -32,7 +32,7 @@ export const cleanSuggestion = (suggestion: string): string => {
   return cleaned;
 };
 
-export const validateSuggestions = (suggestions: any[]): string[] => {
+export const validateSuggestions = (suggestions: unknown[]): string[] => {
   if (!Array.isArray(suggestions) || suggestions.length === 0) {
     return [];
   }

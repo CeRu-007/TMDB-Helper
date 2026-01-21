@@ -47,11 +47,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       backupPath: backupPath
     });
     
-  } catch (error: any) {
-    
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message || '修复失败' 
+  } catch (error: unknown) {
+
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : '修复失败'
     }, { status: 500 });
   }
 }
@@ -221,12 +221,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       message: isFixed ? '已应用修复补丁' : '尚未修复'
     });
     
-  } catch (error: any) {
-    
-    return NextResponse.json({ 
+  } catch (error: unknown) {
+
+    return NextResponse.json({
       exists: false,
       fixed: false,
-      error: error.message 
+      error: error instanceof Error ? error.message : '未知错误'
     }, { status: 500 });
   }
 }

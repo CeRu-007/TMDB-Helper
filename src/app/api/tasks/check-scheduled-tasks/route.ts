@@ -86,11 +86,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }))
     });
 
-  } catch (error: any) {
-    
-    return NextResponse.json({ 
+  } catch (error: unknown) {
+
+    return NextResponse.json({
       success: false,
-      error: '检查定时任务失败', 
+      error: '检查定时任务失败',
       message: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
@@ -197,11 +197,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }, { status: 500 });
     }
 
-  } catch (error: any) {
-    
-    return NextResponse.json({ 
+  } catch (error: unknown) {
+
+    return NextResponse.json({
       success: false,
-      error: '执行错过任务失败', 
+      error: '执行错过任务失败',
       message: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }

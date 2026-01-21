@@ -6,7 +6,7 @@
 export interface OperationLog {
   timestamp: string
   operation: string
-  details: any
+  details: unknown
   success: boolean
   error?: string
 }
@@ -18,7 +18,7 @@ class MemoryLogger {
   /**
    * 记录操作日志
    */
-  log(operation: string, details: any, success: boolean = true, error?: string) {
+  log(operation: string, details: unknown, success: boolean = true, error?: string) {
     const logEntry: OperationLog = {
       timestamp: new Date().toISOString(),
       operation,

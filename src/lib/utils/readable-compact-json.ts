@@ -6,7 +6,7 @@
 /**
  * 智能JSON序列化，既紧凑又可读
  */
-export function stringifyReadableCompact(data: any): string {
+export function stringifyReadableCompact(data: unknown): string {
   return JSON.stringify(data, null, 0)
     .replace(/},/g, '},\n')  // 在对象结束后换行
     .replace(/\[{/g, '[\n{')  // 数组开始时换行
@@ -31,7 +31,7 @@ export function stringifyReadableCompact(data: any): string {
  * 更高级的可读紧凑格式化
  * 针对TMDB数据结构优化
  */
-export function stringifyTMDBReadableCompact(items: any[]): string {
+export function stringifyTMDBReadableCompact(items: unknown[]): string {
   if (!Array.isArray(items)) {
     return stringifyReadableCompact(items);
   }
@@ -94,7 +94,7 @@ export function stringifyTMDBReadableCompact(items: any[]): string {
  * 美观紧凑格式 - 对称美观又紧凑
  * 适当的缩进和换行，保持视觉美感
  */
-export function stringifySimpleReadableCompact(data: any): string {
+export function stringifySimpleReadableCompact(data: unknown): string {
   // 先使用标准格式化，然后进行美化调整
   let formatted = JSON.stringify(data, null, 2);
 
@@ -135,7 +135,7 @@ export function stringifySimpleReadableCompact(data: any): string {
 /**
  * 针对定时任务的可读紧凑格式
  */
-export function stringifyScheduledTasksReadableCompact(tasks: any[]): string {
+export function stringifyScheduledTasksReadableCompact(tasks: unknown[]): string {
   if (!Array.isArray(tasks) || tasks.length === 0) {
     return JSON.stringify(tasks);
   }
@@ -150,7 +150,7 @@ export function stringifyScheduledTasksReadableCompact(tasks: any[]): string {
 /**
  * 自动选择最佳格式化方式
  */
-export function stringifyAuto(data: any, dataType?: 'tmdb' | 'tasks' | 'config'): string {
+export function stringifyAuto(data: unknown, dataType?: 'tmdb' | 'tasks' | 'config'): string {
   // 统一使用简单可读紧凑格式，既节省空间又便于阅读
   return stringifySimpleReadableCompact(data);
 }
@@ -161,7 +161,7 @@ export function stringifyAuto(data: any, dataType?: 'tmdb' | 'tasks' | 'config')
 export function optimizeToReadableCompact(jsonString: string, dataType?: string): string {
   try {
     const data = JSON.parse(jsonString);
-    return stringifyAuto(data, dataType as any);
+    return stringifyAuto(data, dataType as 'tmdb' | 'tasks' | 'config' | undefined);
   } catch (error) {
     
     return jsonString;

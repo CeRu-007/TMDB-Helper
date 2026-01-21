@@ -27,7 +27,20 @@ import { useData } from "@/shared/components/client-data-provider"
 import { useToast } from "@/shared/lib/hooks/use-toast"
 
 // 导入常量
-import { categories } from '@/lib/constants/categories'
+import { categories, type Category } from '@/lib/constants/categories'
+import type { MediaItem } from '@/types/media'
+
+// Media news types
+interface MediaNewsData {
+  upcomingItems: MediaItem[]
+  recentItems: MediaItem[]
+  loadingUpcoming: boolean
+  loadingRecent: boolean
+  upcomingError?: string
+  recentError?: string
+  fetchUpcomingItems: (region: string, force?: boolean) => Promise<void>
+  fetchRecentItems: (region: string, force?: boolean) => Promise<void>
+}
 
 // 导入组件
 import { SidebarLayout } from "@/shared/components/layouts/sidebar-layout"
@@ -60,7 +73,7 @@ import { EmptyState } from "@/features/media-maintenance/components/empty-state"
 const isClientEnv = typeof window !== 'undefined'
 
 // Helper function to get empty state message
-const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: number, categories: any[], isCompleted: boolean = false) => {
+const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: number, categories: Category[], isCompleted: boolean = false) => {
   if (selectedCategory !== "all") {
     const categoryName = categories.find(c => c.id === selectedCategory)?.name
     return isCompleted
@@ -80,7 +93,7 @@ const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: numbe
 }
 
 // Helper function to render media news content
-const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: any, items: any[], selectedRegion: string) => {
+const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaNewsData, items: MediaItem[], selectedRegion: string) => {
   const newsData = mediaNewsType === 'upcoming' ? mediaNews.upcomingItems : mediaNews.recentItems
   const loading = mediaNewsType === 'upcoming' ? mediaNews.loadingUpcoming : mediaNews.loadingRecent
   const error = mediaNewsType === 'upcoming' ? mediaNews.upcomingError : mediaNews.recentError
@@ -220,7 +233,7 @@ export default function HomePage() {
 
 
   // 获取最终筛选后的词条
-  const getFinalFilteredItems = (items: any[]) => {
+  const getFinalFilteredItems = (items: MediaItem[]) => {
     const categoryFiltered = filterItemsByCategory(items, homeState.selectedCategory)
     return getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
   }

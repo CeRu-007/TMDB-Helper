@@ -442,7 +442,7 @@ export async function POST(request: NextRequest) {
         conflictAction: conflictAction
       }, { status: 200 });
 
-    } catch (execError: any) {
+    } catch (execError: unknown) {
 
       return NextResponse.json({
         success: false,
@@ -450,8 +450,8 @@ export async function POST(request: NextRequest) {
         details: {
           command: `python -m tmdb-import "${tmdbUrl}"`,
           workingDir: tmdbImportDir,
-          errorMessage: execError.message || String(execError),
-          errorStack: execError.stack || '',
+          errorMessage: execError instanceof Error ? execError.message : String(execError),
+          errorStack: execError instanceof Error ? execError.stack : undefined,
           conflictAction: conflictAction
         }
       }, { status: 500 });

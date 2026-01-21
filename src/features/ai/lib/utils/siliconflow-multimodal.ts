@@ -9,6 +9,20 @@ export interface SiliconFlowConfig {
   timeout?: number;
 }
 
+// Segment type for subtitle processing
+interface SubtitleSegment {
+  start?: number
+  end?: number
+  text?: string
+  confidence?: number
+}
+
+// Model type for API responses
+interface ModelInfo {
+  id: string
+  [key: string]: unknown
+}
+
 export interface VisualAnalysisOptions {
   model?: string;
   temperature?: number;
@@ -314,7 +328,7 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       // 处理分段信息
       let segments = [];
       if (result.segments && Array.isArray(result.segments)) {
-        segments = result.segments.map((segment: any) => ({
+        segments = result.segments.map((segment: SubtitleSegment) => ({
           start: segment.start || 0,
           end: segment.end || 0,
           text: segment.text || '',
@@ -445,13 +459,13 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       
       const data = await response.json();
       const visionModels = data.data
-        ?.filter((model: any) => 
-          model.id.includes('VL') || 
-          model.id.includes('vision') || 
+        ?.filter((model: ModelInfo) =>
+          model.id.includes('VL') ||
+          model.id.includes('vision') ||
           model.id.includes('Qwen2.5-VL') ||
           model.id.includes('deepseek-vl')
         )
-        ?.map((model: any) => model.id) || [];
+        ?.map((model: ModelInfo) => model.id) || [];
       
       return visionModels;
     } catch (error) {

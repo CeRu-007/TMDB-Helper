@@ -168,7 +168,7 @@ export class TaskExecutionLogger {
     step: string,
     message: string,
     level: 'info' | 'success' | 'warning' | 'error',
-    details?: any,
+    details?: Record<string, unknown>,
   ): Promise<void> {
     const log: ExecutionLog = {
       id: uuidv4(),

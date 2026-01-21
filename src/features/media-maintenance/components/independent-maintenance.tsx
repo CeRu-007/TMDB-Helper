@@ -202,10 +202,10 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         description: `CSV文件已加载，共${formattedCsvData.rows?.length || 0}行数据`
       })
 
-    } catch (error: any) {
-      
+    } catch (error: unknown) {
+
       // 特殊处理404错误（文件不存在）
-      if (error.message && error.message.includes('404')) {
+      if (error instanceof Error && error.message.includes('404')) {
         const errorMessage = '未找到CSV文件。请先运行播出平台抓取命令生成CSV文件。'
         appendTerminalOutput(errorMessage, "error")
         appendTerminalOutput("提示：切换到\"处理\"标签页，使用播出平台抓取和TMDB导入命令。", "info")
@@ -218,7 +218,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
           description: errorMessage,
           variant: "destructive"
         })
-      } else if (error.message && error.message.includes('文件不存在')) {
+      } else if (error instanceof Error && error.message.includes('文件不存在')) {
         const errorMessage = '未找到CSV文件。请先运行播出平台抓取命令生成CSV文件。'
         appendTerminalOutput(errorMessage, "error")
         appendTerminalOutput("提示：使用播出平台抓取和TMDB导入功能生成CSV文件。", "info")
@@ -230,7 +230,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         })
       } else {
         // 其他错误
-        const errorMessage = error.message || '未知错误'
+        const errorMessage = error instanceof Error ? error.message : '未知错误'
         appendTerminalOutput(`读取CSV文件失败: ${errorMessage}`, "error")
         
         toast({

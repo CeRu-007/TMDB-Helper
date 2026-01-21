@@ -2,6 +2,38 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
+// 类型定义
+interface EpisodeInfo {
+  line: number;
+  episodeNumber: number;
+  rawValue: string;
+}
+
+interface FileInfo {
+  path: string;
+  exists: boolean;
+  content: string;
+  lines: number;
+  episodes: EpisodeInfo[];
+  episodeColumnIndex?: number;
+  episodeColumnName?: string;
+  error?: string;
+}
+
+interface VerificationResult {
+  originalFile: FileInfo;
+  processedFile?: FileInfo;
+  comparison?: {
+    originalEpisodeCount: number;
+    processedEpisodeCount: number;
+    removedEpisodes: number[];
+    addedEpisodes: number[];
+    originalEpisodes: number[];
+    processedEpisodes: number[];
+    isIdentical: boolean;
+  };
+}
+
 /**
  * POST /api/verify-csv-processing - 验证CSV文件处理结果
  */
@@ -19,7 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result: any = {
+    const result: VerificationResult = {
       originalFile: {
         path: originalCsvPath,
         exists: false,
@@ -146,10 +178,10 @@ export async function POST(request: NextRequest) {
       // 比较分析
       if (result.originalFile.exists && result.processedFile.exists) {
         const originalEpisodes = result.originalFile.episodes
-          .map((e: any) => e.episodeNumber)
+          .map((e: EpisodeInfo) => e.episodeNumber)
           .sort((a: number, b: number) => a - b);
         const processedEpisodes = result.processedFile.episodes
-          .map((e: any) => e.episodeNumber)
+          .map((e: EpisodeInfo) => e.episodeNumber)
           .sort((a: number, b: number) => a - b);
 
         result.comparison = {

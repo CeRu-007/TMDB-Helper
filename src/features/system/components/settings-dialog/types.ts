@@ -53,7 +53,7 @@ export interface SettingsDialogProps {
 
 export interface SettingsPanelProps {
   onSave?: () => void
-  onConfigChange?: (config: any) => void
+  onConfigChange?: (config: Record<string, unknown>) => void
 }
 
 // API配置相关类型
@@ -95,7 +95,7 @@ export interface ScenarioSettings {
   [key: string]: {
     selectedModelIds: string[]
     primaryModelId: string
-    parameters: any
+    parameters: Record<string, unknown>
   }
 }
 

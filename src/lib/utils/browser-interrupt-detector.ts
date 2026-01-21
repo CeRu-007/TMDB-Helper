@@ -7,7 +7,7 @@ export interface BrowserInterruptResult {
   isUserInterrupted: boolean;
   errorType: 'user_closed' | 'system_error' | 'timeout' | 'unknown';
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 export class BrowserInterruptDetector {
@@ -15,7 +15,7 @@ export class BrowserInterruptDetector {
   /**
    * 分析错误信息，判断是否为用户主动中断
    */
-  static analyzeError(error: any, stdout?: string, stderr?: string): BrowserInterruptResult {
+  static analyzeError(error: { message?: string; stack?: string }, stdout?: string, stderr?: string): BrowserInterruptResult {
     const errorMessage = error?.message || String(error);
     const errorStack = error?.stack || '';
     const stdoutText = stdout || '';
@@ -177,7 +177,7 @@ export class BrowserInterruptDetector {
   /**
    * 检查是否为常见的用户中断场景
    */
-  static isCommonUserInterrupt(error: any): boolean {
+  static isCommonUserInterrupt(error: { message?: string; stack?: string }): boolean {
     const result = this.analyzeError(error);
     return result.isUserInterrupted;
   }

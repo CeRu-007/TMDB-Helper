@@ -64,17 +64,28 @@ async function executeTMDBImportCommand(command: string, workingDirectory: strin
             
         }
         return { stdout, stderr };
-    } catch (error: any) {
-        
+    } catch (error: unknown) {
+
         // 提供更详细的错误信息
-        let errorMessage = error.message || '未知错误';
-        if (error.code === 'ENOENT') {
-            errorMessage = `找不到可执行文件: ${error.path}`;
-        } else if (error.code === 'ETIMEDOUT') {
-            errorMessage = '命令执行超时 (3分钟)';
+        let errorMessage = '未知错误';
+        let errorStack = '';
+
+        if (error instanceof Error) {
+            errorMessage = error.message;
+            errorStack = error.stack || '';
+
+            // 检查是否是带有code属性的Error（如Node.js系统错误）
+            if ('code' in error) {
+                const errorCode = (error as any).code;
+                if (errorCode === 'ENOENT') {
+                    errorMessage = `找不到可执行文件: ${(error as any).path || '未知路径'}`;
+                } else if (errorCode === 'ETIMEDOUT') {
+                    errorMessage = '命令执行超时 (3分钟)';
+                }
+            }
         }
 
-        return { stdout: '', stderr: `${errorMessage}\n${error.stack || ''}` };
+        return { stdout: '', stderr: `${errorMessage}\n${errorStack}` };
     }
 }
 /**
@@ -894,8 +905,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 csvPath: csvPath
             });
         }
-    } catch (error: any) {
-        
+    } catch (error: unknown) {
+
         return NextResponse.json({
             error: '执行定时任务失败',
             message: error instanceof Error ? error.message : String(error)
@@ -970,8 +981,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             },
             body: JSON.stringify(requestData)
         }));
-    } catch (error: any) {
-        
+    } catch (error: unknown) {
+
         return NextResponse.json({
             error: '处理请求失败',
             message: error instanceof Error ? error.message : String(error)

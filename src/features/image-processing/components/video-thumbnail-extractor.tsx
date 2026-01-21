@@ -862,12 +862,12 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
               throw new Error('获取缩略图AI筛选场景配置失败')
             }
             
-            const primaryModel = scenarioResult.models.find((m: any) => m.id === thumbnailModels.primaryModelId)
+            const primaryModel = scenarioResult.models.find((m: { id: string }) => m.id === thumbnailModels.primaryModelId)
             if (!primaryModel) {
               throw new Error('配置的模型不存在')
             }
             
-            const provider = scenarioResult.providers.find((p: any) => p.id === primaryModel.providerId)
+            const provider = scenarioResult.providers.find((p: { id: string; apiKey?: string }) => p.id === primaryModel.providerId)
             if (!provider || !provider.apiKey) {
               throw new Error('模型提供商未配置API密钥')
             }

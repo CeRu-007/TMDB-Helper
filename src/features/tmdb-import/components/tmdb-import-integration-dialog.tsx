@@ -520,9 +520,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         
         
         return true;
-        } catch (axiosError: any) {
+        } catch (axiosError: unknown) {
           // 特殊处理404错误（文件不存在）
-          if (axiosError.response && axiosError.response.status === 404) {
+          if (axiosError && typeof axiosError === 'object' && 'response' in axiosError && axiosError.response && typeof axiosError.response === 'object' && 'status' in axiosError.response && axiosError.response.status === 404) {
             const errorMessage = '未找到CSV文件。请先运行平台元数据抓取命令生成CSV文件。';
             appendTerminalOutput(errorMessage, "error");
             appendTerminalOutput("提示：切换到\"处理\"标签页，使用上方的TMDB导入命令抓取元数据。", "info");
@@ -551,13 +551,13 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
           return false;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // 捕获并处理所有其他错误
 
         appendTerminalOutput(`读取CSV文件过程中出错: ${error.message || '未知错误'}`, "error");
         return false;
       }
-    } catch (outerError: any) {
+    } catch (outerError: unknown) {
       // 捕获所有可能的外部错误
 
       appendTerminalOutput("读取CSV文件时出现未预期的错误，请检查控制台日志", "error");
@@ -657,7 +657,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   }
 
   // 通用错误处理辅助函数
-  const handleSaveErrorWrapper = (error: any) => {
+  const handleSaveErrorWrapper = (error: unknown) => {
     handleSaveError(error, appendTerminalOutput, toast)
   }
 
@@ -957,7 +957,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
           });
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
 
       appendTerminalOutput(`执行出错: ${error.message || '未知错误'}`, "error");
       toast({
@@ -2166,7 +2166,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             variant: "destructive",
           });
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         
         appendTerminalOutput(`加载CSV文件时出错: ${error.message || "未知错误"}`, "error");
         toast({

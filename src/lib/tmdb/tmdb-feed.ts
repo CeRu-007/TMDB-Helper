@@ -202,7 +202,7 @@ export async function fetchTmdbFeed(
       type: kind,
       timestamp: new Date().toISOString()
     }
-  } catch (error: any) {
+  } catch (error: { message?: string }) {
     throw new Error(`TMDB API请求失败: ${error.message}`)
   }
 }

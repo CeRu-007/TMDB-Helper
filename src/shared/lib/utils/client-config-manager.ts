@@ -10,7 +10,7 @@ const REQUEST_TIMEOUT = 5000;
 
 // Client Config Manager Class
 export class ClientConfigManager {
-  private static cache: Map<string, any> = new Map();
+  private static cache: Map<string, unknown> = new Map();
   private static cacheExpiry: Map<string, number> = new Map();
 
   private static isCacheValid(key: string): boolean {
@@ -19,7 +19,7 @@ export class ClientConfigManager {
     return Date.now() < expiry;
   }
 
-  private static updateCache(key: string, value: any): void {
+  private static updateCache(key: string, value: unknown): void {
     this.cache.set(key, value);
     this.cacheExpiry.set(key, Date.now() + CACHE_DURATION);
   }
@@ -52,23 +52,33 @@ export class ClientConfigManager {
   }
 
   private static async fetchFromServer(key: string): Promise<any> {
-    const response = await fetch(`${API_ENDPOINT}?key=${encodeURIComponent(key)}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT)
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`);
+    try {
+      const response = await fetch(`${API_ENDPOINT}?key=${encodeURIComponent(key)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Server error');
+      }
+
+      return data.value;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
     }
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Server error');
-    }
-
-    return data.value;
   }
 
   static async getItem(key: string): Promise<string | null> {

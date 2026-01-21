@@ -1,4 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { BaseAPIRoute } from '@/lib/api/base-api-route';
+
+// 类型定义
+interface ModelScopeMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface ModelScopeRequestBody {
+  model: string;
+  messages: ModelScopeMessage[];
+  stream: boolean;
+}
+
+interface ModelScopeChoice {
+  message: {
+    content: string;
+  };
+}
+
+interface ModelScopeResponse {
+  choices?: ModelScopeChoice[];
+}
 
 // 魔搭社区API配置
 const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1';
@@ -85,42 +108,40 @@ function parseSuggestions(text: string): string[] {
   return suggestions;
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { model, messages, apiKey, lastMessage } = body;
+class AISuggestionsRoute extends BaseAPIRoute {
+  protected async handle(request: NextRequest): Promise<NextResponse> {
+    const { data: body, error } = await this.parseRequestBody<{
+      model: string;
+      messages: ModelScopeMessage[];
+      apiKey: string;
+      lastMessage: string;
+    }>(request);
+
+    if (error) {
+      return this.validationErrorResponse(error);
+    }
+
+    const { model, messages, apiKey, lastMessage } = body!;
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'API密钥未提供' },
-        { status: 400 }
-      );
+      return this.validationErrorResponse('API密钥未提供', 'apiKey');
     }
 
     // 验证API密钥格式
     if (!apiKey.startsWith('ms-')) {
-      return NextResponse.json(
-        { 
-          error: 'API密钥格式不正确',
-          details: '请使用魔搭社区(ModelScope)的API密钥，格式应为ms-开头'
-        },
-        { status: 400 }
+      return this.validationErrorResponse(
+        'API密钥格式不正确',
+        'apiKey'
       );
     }
 
     if (!model || !messages || !lastMessage) {
-      return NextResponse.json(
-        { error: '缺少必要参数' },
-        { status: 400 }
-      );
+      return this.validationErrorResponse('缺少必要参数');
     }
 
     // 验证消息格式
     if (!Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json(
-        { error: '消息格式错误，messages必须是非空数组' },
-        { status: 400 }
-      );
+      return this.validationErrorResponse('消息格式错误，messages必须是非空数组', 'messages');
     }
 
     console.log('调用魔搭社区API获取建议:', {
@@ -131,7 +152,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 构建专门用于获取建议的提示词
-    const suggestionPrompt = {
+    const suggestionPrompt: ModelScopeMessage = {
       role: 'user',
       content: `基于对话内容，预测用户接下来可能想问的3个问题或想了解的内容。
 
@@ -147,7 +168,7 @@ ${lastMessage}
     };
 
     // 构建请求体
-    let requestBody: any = {
+    let requestBody: ModelScopeRequestBody = {
       model,
       messages: [...messages, suggestionPrompt],
       stream: false // 非流式响应
@@ -156,13 +177,13 @@ ${lastMessage}
     // DeepSeek-V3.1 特殊处理
     const isDeepSeekV3 = model === 'deepseek-ai/DeepSeek-V3.1';
     if (isDeepSeekV3) {
-      requestBody.messages = requestBody.messages.filter((m: any) => m.role !== 'system');
+      requestBody.messages = requestBody.messages.filter((m: ModelScopeMessage) => m.role !== 'system');
     }
 
     // Qwen3-Next 特殊处理
     const isQwen3Next = model === 'Qwen/Qwen3-Next-80B-A3B-Instruct';
     if (isQwen3Next) {
-      if (!requestBody.messages.some((m: any) => m.role === 'system')) {
+      if (!requestBody.messages.some((m: ModelScopeMessage) => m.role === 'system')) {
         requestBody.messages = [
           { role: 'system', content: 'You are a helpful assistant.' },
           ...requestBody.messages
@@ -172,78 +193,77 @@ ${lastMessage}
 
     console.log('发送建议请求体:', JSON.stringify(requestBody, null, 2));
 
-    const response = await fetch(`${MODELSCOPE_API_BASE}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('API调用失败:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData
+    try {
+      const response = await fetch(`${MODELSCOPE_API_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
       });
 
-      let errorDetails = errorData;
-      try {
-        const errorJson = JSON.parse(errorData);
-        errorDetails = errorJson.error?.message || errorJson.message || errorData;
-      } catch (e) {
-        // 保持原始错误信息
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('API调用失败:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+
+        let errorDetails = errorData;
+        try {
+          const errorJson = JSON.parse(errorData);
+          errorDetails = errorJson.error?.message || errorJson.message || errorData;
+        } catch {
+          // 保持原始错误信息
+        }
+
+        return this.errorResponse(
+          `魔搭社区API调用失败: ${response.status} ${response.statusText}`,
+          response.status,
+          { details: errorDetails }
+        );
       }
 
-      return NextResponse.json(
-        {
-          error: `魔搭社区API调用失败: ${response.status} ${response.statusText}`,
-          details: errorDetails
-        },
-        { status: response.status }
+      const result: ModelScopeResponse = await response.json();
+      const content = result.choices?.[0]?.message?.content || '';
+
+      // 解析建议
+      let suggestions = parseSuggestions(content);
+
+      // 确保始终返回有效的建议
+      if (!Array.isArray(suggestions) || suggestions.length === 0) {
+        console.warn('解析建议失败或结果为空，使用默认建议');
+        suggestions = ['深入探讨这个话题', '提供更多细节', '换个角度分析'];
+      } else {
+        // 清理建议内容，确保都是非空字符串
+        suggestions = suggestions
+          .map(s => typeof s === 'string' ? s.trim() : '')
+          .filter(s => s.length > 0)
+          .slice(0, 3);
+
+        // 如果清理后没有有效建议，使用默认建议
+        if (suggestions.length === 0) {
+          suggestions = ['深入探讨这个话题', '提供更多细节', '换个角度分析'];
+        }
+      }
+
+      return this.successResponse(
+        { suggestions },
+        { message: '获取建议成功' }
+      );
+    } catch (error) {
+      return this.errorResponse(
+        'API调用失败',
+        500,
+        { details: error instanceof Error ? error.message : '未知错误' }
       );
     }
-
-    const result = await response.json();
-    const content = result.choices?.[0]?.message?.content || '';
-
-    // 解析建议
-    let suggestions = parseSuggestions(content);
-    
-    // 确保始终返回有效的建议
-    if (!Array.isArray(suggestions) || suggestions.length === 0) {
-      console.warn('解析建议失败或结果为空，使用默认建议');
-      suggestions = ['深入探讨这个话题', '提供更多细节', '换个角度分析'];
-    } else {
-      // 清理建议内容，确保都是非空字符串
-      suggestions = suggestions
-        .map(s => typeof s === 'string' ? s.trim() : '')
-        .filter(s => s.length > 0)
-        .slice(0, 3);
-      
-      // 如果清理后没有有效建议，使用默认建议
-      if (suggestions.length === 0) {
-        suggestions = ['深入探讨这个话题', '提供更多细节', '换个角度分析'];
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        suggestions: suggestions
-      }
-    });
-
-  } catch (error: any) {
-    console.error('服务器内部错误:', error);
-    return NextResponse.json(
-      {
-        error: '服务器内部错误',
-        details: error.message
-      },
-      { status: 500 }
-    );
   }
+}
+
+export const POST = (request: NextRequest) => {
+  const route = new AISuggestionsRoute();
+  return route.execute(request);
 }

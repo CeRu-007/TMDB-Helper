@@ -1,5 +1,17 @@
 import { NextRequest } from "next/server";
 
+// 类型定义
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface StreamRequestBody {
+  model: string;
+  messages: ChatMessage[];
+  stream: boolean;
+}
+
 const MODELSCOPE_API_BASE = "https://api-inference.modelscope.cn/v1";
 const SILICONFLOW_API_BASE = "https://api.siliconflow.cn/v1";
 
@@ -39,17 +51,17 @@ export async function POST(request: NextRequest) {
     const isDeepSeekV3 = model === "deepseek-ai/DeepSeek-V3.1";
     const isQwen3Next = model === "Qwen/Qwen3-Next-80B-A3B-Instruct";
 
-    let requestBody: any = {
+    let requestBody: StreamRequestBody = {
       model,
       messages,
       stream: true,
     };
 
     if (isDeepSeekV3) {
-      requestBody.messages = messages.filter((m: any) => m.role !== "system");
+      requestBody.messages = messages.filter((m: ChatMessage) => m.role !== "system");
     }
     if (isQwen3Next) {
-      if (!messages.some((m: any) => m.role === "system")) {
+      if (!messages.some((m: ChatMessage) => m.role === "system")) {
         requestBody.messages = [{ role: "system", content: "You are a helpful assistant." }, ...messages];
       }
     }
@@ -90,8 +102,8 @@ export async function POST(request: NextRequest) {
           }
 
           controller.enqueue(encoder.encode("\ndata: [DONE]\n\n"));
-        } catch (e: any) {
-          const err = typeof e?.message === "string" ? e.message : "stream error";
+        } catch (e: unknown) {
+          const err = e instanceof Error && typeof e.message === "string" ? e.message : "stream error";
           controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ error: err })}\n\n`));
         } finally {
           controller.close();
@@ -113,8 +125,9 @@ export async function POST(request: NextRequest) {
         "Transfer-Encoding": "chunked",
       },
     });
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: "服务器内部错误", details: error?.message || String(error) }), {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ error: "服务器内部错误", details: errorMessage }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

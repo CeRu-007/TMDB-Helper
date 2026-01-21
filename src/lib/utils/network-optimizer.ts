@@ -10,7 +10,7 @@ interface RequestConfig {
   url: string;
   method?: string;
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   timeout?: number;
   retries?: number;
   cache?: boolean;
@@ -21,8 +21,8 @@ interface RequestConfig {
 interface BatchRequest {
   id: string;
   config: RequestConfig;
-  resolve: (value: any) => void;
-  reject: (error: any) => void;
+  resolve: (value: unknown) => void;
+  reject: (error: unknown) => void;
   timestamp: number;
 }
 
@@ -223,7 +223,7 @@ export class NetworkOptimizer {
   /**
    * 判断是否为不可重试的错误
    */
-  private isNonRetryableError(error: any): boolean {
+  private isNonRetryableError(error: { code?: number; message?: string }): boolean {
     if (error.name === 'AbortError') return true;
     if (error.message?.includes('400')) return true;
     if (error.message?.includes('401')) return true;

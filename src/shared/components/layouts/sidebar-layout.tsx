@@ -11,6 +11,8 @@ import { AiChat } from "@/features/ai/components/ai-chat"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { TMDBItem } from "@/types/tmdb-item"
+import { Task } from "@/types/tasks"
 import {
   Settings,
   Plus,
@@ -45,7 +47,7 @@ export interface SidebarLayoutProps {
   children: React.ReactNode
   // 从原始页面传递的状态和处理函数
   totalItems: number
-  runningTasks: any[]
+  runningTasks: Task[]
   onShowAddDialog: () => void
   onShowSettingsDialog: (section?: string) => void
   onShowTasksDialog: () => void
@@ -53,15 +55,15 @@ export interface SidebarLayoutProps {
   onShowImportDialog: () => void
   onShowExportDialog: () => void
   // 词条详情相关
-  selectedItem: any
-  onSelectedItemChange: (item: any | null) => void
-  onUpdateItem: (item: any) => void
+  selectedItem: TMDBItem | null
+  onSelectedItemChange: (item: TMDBItem | null) => void
+  onUpdateItem: (item: TMDBItem) => void
   onDeleteItem: (id: string) => void
-  onOpenScheduledTask?: (item: any) => void
-  onItemClick?: (item: any) => void
+  onOpenScheduledTask?: (item: TMDBItem) => void
+  onItemClick?: (item: TMDBItem) => void
   // 影视资讯相关状态和函数
-  upcomingItems: any[]
-  recentItems: any[]
+  upcomingItems: TMDBItem[]
+  recentItems: TMDBItem[]
   loadingUpcoming: boolean
   loadingRecent: boolean
   upcomingError: string | null
@@ -71,25 +73,25 @@ export interface SidebarLayoutProps {
   selectedRegion: string
   mediaNewsType: 'upcoming' | 'recent'
   isMissingApiKey: boolean
-  upcomingItemsByRegion: Record<string, any[]>
-  recentItemsByRegion: Record<string, any[]>
+  upcomingItemsByRegion: Record<string, TMDBItem[]>
+  recentItemsByRegion: Record<string, TMDBItem[]>
   fetchUpcomingItems: (silent?: boolean, retryCount?: number, region?: string) => void
   fetchRecentItems: (silent?: boolean, retryCount?: number, region?: string) => void
   setMediaNewsType: React.Dispatch<React.SetStateAction<'upcoming' | 'recent'>>
   setSelectedRegion: (region: string) => void
   // 词条维护相关状态和函数
-  items: any[]
+  items: TMDBItem[]
   activeTab: string
   selectedDayFilter: "recent" | number
   selectedCategory: string
-  categories: any[]
-  filteredOngoingItems: any[]
-  filteredCompletedItems: any[]
-  getFilteredItems: (items: any[]) => any[]
+  categories: string[]
+  filteredOngoingItems: TMDBItem[]
+  filteredCompletedItems: TMDBItem[]
+  getFilteredItems: (items: TMDBItem[]) => TMDBItem[]
   setActiveTab: (tab: string) => void
   setSelectedDayFilter: (filter: "recent" | number) => void
   setSelectedCategory: (category: string) => void
-  onItemClick?: (item: any) => void
+  onItemClick?: (item: TMDBItem) => void
   // 组件引用
   RegionNavigation: React.ComponentType
   ApiKeySetupGuide: React.ComponentType
@@ -363,7 +365,7 @@ export function SidebarLayout({
   }
 
   // 处理词条点击，显示详情页面
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: TMDBItem) => {
     // 调用父组件传递的 onItemClick 回调
     if (onItemClick) {
       onItemClick(item)

@@ -16,6 +16,22 @@ import {
 import { cn } from "@/lib/utils"
 import { SUPPORTED_SUBTITLE_FORMATS } from "@/features/ai/lib/utils/ai-chat-constants"
 
+// Scenario models type
+interface ScenarioModelsConfig {
+  selectedModelIds: string[]
+  primaryModelId: string
+  availableModels: Array<{
+    id: string
+    displayName: string
+    providerId: string
+    modelId: string
+  }>
+  isLoading: boolean
+  error: string | null
+  getCurrentModel: () => any
+  getSelectedModels: () => any[]
+}
+
 interface ChatInputProps {
   inputValue: string
   isLoading: boolean
@@ -26,7 +42,7 @@ interface ChatInputProps {
   isUploading: boolean
   uploadProgress: number
   selectedModel: string
-  scenarioModels: any
+  scenarioModels: ScenarioModelsConfig
   onInputChange: (value: string) => void
   onSendMessage: () => void
   onInterrupt: () => void

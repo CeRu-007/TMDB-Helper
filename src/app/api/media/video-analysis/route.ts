@@ -4,6 +4,7 @@ import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { ApiResponse } from '@/types/common';
 // 移除字幕提取器导入，现在只专注于音频分析
 
 const execAsync = promisify(exec);
@@ -35,6 +36,35 @@ interface VideoAnalysisResult {
   };
   error?: string;
   progress?: number;
+}
+
+// API 请求接口
+interface VideoAnalysisRequest {
+  videoUrl: string;
+  model?: string;
+  language?: string;
+  enableStructuredContent?: boolean;
+}
+
+// 音频转写分段接口
+interface AudioSegment {
+  start: number;
+  end: number;
+  text: string;
+  confidence?: number;
+}
+
+// 音频转写结果接口
+interface AudioTranscriptResult {
+  text: string;
+  segments: AudioSegment[];
+}
+
+// 视频信息接口
+interface VideoInfo {
+  title: string;
+  duration: number;
+  url: string;
 }
 
 // 临时文件目录（使用data文件夹）
@@ -216,7 +246,7 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
 
     // 如果API返回了分段信息，优先使用
     if (result.segments && Array.isArray(result.segments)) {
-      segments = result.segments.map((segment: any) => ({
+      segments = result.segments.map((segment: AudioSegment) => ({
         start: segment.start || 0,
         end: segment.end || 0,
         text: segment.text || '',
@@ -265,8 +295,8 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
 
 // 生成SRT格式的音频内容
 async function generateStructuredContent(
-  audioTranscriptResult: { text: string; segments: any[] },
-  videoInfo: { title: string; duration: number; url: string }
+  audioTranscriptResult: AudioTranscriptResult,
+  videoInfo: VideoInfo
 ): Promise<{
   srt: string;
 }> {
@@ -308,31 +338,34 @@ function formatSRTTime(seconds: number): string {
 
 export async function POST(request: NextRequest) {
   const sessionId = uuidv4();
-  
+
   try {
     await ensureTempDir();
-    
-    const body = await request.json();
+
+    const body = await request.json() as VideoAnalysisRequest & { apiKey: string; speechRecognitionModel?: string };
     const { videoUrl, apiKey, speechRecognitionModel } = body;
-    
+
     if (!videoUrl) {
-      return NextResponse.json({
+      return NextResponse.json<ApiResponse<null>>({
         success: false,
-        error: '请提供视频URL'
+        error: '请提供视频URL',
+        data: null
       }, { status: 400 });
     }
-    
+
     if (!apiKey) {
-      return NextResponse.json({
+      return NextResponse.json<ApiResponse<null>>({
         success: false,
-        error: '请提供硅基流动API密钥'
+        error: '请提供硅基流动API密钥',
+        data: null
       }, { status: 400 });
     }
-    
+
     if (!validateVideoUrl(videoUrl)) {
-      return NextResponse.json({
+      return NextResponse.json<ApiResponse<null>>({
         success: false,
-        error: '不支持的视频URL格式'
+        error: '不支持的视频URL格式',
+        data: null
       }, { status: 400 });
     }
     
@@ -377,16 +410,20 @@ export async function POST(request: NextRequest) {
     // 5. 立即清理临时文件（处理完成后不再需要）
     await cleanupTempFiles(sessionId);
     
-    return NextResponse.json(result);
-    
+    return NextResponse.json<ApiResponse<VideoAnalysisResult['data']>>({
+      success: true,
+      data: result.data
+    });
+
   } catch (error) {
-    
     // 清理临时文件
     await cleanupTempFiles(sessionId);
-    
-    return NextResponse.json({
+
+    const errorMessage = error instanceof Error ? error.message : '音频转写失败';
+    return NextResponse.json<ApiResponse<null>>({
       success: false,
-      error: error instanceof Error ? error.message : '音频转写失败'
+      error: errorMessage,
+      data: null
     }, { status: 500 });
   }
 }

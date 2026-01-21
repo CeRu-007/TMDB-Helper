@@ -254,7 +254,7 @@ export function useConfigManagement() {
       }
     }
 
-    window.addEventListener('global-settings-closed', (event: any) => {
+    window.addEventListener('global-settings-closed', (event: unknown) => {
       handleGlobalSettingsClose(event.detail?.shouldReopenSettingsDialog, event.detail?.setShowSettingsDialog)
     })
 

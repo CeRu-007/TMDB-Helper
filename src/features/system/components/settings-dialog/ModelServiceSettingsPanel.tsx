@@ -54,8 +54,8 @@ interface ModelServiceSettingsPanelProps {
   setTestingConnection: (testing: boolean) => void
   loadingModels: boolean
   setLoadingModels: (loading: boolean) => void
-  availableModels: any[]
-  setAvailableModels: (models: any[]) => void
+  availableModels: unknown[]
+  setAvailableModels: (models: unknown[]) => void
   selectedProviderId: string
   setSelectedProviderId: (id: string) => void
   expandedScenario: string | null
@@ -254,7 +254,7 @@ export default function ModelServiceSettingsPanel({
 
       const result = await response.json()
       if (result.success && result.models) {
-        const normalizedModels = result.models.map((model: any) => ({
+        const normalizedModels = result.models.map((model: Record<string, unknown>) => ({
           id: model.id || model.model,
           object: model.object || 'model',
           created: model.created || Date.now(),
@@ -484,7 +484,7 @@ export default function ModelServiceSettingsPanel({
     }
   }
 
-  const handleParameterChange = (scenarioType: string, parameter: string, value: any) => {
+  const handleParameterChange = (scenarioType: string, parameter: string, value: unknown) => {
     const currentSetting = scenarioSettings[scenarioType]
     const selectedModelIds = currentSetting?.selectedModelIds || []
     const primaryModelId = currentSetting?.primaryModelId || selectedModelIds[0] || ""

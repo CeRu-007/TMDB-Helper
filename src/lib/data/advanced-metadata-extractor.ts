@@ -82,7 +82,7 @@ export interface AdvancedExtractedMetadata {
 
   // 平台特定信息
   platformSpecific?: {
-    [platform: string]: any;
+    [platform: string]: Record<string, unknown>;
   };
 }
 

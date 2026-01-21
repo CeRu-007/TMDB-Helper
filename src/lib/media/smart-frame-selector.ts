@@ -48,7 +48,10 @@ export interface SmartSelectionResult {
 }
 
 export class SmartFrameSelector {
-  private enhancedAnalyzer: any = null;
+  private enhancedAnalyzer: {
+  analyzeFrame: (frameData: ImageData) => Promise<EnhancedFrameAnalysis>
+  batchAnalyze: (frames: ImageData[]) => Promise<EnhancedFrameAnalysis[]>
+} | null = null;
   private siliconFlowAPI: SiliconFlowAPI | null = null;
   private processingStartTime: number = 0;
 

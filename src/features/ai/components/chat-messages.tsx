@@ -3,11 +3,17 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { ChatMessageItem } from "./chat-message-item"
 import { Message } from "@/types/ai-chat"
 
+// User info type
+interface UserInfo {
+  avatarUrl?: string
+  displayName?: string
+}
+
 interface ChatMessagesProps {
   messages: Message[]
   editingMessageId: string | null
   editingContent: string
-  userInfo: any
+  userInfo: UserInfo | null
   isLoading: boolean
   currentChatId: string | null
   selectedModel: string

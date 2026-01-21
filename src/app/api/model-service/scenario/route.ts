@@ -1,6 +1,25 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { ModelServiceStorage } from '@/lib/data/model-service-storage'
 
+// 类型定义
+interface ScenarioConfig {
+  type: string;
+  selectedModelIds: string[];
+  primaryModelId: string;
+  [key: string]: unknown;
+}
+
+interface ModelConfig {
+  id: string;
+  providerId: string;
+  [key: string]: unknown;
+}
+
+interface ProviderConfig {
+  id: string;
+  [key: string]: unknown;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -16,7 +35,7 @@ export async function GET(request: NextRequest) {
     const modelServiceConfig = await ModelServiceStorage.getConfig()
 
     // 获取场景配置
-    const scenarioConfig = modelServiceConfig.scenarios?.find((s: any) => s.type === scenario)
+    const scenarioConfig = modelServiceConfig.scenarios?.find((s: ScenarioConfig) => s.type === scenario)
 
     if (!scenarioConfig) {
       return NextResponse.json({
@@ -31,13 +50,13 @@ export async function GET(request: NextRequest) {
 
     // 合并所有模型ID，确保 primaryModelId 被包含
     const allModelIds = [...new Set([...selectedModelIds, primaryModelId].filter(Boolean))]
-    const models = modelServiceConfig.models.filter((model: any) =>
+    const models = modelServiceConfig.models.filter((model: ModelConfig) =>
       allModelIds.includes(model.id)
     )
 
     // 获取相关的提供商信息
     const providerIds = [...new Set(models.map(m => m.providerId))]
-    const providers = modelServiceConfig.providers.filter((provider: any) =>
+    const providers = modelServiceConfig.providers.filter((provider: ProviderConfig) =>
       providerIds.includes(provider.id)
     )
 

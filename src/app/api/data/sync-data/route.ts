@@ -4,6 +4,20 @@ import { StorageManager } from '@/lib/data/storage';
 import { readScheduledTasks } from '@/lib/data/server-scheduled-tasks';
 import { TMDBItem, ScheduledTask } from '@/lib/data/storage';
 
+// 类型定义
+interface SyncItem {
+  id: string;
+  title: string;
+  [key: string]: unknown;
+}
+
+interface SyncTask {
+  id: string;
+  name: string;
+  itemId: string;
+  [key: string]: unknown;
+}
+
 /**
  * GET /api/sync-data - 获取服务端数据用于同步
  */
@@ -85,11 +99,11 @@ export async function POST(request: NextRequest) {
 
     // 验证数据完整性
     const validItems = items.filter(
-      (item: any) => item && typeof item === 'object' && item.id && item.title,
+      (item: SyncItem) => item && typeof item === 'object' && item.id && item.title,
     );
 
     const validTasks = tasks.filter(
-      (task: any) =>
+      (task: SyncTask) =>
         task && typeof task === 'object' && task.id && task.name && task.itemId,
     );
 

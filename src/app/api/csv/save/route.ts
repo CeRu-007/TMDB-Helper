@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+// 类型定义
+interface CsvDataObject {
+  headers: string[];
+  rows: string[][];
+}
+
+type CsvData = string[][] | CsvDataObject;
+
 /**
  * CSV文件保存API
  * 用于保存CSV数据到指定文件路径
@@ -63,7 +71,7 @@ export async function POST(request: NextRequest) {
 /**
  * 序列化CSV数据
  */
-function serializeCsvData(data: any): string {
+function serializeCsvData(data: CsvData): string {
   // 处理不同的数据格式
   let headers: string[] = [];
   let rows: string[][] = [];
@@ -102,7 +110,7 @@ function serializeCsvData(data: any): string {
 /**
  * 格式化CSV字段（处理特殊字符）
  */
-function formatCsvField(field: any): string {
+function formatCsvField(field: string | number | boolean | null | undefined): string {
   if (field === null || field === undefined) {
     return '';
   }

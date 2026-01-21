@@ -364,7 +364,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             if (data.success && data.config) {
               setModelServiceConfig(data.config)
               if (data.config.providers) {
-                const customProviders = data.config.providers.filter((p: any) => p.isBuiltIn === false)
+                const customProviders = data.config.providers.filter((p: { isBuiltIn: boolean }) => p.isBuiltIn === false)
                 setCustomProviders(customProviders)
               }
               if (data.config.models) {
@@ -372,7 +372,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               }
               if (data.config.scenarios) {
                 const initialScenarioSettings: ScenarioSettings = {}
-                data.config.scenarios.forEach((scenario: any) => {
+                data.config.scenarios.forEach((scenario: {
+  type: string;
+  selectedModelIds?: string[];
+  primaryModelId?: string;
+  parameters?: Record<string, unknown>
+}) => {
                   initialScenarioSettings[scenario.type] = {
                     selectedModelIds: scenario.selectedModelIds || [],
                     primaryModelId: scenario.primaryModelId || '',
@@ -383,7 +388,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               }
 
               // 加载API设置
-              const siliconflowProvider = data.config.providers?.find((p: any) => p.type === 'siliconflow' && p.isBuiltIn)
+              const siliconflowProvider = data.config.providers?.find((p: { type: string; isBuiltIn: boolean }) => p.type === 'siliconflow' && p.isBuiltIn)
               if (siliconflowProvider) {
                 setApiSettings(prev => ({
                   ...prev,
@@ -394,7 +399,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                 }))
               }
 
-              const modelscopeProvider = data.config.providers?.find((p: any) => p.type === 'modelscope' && p.isBuiltIn)
+              const modelscopeProvider = data.config.providers?.find((p: { type: string; isBuiltIn: boolean }) => p.type === 'modelscope' && p.isBuiltIn)
               if (modelscopeProvider) {
                 setApiSettings(prev => ({
                   ...prev,
@@ -477,7 +482,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
       // 更新自定义提供商
       if (data.config.providers) {
-        setCustomProviders(data.config.providers.filter((p: any) => !p.isBuiltIn))
+        setCustomProviders(data.config.providers.filter((p: { isBuiltIn: boolean }) => !p.isBuiltIn))
       }
 
       // 更新配置的模型
@@ -488,7 +493,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       // 更新场景设置
       if (data.config.scenarios) {
         const updatedScenarioSettings: ScenarioSettings = {}
-        data.config.scenarios.forEach((scenario: any) => {
+        data.config.scenarios.forEach((scenario: {
+  type: string;
+  selectedModelIds?: string[];
+  primaryModelId?: string;
+  parameters?: Record<string, unknown>
+}) => {
           updatedScenarioSettings[scenario.type] = {
             selectedModelIds: scenario.selectedModelIds || [],
             primaryModelId: scenario.primaryModelId || '',
@@ -513,9 +523,9 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           const data = await response.json()
           if (data.success && data.config) {
             setConfiguredModels(data.config.models || [])
-            setCustomProviders(data.config.providers?.filter((p: any) => p.isBuiltIn === false) || [])
+            setCustomProviders(data.config.providers?.filter((p: { isBuiltIn: boolean }) => p.isBuiltIn === false) || [])
 
-            const siliconflowProvider = data.config.providers?.find((p: any) => p.type === 'siliconflow' && p.isBuiltIn)
+            const siliconflowProvider = data.config.providers?.find((p: { type: string; isBuiltIn: boolean }) => p.type === 'siliconflow' && p.isBuiltIn)
             if (siliconflowProvider) {
               setApiSettings(prev => ({
                 ...prev,
@@ -523,7 +533,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               }))
             }
 
-            const modelscopeProvider = data.config.providers?.find((p: any) => p.type === 'modelscope' && p.isBuiltIn)
+            const modelscopeProvider = data.config.providers?.find((p: { type: string; isBuiltIn: boolean }) => p.type === 'modelscope' && p.isBuiltIn)
             if (modelscopeProvider) {
               setApiSettings(prev => ({
                 ...prev,
@@ -532,9 +542,14 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             }
 
             const updatedScenarioSettings: ScenarioSettings = {}
-            data.config.scenarios.forEach((scenario: any) => {
+            data.config.scenarios.forEach((scenario: {
+  type: string;
+  selectedModelIds?: string[];
+  primaryModelId?: string;
+  parameters?: Record<string, unknown>
+}) => {
               const validModelIds = scenario.selectedModelIds?.filter((modelId: string) =>
-                data.config.models.some((model: any) => model.id === modelId)
+                data.config.models.some((model: { id: string }) => model.id === modelId)
               ) || []
               const validPrimaryId = validModelIds.includes(scenario.primaryModelId || '')
                 ? scenario.primaryModelId
@@ -920,7 +935,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   }, [])
 
   // 保存Docker配置
-  const saveDockerConfig = useCallback(async (configData: any) => {
+  const saveDockerConfig = useCallback(async (configData: Record<string, unknown>) => {
     const response = await fetch('/api/system/docker-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

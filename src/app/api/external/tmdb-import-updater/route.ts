@@ -419,7 +419,7 @@ async function installUpdate(): Promise<NextResponse> {
     // 创建临时解压目录
     const tempExtractDir = path.join(TOOLS_DIR, 'temp_tmdb_extract')
     if (fs.existsSync(tempExtractDir)) {
-      fs.rmSync(tempExtractDir, { recursive: true, force: true })
+      fs.rmSync(tempExtractDir, { recursive: true, force: true });
     }
     fs.mkdirSync(tempExtractDir, { recursive: true })
 
@@ -455,19 +455,19 @@ async function installUpdate(): Promise<NextResponse> {
       // 先尝试直接移动
       try {
         fs.renameSync(extractedDirPath, TMDB_IMPORT_DIR)
-      } catch (moveError: any) {
+      } catch (moveError: unknown) {
         // 如果移动失败，尝试复制后删除
-        
+
         const copyCmd = isWindows
           ? `powershell -Command "Copy-Item -Path '${extractedDirPath}' -Destination '${TMDB_IMPORT_DIR}' -Recurse -Force"`
           : `cp -r "${extractedDirPath}" "${TMDB_IMPORT_DIR}"`
-        await execAsync(copyCmd)
+        await execAsync(copyCmd);
         // 删除源目录
-        fs.rmSync(extractedDirPath, { recursive: true, force: true })
+        fs.rmSync(extractedDirPath, { recursive: true, force: true });
       }
       
       // 清理临时目录
-      fs.rmSync(tempExtractDir, { recursive: true, force: true })
+      fs.rmSync(tempExtractDir, { recursive: true, force: true });
       
       // 验证最终目录是否存在
       if (!fs.existsSync(TMDB_IMPORT_DIR)) {
@@ -477,7 +477,7 @@ async function installUpdate(): Promise<NextResponse> {
     } catch (extractError) {
       // 清理临时目录
       if (fs.existsSync(tempExtractDir)) {
-        fs.rmSync(tempExtractDir, { recursive: true, force: true })
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
       }
       throw extractError
     }
@@ -504,7 +504,7 @@ async function installUpdate(): Promise<NextResponse> {
     }, null, 2))
 
     // 清理临时文件
-    fs.unlinkSync(tempZipPath)
+    fs.unlinkSync(tempZipPath);
 
     // 构建完成消息
     let message = '安装完成'
@@ -521,7 +521,7 @@ async function installUpdate(): Promise<NextResponse> {
         message: message,
         credentialsPreserved: hasCredentials
       }
-    })
+    });
   } catch (error) {
     
     return NextResponse.json({

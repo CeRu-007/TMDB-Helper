@@ -178,7 +178,7 @@ export const Markdown = React.memo(function Markdown({ children, className = "" 
             "data-color-mode": undefined
           }}
           remarkPlugins={[remarkGfm, remarkBreaks]}
-          rehypeRewrite={(node: any) => {
+          rehypeRewrite={(node: unknown) => {
             if (node.type === 'element' && node.tagName === 'a') {
               node.properties = { ...node.properties, target: '_blank', rel: 'noopener noreferrer' };
             }

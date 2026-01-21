@@ -201,11 +201,11 @@ export class TaskSchedulerAdvancedConfigManager {
   /**
    * 与默认配置合并
    */
-  private mergeWithDefaults(config: any): TaskSchedulerAdvancedConfig {
+  private mergeWithDefaults(config: Partial<TaskSchedulerAdvancedConfig>): TaskSchedulerAdvancedConfig {
     const defaultConfig = this.getDefaultConfig();
 
     // 深度合并配置
-    const mergeDeep = (target: any, source: any): any => {
+    const mergeDeep = (target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> => {
       const result = { ...target };
 
       for (const key in source) {

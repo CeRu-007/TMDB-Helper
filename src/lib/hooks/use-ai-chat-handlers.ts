@@ -157,8 +157,8 @@ export const useAiChatHandlers = ({
       })
       
       scrollToLatestMessage()
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         setMessages(prevMessages => {
           const interruptedMessages = prevMessages.map(msg =>
             msg.id === assistantMessage.id
@@ -173,7 +173,7 @@ export const useAiChatHandlers = ({
         setMessages(prevMessages => {
           const errorMessages = prevMessages.map(msg =>
             msg.id === assistantMessage.id
-              ? { ...msg, content: msg.content || `AI回复时出现错误：${error.message}`, isStreaming: false }
+              ? { ...msg, content: msg.content || `AI回复时出现错误：${error instanceof Error ? error.message : '未知错误'}`, isStreaming: false }
               : msg
           )
           updateCurrentChat(errorMessages, chatId)
@@ -241,7 +241,7 @@ export const useAiChatHandlers = ({
       })
       
       scrollToLatestMessage()
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.name !== 'AbortError') {
         console.error('重新生成失败:', error)
       }
@@ -298,7 +298,7 @@ export const useAiChatHandlers = ({
       })
       
       scrollToLatestMessage()
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.name !== 'AbortError') {
         console.error('继续生成失败:', error)
       }

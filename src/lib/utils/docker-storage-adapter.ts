@@ -256,7 +256,7 @@ export class DockerStorageAdapter {
     };
     recommendations: string[];
   }> {
-    const details: any = {};
+    const details: Record<string, unknown> = {};
     const recommendations: string[] = [];
     let status: 'healthy' | 'warning' | 'error' = 'healthy';
 

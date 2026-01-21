@@ -54,7 +54,12 @@ export class SubtitleExtractor {
       const subtitleTracks: SubtitleTrack[] = [];
       
       if (data.streams) {
-        data.streams.forEach((stream: any, index: number) => {
+        data.streams.forEach((stream: {
+          index: number;
+          codec_type: string;
+          codec_name: string;
+          tags?: { language?: string; title?: string }
+        }, index: number) => {
           if (stream.codec_type === 'subtitle') {
             subtitleTracks.push({
               index: stream.index,

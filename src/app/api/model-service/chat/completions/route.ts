@@ -1,6 +1,36 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { ModelServiceStorage } from '@/lib/data/model-service-storage'
 
+// 类型定义
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface ChatRequest {
+  modelId: string;
+  messages: ChatMessage[];
+  temperature?: number;
+  max_tokens?: number;
+}
+
+interface ChatChoice {
+  message: {
+    content: string;
+  };
+}
+
+interface ChatResponse {
+  choices?: ChatChoice[];
+  usage?: unknown;
+  model?: string;
+}
+
+interface ParsedError {
+  code?: string | number;
+  message?: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -104,7 +134,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const data = await response.json()
+    const data: ChatResponse = await response.json()
 
     // 验证响应格式
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
@@ -123,12 +153,12 @@ export async function POST(request: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('模型服务API调用失败:', error)
     return NextResponse.json(
       {
         error: '服务器内部错误',
-        details: error.message
+        details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     )

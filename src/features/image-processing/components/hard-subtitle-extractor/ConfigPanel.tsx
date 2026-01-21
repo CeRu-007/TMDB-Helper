@@ -37,7 +37,7 @@ interface ConfigPanelProps {
   onVideoUrlChange: (url: string) => void
   onVideoUpload: (file: File) => void
   config: Config
-  onConfigChange: (key: keyof Config, value: any) => void
+  onConfigChange: (key: keyof Config, value: unknown) => void
   subtitleRegions: BoundingBox[]
   progress: number
   isProcessing: boolean
@@ -73,7 +73,7 @@ export function ConfigPanel({
         const data = await response.json()
         
         if (data.success && data.models && data.models.length > 0) {
-          const modelList = data.models.map((m: any) => ({
+          const modelList = data.models.map((m: Record<string, unknown>) => ({
             id: m.id,
             displayName: m.displayName || m.modelId || m.id,
             providerId: m.providerId

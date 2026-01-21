@@ -112,7 +112,7 @@ export class DataValidator {
   /**
    * 验证TMDB项目数据
    */
-  static validateTMDBItem(data: unknown): { success: boolean; data?: any; errors?: string[] } {
+  static validateTMDBItem(data: unknown): { success: boolean; data?: TMDBItemType; errors?: string[] } {
     try {
       const validated = TMDBItemSchema.parse(data)
       log.debug('DataValidator', 'TMDB项目验证成功')
@@ -131,7 +131,7 @@ export class DataValidator {
   /**
    * 验证定时任务数据
    */
-  static validateScheduledTask(data: unknown): { success: boolean; data?: any; errors?: string[] } {
+  static validateScheduledTask(data: unknown): { success: boolean; data?: ScheduledTaskType; errors?: string[] } {
     try {
       const validated = ScheduledTaskSchema.parse(data)
       log.debug('DataValidator', '定时任务验证成功')
@@ -150,7 +150,7 @@ export class DataValidator {
   /**
    * 验证导入数据
    */
-  static validateImportData(data: unknown): { success: boolean; data?: any; errors?: string[] } {
+  static validateImportData(data: unknown): { success: boolean; data?: ImportDataType; errors?: string[] } {
     try {
       const validated = ImportDataSchema.parse(data)
       log.info('DataValidator', '导入数据验证成功', { 
@@ -172,12 +172,12 @@ export class DataValidator {
   /**
    * 批量验证TMDB项目
    */
-  static validateTMDBItems(items: unknown[]): { 
-    validItems: any[]
+  static validateTMDBItems(items: unknown[]): {
+    validItems: TMDBItemType[]
     invalidItems: Array<{ index: number; errors: string[] }>
     summary: { total: number; valid: number; invalid: number }
   } {
-    const validItems: any[] = []
+    const validItems: TMDBItemType[] = []
     const invalidItems: Array<{ index: number; errors: string[] }> = []
 
     items.forEach((item, index) => {
@@ -205,9 +205,9 @@ export class DataValidator {
   /**
    * 清理和标准化数据
    */
-  static sanitizeTMDBItem(data: any): any {
+  static sanitizeTMDBItem(data: unknown): TMDBItemType {
     // 清理空字符串为undefined
-    const cleaned = { ...data }
+    const cleaned = data as Record<string, unknown>
     
     const urlFields = ['tmdbUrl', 'posterUrl', 'backdropUrl', 'logoUrl', 'networkLogoUrl', 'platformUrl']
     urlFields.forEach(field => {

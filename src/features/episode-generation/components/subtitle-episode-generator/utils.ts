@@ -200,7 +200,7 @@ export function parseSubtitleFile(content: string, filename: string): SubtitleEp
 }
 
 // 检测是否是余额不足错误
-export function isInsufficientBalanceError(error: any): boolean {
+export function isInsufficientBalanceError(error: unknown): boolean {
   if (typeof error === 'string') {
     return error.includes('account balance is insufficient') ||
            error.includes('余额已用完') ||
@@ -212,14 +212,14 @@ export function isInsufficientBalanceError(error: any): boolean {
     return errorStr.includes('30001') ||
            errorStr.includes('account balance is insufficient') ||
            errorStr.includes('insufficient_balance') ||
-           error.errorType === 'INSUFFICIENT_BALANCE'
+           (error as Record<string, unknown>).errorType === 'INSUFFICIENT_BALANCE'
   }
 
   return false
 }
 
 // 检测是否是配额超限错误
-export function isQuotaExceededError(error: any): boolean {
+export function isQuotaExceededError(error: unknown): boolean {
   if (typeof error === 'string') {
     return error.includes('exceeded today\'s quota') ||
            error.includes('quota exceeded') ||

@@ -1,5 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// 类型定义
+interface ModelScopeMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface ModelScopeRequestBody {
+  model: string;
+  messages: ModelScopeMessage[];
+  stream: boolean;
+}
+
+interface ModelScopeStreamDelta {
+  reasoning_content?: string;
+  content?: string;
+}
+
+interface ModelScopeStreamChoice {
+  delta?: ModelScopeStreamDelta;
+}
+
+interface ModelScopeStreamParsed {
+  choices?: ModelScopeStreamChoice[];
+}
+
+interface ModelScopeModel {
+  id: string;
+  name: string;
+  description: string;
+  isThinking: boolean;
+}
+
 // 魔搭社区API配置
 const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1';
 
@@ -84,7 +116,7 @@ async function handleDeepSeekStreamResponse(response: Response) {
       }
     };
 
-  } catch (error: any) {
+  } catch (error: Error) {
     console.error('处理DeepSeek流式响应失败:', error);
     throw new Error('处理流式响应失败: ' + error.message);
   }
@@ -188,7 +220,7 @@ async function handleQwenStreamResponse(response: Response) {
       }
     };
 
-  } catch (error: any) {
+  } catch (error: Error) {
     console.error('处理Qwen流式响应失败:', error);
     throw new Error('处理流式响应失败: ' + error.message);
   }
@@ -242,7 +274,7 @@ export async function POST(request: NextRequest) {
     const isDeepSeekV3 = model === 'deepseek-ai/DeepSeek-V3.1';
     const isQwen3Next = model === 'Qwen/Qwen3-Next-80B-A3B-Instruct';
 
-    let requestBody: any = {
+    let requestBody: ModelScopeRequestBody = {
       model,
       messages: messages,
       stream: true // 都使用流式响应
@@ -314,7 +346,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
 
-  } catch (error: any) {
+  } catch (error: Error) {
     console.error('服务器内部错误:', error);
     return NextResponse.json(
       {
@@ -360,10 +392,10 @@ export async function GET(request: NextRequest) {
       data: models
     });
 
-  } catch (error: any) {
+  } catch (error: Error) {
     console.error('获取模型列表失败:', error);
     return NextResponse.json(
-      { 
+      {
         error: '服务器内部错误',
         details: error.message
       },

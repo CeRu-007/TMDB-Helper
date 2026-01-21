@@ -274,7 +274,7 @@ class TaskScheduler {
    */
   public async enqueueTask(
     task: ScheduledTask,
-    resolution: any,
+    resolution: { queuePosition?: number; strategy?: string },
   ): Promise<void> {
     return this.taskQueue.enqueueTask(task, resolution);
   }
@@ -289,7 +289,7 @@ class TaskScheduler {
   /**
    * 更新冲突检测和解决配置
    */
-  public updateConflictConfig(config: any): void {
+  public updateConflictConfig(config: Partial<TaskSchedulerAdvancedConfig>): void {
     this.taskQueue.updateConflictConfig(config);
   }
 

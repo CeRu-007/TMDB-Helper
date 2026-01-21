@@ -164,38 +164,38 @@ class ErrorHandler {
   /**
    * 错误类型判断方法
    */
-  private isNetworkError(error: any): boolean {
+  private isNetworkError(error: unknown): boolean {
     return error instanceof TypeError && 
            (error.message.includes('fetch') || 
             error.message.includes('network') ||
             error.message.includes('Failed to fetch'))
   }
 
-  private isApiError(error: any): boolean {
+  private isApiError(error: unknown): boolean {
     return error.response || error.status || error.statusCode
   }
 
-  private isTimeoutError(error: any): boolean {
+  private isTimeoutError(error: unknown): boolean {
     return error.name === 'TimeoutError' || 
            error.message?.includes('timeout') ||
            error.code === 'TIMEOUT'
   }
 
-  private isStorageError(error: any): boolean {
+  private isStorageError(error: unknown): boolean {
     return error.name === 'QuotaExceededError' ||
            error.message?.includes('storage') ||
            error.message?.includes('localStorage') ||
            error.message?.includes('sessionStorage')
   }
 
-  private isPermissionError(error: any): boolean {
+  private isPermissionError(error: unknown): boolean {
     return error.status === 401 || 
            error.status === 403 ||
            error.message?.includes('permission') ||
            error.message?.includes('unauthorized')
   }
 
-  private isValidationError(error: any): boolean {
+  private isValidationError(error: unknown): boolean {
     return error.name === 'ValidationError' ||
            error.status === 400 ||
            error.message?.includes('validation')
@@ -271,7 +271,7 @@ class ErrorHandler {
     delay: number = 1000,
     backoff: boolean = true
   ): Promise<T> {
-    let lastError: any
+    let lastError: unknown
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {

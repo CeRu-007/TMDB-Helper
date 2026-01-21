@@ -11,7 +11,7 @@ export interface DataValidationResult {
   warnings: string[];
   itemCount: number;
   taskCount: number;
-  corruptedData?: any;
+  corruptedData?: unknown;
 }
 
 export interface DataRecoveryOptions {
@@ -288,7 +288,7 @@ class DataRecoveryManager {
   /**
    * 创建数据备份
    */
-  private async createBackup(data: any): Promise<void> {
+  private async createBackup(data: unknown): Promise<void> {
     if (typeof window === 'undefined' || !window.localStorage) return;
 
     try {

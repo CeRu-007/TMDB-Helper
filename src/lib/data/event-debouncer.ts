@@ -13,7 +13,7 @@ export type DataChangeEvent = {
     | 'data_imported'
     | 'data_exported'
     | 'connection_status'
-  data: any
+  data: unknown
   timestamp: number
   userId?: string
   sourceConnectionId?: string

@@ -1,13 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { ApiResponse } from '@/types/common'
+import { ModelProvider, ModelConfig } from '@/shared/types/model-service'
+
+// 请求接口
+interface ImageAnalysisRequest {
+  image: string
+  model?: string
+}
+
+// API 响应类型
+interface ModelServiceResponse {
+  success: boolean
+  scenario: {
+    primaryModelId: string
+  }
+  models: ModelConfig[]
+  providers: ModelProvider[]
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await request.json() as ImageAnalysisRequest
     const { image } = body
 
     if (!image) {
-      return NextResponse.json(
-        { error: '图片数据未提供' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: '图片数据未提供',
+          data: null
+        },
         { status: 400 }
       )
     }
@@ -15,34 +37,50 @@ export async function POST(request: NextRequest) {
     // 从模型服务系统获取图像分析场景配置
     const modelServiceResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/model-service/scenario?scenario=image_analysis`)
     if (!modelServiceResponse.ok) {
-      return NextResponse.json(
-        { error: '获取模型服务配置失败' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: '获取模型服务配置失败',
+          data: null
+        },
         { status: 500 }
       )
     }
 
-    const modelServiceData = await modelServiceResponse.json()
+    const modelServiceData = await modelServiceResponse.json() as ModelServiceResponse
     if (!modelServiceData.success || !modelServiceData.scenario || !modelServiceData.scenario.primaryModelId) {
-      return NextResponse.json(
-        { error: '图像分析场景未配置，请在模型服务-使用场景中配置模型' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: '图像分析场景未配置，请在模型服务-使用场景中配置模型',
+          data: null
+        },
         { status: 400 }
       )
     }
 
     // 获取主模型和对应的提供商
     const primaryModelId = modelServiceData.scenario.primaryModelId
-    const primaryModel = modelServiceData.models.find((m: any) => m.id === primaryModelId)
+    const primaryModel = modelServiceData.models.find((m: ModelConfig) => m.id === primaryModelId)
     if (!primaryModel) {
-      return NextResponse.json(
-        { error: '配置的模型不存在，请重新配置' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: '配置的模型不存在，请重新配置',
+          data: null
+        },
         { status: 400 }
       )
     }
 
-    const provider = modelServiceData.providers.find((p: any) => p.id === primaryModel.providerId)
+    const provider = modelServiceData.providers.find((p: ModelProvider) => p.id === primaryModel.providerId)
     if (!provider || !provider.apiKey) {
-      return NextResponse.json(
-        { error: '模型提供商未配置API密钥，请在设置中配置' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: '模型提供商未配置API密钥，请在设置中配置',
+          data: null
+        },
         { status: 400 }
       )
     }
@@ -56,7 +94,7 @@ export async function POST(request: NextRequest) {
     const maxTokens = modelServiceData.scenario.parameters?.max_tokens || 2000
 
     // 处理图像格式 - 魔搭社区API可能需要base64格式
-    let imageContent: any
+    let imageContent: string | { type: string; image_url: string }
     if (image.startsWith('data:')) {
       // 已经是data URL格式
       imageContent = {
@@ -120,9 +158,11 @@ export async function POST(request: NextRequest) {
         // 保持原始错误信息
       }
 
-      return NextResponse.json(
+      return NextResponse.json<ApiResponse<null>>(
         {
+          success: false,
           error: `魔搭社区API调用失败: ${response.status} ${response.statusText}`,
+          data: null,
           details: errorDetails
         },
         { status: response.status }
@@ -133,8 +173,12 @@ export async function POST(request: NextRequest) {
     const content = result.choices?.[0]?.message?.content || ''
 
     if (!content) {
-      return NextResponse.json(
-        { error: '模型未返回有效内容' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: '模型未返回有效内容',
+          data: null
+        },
         { status: 500 }
       )
     }
@@ -142,20 +186,30 @@ export async function POST(request: NextRequest) {
     // 解析模型返回的内容
     const analysisResult = parseAnalysisResult(content)
 
-    return NextResponse.json({
+    return NextResponse.json<ApiResponse<{
+      description: string;
+      confidence: number;
+      keywords: string[];
+      rawContent: string;
+    }>>({
       success: true,
-      description: analysisResult.description,
-      confidence: analysisResult.confidence,
-      keywords: analysisResult.keywords,
-      rawContent: content
+      data: {
+        description: analysisResult.description,
+        confidence: analysisResult.confidence,
+        keywords: analysisResult.keywords,
+        rawContent: content
+      }
     })
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Image analysis error:', error)
-    return NextResponse.json(
-      { 
+    const errorMessage = error instanceof Error ? error.message : '未知错误'
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
         error: '图像分析失败',
-        details: error instanceof Error ? error.message : '未知错误'
+        data: null,
+        details: errorMessage
       },
       { status: 500 }
     )

@@ -7,12 +7,18 @@ import { MessageActions } from "./molecules/message-actions"
 import { MessageEditor } from "./molecules/message-editor"
 import { SuggestionList } from "./molecules/suggestion-list"
 
+// User info type
+interface UserInfo {
+  avatarUrl?: string
+  displayName?: string
+}
+
 interface ChatMessageItemProps {
   message: Message
   isLastMessage: boolean
   isEditing: boolean
   editingContent: string
-  userInfo: any
+  userInfo: UserInfo | null
   isLoading: boolean
   onStartEdit: (messageId: string, content: string) => void
   onCancelEdit: () => void

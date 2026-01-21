@@ -1,6 +1,10 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+// 导出类型安全工具
+export * from './type-guards';
+export * from './runtime-validation';
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -46,7 +50,7 @@ export function delay(ms: number): Promise<void> {
  * @param defaultValue 解析失败时的默认值
  * @returns 解析后的对象或默认值
  */
-export function safeJsonParse<T = any>(value: any, defaultValue: T | null = null): T | null {
+export function safeJsonParse<T = unknown>(value: unknown, defaultValue: T | null = null): T | null {
   // 如果已经是对象，直接返回
   if (typeof value === 'object' && value !== null) {
     return value as T;
@@ -88,9 +92,9 @@ export function suppressRefWarnings() {
   if (typeof window !== 'undefined') {
     // 保存原始console.error
     const originalConsoleError = console.error;
-    
+
     // 替换console.error
-    console.error = function(...args: any[]) {
+    console.error = function(...args: unknown[]) {
       // 检查是否是我们想要抑制的警告
       const isRefWarning = args.length > 0 && 
         typeof args[0] === 'string' && 

@@ -13,7 +13,7 @@ export interface ApiConfig {
   cache?: boolean
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T
   success: boolean
   message?: string
@@ -23,7 +23,7 @@ export interface ApiResponse<T = any> {
 class ApiClient {
   private static instance: ApiClient
   private config: ApiConfig
-  private cache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map()
+  private cache: Map<string, { data: unknown; timestamp: number; ttl: number }> = new Map()
 
   private constructor(config: ApiConfig = {}) {
     this.config = {
@@ -45,7 +45,7 @@ class ApiClient {
     return `${url}${params ? '?' + new URLSearchParams(params).toString() : ''}`
   }
 
-  private getFromCache(key: string): any | null {
+  private getFromCache(key: string): unknown | null {
     const cached = this.cache.get(key)
     if (cached && Date.now() - cached.timestamp < cached.ttl) {
       log.debug('ApiClient', `缓存命中: ${key}`)
@@ -57,7 +57,7 @@ class ApiClient {
     return null
   }
 
-  private setCache(key: string, data: any, ttl: number = 5 * 60 * 1000): void {
+  private setCache(key: string, data: unknown, ttl: number = 5 * 60 * 1000): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -148,7 +148,7 @@ class ApiClient {
     return this.request<T>(url, { ...options, method: 'GET', params })
   }
 
-  async post<T = any>(url: string, data?: any, options?: RequestInit): Promise<ApiResponse<T>> {
+  async post<T = unknown>(url: string, data?: unknown, options?: RequestInit): Promise<ApiResponse<T>> {
     return this.request<T>(url, {
       ...options,
       method: 'POST',
@@ -157,7 +157,7 @@ class ApiClient {
     })
   }
 
-  async put<T = any>(url: string, data?: any, options?: RequestInit): Promise<ApiResponse<T>> {
+  async put<T = unknown>(url: string, data?: unknown, options?: RequestInit): Promise<ApiResponse<T>> {
     return this.request<T>(url, {
       ...options,
       method: 'PUT',

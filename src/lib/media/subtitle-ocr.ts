@@ -3,6 +3,64 @@
  * 使用模型服务的多模态视觉模型进行字幕识别
  */
 
+// OCR 相关类型定义
+interface OCRSegment {
+  text?: string;
+  confidence?: number;
+  timestamps?: {
+    start?: number;
+    end?: number;
+  };
+}
+
+interface ModelInfo {
+  id: string;
+  providerId?: string;
+  modelId?: string;
+  name?: string;
+  capabilities?: string[];
+}
+
+interface ProviderInfo {
+  id: string;
+  name?: string;
+  endpoint?: string;
+}
+
+interface ModelServiceData {
+  models: ModelInfo[];
+  providers: ProviderInfo[];
+  scenario: {
+    primaryModelId: string;
+  };
+  primaryModel?: string;
+}
+
+interface ImageContent {
+  type: string;
+  data: string;
+  format?: string;
+}
+
+interface ChatMessage {
+  role: string;
+  content?: string | ImageContent[];
+  [key: string]: unknown;
+}
+
+interface OCRResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+}
+
 // ============ 模型轮换器 ============
 
 /**
@@ -69,7 +127,7 @@ export interface OCRBatchRequest {
   /** 各帧的时间戳列表 */
   timestamps: number[]
   /** 各帧对应的语音段 */
-  segments?: any[]
+  segments?: OCRSegment[]
 }
 
 export interface OCRResult {
@@ -243,7 +301,7 @@ export class SubtitleOCR {
       try {
         const result = await this.recognize(requests[i])
         results.push(result)
-      } catch (err: any) {
+      } catch (err: unknown) {
         results.push({
           text: '',
           confidence: 0,
@@ -275,15 +333,15 @@ export class SubtitleOCR {
   /**
    * 提取模型信息（包含备用模型）
    */
-  private extractModelInfo(data: any) {
+  private extractModelInfo(data: ModelServiceData) {
     const primaryModelId = data.scenario.primaryModelId
-    const primaryModel = data.models.find((m: any) => m.id === primaryModelId)
+    const primaryModel = data.models.find((m) => m.id === primaryModelId)
 
     if (!primaryModel) {
       throw new Error('配置的OCR模型不存在')
     }
 
-    const provider = data.providers.find((p: any) => p.id === primaryModel.providerId)
+    const provider = data.providers.find((p) => p.id === primaryModel.providerId)
 
     if (!provider?.apiKey) {
       throw new Error('OCR模型提供商未配置API密钥')
@@ -291,8 +349,8 @@ export class SubtitleOCR {
 
     // 获取所有可用的备用模型（从场景配置的模型中，排除主模型）
     const backupModels = data.models
-      .filter((m: any) => m.id !== primaryModelId)
-      .map((m: any) => m.modelId || m.id)
+      .filter((m) => m.id !== primaryModelId)
+      .map((m) => m.modelId || m.id)
 
     console.log(`[OCR] 可用模型列表:`, [primaryModel.modelId || primaryModel.id, ...backupModels])
 
@@ -327,7 +385,7 @@ export class SubtitleOCR {
    * 构建API消息
    */
   private buildMessages(image: string, prompt: string) {
-    let imageContent: any
+    let imageContent: ImageContent
 
     if (image.startsWith('data:')) {
       imageContent = {
@@ -357,8 +415,8 @@ export class SubtitleOCR {
     apiBaseUrl: string,
     apiKey: string,
     modelId: string,
-    messages: any[]
-  ): Promise<any> {
+    messages: ChatMessage[]
+  ): Promise<OCRResponse> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout)
 
@@ -395,7 +453,7 @@ export class SubtitleOCR {
   /**
    * 解析OCR结果
    */
-  private parseOCRResult(response: any): { text: string; confidence: number } {
+  private parseOCRResult(response: OCRResponse): { text: string; confidence: number } {
     const content = response.choices?.[0]?.message?.content || ''
 
     // 清理结果

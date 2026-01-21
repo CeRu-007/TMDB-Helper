@@ -131,8 +131,8 @@ export const useSubtitleTask = ({
       scrollToLatestMessage();
       toast.success(config.successMessage)
 
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         const interruptedMessages = updatedMessages.map(msg => {
           if (msg.id === assistantMessage.id) {
             return {
@@ -153,7 +153,7 @@ export const useSubtitleTask = ({
           if (msg.id === assistantMessage.id) {
             return {
               ...msg,
-              content: `${config.errorPrefix}时出现错误：${error.message}`,
+              content: `${config.errorPrefix}时出现错误：${error instanceof Error ? error.message : String(error)}`,
               isStreaming: false
             }
           }
@@ -164,7 +164,7 @@ export const useSubtitleTask = ({
         updateCurrentChat(errorMessages, chatId)
 
         toast.error(`${config.taskName}失败`, {
-          description: error.message
+          description: error instanceof Error ? error.message : String(error)
         })
       }
     } finally {

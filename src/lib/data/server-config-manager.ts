@@ -1,6 +1,55 @@
 import fs from 'fs';
 import path from 'path';
 
+// 通用设置类型定义
+interface GeneralSettings {
+  language?: string;
+  timezone?: string;
+  autoSave?: boolean;
+  debugMode?: boolean;
+}
+
+interface AppearanceSettings {
+  theme?: 'light' | 'dark' | 'auto';
+  fontSize?: 'small' | 'medium' | 'large';
+  compactMode?: boolean;
+  sidebarCollapsed?: boolean;
+}
+
+interface VideoThumbnailSettings {
+  quality?: 'low' | 'medium' | 'high';
+  format?: 'jpg' | 'png' | 'webp';
+  interval?: number;
+  maxThumbnails?: number;
+}
+
+interface TaskSchedulerConfig {
+  enabled?: boolean;
+  maxConcurrentTasks?: number;
+  retryAttempts?: number;
+  retryDelay?: number;
+}
+
+interface SyncStatus {
+  lastSync?: number;
+  inProgress?: boolean;
+  errors?: string[];
+  pending?: number;
+}
+
+interface LayoutPreferences {
+  sidebarWidth?: number;
+  panelSizes?: number[];
+  hiddenSections?: string[];
+}
+
+interface EpisodeGeneratorConfig {
+  model?: string;
+  provider?: string;
+  maxTokens?: number;
+  temperature?: number;
+}
+
 /**
  * 服务端配置接口
  */
@@ -20,16 +69,16 @@ export interface ServerConfig {
   modelScopeApiSettings?: string;
 
   // 通用设置
-  generalSettings?: any;
-  appearanceSettings?: any;
-  videoThumbnailSettings?: any;
-  taskSchedulerConfig?: any;
+  generalSettings?: GeneralSettings;
+  appearanceSettings?: AppearanceSettings;
+  videoThumbnailSettings?: VideoThumbnailSettings;
+  taskSchedulerConfig?: TaskSchedulerConfig;
   episodeGeneratorApiProvider?: string;
-  sync_status?: any;
-  layout_preferences?: any;
-  episode_generator_config?: any;
-  last_login_username?: any;
-  last_login_remember_me?: any;
+  sync_status?: SyncStatus;
+  layout_preferences?: LayoutPreferences;
+  episode_generator_config?: EpisodeGeneratorConfig;
+  last_login_username?: string;
+  last_login_remember_me?: boolean;
 
   // 元数据
   lastUpdated?: number;
@@ -246,7 +295,7 @@ export class ServerConfigManager {
   /**
    * 键名映射：将下划线命名转换为驼峰命名
    */
-  private static mapKeys(rawConfig: any): ServerConfig {
+  private static mapKeys(rawConfig: Record<string, unknown>): ServerConfig {
     const keyMapping: Record<string, string> = {
       tmdb_api_key: 'tmdbApiKey',
       tmdb_import_path: 'tmdbImportPath',
@@ -263,7 +312,7 @@ export class ServerConfigManager {
       task_scheduler_config: 'taskSchedulerConfig',
     };
 
-    const mappedConfig: any = {};
+    const mappedConfig: Partial<ServerConfig> = {};
 
     // 复制所有原始键
     Object.keys(rawConfig).forEach((key) => {
@@ -565,7 +614,7 @@ export class ServerConfigManager {
   /**
    * 获取特定配置项
    */
-  static getConfigItem(key: keyof ServerConfig): any {
+  static getConfigItem<T extends keyof ServerConfig>(key: T): ServerConfig[T] | undefined {
     const config = this.getConfig();
     const value = config[key];
 
@@ -584,7 +633,7 @@ export class ServerConfigManager {
   /**
    * 设置特定配置项 (减少日志输出)
    */
-  static setConfigItem(key: keyof ServerConfig, value: any): void {
+  static setConfigItem<T extends keyof ServerConfig>(key: T, value: ServerConfig[T]): void {
     if (process.env.NODE_ENV === 'development') {
     }
 

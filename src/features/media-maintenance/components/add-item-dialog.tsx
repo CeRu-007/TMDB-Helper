@@ -29,7 +29,7 @@ import {
   FileCode,
   Image as ImageIcon
 } from "lucide-react"
-import type { TMDBItem, Season, Episode } from "@/lib/data/storage"
+import type { TMDBItem, Season, Episode } from "@/types/tmdb-item"
 import { StorageManager } from "@/lib/data/storage"
 import { cn } from "@/lib/utils"
 import { Checkbox } from "@/shared/components/ui/checkbox"
@@ -76,7 +76,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
   const [selectedResult, setSelectedResult] = useState<TMDBSearchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
-  const [tmdbSeasons, setTmdbSeasons] = useState<any[]>([])
+  const [tmdbSeasons, setTmdbSeasons] = useState<Season[]>([])
   const [backdropUrl, setBackdropUrl] = useState<string | undefined>(undefined)
   const [backdropPath, setBackdropPath] = useState<string | undefined>(undefined)
   const [customBackdropUrl, setCustomBackdropUrl] = useState<string>("")
@@ -95,7 +95,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
   // 添加标记来跟踪用户是否手动修改了总集数
   const [isManualTotalEpisodes, setIsManualTotalEpisodes] = useState(false)
   // Node.js和浏览器环境中setTimeout返回类型不同，使用any类型避免类型错误
-  const searchTimeoutRef = useRef<any>();
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   
   // 获取显示标题
   const getDisplayTitle = (result: TMDBSearchResult): string => {
@@ -129,7 +129,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
           calculatedTotalEpisodes = tmdbData.totalEpisodes;
         }
         if (tmdbData.seasons && tmdbData.seasons.length > 0) {
-          calculatedTotalEpisodes = tmdbData.seasons.reduce((sum: number, season: any) => sum + (season.totalEpisodes || 0), 0);
+          calculatedTotalEpisodes = tmdbData.seasons.reduce((sum: number, season: { totalEpisodes?: number }) => sum + (season.totalEpisodes || 0), 0);
         }
 
         // 更新表单数据
@@ -239,7 +239,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       }
 
       const results = result.data.results
-        .filter((item: any) => item.media_type === "movie" || item.media_type === "tv")
+        .filter((item: { media_type: string }) => item.media_type === "movie" || item.media_type === "tv")
         .slice(0, 10) // 限制显示10个结果
 
       setSearchResults(results)
@@ -773,7 +773,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                       {/* 季数信息展示 - 使用紧凑的标签式设计 */}
                       {tmdbSeasons && tmdbSeasons.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-1">
-                          {tmdbSeasons.map((season: any, index: number) => (
+                          {tmdbSeasons.map((season: Season, index: number) => (
                             <Badge
                               key={index}
                               variant="outline"

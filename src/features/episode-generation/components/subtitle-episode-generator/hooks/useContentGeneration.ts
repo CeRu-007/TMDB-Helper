@@ -1,7 +1,7 @@
 ﻿import { useState, useCallback } from 'react'
 import { useToast } from '@/shared/components/ui/use-toast'
 import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
-import { SubtitleFile, GenerationConfig, EnhanceOperation, GenerationStatus } from '../types'
+import { SubtitleFile, GenerationConfig, EnhanceOperation, GenerationStatus, GenerationResult } from '../types'
 import { GENERATION_STYLES } from '../constants'
 import { timestampToMinutes } from '../utils'
 import { useApiCalls } from './useApiCalls'
@@ -11,7 +11,7 @@ export function useContentGeneration(
   subtitleFiles: SubtitleFile[],
   selectedFile: SubtitleFile | null
 ) {
-  const [generationResults, setGenerationResults] = useState<Record<string, any[]>>({})
+  const [generationResults, setGenerationResults] = useState<Record<string, GenerationResult[]>>({})
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationProgress, setGenerationProgress] = useState(0)
   const [showInsufficientBalanceDialog, setShowInsufficientBalanceDialog] = useState(false)
@@ -20,7 +20,7 @@ export function useContentGeneration(
   const { generateEpisodeContentForStyle, enhanceContent } = useApiCalls(config)
 
   // 检测是否是余额不足错误
-  const isInsufficientBalanceError = (error: any): boolean => {
+  const isInsufficientBalanceError = (error: { code?: string; message?: string }): boolean => {
     if (typeof error === 'string') {
       return error.includes('account balance is insufficient') ||
              error.includes('余额已用完') ||
@@ -39,8 +39,8 @@ export function useContentGeneration(
   }
 
   // 为所有选中的风格生成内容
-  const generateEpisodeContent = useCallback(async (episode: any): Promise<any[]> => {
-    const results: any[] = []
+  const generateEpisodeContent = useCallback(async (episode: SubtitleEpisode): Promise<GenerationResult[]> => {
+    const results: GenerationResult[] = []
 
     // 验证和过滤有效的风格ID
     const validStyleIds = GENERATION_STYLES.map(s => s.id)
@@ -221,7 +221,7 @@ export function useContentGeneration(
     setGenerationResults(prev => ({ ...prev, [selectedFile.id]: [] }))
 
     try {
-      const results: any[] = []
+      const results: GenerationResult[] = []
       const episodes = selectedFile.episodes
       let successCount = 0
       let failCount = 0

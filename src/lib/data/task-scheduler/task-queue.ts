@@ -41,7 +41,7 @@ export class TaskQueue {
    */
   public async enqueueTask(
     task: ScheduledTask,
-    resolution: any,
+    resolution: { queuePosition?: number; strategy?: string },
   ): Promise<void> {
     try {
       // 这里需要集成任务队列系统
@@ -64,7 +64,7 @@ export class TaskQueue {
   /**
    * 检测任务冲突
    */
-  public detectConflicts(task: ScheduledTask, nextRunTime: Date): any[] {
+  public detectConflicts(task: ScheduledTask, nextRunTime: Date): unknown[] {
     return this.conflictDetector.detectConflicts(task, nextRunTime);
   }
 
@@ -74,8 +74,8 @@ export class TaskQueue {
   public resolveConflicts(
     task: ScheduledTask,
     nextRunTime: Date,
-    conflicts: any[],
-  ): any {
+    conflicts: unknown[],
+  ): unknown {
     return this.conflictResolver.resolveConflicts(
       task,
       nextRunTime,
@@ -110,7 +110,7 @@ export class TaskQueue {
   /**
    * 更新冲突检测和解决配置
    */
-  public updateConflictConfig(config: any): void {
+  public updateConflictConfig(config: Partial<TaskSchedulerAdvancedConfig>): void {
     const advancedConfig = advancedConfigManager.getConfig();
 
     if (config.conflictDetection) {

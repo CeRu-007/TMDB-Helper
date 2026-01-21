@@ -47,6 +47,20 @@ export interface AudioTranscriptionResult {
   confidence: number;
 }
 
+export interface SubtitleSegment {
+  start: number;
+  end: number;
+  text: string;
+  confidence?: number;
+}
+
+export interface ModelInfo {
+  id: string;
+  object?: string;
+  created?: number;
+  owned_by?: string;
+}
+
 export class SiliconFlowMultimodal {
   private config: SiliconFlowConfig;
   private defaultVisualModel = 'Qwen/Qwen2.5-VL-72B-Instruct';
@@ -314,7 +328,7 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       // 处理分段信息
       let segments = [];
       if (result.segments && Array.isArray(result.segments)) {
-        segments = result.segments.map((segment: any) => ({
+        segments = result.segments.map((segment: SubtitleSegment) => ({
           start: segment.start || 0,
           end: segment.end || 0,
           text: segment.text || '',
@@ -445,13 +459,13 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       
       const data = await response.json();
       const visionModels = data.data
-        ?.filter((model: any) => 
-          model.id.includes('VL') || 
-          model.id.includes('vision') || 
+        ?.filter((model: ModelInfo) =>
+          model.id.includes('VL') ||
+          model.id.includes('vision') ||
           model.id.includes('Qwen2.5-VL') ||
           model.id.includes('deepseek-vl')
         )
-        ?.map((model: any) => model.id) || [];
+        ?.map((model: ModelInfo) => model.id) || [];
       
       return visionModels;
     } catch (error) {

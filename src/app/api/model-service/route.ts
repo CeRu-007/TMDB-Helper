@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { ModelServiceStorage } from '@/lib/data/model-service-storage'
-import { ModelServiceConfig } from '@/shared/types/model-service'
+import { ModelServiceConfig, ModelProvider, ModelConfig, UsageScenario } from '@/shared/types/model-service'
+import { ApiResponse } from '@/types/common'
 
 // Standardized error response helper
 function createErrorResponse(message: string, status: number = 500) {
@@ -12,11 +13,11 @@ function createErrorResponse(message: string, status: number = 500) {
 }
 
 // Standardized success response helper
-function createSuccessResponse(data: any, message?: string) {
-  return NextResponse.json({
+function createSuccessResponse<T>(data: T, message?: string) {
+  return NextResponse.json<ApiResponse<T>>({
     success: true,
-    ...(message && { message }),
-    ...data
+    data,
+    ...(message && { message })
   })
 }
 
@@ -56,16 +57,38 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Action handler types
+type ActionHandler<T> = (data: T) => Promise<void>
+
+interface ActionHandlers {
+  'add-provider': ActionHandler<Omit<ModelProvider, 'id' | 'createdAt' | 'updatedAt'>>
+  'update-provider': ActionHandler<ModelProvider>
+  'delete-provider': ActionHandler<{ id: string }>
+  'add-model': ActionHandler<Omit<ModelConfig, 'id' | 'createdAt' | 'updatedAt'>>
+  'update-model': ActionHandler<ModelConfig>
+  'delete-model': ActionHandler<{ id: string }>
+  'update-scenario': ActionHandler<UsageScenario | UsageScenario[]>
+  'update-scenarios': ActionHandler<UsageScenario[]>
+}
+
 // Action handlers mapping for better maintainability
-const ACTION_HANDLERS = {
-  'add-provider': (data: any) => ModelServiceStorage.addProvider(data),
-  'update-provider': (data: any) => ModelServiceStorage.updateProvider(data),
-  'delete-provider': (data: any) => ModelServiceStorage.deleteProvider(data.id),
-  'add-model': (data: any) => ModelServiceStorage.addModel(data),
-  'update-model': (data: any) => ModelServiceStorage.updateModel(data),
-  'delete-model': (data: any) => ModelServiceStorage.deleteModel(data.id),
-  'update-scenario': (data: any) => ModelServiceStorage.updateScenarios(Array.isArray(data) ? data : [data]),
-  'update-scenarios': (data: any) => ModelServiceStorage.updateScenarios(Array.isArray(data) ? data : [data])
+const ACTION_HANDLERS: ActionHandlers = {
+  'add-provider': (data: Omit<ModelProvider, 'id' | 'createdAt' | 'updatedAt'>) =>
+    ModelServiceStorage.addProvider(data),
+  'update-provider': (data: ModelProvider) =>
+    ModelServiceStorage.updateProvider(data),
+  'delete-provider': (data: { id: string }) =>
+    ModelServiceStorage.deleteProvider(data.id),
+  'add-model': (data: Omit<ModelConfig, 'id' | 'createdAt' | 'updatedAt'>) =>
+    ModelServiceStorage.addModel(data),
+  'update-model': (data: ModelConfig) =>
+    ModelServiceStorage.updateModel(data),
+  'delete-model': (data: { id: string }) =>
+    ModelServiceStorage.deleteModel(data.id),
+  'update-scenario': (data: UsageScenario | UsageScenario[]) =>
+    ModelServiceStorage.updateScenarios(Array.isArray(data) ? data : [data]),
+  'update-scenarios': (data: UsageScenario[]) =>
+    ModelServiceStorage.updateScenarios(data)
 }
 
 export async function PUT(request: NextRequest) {

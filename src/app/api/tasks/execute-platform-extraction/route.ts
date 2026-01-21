@@ -112,18 +112,18 @@ export async function POST(request: NextRequest) {
         output: stdout.substring(0, 1000)
       }, { status: 200 });
       
-    } catch (execError: any) {
-      
+    } catch (execError: unknown) {
+
       return NextResponse.json({
         success: false,
         error: '播出平台抓取命令执行失败',
         details: {
           command: extractCommand,
           workingDir: tmdbImportDir,
-          errorMessage: execError.message,
-          errorCode: execError.code,
-          stdout: execError.stdout || '',
-          stderr: execError.stderr || ''
+          errorMessage: execError instanceof Error ? execError.message : String(execError),
+          errorCode: execError instanceof Error && 'code' in execError ? (execError as Error & { code?: unknown }).code : undefined,
+          stdout: execError instanceof Error && 'stdout' in execError ? (execError as Error & { stdout?: string }).stdout || '' : '',
+          stderr: execError instanceof Error && 'stderr' in execError ? (execError as Error & { stderr?: string }).stderr || '' : ''
         }
       }, { status: 500 });
     }

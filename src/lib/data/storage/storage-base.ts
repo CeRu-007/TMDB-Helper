@@ -153,14 +153,14 @@ export class StorageBase {
   /**
    * 降级到localStorage的方法
    */
-  protected static fallbackToLocalStorage(): any[] {
+  protected static fallbackToLocalStorage(): unknown[] {
     return [];
   }
 
   /**
    * 保存项目方法已移除（现在使用服务端存储）
    */
-  protected static saveItems(items: any[]): void {
+  protected static saveItems(items: unknown[]): void {
     // 已移除，现在使用服务端存储
   }
 

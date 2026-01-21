@@ -1,5 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// 类型定义
+interface SiliconFlowMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface SiliconFlowRequest {
+  model: string;
+  messages: SiliconFlowMessage[];
+  temperature?: number;
+  max_tokens?: number;
+  stream: boolean;
+}
+
+interface SiliconFlowChoice {
+  message: {
+    content: string;
+  };
+}
+
+interface SiliconFlowUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
+interface SiliconFlowResponse {
+  choices?: SiliconFlowChoice[];
+  usage?: SiliconFlowUsage;
+  model?: string;
+}
+
+interface SiliconFlowModel {
+  id: string;
+  object: string;
+  created: number;
+  owned_by: string;
+}
+
+interface SiliconFlowModelsResponse {
+  data?: SiliconFlowModel[];
+}
+
 // 硅基流动API配置
 const SILICONFLOW_API_BASE = 'https://api.siliconflow.cn/v1';
 
@@ -82,8 +125,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = await response.json();
-    
+    const data: SiliconFlowResponse = await response.json();
+
     // 验证响应格式
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       return NextResponse.json(
@@ -101,7 +144,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: Error) {
     
     return NextResponse.json(
       { 
@@ -140,14 +183,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await response.json();
-    
+    const data: SiliconFlowModelsResponse = await response.json();
+
     return NextResponse.json({
       success: true,
       data: data.data || []
     });
 
-  } catch (error: any) {
+  } catch (error: Error) {
     
     return NextResponse.json(
       { 

@@ -262,7 +262,7 @@ class PerformanceManager {
   /**
    * 防抖函数
    */
-  debounce<T extends (...args: any[]) => any>(
+  debounce<T extends (...args: unknown[]) => unknown>(
     func: T,
     delay: number,
     id?: string
@@ -284,7 +284,7 @@ class PerformanceManager {
   /**
    * 节流函数
    */
-  throttle<T extends (...args: any[]) => any>(
+  throttle<T extends (...args: unknown[]) => unknown>(
     func: T,
     delay: number
   ): (...args: Parameters<T>) => void {
@@ -324,8 +324,8 @@ export const perf = {
   endTiming: (label: string) => performanceManager.endTiming(label),
   recordMetrics: (metrics: Partial<PerformanceMetrics>) => performanceManager.recordMetrics(metrics),
   checkMemory: () => performanceManager.checkMemoryUsage(),
-  debounce: <T extends (...args: any[]) => any>(func: T, delay: number, id?: string) => 
+  debounce: <T extends (...args: unknown[]) => unknown>(func: T, delay: number, id?: string) => 
     performanceManager.debounce(func, delay, id),
-  throttle: <T extends (...args: any[]) => any>(func: T, delay: number) => 
+  throttle: <T extends (...args: unknown[]) => unknown>(func: T, delay: number) => 
     performanceManager.throttle(func, delay)
 }

@@ -7,9 +7,9 @@
 import { useState, useCallback } from 'react'
 
 export interface FormFieldConfig {
-  value: any
+  value: unknown
   required?: boolean
-  validator?: (value: any) => string | null
+  validator?: (value: unknown) => string | null
 }
 
 export interface FormState<T> {
@@ -22,12 +22,12 @@ export interface FormState<T> {
 
 export interface UseFormStateOptions<T> {
   initialValues: T
-  validators?: Partial<Record<keyof T, (value: any) => string | null>>
+  validators?: Partial<Record<keyof T, (value: unknown) => string | null>>
   onSubmit?: (values: T) => Promise<void> | void
   onValidate?: (values: T) => Partial<Record<keyof T, string>>
 }
 
-export function useFormState<T extends Record<string, any>>({
+export function useFormState<T extends Record<string, unknown>>({
   initialValues,
   validators = {},
   onSubmit,
@@ -40,7 +40,7 @@ export function useFormState<T extends Record<string, any>>({
   const [isDirty, setIsDirty] = useState(false)
 
   // 验证单个字段
-  const validateField = useCallback((field: keyof T, value: any): string | null => {
+  const validateField = useCallback((field: keyof T, value: unknown): string | null => {
     const validator = validators[field]
     if (validator) {
       return validator(value)
@@ -75,7 +75,7 @@ export function useFormState<T extends Record<string, any>>({
   }, [values, validators, validateField, onValidate])
 
   // 更新字段值
-  const setFieldValue = useCallback((field: keyof T, value: any) => {
+  const setFieldValue = useCallback((field: keyof T, value: unknown) => {
     setValues(prev => ({ ...prev, [field]: value }))
     setIsDirty(true)
 

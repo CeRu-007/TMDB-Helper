@@ -166,7 +166,7 @@ class ChatSyncManager {
             ...result.data,
             createdAt: new Date(result.data.createdAt),
             updatedAt: new Date(result.data.updatedAt),
-            messages: result.data.messages.map((m: any) => ({
+            messages: result.data.messages.map((m: Message) => ({
               ...m,
               timestamp: new Date(m.timestamp)
             }))
@@ -217,11 +217,11 @@ class ChatSyncManager {
       if (response.ok) {
         const result = await response.json()
         if (result.success && Array.isArray(result.data)) {
-          const histories = result.data.map((h: any) => ({
+          const histories = result.data.map((h: ChatHistory) => ({
             ...h,
             createdAt: new Date(h.createdAt),
             updatedAt: new Date(h.updatedAt),
-            messages: h.messages.map((m: any) => ({
+            messages: h.messages.map((m: Message) => ({
               ...m,
               timestamp: new Date(m.timestamp)
             }))

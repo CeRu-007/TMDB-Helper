@@ -6,10 +6,27 @@ import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
 import MediaCard from '@/features/media-maintenance/components/media-card'
 import { UseHomeStateReturn } from '@/features/media-maintenance/lib/hooks/use-home-state'
+
 interface WeeklyScheduleSectionProps {
   homeState: UseHomeStateReturn
   categories: Array<{ id: string; name: string; icon: React.ReactNode }>
 }
+
+// 分类筛选策略
+const categoryFilters = {
+  anime: (title: string, notes: string) =>
+    title.includes("动漫") || notes.includes("动漫"),
+  tv: (title: string, notes: string, mediaType?: string) =>
+    mediaType === "tv" &&
+    !title.includes("动漫") && !notes.includes("动漫") &&
+    !title.includes("综艺") && !notes.includes("综艺"),
+  kids: (title: string, notes: string) =>
+    title.includes("少儿") || notes.includes("少儿"),
+  variety: (title: string, notes: string) =>
+    title.includes("综艺") || notes.includes("综艺"),
+  short: (title: string, notes: string) =>
+    title.includes("短剧") || notes.includes("短剧"),
+} as const;
 
 export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleSectionProps) {
   const { items, loading } = useData()
@@ -17,33 +34,24 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
   // 根据分类筛选词条
   const filterItemsByCategory = (items: TMDBItem[]) => {
     if (homeState.selectedCategory === "all") return items
-    
+
     return items.filter(item => {
+      // 优先使用明确的分类
       if (item.category) {
         return item.category === homeState.selectedCategory
       }
-      
-      // 备用逻辑
+
+      // 备用逻辑：使用关键词匹配
       const title = item.title.toLowerCase()
       const notes = item.notes?.toLowerCase() || ""
-      
-      switch(homeState.selectedCategory) {
-        case "anime":
-          return title.includes("动漫") || notes.includes("动漫")
-        case "tv":
-          return item.mediaType === "tv" && 
-                 !title.includes("动漫") && !notes.includes("动漫") &&
-                 !title.includes("综艺") && !notes.includes("综艺")
-        case "kids":
-          return title.includes("少儿") || notes.includes("少儿")
-        case "variety":
-          return title.includes("综艺") || notes.includes("综艺")
-        case "short":
-          return title.includes("短剧") || notes.includes("短剧")
+      const category = homeState.selectedCategory as keyof typeof categoryFilters
 
-        default:
-          return true
-      }
+      const filter = categoryFilters[category]
+      if (!filter) return true
+
+      return category === 'tv'
+        ? filter(title, notes, item.mediaType)
+        : filter(title, notes)
     })
   }
 

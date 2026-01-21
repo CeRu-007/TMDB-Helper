@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { promises as fs } from 'fs'
 import path from 'path'
+import { ChatHistory } from '@/types/ai-chat'
+import { ApiResponse } from '@/types/common'
 
 // 对话历史存储路径
 const CHAT_HISTORY_DIR = path.join(process.cwd(), 'data', 'ai-chat')
@@ -25,26 +27,30 @@ export async function GET(request: NextRequest) {
       const histories = JSON.parse(data)
       
       // 按更新时间倒序排序
-      histories.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      
-      return NextResponse.json({
+      histories.sort((a: ChatHistory, b: ChatHistory) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
+
+      return NextResponse.json<ApiResponse<ChatHistory[]>>({
         success: true,
         data: histories
       })
     } catch (error) {
       // 文件不存在或格式错误，返回空数组
-      return NextResponse.json({
+      return NextResponse.json<ApiResponse<ChatHistory[]>>({
         success: true,
         data: []
       })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('获取对话历史失败:', error)
-    return NextResponse.json(
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
         error: '获取对话历史失败',
-        details: error.message
+        data: null,
+        details: errorMessage
       },
       { status: 500 }
     )
@@ -58,31 +64,35 @@ export async function POST(request: NextRequest) {
     const { histories } = body
 
     if (!Array.isArray(histories)) {
-      return NextResponse.json(
+      return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: '无效的对话历史数据格式'
+          error: '无效的对话历史数据格式',
+          data: null
         },
         { status: 400 }
       )
     }
 
     await ensureDirectoryExists()
-    
+
     // 保存到文件
     await fs.writeFile(CHAT_HISTORY_FILE, JSON.stringify(histories, null, 2), 'utf-8')
-    
-    return NextResponse.json({
+
+    return NextResponse.json<ApiResponse<null>>({
       success: true,
+      data: null,
       message: '对话历史保存成功'
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('保存对话历史失败:', error)
-    return NextResponse.json(
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
         error: '保存对话历史失败',
-        details: error.message
+        data: null,
+        details: errorMessage
       },
       { status: 500 }
     )

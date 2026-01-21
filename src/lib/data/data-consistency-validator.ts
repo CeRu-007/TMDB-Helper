@@ -345,7 +345,7 @@ export class DataConsistencyValidator {
   /**
    * 深度比较两个值
    */
-  private deepEqual(a: any, b: any): boolean {
+  private deepEqual(a: unknown, b: unknown): boolean {
     if (a === b) return true;
 
     if (a == null || b == null) return a === b;

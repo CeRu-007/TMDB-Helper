@@ -32,7 +32,7 @@ export class ChunkLoadMonitor {
   private loadHistory: ChunkLoadEvent[] = [];
   private maxHistorySize = 50;
   private listeners: Set<(event: ChunkLoadEvent) => void> = new Set();
-  private originalWebpackRequire?: any;
+  private originalWebpackRequire?: (...args: unknown[]) => unknown;
 
   private constructor() {
     this.setupWebpackMonitoring();

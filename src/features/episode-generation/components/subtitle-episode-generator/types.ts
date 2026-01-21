@@ -147,7 +147,7 @@ export interface WorkAreaProps {
   onUpdateResult?: (resultIndex: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (resultIndex: number) => void
   onEnhanceContent?: (resultIndex: number, operation: EnhanceOperation, selectedTextInfo?: {text: string, start: number, end: number}) => void
-  isInsufficientBalanceError?: (error: any) => boolean
+  isInsufficientBalanceError?: (error: { code?: string; message?: string }) => boolean
   setShowInsufficientBalanceDialog?: (show: boolean) => void
 }
 
@@ -156,7 +156,7 @@ export interface ResultsDisplayProps {
   onUpdateResult?: (index: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (index: number) => void
   onEnhanceContent?: (index: number, operation: EnhanceOperation, selectedTextInfo?: {text: string, start: number, end: number}) => void
-  isInsufficientBalanceError?: (error: any) => boolean
+  isInsufficientBalanceError?: (error: { code?: string; message?: string }) => boolean
   setShowInsufficientBalanceDialog?: (show: boolean) => void
 }
 
@@ -172,7 +172,12 @@ export interface GenerationSettingsDialogProps {
   onConfigChange: (config: GenerationConfig) => void
   onOpenGlobalSettings?: (section: string) => void
   setShouldReopenSettingsDialog?: (value: boolean) => void
-  scenarioModels: any // 使用场景模型配置的返回类型
+  scenarioModels: {
+  availableModels: Array<{ id: string; name: string; type?: string }>
+  selectedModels: string[]
+  isLoading: boolean
+  error?: string
+} // 使用场景模型配置的返回类型
 }
 
 export interface ExportConfigDialogProps {

@@ -17,7 +17,7 @@ interface WorkerMessage {
     staticFrameThreshold?: number;
     simplifiedAnalysis?: boolean;
   };
-  data?: any;
+  data?: unknown;
 }
 
 // 定义分析选项接口
@@ -156,7 +156,12 @@ function batchAnalyzeImage(
   
   try {
     // 创建分析结果对象
-    let results: any = {};
+    let results: Record<string, number | boolean | Uint8ClampedArray | {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}[]> = {};
     
     // 计算基本分数
     results.staticScore = calculateStaticScore(imageData, effectiveSampleRate);

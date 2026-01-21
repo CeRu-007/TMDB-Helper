@@ -10,7 +10,7 @@ import { storageService } from '../storage/storage-service'
 export interface ReducerWithPersistenceOptions<T> {
   key: string
   initialState: T
-  reducer: (state: T, action: any) => T
+  reducer: (state: T, action: { type: string; payload?: unknown }) => T
   persist?: boolean
   onStateChange?: (state: T) => void
 }

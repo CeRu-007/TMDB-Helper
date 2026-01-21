@@ -892,7 +892,7 @@ function DataStatsSection({
   items
 }: {
   userInfo: UserInfo
-  items: any[]
+  items: unknown[]
 }) {
   const daysSinceCreation = Math.floor(
     (new Date().getTime() - new Date(userInfo.createdAt).getTime()) / (1000 * 60 * 60 * 24)

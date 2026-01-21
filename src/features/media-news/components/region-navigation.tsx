@@ -10,7 +10,7 @@ interface RegionNavigationProps {
   setMediaNewsType: (type: 'upcoming' | 'recent') => void
   upcomingItemsByRegion: Record<string, any[]>
   recentItemsByRegion: Record<string, any[]>
-  items: any[]
+  items: unknown[]
 }
 
 export function RegionNavigation({

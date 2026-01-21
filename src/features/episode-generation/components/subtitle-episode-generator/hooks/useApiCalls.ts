@@ -1,4 +1,5 @@
 ﻿import { useCallback } from 'react'
+import { SubtitleEpisode, GenerationResult } from '../types'
 import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
 import { GenerationConfig } from '../types'
 import { GENERATION_STYLES } from '../constants'
@@ -23,7 +24,7 @@ export function useApiCalls(config: GenerationConfig) {
   const scenarioModels = useScenarioModels('episode_generation')
 
   // 调用API生成内容（为单个风格生成）
-  const generateEpisodeContentForStyle = useCallback(async (episode: any, styleId: string): Promise<ApiCallResult> => {
+  const generateEpisodeContentForStyle = useCallback(async (episode: SubtitleEpisode, styleId: string): Promise<ApiCallResult> => {
     const prompt = buildPromptForStyle(episode, config, styleId)
 
     // 获取实际的模型ID
@@ -101,7 +102,7 @@ export function useApiCalls(config: GenerationConfig) {
             errorMessage = 'API密钥无效，请检查配置'
           } else if (response.status === 429) {
             // 检查是否是配额超限错误
-            const isQuotaExceededError = (error: any): boolean => {
+            const isQuotaExceededError = (error: { code?: string; message?: string }): boolean => {
               if (typeof error === 'string') {
                 return error.includes('exceeded today\'s quota') ||
                        error.includes('quota exceeded') ||
@@ -138,7 +139,7 @@ export function useApiCalls(config: GenerationConfig) {
               return false
             }
 
-            const isInsufficientBalanceError = (error: any): boolean => {
+            const isInsufficientBalanceError = (error: { code?: string; message?: string }): boolean => {
               if (typeof error === 'string') {
                 return error.includes('account balance is insufficient') ||
                        error.includes('余额已用完') ||
@@ -183,7 +184,7 @@ export function useApiCalls(config: GenerationConfig) {
             errorMessage = '服务器内部错误，请稍后重试'
           } else if (response.status === 403) {
             // 检查是否是余额不足错误
-            const isInsufficientBalanceError = (error: any): boolean => {
+            const isInsufficientBalanceError = (error: { code?: string; message?: string }): boolean => {
               if (typeof error === 'string') {
                 return error.includes('account balance is insufficient') ||
                        error.includes('余额已用完') ||
@@ -261,7 +262,7 @@ export function useApiCalls(config: GenerationConfig) {
 
   // 内容增强API调用
   const enhanceContent = useCallback(async (
-    content: any,
+    content: string,
     operation: string,
     operationConfig: { temperature: number; maxTokens: number },
     selectedTextInfo?: {text: string, start: number, end: number}
@@ -289,7 +290,7 @@ ${selectedTextInfo.text}
       systemContent = "你是一位专业的文字编辑专家，擅长改写和优化文字表达。请严格按照用户要求进行改写，保持原意的同时提升表达质量。"
     } else {
       // 使用原有的增强逻辑
-      const buildEnhancePrompt = (result: any, operation: string): string => {
+      const buildEnhancePrompt = (result: GenerationResult, operation: string): string => {
         const currentTitle = result.generatedTitle
         const currentSummary = result.generatedSummary
 

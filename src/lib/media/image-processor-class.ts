@@ -14,14 +14,26 @@ type ImageProcessingWorker = Worker;
 export class ImageProcessor {
   private static instance: ImageProcessor | null = null;
   private worker: ImageProcessingWorker | null = null;
-  private taskCallbacks: Map<string, (result: any) => void> = new Map();
+  private taskCallbacks: Map<string, (result: unknown) => void> = new Map();
   private initialized: boolean = false;
   private taskCounter: number = 0;
   private initializationPromise: Promise<void> | null = null;
   private maxRetries: number = 3;
   private siliconFlowAPI: SiliconFlowAPI | null = null;
   private aiAnalysisEnabled: boolean = false;
-  private smartFrameSelector: any = null;
+  private smartFrameSelector: {
+  selectFrames: (frames: ImageData[], options: SmartSelectionOptions) => Promise<{
+    selectedFrames: Array<{
+      index: number;
+      originalIndex: number;
+      scores: unknown;
+      features: unknown;
+      aiAnalyzed: boolean;
+      aiResult?: FrameAnalysisResult;
+    }>;
+    statistics: unknown;
+  }>
+} | null = null;
 
   /**
    * 私有构造函数，防止直接实例化
@@ -477,7 +489,7 @@ export class ImageProcessor {
    * @param imageData 图像数据
    * @param options 分析选项
    */
-  public async batchAnalyzeImage(imageData: ImageData, options: any = {}): Promise<any> {
+  public async batchAnalyzeImage(imageData: ImageData, options: Record<string, unknown> = {}): Promise<unknown> {
     return this.sendTask('batchAnalysis', { 
       imageData, 
       width: imageData.width, 
@@ -492,7 +504,7 @@ export class ImageProcessor {
    * @param data 任务数据
    * @returns 任务结果
    */
-  private async sendTask(type: string, data: any, retries: number = 0): Promise<any> {
+  private async sendTask(type: string, data: unknown, retries: number = 0): Promise<unknown> {
     if (!this.initialized || !this.worker) {
       if (retries < this.maxRetries) {
         console.log(`图像处理器未初始化，尝试初始化 (重试 ${retries + 1}/${this.maxRetries})`);
@@ -1259,7 +1271,7 @@ export class ImageProcessor {
             const originalIndex = framesToAnalyze.indexOf(frame);
 
             try {
-              let scores: any = {};
+              let scores: Record<string, number> = {};
 
               if (useAIAnalysis && this.siliconFlowAPI) {
                 // 使用AI分析

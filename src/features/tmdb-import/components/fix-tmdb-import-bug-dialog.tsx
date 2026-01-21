@@ -168,12 +168,12 @@ def fixed_episode_comparison(episoideID, episoideNumber):
       } else {
         throw new Error(result.error || "修复失败")
       }
-    } catch (error: any) {
-      
-      setFixResult(`修复失败: ${error.message}`)
+    } catch (error: unknown) {
+
+      setFixResult(`修复失败: ${error instanceof Error ? error.message : '未知错误'}`)
       toast({
         title: "修复失败",
-        description: error.message || "无法应用修复补丁",
+        description: error instanceof Error ? error.message : "无法应用修复补丁",
         variant: "destructive"
       })
     } finally {

@@ -1,34 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ApiResponse } from '@/types/common';
 
 // 魔搭社区API配置
 const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1';
 
+// API 类型定义
+interface ModelMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface ModelRequestBody {
+  model: string;
+  messages: ModelMessage[];
+  temperature?: number;
+  max_tokens?: number;
+  stream?: boolean;
+}
+
+interface GenerateTitleRequest {
+  model: string;
+  firstMessage: string;
+  apiKey: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json() as GenerateTitleRequest;
     const { model, firstMessage, apiKey } = body;
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'API密钥未提供' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: 'API密钥未提供',
+          data: null
+        },
         { status: 400 }
       );
     }
 
     // 验证API密钥格式
     if (!apiKey.startsWith('ms-')) {
-      return NextResponse.json(
-        { 
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
           error: 'API密钥格式不正确',
-          details: '请使用魔搭社区(ModelScope)的API密钥，格式应为ms-开头'
+          details: '请使用魔搭社区(ModelScope)的API密钥，格式应为ms-开头',
+          data: null
         },
         { status: 400 }
       );
     }
 
     if (!model || !firstMessage) {
-      return NextResponse.json(
-        { error: '缺少必要参数' },
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: '缺少必要参数',
+          data: null
+        },
         { status: 400 }
       );
     }
@@ -56,7 +87,7 @@ export async function POST(request: NextRequest) {
     };
 
     // 构建请求体
-    let requestBody: any = {
+    let requestBody: ModelRequestBody = {
       model,
       messages: [titlePrompt],
       stream: false // 非流式响应
@@ -65,13 +96,13 @@ export async function POST(request: NextRequest) {
     // DeepSeek-V3.1 特殊处理
     const isDeepSeekV3 = model === 'deepseek-ai/DeepSeek-V3.1';
     if (isDeepSeekV3) {
-      requestBody.messages = requestBody.messages.filter((m: any) => m.role !== 'system');
+      requestBody.messages = requestBody.messages.filter((m: ModelMessage) => m.role !== 'system');
     }
 
     // Qwen3-Next 特殊处理
     const isQwen3Next = model === 'Qwen/Qwen3-Next-80B-A3B-Instruct';
     if (isQwen3Next) {
-      if (!requestBody.messages.some((m: any) => m.role === 'system')) {
+      if (!requestBody.messages.some((m: ModelMessage) => m.role === 'system')) {
         requestBody.messages = [
           { role: 'system', content: 'You are a helpful assistant.' },
           ...requestBody.messages
@@ -129,19 +160,22 @@ export async function POST(request: NextRequest) {
       title = '新对话';
     }
 
-    return NextResponse.json({
+    return NextResponse.json<ApiResponse<{ title: string }>>({
       success: true,
       data: {
         title: title
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('服务器内部错误:', error);
-    return NextResponse.json(
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json<ApiResponse<null>>(
       {
+        success: false,
         error: '服务器内部错误',
-        details: error.message
+        data: null,
+        details: errorMessage
       },
       { status: 500 }
     );

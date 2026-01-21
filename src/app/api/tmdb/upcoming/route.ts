@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const result = await fetchTmdbFeed('upcoming', { region, language }, apiKey);
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: Error) {
 
     return NextResponse.json(
       { success: false, error: `获取TMDB即将上线内容失败: ${error.message}` },

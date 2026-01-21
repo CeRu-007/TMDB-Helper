@@ -123,7 +123,7 @@ export function SubtitleEpisodeGenerator({
 
   // 处理全局设置对话框关闭事件
   useEffect(() => {
-    const handleGlobalSettingsClose = (event: any) => {
+    const handleGlobalSettingsClose = (event: unknown) => {
       if (shouldReopenSettingsDialog) {
         setShouldReopenSettingsDialog(false)
         // 延迟一点时间确保全局设置对话框完全关闭
@@ -254,7 +254,7 @@ export function SubtitleEpisodeGenerator({
               onEnhanceContent={(resultIndex, operation, selectedTextInfo) =>
                 handleEnhanceContent(selectedFile.id, resultIndex, operation, selectedTextInfo)
               }
-              isInsufficientBalanceError={(error: any): boolean => {
+              isInsufficientBalanceError={(error: unknown): boolean => {
                 if (typeof error === 'string') {
                   return error.includes('account balance is insufficient') ||
                          error.includes('余额已用完') ||

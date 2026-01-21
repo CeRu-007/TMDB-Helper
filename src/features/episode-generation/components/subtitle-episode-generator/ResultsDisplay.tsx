@@ -54,7 +54,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   const [selectionHighlight, setSelectionHighlight] = useState<{start: number, end: number} | null>(null)
   const textContainerRef = useRef<HTMLDivElement>(null)
 
-  const handleStartEdit = (index: number, result: any) => {
+  const handleStartEdit = (index: number, result: { generatedTitle: string; generatedSummary: string }) => {
     setEditingIndex(index)
     setEditingTitle(result.generatedTitle)
     setEditingSummary(result.generatedSummary)

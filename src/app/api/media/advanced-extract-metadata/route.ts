@@ -1,12 +1,54 @@
 ﻿import { type NextRequest, NextResponse } from "next/server"
 import type { AdvancedExtractedMetadata, ExtractionConfig } from "@/lib/data/advanced-metadata-extractor"
+import { ApiResponse } from "@/types/common"
+
+// JSON-LD 数据结构类型
+interface JsonLdPerson {
+  name: string;
+  character?: string;
+}
+
+interface JsonLdData {
+  director?: JsonLdPerson | JsonLdPerson[];
+  actor?: JsonLdPerson | JsonLdPerson[];
+  [key: string]: unknown;
+}
+
+// API 数据结构类型
+interface BilibiliData {
+  data?: {
+    title?: string;
+    desc?: string;
+    pic?: string;
+    owner?: {
+      name?: string;
+    };
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+// 提取器配置类型
+interface ExtractorConfig {
+  url: string;
+  method?: string;
+  headers?: Record<string, string>;
+  parser: (data: unknown, originalUrl: string) => AdvancedExtractedMetadata;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const { url, platform, config } = await request.json()
 
     if (!url) {
-      return NextResponse.json({ error: "URL is required" }, { status: 400 })
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: "URL is required",
+          data: null
+        },
+        { status: 400 }
+      )
     }
 
     // 执行多层次提取
@@ -18,22 +60,32 @@ export async function POST(request: NextRequest) {
     // 计算最终置信度
     const confidence = calculateFinalConfidence(extractionResults, mergedMetadata)
 
-    return NextResponse.json({
+    return NextResponse.json<ApiResponse<{
+      metadata: AdvancedExtractedMetadata;
+      platform: string;
+      confidence: number;
+      extractionLayers: number;
+      sources: string[];
+    }>>({
       success: true,
-      metadata: mergedMetadata,
-      platform,
-      confidence,
-      extractionLayers: extractionResults.length,
-      sources: extractionResults.map((r) => r.source),
+      data: {
+        metadata: mergedMetadata,
+        platform,
+        confidence,
+        extractionLayers: extractionResults.length,
+        sources: extractionResults.map((r) => r.source),
+      }
     })
   } catch (error) {
-    
-    return NextResponse.json(
+    const errorMessage = error instanceof Error ? error.message : "高级元数据提取失败"
+
+    return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
-        error: error instanceof Error ? error.message : "高级元数据提取失败",
+        error: errorMessage,
+        data: null,
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
@@ -367,14 +419,14 @@ function extractJsonLdData(html: string): Partial<AdvancedExtractedMetadata> {
 
         if (data.director) {
           metadata.director = Array.isArray(data.director)
-            ? data.director.map((d: any) => d.name || d)
-            : [data.director.name || data.director]
+            ? data.director.map((d: JsonLdPerson) => d.name || String(d))
+            : [data.director.name || String(data.director)]
         }
 
         if (data.actor) {
           metadata.cast = Array.isArray(data.actor)
-            ? data.actor.map((a: any, index: number) => ({
-                name: a.name || a,
+            ? data.actor.map((a: JsonLdPerson, index: number) => ({
+                name: a.name || String(a),
                 character: a.character,
                 order: index,
               }))
@@ -576,9 +628,17 @@ function getRandomUserAgent(): string {
   return userAgents[Math.floor(Math.random() * userAgents.length)]
 }
 
-function getPlatformExtractor(platform: string): any {
+function getPlatformExtractor(platform: string): {
+  userAgent?: string;
+  customHeaders?: Record<string, string>;
+  endpoints?: ExtractorConfig[];
+} | null {
   // 返回平台特定的提取器配置
-  const extractors: Record<string, any> = {
+  const extractors: Record<string, {
+    userAgent?: string;
+    customHeaders?: Record<string, string>;
+    endpoints?: ExtractorConfig[];
+  }> = {
     netflix: {
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -610,13 +670,8 @@ function getPlatformExtractor(platform: string): any {
 function getAjaxEndpoints(
   platform: string,
   url: string,
-): Array<{
-  url: string
-  method?: string
-  headers?: Record<string, string>
-  parser: (data: any, originalUrl: string) => AdvancedExtractedMetadata
-}> {
-  const endpoints = []
+): ExtractorConfig[] {
+  const endpoints: ExtractorConfig[] = []
 
   // 根据平台返回可能的AJAX端点
   if (platform === "bilibili") {
@@ -624,7 +679,7 @@ function getAjaxEndpoints(
     if (bvMatch) {
       endpoints.push({
         url: `https://api.bilibili.com/x/web-interface/view?bvid=${bvMatch[1]}`,
-        parser: (data: any) => ({
+        parser: (data: BilibiliData) => ({
           title: data.data?.title,
           description: data.data?.desc,
           duration: Math.round(data.data?.duration / 60),

@@ -19,11 +19,11 @@ export const useAiChatHistory = (
       try {
         const stored = storageService.get<string>('ai-chat-histories', '')
         if (stored) {
-          const histories = JSON.parse(stored).map((h: any) => ({
+          const histories = JSON.parse(stored).map((h: ChatHistory) => ({
             ...h,
             createdAt: new Date(h.createdAt),
             updatedAt: new Date(h.updatedAt),
-            messages: h.messages.map((m: any) => ({
+            messages: h.messages.map((m: Message) => ({
               ...m,
               timestamp: new Date(m.timestamp)
             }))
