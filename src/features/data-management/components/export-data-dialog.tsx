@@ -24,7 +24,7 @@ import { Download, FileText, Database, Settings, Info } from 'lucide-react';
 import { useData } from '@/shared/components/client-data-provider';
 import { StorageManager, TMDBItem, ScheduledTask } from '@/lib/data/storage';
 import { useToast } from '@/shared/lib/hooks/use-toast';
-import { dataRecoveryManager } from '@/lib/data/data-recovery-manager';
+import { dataRecoveryManager } from '@/shared/lib/data/data-recovery-manager';
 
 interface ExportDataDialogProps {
   open: boolean;
@@ -84,24 +84,12 @@ export default function ExportDataDialog({
     setExporting(true);
 
     try {
-      if (options.format === 'json') {
-        if (options.exactCopy) {
-          // 导出与data文件夹完全一致的文件
-          await exportExactCopy();
-        } else {
-          // 导出新格式 - 包含任务的完整备份
-          await exportFullBackup();
-        }
-      } else if (options.format === 'csv') {
-        // 导出CSV格式
-        await exportToCSV();
+      const success = await performExport();
+      if (success) {
+        onOpenChange(false);
       }
-
-      onOpenChange(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
-
-      // 显示用户友好的错误提示
       toast({
         title: '导出失败',
         description: `${errorMessage}。请检查数据完整性后重试。`,
@@ -113,174 +101,122 @@ export default function ExportDataDialog({
     }
   };
 
-  // 导出精确副本
-  const exportExactCopy = async () => {
+  // 统一的导出处理逻辑
+  const performExport = async (): Promise<boolean> => {
+    if (options.format === 'csv') {
+      await exportToCSV();
+      return true;
+    }
+
+    // JSON export
+    const exportData = options.exactCopy
+      ? await getExactCopyData()
+      : await getFullBackupData();
+
+    if (!exportData || exportData.items.length === 0) {
+      throw new Error('没有可导出的数据');
+    }
+
+    const filename = options.exactCopy
+      ? 'tmdb_items.json'
+      : `tmdb-helper-backup-${new Date().toISOString().split('T')[0]}.json`;
+
+    const data = JSON.stringify(exportData, null, 2);
+    downloadFile(data, filename, 'application/json');
+
+    const itemCount = exportData.items.length;
+    const taskCount = (exportData as any).tasks?.length || 0;
+
+    toast({
+      title: '导出成功',
+      description: options.exactCopy
+        ? `已导出 ${itemCount} 个项目`
+        : `已导出 ${itemCount} 个项目和 ${taskCount} 个任务`,
+      duration: 3000,
+    });
+
+    return true;
+  };
+
+  // 获取精确副本数据
+  const getExactCopyData = async () => {
     try {
-      // 尝试从API获取数据
       const response = await fetch('/api/storage/file-operations', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
-        throw new Error(
-          `API请求失败: ${response.status} ${response.statusText}`,
-        );
+        throw new Error(`API请求失败: ${response.status}`);
       }
 
       const result = await response.json();
-
       if (result.success && result.items) {
-        const data = JSON.stringify(result.items, null, 2);
-        downloadFile(data, 'tmdb_items.json', 'application/json');
-
-        toast({
-          title: '导出成功',
-          description: `已导出 ${result.items.length} 个项目`,
-          duration: 3000,
-        });
-      } else {
-        throw new Error(result.error || 'API返回数据无效');
+        return { items: result.items };
       }
-    } catch (apiError) {
-      // 降级到内存数据
-      try {
-        if (items && items.length > 0) {
-          const data = JSON.stringify(items, null, 2);
-          downloadFile(data, 'tmdb_items.json', 'application/json');
-
-          toast({
-            title: '导出成功',
-            description: `已从内存导出 ${items.length} 个项目`,
-            duration: 3000,
-          });
-        } else {
-          throw new Error('内存中没有可用数据');
-        }
-      } catch (memoryError) {
-        throw new Error(
-          `数据导出失败: API错误(${apiError instanceof Error ? apiError.message : '未知'})，内存错误(${memoryError instanceof Error ? memoryError.message : '未知'})`,
-        );
-      }
-    }
-  };
-
-  // 导出完整备份
-  const exportFullBackup = async () => {
-    try {
-      let exportItems: TMDBItem[] = [];
-      let exportTasks: ScheduledTask[] = [];
-      let dataSource = 'unknown';
-
-      // 尝试从API获取项目数据
-      try {
-        const response = await fetch('/api/storage/file-operations', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.items) {
-            exportItems = result.items;
-            dataSource = 'API';
-          }
-        }
-      } catch (apiError) {}
-
-      // 如果API失败，使用内存数据
-      if (exportItems.length === 0 && items && items.length > 0) {
-        exportItems = items;
-        dataSource = 'Memory';
-      }
-
-      // 获取定时任务数据
-      try {
-        exportTasks = await StorageManager.getScheduledTasks();
-      } catch (taskError) {
-        exportTasks = [];
-
-        // 已切换到服务端存储，此兜底逻辑不再需要
-      }
-
-      // 验证数据
-      if (exportItems.length === 0) {
-        throw new Error('没有找到可导出的项目数据');
-      }
-
-      // 创建完整的导出格式
-      const exportData = {
-        items: exportItems,
-        tasks: exportTasks,
-        version: '1.0.0',
-        exportDate: new Date().toISOString(),
-        dataSource,
-        stats: {
-          itemCount: exportItems.length,
-          taskCount: exportTasks.length,
-        },
-      };
-
-      const data = JSON.stringify(exportData, null, 2);
-      const filename = `tmdb-helper-backup-${new Date().toISOString().split('T')[0]}.json`;
-      downloadFile(data, filename, 'application/json');
-
-      toast({
-        title: '导出成功',
-        description: `已导出 ${exportItems.length} 个项目和 ${exportTasks.length} 个任务`,
-        duration: 3000,
-      });
+      throw new Error(result.error || 'API返回数据无效');
     } catch (error) {
-      // 使用数据恢复管理器作为降级方案
-      await exportWithRecoveryManager();
+      // Fallback to memory data
+      if (items && items.length > 0) {
+        console.warn('使用内存数据作为API降级方案');
+        return { items };
+      }
+      throw new Error('无法获取数据');
     }
   };
 
-  // 使用数据恢复管理器导出
-  const exportWithRecoveryManager = async () => {
+  // 获取完整备份数据
+  const getFullBackupData = async () => {
+    const [exportItems, exportTasks] = await Promise.allSettled([
+      getBackupItems(),
+      getBackupTasks()
+    ]);
+
+    const items = exportItems.status === 'fulfilled' ? exportItems.value : [];
+    const tasks = exportTasks.status === 'fulfilled' ? exportTasks.value : [];
+
+    if (items.length === 0) {
+      throw new Error('没有找到可导出的项目数据');
+    }
+
+    return {
+      items,
+      tasks,
+      version: '1.0.0',
+      exportDate: new Date().toISOString(),
+      stats: {
+        itemCount: items.length,
+        taskCount: tasks.length,
+      },
+    };
+  };
+
+  // 获取备份项目数据
+  const getBackupItems = async (): Promise<TMDBItem[]> => {
     try {
-      const result = await dataRecoveryManager.safeExportData({
-        includeBackup: true,
-        validateData: true,
-        autoFix: true,
-        maxRetries: 3,
+      const response = await fetch('/api/storage/file-operations', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
       });
 
-      if (result.success && result.data && result.filename) {
-        downloadFile(result.data, result.filename, 'application/json');
-
-        toast({
-          title: '导出成功',
-          description: `已安全导出 ${result.stats?.itemCount || 0} 个项目和 ${result.stats?.taskCount || 0} 个任务`,
-          duration: 3000,
-        });
-      } else {
-        throw new Error(result.error || '数据恢复管理器导出失败');
+      if (response.ok) {
+        const result = await response.json();
+        return result.success && result.items ? result.items : [];
       }
-    } catch (recoveryError) {
-      // 最后的降级方案：使用原始的exportData方法
-      try {
-        const fallbackData = await exportData();
-        downloadFile(
-          fallbackData,
-          `tmdb-helper-fallback-${new Date().toISOString().split('T')[0]}.json`,
-          'application/json',
-        );
+    } catch (error) {
+      console.warn('API获取项目失败，使用内存数据');
+    }
 
-        toast({
-          title: '导出成功',
-          description: '已使用备用方法导出数据',
-          duration: 3000,
-        });
-      } catch (fallbackError) {
-        throw new Error(
-          `所有导出方法都失败: ${recoveryError instanceof Error ? recoveryError.message : '未知错误'}`,
-        );
-      }
+    return items || [];
+  };
+
+  // 获取备份任务数据
+  const getBackupTasks = async (): Promise<ScheduledTask[]> => {
+    try {
+      return await StorageManager.getScheduledTasks();
+    } catch (error) {
+      console.warn('获取定时任务失败');
+      return [];
     }
   };
 

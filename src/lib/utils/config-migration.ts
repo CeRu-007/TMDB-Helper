@@ -3,7 +3,7 @@
  * 帮助用户从localStorage迁移到服务端配置
  */
 
-import { ClientConfigManager } from './client-config-manager'
+import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
 
 export interface MigrationResult {
   success: boolean

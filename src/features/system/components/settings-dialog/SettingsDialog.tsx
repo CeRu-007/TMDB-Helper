@@ -15,7 +15,7 @@ import { useAuth } from "@/shared/components/auth-provider"
 import { useModelService } from "@/lib/contexts/ModelServiceContext"
 import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
 import { safeJsonParse } from '@/lib/utils'
-import { ModelProvider, ModelConfig } from '@/types/model-service'
+import { ModelProvider, ModelConfig } from '@/shared/types/model-service'
 import { SettingsMenu } from "./SettingsMenu"
 import ModelServiceSettingsPanel from "./ModelServiceSettingsPanel"
 import ToolsSettingsPanel from "./ToolsSettingsPanel"

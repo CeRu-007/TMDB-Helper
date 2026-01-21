@@ -10,7 +10,7 @@
  *   StorageService.remove('user-preferences')
  */
 
-import { log } from '../utils/logger'
+import { log } from '@/shared/lib/utils/logger'
 
 class StorageService {
   private static instance: StorageService;

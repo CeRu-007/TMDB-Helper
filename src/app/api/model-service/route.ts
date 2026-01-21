@@ -1,27 +1,40 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { ModelServiceStorage } from '@/lib/data/model-service-storage'
-import { ModelServiceConfig } from '@/types/model-service'
+import { ModelServiceConfig } from '@/shared/types/model-service'
+
+// Standardized error response helper
+function createErrorResponse(message: string, status: number = 500) {
+  console.error(`模型服务API错误: ${message}`)
+  return NextResponse.json({
+    success: false,
+    error: message
+  }, { status })
+}
+
+// Standardized success response helper
+function createSuccessResponse(data: any, message?: string) {
+  return NextResponse.json({
+    success: true,
+    ...(message && { message }),
+    ...data
+  })
+}
+
+// Cache control headers for GET requests
+const CACHE_HEADERS = {
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0'
+}
 
 export async function GET(request: NextRequest) {
   try {
     const modelServiceConfig = await ModelServiceStorage.getConfig()
-
-    return NextResponse.json({
-      success: true,
-      config: modelServiceConfig
-    }, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    })
+    return createSuccessResponse({ config: modelServiceConfig })
   } catch (error) {
-    console.error('获取模型服务配置失败:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : '未知错误'
-    }, { status: 500 })
+    return createErrorResponse(
+      error instanceof Error ? error.message : '获取配置失败'
+    )
   }
 }
 
@@ -31,25 +44,28 @@ export async function POST(request: NextRequest) {
     const { config } = body
 
     if (!config) {
-      return NextResponse.json({
-        success: false,
-        error: '缺少配置数据'
-      }, { status: 400 })
+      return createErrorResponse('缺少配置数据', 400)
     }
 
     await ModelServiceStorage.saveConfig(config)
-
-    return NextResponse.json({
-      success: true,
-      message: '模型服务配置已保存'
-    })
+    return createSuccessResponse({}, '模型服务配置已保存')
   } catch (error) {
-    console.error('保存模型服务配置失败:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : '未知错误'
-    }, { status: 500 })
+    return createErrorResponse(
+      error instanceof Error ? error.message : '保存配置失败'
+    )
   }
+}
+
+// Action handlers mapping for better maintainability
+const ACTION_HANDLERS = {
+  'add-provider': (data: any) => ModelServiceStorage.addProvider(data),
+  'update-provider': (data: any) => ModelServiceStorage.updateProvider(data),
+  'delete-provider': (data: any) => ModelServiceStorage.deleteProvider(data.id),
+  'add-model': (data: any) => ModelServiceStorage.addModel(data),
+  'update-model': (data: any) => ModelServiceStorage.updateModel(data),
+  'delete-model': (data: any) => ModelServiceStorage.deleteModel(data.id),
+  'update-scenario': (data: any) => ModelServiceStorage.updateScenarios(Array.isArray(data) ? data : [data]),
+  'update-scenarios': (data: any) => ModelServiceStorage.updateScenarios(Array.isArray(data) ? data : [data])
 }
 
 export async function PUT(request: NextRequest) {
@@ -57,61 +73,29 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { action, data } = body
 
-    console.log('PUT /api/model-service:', { action, data: data })
-
-    const currentConfig = await ModelServiceStorage.getConfig()
-
-    switch (action) {
-      case 'add-provider':
-        await ModelServiceStorage.addProvider(data)
-        break
-      case 'update-provider':
-        await ModelServiceStorage.updateProvider(data)
-        break
-      case 'delete-provider':
-        await ModelServiceStorage.deleteProvider(data.id)
-        break
-      case 'add-model':
-        await ModelServiceStorage.addModel(data)
-        break
-      case 'update-model':
-        await ModelServiceStorage.updateModel(data)
-        break
-      case 'delete-model':
-        await ModelServiceStorage.deleteModel(data.id)
-        break
-      case 'update-scenario':
-      case 'update-scenarios':
-        if (Array.isArray(data)) {
-          // 合并场景：只更新数组中指定的场景，保留其他场景不变
-          await ModelServiceStorage.updateScenarios(data)
-          console.log('Merged scenarios:', data.length, 'scenarios updated')
-        } else {
-          // 单个场景更新
-          await ModelServiceStorage.updateScenarios([data])
-        }
-        break
-      default:
-        return NextResponse.json({
-          success: false,
-          error: '未知操作'
-        }, { status: 400 })
+    if (!action || !data) {
+      return createErrorResponse('缺少必要参数: action 或 data', 400)
     }
 
-    // 获取更新后的配置
-    const updatedConfig = await ModelServiceStorage.getConfig()
+    const handler = ACTION_HANDLERS[action as keyof typeof ACTION_HANDLERS]
+    if (!handler) {
+      return createErrorResponse(`未知操作: ${action}`, 400)
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: '操作成功',
-      config: updatedConfig
-    })
+    await handler(data)
+
+    // Log scenario updates
+    if (action.startsWith('update-scenario')) {
+      const count = Array.isArray(data) ? data.length : 1
+      console.log(`更新场景: ${count} 个场景已更新`)
+    }
+
+    const updatedConfig = await ModelServiceStorage.getConfig()
+    return createSuccessResponse({ config: updatedConfig }, '操作成功')
   } catch (error) {
-    console.error('更新模型服务配置失败:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : '未知错误'
-    }, { status: 500 })
+    return createErrorResponse(
+      error instanceof Error ? error.message : '更新配置失败'
+    )
   }
 }
 

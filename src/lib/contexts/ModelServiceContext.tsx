@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { ModelServiceConfig, ModelConfig, ModelProvider, UsageScenario } from '@/types/model-service'
+import { ModelServiceConfig, ModelConfig, ModelProvider, UsageScenario } from '@/shared/types/model-service'
 
 interface ModelServiceContextType {
   config: ModelServiceConfig | null
@@ -67,67 +67,60 @@ export function ModelServiceProvider({ children }: ModelServiceProviderProps) {
       return { scenario: null, models: [], providers: [] }
     }
 
-    // 过滤出实际存在的模型ID
+    // Filter valid model IDs
     const validModelIds = scenario.selectedModelIds?.filter(modelId =>
       config.models.some(model => model.id === modelId)
     ) || []
 
-    // 检查是否有无效的模型ID需要清理
+    // Auto-cleanup invalid references
     if (scenario.selectedModelIds && scenario.selectedModelIds.length !== validModelIds.length) {
-      console.warn(`[ModelService] 场景 ${scenarioType} 包含无效的模型引用，正在自动清理`, {
-        originalIds: scenario.selectedModelIds,
-        validIds: validModelIds
-      })
-
-      // 自动清理无效的模型引用
-      const updatedScenarios = config.scenarios.map(s => {
-        if (s.type === scenarioType) {
-          return {
-            ...s,
-            selectedModelIds: validModelIds,
-            primaryModelId: validModelIds.includes(s.primaryModelId || '') ? s.primaryModelId : validModelIds[0] || ''
-          }
-        }
-        return s
-      })
-
-      // 异步更新配置
-      fetch('/api/model-service', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update-scenarios',
-          data: updatedScenarios
-        })
-      }).then(response => response.json())
-        .then(result => {
-          if (result.success) {
-            setConfig(result.config)
-            console.log(`[ModelService] 场景 ${scenarioType} 无效引用已清理`)
-
-            // 触发全局配置更新事件
-            window.dispatchEvent(new CustomEvent('model-service-config-updated'))
-          }
-        })
-        .catch(error => {
-          console.error('[ModelService] 自动清理场景配置失败:', error)
-        })
+      console.warn(`[ModelService] 场景 ${scenarioType} 包含无效模型引用，自动清理中`)
+      cleanupInvalidScenarioReferences(scenarioType, validModelIds)
     }
 
     if (validModelIds.length === 0) {
       return { scenario, models: [], providers: [] }
     }
 
-    const models = config.models.filter(model =>
-      validModelIds.includes(model.id)
-    )
-
+    const models = config.models.filter(model => validModelIds.includes(model.id))
     const providerIds = [...new Set(models.map(m => m.providerId))]
-    const providers = config.providers.filter(provider =>
-      providerIds.includes(provider.id)
-    )
+    const providers = config.providers.filter(provider => providerIds.includes(provider.id))
 
     return { scenario, models, providers }
+  }
+
+  // Extracted cleanup logic for better separation of concerns
+  const cleanupInvalidScenarioReferences = async (scenarioType: string, validModelIds: string[]) => {
+    const updatedScenarios = config.scenarios.map(s => {
+      if (s.type === scenarioType) {
+        return {
+          ...s,
+          selectedModelIds: validModelIds,
+          primaryModelId: validModelIds.includes(s.primaryModelId || '') ? s.primaryModelId : validModelIds[0] || ''
+        }
+      }
+      return s
+    })
+
+    try {
+      const response = await fetch('/api/model-service', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update-scenarios',
+          data: updatedScenarios
+        })
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        setConfig(result.config)
+        console.log(`[ModelService] 场景 ${scenarioType} 无效引用已清理`)
+        window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+      }
+    } catch (error) {
+      console.error('[ModelService] 自动清理失败:', error)
+    }
   }
 
   const updateScenario = async (scenarioType: string, selectedModelIds: string[], primaryModelId: string) => {

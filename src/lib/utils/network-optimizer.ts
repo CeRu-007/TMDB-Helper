@@ -47,29 +47,8 @@ export class NetworkOptimizer {
   private readonly maxMetricsHistory = 1000;
 
   private constructor() {
-    this.initializeDockerSupport();
-  }
-
-  /**
-   * 初始化Docker支持
-   */
-  private initializeDockerSupport(): void {
-    try {
-      const networkConfig = dockerStorageAdapter.getNetworkConfig();
-      const env = dockerStorageAdapter.getEnvironment();
-      
-      if (env.isDocker) {
-        
-        // 应用Docker特定的配置
-        this.maxBatchSize = Math.min(this.maxBatchSize, networkConfig.maxConcurrentRequests);
-        
-        // 在Docker环境中增加批量延迟以减少网络压力
-        (this as any).batchDelay = Math.max(this.batchDelay, 100);
-
-      }
-    } catch (error) {
-      
-    }
+    // Initialize with default values
+    // Docker-specific configuration can be applied dynamically when needed
   }
 
   static getInstance(): NetworkOptimizer {
@@ -193,24 +172,19 @@ export class NetworkOptimizer {
    * 执行实际的网络请求
    */
   private async executeRequest(config: RequestConfig): Promise<any> {
-    // 获取Docker环境的网络配置
-    const networkConfig = dockerStorageAdapter.getNetworkConfig();
-    
     const {
       url,
       method = 'GET',
       headers = {},
       body,
-      timeout = networkConfig.requestTimeout,
-      retries = networkConfig.retryAttempts
+      timeout = 15000,
+      retries = 3
     } = config;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      let lastError: Error | null = null;
-      
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
           const response = await fetch(url, {
@@ -227,23 +201,20 @@ export class NetworkOptimizer {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
 
-          const result = await response.json();
-          return result;
+          return await response.json();
         } catch (error) {
-          lastError = error as Error;
-          
-          // 如果是最后一次尝试或者是不可重试的错误，直接抛出
-          if (attempt === retries || this.isNonRetryableError(error)) {
+          const isLastAttempt = attempt === retries;
+          const isNonRetryable = this.isNonRetryableError(error);
+
+          if (isLastAttempt || isNonRetryable) {
             throw error;
           }
-          
-          // 等待一段时间后重试
+
+          // Exponential backoff
           const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
-      
-      throw lastError;
     } finally {
       clearTimeout(timeoutId);
     }
@@ -254,10 +225,10 @@ export class NetworkOptimizer {
    */
   private isNonRetryableError(error: any): boolean {
     if (error.name === 'AbortError') return true;
-    if (error.message?.includes('400')) return true; // Bad Request
-    if (error.message?.includes('401')) return true; // Unauthorized
-    if (error.message?.includes('403')) return true; // Forbidden
-    if (error.message?.includes('404')) return true; // Not Found
+    if (error.message?.includes('400')) return true;
+    if (error.message?.includes('401')) return true;
+    if (error.message?.includes('403')) return true;
+    if (error.message?.includes('404')) return true;
     return false;
   }
 
@@ -338,39 +309,28 @@ export class NetworkOptimizer {
    * 智能预加载
    */
   async preload(configs: RequestConfig[]): Promise<void> {
-    
-    // 按优先级分组
-    const highPriority = configs.filter(c => c.priority === 'high');
-    const normalPriority = configs.filter(c => c.priority === 'normal' || !c.priority);
-    const lowPriority = configs.filter(c => c.priority === 'low');
+    const priorities = {
+      high: configs.filter(c => c.priority === 'high'),
+      normal: configs.filter(c => c.priority === 'normal' || !c.priority),
+      low: configs.filter(c => c.priority === 'low')
+    };
 
-    try {
-      // 高优先级立即加载
-      if (highPriority.length > 0) {
-        await Promise.allSettled(highPriority.map(config => this.request(config)));
-      }
+    // Execute immediately, don't wait
+    Promise.allSettled(priorities.high.map(config => this.request(config)));
 
-      // 普通优先级延迟加载
-      if (normalPriority.length > 0) {
-        setTimeout(() => {
-          Promise.allSettled(normalPriority.map(config => this.request(config)));
-        }, 100);
-      }
+    // Delay normal priority
+    setTimeout(() => {
+      Promise.allSettled(priorities.normal.map(config => this.request(config)));
+    }, 100);
 
-      // 低优先级在空闲时加载
-      if (lowPriority.length > 0) {
-        if ('requestIdleCallback' in window) {
-          (window as any).requestIdleCallback(() => {
-            Promise.allSettled(lowPriority.map(config => this.request(config)));
-          });
-        } else {
-          setTimeout(() => {
-            Promise.allSettled(lowPriority.map(config => this.request(config)));
-          }, 1000);
-        }
-      }
-    } catch (error) {
-      
+    // Use idle callback for low priority if available
+    const loadLowPriority = () =>
+      Promise.allSettled(priorities.low.map(config => this.request(config)));
+
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(loadLowPriority);
+    } else {
+      setTimeout(loadLowPriority, 1000);
     }
   }
 
@@ -516,7 +476,7 @@ export class TMDBNetworkOptimizer {
 
   private async loadApiKey(): Promise<void> {
     if (typeof window !== 'undefined') {
-      const { ClientConfigManager } = await import('./client-config-manager');
+      const { ClientConfigManager } = await import('@/shared/lib/utils/client-config-manager');
       this.apiKey = await ClientConfigManager.getItem('tmdb_api_key');
     }
   }

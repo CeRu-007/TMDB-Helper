@@ -10,6 +10,24 @@ import { Toaster } from "@/shared/components/ui/toaster"
 import { ModelServiceProvider } from "@/lib/contexts/ModelServiceContext"
 import { useAppInitialization } from "@/shared/hooks/use-app-initialization"
 
+// Combined provider component for better readability
+const AppProviders = ({ children }: { children: ReactNode }) => (
+  <UserIdentityProvider>
+    <DataProvider>
+      <ModelServiceProvider>
+        {children}
+      </ModelServiceProvider>
+    </DataProvider>
+  </UserIdentityProvider>
+)
+
+const AppWithToaster = ({ children }: { children: ReactNode }) => (
+  <>
+    {children}
+    <Toaster />
+  </>
+)
+
 export default function MidLayout({
   children,
 }: {
@@ -25,21 +43,17 @@ export default function MidLayout({
       <AuthProvider>
         {isLoginPage ? (
           // Login page: no auth protection or identity provider needed
-          <>
+          <AppWithToaster>
             {children}
-            <Toaster />
-          </>
+          </AppWithToaster>
         ) : (
           // Main app: requires authentication
           <AuthGuard>
-            <UserIdentityProvider>
-              <DataProvider>
-                <ModelServiceProvider>
-                  {children}
-                  <Toaster />
-                </ModelServiceProvider>
-              </DataProvider>
-            </UserIdentityProvider>
+            <AppProviders>
+              <AppWithToaster>
+                {children}
+              </AppWithToaster>
+            </AppProviders>
           </AuthGuard>
         )}
       </AuthProvider>

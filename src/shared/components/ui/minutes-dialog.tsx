@@ -12,7 +12,7 @@ import {
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import { setTimeMinutes } from "@/lib/utils/date-utils"
+import { setTimeMinutes } from "@/shared/lib/utils/date-utils"
 
 export interface MinutesDialogProps {
   open: boolean

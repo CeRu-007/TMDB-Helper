@@ -59,6 +59,119 @@ import { EmptyState } from "@/features/media-maintenance/components/empty-state"
 // 判断当前环境是否为客户端
 const isClientEnv = typeof window !== 'undefined'
 
+// Helper function to get empty state message
+const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: number, categories: any[], isCompleted: boolean = false) => {
+  if (selectedCategory !== "all") {
+    const categoryName = categories.find(c => c.id === selectedCategory)?.name
+    return isCompleted
+      ? `${categoryName}分类暂无已完结词条`
+      : `${categoryName}分类暂无词条`
+  }
+
+  if (selectedDayFilter === "recent") {
+    return isCompleted ? "暂无最近完成的词条" : "暂无最近更新的词条"
+  }
+
+  const weekdayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+  const weekdayName = weekdayNames[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]
+  return isCompleted
+    ? `${weekdayName}暂无已完结词条`
+    : `${weekdayName}暂无词条`
+}
+
+// Helper function to render media news content
+const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: any, items: any[], selectedRegion: string) => {
+  const newsData = mediaNewsType === 'upcoming' ? mediaNews.upcomingItems : mediaNews.recentItems
+  const loading = mediaNewsType === 'upcoming' ? mediaNews.loadingUpcoming : mediaNews.loadingRecent
+  const error = mediaNewsType === 'upcoming' ? mediaNews.upcomingError : mediaNews.recentError
+  const fetchFunction = mediaNewsType === 'upcoming'
+    ? () => mediaNews.fetchUpcomingItems(selectedRegion, false)
+    : () => mediaNews.fetchRecentItems(selectedRegion, false)
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-48">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">加载中，请稍候...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
+        <div className="flex flex-col items-center text-center mb-4">
+          <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
+          <p className="text-red-600 dark:text-red-300 font-medium mb-1">
+            {error}
+          </p>
+          <p className="text-red-500 dark:text-red-400 text-sm mb-4">
+            {mediaNews.isMissingApiKey
+              ? '请按照上方指南配置TMDB API密钥'
+              : '无法连接到TMDB服务，请检查网络连接或稍后重试'}
+          </p>
+          <Button
+            onClick={fetchFunction}
+            variant="outline"
+            className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            重试
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (newsData.length === 0) {
+    return (
+      <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
+        <p className="text-gray-500 dark:text-gray-400 mb-1">
+          {mediaNewsType === 'upcoming' ? '暂无即将上线的内容' : '暂无近期开播的内容'}
+        </p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm">
+          {mediaNewsType === 'upcoming' ? '未找到未来30天内上线的影视动态' : '未找到过去30天内刚刚开播的影视动态'}
+        </p>
+      </div>
+    )
+  }
+
+  const filteredItems = newsData.filter(newsItem =>
+    !items.some(item =>
+      item.tmdbId === newsItem.id.toString() &&
+      item.mediaType === newsItem.mediaType
+    )
+  )
+
+  return (
+    <div className="grid grid-cols-6 gap-6 overflow-y-auto max-h-[calc(100vh-350px)]">
+      {filteredItems.map((item) => (
+        <div key={`${item.mediaType}-${item.id}`} className="group">
+          <div className="mb-2">
+            <Badge className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+              {new Date(item.releaseDate).toLocaleDateString('zh-CN')}
+            </Badge>
+          </div>
+          <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl">
+            <img
+              src={item.posterUrl ? `https://image.tmdb.org/t/p/w500${item.posterUrl}` : "/placeholder.svg"}
+              alt={item.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="mt-2">
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+              {item.title}
+            </h3>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const { toast } = useToast()
 
@@ -154,11 +267,7 @@ export default function HomePage() {
                   <div className="p-8 max-w-md mx-auto">
                     <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
                     <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      {homeState.selectedCategory !== "all"
-                        ? `${categories.find(c => c.id === homeState.selectedCategory)?.name}分类暂无词条`
-                        : homeState.selectedDayFilter === "recent"
-                          ? "暂无最近更新的词条"
-                          : `${['周一', '周二', '周三', '周四', '周五', '周六', '周日'][homeState.selectedDayFilter === 0 ? 6 : homeState.selectedDayFilter - 1]}暂无词条`}
+                      {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, categories, false)}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">添加新词条开始维护吧</p>
                     <Button onClick={() => homeState.setShowAddDialog(true)} className="bg-blue-600 hover:bg-blue-700">
@@ -199,11 +308,7 @@ export default function HomePage() {
                 <div className="text-center py-16">
                   <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
                   <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    {homeState.selectedCategory !== "all"
-                      ? `${categories.find(c => c.id === homeState.selectedCategory)?.name}分类暂无已完结词条`
-                      : homeState.selectedDayFilter === "recent"
-                        ? "暂无最近完成的词条"
-                        : `${['周一', '周二', '周三', '周四', '周五', '周六', '周日'][homeState.selectedDayFilter === 0 ? 6 : homeState.selectedDayFilter - 1]}暂无已完结词条`}
+                    {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, categories, true)}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">完成维护的词条会自动出现在这里</p>
                 </div>
@@ -268,86 +373,7 @@ export default function HomePage() {
             />
 
             <div className="overflow-y-auto">
-              {/* 影视资讯内容渲染... */}
-              {mediaNewsType === 'upcoming' ? (
-                mediaNews.loadingUpcoming ? (
-                  <div className="flex justify-center items-center h-48">
-                    <div className="flex flex-col items-center">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400">加载中，请稍候...</p>
-                    </div>
-                  </div>
-                ) : mediaNews.upcomingError ? (
-                  <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
-                    <div className="flex flex-col items-center text-center mb-4">
-                      <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
-                      <p className="text-red-600 dark:text-red-300 font-medium mb-1">
-                        {mediaNews.upcomingError}
-                      </p>
-                      <p className="text-red-500 dark:text-red-400 text-sm mb-4">
-                        {mediaNews.isMissingApiKey
-                          ? '请按照上方指南配置TMDB API密钥'
-                          : '无法连接到TMDB服务，请检查网络连接或稍后重试'}
-                      </p>
-                      <Button
-                        onClick={() => mediaNews.fetchUpcomingItems(selectedRegion, false)}
-                        variant="outline"
-                        className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50"
-                      >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        重试
-                      </Button>
-                    </div>
-                  </div>
-                ) : mediaNews.upcomingItems.length === 0 ? (
-                  <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">
-                      暂无即将上线的内容
-                    </p>
-                    <p className="text-gray-400 dark:text-gray-500 text-sm">
-                      未找到未来30天内上线的影视动态
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-6 gap-6 overflow-y-auto max-h-[calc(100vh-350px)]">
-                    {mediaNews.upcomingItems
-                      .filter(upcomingItem =>
-                        !items.some(item =>
-                          item.tmdbId === upcomingItem.id.toString() &&
-                          item.mediaType === upcomingItem.mediaType
-                        )
-                      )
-                      .map((item) => (
-                        <div
-                          key={`${item.mediaType}-${item.id}`}
-                          className="group"
-                        >
-                          {/* 影视资讯卡片内容... */}
-                          <div className="mb-2">
-                            <Badge className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                              {new Date(item.releaseDate).toLocaleDateString('zh-CN')}
-                            </Badge>
-                          </div>
-                          <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl">
-                            <img
-                              src={item.posterUrl ? `https://image.tmdb.org/t/p/w500${item.posterUrl}` : "/placeholder.svg"}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="mt-2">
-                            <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                              {item.title}
-                            </h3>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )
-              ) : (
-                // 近期开播内容...
-                <div>近期开播内容...</div>
-              )}
+              {renderMediaNews(mediaNewsType, mediaNews, items, selectedRegion)}
             </div>
           </TabsContent>
 

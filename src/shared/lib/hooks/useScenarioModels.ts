@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useModelService } from '@/lib/contexts/ModelServiceContext'
-import { ModelConfig } from '@/types/model-service'
+import { ModelConfig } from '@/shared/types/model-service'
 
 interface ScenarioModelConfig {
   selectedModelIds: string[]
