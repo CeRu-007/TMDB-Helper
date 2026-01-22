@@ -27,7 +27,6 @@ import {
   AlertDialogNoOverlayContent,
 } from "@/shared/components/ui/alert-dialog"
 import {
-  Copy,
   ExternalLink,
   Edit,
   Save,
@@ -39,66 +38,31 @@ import {
   PlayCircle,
   Link,
   Plus,
-  Minus,
   AlertTriangle,
   Info,
   CheckSquare,
-  Square,
   RotateCcw,
   Terminal,
-  Download,
   Sparkles,
   Clapperboard,
   Baby,
   Popcorn,
   Ticket,
-  LayoutGrid,
-  FileText,
-  Wrench,
   Loader2,
   RefreshCw,
   AlarmClock,
   Settings,
   Zap,
-  FileCode,
-  Table,
-  XCircle,
-  Pencil,
-  Lock,
   Clock,
-  Filter,
-  Send,
-  Trash,
-  Check,
-  ClipboardList,
-  BookOpen,
   ArrowRightCircle,
-  Bug,
   Calendar,
-  ImageIcon,
-  BarChart,
-  Languages,
   CalendarDays,
   PlusCircle,
   AlertCircle,
-  Heart,
-  Share2,
-  StickyNote,
-  BookMarked,
-  ListTodo,
-  Activity,
   Link2,
   FrameIcon,
-  Code,
   CalendarPlus,
   CalendarClock,
-  Network,
-  ChevronDown,
-  ChevronUp,
-  CircleCheck,
-  CircleX,
-  PackageCheck,
-  Play,
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/lib/data/storage"
 import TMDBImportIntegrationDialog from "@/features/tmdb-import/components/tmdb-import-integration-dialog"
@@ -179,11 +143,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
   const [showFixBugDialog, setShowFixBugDialog] = useState(false)
   const [scheduledTaskDialogOpen, setScheduledTaskDialogOpen] = useState(false)
   const [tmdbCommands, setTmdbCommands] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState("episodes")
   const [detailTab, setDetailTab] = useState("details")
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
-  const [isMarkingEpisode, setIsMarkingEpisode] = useState(false)
   const [highlightedEpisode, setHighlightedEpisode] = useState<number | null>(null)
   // 全局外观设置（仅取本页需要的字段）
   const [appearanceSettings, setAppearanceSettings] = useState<{
@@ -284,13 +246,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       setCustomSeasonNumber(1)
     }
 
-    // 优化图片预加载策略 - 只预加载当前视图需要的图片
-    // 优先预加载背景图（对用户体验最重要）
-    if (item.backdropUrl) {
-      const img = new Image();
-      img.src = item.backdropUrl;
-    }
-
     // 读取全局外观设置
     (async () => {
       try {
@@ -381,7 +336,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         container.style.setProperty('--dialog-height', `${rect.height}px`)
       }
 
-      // 保存 container 原始样式和属性到 dataset，以便在 cleanup 或异常卸载时恢复（更健壮）
+      // 保存 container 原始样式和属性到 dataset
       try {
         container.dataset.tmhPrevOverflow = container.style.overflow || ''
         container.dataset.tmhManaged = '1'
@@ -409,90 +364,71 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       body.style.top = `-${savedScrollY}px`
       body.style.width = '100%'
 
-      const getScrollableAncestor = (start: Node, within: HTMLElement): HTMLElement | null => {
-        let el: HTMLElement | null = (start as HTMLElement)?.closest('*') as HTMLElement
-        while (el && within.contains(el)) {
-          const style = window.getComputedStyle(el)
-          const overflowY = style.overflowY
-          if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
-            return el
-          }
-          el = el.parentElement
-        }
-        return within
-      }
-
-      const canScroll = (el: HTMLElement | null, deltaY: number) => {
-        if (!el) return false
-        if (deltaY < 0) return el.scrollTop > 0
-        if (deltaY > 0) return el.scrollTop + el.clientHeight < el.scrollHeight - 1
-        return false
-      }
-
-      const wheelHandler = (e: WheelEvent) => {
-        const target = e.target as Element
-
-        // 检查是否在 Select/Popover 等弹出组件内，如果是则跳过拦截
-        let current = target as HTMLElement | null
+      // 检查元素是否在弹出组件内
+      const isInPopover = (element: HTMLElement | null): boolean => {
+        let current = element
         while (current) {
-          // 检查是否是 Radix UI 的 Select 或 Popover 内容
           if (current.hasAttribute('data-radix-select-content') ||
               current.hasAttribute('data-radix-popover-content') ||
               current.closest('[data-radix-select-content]') ||
               current.closest('[data-radix-popover-content]')) {
-            return // 让 Select/Popover 自己处理滚动
+            return true
           }
           current = current.parentElement
         }
+        return false
+      }
 
-        // 总是阻止默认行为
-        e.preventDefault()
-
-        if (!contentRef.current) return
-
-        // 检查是否在可滚动的元素内
-        let scrollableElement: HTMLElement | null = null
-        current = target as HTMLElement | null
-
-        // 向上遍历查找可滚动元素
+      // 查找可滚动元素
+      const findScrollableElement = (start: HTMLElement): HTMLElement | null => {
+        let current = start
         while (current && current !== contentRef.current) {
           const style = window.getComputedStyle(current)
           const overflowY = style.overflowY
-
-          // 检查是否是可滚动元素
           if ((overflowY === 'auto' || overflowY === 'scroll') &&
               current.scrollHeight > current.clientHeight) {
-            scrollableElement = current
-            break
+            return current
           }
-
-          // 检查是否是 ScrollArea 的视口
           if (current.hasAttribute('data-radix-scroll-area-viewport')) {
-            scrollableElement = current
-            break
+            return current
           }
-
           current = current.parentElement
         }
+        return null
+      }
+
+      // 处理滚动
+      const handleScroll = (deltaY: number, target: Element) => {
+        if (!contentRef.current) return
+
+        if (isInPopover(target as HTMLElement)) {
+          return
+        }
+
+        const scrollableElement = findScrollableElement(target as HTMLElement)
 
         if (scrollableElement && contentRef.current.contains(scrollableElement)) {
-          // 在可滚动元素内，手动处理滚动
-          const deltaY = e.deltaY
           const scrollTop = scrollableElement.scrollTop
           const scrollHeight = scrollableElement.scrollHeight
           const clientHeight = scrollableElement.clientHeight
 
-          // 检查是否可以滚动
-          if ((deltaY < 0 && scrollTop > 0) ||
-              (deltaY > 0 && scrollTop < scrollHeight - clientHeight)) {
-            // 可以滚动，更新滚动位置
+          const canScroll = (deltaY < 0 && scrollTop > 0) ||
+                           (deltaY > 0 && scrollTop < scrollHeight - clientHeight)
+
+          if (canScroll) {
             scrollableElement.scrollTop += deltaY
           }
         }
+      }
 
-        // 总是阻止冒泡
+      const wheelHandler = (e: WheelEvent) => {
+        if (isInPopover(e.target as HTMLElement)) {
+          return
+        }
+        e.preventDefault()
         e.stopPropagation()
         e.stopImmediatePropagation()
+        handleScroll(e.deltaY, e.target as Element)
       }
 
       const touchStartYRef = { current: 0 }
@@ -501,89 +437,31 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         if (t) touchStartYRef.current = t.clientY
       }
       const touchMoveHandler = (e: TouchEvent) => {
-        const target = e.target as Element
-
-        // 检查是否在 Select/Popover 等弹出组件内，如果是则跳过拦截
-        let current = target as HTMLElement | null
-        while (current) {
-          // 检查是否是 Radix UI 的 Select 或 Popover 内容
-          if (current.hasAttribute('data-radix-select-content') ||
-              current.hasAttribute('data-radix-popover-content') ||
-              current.closest('[data-radix-select-content]') ||
-              current.closest('[data-radix-popover-content]')) {
-            return // 让 Select/Popover 自己处理滚动
-          }
-          current = current.parentElement
+        if (isInPopover(e.target as HTMLElement)) {
+          return
         }
-
-        // 总是阻止默认行为
         e.preventDefault()
-
-        if (!contentRef.current) return
-
-        const deltaY = touchStartYRef.current - (e.touches[0]?.clientY || 0)
-
-        // 检查是否在可滚动的元素内
-        let scrollableElement: HTMLElement | null = null
-        current = target as HTMLElement | null
-
-        // 向上遍历查找可滚动元素
-        while (current && current !== contentRef.current) {
-          const style = window.getComputedStyle(current)
-          const overflowY = style.overflowY
-
-          // 检查是否是可滚动元素
-          if ((overflowY === 'auto' || overflowY === 'scroll') &&
-              current.scrollHeight > current.clientHeight) {
-            scrollableElement = current
-            break
-          }
-
-          // 检查是否是 ScrollArea 的视口
-          if (current.hasAttribute('data-radix-scroll-area-viewport')) {
-            scrollableElement = current
-            break
-          }
-
-          current = current.parentElement
-        }
-
-        if (scrollableElement && contentRef.current.contains(scrollableElement)) {
-          // 在可滚动元素内，手动处理滚动
-          const scrollTop = scrollableElement.scrollTop
-          const scrollHeight = scrollableElement.scrollHeight
-          const clientHeight = scrollableElement.clientHeight
-
-          // 检查是否可以滚动
-          if ((deltaY < 0 && scrollTop > 0) ||
-              (deltaY > 0 && scrollTop < scrollHeight - clientHeight)) {
-            // 可以滚动，更新滚动位置
-            scrollableElement.scrollTop += deltaY
-            touchStartYRef.current = e.touches[0]?.clientY || 0
-          }
-        }
-
-        // 总是阻止冒泡
         e.stopPropagation()
         e.stopImmediatePropagation()
+        const deltaY = touchStartYRef.current - (e.touches[0]?.clientY || 0)
+        handleScroll(deltaY, e.target as Element)
+        touchStartYRef.current = e.touches[0]?.clientY || 0
       }
 
       window.addEventListener('wheel', wheelHandler, { passive: false, capture: true })
       window.addEventListener('touchstart', touchStartHandler, { passive: true, capture: true })
       window.addEventListener('touchmove', touchMoveHandler, { passive: false, capture: true })
+
       return () => {
-        // 恢复 container 的原始样式（优先从 dataset 读取以防闭包丢失）
+        // 恢复 container 的原始样式
         try {
           const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
-          const prevHeight = container.dataset.tmhPrevHeight ?? ''
-          const prevPosition = container.dataset.tmhPrevPosition ?? ''
           container.style.overflow = prevOverflow
-          container.style.height = prevHeight
-          if (prevPosition !== undefined) container.style.position = prevPosition
-          // 清理 dataset 标记
+          container.style.removeProperty('--dialog-left')
+          container.style.removeProperty('--dialog-top')
+          container.style.removeProperty('--dialog-width')
+          container.style.removeProperty('--dialog-height')
           delete container.dataset.tmhPrevOverflow
-          delete container.dataset.tmhPrevHeight
-          delete container.dataset.tmhPrevPosition
           delete container.dataset.tmhManaged
         } catch {}
 
@@ -594,23 +472,24 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         body.style.width = prevBodyWidth
         root.style.overscrollBehavior = prevRootOverscroll
         body.style.overscrollBehavior = prevBodyOverscroll
+
         try {
           const y = parseInt((prevBodyTop || '0').replace(/[^-\d]/g, ''))
           if (!isNaN(y) && y !== 0) {
             window.scrollTo({ top: -y, behavior: 'auto' })
           }
         } catch {}
+
         window.removeEventListener('wheel', wheelHandler as any, true)
         window.removeEventListener('touchstart', touchStartHandler as any, true)
         window.removeEventListener('touchmove', touchMoveHandler as any, true)
       }
     } else {
-      // 如果不是 open 状态，确保我们没有留下样式（只在本组件曾管理过时清理）
+      // 清理样式
       try {
         if (container.dataset.tmhManaged) {
           const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
           container.style.overflow = prevOverflow
-          // 清理 CSS 变量
           container.style.removeProperty('--dialog-left')
           container.style.removeProperty('--dialog-top')
           container.style.removeProperty('--dialog-width')
@@ -671,135 +550,51 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     }
   }, [open, contentRef.current])
 
-  // 添加额外的滚动阻止
-  useEffect(() => {
-    if (!open || displayMode !== 'inline') return
-
-    // 阻止整个页面的滚动
-    const preventScroll = (e: Event) => {
-      const target = e.target as Element
-
-      // 检查是否在 Select/Popover 等弹出组件内
-      let current = target as HTMLElement | null
-      while (current) {
-        // 检查是否是 Radix UI 的 Select 或 Popover 内容
-        if (current.hasAttribute('data-radix-select-content') ||
-            current.hasAttribute('data-radix-popover-content') ||
-            current.hasAttribute('data-radix-select-viewport') ||
-            current.hasAttribute('data-radix-popover-viewport') ||
-            current.closest('[data-radix-select-content]') ||
-            current.closest('[data-radix-popover-content]') ||
-            current.closest('[data-radix-select-viewport]') ||
-            current.closest('[data-radix-popover-viewport]') ||
-            current.closest('[role="listbox"]') ||
-            current.closest('[role="list"]')) {
-          return // 让 Select/Popover 自己处理滚动
-        }
-        current = current.parentElement
-      }
-
-      e.preventDefault()
-      e.stopPropagation()
-      e.stopImmediatePropagation()
-    }
-
-    // 在内容容器上添加滚动监听
-    const contentElement = contentRef.current
-    if (contentElement) {
-      contentElement.addEventListener('wheel', preventScroll, { passive: false, capture: true })
-      contentElement.addEventListener('touchmove', preventScroll, { passive: false, capture: true })
-    }
-
-    return () => {
-      if (contentElement) {
-        contentElement.removeEventListener('wheel', preventScroll, true)
-        contentElement.removeEventListener('touchmove', preventScroll, true)
-      }
-    }
-  }, [open, displayMode])
-
-  useEffect(() => {
-    if (!contentRef.current) return
-    const el = contentRef.current
-    const updateOverflow = () => {
-      const needsScroll = el.scrollHeight > el.clientHeight + 1
-      el.style.overflowY = needsScroll ? 'auto' : 'hidden'
-    }
-    updateOverflow()
-    const ro = new ResizeObserver(updateOverflow)
-    ro.observe(el)
-    window.addEventListener('resize', updateOverflow)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', updateOverflow)
-    }
-  }, [open, displayMode])
-
   const handleEpisodeToggle = async (episodeNumber: number, completed: boolean, seasonNumber: number) => {
     // 计算要操作的集数范围
     let episodeNumbers: number[] = []
     let rangeInfo = ''
-    
-    // Shift多选逻辑：按住Shift时进行范围选择
+
     if (isShiftPressed) {
       if (lastClickedEpisode === null) {
-        // 第一次点击，只记录起点，不执行更新
         setLastClickedEpisode(episodeNumber)
         setCopyFeedback(`已选择起点：第${episodeNumber}集`)
         setTimeout(() => setCopyFeedback(null), 1000)
         return
       } else {
-        // 第二次点击，执行范围选择
         const start = Math.min(lastClickedEpisode, episodeNumber)
         const end = Math.max(lastClickedEpisode, episodeNumber)
-        
-        for (let i = start; i <= end; i++) {
-          episodeNumbers.push(i)
-        }
+        episodeNumbers = Array.from({ length: end - start + 1 }, (_, i) => start + i)
         rangeInfo = `第${start}-${end}集`
-        setLastClickedEpisode(null) // 重置
+        setLastClickedEpisode(null)
       }
     } else {
-      // 普通点击，立即更新当前集数
       episodeNumbers = [episodeNumber]
       rangeInfo = `第${episodeNumber}集`
     }
 
-    // 添加视觉反馈
-    if (completed) {
-      setCopyFeedback(`${rangeInfo}已标记为完成`)
-    } else {
-      setCopyFeedback(`${rangeInfo}已标记为未完成`)
-    }
+    const feedbackText = completed ? `${rangeInfo}已标记为完成` : `${rangeInfo}已标记为未完成`
+    setCopyFeedback(feedbackText)
     setTimeout(() => setCopyFeedback(null), 1500)
 
-    // 立即更新本地状态，实现即时UI反馈
-    let updatedItem = { ...localItem } // 使用本地状态作为基础
+    let updatedItem = { ...localItem }
 
     if (updatedItem.seasons && seasonNumber) {
-      // 多季模式
       const updatedSeasons = updatedItem.seasons.map((season) => {
         if (season.seasonNumber === seasonNumber) {
-          let updatedEpisodes = [...season.episodes]
-
-          // 对每个要操作的集数进行更新
-          episodeNumbers.forEach(epNum => {
-            updatedEpisodes = updatedEpisodes.map((ep) => 
-              ep.number === epNum ? { ...ep, completed } : ep
-            )
-          })
-
+          const updatedEpisodes = season.episodes.map((ep) =>
+            episodeNumbers.includes(ep.number) ? { ...ep, completed } : ep
+          )
           return { ...season, episodes: updatedEpisodes }
         }
         return season
       })
 
-      // 更新扁平化的episodes数组
       const allEpisodes = updatedSeasons.flatMap((season) =>
         season.episodes.map((ep) => ({
           ...ep,
           seasonNumber: season.seasonNumber,
-        })),
+        }))
       )
 
       updatedItem = {
@@ -809,22 +604,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         updatedAt: new Date().toISOString(),
       }
     } else {
-      // 单季模式
-      let updatedEpisodes = [...(updatedItem.episodes || [])]
-
-      if (isShiftPressed && lastClickedEpisode !== null && lastClickedEpisode !== episodeNumber) {
-        const start = Math.min(lastClickedEpisode, episodeNumber)
-        const end = Math.max(lastClickedEpisode, episodeNumber)
-
-        updatedEpisodes = updatedEpisodes.map((ep) => {
-          if (ep.number >= start && ep.number <= end) {
-            return { ...ep, completed }
-          }
-          return ep
-        })
-      } else {
-        updatedEpisodes = updatedEpisodes.map((ep) => (ep.number === episodeNumber ? { ...ep, completed } : ep))
-      }
+      const updatedEpisodes = (updatedItem.episodes || []).map((ep) =>
+        episodeNumbers.includes(ep.number) ? { ...ep, completed } : ep
+      )
 
       updatedItem = {
         ...updatedItem,
@@ -833,7 +615,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       }
     }
 
-    // 检查是否所有集数都已完成
+    // 更新状态
     const allCompleted = updatedItem.episodes?.every((ep) => ep.completed) && updatedItem.episodes.length > 0
     if (allCompleted && updatedItem.status === "ongoing") {
       updatedItem.status = "completed"
@@ -843,38 +625,27 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
       updatedItem.completed = false
     }
 
-    // 先更新本地状态，实现即时UI反馈
     setLocalItem(updatedItem)
-    
-    // 只有在非Shift多选时才更新最后点击的集数
+
     if (!(isShiftPressed && lastClickedEpisode !== null && lastClickedEpisode !== episodeNumber)) {
       setLastClickedEpisode(episodeNumber)
     }
 
-    // 为单集操作添加短暂的高亮效果
     if (episodeNumbers.length === 1) {
       setHighlightedEpisode(episodeNumbers[0])
-      setTimeout(() => setHighlightedEpisode(null), 500) // 500ms后清除高亮
+      setTimeout(() => setHighlightedEpisode(null), 500)
     }
 
     try {
-      // 直接操作文件系统保存更新
       const success = await saveItemDirectly(updatedItem)
-      
       if (!success) {
         throw new Error('保存失败')
       }
 
-      // 保存成功后，通知父组件更新全局状态
       onUpdate(updatedItem)
-      
-      // 显示成功反馈
       setCopyFeedback(`已标记 ${episodeNumbers.length} 个集数为${completed ? '已完成' : '未完成'}`)
       setTimeout(() => setCopyFeedback(null), 2000)
-
     } catch (error) {
-      
-      // 如果保存失败，回滚本地状态
       setLocalItem(localItem)
       setCopyFeedback('更新失败，请重试')
       setTimeout(() => setCopyFeedback(null), 2000)
@@ -1424,10 +1195,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
     setRefreshError(null);
 
     try {
-      // 构建TMDB URL
       const tmdbUrl = `https://www.themoviedb.org/${editData.mediaType}/${editData.tmdbId}`;
-
-      // 使用API获取最新数据，强制刷新标志
       const response = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`)
       const result = await response.json()
       const tmdbData = result.success ? result.data : null
@@ -1436,78 +1204,45 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
         throw new Error("未能从TMDB获取到有效数据");
       }
 
-      // 调试日志：检查刷新获取到的数据
-      
-      // 更新背景图
       let updatedData = { ...editData };
-      let hasNewBackdrop = false;
+      const hasNewBackdrop = !!tmdbData.backdropUrl && tmdbData.backdropUrl !== updatedData.backdropUrl;
 
-      // 如果有背景图数据，更新背景图URL
-      if (tmdbData.backdropUrl && tmdbData.backdropUrl !== updatedData.backdropUrl) {
-        hasNewBackdrop = true;
-        updatedData = {
-          ...updatedData,
-          backdropUrl: tmdbData.backdropUrl,
-          backdropPath: tmdbData.backdropPath || undefined
-        };
-
-        // 预加载背景图，提高加载速度
+      // 更新背景图
+      if (tmdbData.backdropUrl) {
+        updatedData.backdropUrl = tmdbData.backdropUrl;
+        updatedData.backdropPath = tmdbData.backdropPath || undefined;
         preloadBackdrop(tmdbData.backdropPath);
       }
 
-      // 更新TMDB简介
+      // 更新标志
+      if (tmdbData.logoUrl) {
+        updatedData.logoUrl = tmdbData.logoUrl;
+      }
 
+      // 更新网络信息
+      if (editData.mediaType === "tv" && (tmdbData.networkId || tmdbData.networkName || tmdbData.networkLogoUrl)) {
+        updatedData.networkId = tmdbData.networkId;
+        updatedData.networkName = tmdbData.networkName;
+        updatedData.networkLogoUrl = tmdbData.networkLogoUrl;
+      }
+
+      // 更新简介
       if (tmdbData.overview !== undefined) {
-        updatedData = {
-          ...updatedData,
-          overview: tmdbData.overview === null ? undefined : tmdbData.overview
-        };
+        updatedData.overview = tmdbData.overview === null ? undefined : tmdbData.overview;
       }
 
-      // 更新TMDB标志
-      let hasNewLogo = false;
-      if (tmdbData.logoUrl && tmdbData.logoUrl !== updatedData.logoUrl) {
-        hasNewLogo = true;
-        updatedData = {
-          ...updatedData,
-          logoUrl: tmdbData.logoUrl
-        };
-      }
-
-      // 更新网络相关信息 - 第一处添加
-      if (editData.mediaType === "tv") {
-        // 检查是否有网络信息
-        if (tmdbData.networkId || tmdbData.networkName || tmdbData.networkLogoUrl) {
-          
-          updatedData = {
-            ...updatedData,
-            networkId: tmdbData.networkId,
-            networkName: tmdbData.networkName,
-            networkLogoUrl: tmdbData.networkLogoUrl,
-          };
-        }
-      }
-
-      // 对于电视剧，更新季数据
+      // 更新季数据
       if (editData.mediaType === "tv" && tmdbData.seasons) {
-        // 将TMDB的季数据与现有数据合并
         const updatedSeasons = tmdbData.seasons.map((newSeason: TMDBSeasonData) => {
-          // 查找是否有匹配的现有季数据
-          const existingSeason = editData.seasons?.find(
-            s => s.seasonNumber === newSeason.seasonNumber
-          );
+          const existingSeason = editData.seasons?.find(s => s.seasonNumber === newSeason.seasonNumber);
 
           if (existingSeason) {
-            // 如果存在，保留完成状态，更新总集数
             return {
               ...existingSeason,
               totalEpisodes: newSeason.totalEpisodes,
-              // 确保episodes数组长度匹配新的totalEpisodes
               episodes: Array.from({ length: newSeason.totalEpisodes }, (_, i) => {
                 const episodeNumber = i + 1;
-                // 查找现有的集数据
                 const existingEpisode = existingSeason.episodes.find(ep => ep.number === episodeNumber);
-                // 如果存在返回现有数据，否则创建新的
                 return existingEpisode || {
                   number: episodeNumber,
                   completed: false,
@@ -1516,7 +1251,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
               })
             };
           } else {
-            // 如果是新季，创建新的季数据
             return {
               seasonNumber: newSeason.seasonNumber,
               name: newSeason.name,
@@ -1530,7 +1264,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           }
         });
 
-        // 更新扁平化的episodes数组
         const allEpisodes = updatedSeasons.flatMap((season: Season) =>
           season.episodes.map((ep: Episode) => ({
             ...ep,
@@ -1538,79 +1271,40 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
           }))
         );
 
-        // 更新总集数
-        const newTotalEpisodes = allEpisodes.length;
-
-        // 更新editData状态
         updatedData = {
           ...updatedData,
           seasons: updatedSeasons,
           episodes: allEpisodes,
-          totalEpisodes: newTotalEpisodes
+          totalEpisodes: allEpisodes.length
         };
       }
 
-      // 将更新的数据应用到localItem，使背景图和其他数据立即生效
-      const timestamp = Date.now(); // 添加时间戳强制重新加载图片
-
-      // 首先确保editData中保存的是原始URL（不带时间戳）
-      updatedData = {
-        ...updatedData,
-        backdropUrl: tmdbData.backdropUrl || updatedData.backdropUrl,
-        backdropPath: tmdbData.backdropPath || updatedData.backdropPath,
-        logoUrl: tmdbData.logoUrl || updatedData.logoUrl,
-        networkLogoUrl: tmdbData.networkLogoUrl || updatedData.networkLogoUrl,
-        networkId: tmdbData.networkId !== undefined ? tmdbData.networkId : updatedData.networkId,
-        networkName: tmdbData.networkName || updatedData.networkName,
-        overview: tmdbData.overview !== undefined ? (tmdbData.overview === null ? undefined : tmdbData.overview) : updatedData.overview
-      };
-
-      // 更新状态 - 现在updatedData包含了完整的更新数据
       setEditData(updatedData);
 
-      // 然后在localItem中使用带时间戳的URL用于立即显示
+      // 使用时间戳强制刷新图片显示
+      const timestamp = Date.now();
       const newLocalItem = {
         ...localItem,
+        ...updatedData,
         backdropUrl: tmdbData.backdropUrl ? `${tmdbData.backdropUrl}?t=${timestamp}` : localItem.backdropUrl,
-        backdropPath: tmdbData.backdropPath || localItem.backdropPath,
         logoUrl: tmdbData.logoUrl ? `${tmdbData.logoUrl}?t=${timestamp}` : localItem.logoUrl,
         networkLogoUrl: tmdbData.networkLogoUrl ? `${tmdbData.networkLogoUrl}?t=${timestamp}` : localItem.networkLogoUrl,
-        networkId: tmdbData.networkId !== undefined ? tmdbData.networkId : localItem.networkId,
-        networkName: tmdbData.networkName || localItem.networkName,
-        overview: tmdbData.overview !== undefined ? (tmdbData.overview === null ? undefined : tmdbData.overview) : localItem.overview
+        seasons: updatedData.seasons || localItem.seasons,
+        episodes: updatedData.episodes || localItem.episodes,
+        totalEpisodes: updatedData.totalEpisodes || localItem.totalEpisodes
       };
 
-      // 如果是电视剧且有季数据更新，也更新这部分
-      if (editData.mediaType === "tv" && updatedData.seasons) {
-        newLocalItem.seasons = updatedData.seasons;
-        newLocalItem.episodes = updatedData.episodes;
-        newLocalItem.totalEpisodes = updatedData.totalEpisodes;
-      }
-
       setLocalItem(newLocalItem);
-
-      // 通知父组件更新 - 使用updatedData确保保存的是原始URL（不带时间戳）
       onUpdate(updatedData);
 
-      // 显示成功信息
-      if (hasNewBackdrop) {
-        if (editData.mediaType === "tv") {
-          setCopyFeedback("TMDB数据、背景图、标志、网络logo和简介已成功刷新");
-        } else {
-          setCopyFeedback("TMDB数据、背景图、标志和简介已成功刷新");
-        }
-      } else {
-        if (editData.mediaType === "tv") {
-          setCopyFeedback("TMDB数据、标志、网络logo和简介已成功刷新");
-        } else {
-          setCopyFeedback("TMDB数据、标志和简介已成功刷新");
-        }
-      }
+      const feedbackText = hasNewBackdrop
+        ? (editData.mediaType === "tv" ? "TMDB数据、背景图、标志、网络logo和简介已成功刷新" : "TMDB数据、背景图、标志和简介已成功刷新")
+        : (editData.mediaType === "tv" ? "TMDB数据、标志、网络logo和简介已成功刷新" : "TMDB数据、标志和简介已成功刷新");
 
+      setCopyFeedback(feedbackText);
       setTimeout(() => setCopyFeedback(null), 2000);
 
     } catch (error) {
-      
       setRefreshError(error instanceof Error ? error.message : "刷新TMDB数据失败，请稍后再试");
     } finally {
       setIsRefreshingTMDBData(false);
@@ -1691,23 +1385,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             const backgroundImageUrl = localItem.backdropUrl || localItem.posterUrl;
             const isUsingPoster = !localItem.backdropUrl && localItem.posterUrl;
 
-            // 调试日志：显示背景图使用情况（只在首次加载时输出）
-            if (backgroundImageUrl && typeof window !== 'undefined') {
-              // 使用localItem.id作为唯一标识符
-              const logKey = `bg-image-logged-${localItem.id}`
-              if (!sessionStorage.getItem(logKey)) {
-                console.log("🖼️ [词条详情] 背景图信息:", {
-                  title: localItem.title,
-                  hasBackdrop: !!localItem.backdropUrl,
-                  hasPoster: !!localItem.posterUrl,
-                  isUsingPoster,
-                  backgroundImageUrl: backgroundImageUrl.substring(0, 50) + "..."
-                });
-                sessionStorage.setItem(logKey, 'true')
-              }
-            }
+            if (!backgroundImageUrl) return null;
 
-            return backgroundImageUrl ? (
+            return (
               <BackgroundImage
                 src={backgroundImageUrl}
                 alt={localItem.title + (isUsingPoster ? " 海报背景" : " 背景图")}
@@ -1720,11 +1400,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                 blurIntensity={appearanceSettings?.detailBackdropBlurIntensity || 'medium'}
                 overlayClassName={cn(
                   isUsingPoster
-                    ? "bg-gradient-to-b from-background/50 via-background/45 to-background/55" // 海报背景使用更强遮罩
-                    : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"  // 正常背景图遮罩
+                    ? "bg-gradient-to-b from-background/50 via-background/45 to-background/55"
+                    : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"
                 )}
               />
-            ) : null;
+            );
           })()}
 
           {/* 内容层 - 添加相对定位和z-index确保内容在背景图上方 */}
@@ -1733,15 +1413,11 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
             <div className="flex-1 pr-4">
 
               <DialogTitle className="text-xl flex items-center">
-                {isMarkingEpisode && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
                 {localItem.mediaType === "movie" ? (
                   <Film className="mr-2 h-5 w-5" />
                 ) : (
                   <Tv className="mr-2 h-5 w-5" />
                 )}
-                {/* 使用TMDB标志替代文字标题 */}
                 {localItem.logoUrl ? (
                   <div className="h-10 max-w-[200px] flex items-center">
                     <CachedImage
@@ -1751,7 +1427,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                       loading="eager"
                       decoding="async"
                       onError={(e) => {
-                        // 如果标志加载失败，显示文字标题
                         e.currentTarget.style.display = 'none';
                         const titleElement = e.currentTarget.parentElement?.nextElementSibling;
                         if (titleElement) {
@@ -2195,12 +1870,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                         <div className="flex items-center justify-start mb-1">
                           {/* 平台Logo区域 - 优先使用TMDB网络logo */}
                           <div className="flex items-center justify-start w-full">
-                            {(() => {
-                              // 调试日志：检查网络logo数据
-                              
-                              return localItem.networkLogoUrl;
-                            })() ? (
-                              // 显示TMDB官方网络logo
+                            {localItem.networkLogoUrl ? (
                               <div
                                 className="w-full h-12 flex items-center justify-start cursor-pointer"
                                 onClick={() => localItem.platformUrl && window.open(localItem.platformUrl, '_blank')}
@@ -2213,9 +1883,7 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                   loading="eager"
                                   decoding="async"
                                   onError={(e) => {
-                                    // 如果官方logo加载失败，隐藏图片元素
                                     e.currentTarget.style.display = 'none';
-                                    // 显示备用元素
                                     const container = e.currentTarget.parentElement;
                                     if (container) {
                                       const networkIcon = document.createElement('div');
@@ -2226,7 +1894,6 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                 />
                               </div>
                             ) : localItem.platformUrl ? (
-                              // 回退到基于URL的平台识别
                               (() => {
                                 const platformInfo = getPlatformInfo(localItem.platformUrl);
                                 return (
@@ -2245,10 +1912,9 @@ export default function ItemDetailDialog({ item, open, onOpenChange, onUpdate, o
                                       <ExternalLink className="h-9 w-9 text-foreground/70" />
                                     )}
                                   </div>
-                                )
+                                );
                               })()
                             ) : (
-                              // 未设置平台URL时的显示
                               <div className="w-full h-12 flex items-center justify-start">
                                 <FrameIcon className="h-8 w-8 text-muted-foreground/50" />
                               </div>
