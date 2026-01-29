@@ -6,7 +6,6 @@
 
 import { log } from '@/shared/lib/utils/logger'
 import { SiliconFlowAPI, FrameAnalysisResult, createSiliconFlowAPI } from '@/lib/utils/siliconflow-api'
-import type { SmartSelectionOptions } from './smart-frame-selector'
 
 // 定义Worker类型
 type ImageProcessingWorker = Worker;
@@ -21,19 +20,6 @@ export class ImageProcessor {
   private maxRetries: number = 3;
   private siliconFlowAPI: SiliconFlowAPI | null = null;
   private aiAnalysisEnabled: boolean = false;
-  private smartFrameSelector: {
-  selectFrames: (frames: ImageData[], options: SmartSelectionOptions) => Promise<{
-    selectedFrames: Array<{
-      index: number;
-      originalIndex: number;
-      scores: unknown;
-      features: unknown;
-      aiAnalyzed: boolean;
-      aiResult?: FrameAnalysisResult;
-    }>;
-    statistics: unknown;
-  }>
-} | null = null;
 
   /**
    * 私有构造函数，防止直接实例化
@@ -307,198 +293,6 @@ export class ImageProcessor {
   }
 
   /**
-   * AI预筛选候选帧 - 优化字幕检测版本
-   */
-  private async performAIPrefiltering(
-    candidateFrames: { imageData: ImageData; timePoint: number; aiScore?: number }[],
-    targetCount: number,
-    options: { useMultiModel?: boolean } = {}
-  ): Promise<void> {
-    if (!this.siliconFlowAPI) return;
-
-    const { useMultiModel = false } = options;
-    console.log(`🤖 开始AI预筛选 ${candidateFrames.length} 个候选帧${useMultiModel ? ' (多模型验证)' : ''}...`);
-
-    // 🔧 优化的批量分析策略
-    const batchSize = useMultiModel ? 2 : 3; // 多模型验证时减少并发数
-    let processedCount = 0;
-
-    for (let i = 0; i < candidateFrames.length; i += batchSize) {
-      const batch = candidateFrames.slice(i, i + batchSize);
-
-      const analysisPromises = batch.map(async (frame) => {
-        try {
-          // 🔧 根据配置选择分析方法
-          const result = useMultiModel ?
-            await this.siliconFlowAPI!.analyzeFrameWithMultiModel(frame.imageData) :
-            await this.siliconFlowAPI!.analyzeFrame(frame.imageData);
-
-          // 🔧 优化的评分算法 - 更严格的字幕检测
-          let score = 0.4; // 降低基础分
-
-          // 字幕检测评分 (权重最高)
-          if (!result.hasSubtitles) {
-            score += 0.4; // 无字幕大幅加分
-          } else {
-            // 有字幕时根据详情进行细分
-            if (result.subtitleDetails) {
-              const details = result.subtitleDetails;
-              // 如果是顶部字幕或中间字幕，可能是标题而非对话字幕
-              if (details.position === 'top' || details.position === 'middle') {
-                score += 0.1; // 轻微加分
-              } else {
-                score -= 0.2; // 底部字幕（通常是对话）减分
-              }
-            } else {
-              score -= 0.3; // 确认有字幕但无详情，大幅减分
-            }
-          }
-
-          // 人物检测评分
-          if (result.hasPeople) score += 0.25; // 有人物加分
-
-          // 置信度评分
-          score += (result.confidence || 0.5) * 0.15;
-
-          // 🔧 多模型验证额外加分
-          if (useMultiModel) {
-            score += 0.1; // 多模型验证的结果更可靠
-          }
-
-          frame.aiScore = Math.max(0, Math.min(1.0, score));
-
-          const subtitleInfo = result.subtitleDetails ?
-            `位置=${result.subtitleDetails.position}, 颜色=${result.subtitleDetails.textColor}` :
-            '无详情';
-
-          console.log(`AI分析 ${frame.timePoint.toFixed(1)}s: 字幕=${result.hasSubtitles}${result.hasSubtitles ? `(${subtitleInfo})` : ''}, 人物=${result.hasPeople}, 置信度=${result.confidence.toFixed(2)}, 评分=${frame.aiScore.toFixed(2)}`);
-
-        } catch (error) {
-          console.warn(`AI分析失败 ${frame.timePoint.toFixed(1)}s:`, error);
-          frame.aiScore = 0.2; // 分析失败给更低分
-        }
-      });
-
-      await Promise.all(analysisPromises);
-      processedCount += batch.length;
-      console.log(`AI分析进度: ${processedCount}/${candidateFrames.length} (${((processedCount / candidateFrames.length) * 100).toFixed(1)}%)`);
-    }
-
-    // 按评分排序
-    candidateFrames.sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0));
-    console.log(`🏆 AI预筛选完成，最高评分: ${candidateFrames[0]?.aiScore?.toFixed(2) || 'N/A'}`);
-  }
-
-  /**
-   * 应用多样性过滤，移除相似的帧
-   */
-  private applyDiversityFilter(frames: ImageData[], threshold: number = 0.75): ImageData[] {
-    if (frames.length <= 1) return frames;
-
-    const filteredFrames: ImageData[] = [frames[0]]; // 保留第一帧
-
-    for (let i = 1; i < frames.length; i++) {
-      const currentFrame = frames[i];
-      let isSimilar = false;
-
-      // 检查与已选择帧的相似度
-      for (const selectedFrame of filteredFrames) {
-        if (this.calculateFrameSimilarity(currentFrame, selectedFrame) > threshold) {
-          isSimilar = true;
-          break;
-        }
-      }
-
-      if (!isSimilar) {
-        filteredFrames.push(currentFrame);
-      }
-    }
-
-    return filteredFrames;
-  }
-
-  /**
-   * 计算两帧之间的相似度
-   */
-  private calculateFrameSimilarity(frame1: ImageData, frame2: ImageData): number {
-    if (frame1.width !== frame2.width || frame1.height !== frame2.height) {
-      return 0; // 尺寸不同，认为不相似
-    }
-
-    const data1 = frame1.data;
-    const data2 = frame2.data;
-    const length = Math.min(data1.length, data2.length);
-
-    // 采样计算，提高性能
-    const sampleRate = Math.max(1, Math.floor(length / 10000)); // 最多采样10000个像素
-    let totalDiff = 0;
-    let sampleCount = 0;
-
-    for (let i = 0; i < length; i += 4 * sampleRate) {
-      const r1 = data1[i], g1 = data1[i + 1], b1 = data1[i + 2];
-      const r2 = data2[i], g2 = data2[i + 1], b2 = data2[i + 2];
-
-      // 计算RGB差异
-      const diff = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
-      totalDiff += diff;
-      sampleCount++;
-    }
-
-    const avgDiff = totalDiff / sampleCount;
-    const maxDiff = 255 * 3; // RGB最大差异
-    const similarity = 1 - (avgDiff / maxDiff);
-
-    return Math.max(0, Math.min(1, similarity));
-  }
-
-  /**
-   * 分析图像的静态分数
-   * @param imageData 图像数据
-   * @param sampleRate 采样率
-   */
-  public async analyzeStaticScore(imageData: ImageData, sampleRate: number = 1): Promise<number> {
-    return this.sendTask('staticScore', { imageData, width: imageData.width, height: imageData.height, options: { sampleRate } });
-  }
-
-  /**
-   * 分析图像中的字幕区域
-   * @param imageData 图像数据
-   * @param detectionStrength 检测强度
-   * @returns 字幕分数（0-1，越高表示越可能有字幕）
-   */
-  public async analyzeSubtitleScore(imageData: ImageData, detectionStrength: number = 0.8): Promise<number> {
-    return this.sendTask('subtitleScore', { 
-      imageData, 
-      width: imageData.width, 
-      height: imageData.height, 
-      detectionStrength 
-    });
-  }
-
-  /**
-   * 分析图像的人物分数
-   * @param imageData 图像数据
-   * @param sampleRate 采样率
-   */
-  public async analyzePeopleScore(imageData: ImageData, sampleRate: number = 4): Promise<number> {
-    return this.sendTask('peopleScore', { imageData, width: imageData.width, height: imageData.height, options: { sampleRate } });
-  }
-
-  /**
-   * 批量分析图像
-   * @param imageData 图像数据
-   * @param options 分析选项
-   */
-  public async batchAnalyzeImage(imageData: ImageData, options: Record<string, unknown> = {}): Promise<unknown> {
-    return this.sendTask('batchAnalysis', { 
-      imageData, 
-      width: imageData.width, 
-      height: imageData.height, 
-      options 
-    });
-  }
-
-  /**
    * 发送任务到Worker
    * @param type 任务类型
    * @param data 任务数据
@@ -702,6 +496,50 @@ export class ImageProcessor {
     
     // 没有找到相似帧
     return false;
+  }
+
+  /**
+   * 应用多样性过滤 - 过滤掉过于相似的帧
+   * @param frames 帧数组
+   * @param similarityThreshold 相似度阈值 (0-1)
+   * @returns 过滤后的帧数组
+   */
+  private applyDiversityFilter(frames: ImageData[], similarityThreshold: number = 0.75): ImageData[] {
+    if (frames.length <= 1) {
+      return frames;
+    }
+
+    const diverseFrames: ImageData[] = [];
+
+    for (const frame of frames) {
+      // 检查当前帧是否与已选择的帧太相似
+      const isTooSimilar = this.checkFrameSimilarity(frame, diverseFrames, similarityThreshold);
+
+      // 如果不相似，添加到结果中
+      if (!isTooSimilar) {
+        diverseFrames.push(frame);
+      }
+
+      // 如果已经收集了足够多的帧，提前退出
+      // 确保至少保留50%的原始帧数，避免过滤过度
+      if (diverseFrames.length >= Math.max(1, Math.floor(frames.length * 0.5))) {
+        break;
+      }
+    }
+
+    // 如果过滤后的帧数太少，返回原始帧的一部分作为回退
+    if (diverseFrames.length < Math.max(2, Math.floor(frames.length * 0.3))) {
+      console.warn(`多样性过滤过度 (${diverseFrames.length}/${frames.length})，使用回退策略`);
+      // 均匀选择帧作为回退
+      const step = Math.max(1, Math.floor(frames.length / Math.max(2, Math.floor(frames.length * 0.5))));
+      const fallbackFrames: ImageData[] = [];
+      for (let i = 0; i < frames.length; i += step) {
+        fallbackFrames.push(frames[i]);
+      }
+      return fallbackFrames;
+    }
+
+    return diverseFrames;
   }
 
   /**
@@ -1153,78 +991,8 @@ export class ImageProcessor {
     }>;
   }> {
     try {
-      
-      // 🎯 尝试使用新的智能帧选择器
-      try {
-        if (!this.smartFrameSelector) {
-          // 动态导入避免构造函数问题
-          const { SmartFrameSelector } = await import('./smart-frame-selector');
-          this.smartFrameSelector = new SmartFrameSelector();
-          
-          // 如果启用了AI分析，配置AI
-          if (this.isAIAnalysisEnabled() && this.siliconFlowAPI) {
-            // 从siliconFlowAPI获取配置信息
-            const apiKey = (this.siliconFlowAPI as any).config?.apiKey;
-            const model = (this.siliconFlowAPI as any).config?.model;
-            if (apiKey) {
-              this.smartFrameSelector.configureAI(apiKey, model);
-            }
-          }
-        }
-
-        // 构建智能选择选项
-        const selectionOptions: SmartSelectionOptions = {
-          targetCount: count,
-          preferences: {
-            prioritizeStatic: preferences.prioritizeStatic ?? true,
-            avoidSubtitles: preferences.avoidSubtitles ?? true,
-            preferPeople: preferences.preferPeople ?? true,
-            preferFaces: preferences.preferFaces ?? true,
-            enhanceDiversity: true // 启用多样性优化
-          },
-          aiAnalysis: {
-            enabled: this.isAIAnalysisEnabled(),
-            maxAIFrames: Math.min(15, Math.max(count * 2, 10)), // 动态调整AI分析帧数
-            confidenceThreshold: options.subtitleDetectionStrength ?? 0.8
-          },
-          performance: {
-            maxProcessingTime: 180000, // 3分钟超时
-            enableCaching: true,
-            batchSize: 5
-          }
-        };
-
-        // 🎯 执行智能帧选择
-        const smartResult = await this.smartFrameSelector.selectBestFrames(frames, selectionOptions);
-
-        // 转换为原有格式
-        const result = {
-          frames: smartResult.selectedFrames.map(frame => ({
-            index: frame.originalIndex,
-            scores: {
-              staticScore: frame.scores.staticScore,
-              subtitleScore: frame.scores.subtitleScore,
-              peopleScore: frame.scores.peopleScore,
-              emptyFrameScore: frame.scores.qualityScore,
-              diversityScore: frame.scores.diversityScore
-            }
-          }))
-        };
-
-        return result;
-
-      } catch (smartSelectorError) {
-        
-        // 继续执行原有的传统分析逻辑
-      }
-
-      // 检查是否启用AI分析（保留原有逻辑作为回退）
+      // 检查是否启用AI分析
       const useAIAnalysis = this.isAIAnalysisEnabled();
-      if (useAIAnalysis) {
-        
-      } else {
-        
-      }
 
       // 如果帧数过多，先进行初步筛选以减轻计算负担
       let framesToAnalyze = frames;
@@ -1238,9 +1006,8 @@ export class ImageProcessor {
         for (let i = 0; i < frames.length; i += step) {
           framesToAnalyze.push(frames[i]);
         }
-        
       }
-      
+
       // 使用批处理来分析帧，避免一次性分析太多帧导致超时
       const batchSize = 5; // 每批分析的帧数
       // 扩展帧分析接口，添加originalIndex属性
@@ -1255,16 +1022,16 @@ export class ImageProcessor {
           diversityScore?: number;
         };
       }
-      
+
       const frameAnalysis: FrameAnalysis[] = [];
-      
+
       // 批量分析帧
       for (let i = 0; i < framesToAnalyze.length; i += batchSize) {
         const batchEnd = Math.min(i + batchSize, framesToAnalyze.length);
         const currentBatch = framesToAnalyze.slice(i, batchEnd);
-        
+
         console.log(`分析帧批次 ${i/batchSize + 1}/${Math.ceil(framesToAnalyze.length/batchSize)}`);
-        
+
         try {
           // 创建批处理Promise
           const batchPromises = currentBatch.map(async (frame, batchIndex) => {
@@ -1275,7 +1042,6 @@ export class ImageProcessor {
 
               if (useAIAnalysis && this.siliconFlowAPI) {
                 // 使用AI分析
-                
                 const aiResult = await this.siliconFlowAPI.analyzeFrame(frame);
 
                 if (!aiResult.error) {

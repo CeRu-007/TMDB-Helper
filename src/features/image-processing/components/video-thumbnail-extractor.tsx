@@ -16,52 +16,23 @@ import {
   ArrowUpDown,
   Settings,
   HelpCircle,
-  Search,
   Eye,
-  CheckCircle,
   X,
-  ChevronLeft,
-  ChevronRight,
-  Info,
   AlertTriangle,
-  User,
-  Image as ImageIcon,
-  TerminalSquare,
-  Sliders,
-  Save,
-  PackageOpen,
-  Cog,
-  ChevronsRight,
-  ArrowDown,
-  Check,
-  BarChart4,
   Layers,
-  Cpu,
-  Loader2,
-  LayoutGrid,
-  LayoutList
+  Loader2
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Button, buttonVariants } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
+import { Button } from "@/shared/components/ui/button"
 import { Progress } from "@/shared/components/ui/progress"
 import { Badge } from "@/shared/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Slider } from "@/shared/components/ui/slider"
-import { Switch } from "@/shared/components/ui/switch"
-import { Checkbox } from "@/shared/components/ui/checkbox"
 import { useToast } from "@/shared/components/ui/use-toast"
 import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/shared/components/ui/dialog"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
-import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/toggle-group"
 import { ImageProcessor } from "@/lib/media/image-processor-class"
+import JSZip from 'jszip'
+import FileSaver from 'file-saver'
 
 // 视频文件接口
 interface VideoFile {
@@ -76,10 +47,6 @@ interface VideoFile {
   selectedThumbnail: number
   extractionProgress: number
   status: "pending" | "processing" | "completed" | "error" | "cancelled" | "no-frames"
-  thumbnailPagination?: {
-    currentPage: number
-    itemsPerPage: number
-  }
 }
 
 // 缩略图接口
@@ -88,59 +55,60 @@ interface Thumbnail {
   url: string
   timestamp: number
   quality: number
-  isMain: boolean  // 是否为主图
+  isMain: boolean
 }
 
 // 提取设置接口
 interface ExtractionSettings {
-  startTime: number          // 开始提取时间（秒）
-  threadCount: number        // 线程数（并发处理数）
-  outputFormat: "jpg" | "png" // 输出格式
-  thumbnailCount: number     // 每个视频提取的缩略图数量
-  frameInterval: number      // 帧间隔（每隔多少帧提取一次，1表示每帧都提取）
-  keepOriginalResolution: boolean  // 保持原始分辨率
-  // AI筛选功能
-  enableAIFilter: boolean    // 启用AI筛选
-  siliconFlowApiKey: string  // 硅基流动API密钥
-  siliconFlowModel: string   // 使用的模型
+  startTime: number
+  threadCount: number
+  outputFormat: "jpg" | "png"
+  thumbnailCount: number
+  frameInterval: number
+  keepOriginalResolution: boolean
+  enableAIFilter: boolean
+  siliconFlowApiKey: string
+  siliconFlowModel: string
 }
 
-// 可用AI模型配置
-const availableModels = {
-  subtitleDetection: [
-    { id: "enhanced", name: "增强检测", description: "使用增强型图像处理算法检测字幕区域，综合了多种检测技术" },
-  ],
-  peopleDetection: [
-    { id: "basic", name: "基础检测", description: "使用基本图像处理算法检测人物轮廓" },
-    { id: "yolo-tiny", name: "YOLO-Tiny", description: "轻量级目标检测模型，速度快" },
-    { id: "face-detect", name: "人脸检测", description: "专注于检测人脸的模型" },
-    { id: "human-pose", name: "人体姿态", description: "检测完整人体姿态的高级模型" },
-  ],
+// 预览数据接口
+interface PreviewData {
+  url: string
+  filename: string
+  videoId: string
+  thumbnailId: string
 }
 
-// 添加JSZip和FileSaver的导入
-import JSZip from 'jszip';
-import FileSaver from 'file-saver';
+// 模型状态接口
+interface ModelStatus {
+  subtitle: "loading" | "ready" | "error"
+  person: "loading" | "ready" | "error"
+}
 
-// 添加视图模式类型
-type ViewMode = "grid"; // 修改为只有网格模式
+// 默认设置
+const DEFAULT_SETTINGS: ExtractionSettings = {
+  startTime: 0,
+  threadCount: 2,
+  outputFormat: "jpg",
+  thumbnailCount: 9,
+  frameInterval: 30,
+  keepOriginalResolution: true,
+  enableAIFilter: false,
+  siliconFlowApiKey: "",
+  siliconFlowModel: "Qwen/Qwen2.5-VL-32B-Instruct"
+}
+
+const DEFAULT_ITEMS_PER_PAGE = 9
 
 interface VideoThumbnailExtractorProps {
   onOpenGlobalSettings?: (section?: string) => void
 }
 
-/**
- * 视频缩略图提取组件
- * 
- * 注意：此组件在TypeScript编译时可能会有类型错误，
- * 这是因为shadcn UI组件和当前React类型不匹配导致的。
- * 这些错误不会影响运行时功能，可以安全忽略。
- */
 export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoThumbnailExtractorProps = {}) {
-  // 使用场景模型配置 - 缩略图AI筛选
   const thumbnailModels = useScenarioModels('thumbnail_filter')
-  
-  // 视频列表状态
+  const { toast } = useToast()
+
+  // 视频列表
   const [videos, setVideos] = useState<VideoFile[]>([])
 
   // 处理状态
@@ -148,48 +116,21 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
   const [totalProgress, setTotalProgress] = useState(0)
   const [processingQueue, setProcessingQueue] = useState<string[]>([])
 
-  // 排序和过滤状态
+  // 排序和过滤
   const [sortBy, setSortBy] = useState<"name" | "date" | "size">("name")
   const [filterBy, setFilterBy] = useState<"all" | "completed" | "processing" | "pending">("all")
-  const [thumbnailSortBy, setThumbnailSortBy] = useState<"quality" | "timestamp">("timestamp")
 
-  // 提取设置
-  const [settings, setSettings] = useState<ExtractionSettings>({
-    startTime: 0,
-    threadCount: 2,
-    outputFormat: "jpg",
-    thumbnailCount: 9, // 修改默认为9，以便于3x3网格布局
-    frameInterval: 30, // 默认每30帧提取一次（约1秒间隔，假设30fps）
-    keepOriginalResolution: true,  // 默认保持原始分辨率
-    // AI筛选功能
-    enableAIFilter: false,         // 默认禁用AI筛选
-    siliconFlowApiKey: "",        // 需要用户配置
-    siliconFlowModel: "Qwen/Qwen2.5-VL-32B-Instruct", // 默认模型
-  })
-
-  // 分页设置
-  const [defaultItemsPerPage, setDefaultItemsPerPage] = useState<number>(9) // 保持为9
+  // 设置
+  const [settings, setSettings] = useState<ExtractionSettings>(DEFAULT_SETTINGS)
 
   // UI 状态
   const [showHelpDialog, setShowHelpDialog] = useState(false)
   const [showPreviewDialog, setShowPreviewDialog] = useState(false)
-  const [selectedSubtitleModel, setSelectedSubtitleModel] = useState("enhanced")
-  const [selectedPeopleModel, setSelectedPeopleModel] = useState("yolo-tiny")
-  const [showSubtitleMarkers, setShowSubtitleMarkers] = useState(true)
-  const [modelStatus, setModelStatus] = useState({
-    subtitle: "loading", // loading, ready, error
-    person: "loading"   // loading, ready, error
+  const [modelStatus, setModelStatus] = useState<ModelStatus>({
+    subtitle: "loading",
+    person: "loading"
   })
-
-  // 预览状态
-  const [previewData, setPreviewData] = useState<{
-    url: string
-    filename: string
-    videoId: string
-    thumbnailId: string
-  } | null>(null)
-
-  // 反馈状态
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null)
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
 
   // 处理器状态
@@ -200,48 +141,25 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
   // 引用
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropAreaRef = useRef<HTMLDivElement>(null)
-  const { toast } = useToast()
-
-  // 图像处理器
   const imageProcessorRef = useRef<ImageProcessor | null>(null)
-
-  // 视图模式固定为网格模式
-  const viewMode: ViewMode = "grid";
 
   // 加载处理器和设置
   useEffect(() => {
     const initProcessor = async () => {
-      // 模拟加载过程
-      setModelStatus({
-        subtitle: "loading",
-        person: "loading"
-      })
+      setModelStatus({ subtitle: "loading", person: "loading" })
 
       try {
         if (typeof window !== 'undefined') {
-          // 初始化图像处理器
           const processor = ImageProcessor.getInstance()
           await processor.initialize()
           imageProcessorRef.current = processor
-
-          // 更新模型状态
-          setModelStatus({
-            subtitle: "ready",
-            person: "ready"
-          })
-
+          setModelStatus({ subtitle: "ready", person: "ready" })
           setProcessorInitialized(true)
           setProcessorReady(true)
-
         }
       } catch (error) {
-        
-        setModelStatus({
-          subtitle: "error",
-          person: "error"
-        })
+        setModelStatus({ subtitle: "error", person: "error" })
         setProcessorError("初始化图像处理器失败，请刷新页面重试")
-
         toast({
           title: "模型加载失败",
           description: "无法初始化图像处理器，请刷新页面重试",
@@ -257,45 +175,26 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings)
-        setSettings(prev => ({
-          ...prev,
+        setSettings({
+          ...DEFAULT_SETTINGS,
           ...parsed,
-          // 确保数值正确
-          startTime: Number(parsed.startTime || prev.startTime),
-          threadCount: Number(parsed.threadCount || prev.threadCount),
-          thumbnailCount: Number(parsed.thumbnailCount || prev.thumbnailCount),
-          subtitleDetectionStrength: Number(parsed.subtitleDetectionStrength || prev.subtitleDetectionStrength),
-          staticFrameThreshold: Number(parsed.staticFrameThreshold || prev.staticFrameThreshold),
-          keepOriginalResolution: parsed.keepOriginalResolution || prev.keepOriginalResolution,
-          enhancedFrameDiversity: parsed.enhancedFrameDiversity || prev.enhancedFrameDiversity,
-          frameSimilarityThreshold: Number(parsed.frameSimilarityThreshold || prev.frameSimilarityThreshold),
-          timeDistribution: parsed.timeDistribution || prev.timeDistribution,
-          // AI配置
-          enableAIAnalysis: parsed.enableAIAnalysis || prev.enableAIAnalysis,
-          siliconFlowApiKey: parsed.siliconFlowApiKey || prev.siliconFlowApiKey,
-          siliconFlowModel: parsed.siliconFlowModel || prev.siliconFlowModel,
-          useMultiModelValidation: parsed.useMultiModelValidation || prev.useMultiModelValidation
-        }))
-
-        // 如果启用了AI分析且有API密钥，则配置AI
-        if (parsed.enableAIAnalysis && parsed.siliconFlowApiKey && imageProcessorRef.current) {
-          setTimeout(() => {
-            if (imageProcessorRef.current) {
-              imageProcessorRef.current.configureSiliconFlowAPI(
-                parsed.siliconFlowApiKey.trim(),
-                { model: parsed.siliconFlowModel }
-              );
-            }
-          }, 1000); // 延迟1秒确保处理器已初始化
-        }
+          startTime: Number(parsed.startTime ?? DEFAULT_SETTINGS.startTime),
+          threadCount: Number(parsed.threadCount ?? DEFAULT_SETTINGS.threadCount),
+          thumbnailCount: Number(parsed.thumbnailCount ?? DEFAULT_SETTINGS.thumbnailCount),
+          frameInterval: Number(parsed.frameInterval ?? DEFAULT_SETTINGS.frameInterval),
+          keepOriginalResolution: parsed.keepOriginalResolution ?? DEFAULT_SETTINGS.keepOriginalResolution,
+          enableAIFilter: parsed.enableAIFilter ?? DEFAULT_SETTINGS.enableAIFilter,
+          siliconFlowApiKey: parsed.siliconFlowApiKey ?? DEFAULT_SETTINGS.siliconFlowApiKey,
+          siliconFlowModel: parsed.siliconFlowModel ?? DEFAULT_SETTINGS.siliconFlowModel
+        })
       } catch (error) {
-        
+        console.error('加载设置失败:', error)
       }
     }
   }, [toast])
 
+  // 监听处理器错误
   useEffect(() => {
-    // 监听处理器错误
     if (processorError) {
       toast({
         title: "处理器错误",
@@ -307,15 +206,16 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
   // 当模型状态变化时显示提示
   useEffect(() => {
-    if (modelStatus.subtitle === "ready" && modelStatus.person === "ready") {
-      // 当模型加载完成时
+    const isReady = modelStatus.subtitle === "ready" && modelStatus.person === "ready"
+    const isError = modelStatus.subtitle === "error" || modelStatus.person === "error"
+
+    if (isReady) {
       toast({
         title: "模型加载完成",
         description: "可以开始处理视频",
         variant: "default",
       })
-    } else if (modelStatus.subtitle === "error" || modelStatus.person === "error") {
-      // 当模型加载失败时
+    } else if (isError) {
       toast({
         title: "模型加载失败",
         description: "请刷新页面重试",
@@ -370,7 +270,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
   // 处理文件列表
   const processFiles = (files: File[]) => {
-    // 过滤出视频文件
     const videoFiles = files.filter(file => file.type.startsWith('video/'))
 
     if (videoFiles.length === 0) {
@@ -382,49 +281,38 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
       return
     }
 
-    // 添加到视频列表
-    const newVideos = videoFiles.map(file => {
-      const videoId = `video-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+    const newVideos: VideoFile[] = videoFiles.map(file => ({
+      id: `video-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      file,
+      name: file.name,
+      size: file.size,
+      duration: 0,
+      resolution: "",
+      url: URL.createObjectURL(file),
+      thumbnails: [],
+      selectedThumbnail: 0,
+      extractionProgress: 0,
+      status: "pending"
+    }))
 
-      return {
-        id: videoId,
-        file,
-        name: file.name,
-        size: file.size,
-        duration: 0, // 将在加载视频后更新
-        resolution: "", // 将在加载视频后更新
-        url: URL.createObjectURL(file),
-        thumbnails: [],
-        selectedThumbnail: 0,
-        extractionProgress: 0,
-        status: "pending" as const,
-        thumbnailPagination: {
-          currentPage: 0,
-          itemsPerPage: defaultItemsPerPage
-        }
-      }
-    })
-
-    // 更新视频列表
     setVideos(prev => [...prev, ...newVideos])
 
-    // 自动开始处理
     if (!isProcessing && processorReady) {
       setTimeout(() => handleBatchExtraction(), 500)
     }
   }
 
   // 格式化文件大小
-  const formatFileSize = (bytes: number) => {
+  const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes"
     const k = 1024
     const sizes = ["Bytes", "KB", "MB", "GB"]
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
   }
 
   // 格式化时长
-  const formatDuration = (seconds: number) => {
+  const formatDuration = (seconds: number): string => {
     if (!isFinite(seconds) || seconds <= 0) return "未知"
 
     const hours = Math.floor(seconds / 3600)
@@ -433,16 +321,14 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-    } else {
-      return `${minutes}:${secs.toString().padStart(2, '0')}`
     }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`
   }
 
   // 批量处理视频
   const handleBatchExtraction = async () => {
     if (isProcessing) return
 
-    // 检查模型是否已加载
     if (!processorInitialized) {
       toast({
         title: "模型尚未准备好",
@@ -455,7 +341,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     setIsProcessing(true)
 
     try {
-      // 过滤出待处理的视频
       const pendingVideos = videos.filter(v => v.status === "pending")
 
       if (pendingVideos.length === 0) {
@@ -468,98 +353,72 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
         return
       }
 
-      // 使用队列处理视频，避免同时处理太多导致浏览器崩溃
-      const processQueue = async (videos: VideoFile[]) => {
-        // 创建一个队列
-        const queue = [...videos.map(v => v.id)]
-        setProcessingQueue(queue)
-
-        // 同时处理的视频数量
-        const concurrentLimit = Math.max(1, Math.min(settings.threadCount, 8))
-
-        // 当前正在处理的视频数量
-        let activeCount = 0
-        let completedCount = 0
-
-        // 处理下一个视频
-        const processNext = async () => {
-          if (queue.length === 0) {
-            // 更新总进度为100%
-            if (completedCount === pendingVideos.length) {
-              setTotalProgress(100)
-            }
-            return
-          }
-
-          // 如果达到并发限制，等待
-          if (activeCount >= concurrentLimit) return
-
-          activeCount++
-          const videoId = queue.shift()!
-          const video = videos.find(v => v.id === videoId)
-
-          if (!video || video.status !== "pending") {
-            activeCount--
-            processNext()
-            return
-          }
-
-          // 更新视频状态为处理中
-          setVideos(prev =>
-            prev.map(v => v.id === videoId ? { ...v, status: "processing", extractionProgress: 0 } : v)
-          )
-
-          try {
-            // 处理视频
-            await processVideo(video)
-
-            // 更新完成计数
-            completedCount++
-
-            // 更新总进度
-            setTotalProgress(Math.floor((completedCount / pendingVideos.length) * 100))
-          } catch (error) {
-            
-            // 视频状态已在processVideo内部更新为错误
-
-            // 更新完成计数
-            completedCount++
-
-            // 更新总进度
-            setTotalProgress(Math.floor((completedCount / pendingVideos.length) * 100))
-          } finally {
-            activeCount--
-
-            // 继续处理队列
-            processNext()
-
-            // 检查是否所有视频都已处理完成
-            if (activeCount === 0 && queue.length === 0) {
-              setIsProcessing(false)
-              setProcessingQueue([])
-            }
-          }
-        }
-
-        // 启动初始的并发处理
-        const initialBatch = Math.min(concurrentLimit, queue.length)
-        for (let i = 0; i < initialBatch; i++) {
-          processNext()
-        }
-      }
-
-      // 开始处理队列
       await processQueue(pendingVideos)
     } catch (error) {
-      
       setIsProcessing(false)
       setProcessingQueue([])
-
       toast({
         title: "处理失败",
         description: "批量处理视频时出错",
         variant: "destructive",
       })
+    }
+  }
+
+  // 队列处理函数
+  const processQueue = async (videos: VideoFile[]) => {
+    const queue = [...videos.map(v => v.id)]
+    setProcessingQueue(queue)
+
+    const concurrentLimit = Math.max(1, Math.min(settings.threadCount, 8))
+    let activeCount = 0
+    let completedCount = 0
+
+    const processNext = async () => {
+      if (queue.length === 0) {
+        if (completedCount === videos.length) {
+          setTotalProgress(100)
+        }
+        return
+      }
+
+      if (activeCount >= concurrentLimit) return
+
+      activeCount++
+      const videoId = queue.shift()!
+      const video = videos.find(v => v.id === videoId)
+
+      if (!video || video.status !== "pending") {
+        activeCount--
+        processNext()
+        return
+      }
+
+      setVideos(prev =>
+        prev.map(v => v.id === videoId ? { ...v, status: "processing", extractionProgress: 0 } : v)
+      )
+
+      try {
+        await processVideo(video)
+        completedCount++
+        setTotalProgress(Math.floor((completedCount / videos.length) * 100))
+      } catch (error) {
+        completedCount++
+        setTotalProgress(Math.floor((completedCount / videos.length) * 100))
+      } finally {
+        activeCount--
+        processNext()
+
+        if (activeCount === 0 && queue.length === 0) {
+          setIsProcessing(false)
+          setProcessingQueue([])
+        }
+      }
+    }
+
+    const initialBatch = Math.min(concurrentLimit, queue.length)
+    for (let i = 0; i < initialBatch; i++) {
+      processNext()
     }
   }
 
@@ -658,393 +517,252 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     }
   }
 
-  // 简单的顺序帧提取函数
-  const extractFramesSequentially = async (
-    video: HTMLVideoElement,
-    options: {
-      startTime: number;
-      frameCount: number;
-      frameInterval: number;
-      keepOriginalResolution: boolean;
-    }
-  ): Promise<ImageData[]> => {
-    const frames: ImageData[] = []
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    
-    if (!ctx) {
-      throw new Error('无法创建Canvas上下文')
-    }
-
-    // 设置canvas尺寸
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-
-    for (let i = 0; i < options.frameCount; i++) {
-      try {
-        // 计算当前帧的时间点（以帧为单位）
-        const currentTime = options.startTime + (i * options.frameInterval / 30) // 假设30fps
-        
-        // 确保不超过视频时长
-        if (currentTime >= video.duration) {
-          
-          break
-        }
-
-        // 跳转到指定时间
-        video.currentTime = currentTime
-        
-        // 等待视频跳转完成
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error(`跳转到时间 ${currentTime}s 超时`))
-          }, 5000)
-
-          const seekHandler = () => {
-            clearTimeout(timeout)
-            video.removeEventListener('seeked', seekHandler)
-            video.removeEventListener('error', errorHandler)
-            resolve()
-          }
-
-          const errorHandler = () => {
-            clearTimeout(timeout)
-            video.removeEventListener('seeked', seekHandler)
-            video.removeEventListener('error', errorHandler)
-            reject(new Error(`跳转到时间 ${currentTime}s 失败`))
-          }
-
-          video.addEventListener('seeked', seekHandler)
-          video.addEventListener('error', errorHandler)
-        })
-
-        // 绘制当前帧到canvas
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        
-        // 获取图像数据
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        
-        // 验证图像数据有效性
-        if (imageData && imageData.data && imageData.data.length > 0) {
-          frames.push(imageData)
-          console.log(`成功提取第 ${i + 1} 帧，时间: ${currentTime.toFixed(2)}s`)
-        } else {
-          
-        }
-
-      } catch (error) {
-        
-        // 继续提取下一帧
-      }
-    }
-
-    return frames
-  }
-
   // 处理单个视频
   const processVideo = async (videoData: VideoFile): Promise<void> => {
     try {
-      
-      // 创建视频元素
       const video = document.createElement('video')
       video.preload = 'metadata'
       video.src = videoData.url
 
-      // 等待视频元数据加载
-      await new Promise<void>((resolve, reject) => {
-        // 设置超时
-        const timeout = setTimeout(() => {
-          reject(new Error("视频元数据加载超时"))
-        }, 10000)
+      await loadVideoMetadata(video)
 
-        // 加载处理
-        const loadHandler = () => {
-          clearTimeout(timeout)
-          video.removeEventListener('loadedmetadata', loadHandler)
-          video.removeEventListener('error', errorHandler)
-          resolve()
-        }
-
-        // 错误处理
-        const errorHandler = () => {
-          clearTimeout(timeout)
-          video.removeEventListener('loadedmetadata', loadHandler)
-          video.removeEventListener('error', errorHandler)
-          reject(new Error("视频加载失败"))
-        }
-
-        // 添加事件监听
-        video.addEventListener('loadedmetadata', loadHandler)
-        video.addEventListener('error', errorHandler)
-
-        // 如果已经加载完成，直接解析
-        if (video.readyState >= 2) {
-          clearTimeout(timeout)
-          video.removeEventListener('loadedmetadata', loadHandler)
-          video.removeEventListener('error', errorHandler)
-          resolve()
-        }
-      })
-
-      // 更新视频信息
       const duration = video.duration || 0
       const resolution = video.videoWidth && video.videoHeight ?
         `${video.videoWidth}x${video.videoHeight}` : "未知"
 
       setVideos(prev =>
         prev.map(v => v.id === videoData.id ?
-          { ...v, duration, resolution } : v
+          { ...v, duration, resolution, extractionProgress: 10 } : v
         )
       )
 
-      // 确保处理器已初始化
       if (!imageProcessorRef.current || !processorInitialized) {
         throw new Error("图像处理器未初始化")
       }
 
-      // 更新进度-开始提取帧
-      setVideos(prev =>
-        prev.map(v => v.id === videoData.id ?
-          { ...v, extractionProgress: 10 } : v
-        )
-      )
-
-      // 确保开始时间有效
       const validStartTime = Math.min(
         Math.max(0, settings.startTime),
         Math.max(0, duration - 1)
       )
+      const availableDuration = Math.max(0, duration - validStartTime)
 
-      // 简单的顺序帧提取
-      // 如果启用AI筛选，提取更多帧作为候选（因为很多帧可能被筛选掉）
-      const candidateFrameCount = settings.enableAIFilter ? 
-        Math.max(settings.thumbnailCount * 3, 20) : // AI模式：提取3倍数量作为候选
-        settings.thumbnailCount // 普通模式：只提取目标数量
+      const candidateFrameCount = settings.enableAIFilter ?
+        Math.max(settings.thumbnailCount * 4, 20) :
+        Math.max(settings.thumbnailCount * 3, 15)
 
-      const frames = await extractFramesSequentially(video, {
+      const frames = await imageProcessorRef.current.extractFramesFromVideo(video, {
         startTime: validStartTime,
         frameCount: candidateFrameCount,
-        frameInterval: settings.frameInterval,
-        keepOriginalResolution: settings.keepOriginalResolution
+        interval: 'keyframes',
+        keepOriginalResolution: settings.keepOriginalResolution,
+        enhancedFrameDiversity: true,
+        useAIPrefilter: false
       })
 
-      // 更新进度-帧提取完成
       setVideos(prev =>
         prev.map(v => v.id === videoData.id ?
           { ...v, extractionProgress: 50 } : v
         )
       )
 
-      // 如果没有提取到帧，抛出错误
       if (frames.length === 0) {
-        
         throw new Error("无法从视频中提取帧")
       }
 
-      // 生成缩略图
-      const thumbnails: Thumbnail[] = []
-      let processedFrames = 0
-      let aiFilteredFrames = 0 // 被AI筛选掉的帧数
+      const scenarioData = await validateAIConfig()
 
-      // 处理每一帧
-      for (let i = 0; i < frames.length && thumbnails.length < settings.thumbnailCount; i++) {
-        const frame = frames[i]
-        processedFrames++
+      const thumbnails = await generateThumbnails(
+        frames,
+        videoData.id,
+        validStartTime,
+        availableDuration,
+        scenarioData
+      )
 
-        // 如果启用了AI筛选，先进行AI分析
-        if (settings.enableAIFilter && thumbnailModels.primaryModelId) {
-          try {
-            // 获取场景配置
-            const scenarioResponse = await fetch('/api/model-service/scenario?scenario=thumbnail_filter')
-            const scenarioResult = await scenarioResponse.json()
-            
-            if (!scenarioResult.success || !scenarioResult.scenario) {
-              throw new Error('获取缩略图AI筛选场景配置失败')
-            }
-            
-            const primaryModel = scenarioResult.models.find((m: { id: string }) => m.id === thumbnailModels.primaryModelId)
-            if (!primaryModel) {
-              throw new Error('配置的模型不存在')
-            }
-            
-            const provider = scenarioResult.providers.find((p: { id: string; apiKey?: string }) => p.id === primaryModel.providerId)
-            if (!provider || !provider.apiKey) {
-              throw new Error('模型提供商未配置API密钥')
-            }
-            
-            const aiResult = await analyzeFrameWithAI(frame, provider.apiKey, primaryModel.modelId || primaryModel.id, provider.apiBaseUrl)
-
-            // 只有包含人物且无字幕的帧才生成缩略图
-            if (!aiResult.hasPeople || aiResult.hasSubtitles) {
-              aiFilteredFrames++
-              
-              // 更新进度
-              setVideos(prev =>
-                prev.map(v => v.id === videoData.id ?
-                  { ...v, extractionProgress: 50 + (processedFrames / frames.length) * 50 } : v
-                )
-              )
-              continue
-            }
-
-          } catch (aiError) {
-            
-            // 更新进度
-            setVideos(prev =>
-              prev.map(v => v.id === videoData.id ?
-                { ...v, extractionProgress: 50 + (processedFrames / frames.length) * 50 } : v
-              )
-            )
-            continue
-          }
-        }
-
-        // 生成缩略图
-        try {
-          
-          const result = await imageProcessorRef.current.generateThumbnail(frame, {
-            maxWidth: settings.keepOriginalResolution ? frame.width : 640,
-            maxHeight: settings.keepOriginalResolution ? frame.height : 360,
-            quality: 0.9,
-            format: settings.outputFormat as 'webp' | 'jpeg' | 'png'
-          })
-
-          if (!result || !result.url) {
-            
-            continue
-          }
-
-          // 计算时间戳（基于帧间隔）
-          const timestamp = validStartTime + (i * settings.frameInterval / 30) // 假设30fps
-
-          // 添加到缩略图列表
-          thumbnails.push({
-            id: `thumb_${videoData.id}_${i}_${Date.now()}`,
-            url: result.url,
-            timestamp: timestamp,
-            quality: 100, // 简化为固定质量
-            isMain: thumbnails.length === 0 // 第一个为主图
-          })
-
-        } catch (thumbnailError) {
-          
-          continue
-        }
-
-        // 更新进度
-        setVideos(prev =>
-          prev.map(v => v.id === videoData.id ?
-            { ...v, extractionProgress: 50 + (processedFrames / frames.length) * 50 } : v
-          )
-        )
+      if (thumbnails.length === 0 && frames.length > 0) {
+        await generateFallbackThumbnail(frames[0], validStartTime, videoData.id)
       }
 
-      // 如果AI筛选过于严格导致缩略图不足，尝试放宽条件
-      if (settings.enableAIFilter && thumbnails.length < settings.thumbnailCount && frames.length > thumbnails.length) {
-        
-        // 检查是否配置了API密钥（兼容旧配置）
-        if (!settings.siliconFlowApiKey.trim()) {
-          console.warn('🔍 [Thumbnail] 备用AI筛选：未配置API密钥，跳过')
-          return
-        }
-        
-        // 对剩余的帧使用更宽松的条件（只要有人物，不管是否有字幕）
-        for (let i = 0; i < frames.length && thumbnails.length < settings.thumbnailCount; i++) {
-          // 跳过已经处理过的帧
-          if (i < processedFrames) continue
-          
-          const frame = frames[i]
-          
-          try {
-            
-            const aiResult = await analyzeFrameWithAI(frame, settings.siliconFlowApiKey, settings.siliconFlowModel)
-            
-            // 放宽条件：只要有人物就可以
-            if (aiResult.hasPeople) {
-              
-              // 生成缩略图
-              const result = await imageProcessorRef.current.generateThumbnail(frame, {
-                maxWidth: settings.keepOriginalResolution ? frame.width : 640,
-                maxHeight: settings.keepOriginalResolution ? frame.height : 360,
-                quality: 0.9,
-                format: settings.outputFormat as 'webp' | 'jpeg' | 'png'
-              })
-
-              if (result && result.url) {
-                const timestamp = validStartTime + (i * settings.frameInterval / 30)
-                thumbnails.push({
-                  id: `thumb_${videoData.id}_${i}_${Date.now()}`,
-                  url: result.url,
-                  timestamp: timestamp,
-                  quality: 80, // 稍低的质量标记
-                  isMain: thumbnails.length === 0
-                })
-                
-              }
-            }
-          } catch (error) {
-            
-          }
-        }
-      }
-
-      // 检查是否生成了缩略图
-      if (thumbnails.length === 0) {
-
-        // 尝试生成至少一个缩略图作为回退
-        if (frames.length > 0) {
-          
-          try {
-            const fallbackResult = await imageProcessorRef.current.generateThumbnail(frames[0], {
-              maxWidth: settings.keepOriginalResolution ? frames[0].width : 640,
-              maxHeight: settings.keepOriginalResolution ? frames[0].height : 360,
-              quality: 0.9,
-              format: settings.outputFormat as 'webp' | 'jpeg' | 'png'
-            })
-            
-            if (fallbackResult && fallbackResult.url) {
-              thumbnails.push({
-                id: `thumb_${videoData.id}_fallback_${Date.now()}`,
-                url: fallbackResult.url,
-                timestamp: validStartTime,
-                quality: 50, // 默认质量
-                isMain: true
-              })
-              
-            }
-          } catch (fallbackError) {
-            
-          }
-        }
-        
-        if (thumbnails.length === 0) {
-          throw new Error(`未能生成缩略图: 原始帧数=${frames.length}, 处理帧数=${processedFrames}`)
-        }
-      }
-
-      // 更新视频状态为完成
       setVideos(prev =>
         prev.map(v => v.id === videoData.id ?
           {
             ...v,
             status: "completed",
             extractionProgress: 100,
-            thumbnails: thumbnails,
+            thumbnails,
             selectedThumbnail: 0
           } : v
         )
       )
     } catch (error) {
-      
-      // 更新视频状态为错误
       setVideos(prev =>
         prev.map(v => v.id === videoData.id ?
           { ...v, status: "error", extractionProgress: 0 } : v
         )
       )
+      throw error
+    }
+  }
 
-      // 重新抛出错误供上层处理
-      throw error;
+  // 加载视频元数据
+  const loadVideoMetadata = (video: HTMLVideoElement): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error("视频元数据加载超时"))
+      }, 10000)
+
+      const loadHandler = () => {
+        clearTimeout(timeout)
+        video.removeEventListener('loadedmetadata', loadHandler)
+        video.removeEventListener('error', errorHandler)
+        resolve()
+      }
+
+      const errorHandler = () => {
+        clearTimeout(timeout)
+        video.removeEventListener('loadedmetadata', loadHandler)
+        video.removeEventListener('error', errorHandler)
+        reject(new Error("视频加载失败"))
+      }
+
+      video.addEventListener('loadedmetadata', loadHandler)
+      video.addEventListener('error', errorHandler)
+
+      if (video.readyState >= 2) {
+        clearTimeout(timeout)
+        video.removeEventListener('loadedmetadata', loadHandler)
+        video.removeEventListener('error', errorHandler)
+        resolve()
+      }
+    })
+  }
+
+  // 验证AI配置
+  const validateAIConfig = async () => {
+    if (!settings.enableAIFilter) return null
+
+    if (!thumbnailModels.primaryModelId || thumbnailModels.availableModels.length === 0) {
+      throw new Error("已启用 AI 筛选，但缩略图筛选场景未配置模型。请在设置 > 模型服务 > 使用场景中配置缩略图筛选模型，或关闭 AI 筛选功能。")
+    }
+
+    const scenarioResponse = await fetch('/api/model-service/scenario?scenario=thumbnail_filter')
+    const scenarioResult = await scenarioResponse.json()
+
+    if (!scenarioResult.success || !scenarioResult.scenario) {
+      throw new Error("获取缩略图筛选场景配置失败")
+    }
+
+    return scenarioResult
+  }
+
+  // 生成缩略图
+  const generateThumbnails = async (
+    frames: ImageData[],
+    videoId: string,
+    validStartTime: number,
+    availableDuration: number,
+    scenarioData: any
+  ): Promise<Thumbnail[]> => {
+    const thumbnails: Thumbnail[] = []
+    let processedFrames = 0
+
+    for (let i = 0; i < frames.length && thumbnails.length < settings.thumbnailCount; i++) {
+      const frame = frames[i]
+      processedFrames++
+
+      try {
+        if (settings.enableAIFilter && scenarioData) {
+          const shouldSkip = await checkShouldSkipFrame(frame, scenarioData)
+          if (shouldSkip) {
+            updateProgress(videoId, processedFrames, frames.length)
+            continue
+          }
+        }
+
+        const result = await imageProcessorRef.current!.generateThumbnail(frame, {
+          maxWidth: settings.keepOriginalResolution ? frame.width : 640,
+          maxHeight: settings.keepOriginalResolution ? frame.height : 360,
+          quality: 0.9,
+          format: settings.outputFormat as 'webp' | 'jpeg' | 'png'
+        })
+
+        if (!result || !result.url) continue
+
+        const estimatedTimestamp = validStartTime + (i * availableDuration / frames.length)
+
+        thumbnails.push({
+          id: `thumb_${videoId}_${i}_${Date.now()}`,
+          url: result.url,
+          timestamp: estimatedTimestamp,
+          quality: 100,
+          isMain: thumbnails.length === 0
+        })
+
+        updateProgress(videoId, processedFrames, frames.length)
+      } catch (error) {
+        console.warn('处理帧失败，跳过此帧:', error)
+        continue
+      }
+    }
+
+    return thumbnails
+  }
+
+  // 检查是否应该跳过帧
+  const checkShouldSkipFrame = async (frame: ImageData, scenarioData: any): Promise<boolean> => {
+    const primaryModelId = scenarioData.scenario.primaryModelId
+    const primaryModel = scenarioData.models.find((m: any) => m.id === primaryModelId)
+    const provider = scenarioData.providers.find((p: any) => p.id === primaryModel!.providerId)
+
+    if (!provider || !primaryModel) {
+      throw new Error("模型配置异常，请重新配置缩略图筛选场景")
+    }
+
+    const aiResult = await analyzeFrameWithAI(
+      frame,
+      provider.apiKey,
+      primaryModel.modelId || primaryModel.id,
+      provider.apiBaseUrl
+    )
+
+    return !aiResult.hasPeople || aiResult.hasSubtitles
+  }
+
+  // 更新进度
+  const updateProgress = (videoId: string, processedFrames: number, totalFrames: number) => {
+    setVideos(prev =>
+      prev.map(v => v.id === videoId ?
+        { ...v, extractionProgress: 50 + (processedFrames / totalFrames) * 50 } : v
+      )
+    )
+  }
+
+  // 生成回退缩略图
+  const generateFallbackThumbnail = async (
+    frame: ImageData,
+    validStartTime: number,
+    videoId: string
+  ): Promise<void> => {
+    const result = await imageProcessorRef.current!.generateThumbnail(frame, {
+      maxWidth: settings.keepOriginalResolution ? frame.width : 640,
+      maxHeight: settings.keepOriginalResolution ? frame.height : 360,
+      quality: 0.9,
+      format: settings.outputFormat as 'webp' | 'jpeg' | 'png'
+    })
+
+    if (result && result.url) {
+      setVideos(prev =>
+        prev.map(v => v.id === videoId ? {
+          ...v,
+          thumbnails: [{
+            id: `thumb_${videoId}_fallback_${Date.now()}`,
+            url: result.url,
+            timestamp: validStartTime,
+            quality: 50,
+            isMain: true
+          }]
+        } : v)
+      )
     }
   }
 
@@ -1059,8 +777,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     const link = document.createElement('a')
     link.href = thumbnail.url
 
-    // 创建一个合理的文件名
-    const baseFilename = video.name.replace(/\.[^.]+$/, '') // 去除扩展名
+    const baseFilename = video.name.replace(/\.[^.]+$/, '')
     const timestamp = formatDuration(thumbnail.timestamp)
     const outputExt = settings.outputFormat
 
@@ -1078,34 +795,30 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
   const setAsMainThumbnail = (videoId: string, thumbnailId: string) => {
     setVideos(prev =>
       prev.map(v => {
-        if (v.id === videoId) {
-          // 找到当前缩略图的索引
-          const thumbnailIndex = v.thumbnails.findIndex(t => t.id === thumbnailId);
-          if (thumbnailIndex === -1) return v;
+        if (v.id !== videoId) return v
 
-          // 更新所有缩略图的isMain状态
-          const updatedThumbnails = v.thumbnails.map((t, idx) => ({
-            ...t,
-            isMain: t.id === thumbnailId
-          }));
+        const thumbnailIndex = v.thumbnails.findIndex(t => t.id === thumbnailId)
+        if (thumbnailIndex === -1) return v
 
-          // 更新选中的缩略图
-          return {
-            ...v,
-            thumbnails: updatedThumbnails,
-            selectedThumbnail: thumbnailIndex
-          };
+        const updatedThumbnails = v.thumbnails.map(t => ({
+          ...t,
+          isMain: t.id === thumbnailId
+        }))
+
+        return {
+          ...v,
+          thumbnails: updatedThumbnails,
+          selectedThumbnail: thumbnailIndex
         }
-        return v;
       })
-    );
+    )
 
     toast({
       title: "已设为主图",
       description: "此缩略图将作为下载全部时的主要图片",
       variant: "default",
-    });
-  };
+    })
+  }
 
   // 下载所有缩略图
   const downloadAllThumbnails = async () => {
@@ -1120,15 +833,12 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
       return
     }
 
-    // 对于单个视频的单个缩略图，直接下载
     if (completedVideos.length === 1 && completedVideos[0].thumbnails.length === 1) {
       const video = completedVideos[0]
-      const thumbnail = video.thumbnails[0]
-      downloadThumbnail(video.id, thumbnail.id)
+      downloadThumbnail(video.id, video.thumbnails[0].id)
       return
     }
 
-    // 对于多个缩略图，使用JSZip打包下载
     toast({
       title: "正在准备下载",
       description: "正在打包所有缩略图...",
@@ -1136,86 +846,69 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     })
 
     try {
-      // 创建一个新的ZIP文件实例
-      const zip = new JSZip();
-      const imgFolder = zip.folder("thumbnails");
+      const zip = new JSZip()
+      const imgFolder = zip.folder("thumbnails")
 
       if (!imgFolder) {
-        throw new Error("创建ZIP文件夹失败");
+        throw new Error("创建ZIP文件夹失败")
       }
 
-      // 将URL转换为Blob的辅助函数
-      const urlToBlob = async (url: string): Promise<Blob> => {
-        const response = await fetch(url);
-        return await response.blob();
-      };
-
-      // 将所有缩略图添加到ZIP文件
       for (const video of completedVideos) {
-        // 为每个视频创建一个文件夹
-        const videoFolder = imgFolder.folder(video.name.replace(/[\\/:*?"<>|]/g, "_"));
+        const videoFolder = imgFolder.folder(video.name.replace(/[\\/:*?"<>|]/g, "_"))
 
-        if (!videoFolder) {
-          
-          continue;
-        }
+        if (!videoFolder) continue
 
-        // 获取主图和候选帧
-        const mainThumbnail = video.thumbnails.find(t => t.isMain);
-        const candidateThumbnails = video.thumbnails.filter(t => !t.isMain);
+        const mainThumbnail = video.thumbnails.find(t => t.isMain)
+        const candidateThumbnails = video.thumbnails.filter(t => !t.isMain)
 
-        // 添加主图（如果有）
         if (mainThumbnail) {
-          const blob = await urlToBlob(mainThumbnail.url);
-          const extension = settings.outputFormat === "jpg" ? "jpg" : settings.outputFormat;
-          const filename = `main_${Math.round(mainThumbnail.timestamp)}_q${Math.round(mainThumbnail.quality)}.${extension}`;
-          videoFolder.file(filename, blob);
+          const blob = await fetch(mainThumbnail.url).then(r => r.blob())
+          const extension = settings.outputFormat === "jpg" ? "jpg" : settings.outputFormat
+          videoFolder.file(
+            `main_${Math.round(mainThumbnail.timestamp)}_q${Math.round(mainThumbnail.quality)}.${extension}`,
+            blob
+          )
         }
 
-        // 添加候选帧
         for (let i = 0; i < candidateThumbnails.length; i++) {
-          const thumbnail = candidateThumbnails[i];
-          const blob = await urlToBlob(thumbnail.url);
-          const extension = settings.outputFormat === "jpg" ? "jpg" : settings.outputFormat;
-          const filename = `candidate_${i + 1}_${Math.round(thumbnail.timestamp)}_q${Math.round(thumbnail.quality)}.${extension}`;
-          videoFolder.file(filename, blob);
+          const thumbnail = candidateThumbnails[i]
+          const blob = await fetch(thumbnail.url).then(r => r.blob())
+          const extension = settings.outputFormat === "jpg" ? "jpg" : settings.outputFormat
+          videoFolder.file(
+            `candidate_${i + 1}_${Math.round(thumbnail.timestamp)}_q${Math.round(thumbnail.quality)}.${extension}`,
+            blob
+          )
         }
       }
 
-      // 生成ZIP文件并下载
       const content = await zip.generateAsync({
         type: "blob",
         compression: "DEFLATE",
-        compressionOptions: {
-          level: 6
-        }
+        compressionOptions: { level: 6 }
       }, (metadata) => {
-        // 更新进度
-        const progress = Math.round(metadata.percent);
-        if (progress % 10 === 0) { // 每10%更新一次
+        const progress = Math.round(metadata.percent)
+        if (progress % 10 === 0) {
           toast({
             title: "打包进度",
             description: `${progress}%`,
             variant: "default",
-          });
+          })
         }
-      });
+      })
 
-      // 下载ZIP文件
-      FileSaver.saveAs(content, `thumbnails_${new Date().toISOString().slice(0, 10)}.zip`);
+      FileSaver.saveAs(content, `thumbnails_${new Date().toISOString().slice(0, 10)}.zip`)
 
       toast({
         title: "下载完成",
         description: "所有缩略图已打包下载",
         variant: "default",
-      });
+      })
     } catch (error) {
-      
       toast({
         title: "下载失败",
         description: "打包缩略图时出错",
         variant: "destructive",
-      });
+      })
     }
   }
 
@@ -1223,12 +916,9 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
   const removeVideo = (videoId: string) => {
     setVideos(prev => {
       const videoToRemove = prev.find(v => v.id === videoId)
-
       if (videoToRemove) {
-        // 释放URL对象
         URL.revokeObjectURL(videoToRemove.url)
       }
-
       return prev.filter(v => v.id !== videoId)
     })
 
@@ -1242,7 +932,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
   // 移除所有视频
   const removeAllVideos = () => {
     setVideos(prev => {
-      // 释放所有URL对象
       prev.forEach(v => URL.revokeObjectURL(v.url))
       return []
     })
@@ -1266,7 +955,6 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
       )
     )
 
-    // 如果当前没有处理中的视频，立即开始处理
     if (!isProcessing) {
       handleBatchExtraction()
     }
@@ -1274,39 +962,13 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
   // 取消处理视频
   const cancelProcessVideo = (videoId: string) => {
-    // 更新视频状态为已取消
     setVideos(prev =>
       prev.map(v => v.id === videoId ?
         { ...v, status: "cancelled", extractionProgress: 0 } : v
       )
     )
 
-    // 从处理队列中移除
     setProcessingQueue(prev => prev.filter(id => id !== videoId))
-  }
-
-  // 分页控制
-  const handlePageChange = (videoId: string, newPage: number) => {
-    setVideos(prev =>
-      prev.map(v => v.id === videoId ?
-        {
-          ...v,
-          thumbnailPagination: {
-            ...v.thumbnailPagination!,
-            currentPage: newPage
-          }
-        } : v
-      )
-    )
-  }
-
-  // 选择缩略图
-  const selectThumbnail = (videoId: string, index: number) => {
-    setVideos(prev =>
-      prev.map(v => v.id === videoId ?
-        { ...v, selectedThumbnail: index } : v
-      )
-    )
   }
 
   // 打开预览
@@ -1342,59 +1004,25 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
   // 获取已过滤的视频列表
   const getFilteredVideos = (): VideoFile[] => {
-    // 首先过滤
-    let filteredList = [...videos];
+    let filteredList = [...videos]
 
     if (filterBy !== "all") {
-      filteredList = filteredList.filter(v => v.status === filterBy);
+      filteredList = filteredList.filter(v => v.status === filterBy)
     }
 
-    // 然后排序
     switch (sortBy) {
       case "name":
-        filteredList.sort((a, b) => a.name.localeCompare(b.name));
-        break;
+        filteredList.sort((a, b) => a.name.localeCompare(b.name))
+        break
       case "date":
-        // 这里使用ID来模拟按日期排序，因为ID包含时间戳
-        filteredList.sort((a, b) => a.id.localeCompare(b.id));
-        break;
+        filteredList.sort((a, b) => a.id.localeCompare(b.id))
+        break
       case "size":
-        filteredList.sort((a, b) => b.size - a.size);
-        break;
+        filteredList.sort((a, b) => b.size - a.size)
+        break
     }
 
-    return filteredList;
-  }
-
-  // 获取视频的缩略图分页数据
-  const getPaginatedThumbnails = (video: VideoFile) => {
-    if (!video.thumbnailPagination || video.thumbnails.length === 0) {
-      return [];
-    }
-
-    const { currentPage, itemsPerPage } = video.thumbnailPagination;
-    const start = currentPage * itemsPerPage;
-    const end = start + itemsPerPage;
-
-    // 排序缩略图
-    let sortedThumbnails = [...video.thumbnails];
-
-    if (thumbnailSortBy === "quality") {
-      sortedThumbnails.sort((a, b) => b.quality - a.quality);
-    } else {
-      sortedThumbnails.sort((a, b) => a.timestamp - b.timestamp);
-    }
-
-    return sortedThumbnails.slice(start, end);
-  }
-
-  // 获取视频的总页数
-  const getTotalPages = (video: VideoFile) => {
-    if (!video.thumbnailPagination || video.thumbnails.length === 0) {
-      return 1;
-    }
-
-    return Math.ceil(video.thumbnails.length / video.thumbnailPagination.itemsPerPage);
+    return filteredList
   }
 
   // 渲染预览对话框

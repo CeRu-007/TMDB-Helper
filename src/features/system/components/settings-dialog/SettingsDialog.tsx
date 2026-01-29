@@ -69,6 +69,15 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
   const [activeSection, setActiveSection] = useState<string>(validInitialSection)
 
+  // 当 initialSection 变化时更新 activeSection
+  useEffect(() => {
+    if (initialSection && 
+        typeof initialSection === 'string' && 
+        validSections.includes(initialSection)) {
+      setActiveSection(initialSection)
+    }
+  }, [initialSection, validSections])
+
   // TMDB配置相关状态
   const [tmdbImportPath, setTmdbImportPath] = useState("")
   const [tmdbConfig, setTmdbConfig] = useState<TMDBConfig>({

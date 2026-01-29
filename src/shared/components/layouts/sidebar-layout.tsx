@@ -985,7 +985,7 @@ export function SidebarLayout({
 
       case 'thumbnails-extract':
         // 显示缩略图提取内容
-        return <VideoThumbnailExtractor onOpenGlobalSettings={onShowSettingsDialog} />
+        return <VideoThumbnailExtractor onOpenGlobalSettings={(section) => onShowSettingsDialog(section)} />
 
       case 'thumbnails-crop':
         // 显示图片裁切内容
