@@ -18,17 +18,13 @@ interface DetailsTabProps {
   isRefreshingTMDBData: boolean
   refreshError: string | null
   customSeasonNumber: number
-  highlightedEpisode: number | null
   onMovieToggle: (completed: boolean) => void
   onSeasonClick: (seasonNumber: number) => void
-  onBatchToggle: () => void
-  onMarkNextEpisode: () => void
   onResetSeason: () => void
   onDeleteSeason: () => void
   onRefreshTMDB: () => void
   onAddSeason: (seasonNumber: number, episodeCount: number) => void
-  onEpisodeToggle: (episodeNumber: number, completed: boolean, seasonNumber: number) => void
-  onEpisodeClick: (episodeNumber: number) => void
+  onEpisodeProgressUpdate: (currentEpisode: number, seasonNumber: number) => void
   onTotalEpisodesChange: (count: number) => void
   onCustomSeasonNumberChange: (value: number) => void
   onClearRefreshError: () => void
@@ -42,17 +38,13 @@ export function DetailsTab({
   isRefreshingTMDBData,
   refreshError,
   customSeasonNumber,
-  highlightedEpisode,
   onMovieToggle,
   onSeasonClick,
-  onBatchToggle,
-  onMarkNextEpisode,
   onResetSeason,
   onDeleteSeason,
   onRefreshTMDB,
   onAddSeason,
-  onEpisodeToggle,
-  onEpisodeClick,
+  onEpisodeProgressUpdate,
   onTotalEpisodesChange,
   onCustomSeasonNumberChange,
   onClearRefreshError
@@ -82,7 +74,10 @@ export function DetailsTab({
               <SeasonSelector
                 seasons={item.seasons || []}
                 selectedSeason={selectedSeason}
+                editing={editing}
+                isRefreshingTMDBData={isRefreshingTMDBData}
                 onSeasonClick={onSeasonClick}
+                onRefreshTMDB={onRefreshTMDB}
               />
 
               {/* 季数操作 */}
@@ -90,13 +85,9 @@ export function DetailsTab({
                 currentSeason={currentSeason}
                 selectedSeason={selectedSeason}
                 editing={editing}
-                isRefreshingTMDBData={isRefreshingTMDBData}
                 customSeasonNumber={customSeasonNumber}
-                onBatchToggle={onBatchToggle}
-                onMarkNextEpisode={onMarkNextEpisode}
                 onResetSeason={onResetSeason}
                 onDeleteSeason={onDeleteSeason}
-                onRefreshTMDB={onRefreshTMDB}
                 onAddSeason={onAddSeason}
                 onCustomSeasonNumberChange={onCustomSeasonNumberChange}
               />
@@ -124,9 +115,8 @@ export function DetailsTab({
                 currentSeason={currentSeason}
                 editing={editing}
                 customSeasonNumber={customSeasonNumber}
-                highlightedEpisode={highlightedEpisode}
-                onEpisodeToggle={onEpisodeToggle}
-                onEpisodeClick={onEpisodeClick}
+                item={item}
+                onEpisodeProgressUpdate={onEpisodeProgressUpdate}
                 onTotalEpisodesChange={onTotalEpisodesChange}
                 onAddSeason={onAddSeason}
                 onCustomSeasonNumberChange={onCustomSeasonNumberChange}
@@ -134,7 +124,6 @@ export function DetailsTab({
             </>
           )}
 
-          {/* 状态信息卡片已移除 */}
         </div>
       </ScrollArea>
     </div>

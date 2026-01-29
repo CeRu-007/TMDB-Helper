@@ -19,6 +19,7 @@ import {
   Info,
   Terminal,
   ArrowRightCircle,
+  RefreshCw,
 } from "lucide-react"
 import type { TMDBItem, Episode, Season } from "@/types/tmdb-item"
 import { cn } from "@/lib/utils"
@@ -122,13 +123,15 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     showFeedback,
   } = useItemDetailState({ item, onUpdate })
 
+  // 清除刷新错误
+  const onClearRefreshError = () => {
+    setRefreshError(null)
+  }
+
   // 本地状态
   const [selectedSeason, setSelectedSeason] = useState<number | undefined>(undefined)
   const [customSeasonNumber, setCustomSeasonNumber] = useState(1)
   const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
-  const [lastClickedEpisode, setLastClickedEpisode] = useState<number | null>(null)
-  const [isShiftPressed, setIsShiftPressed] = useState(false)
-  const [highlightedEpisode, setHighlightedEpisode] = useState<number | null>(null)
 
   // 使用图片预加载hook
   useItemImagesPreloader(item)
@@ -142,22 +145,18 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
   })
 
   // 获取当前季节数据
-  function getCurrentSeason(): Season | null {
-    if (!localItem.seasons || !selectedSeason) return null
-    return localItem.seasons.find(function(s: Season) { return s.seasonNumber === selectedSeason }) || null
-  }
-
-  const currentSeason = getCurrentSeason()
+  const currentSeason = localItem.seasons?.find(s => s.seasonNumber === selectedSeason) || null
 
   // 获取内联模式容器
-  const getInlineContainer = useCallback((): HTMLElement | null => {
+  function getInlineContainer(): HTMLElement | null {
     if (typeof document === 'undefined') return null
     return document.body
-  }, [])
+  }
 
   // 直接保存项目到文件系统
-  const saveItemDirectly = useCallback(async function(updatedItem: TMDBItem): Promise<boolean> {
+  async function saveItemDirectly(updatedItem: TMDBItem): Promise<boolean> {
     try {
+      // 获取现有数据
       const response = await fetch('/api/storage/file-operations', {
         method: 'GET',
         headers: { 'x-user-id': 'user_admin_system' }
@@ -168,16 +167,17 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
         return false
       }
 
-      const data = await response.json()
-      const items: TMDBItem[] = data.items || []
+      const { items = [] } = await response.json()
 
-      const index = items.findIndex(function(i: TMDBItem) { return i.id === updatedItem.id })
+      // 更新或添加项目
+      const index = items.findIndex(i => i.id === updatedItem.id)
       if (index !== -1) {
         items[index] = updatedItem
       } else {
         items.push(updatedItem)
       }
 
+      // 保存数据
       const writeResponse = await fetch('/api/storage/file-operations', {
         method: 'POST',
         headers: {
@@ -187,17 +187,12 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
         body: JSON.stringify({ items })
       })
 
-      if (!writeResponse.ok) {
-        console.error('保存数据失败:', writeResponse.statusText)
-        return false
-      }
-
-      return true
+      return writeResponse.ok
     } catch (error) {
       console.error('保存项目时出错:', error)
       return false
     }
-  }, [])
+  }
 
   // 同步本地状态与传入的item
   useEffect(() => {
@@ -205,45 +200,45 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     setEditData(item)
   }, [item])
 
-  // 初始化python命令
+  // 初始化设置
   useEffect(() => {
-    (async () => {
+    const initializeSettings = async () => {
+      // 初始化python命令
       try {
-        const v = await ClientConfigManager.getItem('python_command')
-        if (v && v.trim()) setPythonCmd(v)
-      } catch {}
-    })()
-  }, [])
-
-  // 加载外观设置
-  useEffect(() => {
-    (async () => {
-      try {
-        const savedAppearanceSettings = await ClientConfigManager.getItem("appearance_settings")
-        if (savedAppearanceSettings) {
-          const saved = JSON.parse(savedAppearanceSettings)
-          if (saved) {
-            setAppearanceSettings({
-              detailBackdropBlurEnabled: saved.detailBackdropBlurEnabled ?? true,
-              detailBackdropBlurIntensity: saved.detailBackdropBlurIntensity ?? 'medium',
-              detailBackdropOverlayOpacity: saved.detailBackdropOverlayOpacity ?? 0.25,
-            })
-          }
+        const pythonCommand = await ClientConfigManager.getItem('python_command')
+        if (pythonCommand?.trim()) {
+          setPythonCmd(pythonCommand)
         }
-      } catch (e) {
+      } catch {}
+
+      // 加载外观设置
+      try {
+        const savedSettings = await ClientConfigManager.getItem("appearance_settings")
+        const parsed = savedSettings ? JSON.parse(savedSettings) : null
+
+        setAppearanceSettings({
+          detailBackdropBlurEnabled: parsed?.detailBackdropBlurEnabled ?? true,
+          detailBackdropBlurIntensity: parsed?.detailBackdropBlurIntensity ?? 'medium',
+          detailBackdropOverlayOpacity: parsed?.detailBackdropOverlayOpacity ?? 0.25,
+        })
+      } catch {
         setAppearanceSettings({
           detailBackdropBlurEnabled: true,
           detailBackdropBlurIntensity: 'medium',
           detailBackdropOverlayOpacity: 0.25,
         })
       }
-    })()
+    }
+
+    initializeSettings()
   }, [])
 
   // 监听季数变化，初始化选中季数
   useEffect(() => {
-    if (localItem.seasons && localItem.seasons.length > 0) {
-      const maxSeasonNumber = Math.max(...localItem.seasons.map(function(s: Season) { return s.seasonNumber || 1 }))
+    const seasons = localItem.seasons || []
+
+    if (seasons.length > 0) {
+      const maxSeasonNumber = Math.max(...seasons.map(s => s.seasonNumber || 1))
       setSelectedSeason(maxSeasonNumber)
       setCustomSeasonNumber(maxSeasonNumber)
     } else if (localItem.mediaType === "tv") {
@@ -253,48 +248,16 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
   }, [localItem])
 
   // 处理季数切换
-  const handleSeasonClick = (seasonNumber: number) => {
+  function handleSeasonClick(seasonNumber: number) {
     setSelectedSeason(seasonNumber)
     setCustomSeasonNumber(seasonNumber)
-    setLastClickedEpisode(null)
     showFeedback(`已切换到第${seasonNumber}季`, 1000)
   }
 
-  // 处理批量切换
-  function handleBatchToggleForSeason() {
-    if (!selectedSeason || !localItem.seasons) return
-
-    const season = localItem.seasons.find(function(s: Season) { return s.seasonNumber === selectedSeason })
-    if (!season) return
-
-    const allCompleted = season.episodes.every(function(ep: Episode) { return ep.completed })
-    const newCompleted = !allCompleted
-
-    season.episodes.forEach(function(episode: Episode) {
-      handleEpisodeToggle(episode.number, newCompleted, selectedSeason)
-    })
-  }
-
-  // 处理标记下一集
-  function handleMarkNextEpisode() {
-    if (!selectedSeason || !currentSeason || !currentSeason.episodes) {
-      showFeedback('当前季没有集数')
-      return
-    }
-
-    const nextEpisode = currentSeason.episodes.find(function(ep: Episode) { return !ep.completed })
-    if (!nextEpisode) {
-      showFeedback('所有集数都已完成')
-      return
-    }
-
-    handleEpisodeToggle(nextEpisode.number, true, selectedSeason)
-    showFeedback(`已标记第${nextEpisode.number}集为已完成`)
-  }
-
   // 处理删除季数
-  function handleDeleteSeason(seasonNumber: number) {
-    setSeasonToDelete(seasonNumber)
+  function handleDeleteSeason() {
+    if (!selectedSeason) return
+    setSeasonToDelete(selectedSeason)
     setShowDeleteSeasonDialog(true)
   }
 
@@ -302,14 +265,12 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
   function confirmDeleteSeason() {
     if (!seasonToDelete || !localItem.seasons) return
 
-    const updatedSeasons = localItem.seasons.filter(function(s: Season) { return s.seasonNumber !== seasonToDelete })
-    const updatedEpisodes = localItem.episodes?.filter(function(ep: Episode) { return ep.seasonNumber !== seasonToDelete }) || []
-    const updatedTotalEpisodes = updatedEpisodes.length
+    const updatedSeasons = localItem.seasons.filter(s => s.seasonNumber !== seasonToDelete)
+    const updatedTotalEpisodes = updatedSeasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0)
 
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
-      episodes: updatedEpisodes,
       totalEpisodes: updatedTotalEpisodes,
       updatedAt: new Date().toISOString()
     }
@@ -319,8 +280,9 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     setShowDeleteSeasonDialog(false)
     setSeasonToDelete(null)
 
+    // 更新选中的季
     if (updatedSeasons.length > 0) {
-      const maxSeason = Math.max(...updatedSeasons.map(function(s: Season) { return s.seasonNumber }))
+      const maxSeason = Math.max(...updatedSeasons.map(s => s.seasonNumber))
       setSelectedSeason(maxSeason)
       setCustomSeasonNumber(maxSeason)
     } else {
@@ -332,11 +294,11 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
   function handleResetSeason() {
     if (!selectedSeason || !currentSeason) return
 
-    const updatedSeasons = localItem.seasons?.map(function(season: Season) {
+    const updatedSeasons = localItem.seasons?.map(season => {
       if (season.seasonNumber === selectedSeason) {
         return {
           ...season,
-          episodes: season.episodes.map(function(ep: Episode) { return { ...ep, completed: false } })
+          episodes: season.episodes?.map(ep => ({ ...ep, completed: false })) || []
         }
       }
       return season
@@ -345,9 +307,9 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
-      episodes: updatedSeasons.flatMap(function(s: Season) {
-        return s.episodes.map(function(ep: Episode) { return { ...ep, seasonNumber: s.seasonNumber } })
-      }),
+      episodes: updatedSeasons.flatMap(s =>
+        s.episodes?.map(ep => ({ ...ep, seasonNumber: s.seasonNumber })) || []
+      ),
       updatedAt: new Date().toISOString()
     }
 
@@ -379,20 +341,20 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
 
     const { oldCount, newCount } = episodeChangeData
 
-    const updatedSeasons = localItem.seasons.map(function(season: Season) {
+    const updatedSeasons = localItem.seasons.map(season => {
       if (season.seasonNumber === selectedSeason) {
-        let updatedEpisodes = [...season.episodes]
+        let updatedEpisodes = [...(season.episodes || [])]
 
         if (newCount > oldCount) {
-          const newEpisodes = Array.from({ length: newCount - oldCount }, function(_: unknown, i: number) {
-            return {
-              number: oldCount + i + 1,
-              completed: false,
-            }
-          })
-          updatedEpisodes = [...season.episodes, ...newEpisodes]
+          // 添加新剧集
+          const newEpisodes = Array.from({ length: newCount - oldCount }, (_, i) => ({
+            number: oldCount + i + 1,
+            completed: false,
+          }))
+          updatedEpisodes = [...updatedEpisodes, ...newEpisodes]
         } else {
-          updatedEpisodes = season.episodes.slice(0, newCount)
+          // 减少剧集
+          updatedEpisodes = updatedEpisodes.slice(0, newCount)
         }
 
         return {
@@ -404,22 +366,18 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
       return season
     })
 
-    const updatedEpisodes = updatedSeasons.flatMap(function(season: Season) {
-      return season.episodes.map(function(ep: Episode) {
-        return {
-          ...ep,
-          seasonNumber: season.seasonNumber,
-        }
-      })
-    })
-
-    const newTotalEpisodes = updatedEpisodes.length
+    const updatedEpisodes = updatedSeasons.flatMap(season =>
+      season.episodes?.map(ep => ({
+        ...ep,
+        seasonNumber: season.seasonNumber,
+      })) || []
+    )
 
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
       episodes: updatedEpisodes,
-      totalEpisodes: newTotalEpisodes,
+      totalEpisodes: updatedEpisodes.length,
       updatedAt: new Date().toISOString(),
     }
 
@@ -439,58 +397,57 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
   function handleAddSeason(seasonNumber: number, episodeCount: number) {
     if (seasonNumber < 1 || episodeCount < 1) return
 
-    const seasonExists = localItem.seasons?.some(function(season: Season) {
-      return season.seasonNumber === seasonNumber
-    })
-
+    // 检查季是否已存在
+    const seasonExists = localItem.seasons?.some(s => s.seasonNumber === seasonNumber)
     if (seasonExists) {
       showFeedback(`第${seasonNumber}季已存在`)
       return
     }
 
+    // 创建新季
     const newSeason = {
       seasonNumber,
       totalEpisodes: episodeCount,
-      episodes: Array.from({ length: episodeCount }, function(_: unknown, i: number) {
-        return {
-          number: i + 1,
-          completed: false,
-        }
-      }),
+      episodes: Array.from({ length: episodeCount }, (_, i) => ({
+        number: i + 1,
+        completed: false,
+      })),
     }
 
-    const updatedSeasons = [...(localItem.seasons || []), newSeason].sort(function(a: Season, b: Season) { return a.seasonNumber - b.seasonNumber })
+    // 更新季列表
+    const updatedSeasons = [...(localItem.seasons || []), newSeason]
+      .sort((a, b) => a.seasonNumber - b.seasonNumber)
+
+    // 更新剧集列表
     const updatedEpisodes = [
       ...(localItem.episodes || []),
-      ...newSeason.episodes.map(function(ep: Episode) {
-        return {
-          ...ep,
-          seasonNumber: newSeason.seasonNumber,
-        }
-      }),
+      ...newSeason.episodes.map(ep => ({
+        ...ep,
+        seasonNumber: newSeason.seasonNumber,
+      })),
     ]
-
-    const updatedTotalEpisodes = (localItem.totalEpisodes || 0) + episodeCount
 
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
       episodes: updatedEpisodes,
-      totalEpisodes: updatedTotalEpisodes,
+      totalEpisodes: (localItem.totalEpisodes || 0) + episodeCount,
       updatedAt: new Date().toISOString()
     }
 
     updateLocalItem(updatedItem)
 
+    // 更新编辑状态
     if (editing) {
       setEditData({
         ...editData,
         seasons: updatedSeasons,
         episodes: updatedEpisodes,
-        totalEpisodes: updatedTotalEpisodes
+        totalEpisodes: updatedItem.totalEpisodes
       })
     }
 
+    // 选中新添加的季
     setSelectedSeason(seasonNumber)
     setCustomSeasonNumber(seasonNumber)
 
@@ -578,60 +535,19 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     setSelectedLanguage(languageCode)
   }
 
-  // 处理键盘事件
-  useEffect(() => {
-    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Shift") {
-        setIsShiftPressed(true)
-        document.body.classList.add('shift-select-mode')
-      }
-    }
-
-    const handleKeyUp = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Shift") {
-        setIsShiftPressed(false)
-        document.body.classList.remove('shift-select-mode')
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    document.addEventListener('keyup', handleKeyUp)
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.removeEventListener('keyup', handleKeyUp)
-      document.body.classList.remove('shift-select-mode')
-    }
-  }, [])
-
   // 获取进度信息
-  function getProgress() {
-    if (localItem.mediaType === "movie") {
-      return { completed: localItem.completed ? 1 : 0, total: 1 };
-    }
+  const progress = localItem.mediaType === "movie"
+    ? { completed: localItem.completed ? 1 : 0, total: 1 }
+    : localItem.seasons?.length
+      ? {
+          completed: localItem.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0),
+          total: localItem.seasons.reduce((sum, season) => sum + season.totalEpisodes, 0)
+        }
+      : {
+          completed: localItem.seasons?.[0]?.currentEpisode || 0,
+          total: localItem.seasons?.[0]?.totalEpisodes || 0
+        }
 
-    // 多季电视剧
-    if (localItem.seasons && localItem.seasons.length > 0) {
-      const total = localItem.seasons.reduce(function(sum: number, season: Season) { return sum + season.totalEpisodes }, 0);
-      const completed = localItem.seasons.reduce(
-        function(sum: number, season: Season) {
-          // 添加安全检查确保episodes存在
-          return sum + (season.episodes && season.episodes.length > 0
-            ? season.episodes.filter(function(ep: Episode) { return ep.completed }).length
-            : 0);
-        },
-        0
-      );
-      return { completed, total };
-    }
-
-    // 单季电视剧
-    const completed = localItem.episodes?.filter(function(ep: Episode) { return ep.completed }).length || 0;
-    const total = localItem.totalEpisodes || 0;
-    return { completed, total };
-  }
-
-  const progress = getProgress()
   const isDailyUpdate = localItem.isDailyUpdate
 
   // 辅助函数：检查元素是否在弹出组件内
@@ -826,100 +742,28 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     } catch {}
   }, [open, displayMode])
 
-  // 处理剧集切换
-  async function handleEpisodeToggle(episodeNumber: number, completed: boolean, seasonNumber: number) {
-    let episodeNumbers: number[] = []
-    let rangeInfo = ''
+  // 处理剧集进度更新
+  function handleEpisodeProgressUpdate(currentEpisode: number, seasonNumber: number) {
+    if (!localItem.seasons) return
 
-    if (isShiftPressed) {
-      if (lastClickedEpisode === null) {
-        setLastClickedEpisode(episodeNumber)
-        showFeedback(`已选择起点：第${episodeNumber}集`, 1000)
-        return
-      } else {
-        const start = Math.min(lastClickedEpisode, episodeNumber)
-        const end = Math.max(lastClickedEpisode, episodeNumber)
-        episodeNumbers = Array.from({ length: end - start + 1 }, function(_: unknown, i: number) { return start + i })
-        rangeInfo = `第${start}-${end}集`
-        setLastClickedEpisode(null)
-      }
-    } else {
-      episodeNumbers = [episodeNumber]
-      rangeInfo = `第${episodeNumber}集`
+    const updatedSeasons = localItem.seasons.map(season =>
+      season.seasonNumber === seasonNumber
+        ? { ...season, currentEpisode }
+        : season
+    )
+
+    const season = updatedSeasons.find(s => s.seasonNumber === seasonNumber)
+    const isCompleted = season?.currentEpisode === season?.totalEpisodes
+
+    const updatedItem = {
+      ...localItem,
+      seasons: updatedSeasons,
+      status: isCompleted ? "completed" : "ongoing",
+      completed: isCompleted,
+      updatedAt: new Date().toISOString(),
     }
 
-    let updatedItem = { ...localItem }
-
-    if (updatedItem.seasons && seasonNumber) {
-      const updatedSeasons = updatedItem.seasons.map(function(season: Season) {
-        if (season.seasonNumber === seasonNumber) {
-          const updatedEpisodes = season.episodes.map(function(ep: Episode) {
-            return episodeNumbers.includes(ep.number) ? { ...ep, completed } : ep
-          })
-          return { ...season, episodes: updatedEpisodes }
-        }
-        return season
-      })
-
-      const allEpisodes = updatedSeasons.flatMap(function(season: Season) {
-        return season.episodes.map(function(ep: Episode) {
-          return {
-            ...ep,
-            seasonNumber: season.seasonNumber,
-          }
-        })
-      })
-
-      updatedItem = {
-        ...updatedItem,
-        seasons: updatedSeasons,
-        episodes: allEpisodes,
-        updatedAt: new Date().toISOString(),
-      }
-    } else {
-      const updatedEpisodes = (updatedItem.episodes || []).map(function(ep: Episode) {
-        return episodeNumbers.includes(ep.number) ? { ...ep, completed } : ep
-      })
-
-      updatedItem = {
-        ...updatedItem,
-        episodes: updatedEpisodes,
-        updatedAt: new Date().toISOString(),
-      }
-    }
-
-    const allCompleted = updatedItem.episodes?.every(function(ep: Episode) { return ep.completed }) && updatedItem.episodes.length > 0
-    if (allCompleted && updatedItem.status === "ongoing") {
-      updatedItem.status = "completed"
-      updatedItem.completed = true
-    } else if (!allCompleted && updatedItem.status === "completed") {
-      updatedItem.status = "ongoing"
-      updatedItem.completed = false
-    }
-
-    setLocalItem(updatedItem)
-
-    if (!(isShiftPressed && lastClickedEpisode !== null && lastClickedEpisode !== episodeNumber)) {
-      setLastClickedEpisode(episodeNumber)
-    }
-
-    if (episodeNumbers.length === 1) {
-      setHighlightedEpisode(episodeNumbers[0] ?? null)
-      setTimeout(function() { setHighlightedEpisode(null) }, 500)
-    }
-
-    try {
-      const success = await saveItemDirectly(updatedItem)
-      if (!success) {
-        throw new Error('保存失败')
-      }
-
-      onUpdate(updatedItem)
-      showFeedback(`已标记 ${episodeNumbers.length} 个集数为${completed ? '已完成' : '未完成'}`)
-    } catch (error) {
-      setLocalItem(localItem)
-      showFeedback('更新失败，请重试')
-    }
+    updateLocalItem(updatedItem)
   }
 
   // 处理保存编辑
@@ -943,7 +787,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
       onUpdate(updatedItem)
       setEditing(false)
       showFeedback('保存成功')
-    } catch (error) {
+    } catch {
       showFeedback('保存失败，请重试')
     } finally {
       setIsSaving(false)
@@ -951,7 +795,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
   }
 
   // Helper function to get air time display
-  function getAirTime(weekday?: number): string {
+  const getAirTime = (weekday?: number): string => {
     if (weekday === undefined) return ""
     const days = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
     return days[weekday] || ""
@@ -1023,7 +867,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
                         className="max-h-full object-contain"
                         loading="eager"
                         decoding="async"
-                        onError={(e) => {
+                        onError={function handleImageError(e) {
                           e.currentTarget.style.display = 'none';
                           const titleElement = e.currentTarget.parentElement?.nextElementSibling;
                           if (titleElement) {
@@ -1079,6 +923,22 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
               </div>
 
               <div className="flex items-center space-x-2 pr-2">
+                {localItem.mediaType === "tv" && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 transition-transform hover:scale-110"
+                    title="刷新TMDB数据"
+                    onClick={refreshSeasonFromTMDB}
+                    disabled={isRefreshingTMDBData}
+                  >
+                    {isRefreshingTMDBData ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
                 {localItem.tmdbUrl && (
                   <Button
                     variant="outline"
@@ -1179,7 +1039,9 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
                             <Input
                               id="edit-title"
                               value={editData.title}
-                              onChange={(e) => setEditData({...editData, title: e.target.value})}
+                              onChange={function handleTitleChange(e) {
+                              setEditData({...editData, title: e.target.value})
+                            }}
                               className="h-8"
                             />
                           </div>
@@ -1230,7 +1092,9 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
                             <Input
                               id="edit-airtime"
                               value={editData.airTime || ""}
-                              onChange={(e) => setEditData({...editData, airTime: e.target.value})}
+                              onChange={function handleAirTimeChange(e) {
+                              setEditData({...editData, airTime: e.target.value})
+                            }}
                               placeholder="例如：周一 22:00"
                               className="h-8"
                             />
@@ -1260,7 +1124,9 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
                               <input
                                 type="checkbox"
                                 checked={editData.isDailyUpdate || false}
-                                onChange={(e) => setEditData({...editData, isDailyUpdate: e.target.checked})}
+                                onChange={function handleDailyUpdateChange(e) {
+                                setEditData({...editData, isDailyUpdate: e.target.checked})
+                              }}
                                 className="h-4 w-4"
                               />
                             </div>
@@ -1324,24 +1190,18 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
                       refreshError={refreshError}
                       customSeasonNumber={customSeasonNumber}
                       selectedLanguage={selectedLanguage}
-                      highlightedEpisode={highlightedEpisode}
                       CATEGORIES={CATEGORIES}
                       WEEKDAYS={WEEKDAYS}
                       onMovieToggle={handleMovieToggle}
                       onSeasonClick={handleSeasonClick}
-                      onBatchToggle={handleBatchToggleForSeason}
-                      onMarkNextEpisode={handleMarkNextEpisode}
                       onResetSeason={handleResetSeason}
                       onDeleteSeason={handleDeleteSeason}
                       onRefreshTMDB={refreshSeasonFromTMDB}
                       onAddSeason={handleAddSeason}
-                      onEpisodeToggle={handleEpisodeToggle}
-                      onEpisodeClick={function(episodeNumber: number) { setLastClickedEpisode(episodeNumber) }}
+                      onEpisodeProgressUpdate={handleEpisodeProgressUpdate}
                       onTotalEpisodesChange={handleTotalEpisodesChange}
                       onCustomSeasonNumberChange={setCustomSeasonNumber}
-                      onLanguageChange={handleLanguageChange}
-                      onClearRefreshError={() => setRefreshError(null)}
-                      onEditDataChange={setEditData}
+                      onClearRefreshError={onClearRefreshError}
                     />
                   </TabsContent>
 

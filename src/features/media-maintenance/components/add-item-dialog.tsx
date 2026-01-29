@@ -99,7 +99,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
   
   // 获取显示标题
   const getDisplayTitle = (result: TMDBSearchResult): string => {
-    return result.media_type === "movie" ? result.title : (result.name || result.title)
+    return result.name || result.title
   }
   
   // 选择搜索结果 - 使用useCallback包装以避免依赖循环
@@ -166,52 +166,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     }
   }, [setSelectedResult, setDetailLoading, setFormData, setTmdbSeasons, setBackdropUrl, setBackdropPath])
   
-  // 处理对话框打开时的初始化
-  useEffect(() => {
-    if (open) {
-      // 重置表单状态
-      setSearchQuery("");
-      setSearchResults([]);
-      setSelectedResult(null);
-      setFormData({
-        title: "",
-        mediaType: "movie" as MediaType,
-        weekday: -1,
-        secondWeekday: -1,
-        airTime: "18:00",
-        totalEpisodes: 1,
-        platformUrl: "",
-        category: "",
-        isDailyUpdate: false
-      });
-      setIsManualTotalEpisodes(false);
-    }
-  }, [open]);
-  
-  // 当对话框关闭时重置表单
+  // 处理对话框状态变化，统一重置表单
   useEffect(() => {
     if (!open) {
-      // 直接在这里重置状态
-      setSearchQuery("");
-      setSearchResults([]);
-      setSelectedResult(null);
-      setTmdbSeasons([]);
-      setBackdropUrl(undefined);
-      setBackdropPath(undefined);
-      setCustomBackdropUrl("");
-      setShowBackdropPreview(false);
-      setShowPreviewCard(false);
-      setFormData({
-        weekday: 1,
-        secondWeekday: -1,
-        airTime: "18:00",
-        totalEpisodes: 1,
-        platformUrl: "",
-        category: "",
-        isDailyUpdate: false
-      });
-      // 重置手动设置标记
-      setIsManualTotalEpisodes(false);
+      resetForm();
     }
   }, [open]);
 
@@ -259,18 +217,27 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
   // 处理搜索输入
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
+    clearSearchState()
+
+    // 防抖搜索
+    debounceSearch(value)
+  }
+
+  // 清除搜索相关状态
+  const clearSearchState = () => {
     setSelectedResult(null)
     setTmdbSeasons([])
     setShowPreviewCard(false)
+  }
 
-    // 清除之前的定时器
+  // 防抖搜索
+  const debounceSearch = (query: string) => {
     if (searchTimeoutRef.current) {
       window.clearTimeout(searchTimeoutRef.current)
     }
 
-    // 设置新的定时器，延迟搜索
     searchTimeoutRef.current = window.setTimeout(() => {
-      searchTMDB(value)
+      searchTMDB(query)
     }, 500) as unknown as number
   }
 
@@ -421,30 +388,25 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       let totalEpisodes = formData.totalEpisodes
       
       if (tmdbData.seasons && tmdbData.seasons.length > 0) {
-        // 多季电视剧
+        // 多季电视剧 - 使用 currentEpisode 字段
         seasons = tmdbData.seasons.map((seasonData) => ({
           seasonNumber: seasonData.seasonNumber,
           name: seasonData.name,
           totalEpisodes: seasonData.totalEpisodes,
-          episodes: Array.from({ length: seasonData.totalEpisodes }, (_, i) => ({
-            number: i + 1,
-            completed: false,
-            seasonNumber: seasonData.seasonNumber,
-          })),
+          currentEpisode: 0,  // 初始为0，表示未开始维护
           posterUrl: seasonData.posterUrl,
         }))
         
-        // 生成所有集数的扁平化数组
-        episodes = seasons.flatMap((season) => season.episodes)
-        totalEpisodes = tmdbData.totalEpisodes || episodes.length
+        totalEpisodes = tmdbData.totalEpisodes || seasons.reduce((sum, s) => sum + s.totalEpisodes, 0)
       } else if (selectedResult.media_type === "tv") {
-        // 单季电视剧
+        // 单季电视剧 - 使用 currentEpisode 字段
         const episodeCount = tmdbData.totalEpisodes || formData.totalEpisodes
         totalEpisodes = episodeCount
-        episodes = Array.from({ length: episodeCount }, (_, i) => ({
-          number: i + 1,
-          completed: false,
-        }))
+        seasons = [{
+          seasonNumber: 1,
+          totalEpisodes: episodeCount,
+          currentEpisode: 0,
+        }]
       }
       
       // 优先使用用户手动输入的平台地址

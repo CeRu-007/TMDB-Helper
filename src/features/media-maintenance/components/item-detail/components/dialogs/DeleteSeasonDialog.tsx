@@ -27,13 +27,21 @@ export function DeleteSeasonDialog({
   onCancel,
   onConfirm
 }: DeleteSeasonDialogProps) {
+  const handleCancel = () => {
+    onCancel()
+  }
+
+  const handleConfirm = () => {
+    onConfirm()
+  }
+
   return (
     <AlertDialogNoOverlay open={open} onOpenChange={onOpenChange}>
       <AlertDialogNoOverlayContent>
         <AlertDialogHeader>
           <AlertDialogTitle>确认删除季</AlertDialogTitle>
           <AlertDialogDescription>
-            确定要删除第 {seasonToDelete} 季吗？此操作不可撤销。
+            {seasonToDelete !== null ? `确定要删除第 ${seasonToDelete} 季吗？此操作不可撤销。` : '确定要删除选中的季吗？此操作不可撤销。'}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

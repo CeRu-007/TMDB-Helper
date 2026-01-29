@@ -24,73 +24,73 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
 
   // 获取进度
   const getProgress = () => {
-    // 移除电影类型检查，只支持电视剧
-
-    if (!item.episodes || item.episodes.length === 0) {
+    // 计算电视剧进度 - 使用 seasons 的 currentEpisode
+    if (!item.seasons || item.seasons.length === 0) {
       return 0
     }
 
-    const completed = item.episodes.filter(ep => ep.completed).length
-    return item.totalEpisodes ? (completed / item.totalEpisodes) * 100 : 0
+    const totalCompleted = item.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0)
+    const totalEpisodes = item.seasons.reduce((sum, season) => sum + season.totalEpisodes, 0)
+
+    return totalEpisodes > 0 ? (totalCompleted / totalEpisodes) * 100 : 0
   }
 
   // 评分设置为null，修复右下角评分问题
   const rating = null
 
-  // 添加completedEpisodes变量定义
-  const completedEpisodes = item.episodes?.filter((ep) => ep.completed).length || 0
-
-  // 获取播出时间
-  const getAirTime = (weekday: number) => {
-    const airTime = item.airTime || "19:00"
-    // 将原始weekday（0-6，0是周日）转换为我们的数组索引（0-6，0是周一，6是周日）
-    const adjustedWeekday = weekday === 0 ? 6 : weekday - 1
-    return `${WEEKDAYS[adjustedWeekday]} ${airTime}`
-  }
+  // 计算已完成集数 - 使用 seasons 的 currentEpisode
+  const completedEpisodes = item.seasons
+    ? item.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0)
+    : 0
 
   // 获取仅时间部分
-  const getTimeOnly = () => {
-    return item.airTime || "19:00"
-  }
+  const getTimeOnly = () => item.airTime || "19:00"
 
   // 检查是否有第二播出日
-  const hasSecondWeekday = typeof item.secondWeekday === 'number' && item.secondWeekday >= 0;
+  const hasSecondWeekday = typeof item.secondWeekday === 'number' && item.secondWeekday >= 0
 
-  // 获取更新信息文本 - 针对多集剧集优化
+  // 获取播出时间显示文本
+  const getAirTimeDisplay = () => {
+    const airTime = getTimeOnly()
+    const weekdays = []
+
+    // 处理主要播出日（转换0=周日到6=周六的格式）
+    const adjustedWeekday1 = item.weekday === 0 ? 6 : item.weekday! - 1
+    weekdays.push(WEEKDAYS[adjustedWeekday1])
+
+    // 处理第二播出日
+    if (hasSecondWeekday) {
+      const adjustedWeekday2 = item.secondWeekday === 0 ? 6 : item.secondWeekday - 1
+      weekdays.push(WEEKDAYS[adjustedWeekday2])
+    }
+
+    return `${weekdays.join('')} ${airTime}`
+  }
+
+  // 获取更新信息文本
   const getUpdateText = () => {
-    // 移除电影类型检查，只支持电视剧
-    // 已完结的剧集显示"全X集"或"已完结"
+    // 已完结的剧集
     if (item.status === "completed") {
-      // 如果有总集数，显示"全X集"
-      if (item.totalEpisodes) {
-        return `全${item.totalEpisodes}集`
-      }
-      // 没有总集数就显示"已完结"
-      return "已完结"
+      return item.totalEpisodes ? `全${item.totalEpisodes}集` : "已完结"
     }
 
-    // 连载中的剧集显示进度
-    // 如果有多季信息，显示最新一季的进度
-    if (item.seasons && item.seasons.length > 0) {
-      // 找到最新的季（季数最大的）
-      const latestSeason = [...item.seasons].sort((a, b) => b.seasonNumber - a.seasonNumber)[0];
+    // 有季信息的剧集，显示最新季进度
+    if (item.seasons?.length) {
+      const latestSeason = [...item.seasons]
+        .sort((a, b) => b.seasonNumber - a.seasonNumber)[0]
 
-      // 计算最新一季的完成集数 - 添加安全检查确保episodes存在
-      const latestSeasonCompletedEpisodes = latestSeason?.episodes && latestSeason.episodes.length > 0
-        ? latestSeason.episodes.filter((ep) => ep.completed).length
-        : 0
-
-      return `维护至第${latestSeasonCompletedEpisodes}集`
+      return `维护至第${latestSeason?.currentEpisode || 0}集`
     }
+
     // 单季剧集显示总进度
     return `维护至第${completedEpisodes}集`
   }
 
-  // 获取完结日期（取updatedAt）
+  // 获取完结日期
   const getCompletionDate = () => {
     try {
-      const date = new Date(item.updatedAt)
-      return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+      return new Date(item.updatedAt)
+        .toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
     } catch {
       return null
     }
@@ -135,28 +135,11 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
                   className={`text-white text-xs px-2 py-1 rounded-full whitespace-nowrap ${
                     // 如果任何一个播出日是今天，使用特殊颜色
                     (item.weekday === new Date().getDay() || (hasSecondWeekday && item.secondWeekday === new Date().getDay()))
-                      ? "bg-red-500 animate-pulse" 
+                      ? "bg-red-500 animate-pulse"
                       : "bg-green-500"
                   }`}
                 >
-                  {/* 获取所有播出日的星期几（不包含时间） */}
-                  {(() => {
-                    const airTime = item.airTime || "19:00";
-                    const weekdays = [];
-                    
-                    // 处理主要播出日
-                    const adjustedWeekday1 = item.weekday === 0 ? 6 : item.weekday - 1;
-                    weekdays.push(WEEKDAYS[adjustedWeekday1]);
-                    
-                    // 处理第二播出日
-                    if (hasSecondWeekday) {
-                      const adjustedWeekday2 = item.secondWeekday === 0 ? 6 : (item.secondWeekday as number) - 1;
-                      weekdays.push(WEEKDAYS[adjustedWeekday2]);
-                    }
-                    
-                    // 返回合并后的字符串
-                    return `${weekdays.join('')} ${airTime}`;
-                  })()}
+                  {getAirTimeDisplay()}
                 </Badge>
               )}
             </>

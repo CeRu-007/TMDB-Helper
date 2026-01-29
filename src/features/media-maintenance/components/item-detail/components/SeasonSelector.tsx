@@ -1,16 +1,9 @@
 "use client"
 
 import { Button } from "@/shared/components/ui/button"
-import { Badge } from "@/shared/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Tv } from "lucide-react"
 import type { Season } from "@/lib/data/storage"
-
-interface SeasonSelectorProps {
-  seasons: Season[]
-  selectedSeason?: number
-  onSeasonClick: (seasonNumber: number) => void
-}
 
 export function SeasonSelector({
   seasons,
@@ -39,12 +32,11 @@ export function SeasonSelector({
               onClick={() => onSeasonClick(season.seasonNumber)}
             >
               第{season.seasonNumber}季
-              {season.episodes && (
+              {season.currentEpisode !== undefined && (
                 <span className="ml-1 text-xs">
-                  ({season.episodes.filter(ep => ep.completed).length}/{season.episodes.length})
+                  ({season.currentEpisode}/{season.totalEpisodes})
                 </span>
-              )}
-            </Button>
+              )}            </Button>
           ))}
         </div>
       </CardContent>
