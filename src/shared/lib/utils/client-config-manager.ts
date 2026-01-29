@@ -77,6 +77,13 @@ export class ClientConfigManager {
       return data.value;
     } catch (error) {
       clearTimeout(timeoutId);
+      
+      // 特殊处理 AbortError（超时错误）
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn(`获取配置项超时: ${key}`);
+        throw new Error(`Request timeout for key: ${key}`);
+      }
+      
       throw error;
     }
   }

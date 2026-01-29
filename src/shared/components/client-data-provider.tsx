@@ -34,8 +34,8 @@ export function useData(): DataContextType {
 }
 
 export function DataProvider({ children }: { children: ReactNode }): JSX.Element {
-  const { items, error, initialized, isConnected, refreshData, setError } = useDataSync()
-  const operations = useDataOperations(items, items => {/* handled by useDataSync */}, setError)
+  const { items, setItems, error, initialized, isConnected, refreshData, setError } = useDataSync()
+  const operations = useDataOperations(items, setItems, setError)
 
   const value: DataContextType = {
     items,

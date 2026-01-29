@@ -105,6 +105,7 @@ export function useDataSync() {
 
   return {
     items,
+    setItems,
     error,
     initialized,
     isConnected,
