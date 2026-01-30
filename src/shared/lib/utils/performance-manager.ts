@@ -3,7 +3,7 @@
  * 提供内存泄漏检测、资源清理和性能监控
  */
 
-import { log } from './logger'
+import { logger } from '@/lib/utils/logger'
 
 export interface PerformanceMetrics {
   memoryUsage?: MemoryInfo
@@ -52,7 +52,7 @@ class PerformanceManager {
     cleanup: () => void
   ): void {
     if (this.cleanupTasks.has(id)) {
-      log.warn('PerformanceManager', `资源 ${id} 已存在，将被覆盖`)
+      logger.warn('PerformanceManager', `资源 ${id} 已存在，将被覆盖`)
       this.cleanup(id)
     }
 
@@ -63,7 +63,7 @@ class PerformanceManager {
       created: new Date().toISOString()
     })
 
-    log.debug('PerformanceManager', `注册清理任务: ${id} (${type})`)
+    logger.debug('PerformanceManager', `注册清理任务: ${id} (${type})`)
   }
 
   /**
@@ -78,10 +78,10 @@ class PerformanceManager {
     try {
       task.cleanup()
       this.cleanupTasks.delete(id)
-      log.debug('PerformanceManager', `清理资源: ${id}`)
+      logger.debug('PerformanceManager', `清理资源: ${id}`)
       return true
     } catch (error) {
-      log.error('PerformanceManager', `清理资源失败: ${id}`, error)
+      logger.error('PerformanceManager', `清理资源失败: ${id}`, error)
       return false
     }
   }
@@ -90,7 +90,7 @@ class PerformanceManager {
    * 清理所有资源
    */
   cleanupAll(): void {
-    log.info('PerformanceManager', `开始清理 ${this.cleanupTasks.size} 个资源`)
+    logger.info('PerformanceManager', `开始清理 ${this.cleanupTasks.size} 个资源`)
     
     let successCount = 0
     let errorCount = 0
@@ -101,12 +101,12 @@ class PerformanceManager {
         successCount++
       } catch (error) {
         errorCount++
-        log.error('PerformanceManager', `清理资源失败: ${id}`, error)
+        logger.error('PerformanceManager', `清理资源失败: ${id}`, error)
       }
     }
 
     this.cleanupTasks.clear()
-    log.info('PerformanceManager', `资源清理完成: 成功 ${successCount}, 失败 ${errorCount}`)
+    logger.info('PerformanceManager', `资源清理完成: 成功 ${successCount}, 失败 ${errorCount}`)
   }
 
   /**
@@ -171,7 +171,7 @@ class PerformanceManager {
    */
   startTiming(label: string): void {
     this.timers.set(label, performance.now())
-    log.debug('PerformanceManager', `开始计时: ${label}`)
+    logger.debug('PerformanceManager', `开始计时: ${label}`)
   }
 
   /**
@@ -186,7 +186,7 @@ class PerformanceManager {
     const duration = performance.now() - startTime
     this.timers.delete(label)
     
-    log.debug('PerformanceManager', `计时结束: ${label} - ${duration.toFixed(2)}ms`)
+    logger.debug('PerformanceManager', `计时结束: ${label} - ${duration.toFixed(2)}ms`)
     return duration
   }
 
@@ -211,7 +211,7 @@ class PerformanceManager {
       this.performanceMetrics.shift()
     }
 
-    log.debug('PerformanceManager', '记录性能指标', fullMetrics)
+    logger.debug('PerformanceManager', '记录性能指标', fullMetrics)
   }
 
   /**
@@ -234,12 +234,12 @@ class PerformanceManager {
     const totalMB = Math.round(memory.totalJSHeapSize / 1024 / 1024)
     const limitMB = Math.round(memory.jsHeapSizeLimit / 1024 / 1024)
 
-    log.info('PerformanceManager', `内存使用: ${usedMB}MB / ${totalMB}MB (限制: ${limitMB}MB)`)
+    logger.info('PerformanceManager', `内存使用: ${usedMB}MB / ${totalMB}MB (限制: ${limitMB}MB)`)
 
     // 内存使用警告
     const usagePercent = (usedMB / limitMB) * 100
     if (usagePercent > 80) {
-      log.warn('PerformanceManager', `内存使用率过高: ${usagePercent.toFixed(1)}%`)
+      logger.warn('PerformanceManager', `内存使用率过高: ${usagePercent.toFixed(1)}%`)
     }
   }
 

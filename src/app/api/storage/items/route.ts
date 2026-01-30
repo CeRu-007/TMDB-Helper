@@ -1,5 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { ServerStorageManager } from '@/lib/data/server-storage-manager';
+import { ErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/utils/logger';
 
 const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
 
@@ -15,14 +17,13 @@ export async function GET(request: NextRequest) {
       count: items.length
     }, { status: 200 });
   } catch (error) {
-    
+    logger.error('获取项目失败', error)
     return NextResponse.json(
       {
-        error: '获取项目失败',
-        details: error instanceof Error ? error.message : String(error),
+        error: ErrorHandler.toUserMessage(error),
         items: []
       },
-      { status: 500 }
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 }

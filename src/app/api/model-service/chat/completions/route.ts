@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { ModelServiceStorage } from '@/lib/data/model-service-storage'
+import { logger } from '@/lib/utils/logger'
 
 // 类型定义
 interface ChatMessage {
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: unknown) {
-    console.error('模型服务API调用失败:', error)
+    logger.error('模型服务API调用失败:', error)
     return NextResponse.json(
       {
         error: '服务器内部错误',

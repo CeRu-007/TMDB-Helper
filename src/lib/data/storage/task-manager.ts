@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { StorageBase } from './storage-base';
 import { ScheduledTask } from './types';
+import { logger } from '@/lib/utils/logger';
 
 export class TaskManager extends StorageBase {
   /**
@@ -259,16 +260,16 @@ export class TaskManager extends StorageBase {
             normalizedTask.itemTitle = relatedItem.title;
           if (!normalizedTask.itemTmdbId)
             normalizedTask.itemTmdbId = relatedItem.tmdbId;
-          console.log(
+          logger.info(
             `[TaskManager] 补充项目信息: ${relatedItem.title} (ID: ${relatedItem.id})`,
           );
         } else {
-          console.warn(
+          logger.warn(
             `[TaskManager] 任务关联的项目不存在: ${normalizedTask.itemId}`,
           );
         }
       } else {
-        console.log(
+        logger.info(
           `[TaskManager] 任务已包含完整项目信息: ${normalizedTask.itemTitle} (ID: ${normalizedTask.itemId})`,
         );
       }

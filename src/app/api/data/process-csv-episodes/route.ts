@@ -7,6 +7,7 @@ import {
   deleteEpisodesByNumbers,
   validateCSVData,
 } from '@/lib/data/robust-csv-processor';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * POST /api/process-csv-episodes - 处理CSV文件，删除已标记集数的行
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[API] 需要删除的集数: [${markedEpisodes.join(', ')}]`);
+    logger.info(`[API] 需要删除的集数: [${markedEpisodes.join(', ')}]`);
 
     // 检测平台类型和用户设置
     const isYoukuPlatform = platformUrl && platformUrl.includes('youku.com');
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
         // 使用强化CSV解析器
         csvData = parseCSVRobust(csvContent);
 
-        console.log(`[API] CSV头部列名: [${csvData.headers.join(', ')}]`);
+        logger.info(`[API] CSV头部列名: [${csvData.headers.join(', ')}]`);
 
         // 验证CSV数据完整性
         const validation = validateCSVData(csvData);
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
           episodesToDelete = markedEpisodes
             .map((ep) => ep - 1)
             .filter((ep) => ep > 0);
-          console.log(
+          logger.info(
             `[API] 优酷平台特殊处理：原始标记集数 [${markedEpisodes.join(', ')}] -> 实际删除集数 [${episodesToDelete.join(', ')}]`,
           );
         }
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
       const lines = csvContent.split('\n');
 
       lines.slice(0, 3).forEach((line, index) => {
-        console.log(
+        logger.info(
           `[API]   第${index + 1}行: ${line.substring(0, 100)}${line.length > 100 ? '...' : ''}`,
         );
       });
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
       const headers = lines[0]
         .split(',')
         .map((h) => h.trim().replace(/"/g, ''));
-      console.log(`[API] CSV头部列名: [${headers.join(', ')}]`);
+      logger.info(`[API] CSV头部列名: [${headers.join(', ')}]`);
 
       // 尝试多种可能的集数列名
       const possibleEpisodeColumns = [
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (episodeNumberIndex === -1) {
-        console.error(
+        logger.error(
           `[API] 无法找到集数列，可用列名: [${headers.join(', ')}]`,
         );
         return NextResponse.json(
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
       const filteredLines = [];
       const titleMatchedLines = [];
 
-      console.log(`[API] 需要删除的集数: [${markedEpisodes.join(', ')}]`);
+      logger.info(`[API] 需要删除的集数: [${markedEpisodes.join(', ')}]`);
 
       for (let i = 0; i < dataLines.length; i++) {
         const line = dataLines[i];
@@ -248,7 +249,7 @@ export async function POST(request: NextRequest) {
                 .filter((ep) => ep > 0);
               shouldRemove = adjustedMarkedEpisodes.includes(episodeNumber);
               if (shouldRemove) {
-                console.log(
+                logger.info(
                   `[API] ✓ 优酷平台特殊处理：删除第 ${episodeNumber} 集 (对应已标记第 ${episodeNumber + 1} 集)`,
                 );
               }
@@ -265,7 +266,9 @@ export async function POST(request: NextRequest) {
               // 使用清理后的行（如果有词条标题被清理）
               filteredLines.push(cleanedLine);
               if (containsItemTitle) {
+                logger.info(`[API] 清理了包含词条标题的行: 第${i + 2}行`);
               } else {
+                logger.info(`[API] 保留普通行: 第${episodeNumber}集`);
               }
             }
           } else {
@@ -275,7 +278,7 @@ export async function POST(request: NextRequest) {
         } else {
           // 保留格式不正确的行
           filteredLines.push(line);
-          console.log(`[API] ✓ 保留格式不正确的行 (列数: ${columns.length})`);
+          logger.info(`[API] ✓ 保留格式不正确的行 (列数: ${columns.length})`);
         }
       }
 
@@ -285,7 +288,7 @@ export async function POST(request: NextRequest) {
         rows: filteredLines.map((line) => parseCSVLine(line)),
       };
 
-      console.log(
+      logger.info(
         `[API] 删除的集数: [${removedEpisodes.sort((a, b) => a - b).join(', ')}]`,
       );
     }
@@ -331,7 +334,7 @@ export async function POST(request: NextRequest) {
       if (removeBackdropColumn) columnsToRemove.push('backdrop');
 
       if (columnsToRemove.length > 0) {
-        console.log(`[API] 需要删除的列: ${columnsToRemove.join(', ')}`);
+        logger.info(`[API] 需要删除的列: ${columnsToRemove.join(', ')}`);
 
         // 查找要删除的列的索引（从后往前删除，避免索引变化）
         const columnsToRemoveIndexes = [];
@@ -361,7 +364,7 @@ export async function POST(request: NextRequest) {
                 row.splice(index, 1);
               }
             });
-            console.log(`[API] 已删除 ${name} 列 (索引: ${index})`);
+            logger.info(`[API] 已删除 ${name} 列 (索引: ${index})`);
           }
         }
       }
@@ -432,7 +435,7 @@ export async function POST(request: NextRequest) {
 
     // 覆盖原始文件
 
-    console.log(`[API] 文件内容预览: ${finalContent.substring(0, 200)}...`);
+    logger.info(`[API] 文件内容预览: ${finalContent.substring(0, 200)}...`);
 
     await fs.writeFile(processedCsvPath, finalContent, 'utf-8');
 
@@ -562,7 +565,7 @@ async function applySpecialVariables(
   if (removeBackdropColumn) columnsToRemove.push('backdrop');
 
   if (columnsToRemove.length > 0) {
-    console.log(`[API] 将删除以下列: ${columnsToRemove.join(', ')}`);
+    logger.info(`[API] 将删除以下列: ${columnsToRemove.join(', ')}`);
   }
 
   // 查找相关列的索引

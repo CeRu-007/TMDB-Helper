@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { spawn } from "child_process"
 import fs from "fs"
+import { TIMEOUT_30S } from "@/lib/constants/constants"
 
 export async function POST(request: NextRequest) {
   try {
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
             workingDirectory: workingDirectory,
           }),
         )
-      }, 30000)
+      }, TIMEOUT_30S)
     })
   } catch (error) {
     return NextResponse.json({ error: "服务器内部错误" }, { status: 500 })

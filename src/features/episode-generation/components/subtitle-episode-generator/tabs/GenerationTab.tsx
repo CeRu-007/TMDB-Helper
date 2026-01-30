@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Copy
 } from "lucide-react"
+import { logger } from '@/lib/utils/logger'
 import { Label } from "@/shared/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Slider } from "@/shared/components/ui/slider"
@@ -30,7 +31,7 @@ export function GenerationTab({
   const handleModelChange = (newModel: string) => {
     // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
-      console.error('onConfigChange is not a function')
+      logger.error('onConfigChange is not a function')
       return
     }
 
@@ -41,7 +42,7 @@ export function GenerationTab({
         model: newModel
       })
     } catch (error) {
-      console.error('Error updating config:', error)
+      logger.error('Error updating config:', error)
       return
     }
 
@@ -68,7 +69,7 @@ export function GenerationTab({
           })
         }
       } catch (error) {
-        console.error('保存场景配置失败:', error)
+        logger.error('保存场景配置失败:', error)
       }
     })()
 
@@ -85,7 +86,7 @@ export function GenerationTab({
           await ClientConfigManager.setItem(key, JSON.stringify(settings))
         }
       } catch (error) {
-        console.error('保存模型配置失败:', error)
+        logger.error('保存模型配置失败:', error)
       }
     })()
   }

@@ -1,12 +1,13 @@
 ﻿/**
  * 设置对话框主组件
- * 
+ *
  * 使用复合模式组织各个设置面板
  */
 
 "use client"
 
-import { useRef, useState, useEffect, useMemo, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
+import { logger } from '@/lib/utils/logger'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Button } from "@/shared/components/ui/button"
@@ -18,6 +19,7 @@ import { safeJsonParse } from '@/lib/utils'
 import { ModelProvider, ModelConfig } from '@/shared/types/model-service'
 import { SettingsMenu } from "./SettingsMenu"
 import ModelServiceSettingsPanel from "./ModelServiceSettingsPanel"
+import { DELAY_2S } from '@/lib/constants/constants'
 import ToolsSettingsPanel from "./ToolsSettingsPanel"
 import VideoThumbnailSettingsPanel from "./VideoThumbnailSettingsPanel"
 import GeneralSettingsPanel from "./GeneralSettingsPanel"
@@ -59,22 +61,15 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   ], [])
 
   const validInitialSection = useMemo(() =>
-    initialSection &&
-    typeof initialSection === 'string' &&
-    validSections.includes(initialSection)
-    ? initialSection
-    : 'model-service',
+    validSections.includes(initialSection || '') ? initialSection : 'model-service',
     [initialSection, validSections]
   )
 
   const [activeSection, setActiveSection] = useState<string>(validInitialSection)
 
-  // 当 initialSection 变化时更新 activeSection
   useEffect(() => {
-    if (initialSection && 
-        typeof initialSection === 'string' && 
-        validSections.includes(initialSection)) {
-      setActiveSection(initialSection)
+    if (validSections.includes(initialSection || '')) {
+      setActiveSection(initialSection || '')
     }
   }, [initialSection, validSections])
 
@@ -279,7 +274,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             }
           }
         } catch (error) {
-          console.warn('Docker环境检查失败:', error)
+          logger.warn('Docker环境检查失败:', error)
         }
 
         // 加载TMDB导入路径
@@ -289,14 +284,14 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         if (!savedTmdbImportPath && typeof window !== "undefined") {
           const localPath = localStorage.getItem("tmdb_import_path")
           if (localPath) {
-            console.log('🔄 [SettingsDialog] 从localStorage恢复tmdb_import_path配置')
+            logger.info('🔄 [SettingsDialog] 从localStorage恢复tmdb_import_path配置')
             savedTmdbImportPath = localPath
             // 自动迁移到ClientConfigManager
             try {
               await ClientConfigManager.setItem("tmdb_import_path", localPath)
-              console.log('✅ [SettingsDialog] 已迁移tmdb_import_path到ClientConfigManager')
+              logger.info('✅ [SettingsDialog] 已迁移tmdb_import_path到ClientConfigManager')
             } catch (error) {
-              console.warn('⚠️ [SettingsDialog] 迁移tmdb_import_path到ClientConfigManager失败:', error)
+              logger.warn('⚠️ [SettingsDialog] 迁移tmdb_import_path到ClientConfigManager失败:', error)
             }
           }
         }
@@ -315,7 +310,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             if (parsed) setGeneralSettings(parsed)
           }
         } catch (error) {
-          console.warn('加载通用设置失败:', error)
+          logger.warn('加载通用设置失败:', error)
         }
 
         // 加载外观设置
@@ -341,7 +336,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             }
           }
         } catch (error) {
-          console.warn('加载外观设置失败:', error)
+          logger.warn('加载外观设置失败:', error)
         }
 
         // 加载视频缩略图设置
@@ -362,7 +357,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             }))
           }
         } catch (error) {
-          console.warn('加载视频缩略图设置失败:', error)
+          logger.warn('加载视频缩略图设置失败:', error)
         }
 
         // 加载模型服务配置
@@ -421,7 +416,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             }
           }
         } catch (error) {
-          console.warn('加载模型服务配置失败:', error)
+          logger.warn('加载模型服务配置失败:', error)
           // 不抛出错误，继续初始化其他设置
         }
 
@@ -442,12 +437,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             }
           })
           .catch(error => {
-            console.warn('获取应用信息失败:', error)
+            logger.warn('获取应用信息失败:', error)
             // 使用默认值，不影响功能
           })
 
       } catch (error) {
-        console.error('初始化设置失败:', error)
+        logger.error('初始化设置失败:', error)
       }
     }
 
@@ -470,7 +465,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           // 刷新模型服务配置
           await refreshModelServiceConfig()
         } catch (error) {
-          console.error('刷新配置失败:', error)
+          logger.error('刷新配置失败:', error)
         }
       }
 
@@ -515,11 +510,11 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           }
         })
         setScenarioSettings(updatedScenarioSettings)
-      }
-    } catch (error) {
-      console.warn('刷新模型服务配置失败:', error)
-    }
-  }, [])
+          }
+        } catch (error) {
+          logger.warn('刷新模型服务配置失败:', error)
+        }
+      }, [])
 
   // 监听模型服务配置更新事件
   useEffect(() => {
@@ -573,7 +568,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           }
         }
       } catch (error) {
-        console.warn('同步场景设置失败:', error)
+        logger.warn('同步场景设置失败:', error)
         // 不抛出错误，避免影响其他功能
       }
     }
@@ -602,7 +597,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       if (saveAction) {
         saveAction()
       } else {
-        console.warn('未知的设置面板:', activeSection)
+        logger.warn('未知的设置面板:', activeSection)
       }
 
       setSaveStatus("success")
@@ -612,9 +607,9 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       setTimeout(() => {
         setSaveStatus("idle")
         setValidationMessage("")
-      }, 2000)
+      }, DELAY_2S)
     } catch (error) {
-      console.error('保存设置失败:', error)
+      logger.error('保存设置失败:', error)
       setSaveStatus("error")
       setValidationMessage("保存失败，请重试")
     }
@@ -627,29 +622,21 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   }
 
   const getStatusIcon = () => {
-    switch (saveStatus) {
-      case "saving":
-        return <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-      case "success":
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />
-      case "error":
-        return <AlertCircle className="h-4 w-4 text-red-600" />
-      default:
-        return null
+    const icons = {
+      saving: <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />,
+      success: <CheckCircle2 className="h-4 w-4 text-green-600" />,
+      error: <AlertCircle className="h-4 w-4 text-red-600" />
     }
+    return icons[saveStatus] || null
   }
 
   const getStatusColor = () => {
-    switch (saveStatus) {
-      case "success":
-        return "text-green-600 dark:text-green-400"
-      case "error":
-        return "text-red-600 dark:text-red-400"
-      case "saving":
-        return "text-blue-600 dark:text-blue-400"
-      default:
-        return "text-gray-600 dark:text-gray-400"
+    const colors = {
+      saving: "text-blue-600 dark:text-blue-400",
+      success: "text-green-600 dark:text-green-400",
+      error: "text-red-600 dark:text-red-400"
     }
+    return colors[saveStatus] || "text-gray-600 dark:text-gray-400"
   }
 
 // 应用主题设置
@@ -707,7 +694,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('加载TMDB配置失败:', response.status, errorText)
+        logger.error('加载TMDB配置失败:', response.status, errorText)
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -725,14 +712,9 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           filter_words: ''
         }
 
-        setTmdbConfig({
-          ...defaultConfig,
-          ...data.config,
-          save_user_profile: data.config.save_user_profile !== false,
-          backdrop_forced_upload: data.config.backdrop_forced_upload === true
-        })
+        setTmdbConfig(data)
       } else {
-        console.warn('TMDB配置API返回失败:', data.error)
+        logger.warn('TMDB配置API返回失败:', data.error)
         toast({
           title: "警告",
           description: data.error || "TMDB配置数据无效",
@@ -740,7 +722,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         })
       }
     } catch (error) {
-      console.error('加载TMDB配置失败，可能是服务不可用:', error)
+      logger.error('加载TMDB配置失败，可能是服务不可用:', error)
       toast({
         title: "错误",
         description: "加载TMDB配置失败，请检查TMDB-Import路径是否正确",
@@ -753,15 +735,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
   // 保存TMDB配置
   const saveTmdbConfig = useCallback(async () => {
-    if (!tmdbImportPath) {
-      toast({
-        title: "错误",
-        description: "请先设置TMDB-Import工具路径",
-        variant: "destructive",
-      })
-      return
-    }
-
     setConfigSaving(true)
     try {
       const response = await fetch('/api/external/tmdb-config', {
@@ -777,7 +750,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('保存TMDB配置失败:', response.status, errorText)
+        logger.error('保存TMDB配置失败:', response.status, errorText)
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -792,7 +765,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         throw new Error(data.error || '保存失败')
       }
     } catch (error) {
-      console.error('保存TMDB配置失败，可能是服务不可用:', error)
+      logger.error('保存TMDB配置失败，可能是服务不可用:', error)
       toast({
         title: "错误",
         description: `保存TMDB配置失败: ${error instanceof Error ? error.message : '服务不可用'}`,
@@ -819,7 +792,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         description: "通用设置已保存",
       })
     } catch (error) {
-      console.error('保存通用设置失败:', error)
+      logger.error('保存通用设置失败:', error)
       toast({
         title: "错误",
         description: "保存通用设置失败",
@@ -840,19 +813,20 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       }
 
       applyThemeSettings(appearanceSettings)
+
       toast({
         title: "成功",
-        description: "外观设置已保存并应用",
+        description: "外观设置已保存",
       })
     } catch (error) {
-      console.error('保存外观设置失败:', error)
+      logger.error('保存外观设置失败:', error)
       toast({
-        title: "错误",
-        description: "保存外观设置失败",
         variant: "destructive",
+        title: "保存失败",
+        description: "保存外观设置时发生错误"
       })
     }
-  }, [appearanceSettings, toast, applyThemeSettings])
+  }, [appearanceSettings, toast])
 
   // 保存视频缩略图设置
   const saveVideoThumbnailSettings = useCallback(async () => {
@@ -870,7 +844,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         description: "视频缩略图设置已保存",
       })
     } catch (error) {
-      console.error('保存视频缩略图设置失败:', error)
+      logger.error('保存视频缩略图设置失败:', error)
       toast({
         title: "错误",
         description: "保存视频缩略图设置失败",
@@ -938,7 +912,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       const data = await response.json()
       return data.success && data.config?.isDockerEnvironment
     } catch (error) {
-      console.warn('检查Docker环境失败:', error)
+      logger.warn('检查Docker环境失败:', error)
       return false
     }
   }, [])

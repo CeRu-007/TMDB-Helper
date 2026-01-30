@@ -2,8 +2,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const { logger } = require('./logger');
 
-console.log('🔧 开始优化构建...');
+logger.info('🔧 开始优化构建...');
 
 // 创建 .electronignore 文件
 function createElectronIgnore() {
@@ -65,27 +66,27 @@ node_modules/@typescript-eslint/
 `;
 
   fs.writeFileSync('.electronignore', electronIgnoreContent.trim());
-  console.log('✅ 创建了 .electronignore 文件');
+  logger.info('✅ 创建了 .electronignore 文件');
 }
 
 // 主函数
 function main() {
   try {
-    console.log('🚀 开始构建优化...');
+    logger.info('🚀 开始构建优化...');
 
     // 只在构建时清理，避免影响开发
     if (process.env.ELECTRON_BUILD === 'true') {
-      console.log('📦 使用排除规则优化打包体积');
-      console.log('📦 TMDB-Import-master 已从打包中排除');
-      console.log('📦 .next/standalone/node_modules/.pnpm 已从打包中排除');
+      logger.info('📦 使用排除规则优化打包体积');
+      logger.info('📦 TMDB-Import-master 已从打包中排除');
+      logger.info('📦 .next/standalone/node_modules/.pnpm 已从打包中排除');
     }
 
     createElectronIgnore();
 
-    console.log('✅ 构建优化完成！');
-    console.log('💡 预计可减少 80-90% 的安装包体积');
+    logger.info('✅ 构建优化完成！');
+    logger.info('💡 预计可减少 80-90% 的安装包体积');
   } catch (error) {
-    console.error('❌ 优化过程中出错:', error);
+    logger.error('❌ 优化过程中出错:', error);
     process.exit(1);
   }
 }

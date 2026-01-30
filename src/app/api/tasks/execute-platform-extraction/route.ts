@@ -3,6 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs';
+import { logger } from '@/lib/utils/logger';
 
 const execAsync = promisify(exec);
 
@@ -157,7 +158,7 @@ function parseCSVPathFromOutput(output: string): string | null {
     const match = output.match(pattern);
     if (match && match[1]) {
       const csvPath = match[1].trim();
-      console.log(`[API] 找到CSV路径: ${csvPath} (使用模式: ${pattern})`);
+      logger.info(`[API] 找到CSV路径: ${csvPath} (使用模式: ${pattern})`);
       return csvPath;
     }
   }

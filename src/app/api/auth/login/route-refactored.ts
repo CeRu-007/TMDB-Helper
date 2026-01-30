@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { NextResponse } from 'next/server'
 import { BaseAPIRoute, APIRateLimiter } from '@/lib/api'
-import { AuthManager, LoginRequest } from '@/lib/auth/auth-manager'
+import { AuthManager } from '@/lib/auth/auth-manager'
 
 // Define validation schema
 const LoginSchema = z.object({
@@ -36,7 +37,7 @@ class LoginRoute extends BaseAPIRoute {
     )
 
     if (!rateLimitResult.allowed) {
-      const lockedMinutes = Math.ceil((rateLimitResult.lockedUntil! - Date.now()) / (60 * 1000))
+      const _lockedMinutes = Math.ceil((rateLimitResult.lockedUntil! - Date.now()) / (60 * 1000))
       return this.rateLimitResponse(
         'Too many login attempts. Please try again later.',
         Math.ceil((rateLimitResult.lockedUntil! - Date.now()) / 1000)

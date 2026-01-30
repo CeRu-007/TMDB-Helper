@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import type { TMDBItem, Episode } from "@/lib/data/storage"
+import { DELAY_1S, DELAY_500MS } from "@/lib/constants/constants"
 
 interface UseEpisodeActionsProps {
   localItem: TMDBItem
@@ -29,7 +30,7 @@ export function useEpisodeActions({
     if (isShiftPressed) {
       if (lastClickedEpisode === null) {
         setLastClickedEpisode(episodeNumber)
-        onShowFeedback(`已选择起点：第${episodeNumber集}`, 1000)
+        onShowFeedback(`已选择起点：第${episodeNumber集}`, DELAY_1S)
         return
       } else {
         const start = Math.min(lastClickedEpisode, episodeNumber)
@@ -107,7 +108,7 @@ export function useEpisodeActions({
     setHighlightedEpisode(episodeNumber)
 
     // 清除高亮效果
-    setTimeout(() => setHighlightedEpisode(null), 500)
+    setTimeout(() => setHighlightedEpisode(null), DELAY_500MS)
   }, [])
 
   // 批量切换剧集状态

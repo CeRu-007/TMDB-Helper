@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { StorageManager } from '@/lib/data/storage';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * POST /api/tasks/fix-task-project-id - 修复任务的项目ID关联
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
           // 尝试通过标题自动匹配
           const matchedItem = allItems.find(i => i.title === task.itemTitle);
           if (matchedItem) {
-            console.log(`[API] 通过标题找到匹配项目: ${matchedItem.title} (ID: ${matchedItem.id})`);
+            logger.info(`[API] 通过标题找到匹配项目: ${matchedItem.title} (ID: ${matchedItem.id})`);
             
             if (autoFix) {
               const updatedTask = {

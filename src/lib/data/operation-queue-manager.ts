@@ -7,6 +7,7 @@
 
 import { TMDBItem } from './storage';
 import { DistributedLock } from '@/lib/utils/distributed-lock';
+import { logger } from '@/lib/utils/logger';
 
 export interface QueuedOperation {
   id: string;
@@ -114,9 +115,9 @@ export class OperationQueueManager {
 
     queue.push(queuedOperation);
 
-    console.log(
-      `[OperationQueue] 操作已入队: ${operationId} (队列长度: ${queue.length})`,
-    );
+    logger.debug('OperationQueue', `操作已入队: ${operationId}`, {
+      queueLength: queue.length
+    });
 
     // 启动防抖处理
     this.startDebounceTimer(operation.itemId);
@@ -288,9 +289,10 @@ export class OperationQueueManager {
           error instanceof Error ? error.message : '未知错误';
 
         if (operation.retryCount < operation.maxRetries) {
-          console.log(
-            `[OperationQueue] 操作失败，准备重试: ${operation.id} (${operation.retryCount}/${operation.maxRetries})`,
-          );
+          logger.warn('OperationQueue', `操作失败，准备重试: ${operation.id}`, {
+            retryCount: operation.retryCount,
+            maxRetries: operation.maxRetries
+          });
 
           // 重新入队重试
           operation.status = 'queued';
@@ -307,9 +309,9 @@ export class OperationQueueManager {
    * 执行单个操作（增强版，支持 AbortError 处理）
    */
   private async executeOperation(operation: QueuedOperation): Promise<boolean> {
-    console.log(
-      `[OperationQueue] 执行操作: ${operation.id} (${operation.type})`,
-    );
+    logger.debug('OperationQueue', `执行操作: ${operation.id}`, {
+      type: operation.type
+    });
 
     try {
       // 这里会被具体的存储管理器实现

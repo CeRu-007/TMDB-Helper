@@ -1,6 +1,7 @@
 ﻿import { useCallback } from 'react'
 import { Message } from '@/types/ai-chat'
 import { validateSuggestions } from '@/features/ai/lib/utils/ai-chat-helpers'
+import { logger } from '@/lib/utils/logger'
 
 interface UseAiChatHandlersProps {
   messages: Message[]
@@ -169,7 +170,7 @@ export const useAiChatHandlers = ({
           return interruptedMessages
         })
       } else {
-        console.error('AI回复失败:', error)
+        logger.error('AI回复失败:', error)
         setMessages(prevMessages => {
           const errorMessages = prevMessages.map(msg =>
             msg.id === assistantMessage.id
@@ -243,7 +244,7 @@ export const useAiChatHandlers = ({
       scrollToLatestMessage()
     } catch (error: unknown) {
       if (error.name !== 'AbortError') {
-        console.error('重新生成失败:', error)
+        logger.error('重新生成失败:', error)
       }
     } finally {
       setIsLoading(false)
@@ -300,7 +301,7 @@ export const useAiChatHandlers = ({
       scrollToLatestMessage()
     } catch (error: unknown) {
       if (error.name !== 'AbortError') {
-        console.error('继续生成失败:', error)
+        logger.error('继续生成失败:', error)
       }
     } finally {
       setIsLoading(false)

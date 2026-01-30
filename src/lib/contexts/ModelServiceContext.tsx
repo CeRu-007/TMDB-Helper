@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { ModelServiceConfig, ModelConfig, ModelProvider, UsageScenario } from '@/shared/types/model-service'
+import { logger } from '@/lib/utils/logger'
 
 interface ModelServiceContextType {
   config: ModelServiceConfig | null
@@ -74,7 +75,7 @@ export function ModelServiceProvider({ children }: ModelServiceProviderProps) {
 
     // Auto-cleanup invalid references
     if (scenario.selectedModelIds && scenario.selectedModelIds.length !== validModelIds.length) {
-      console.warn(`[ModelService] 场景 ${scenarioType} 包含无效模型引用，自动清理中`)
+      logger.warn(`[ModelService] 场景 ${scenarioType} 包含无效模型引用，自动清理中`)
       cleanupInvalidScenarioReferences(scenarioType, validModelIds)
     }
 
@@ -115,11 +116,11 @@ export function ModelServiceProvider({ children }: ModelServiceProviderProps) {
       const result = await response.json()
       if (result.success) {
         setConfig(result.config)
-        console.log(`[ModelService] 场景 ${scenarioType} 无效引用已清理`)
+        logger.info(`[ModelService] 场景 ${scenarioType} 无效引用已清理`)
         window.dispatchEvent(new CustomEvent('model-service-config-updated'))
       }
     } catch (error) {
-      console.error('[ModelService] 自动清理失败:', error)
+      logger.error('[ModelService] 自动清理失败:', error)
     }
   }
 
@@ -162,7 +163,7 @@ export function ModelServiceProvider({ children }: ModelServiceProviderProps) {
 
     // 监听模型服务配置更新事件
     const handleConfigUpdate = () => {
-      console.log('🔄 [ModelService] 配置更新事件触发，重新加载配置')
+      logger.info('🔄 [ModelService] 配置更新事件触发，重新加载配置')
       loadConfig()
     }
 

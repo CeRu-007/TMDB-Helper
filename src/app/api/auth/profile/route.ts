@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthManager } from '@/lib/auth/auth-manager';
 import { AuthMiddleware } from '@/lib/auth/auth-middleware';
+import { ErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * GET /api/auth/profile - 获取管理员信息
  */
-export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
+export const GET = AuthMiddleware.withAuth(async (_request: NextRequest) => {
   try {
     const adminUser = AuthManager.getAdminUser();
     
@@ -22,10 +24,10 @@ export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
     });
 
   } catch (error) {
-    
+    logger.error('获取管理员信息失败', error)
     return NextResponse.json(
-      { success: false, error: '服务器内部错误' },
-      { status: 500 }
+      { success: false, error: ErrorHandler.toUserMessage(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 });
@@ -67,10 +69,10 @@ export const PUT = AuthMiddleware.withAuth(async (request: NextRequest) => {
     });
 
   } catch (error) {
-    
+    logger.error('更新管理员信息失败', error)
     return NextResponse.json(
-      { success: false, error: '服务器内部错误' },
-      { status: 500 }
+      { success: false, error: ErrorHandler.toUserMessage(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 });

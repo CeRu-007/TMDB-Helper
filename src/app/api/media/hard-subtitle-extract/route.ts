@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { HardSubtitleExtractTask, TaskStatus } from './types'
+import { DELAY_1S, DELAY_1500MS, DELAY_3000MS } from '@/lib/constants/constants'
 
 // 任务存储（内存中，生产环境应使用数据库）
 const tasks = new Map<string, HardSubtitleExtractTask>()
@@ -137,35 +138,35 @@ async function processTask(taskId: string, videoFile: File | null) {
 
     // 这里需要集成 ffmpeg 处理视频
     // 暂时使用模拟数据
-    await simulateStep(1000)
+    await simulateStep(DELAY_1S)
 
     // 步骤2: 提取音频并进行VAD检测
     task.progress = 15
     task.statusMessage = '正在进行语音检测...'
     tasks.set(taskId, task)
 
-    await simulateStep(1500)
+    await simulateStep(DELAY_1500MS)
 
     // 步骤3: 采样视频帧
     task.progress = 30
     task.statusMessage = '正在采样视频帧...'
     tasks.set(taskId, task)
 
-    await simulateStep(1000)
+    await simulateStep(DELAY_1S)
 
     // 步骤4: OCR识别
     task.progress = 50
     task.statusMessage = '正在进行OCR识别...'
     tasks.set(taskId, task)
 
-    await simulateStep(3000)
+    await simulateStep(DELAY_3000MS)
 
     // 步骤5: 生成字幕
     task.progress = 80
     task.statusMessage = '正在生成字幕...'
     tasks.set(taskId, task)
 
-    await simulateStep(1000)
+    await simulateStep(DELAY_1S)
 
     // 步骤6: 完成
     task.progress = 100

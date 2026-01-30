@@ -20,6 +20,7 @@ import {
   Loader2,
   RefreshCw
 } from "lucide-react"
+import { logger } from '@/lib/utils/logger'
 
 // 图片信息接口
 interface ImageInfo {
@@ -176,7 +177,7 @@ export function ImageCropper() {
         setGlobalSettings(prev => ({ ...prev, ...parsed }))
       }
     } catch (error) {
-      console.error('Failed to load settings:', error)
+      logger.error('Failed to load settings:', error)
     }
   }, [])
 
@@ -732,7 +733,7 @@ export function ImageCropper() {
       ))
       
     } catch (error) {
-      console.error(`Failed to process image for ratio ${ratio}:`, error)
+      logger.error(`Failed to process image for ratio ${ratio}:`, error)
       
       // 更新该比例的处理结果为失败状态
       setPosterRatioResults(prev => ({
@@ -837,7 +838,7 @@ export function ImageCropper() {
       })
       
     } catch (error) {
-      console.error('Failed to process image:', error)
+      logger.error('Failed to process image:', error)
       setCroppedPreview('') // 确保清除失败的处理结果
       toast({
         title: "处理失败",
@@ -946,7 +947,7 @@ export function ImageCropper() {
         description: `图片 ${filename} 已下载`,
       })
     } catch (error) {
-      console.error('Download failed:', error)
+      logger.error('Download failed:', error)
       toast({
         title: "下载失败",
         description: error instanceof Error ? error.message : "图片下载过程中出现错误",

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { RateLimiter } from '@/lib/auth/rate-limiter'
+import { logger } from '@/lib/utils/logger'
 
 // Rate limiting utilities
 export class APIRateLimiter {
@@ -228,7 +229,7 @@ export class APIErrorHandler {
       context
     }
 
-    console.error('[API Error]', JSON.stringify(errorInfo, null, 2))
+    logger.error('[API Error]', JSON.stringify(errorInfo, null, 2))
   }
 
   static isClientError(statusCode: number): boolean {

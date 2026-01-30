@@ -1,17 +1,12 @@
 ﻿import { type NextRequest, NextResponse } from "next/server"
 import type { AdvancedExtractedMetadata, ExtractionConfig } from "@/lib/data/advanced-metadata-extractor"
 import { ApiResponse } from "@/types/common"
+import { TIMEOUT_10S, TIMEOUT_30S } from "@/lib/constants/constants"
 
 // JSON-LD 数据结构类型
 interface JsonLdPerson {
   name: string;
   character?: string;
-}
-
-interface JsonLdData {
-  director?: JsonLdPerson | JsonLdPerson[];
-  actor?: JsonLdPerson | JsonLdPerson[];
-  [key: string]: unknown;
 }
 
 // API 数据结构类型
@@ -42,13 +37,17 @@ export async function POST(request: NextRequest) {
 
     if (!url) {
       return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: "URL is required",
-          data: null
+      {
+        success: false,
+        error: {
+          code: "MISSING_URL",
+          message: "URL is required",
+          timestamp: Date.now()
         },
-        { status: 400 }
-      )
+        timestamp: Date.now()
+      } as any,
+      { status: 400 }
+    )
     }
 
     // 执行多层次提取
@@ -70,21 +69,25 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         metadata: mergedMetadata,
-        platform,
+        platform: platform as string,
         confidence,
         extractionLayers: extractionResults.length,
         sources: extractionResults.map((r) => r.source),
       }
-    })
+    } as any)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "高级元数据提取失败"
 
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
-        error: errorMessage,
-        data: null,
-      },
+        error: {
+          code: "EXTRACTION_ERROR",
+          message: errorMessage,
+          timestamp: Date.now()
+        },
+        timestamp: Date.now()
+      } as any,
       { status: 500 }
     )
   }
@@ -165,13 +168,12 @@ async function extractBasicMetadata(
     const response = await fetch(url, {
       headers: {
         "User-Agent": config.userAgent || getRandomUserAgent(),
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
         "Cache-Control": "no-cache",
         Pragma: "no-cache",
       },
-      signal: AbortSignal.timeout(config.timeout || 30000),
+      signal: AbortSignal.timeout(config.timeout || TIMEOUT_30S),
     })
 
     if (!response.ok) {
@@ -186,7 +188,7 @@ async function extractBasicMetadata(
       confidence: calculateBasicConfidence(metadata),
     }
   } catch (error) {
-    
+
     return { confidence: 0 }
   }
 }
@@ -211,7 +213,7 @@ async function extractPlatformSpecificMetadata(
         Referer: extractor.referer || url,
         ...extractor.customHeaders,
       },
-      signal: AbortSignal.timeout(config.timeout || 30000),
+      signal: AbortSignal.timeout(config.timeout || TIMEOUT_30S),
     })
 
     if (!response.ok) {
@@ -219,14 +221,14 @@ async function extractPlatformSpecificMetadata(
     }
 
     const html = await response.text()
-    const metadata = await extractor.extract(html, url, config)
+    const metadata = await extractor.extract!(html, url, config)
 
     return {
       metadata,
       confidence: calculatePlatformConfidence(metadata, platform),
     }
   } catch (error) {
-    
+
     return { confidence: 0 }
   }
 }
@@ -242,7 +244,7 @@ async function extractDynamicMetadata(
 
     // 尝试获取可能的AJAX端点
     const ajaxEndpoints = getAjaxEndpoints(platform, url)
-    let bestMetadata: AdvancedExtractedMetadata = {}
+    let bestMetadata: AdvancedExtractedMetadata = { title: "" }
     let bestConfidence = 0
 
     for (const endpoint of ajaxEndpoints) {
@@ -256,7 +258,7 @@ async function extractDynamicMetadata(
             Referer: url,
             ...endpoint.headers,
           },
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(TIMEOUT_10S),
         })
 
         if (response.ok) {
@@ -270,27 +272,30 @@ async function extractDynamicMetadata(
           }
         }
       } catch (error) {
-        
+
       }
     }
 
-    return {
-      metadata: Object.keys(bestMetadata).length > 0 ? bestMetadata : undefined,
-      confidence: bestConfidence,
+    if (Object.keys(bestMetadata).length > 1) {
+      return {
+        metadata: bestMetadata,
+        confidence: bestConfidence,
+      }
     }
+    return { confidence: bestConfidence }
   } catch (error) {
-    
+
     return { confidence: 0 }
   }
 }
 
 async function extractFromExternalAPIs(
-  url: string,
-  platform: string,
+  _url: string,
+  _platform: string,
   existingMetadata?: AdvancedExtractedMetadata,
 ): Promise<{ metadata?: AdvancedExtractedMetadata; confidence: number }> {
   try {
-    const metadata: AdvancedExtractedMetadata = {}
+    const metadata: AdvancedExtractedMetadata = { title: "" }
 
     // 如果已有标题，尝试从外部API获取补充信息
     if (existingMetadata?.title) {
@@ -304,23 +309,26 @@ async function extractFromExternalAPIs(
       }
     }
 
-    return {
-      metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
-      confidence: calculateExternalConfidence(metadata),
+    if (Object.keys(metadata).length > 1) {
+      return {
+        metadata,
+        confidence: calculateExternalConfidence(metadata),
+      }
     }
+    return { confidence: calculateExternalConfidence(metadata) }
   } catch (error) {
-    
+
     return { confidence: 0 }
   }
 }
 
 function parseAdvancedHTML(html: string, url: string, platform: string): AdvancedExtractedMetadata {
-  const metadata: AdvancedExtractedMetadata = {}
+  const metadata: AdvancedExtractedMetadata = { title: "" }
 
   // 提取基本信息
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
   if (titleMatch) {
-    metadata.title = cleanTitle(titleMatch[1].trim(), platform)
+    metadata.title = cleanTitle(titleMatch[1]!.trim(), platform)
   }
 
   // 提取Open Graph数据
@@ -367,7 +375,7 @@ function extractOpenGraphData(html: string): Partial<AdvancedExtractedMetadata> 
 
     if (propertyMatch && contentMatch) {
       const property = propertyMatch[1]
-      const content = contentMatch[1]
+      const content = contentMatch[1]!
 
       switch (property) {
         case "title":
@@ -377,19 +385,19 @@ function extractOpenGraphData(html: string): Partial<AdvancedExtractedMetadata> 
           if (!metadata.description) metadata.description = content
           break
         case "image":
-          if (!metadata.images) metadata.images = {}
-          if (!metadata.images.poster) metadata.images.poster = []
-          metadata.images.poster.push(content)
+          if (!metadata.images) metadata.images = {} as any
+          if (!metadata.images!.poster) metadata.images!.poster = []
+          metadata.images!.poster!.push(content)
           break
         case "video:release_date":
           metadata.releaseDate = content
           break
         case "video:duration":
-          metadata.duration = Number.parseInt(content)
+          metadata.duration = Number.parseInt(content || "0")
           break
         case "video:tag":
           if (!metadata.tags) metadata.tags = []
-          metadata.tags.push(content)
+          metadata.tags!.push(content)
           break
       }
     }
@@ -467,12 +475,12 @@ function extractMicrodataData(html: string): Partial<AdvancedExtractedMetadata> 
   for (const match of itemscopeMatches) {
     const nameMatch = match.match(/itemprop="name"[^>]*>([^<]+)</i)
     if (nameMatch && !metadata.title) {
-      metadata.title = nameMatch[1].trim()
+      metadata.title = nameMatch[1]!.trim()
     }
 
     const descMatch = match.match(/itemprop="description"[^>]*>([^<]+)</i)
     if (descMatch && !metadata.description) {
-      metadata.description = descMatch[1].trim()
+      metadata.description = descMatch[1]!.trim()
     }
   }
 
@@ -499,8 +507,8 @@ function extractRatings(html: string): Array<{
     const match = html.match(pattern)
     if (match) {
       ratings.push({
-        value: Number.parseFloat(match[1]),
-        scale: scale || Number.parseInt(match[2]) || 10,
+        value: Number.parseFloat(match[1]!),
+        scale: scale || Number.parseInt(match[2] || "10") || 10,
         source,
       })
     }
@@ -534,9 +542,9 @@ function extractImages(
     const classMatch = match.match(/class="([^"]*)"/)
 
     if (srcMatch) {
-      const src = resolveUrl(srcMatch[1], baseUrl)
-      const alt = altMatch ? altMatch[1].toLowerCase() : ""
-      const className = classMatch ? classMatch[1].toLowerCase() : ""
+      const src = resolveUrl(srcMatch[1]!, baseUrl)
+      const alt = altMatch ? altMatch[1]!.toLowerCase() : ""
+      const className = classMatch ? classMatch[1]!.toLowerCase() : ""
 
       // 根据特征分类图片
       if (alt.includes("poster") || className.includes("poster") || src.includes("poster")) {
@@ -563,7 +571,12 @@ function extractTrailers(
   type: "trailer" | "teaser" | "clip"
   quality?: string
 }> {
-  const trailers = []
+  const trailers: Array<{
+    name: string
+    url: string
+    type: "trailer" | "teaser" | "clip"
+    quality?: string
+  }> = []
 
   // 提取视频链接
   const videoMatches = html.match(/<video[^>]+src="([^"]+)"[^>]*>|<source[^>]+src="([^"]+)"[^>]*>/gi) || []
@@ -571,7 +584,7 @@ function extractTrailers(
   for (const match of videoMatches) {
     const srcMatch = match.match(/src="([^"]+)"/)
     if (srcMatch) {
-      const src = resolveUrl(srcMatch[1], baseUrl)
+      const src = resolveUrl(srcMatch[1]!, baseUrl)
       trailers.push({
         name: "预告片",
         url: src,
@@ -584,7 +597,7 @@ function extractTrailers(
 }
 
 // 辅助函数
-function cleanTitle(title: string, platform: string): string {
+function cleanTitle(title: string, _platform: string): string {
   const platformNames = [
     "Netflix",
     "Prime Video",
@@ -625,19 +638,25 @@ function getRandomUserAgent(): string {
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
   ]
 
-  return userAgents[Math.floor(Math.random() * userAgents.length)]
+  return userAgents[Math.floor(Math.random() * userAgents.length)]!
 }
 
 function getPlatformExtractor(platform: string): {
   userAgent?: string;
   customHeaders?: Record<string, string>;
   endpoints?: ExtractorConfig[];
+  accept?: string;
+  referer?: string;
+  extract?: (html: string, url: string, config: ExtractionConfig) => Promise<AdvancedExtractedMetadata>;
 } | null {
   // 返回平台特定的提取器配置
   const extractors: Record<string, {
     userAgent?: string;
     customHeaders?: Record<string, string>;
     endpoints?: ExtractorConfig[];
+    accept?: string;
+    referer?: string;
+    extract?: (html: string, url: string, config: ExtractionConfig) => Promise<AdvancedExtractedMetadata>;
   }> = {
     netflix: {
       userAgent:
@@ -645,7 +664,8 @@ function getPlatformExtractor(platform: string): {
       customHeaders: {
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
       },
-      extract: async (html: string, url: string, config: ExtractionConfig) => {
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      extract: async (html: string, url: string, _config: ExtractionConfig) => {
         // Netflix特定的提取逻辑
         return extractNetflixMetadata(html, url)
       },
@@ -657,14 +677,15 @@ function getPlatformExtractor(platform: string): {
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "zh-CN,zh;q=0.9",
       },
-      extract: async (html: string, url: string, config: ExtractionConfig) => {
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      extract: async (html: string, url: string, _config: ExtractionConfig) => {
         return extractBilibiliMetadata(html, url)
       },
     },
     // 可以继续添加其他平台
   }
 
-  return extractors[platform]
+  return extractors[platform] || null
 }
 
 function getAjaxEndpoints(
@@ -678,13 +699,16 @@ function getAjaxEndpoints(
     const bvMatch = url.match(/\/video\/(BV\w+)/)
     if (bvMatch) {
       endpoints.push({
-        url: `https://api.bilibili.com/x/web-interface/view?bvid=${bvMatch[1]}`,
-        parser: (data: BilibiliData) => ({
-          title: data.data?.title,
-          description: data.data?.desc,
-          duration: Math.round(data.data?.duration / 60),
-          // ... 更多字段
-        }),
+        url: "https://api.bilibili.com/x/web-interface/view?bvid=" + bvMatch[1],
+        parser: (data: unknown, _originalUrl: string) => {
+          const bilibiliData = data as BilibiliData;
+          return ({
+            title: bilibiliData.data?.title || "",
+            description: bilibiliData.data?.desc || "",
+            duration: Math.round(((bilibiliData.data?.duration as number) || 0) / 60),
+            // ... 更多字段
+          } as AdvancedExtractedMetadata);
+        },
       })
     }
   }
@@ -692,39 +716,39 @@ function getAjaxEndpoints(
   return endpoints
 }
 
-async function searchTMDB(title: string, year?: number): Promise<Partial<AdvancedExtractedMetadata> | null> {
+async function searchTMDB(_title: string, _year?: number): Promise<Partial<AdvancedExtractedMetadata> | null> {
   // 这里可以集成TMDB API搜索
   // 由于需要API密钥，这里只做示例
   return null
 }
 
-function extractNetflixMetadata(html: string, url: string): AdvancedExtractedMetadata {
+function extractNetflixMetadata(html: string, _url: string): AdvancedExtractedMetadata {
   // Netflix特定的提取逻辑
-  const metadata: AdvancedExtractedMetadata = {}
+  const metadata: AdvancedExtractedMetadata = { title: "" }
 
   // 提取Netflix的React上下文数据
   const reactContextMatch = html.match(/netflix\.reactContext\s*=\s*({.+?});/)
   if (reactContextMatch) {
     try {
-      const reactContext = JSON.parse(reactContextMatch[1])
+      JSON.parse(reactContextMatch[1]!)
       // 解析Netflix特有的数据结构
       // ... 具体实现
     } catch (error) {
-      
+
     }
   }
 
   return metadata
 }
 
-function extractBilibiliMetadata(html: string, url: string): AdvancedExtractedMetadata {
+function extractBilibiliMetadata(html: string, _url: string): AdvancedExtractedMetadata {
   // Bilibili特定的提取逻辑
-  const metadata: AdvancedExtractedMetadata = {}
+  const metadata: AdvancedExtractedMetadata = { title: "" }
 
   const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.+?});/)
   if (initialStateMatch) {
     try {
-      const initialState = JSON.parse(initialStateMatch[1])
+      const initialState = JSON.parse(initialStateMatch[1]!)
 
       if (initialState.videoData) {
         const videoData = initialState.videoData
@@ -733,7 +757,7 @@ function extractBilibiliMetadata(html: string, url: string): AdvancedExtractedMe
         metadata.duration = Math.round(videoData.duration / 60)
 
         if (videoData.pic) {
-          metadata.images = { poster: [videoData.pic] }
+          metadata.images = { poster: [videoData.pic] } as any
         }
 
         if (videoData.owner) {
@@ -741,7 +765,7 @@ function extractBilibiliMetadata(html: string, url: string): AdvancedExtractedMe
         }
       }
     } catch (error) {
-      
+
     }
   }
 
@@ -760,7 +784,7 @@ function calculateBasicConfidence(metadata: AdvancedExtractedMetadata): number {
   return Math.min(score, 1)
 }
 
-function calculatePlatformConfidence(metadata: AdvancedExtractedMetadata, platform: string): number {
+function calculatePlatformConfidence(metadata: AdvancedExtractedMetadata, _platform: string): number {
   const baseConfidence = calculateBasicConfidence(metadata)
   // 平台特定的提取通常更准确
   return Math.min(baseConfidence * 1.2, 1)
@@ -783,19 +807,19 @@ function mergeExtractionResults(
     confidence: number
   }>,
 ): AdvancedExtractedMetadata {
-  if (results.length === 0) return {}
-  if (results.length === 1) return results[0].metadata
+  if (results.length === 0) return { title: "" }
+  if (results.length === 1) return results[0]!.metadata
 
   // 按置信度排序
   const sortedResults = results.sort((a, b) => b.confidence - a.confidence)
 
   // 合并元数据，高置信度的优先
-  const merged: AdvancedExtractedMetadata = {}
+  const merged: AdvancedExtractedMetadata = { title: "" }
 
   for (const result of sortedResults) {
     for (const [key, value] of Object.entries(result.metadata)) {
       if (value && !merged[key as keyof AdvancedExtractedMetadata]) {
-        merged[key as keyof AdvancedExtractedMetadata] = value as any
+        (merged as any)[key] = value
       }
     }
   }

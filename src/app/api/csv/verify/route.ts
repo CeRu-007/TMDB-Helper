@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
-import path from 'path';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * CSV文件验证API
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     // 检查文件是否存在
     const exists = fs.existsSync(filePath);
-    
+
     if (!exists) {
       return NextResponse.json({
         success: false,
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // 检查文件是否为空
     const stats = fs.statSync(filePath);
     const isEmpty = stats.size === 0;
-    
+
     if (isEmpty) {
       return NextResponse.json({
         success: false,
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
       const lines = content.split('\n').filter(line => line.trim());
-      
+
       if (lines.length === 0) {
         return NextResponse.json({
           success: false,
@@ -57,8 +57,16 @@ export async function POST(request: NextRequest) {
 
       // 验证CSV格式（基本验证）
       const firstLine = lines[0];
+      if (!firstLine) {
+        return NextResponse.json({
+          success: false,
+          exists: true,
+          isEmpty: true,
+          error: '文件为空'
+        }, { status: 400 });
+      }
       const hasComma = firstLine.includes(',');
-      
+
       if (!hasComma) {
         return NextResponse.json({
           success: false,
@@ -84,19 +92,19 @@ export async function POST(request: NextRequest) {
         exists: true,
         isEmpty: false,
         error: '文件读取失败',
-        details: { 
+        details: {
           error: readError instanceof Error ? readError.message : String(readError)
         }
       }, { status: 400 });
     }
 
   } catch (error) {
-    console.error('[API] CSV验证错误:', error);
-    
+    logger.error('[API] CSV验证错误:', error);
+
     return NextResponse.json({
       success: false,
       error: '验证CSV文件失败',
-      details: { 
+      details: {
         error: error instanceof Error ? error.message : String(error)
       }
     }, { status: 500 });

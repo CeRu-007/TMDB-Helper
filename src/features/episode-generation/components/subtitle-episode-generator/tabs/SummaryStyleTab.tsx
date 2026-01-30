@@ -2,6 +2,7 @@
 import { useToast } from "@/shared/components/ui/use-toast"
 import { GenerationConfig } from '../types'
 import { GENERATION_STYLES } from '../constants'
+import { logger } from '@/lib/utils/logger'
 
 interface SummaryStyleTabProps {
   config: GenerationConfig
@@ -17,7 +18,7 @@ export function SummaryStyleTab({
   const handleStyleToggle = (styleId: string) => {
     // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
-      console.error('onConfigChange is not a function')
+      logger.error('onConfigChange is not a function')
       return
     }
 

@@ -2,6 +2,7 @@
 import type { ExtractedMetadata } from "@/lib/data/metadata-extractor"
 import { getPlatformParser, PlatformParser } from "@/lib/data/platform-parsers"
 import { ApiResponse } from "@/types/common"
+import { TIMEOUT_15S } from "@/lib/constants/constants"
 
 // JSON-LD 数据结构类型
 interface JsonLdPerson {
@@ -79,7 +80,7 @@ async function extractMetadataFromUrl(url: string, platform: string, parser: Pla
         "Cache-Control": "no-cache",
         Pragma: "no-cache",
       },
-      timeout: 15000, // 15秒超时
+      timeout: TIMEOUT_15S, // 15秒超时
     })
 
     if (!response.ok) {

@@ -1,10 +1,12 @@
 ﻿import { useState, useCallback } from 'react'
 import { useToast } from '@/shared/components/ui/use-toast'
 import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
-import { SubtitleFile, GenerationConfig, EnhanceOperation, GenerationStatus, GenerationResult } from '../types'
+import { SubtitleFile, SubtitleEpisode, GenerationConfig, EnhanceOperation, GenerationStatus, GenerationResult } from '../types'
 import { GENERATION_STYLES } from '../constants'
 import { timestampToMinutes } from '../utils'
 import { useApiCalls } from './useApiCalls'
+import { DELAY_500MS, DELAY_800MS, DELAY_1500MS } from '@/lib/constants/constants'
+import { logger } from '@/lib/utils/logger'
 
 export function useContentGeneration(
   config: GenerationConfig,
@@ -20,19 +22,20 @@ export function useContentGeneration(
   const { generateEpisodeContentForStyle, enhanceContent } = useApiCalls(config)
 
   // 检测是否是余额不足错误
-  const isInsufficientBalanceError = (error: { code?: string; message?: string }): boolean => {
+  const isInsufficientBalanceError = (error: unknown): boolean => {
     if (typeof error === 'string') {
-      return error.includes('account balance is insufficient') ||
-             error.includes('余额已用完') ||
-             error.includes('余额不足')
+      return (error as string).includes('account balance is insufficient') ||
+             (error as string).includes('余额已用完') ||
+             (error as string).includes('余额不足')
     }
 
     if (error && typeof error === 'object') {
+      const errorObj = error as { code?: string; message?: string; errorType?: string }
       const errorStr = JSON.stringify(error).toLowerCase()
       return errorStr.includes('30001') ||
              errorStr.includes('account balance is insufficient') ||
              errorStr.includes('insufficient_balance') ||
-             error.errorType === 'INSUFFICIENT_BALANCE'
+             errorObj.errorType === 'INSUFFICIENT_BALANCE'
     }
 
     return false
@@ -47,13 +50,13 @@ export function useContentGeneration(
     const validSelectedStyles = config.selectedStyles.filter(styleId => {
       const isValid = validStyleIds.includes(styleId)
       if (!isValid) {
-        console.warn(`无效的风格ID: ${styleId}`)
+        logger.warn(`无效的风格ID: ${styleId}`)
       }
       return isValid
     })
 
     if (validSelectedStyles.length === 0) {
-      console.warn('没有选择有效的简介风格')
+      logger.warn('没有选择有效的简介风格')
       return results
     }
 
@@ -80,14 +83,13 @@ export function useContentGeneration(
 
               // 避免API限流，在版本之间添加延迟
               if (i < generateCount - 1) {
-                await new Promise(resolve => setTimeout(resolve, 800))
+                await new Promise(resolve => setTimeout(resolve, DELAY_800MS))
               }
             } catch (error) {
-              console.error(`模仿风格第${i + 1}版本生成失败:`, error)
-              
+              logger.error(`模仿风格第${i + 1}版本生成失败:`, error)
+
               // 检查是否是余额不足错误
               if (isInsufficientBalanceError(error)) {
-                const style = GENERATION_STYLES.find(s => s.id === styleId)
                 results.push({
                   episodeNumber: episode.episodeNumber,
                   originalTitle: episode.title || `第${episode.episodeNumber}集`,
@@ -106,7 +108,6 @@ export function useContentGeneration(
               }
 
               // 添加失败的结果占位符
-              const style = GENERATION_STYLES.find(s => s.id === styleId)
               results.push({
                 episodeNumber: episode.episodeNumber,
                 originalTitle: episode.title || `第${episode.episodeNumber}集`,
@@ -138,10 +139,10 @@ export function useContentGeneration(
 
         // 避免API限流，在风格之间添加短暂延迟
         if (validSelectedStyles.length > 1 && styleId !== validSelectedStyles[validSelectedStyles.length - 1]) {
-          await new Promise(resolve => setTimeout(resolve, 500))
+          await new Promise(resolve => setTimeout(resolve, DELAY_500MS))
         }
       } catch (error) {
-        console.error(`风格${styleId}生成失败:`, error)
+        logger.error(`风格${styleId}生成失败:`, error)
         
         // 检查是否是余额不足错误
         if (isInsufficientBalanceError(error)) {
@@ -232,6 +233,7 @@ export function useContentGeneration(
 
       for (let i = 0; i < episodes.length; i++) {
         const episode = episodes[i]
+        if (!episode) continue
         try {
           // 为每个选中的风格生成内容
           const episodeResults = await generateEpisodeContent(episode)
@@ -251,10 +253,10 @@ export function useContentGeneration(
 
           // 避免API限流，添加延迟
           if (i < episodes.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1500))
+            await new Promise(resolve => setTimeout(resolve, DELAY_1500MS))
           }
         } catch (error) {
-          console.error(`第${episode.episodeNumber}集生成失败:`, error)
+          logger.error(`第${episode!.episodeNumber}集生成失败:`, error)
           failCount += config.selectedStyles.length
           completedTasks += config.selectedStyles.length
 
@@ -262,8 +264,9 @@ export function useContentGeneration(
           for (const styleId of config.selectedStyles) {
             const style = GENERATION_STYLES.find(s => s.id === styleId)
             results.push({
-              episodeNumber: episode.episodeNumber,
-              generatedTitle: `第${episode.episodeNumber}集（${style?.name || styleId}风格生成失败）`,
+              episodeNumber: episode!.episodeNumber,
+              originalTitle: episode!.title || `第${episode!.episodeNumber}集`,
+              generatedTitle: `第${episode!.episodeNumber}集（${style?.name || styleId}风格生成失败）`,
               generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
               confidence: 0,
               wordCount: 0,
@@ -272,7 +275,7 @@ export function useContentGeneration(
               styles: [styleId],
               styleId: styleId,
               styleName: style?.name
-            })
+            } as GenerationResult)
           }
 
           setGenerationResults(prev => ({ ...prev, [selectedFile.id]: [...results] }))
@@ -294,7 +297,7 @@ export function useContentGeneration(
         })
       }
     } catch (error) {
-      console.error('批量生成失败:', error)
+      logger.error('批量生成失败:', error)
       // 检查是否是余额不足错误
       if (isInsufficientBalanceError(error)) {
         setShowInsufficientBalanceDialog(true)
@@ -313,7 +316,7 @@ export function useContentGeneration(
   }, [selectedFile, config, generateEpisodeContent, scenarioModels, toast])
 
   // 批量生成所有文件的简介
-  const handleBatchGenerateAll = useCallback(async (setSubtitleFiles: (files: SubtitleFile[]) => void, setSelectedFile: (file: SubtitleFile | null) => void) => {
+  const handleBatchGenerateAll = useCallback(async (setSubtitleFiles: (files: SubtitleFile[] | ((prev: SubtitleFile[]) => SubtitleFile[])) => void, setSelectedFile: (file: SubtitleFile | null) => void) => {
     // 检查是否配置了模型服务
     if (!scenarioModels.getCurrentModel()) {
       toast({
@@ -349,12 +352,12 @@ export function useContentGeneration(
     setGenerationResults({})
 
     // 初始化所有文件状态为pending
-    setSubtitleFiles(prev => prev.map(file => ({
+    setSubtitleFiles((prev: SubtitleFile[]) => prev.map((file: SubtitleFile) => ({
       ...file,
       generationStatus: validFiles.some(vf => vf.id === file.id) ? 'pending' as GenerationStatus : file.generationStatus,
       generationProgress: 0,
       generatedCount: 0
-    })))
+    })) as SubtitleFile[])
 
     try {
       const allResults: Record<string, any[]> = {}
@@ -369,17 +372,18 @@ export function useContentGeneration(
 
       // 为每个文件生成简介
       for (const file of validFiles) {
-        console.log(`开始处理文件: ${file.name}`)
+        logger.info(`开始处理文件: ${file.name}`)
         
         // 设置当前文件状态为generating
-        setSubtitleFiles(prev => prev.map(f =>
+        setSubtitleFiles((prev: SubtitleFile[]) => prev.map((f: SubtitleFile) =>
           f.id === file.id
             ? { ...f, generationStatus: 'generating' as GenerationStatus, generationProgress: 0, generatedCount: 0 }
             : f
-        ))
+        ) as SubtitleFile[])
 
         for (let i = 0; i < file.episodes.length; i++) {
           const episode = file.episodes[i]
+          if (!episode) continue
           try {
             // 临时设置当前文件为选中文件以便生成
             const originalSelectedFile = selectedFile
@@ -387,11 +391,11 @@ export function useContentGeneration(
 
             const episodeResults = await generateEpisodeContent(episode)
             // 为每个风格的结果添加文件名信息
-            const resultsWithFileName = episodeResults.map(result => ({
+            const resultsWithFileName = episodeResults.map((result: GenerationResult) => ({
               ...result,
               fileName: file.name // 添加文件名信息
             }))
-            allResults[file.id].push(...resultsWithFileName)
+            allResults[file.id]!.push(...resultsWithFileName)
 
             processedEpisodes++
             setGenerationProgress((processedEpisodes / totalEpisodes) * 100)
@@ -399,7 +403,7 @@ export function useContentGeneration(
 
             // 更新当前文件的进度
             const currentFileProgress = ((i + 1) / file.episodes.length) * 100
-            setSubtitleFiles(prev => prev.map(f =>
+            setSubtitleFiles((prev: SubtitleFile[]) => prev.map((f: SubtitleFile) =>
               f.id === file.id
                 ? {
                     ...f,
@@ -407,24 +411,25 @@ export function useContentGeneration(
                     generatedCount: i + 1
                   }
                 : f
-            ))
+            ) as SubtitleFile[])
 
             // 恢复原选中文件
             setSelectedFile(originalSelectedFile)
 
             // 避免API限流，添加延迟
             if (processedEpisodes < totalEpisodes) {
-              await new Promise(resolve => setTimeout(resolve, 1500))
+              await new Promise(resolve => setTimeout(resolve, DELAY_1500MS))
             }
           } catch (error) {
-            console.error(`第${episode.episodeNumber}集生成失败:`, error)
-            
+            logger.error(`第${episode!.episodeNumber}集生成失败:`, error)
+
             // 为每个风格添加失败的结果占位符
             for (const styleId of config.selectedStyles) {
               const style = GENERATION_STYLES.find(s => s.id === styleId)
-              allResults[file.id].push({
-                episodeNumber: episode.episodeNumber,
-                generatedTitle: `第${episode.episodeNumber}集（${style?.name || styleId}风格生成失败）`,
+              allResults[file.id]!.push({
+                episodeNumber: episode!.episodeNumber,
+                originalTitle: episode!.title || `第${episode!.episodeNumber}集`,
+                generatedTitle: `第${episode!.episodeNumber}集（${style?.name || styleId}风格生成失败）`,
                 generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
                 confidence: 0,
                 wordCount: 0,
@@ -443,7 +448,7 @@ export function useContentGeneration(
 
             // 更新当前文件的进度（失败情况）
             const currentFileProgress = ((i + 1) / file.episodes.length) * 100
-            setSubtitleFiles(prev => prev.map(f =>
+            setSubtitleFiles((prev: SubtitleFile[]) => prev.map((f: SubtitleFile) =>
               f.id === file.id
                 ? {
                     ...f,
@@ -451,14 +456,14 @@ export function useContentGeneration(
                     generatedCount: i + 1
                   }
                 : f
-            ))
+            ) as SubtitleFile[])
           }
         }
 
         // 文件处理完成，设置最终状态
         const fileResults = allResults[file.id] || []
-        const hasFailures = fileResults.some(r => r.confidence === 0)
-        setSubtitleFiles(prev => prev.map(f =>
+        const hasFailures = fileResults.some((r: GenerationResult) => r.confidence === 0)
+        setSubtitleFiles((prev: SubtitleFile[]) => prev.map((f: SubtitleFile) =>
           f.id === file.id
             ? {
                 ...f,
@@ -467,7 +472,7 @@ export function useContentGeneration(
                 generatedCount: file.episodes.length
               }
             : f
-        ))
+        ) as SubtitleFile[])
       }
 
       // 计算总体统计
@@ -476,20 +481,20 @@ export function useContentGeneration(
       const successfulGenerated = allResultsFlat.filter(r => r.confidence > 0).length
       const failedGenerated = totalGenerated - successfulGenerated
       
-      console.log(`批量生成完成: 总计 ${totalGenerated} 个，成功 ${successfulGenerated} 个，失败 ${failedGenerated} 个`)
+      logger.info(`批量生成完成: 总计 ${totalGenerated} 个，成功 ${successfulGenerated} 个，失败 ${failedGenerated} 个`)
       
       // 生成完成后，自动选择合适的文件显示结果
       if (validFiles.length > 0) {
         if (!selectedFile) {
           // 如果没有选中文件，选择第一个文件
-          setSelectedFile(validFiles[0])
+          setSelectedFile(validFiles[0]!)
         } else {
           // 如果当前选中的文件没有生成结果，选择第一个有结果的文件
           const currentFileResults = allResults[selectedFile.id] || []
           if (currentFileResults.length === 0) {
             const firstFileWithResults = validFiles.find(file => (allResults[file.id] || []).length > 0)
             if (firstFileWithResults) {
-              setSelectedFile(firstFileWithResults)
+              setSelectedFile(firstFileWithResults!)
             }
           }
         }
@@ -500,7 +505,7 @@ export function useContentGeneration(
         description: `总计生成 ${totalGenerated} 个简介，成功 ${successfulGenerated} 个`,
       })
     } catch (error) {
-      console.error('批量生成失败:', error)
+      logger.error('批量生成失败:', error)
       // 检查是否是余额不足错误
       if (isInsufficientBalanceError(error)) {
         setShowInsufficientBalanceDialog(true)
@@ -544,7 +549,7 @@ export function useContentGeneration(
       }
 
       const operationConfig = getOperationConfig(operation)
-      const enhancedContent = await enhanceContent(result, operation, operationConfig, selectedTextInfo)
+      const enhancedContent = await enhanceContent(result.generatedSummary, operation, operationConfig, selectedTextInfo)
 
       // 如果是改写操作且有选中文字信息，进行部分替换
       if (operation === 'rewrite' && selectedTextInfo) {
@@ -554,7 +559,7 @@ export function useContentGeneration(
                           originalSummary.substring(selectedTextInfo.end)
 
         // 更新结果
-        setGenerationResults(prev => {
+        setGenerationResults((prev: Record<string, GenerationResult[]>) => {
           const fileResults = prev[fileId] || []
           const newResults = [...fileResults]
           if (newResults[resultIndex]) {
@@ -578,7 +583,7 @@ export function useContentGeneration(
         }
 
         // 更新结果
-        setGenerationResults(prev => {
+        setGenerationResults((prev: Record<string, GenerationResult[]>) => {
           const fileResults = prev[fileId] || []
           const newResults = [...fileResults]
           if (newResults[resultIndex]) {
@@ -613,7 +618,7 @@ export function useContentGeneration(
 
   // 更新生成结果的函数
   const handleUpdateResult = useCallback((fileId: string, resultIndex: number, updatedResult: Partial<any>) => {
-    setGenerationResults(prev => {
+    setGenerationResults((prev: Record<string, GenerationResult[]>) => {
       const fileResults = prev[fileId] || []
       const newResults = [...fileResults]
       if (newResults[resultIndex]) {
@@ -628,13 +633,13 @@ export function useContentGeneration(
 
   // 置顶风格简介的函数
   const handleMoveToTop = useCallback((fileId: string, resultIndex: number) => {
-    setGenerationResults(prev => {
+    setGenerationResults((prev: Record<string, GenerationResult[]>) => {
       const fileResults = prev[fileId] || []
       if (resultIndex <= 0 || resultIndex >= fileResults.length) return prev
 
       const newResults = [...fileResults]
       const [movedItem] = newResults.splice(resultIndex, 1)
-      newResults.unshift(movedItem)
+      newResults.unshift(movedItem!)
 
       return {
         ...prev,
@@ -723,7 +728,7 @@ export function useContentGeneration(
         throw new Error('写入文件失败')
       }
     } catch (error) {
-      console.error('导出失败:', error)
+      logger.error('导出失败:', error)
       throw error
     }
   }, [subtitleFiles, generationResults])

@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback } from 'react'
+import { logger } from '@/lib/utils/logger'
 
 export interface FormFieldConfig {
   value: unknown
@@ -123,7 +124,7 @@ export function useFormState<T extends Record<string, unknown>>({
       }
       return true
     } catch (error) {
-      console.error('Form submission error:', error)
+      logger.error('Form submission error:', error)
       return false
     } finally {
       setIsSubmitting(false)

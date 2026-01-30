@@ -8,6 +8,7 @@ import { ConflictDetector } from '../conflict-detector';
 import { ConflictResolver } from '../conflict-resolver';
 import { advancedConfigManager } from '../task-scheduler-config';
 import { TaskExecutor } from './task-executor';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * 任务队列管理器
@@ -52,10 +53,7 @@ export class TaskQueue {
         await this.taskExecutor.executeTaskWithRetry(task);
       }, delayMs);
     } catch (error) {
-      console.error(
-        '[TaskQueue] 任务入队失败:',
-        error instanceof Error ? error.message : String(error),
-      );
+      logger.error('TaskQueue', '任务入队失败', error);
       // 如果队列失败，回退到普通调度
       // 注意：这里需要通过回调或事件通知主调度器重新调度
     }

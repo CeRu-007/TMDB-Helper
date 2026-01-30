@@ -1,3 +1,6 @@
+import type { TMDBItem } from '@/types/tmdb-item';
+import { TIMEOUT_15S } from '@/lib/constants/constants';
+
 export class StorageBase {
   protected static readonly STORAGE_KEY = 'tmdb_helper_items';
   protected static readonly SCHEDULED_TASKS_KEY = 'tmdb_helper_scheduled_tasks';
@@ -46,7 +49,7 @@ export class StorageBase {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-    }, 15000); // 15秒超时
+    }, TIMEOUT_15S); // 15秒超时
 
     // 简化的用户ID处理，使用默认值
     const userId = 'user_admin_system';
@@ -114,7 +117,7 @@ export class StorageBase {
    */
   protected static async getItemsWithRetry(
     retries = this.MAX_RETRIES,
-  ): Promise<unknown[]> {
+  ): Promise<TMDBItem[]> {
     // 首次调用时进行环境检查
     if (retries === this.MAX_RETRIES) {
       this.checkDevelopmentEnvironment();
@@ -134,7 +137,7 @@ export class StorageBase {
         }
 
         const data = await response.json();
-        return data.items || [];
+        return (data.items || []) as TMDBItem[];
       } catch (error) {
         if (retries > 0) {
           await new Promise((resolve) => setTimeout(resolve, this.RETRY_DELAY));

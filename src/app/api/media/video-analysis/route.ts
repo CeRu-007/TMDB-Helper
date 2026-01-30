@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { ApiResponse } from '@/types/common';
+import { TIMEOUT_5S } from '@/lib/constants/constants';
 // 移除字幕提取器导入，现在只专注于音频分析
 
 const execAsync = promisify(exec);
@@ -105,10 +106,10 @@ function validateVideoUrl(url: string): boolean {
 // 检查ffmpeg是否可用
 async function checkFFmpegAvailability(): Promise<boolean> {
   try {
-    await execAsync('ffmpeg -version', { timeout: 5000 });
+    await execAsync('ffmpeg -version', { timeout: TIMEOUT_5S });
     return true;
   } catch (error) {
-    
+
     return false;
   }
 }

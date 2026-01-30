@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/utils/logger';
 
 // 类型定义
 interface ModelScopeMessage {
@@ -10,26 +11,6 @@ interface ModelScopeRequestBody {
   model: string;
   messages: ModelScopeMessage[];
   stream: boolean;
-}
-
-interface ModelScopeStreamDelta {
-  reasoning_content?: string;
-  content?: string;
-}
-
-interface ModelScopeStreamChoice {
-  delta?: ModelScopeStreamDelta;
-}
-
-interface ModelScopeStreamParsed {
-  choices?: ModelScopeStreamChoice[];
-}
-
-interface ModelScopeModel {
-  id: string;
-  name: string;
-  description: string;
-  isThinking: boolean;
 }
 
 // 魔搭社区API配置
@@ -99,8 +80,8 @@ async function handleDeepSeekStreamResponse(response: Response) {
     const suggestionMatch = fullContent.match(/\[请在回复后提供3个相关的引导问题或建议，帮助用户继续对话\]([\s\S]*)$/);
     if (suggestionMatch) {
       mainContent = fullContent.substring(0, suggestionMatch.index).trim();
-      const suggestionText = suggestionMatch[1].trim();
-      
+      const suggestionText = suggestionMatch[1]?.trim() || '';
+
       // 解析引导建议（支持多种格式）
       suggestions = parseSuggestions(suggestionText);
     }
@@ -116,9 +97,9 @@ async function handleDeepSeekStreamResponse(response: Response) {
       }
     };
 
-  } catch (error: Error) {
-    console.error('处理DeepSeek流式响应失败:', error);
-    throw new Error('处理流式响应失败: ' + error.message);
+  } catch (error: unknown) {
+    logger.error('处理DeepSeek流式响应失败:', error);
+    throw new Error('处理流式响应失败: ' + (error instanceof Error ? error.message : 'Unknown error'));
   }
 }
 
@@ -206,8 +187,8 @@ async function handleQwenStreamResponse(response: Response) {
     const suggestionMatch = content.match(/\[请在回复后提供3个相关的引导问题或建议，帮助用户继续对话\]([\s\S]*)$/);
     if (suggestionMatch) {
       mainContent = content.substring(0, suggestionMatch.index).trim();
-      const suggestionText = suggestionMatch[1].trim();
-      
+      const suggestionText = suggestionMatch[1]?.trim() || '';
+
       // 解析引导建议
       suggestions = parseSuggestions(suggestionText);
     }
@@ -220,9 +201,9 @@ async function handleQwenStreamResponse(response: Response) {
       }
     };
 
-  } catch (error: Error) {
-    console.error('处理Qwen流式响应失败:', error);
-    throw new Error('处理流式响应失败: ' + error.message);
+  } catch (error: unknown) {
+    logger.error('处理Qwen流式响应失败:', error);
+    throw new Error('处理流式响应失败: ' + (error instanceof Error ? error.message : 'Unknown error'));
   }
 }
 
@@ -264,7 +245,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('调用魔搭社区API:', {
+    logger.info('调用魔搭社区API:', {
       model,
       messagesCount: messages.length,
       apiKeyPrefix: apiKey.substring(0, 10) + '...'
@@ -297,7 +278,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('发送请求体:', JSON.stringify(requestBody, null, 2));
+    logger.debug('发送请求体:', JSON.stringify(requestBody, null, 2));
 
     const response = await fetch(`${MODELSCOPE_API_BASE}/chat/completions`, {
       method: 'POST',
@@ -310,7 +291,7 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('API调用失败:', {
+      logger.error('API调用失败:', {
         status: response.status,
         statusText: response.statusText,
         error: errorData
@@ -346,12 +327,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
 
-  } catch (error: Error) {
-    console.error('服务器内部错误:', error);
+  } catch (error: unknown) {
+    logger.error('服务器内部错误:', error);
     return NextResponse.json(
       {
-        error: '服务器内部错误',
-        details: error.message
+        success: false,
+        error: { message: '服务器内部错误', code: 'INTERNAL_ERROR', timestamp: Date.now() },
+        data: null,
+        timestamp: Date.now()
       },
       { status: 500 }
     );
@@ -392,12 +375,12 @@ export async function GET(request: NextRequest) {
       data: models
     });
 
-  } catch (error: Error) {
-    console.error('获取模型列表失败:', error);
+  } catch (error: unknown) {
+    logger.error('获取模型列表失败:', error);
     return NextResponse.json(
       {
         error: '服务器内部错误',
-        details: error.message
+        details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );

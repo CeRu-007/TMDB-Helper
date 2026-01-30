@@ -2,6 +2,8 @@
 import { ServerStorageManager } from '@/lib/data/server-storage-manager';
 import { TMDBItem } from '@/lib/data/storage';
 import { getUserIdFromRequest } from '@/lib/auth/user-utils';
+import { ErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/utils/logger';
 
 const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
 
@@ -32,13 +34,12 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
   } catch (error) {
-    console.error('[API] 添加项目错误:', error);
+    logger.error('[API] 添加项目错误:', error);
 
     return NextResponse.json({
-      error: '服务器内部错误',
+      error: ErrorHandler.toUserMessage(error),
       success: false,
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    }, { status: ErrorHandler.getStatusCode(error) });
   }
 }
 
@@ -57,7 +58,7 @@ export async function PUT(request: NextRequest) {
 
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
-    console.log(`[API] 更新项目 - 用户ID: ${userId}, 项目ID: ${item.id}`);
+    logger.info(`[API] 更新项目 - 用户ID: ${userId}, 项目ID: ${item.id}`);
 
     const success = ServerStorageManager.updateItem(item);
 
@@ -70,12 +71,11 @@ export async function PUT(request: NextRequest) {
       }, { status: 404 });
     }
   } catch (error) {
-    
+    logger.error('更新项目失败', error)
     return NextResponse.json({
-      error: '服务器内部错误',
+      error: ErrorHandler.toUserMessage(error),
       success: false,
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    }, { status: ErrorHandler.getStatusCode(error) });
   }
 }
 
@@ -94,7 +94,7 @@ export async function DELETE(request: NextRequest) {
 
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
-    console.log(`[API] 删除项目 - 用户ID: ${userId}, 项目ID: ${id}`);
+    logger.info(`[API] 删除项目 - 用户ID: ${userId}, 项目ID: ${id}`);
 
     const success = ServerStorageManager.deleteItem(id);
 
@@ -107,11 +107,10 @@ export async function DELETE(request: NextRequest) {
       }, { status: 404 });
     }
   } catch (error) {
-    
+    logger.error('删除项目失败', error)
     return NextResponse.json({
-      error: '服务器内部错误',
+      error: ErrorHandler.toUserMessage(error),
       success: false,
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    }, { status: ErrorHandler.getStatusCode(error) });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthManager } from './auth-manager';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * 认证中间件 - 验证API请求的认证状态
@@ -35,7 +36,7 @@ export class AuthMiddleware {
       };
 
     } catch (error) {
-      console.error('[Auth] 认证中间件错误:', error);
+      logger.error('[Auth] 认证中间件错误:', error);
 
       return { success: false, error: '服务器内部错误' };
     }

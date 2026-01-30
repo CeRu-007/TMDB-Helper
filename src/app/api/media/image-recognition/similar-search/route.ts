@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { DELAY_2000MS } from '@/lib/constants/constants'
 
 // 图像相似搜索API接口
 export async function POST(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('相似图片搜索失败:', error)
     return NextResponse.json(
-      { 
+      {
         error: '相似图片搜索失败',
         details: error instanceof Error ? error.message : '未知错误'
       },
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
 // 执行相似图片搜索
 async function performSimilarImageSearch(imageData: string) {
   // 模拟搜索延迟
-  await new Promise(resolve => setTimeout(resolve, 2000))
+  await new Promise(resolve => setTimeout(resolve, DELAY_2000MS))
 
   // 模拟搜索结果
   // 在实际实现中，这里会：

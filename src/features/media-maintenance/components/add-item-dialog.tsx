@@ -1,8 +1,7 @@
 ﻿"use client"
 
-import type React from "react"
-
-import { useState, useRef, useEffect, useCallback } from "react"
+import React, { useState, useRef, useEffect, useCallback } from "react"
+import { logger } from '@/lib/utils/logger'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -202,13 +201,12 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
       setSearchResults(results)
     } catch (error) {
-      
+      logger.error('[添加词条] 添加失败:', error);
       toast({
-        title: "搜索失败",
-        description: error instanceof Error ? error.message : "搜索失败，请重试",
-        variant: "destructive"
+        variant: "destructive",
+        title: "添加失败",
+        description: error instanceof Error ? error.message : "未知错误"
       })
-      setSearchResults([])
     } finally {
       setLoading(false)
     }
@@ -350,7 +348,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       if (!tmdbData.networkLogoUrl && selectedResult.media_type === "tv") missingImages.push("networkLogo");
 
       if (missingImages.length > 0) {
-        console.log(`🔄 [添加词条] 缺少图片信息: ${missingImages.join(", ")}，尝试强制刷新获取...`);
+        logger.info(`🔄 [添加词条] 缺少图片信息: ${missingImages.join(", ")}，尝试强制刷新获取...`);
         try {
           const refreshResponse = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`);
           const refreshResult = await refreshResponse.json();
@@ -489,7 +487,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       onOpenChange(false)
       resetForm()
     } catch (error) {
-      console.error('[添加词条] 添加失败:', error);
+      logger.error('[添加词条] 添加失败:', error);
 
       toast({
         title: "添加失败",

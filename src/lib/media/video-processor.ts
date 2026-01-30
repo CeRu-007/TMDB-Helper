@@ -5,6 +5,7 @@
 
 import { EnergyVAD, type AudioAnalysisResult, type SpeechSegment } from './audio-vad'
 import { SubtitleOCR, type OCRResult } from './subtitle-ocr'
+import { logger } from '@/lib/utils/logger';
 
 export interface VideoProcessConfig {
   /** VAD 语音阈值 (0-1)，默认 0.15 */
@@ -137,7 +138,7 @@ export class VideoProcessor {
       const audioResults = this.vad.analyzeAudioBuffer(audioBuffer)
       const speechSegments = this.vad.extractSpeechSegments(audioResults)
 
-      console.log('[VideoProcessor] 检测到语音片段:', speechSegments.length)
+      logger.debug('VideoProcessor', '检测到语音片段', { count: speechSegments.length })
 
       // 步骤 3: 如果不使用 VAD 或没有检测到语音，进行均匀采样
       let sampleTimestamps: number[] = []
@@ -258,7 +259,7 @@ export class VideoProcessor {
               }
             } else {
               // 拼接失败，逐个识别当前批次
-              console.warn('[VideoProcessor] 图片拼接失败，使用逐个识别')
+              logger.warn('VideoProcessor', '图片拼接失败，使用逐个识别')
               for (let j = 0; j < extractedFrames.length; j++) {
                 if (extractedFrames[j].imageUrl) {
                   try {
@@ -288,7 +289,7 @@ export class VideoProcessor {
             extractedFrames.length = 0
           }
         } catch (error) {
-          console.error(`[VideoProcessor] 帧 ${timestamp}s 提取失败:`, error)
+          logger.error('VideoProcessor', `帧 ${timestamp}s 提取失败`, error)
           // 即使失败也添加空帧，保持时间戳对应
           extractedFrames.push({
             timestamp,

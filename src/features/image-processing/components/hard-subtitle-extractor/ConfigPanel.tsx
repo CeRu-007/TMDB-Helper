@@ -8,6 +8,7 @@ import { Slider } from "@/shared/components/ui/slider"
 import { Switch } from "@/shared/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Upload, Link, Settings, Volume2, Image, Clock, CheckCircle, Loader2, X } from "lucide-react"
+import { logger } from '@/lib/utils/logger'
 
 interface BoundingBox {
   id: string
@@ -83,7 +84,7 @@ export function ConfigPanel({
           setModels([])
         }
       } catch (err) {
-        console.error('加载模型列表失败:', err)
+        logger.error('加载模型列表失败:', err)
         setModelError('加载模型列表失败')
         setModels([])
       } finally {

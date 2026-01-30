@@ -1,4 +1,5 @@
 ﻿import { TMDBItem } from '@/lib/data/storage';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * 服务器端文件系统存储服务
@@ -123,12 +124,12 @@ export class ServerStorageService {
       this.itemsCache = [...items];
       this.cacheTimestamp = Date.now();
 
-      console.log(
+      logger.info(
         `[ServerStorageService] 成功写入 ${items.length} 个词条到文件系统`,
       );
       return true;
     } catch (error) {
-      console.error(`[ServerStorageService] 写入数据到文件系统失败:`, error);
+      logger.error(`[ServerStorageService] 写入数据到文件系统失败:`, error);
       // 写入失败时清除缓存，强制下次读取从文件获取
       this.clearCache();
       return false;
@@ -153,11 +154,11 @@ export class ServerStorageService {
 
       const result = this.writeItemsToFile(items);
       if (result) {
-        console.log(`[ServerStorageService] 成功添加项目: ${item.title}`);
+        logger.info(`[ServerStorageService] 成功添加项目: ${item.title}`);
       }
       return result;
     } catch (error) {
-      console.error(`[ServerStorageService] 添加项目到文件失败:`, error);
+      logger.error(`[ServerStorageService] 添加项目到文件失败:`, error);
       return false;
     }
   }
@@ -171,7 +172,7 @@ export class ServerStorageService {
       const index = items.findIndex((i) => i.id === item.id);
 
       if (index === -1) {
-        console.error(
+        logger.error(
           `[ServerStorageService] 更新失败: 找不到ID为 ${item.id} 的项目`,
         );
         return false;
@@ -180,11 +181,11 @@ export class ServerStorageService {
       items[index] = item;
       const result = this.writeItemsToFile(items);
       if (result) {
-        console.log(`[ServerStorageService] 成功更新项目: ${item.title}`);
+        logger.info(`[ServerStorageService] 成功更新项目: ${item.title}`);
       }
       return result;
     } catch (error) {
-      console.error(`[ServerStorageService] 更新项目到文件失败:`, error);
+      logger.error(`[ServerStorageService] 更新项目到文件失败:`, error);
       return false;
     }
   }
@@ -198,7 +199,7 @@ export class ServerStorageService {
       const filteredItems = items.filter((i) => i.id !== id);
 
       if (filteredItems.length === items.length) {
-        console.error(
+        logger.error(
           `[ServerStorageService] 删除失败: 找不到ID为 ${id} 的项目`,
         );
         return false;
@@ -206,11 +207,11 @@ export class ServerStorageService {
 
       const result = this.writeItemsToFile(filteredItems);
       if (result) {
-        console.log(`[ServerStorageService] 成功删除项目ID: ${id}`);
+        logger.info(`[ServerStorageService] 成功删除项目ID: ${id}`);
       }
       return result;
     } catch (error) {
-      console.error(`[ServerStorageService] 从文件删除项目失败:`, error);
+      logger.error(`[ServerStorageService] 从文件删除项目失败:`, error);
       return false;
     }
   }
@@ -221,9 +222,9 @@ export class ServerStorageService {
   static preloadCache(): void {
     try {
       this.readItemsFromFile(); // 这会自动填充缓存
-      console.log(`[ServerStorageService] 缓存预加载完成`);
+      logger.debug(`[ServerStorageService] 缓存预加载完成`);
     } catch (error) {
-      console.error(`[ServerStorageService] 缓存预加载失败:`, error);
+      logger.error(`[ServerStorageService] 缓存预加载失败:`, error);
     }
   }
 

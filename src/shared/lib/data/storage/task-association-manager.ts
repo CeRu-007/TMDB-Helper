@@ -1,5 +1,6 @@
 import { StorageBase } from './storage-base';
 import { ScheduledTask } from './types';
+import { logger } from '@/lib/utils/logger';
 
 export class TaskAssociationManager extends StorageBase {
   /**
@@ -32,7 +33,7 @@ export class TaskAssociationManager extends StorageBase {
 
           if (!relatedItem) {
             invalidTasks++;
-            console.log(
+            logger.info(
               `[TaskAssociationManager] 发现无效任务: ${task.name} (ID: ${task.id}, itemId: ${task.itemId})`,
             );
 
@@ -420,7 +421,7 @@ export class TaskAssociationManager extends StorageBase {
     // 使用智能匹配算法
     const matchResult = this.findBestItemMatch(task, items);
     if (matchResult.item && matchResult.confidence > 0.5) {
-      console.log(
+      logger.info(
         `[TaskAssociationManager] 找到高置信度匹配: ${matchResult.item.title} (置信度 ${Math.round(matchResult.confidence * 100)}%)`,
       );
       return {
@@ -432,7 +433,7 @@ export class TaskAssociationManager extends StorageBase {
         confidence: matchResult.confidence,
       };
     } else if (matchResult.item && matchResult.confidence > 0.2) {
-      console.log(
+      logger.info(
         `[TaskAssociationManager] 找到低置信度匹配: ${matchResult.item.title} (置信度 ${Math.round(matchResult.confidence * 100)}%)`,
       );
       return {
@@ -489,7 +490,7 @@ export class TaskAssociationManager extends StorageBase {
         }
 
         // 如果没有关联到有效项目，尝试通过项目标题、TMDB ID或项目名称匹配
-        console.log(
+        logger.info(
           `[TaskAssociationManager] 任务 ${task.id} (${task.name}) 关联的项目ID ${task.itemId} 无效，尝试修复`,
         );
 
@@ -555,7 +556,7 @@ export class TaskAssociationManager extends StorageBase {
         }
 
         // 如果无法修复，保留原始任务
-        console.warn(
+        logger.warn(
           `[TaskAssociationManager] 无法为任务${task.id} (${task.name}) 找到匹配项目`,
         );
         return task;
@@ -567,7 +568,7 @@ export class TaskAssociationManager extends StorageBase {
           try {
             await this.updateScheduledTask(task);
           } catch (error) {
-            console.error(
+            logger.error(
               `[TaskAssociationManager] 更新修复后的任务失败: ${task.id}`,
               error,
             );
@@ -577,7 +578,7 @@ export class TaskAssociationManager extends StorageBase {
 
       return fixedTasks;
     } catch (error) {
-      console.error('[TaskAssociationManager] 修复定时任务关联失败:', error);
+      logger.error('[TaskAssociationManager] 修复定时任务关联失败:', error);
       return [];
     }
   }
@@ -629,7 +630,7 @@ export class TaskAssociationManager extends StorageBase {
 
       return true;
     } catch (error) {
-      console.error('[TaskAssociationManager] 更新定时任务失败:', error);
+      logger.error('[TaskAssociationManager] 更新定时任务失败:', error);
       return false;
     }
   }
@@ -655,7 +656,7 @@ export class TaskAssociationManager extends StorageBase {
 
       return true;
     } catch (error) {
-      console.error('[TaskAssociationManager] 删除定时任务失败:', error);
+      logger.error('[TaskAssociationManager] 删除定时任务失败:', error);
       return false;
     }
   }

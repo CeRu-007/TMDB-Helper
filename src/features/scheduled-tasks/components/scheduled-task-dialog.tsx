@@ -1,6 +1,7 @@
 ﻿"use client"
 
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
+import { logger } from '@/lib/utils/logger'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/shared/components/ui/dialog"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -226,7 +227,7 @@ export default function ScheduledTaskDialog({ item, open, onOpenChange, onUpdate
         updatedTask.name = `${item.title} 定时任务`;
       }
 
-      console.log(`[ScheduledTaskDialog] 任务详情:`, JSON.stringify(updatedTask, null, 2));
+      logger.info(`[ScheduledTaskDialog] 任务详情:`, JSON.stringify(updatedTask, null, 2));
 
       let success = false;
       if (isAddingTask) {

@@ -3,10 +3,10 @@
 /**
  * 定时任务守护进程
  * 独立运行的后台服务，用于检查和执行错过的定时任务
- * 
+ *
  * 使用方法:
  * node scripts/task-scheduler-daemon.js [--port=3000] [--interval=600]
- * 
+ *
  * 参数:
  * --port: Next.js 应用运行的端口 (默认: 3000)
  * --interval: 检查间隔，单位秒 (默认: 600，即10分钟)
@@ -15,6 +15,7 @@
 const http = require('http');
 const https = require('https');
 const { URL } = require('url');
+const { logger } = require('./logger');
 
 // 解析命令行参数
 const args = process.argv.slice(2);
@@ -93,7 +94,7 @@ function makeRequest(url, options = {}) {
  */
 async function checkScheduledTasks() {
   try {
-    console.log(`[TaskSchedulerDaemon] ${new Date().toLocaleString('zh-CN')} - 开始检查定时任务`);
+    logger.info(`[TaskSchedulerDaemon] ${new Date().toLocaleString('zh-CN')} - 开始检查定时任务`);
     
     const response = await makeRequest(`${baseUrl}/api/check-scheduled-tasks`);
     
@@ -111,10 +112,10 @@ async function checkScheduledTasks() {
 
     // 如果有错过的任务，尝试执行
     if (result.missedTasks > 0) {
-      
+
       for (const missedTask of result.missedTaskDetails) {
         try {
-          console.log(`[TaskSchedulerDaemon] 执行错过的任务: ${missedTask.name} (错过 ${missedTask.timeDiff} 分钟)`);
+          logger.info(`[TaskSchedulerDaemon] 执行错过的任务: ${missedTask.name} (错过 ${missedTask.timeDiff} 分钟)`);
           
           const executeResponse = await makeRequest(`${baseUrl}/api/check-scheduled-tasks`, {
             method: 'POST',
@@ -176,7 +177,7 @@ async function main() {
     serverReady = await checkServerHealth();
     if (!serverReady) {
       retryCount++;
-      console.log(`[TaskSchedulerDaemon] 服务器未就绪，等待中... (${retryCount}/${maxRetries})`);
+      logger.info(`[TaskSchedulerDaemon] 服务器未就绪，等待中... (${retryCount}/${maxRetries})`);
       await new Promise(resolve => setTimeout(resolve, 10000)); // 等待10秒
     }
   }

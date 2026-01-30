@@ -7,6 +7,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs';
+import { DELAY_1000MS } from '@/lib/constants/constants';
 
 const execAsync = promisify(exec);
 
@@ -413,7 +414,7 @@ export async function POST(request: NextRequest) {
 
       case 'restart':
         serverScheduler.stop();
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 等待1秒
+        await new Promise(resolve => setTimeout(resolve, DELAY_1000MS)); // 等待1秒
         serverScheduler.start();
         return NextResponse.json({
           success: true,

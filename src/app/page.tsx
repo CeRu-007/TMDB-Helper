@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 // 导入图标
 import {
@@ -65,20 +65,18 @@ import { SubtitleEpisodeGenerator } from "@/features/episode-generation/componen
 import VideoThumbnailExtractor from "@/features/image-processing/components/video-thumbnail-extractor"
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"
 
-// 导入 home 组件
+// 导入共享组件
 import { ErrorState } from "@/features/media-maintenance/components/error-state"
-import { EmptyState } from "@/features/media-maintenance/components/empty-state"
+
 
 // 判断当前环境是否为客户端
 const isClientEnv = typeof window !== 'undefined'
 
-// Helper function to get empty state message
 const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: number, categories: Category[], isCompleted: boolean = false) => {
   if (selectedCategory !== "all") {
     const categoryName = categories.find(c => c.id === selectedCategory)?.name
-    return isCompleted
-      ? `${categoryName}分类暂无已完结词条`
-      : `${categoryName}分类暂无词条`
+    const suffix = isCompleted ? "暂无已完结词条" : "暂无词条"
+    return `${categoryName}分类${suffix}`
   }
 
   if (selectedDayFilter === "recent") {
@@ -87,19 +85,17 @@ const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: numbe
 
   const weekdayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
   const weekdayName = weekdayNames[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]
-  return isCompleted
-    ? `${weekdayName}暂无已完结词条`
-    : `${weekdayName}暂无词条`
+  return isCompleted ? `${weekdayName}暂无已完结词条` : `${weekdayName}暂无词条`
 }
 
-// Helper function to render media news content
 const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaNewsData, items: MediaItem[], selectedRegion: string) => {
-  const newsData = mediaNewsType === 'upcoming' ? mediaNews.upcomingItems : mediaNews.recentItems
-  const loading = mediaNewsType === 'upcoming' ? mediaNews.loadingUpcoming : mediaNews.loadingRecent
-  const error = mediaNewsType === 'upcoming' ? mediaNews.upcomingError : mediaNews.recentError
-  const fetchFunction = mediaNewsType === 'upcoming'
-    ? () => mediaNews.fetchUpcomingItems(selectedRegion, false)
-    : () => mediaNews.fetchRecentItems(selectedRegion, false)
+  const isUpcoming = mediaNewsType === 'upcoming'
+  const newsData = isUpcoming ? mediaNews.upcomingItems : mediaNews.recentItems
+  const loading = isUpcoming ? mediaNews.loadingUpcoming : mediaNews.loadingRecent
+  const error = isUpcoming ? mediaNews.upcomingError : mediaNews.recentError
+  const fetchFunction = () => isUpcoming
+    ? mediaNews.fetchUpcomingItems(selectedRegion, false)
+    : mediaNews.fetchRecentItems(selectedRegion, false)
 
   if (loading) {
     return (
@@ -113,18 +109,16 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
   }
 
   if (error) {
+    const errorMessage = mediaNews.isMissingApiKey
+      ? '请按照上方指南配置TMDB API密钥'
+      : '无法连接到TMDB服务，请检查网络连接或稍后重试'
+
     return (
       <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
         <div className="flex flex-col items-center text-center mb-4">
           <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
-          <p className="text-red-600 dark:text-red-300 font-medium mb-1">
-            {error}
-          </p>
-          <p className="text-red-500 dark:text-red-400 text-sm mb-4">
-            {mediaNews.isMissingApiKey
-              ? '请按照上方指南配置TMDB API密钥'
-              : '无法连接到TMDB服务，请检查网络连接或稍后重试'}
-          </p>
+          <p className="text-red-600 dark:text-red-300 font-medium mb-1">{error}</p>
+          <p className="text-red-500 dark:text-red-400 text-sm mb-4">{errorMessage}</p>
           <Button
             onClick={fetchFunction}
             variant="outline"
@@ -139,14 +133,14 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
   }
 
   if (newsData.length === 0) {
+    const noDataMessage = isUpcoming
+      ? { title: '暂无即将上线的内容', desc: '未找到未来30天内上线的影视动态' }
+      : { title: '暂无近期开播的内容', desc: '未找到过去30天内刚刚开播的影视动态' }
+
     return (
       <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
-        <p className="text-gray-500 dark:text-gray-400 mb-1">
-          {mediaNewsType === 'upcoming' ? '暂无即将上线的内容' : '暂无近期开播的内容'}
-        </p>
-        <p className="text-gray-400 dark:text-gray-500 text-sm">
-          {mediaNewsType === 'upcoming' ? '未找到未来30天内上线的影视动态' : '未找到过去30天内刚刚开播的影视动态'}
-        </p>
+        <p className="text-gray-500 dark:text-gray-400 mb-1">{noDataMessage.title}</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm">{noDataMessage.desc}</p>
       </div>
     )
   }
@@ -242,10 +236,6 @@ export default function HomePage() {
   const renderContent = () => {
     if (loadError) {
       return <ErrorState error={loadError} onRefresh={handleRefresh} onOpenSettings={() => homeState.setShowSettingsDialog(true)} />;
-    }
-
-    if (items.length === 0 && initialized) {
-      return <EmptyState onAddItem={() => homeState.setShowAddDialog(true)} />;
     }
 
     return (

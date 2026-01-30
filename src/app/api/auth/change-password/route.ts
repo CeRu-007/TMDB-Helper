@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthManager } from '@/lib/auth/auth-manager';
 import { AuthMiddleware } from '@/lib/auth/auth-middleware';
+import { ErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * POST /api/auth/change-password - 修改管理员密码
@@ -41,10 +43,10 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
     }
 
   } catch (error) {
-    
+    logger.error('修改密码失败', error)
     return NextResponse.json(
-      { success: false, error: '服务器内部错误' },
-      { status: 500 }
+      { success: false, error: ErrorHandler.toUserMessage(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 });

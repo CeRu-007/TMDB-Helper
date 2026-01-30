@@ -2,7 +2,8 @@
 // import { readUserItems } from '@/lib/user-aware-storage'; // 替换为StorageManager
 import { StorageManager } from '@/lib/data/storage';
 import { getUserIdFromRequest } from '@/lib/auth/user-utils';
-import { TMDBItem } from '@/lib/data/storage';
+import { TMDBItem } from '@/types/tmdb-item';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * GET /api/items - 获取项目数据（专门用于数据一致性验证）
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const force = searchParams.get('force') === 'true';
 
-    console.log(`[API] 获取项目数据请求 (force=${force})`);
+    logger.info(`[API] 获取项目数据请求 (force=${force})`);
 
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);

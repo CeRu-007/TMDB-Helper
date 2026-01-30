@@ -3,6 +3,8 @@
  * 用于视频帧内容分析：字幕检测、人物检测等
  */
 
+import { logger } from '@/lib/utils/logger'
+
 export interface SiliconFlowConfig {
   apiKey: string;
   baseUrl?: string;
@@ -265,7 +267,7 @@ export class SiliconFlowAPI {
 
     } catch (error) {
       
-      console.error('错误详情:', {
+      logger.error('错误详情:', {
         message: error instanceof Error ? error.message : '未知错误',
         stack: error instanceof Error ? error.stack : undefined,
         apiKey: this.config.apiKey ? `${this.config.apiKey.substring(0, 10)}...` : '未设置',

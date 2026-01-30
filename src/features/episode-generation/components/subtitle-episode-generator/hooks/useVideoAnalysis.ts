@@ -3,6 +3,7 @@ import { useToast } from '@/shared/components/ui/use-toast'
 import { VideoAnalyzer, VideoAnalysisResult } from '@/lib/media/video-analyzer'
 import { SubtitleFile } from '../types'
 import { useContentGeneration } from './useContentGeneration'
+import { logger } from '@/lib/utils/logger'
 
 export function useVideoAnalysis(
   config: { speechRecognitionModel?: string },
@@ -49,7 +50,7 @@ export function useVideoAnalysis(
       })
 
     } catch (error) {
-      console.error('音频转写失败:', error)
+      logger.error('音频转写失败:', error)
       toast({
         title: "音频转写失败",
         description: error instanceof Error ? error.message : '未知错误',

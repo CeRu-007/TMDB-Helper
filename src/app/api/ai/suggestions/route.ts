@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BaseAPIRoute } from '@/lib/api/base-api-route';
+import { logger } from '@/lib/utils/logger';
 
 // 类型定义
 interface ModelScopeMessage {
@@ -144,7 +145,7 @@ class AISuggestionsRoute extends BaseAPIRoute {
       return this.validationErrorResponse('消息格式错误，messages必须是非空数组', 'messages');
     }
 
-    console.log('调用魔搭社区API获取建议:', {
+    logger.info('调用魔搭社区API获取建议:', {
       model,
       messagesCount: messages.length,
       lastMessage: lastMessage.substring(0, 50) + '...',
@@ -191,7 +192,7 @@ ${lastMessage}
       }
     }
 
-    console.log('发送建议请求体:', JSON.stringify(requestBody, null, 2));
+    logger.debug('发送建议请求体:', JSON.stringify(requestBody, null, 2));
 
     try {
       const response = await fetch(`${MODELSCOPE_API_BASE}/chat/completions`, {
@@ -205,7 +206,7 @@ ${lastMessage}
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('API调用失败:', {
+        logger.error('API调用失败:', {
           status: response.status,
           statusText: response.statusText,
           error: errorData
@@ -234,7 +235,7 @@ ${lastMessage}
 
       // 确保始终返回有效的建议
       if (!Array.isArray(suggestions) || suggestions.length === 0) {
-        console.warn('解析建议失败或结果为空，使用默认建议');
+        logger.warn('解析建议失败或结果为空，使用默认建议');
         suggestions = ['深入探讨这个话题', '提供更多细节', '换个角度分析'];
       } else {
         // 清理建议内容，确保都是非空字符串

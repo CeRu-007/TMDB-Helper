@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { Message } from '@/types/ai-chat'
 import { toast } from 'sonner'
+import { logger } from '@/lib/utils/logger'
 
 export const useAiMessageActions = (
   messages: Message[],
@@ -126,7 +127,7 @@ export const useAiMessageActions = (
         feedbackList.push(feedbackData)
         localStorage.setItem('ai-chat-feedback', JSON.stringify(feedbackList))
       } catch (error) {
-        console.error('保存反馈数据失败:', error)
+        logger.error('保存反馈数据失败:', error)
       }
     }
     

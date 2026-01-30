@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * CSV文件读取API
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // 读取CSV文件内容
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
-    
+
     // 解析CSV内容
     const csvData = parseCSV(csvContent);
 
@@ -50,12 +51,12 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[API] CSV读取错误:', error);
-    
+    logger.error('[API] CSV读取错误:', error);
+
     return NextResponse.json({
       success: false,
       error: '读取CSV文件失败',
-      details: { 
+      details: {
         error: error instanceof Error ? error.message : String(error)
       }
     }, { status: 500 });
@@ -72,11 +73,11 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
     return { headers: [], rows: [] };
   }
 
-  const headers = parseCSVLine(lines[0]);
+  const headers = parseCSVLine(lines[0] || '');
   const rows: string[][] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const row = parseCSVLine(lines[i]);
+    const row = parseCSVLine(lines[i] || '');
     if (row.length > 0) {
       rows.push(row);
     }

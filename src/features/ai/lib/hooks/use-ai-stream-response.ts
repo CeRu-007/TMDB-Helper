@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { flushSync } from 'react-dom'
 import { Message } from '@/types/ai-chat'
+import { logger } from '@/lib/utils/logger'
 
 export const useAiStreamResponse = () => {
   const processStream = useCallback(async (
@@ -57,7 +58,7 @@ export const useAiStreamResponse = () => {
               }
             }
           } catch (e) {
-            console.warn('SSE解析失败，跳过此行:', dataStr.substring(0, 100));
+            logger.warn('SSE解析失败，跳过此行:', dataStr.substring(0, 100));
           }
         }
       }

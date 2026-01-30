@@ -1,5 +1,6 @@
 import { SubtitleEpisode, GenerationResult, GenerationConfig, EnhanceOperation } from './types'
 import { GENERATION_STYLES, TITLE_STYLES } from './constants'
+import { logger } from '@/lib/utils/logger'
 
 // 智能截断文件名函数
 export function truncateFileName(fileName: string, maxLength: number = 30): string {
@@ -53,7 +54,7 @@ export function timestampToMinutes(timestamp: string): number {
       return Math.round(totalMinutes)
     }
   } catch (error) {
-    console.error('时间戳转换错误:', error)
+    logger.error('时间戳转换错误:', error)
   }
 
   return 0
@@ -187,7 +188,7 @@ export function parseSubtitleFile(content: string, filename: string): SubtitleEp
       }
     }
   } catch (error) {
-    console.error('字幕文件解析失败:', error)
+    logger.error('字幕文件解析失败:', error)
     // 返回一个默认的集数
     episodes.push({
       episodeNumber: 1,
@@ -280,9 +281,9 @@ export function parseGeneratedContent(content: string, episode: SubtitleEpisode,
     const currentLength = summary.length
 
     if (currentLength > allowedMaxLength) {
-      console.warn(`简介字数超出过多(${currentLength}字 > ${allowedMaxLength}字)，建议调整提示词或重新生成`)
+      logger.warn(`简介字数超出过多(${currentLength}字 > ${allowedMaxLength}字)，建议调整提示词或重新生成`)
     } else if (currentLength < minLength - 5) {
-      console.warn(`简介字数偏少(${currentLength}字 < ${minLength}字)，建议调整提示词`)
+      logger.warn(`简介字数偏少(${currentLength}字 < ${minLength}字)，建议调整提示词`)
     }
 
     return {
@@ -299,7 +300,7 @@ export function parseGeneratedContent(content: string, episode: SubtitleEpisode,
       styleName: styleName
     }
   } catch (error) {
-    console.error('解析生成内容失败:', error)
+    logger.error('解析生成内容失败:', error)
 
     // 如果不是JSON格式，尝试从文本中提取
     const lines = content.split('\n').filter(line => line.trim())

@@ -85,7 +85,7 @@ export class ConfigManager {
       minExecutionDelay: 10 * 1000, // 10秒
 
       // 存储配置
-      storageQuota: 50 * 1024 * 1024, // 50MB
+      storageQuota: 50 * 1024 * 1024, // 50MB - 注：此处保留硬编码，因配置动态管理
       maxLogEntries: 1000,
       dataRetentionDays: 30,
 

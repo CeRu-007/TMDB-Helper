@@ -2,7 +2,10 @@
  * 模型服务设置面板
  */
 
-import { useState } from "react"
+"use client"
+
+import React, { useState, useEffect } from "react"
+import { logger } from '@/lib/utils/logger'
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -143,7 +146,7 @@ export default function ModelServiceSettingsPanel({
       
       window.dispatchEvent(new CustomEvent('model-service-config-updated'))
     } catch (error) {
-      console.error('删除提供商失败:', error)
+      logger.error('删除提供商失败:', error)
     }
   }
 
@@ -194,7 +197,7 @@ export default function ModelServiceSettingsPanel({
       window.dispatchEvent(new CustomEvent('model-service-config-updated'))
       setShowProviderDialog(false)
     } catch (error) {
-      console.error('保存提供商失败:', error)
+      logger.error('保存提供商失败:', error)
     }
   }
 
@@ -215,6 +218,7 @@ export default function ModelServiceSettingsPanel({
       const result = await response.json()
       setConnectionTestResult(result)
     } catch (error) {
+      logger.error('获取模型列表失败:', error)
       setConnectionTestResult({ success: false, message: "连接测试失败" })
     } finally {
       setTestingConnection(false)
@@ -264,7 +268,7 @@ export default function ModelServiceSettingsPanel({
         setShowAvailableModelsDialog(true)
       }
     } catch (error) {
-      console.error('获取模型列表失败:', error)
+      logger.error('获取模型列表失败:', error)
     } finally {
       setLoadingModels(false)
     }
@@ -311,7 +315,7 @@ export default function ModelServiceSettingsPanel({
         }
       }
     } catch (error) {
-      console.error('保存模型失败:', error)
+      logger.error('保存模型失败:', error)
     }
   }
 
@@ -336,7 +340,7 @@ export default function ModelServiceSettingsPanel({
         }
       }
     } catch (error) {
-      console.error('删除模型失败:', error)
+      logger.error('删除模型失败:', error)
     }
   }
 
@@ -352,7 +356,7 @@ export default function ModelServiceSettingsPanel({
       })
       window.dispatchEvent(new CustomEvent('model-service-config-updated'))
     } catch (error) {
-      console.error('保存内置提供商失败:', error)
+      logger.error('保存内置提供商失败:', error)
     }
   }
 
@@ -450,7 +454,7 @@ export default function ModelServiceSettingsPanel({
         })
       })
     } catch (error) {
-      console.error('更新场景配置失败:', error)
+      logger.error('更新场景配置失败:', error)
     }
   }
 
@@ -480,7 +484,7 @@ export default function ModelServiceSettingsPanel({
         })
       })
     } catch (error) {
-      console.error('更新场景配置失败:', error)
+      logger.error('更新场景配置失败:', error)
     }
   }
 

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server"
 import { spawn } from "child_process"
 import fs from "fs"
+import { TIMEOUT_60S } from "@/lib/constants/constants"
 
 export async function POST(request: NextRequest) {
   try {
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
             ),
           )
           controller.close()
-        }, 60000) // 60秒超时
+        }, TIMEOUT_60S) // 60秒超时
       },
     })
 

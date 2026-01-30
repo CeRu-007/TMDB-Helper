@@ -2,6 +2,8 @@
 import fs from 'fs';
 import path from 'path';
 import { TMDBItem } from '@/lib/data/storage';
+import { ErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/utils/logger';
 
 // 获取用户数据文件路径
 function getUserDataFile(userId?: string): string {
@@ -56,9 +58,11 @@ export async function GET(request: NextRequest) {
       // 检查是否存在旧的数据文件需要迁移
       ensureDataDir();
       if (fs.existsSync(DATA_FILE)) {
-        
-        fs.copyFileSync(DATA_FILE, userDataFile);
-        
+        try {
+          fs.copyFileSync(DATA_FILE, userDataFile);
+        } catch (error) {
+          logger.error('迁移数据文件失败', error)
+        }
       } else {
         // 如果文件不存在，返回空数组
         return NextResponse.json({ items: [] });
@@ -75,14 +79,13 @@ export async function GET(request: NextRequest) {
       dataPath: userDataFile
     });
   } catch (error) {
-    
+    logger.error('读取数据文件失败', error)
     return NextResponse.json(
-      { 
-        error: '读取数据文件失败', 
-        details: error instanceof Error ? error.message : String(error),
+      {
+        error: ErrorHandler.toUserMessage(error),
         success: false
       },
-      { status: 500 }
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 }
@@ -112,8 +115,11 @@ export async function POST(request: NextRequest) {
     // 如果需要备份且原文件存在
     if (backup && fs.existsSync(userDataFile)) {
       const backupFile = path.join(userDataDir, `tmdb_items_backup_${Date.now()}.json`);
-      fs.copyFileSync(userDataFile, backupFile);
-      
+      try {
+        fs.copyFileSync(userDataFile, backupFile);
+      } catch (error) {
+        logger.error('备份数据文件失败', error)
+      }
     }
     
     // 写入新数据
@@ -126,14 +132,13 @@ export async function POST(request: NextRequest) {
       dataPath: userDataFile
     });
   } catch (error) {
-    
+    logger.error('写入数据文件失败', error)
     return NextResponse.json(
-      { 
-        error: '写入数据文件失败', 
-        details: error instanceof Error ? error.message : String(error),
+      {
+        error: ErrorHandler.toUserMessage(error),
         success: false
       },
-      { status: 500 }
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 }
@@ -168,7 +173,7 @@ export async function PUT(request: NextRequest) {
         const existingData = fs.readFileSync(userDataFile, 'utf-8');
         existingItems = JSON.parse(existingData);
       } catch (error) {
-        
+        logger.error('读取现有数据失败', error)
       }
     }
     
@@ -228,14 +233,13 @@ export async function PUT(request: NextRequest) {
       dataPath: userDataFile
     });
   } catch (error) {
-    
+    logger.error('合并数据失败', error)
     return NextResponse.json(
-      { 
-        error: '合并数据失败', 
-        details: error instanceof Error ? error.message : String(error),
+      {
+        error: ErrorHandler.toUserMessage(error),
         success: false
       },
-      { status: 500 }
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 }

@@ -1,6 +1,9 @@
 /**
  * 项目管理器 - 处理TMDB项目的增删改查
  */
+import { logger } from '@/lib/utils/logger';
+import { TIMEOUT_15S } from '@/lib/constants/constants';
+
 export class ItemManager {
   private static readonly API_BASE_URL = '/api/storage';
   private static readonly MAX_RETRIES = 3;
@@ -21,7 +24,7 @@ export class ItemManager {
     options: RequestInit = {},
   ): Promise<Response> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_15S); // 15秒超时
 
     try {
       const headers: Record<string, string> = {
@@ -138,7 +141,7 @@ export class ItemManager {
 
         return true;
       } catch (error) {
-        console.error('[ItemManager] 添加项目失败:', error);
+        logger.error('ItemManager', '添加项目失败', error);
         return false;
       }
     }
@@ -153,9 +156,7 @@ export class ItemManager {
     // 使用文件存储
     if (typeof window !== 'undefined') {
       try {
-        console.log(
-          `[ItemManager] 开始更新项目: ${updatedItem.title} (ID: ${updatedItem.id})`,
-        );
+        logger.debug('ItemManager', `开始更新项目: ${updatedItem.title} (ID: ${updatedItem.id})`);
 
         const response = await this.makeApiCall(`${this.API_BASE_URL}/item`, {
           method: 'PUT',

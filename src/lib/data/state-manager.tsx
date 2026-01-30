@@ -5,8 +5,8 @@
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { TMDBItem, ScheduledTask } from './storage';
-import { log } from './logger';
-import { handleError } from './error-handler';
+import { log } from '@/lib/utils/logger';
+import { handleError } from '@/lib/utils/error-handler';
 
 // 状态接口
 export interface AppState {

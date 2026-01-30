@@ -1,7 +1,8 @@
-﻿import { useCallback, useRef } from 'react'
+﻿import { useCallback } from 'react'
 import { Message } from '@/types/ai-chat'
 import { SUBTITLE_TASKS } from '@/features/ai/lib/utils/ai-chat-constants'
 import { toast } from 'sonner'
+import { logger } from '@/lib/utils/logger'
 
 interface UseSubtitleTaskProps {
   currentChatId: string | null
@@ -147,7 +148,7 @@ export const useSubtitleTask = ({
         updateCurrentChat(interruptedMessages, chatId)
         toast.info('已中断AI回复')
       } else {
-        console.error(`${config.taskName}失败:`, error)
+        logger.error(`${config.taskName}失败:`, error)
         
         const errorMessages = updatedMessages.map(msg => {
           if (msg.id === assistantMessage.id) {

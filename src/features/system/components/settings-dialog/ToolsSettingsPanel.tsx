@@ -4,7 +4,8 @@
 
 "use client"
 
-import { useCallback } from "react"
+import React, { useState, useEffect, useCallback } from "react"
+import { logger } from '@/lib/utils/logger'
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -56,10 +57,10 @@ export default function ToolsSettingsPanel({
     try {
       const success = await ClientConfigManager.setItem("tmdb_import_path", path)
       if (!success) {
-        console.error('保存TMDB-Import路径失败')
+        logger.error('保存TMDB-Import路径失败')
       }
     } catch (error) {
-      console.error('保存TMDB-Import路径时出错:', error)
+      logger.error('保存TMDB-Import路径时出错:', error)
     }
   }, [])
 

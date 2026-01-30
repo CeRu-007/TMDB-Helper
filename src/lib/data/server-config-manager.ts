@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { logger } from '@/lib/utils/logger';
 
 // 通用设置类型定义
 interface GeneralSettings {
@@ -111,15 +112,11 @@ export class ServerConfigManager {
     // 确保data目录存在
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
-      console.log(
-        `📁 创建配置目录: ${dataDir} ${isDocker ? '(Docker环境)' : '(开发环境)'}`,
-      );
+      logger.debug('ServerConfigManager', `创建配置目录: ${dataDir}`, { isDocker });
     }
 
     const configPath = path.join(dataDir, this.CONFIG_FILE);
-    console.log(
-      `📍 配置文件路径: ${configPath} ${isDocker ? '(Docker环境)' : '(开发环境)'}`,
-    );
+    logger.debug('ServerConfigManager', `配置文件路径: ${configPath}`, { isDocker });
 
     return configPath;
   }

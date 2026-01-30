@@ -3,6 +3,8 @@
  * 防止任务重复执行和并发冲突
  */
 
+import { logger } from '@/lib/utils/logger'
+
 export interface LockInfo {
   id: string;
   taskId: string;
@@ -27,7 +29,7 @@ export class DistributedLock {
   static initialize(): void {
     // 已移除定时器检查
 
-    console.log(`[DistributedLock] 初始化分布式锁系统，进程ID: ${this.PROCESS_ID}`);
+    logger.info(`[DistributedLock] 初始化分布式锁系统，进程ID: ${this.PROCESS_ID}`);
     
     // 只在启动时清理一次过期锁（移除定时器）
     this.cleanupExpiredLocks();
@@ -62,18 +64,18 @@ export class DistributedLock {
         if (new Date(existingLock.expiresAt) > now) {
           // 检查是否是同一进程的锁
           if (existingLock.processId === this.PROCESS_ID) {
-            console.log(`[DistributedLock] 同一进程重复获取锁: ${lockKey}`);
+            logger.info(`[DistributedLock] 同一进程重复获取锁: ${lockKey}`);
             return { success: true, lockId: existingLock.id };
           }
           
-          console.log(`[DistributedLock] 锁已被占用: ${lockKey}, 占用者: ${existingLock.processId}`);
+          logger.info(`[DistributedLock] 锁已被占用: ${lockKey}, 占用者: ${existingLock.processId}`);
           return { 
             success: false, 
             error: `锁已被占用，预计释放时间: ${new Date(existingLock.expiresAt).toLocaleString()}` 
           };
         } else {
           // 锁已过期，清理它
-          console.log(`[DistributedLock] 清理过期锁: ${lockKey}`);
+          logger.info(`[DistributedLock] 清理过期锁: ${lockKey}`);
           await this.releaseLock(fullLockKey);
         }
       }
@@ -93,15 +95,15 @@ export class DistributedLock {
       
       if (success) {
         this.activeLocks.set(fullLockKey, lockInfo);
-        console.log(`[DistributedLock] 成功获取锁: ${lockKey}, 锁ID: ${lockId}`);
+        logger.info(`[DistributedLock] 成功获取锁: ${lockKey}, 锁ID: ${lockId}`);
         return { success: true, lockId };
       } else {
-        console.log(`[DistributedLock] 获取锁失败: ${lockKey} (原子操作失败)`);
+        logger.info(`[DistributedLock] 获取锁失败: ${lockKey} (原子操作失败)`);
         return { success: false, error: '获取锁失败，可能存在并发冲突' };
       }
 
     } catch (error) {
-      console.error(`[DistributedLock] 获取锁时出错: ${lockKey}`, error);
+      logger.error(`[DistributedLock] 获取锁时出错: ${lockKey}`, error);
       return { 
         success: false, 
         error: `获取锁时出错: ${error instanceof Error ? error.message : String(error)}` 
@@ -122,17 +124,17 @@ export class DistributedLock {
         // 只能释放自己进程的锁
         await this.removeLockFromStorage(fullLockKey);
         this.activeLocks.delete(fullLockKey);
-        console.log(`[DistributedLock] 成功释放锁: ${lockKey}`);
+        logger.info(`[DistributedLock] 成功释放锁: ${lockKey}`);
         return true;
       } else if (lockInfo) {
-        console.warn(`[DistributedLock] 尝试释放其他进程的锁: ${lockKey}, 锁拥有者: ${lockInfo.processId}`);
+        logger.warn(`[DistributedLock] 尝试释放其他进程的锁: ${lockKey}, 锁拥有者: ${lockInfo.processId}`);
         return false;
       } else {
-        console.log(`[DistributedLock] 锁不存在或已释放: ${lockKey}`);
+        logger.info(`[DistributedLock] 锁不存在或已释放: ${lockKey}`);
         return true;
       }
     } catch (error) {
-      console.error(`[DistributedLock] 释放锁时出错: ${lockKey}`, error);
+      logger.error(`[DistributedLock] 释放锁时出错: ${lockKey}`, error);
       return false;
     }
   }
@@ -159,7 +161,7 @@ export class DistributedLock {
 
       return true;
     } catch (error) {
-      console.error(`[DistributedLock] 检查锁状态时出错: ${lockKey}`, error);
+      logger.error(`[DistributedLock] 检查锁状态时出错: ${lockKey}`, error);
       return false;
     }
   }
@@ -174,7 +176,7 @@ export class DistributedLock {
       const lockInfo = await this.getLockInfo(fullLockKey);
       
       if (!lockInfo || lockInfo.processId !== this.PROCESS_ID) {
-        console.warn(`[DistributedLock] 无法延长锁，锁不存在或不属于当前进程: ${lockKey}`);
+        logger.warn(`[DistributedLock] 无法延长锁，锁不存在或不属于当前进程: ${lockKey}`);
         return false;
       }
 
@@ -188,13 +190,13 @@ export class DistributedLock {
       
       if (success) {
         this.activeLocks.set(fullLockKey, updatedLockInfo);
-        console.log(`[DistributedLock] 成功延长锁: ${lockKey}, 新过期时间: ${newExpiresAt.toLocaleString()}`);
+        logger.info(`[DistributedLock] 成功延长锁: ${lockKey}, 新过期时间: ${newExpiresAt.toLocaleString()}`);
         return true;
       }
 
       return false;
     } catch (error) {
-      console.error(`[DistributedLock] 延长锁时出错: ${lockKey}`, error);
+      logger.error(`[DistributedLock] 延长锁时出错: ${lockKey}`, error);
       return false;
     }
   }
@@ -220,12 +222,12 @@ export class DistributedLock {
           }
         }
       } catch (error) {
-        console.warn(`获取锁信息失败: ${fullLockKey}`, error);
+        logger.warn(`获取锁信息失败: ${fullLockKey}`, error);
       }
 
       return null;
     } catch (error) {
-      console.error(`[DistributedLock] 获取锁信息时出错: ${fullLockKey}`, error);
+      logger.error(`[DistributedLock] 获取锁信息时出错: ${fullLockKey}`, error);
       return null;
     }
   }
@@ -253,7 +255,7 @@ export class DistributedLock {
 
       return false;
     } catch (error) {
-      console.error(`[DistributedLock] 原子设置锁时出错: ${fullLockKey}`, error);
+      logger.error(`[DistributedLock] 原子设置锁时出错: ${fullLockKey}`, error);
       return false;
     }
   }
@@ -267,7 +269,7 @@ export class DistributedLock {
         localStorage.removeItem(fullLockKey);
       }
     } catch (error) {
-      console.error(`[DistributedLock] 移除锁时出错: ${fullLockKey}`, error);
+      logger.error(`[DistributedLock] 移除锁时出错: ${fullLockKey}`, error);
     }
   }
 
@@ -314,10 +316,10 @@ export class DistributedLock {
       }
 
       if (expiredLocks.length > 0) {
-        console.log(`[DistributedLock] 清理了 ${expiredLocks.length} 个过期锁`);
+        logger.info(`[DistributedLock] 清理了 ${expiredLocks.length} 个过期锁`);
       }
     } catch (error) {
-      console.error(`[DistributedLock] 清理过期锁时出错:`, error);
+      logger.error(`[DistributedLock] 清理过期锁时出错:`, error);
     }
   }
 
@@ -325,7 +327,7 @@ export class DistributedLock {
    * 释放所有当前进程的锁
    */
   private static async releaseAllLocks(): Promise<void> {
-    console.log(`[DistributedLock] 释放所有锁，进程ID: ${this.PROCESS_ID}`);
+    logger.info(`[DistributedLock] 释放所有锁，进程ID: ${this.PROCESS_ID}`);
     
     const locksToRelease = Array.from(this.activeLocks.keys());
     
@@ -380,7 +382,7 @@ export class DistributedLock {
         totalLocks: activeLocks.length + expiredLocks.length
       };
     } catch (error) {
-      console.error(`[DistributedLock] 获取锁状态时出错:`, error);
+      logger.error(`[DistributedLock] 获取锁状态时出错:`, error);
       return {
         activeLocks: [],
         expiredLocks: [],
@@ -413,11 +415,11 @@ export class DistributedLock {
       }
 
       this.activeLocks.clear();
-      console.log(`[DistributedLock] 强制清理了 ${cleanedCount} 个锁`);
+      logger.info(`[DistributedLock] 强制清理了 ${cleanedCount} 个锁`);
       
       return cleanedCount;
     } catch (error) {
-      console.error(`[DistributedLock] 强制清理锁时出错:`, error);
+      logger.error(`[DistributedLock] 强制清理锁时出错:`, error);
       return cleanedCount;
     }
   }

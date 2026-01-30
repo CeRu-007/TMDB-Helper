@@ -3,6 +3,8 @@
  * 使用模型服务的多模态视觉模型进行字幕识别
  */
 
+import { logger } from '@/lib/utils/logger';
+
 // OCR 相关类型定义
 interface OCRSegment {
   text?: string;
@@ -183,16 +185,16 @@ export class SubtitleOCR {
 
     // 初始化或更新模型轮换器
     const allModels = [primaryModelId, ...(backupModels || [])]
-    console.log(`[OCR] 模型轮换器初始化，共 ${allModels.length} 个模型:`, allModels)
+    logger.debug('SubtitleOCR', '模型轮换器初始化', { models: allModels })
 
     if (!globalModelRotator || globalModelRotator.getCount() !== allModels.length) {
       globalModelRotator = new ModelRotator(allModels)
-      console.log(`[OCR] 创建新的模型轮换器`)
+      logger.debug('SubtitleOCR', '创建新的模型轮换器')
     }
 
     // 轮换使用模型
     const currentModelId = globalModelRotator.getNext()
-    console.log(`[OCR] 使用模型: ${currentModelId}`)
+    logger.debug('SubtitleOCR', `使用模型: ${currentModelId}`)
 
     // 构建提示词
     const prompt = this.buildOCRPrompt(request.region)
@@ -229,7 +231,10 @@ export class SubtitleOCR {
 
     // 初始化或更新模型轮换器
     const allModels = [primaryModelId, ...(backupModels || [])]
-    console.log(`[OCR] 批量识别，共 ${request.timestamps.length} 帧，使用 ${allModels.length} 个模型`)
+    logger.debug('SubtitleOCR', '批量识别', {
+      frameCount: request.timestamps.length,
+      modelCount: allModels.length
+    })
 
     if (!globalModelRotator || globalModelRotator.getCount() !== allModels.length) {
       globalModelRotator = new ModelRotator(allModels)
@@ -237,7 +242,7 @@ export class SubtitleOCR {
 
     // 轮换使用模型
     const currentModelId = globalModelRotator.getNext()
-    console.log(`[OCR] 批量识别使用模型: ${currentModelId}`)
+    logger.debug('SubtitleOCR', `批量识别使用模型: ${currentModelId}`)
 
     // 构建批量识别的提示词
     const prompt = this.buildBatchOCRPrompt(request.timestamps.length)
@@ -352,7 +357,10 @@ export class SubtitleOCR {
       .filter((m) => m.id !== primaryModelId)
       .map((m) => m.modelId || m.id)
 
-    console.log(`[OCR] 可用模型列表:`, [primaryModel.modelId || primaryModel.id, ...backupModels])
+    logger.debug('SubtitleOCR', '可用模型列表', {
+      primary: primaryModel.modelId || primaryModel.id,
+      backup: backupModels
+    });
 
     return {
       apiBaseUrl: provider.apiBaseUrl,

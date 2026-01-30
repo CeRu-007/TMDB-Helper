@@ -1,13 +1,7 @@
 ﻿'use client';
 
 import React, { useState } from 'react';
-
-// Basic item type for import/export operations
-interface ImportItem {
-  id: string;
-  title?: string;
-  [key: string]: unknown;
-}
+import { DELAY_2S } from '@/lib/constants/constants';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +21,13 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
+
+// Basic item type for import/export operations
+interface ImportItem {
+  id: string;
+  title?: string;
+  [key: string]: unknown;
+}
 import { Upload, FileText, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { StorageManager } from '@/lib/data/storage';
 import { useData } from '@/shared/components/client-data-provider';
@@ -265,7 +266,7 @@ export default function ImportDataDialog({
       // 延迟刷新页面，让用户看到成功信息
       setTimeout(() => {
         window.location.reload();
-      }, 2000);
+      }, DELAY_2S);
 
     } catch (error) {
       setImportStep('导入失败');

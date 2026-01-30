@@ -79,7 +79,7 @@ export async function GET() {
         description: packageJson.description || 'TMDB数据管理工具',
         author: packageJson.author || 'TMDB Helper Team',
         homepage: packageJson.homepage || '',
-        repository: packageJson.repository || '',
+        repository: (packageJson as any).repository || '',
         versionInfo: versionInfo
       }
     });

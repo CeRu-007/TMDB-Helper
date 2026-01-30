@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { Button } from "@/shared/components/ui/button"
 import Link from "next/link"
-import { logger } from "@/shared/lib/utils/logger"
+import { logger } from "@/lib/utils/logger"
 
 export default function Error({
   error,
@@ -13,7 +13,7 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    logger.error('ErrorPage', 'Application error occurred', error)
+    logger.error('[ErrorPage] Application error occurred', error)
   }, [error])
 
   return (

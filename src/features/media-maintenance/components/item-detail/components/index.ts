@@ -1,5 +1,5 @@
 // 主组件
-export { default } from './ItemDetailDialog'
+export { ItemDetailDialog } from './ItemDetailDialog'
 
 // 子组件
 export { SeasonSelector } from './SeasonSelector'

@@ -3,6 +3,7 @@ import { spawn } from "child_process"
 import fs from "fs"
 import path from "path"
 import os from "os"
+import { logger } from "@/lib/utils/logger"
 
 // 声明全局activeProcesses类型
 declare global {
@@ -18,13 +19,11 @@ if (!global.activeProcesses) {
 const checkPythonExecutable = () => {
   const isPythonAvailable = (cmd: string): boolean => {
     try {
-      
       const result = require("child_process").spawnSync(cmd, ["--version"]);
       const isAvailable = result.status === 0;
-      
+
       return isAvailable;
     } catch (error) {
-      
       return false;
     }
   };
@@ -51,7 +50,6 @@ const checkPythonExecutable = () => {
     
     for (const path of commonPaths) {
       if (fs.existsSync(path)) {
-        
         return `"${path}"`;  // 使用引号包裹路径，以防路径中有空格
       }
     }
@@ -62,7 +60,6 @@ const checkPythonExecutable = () => {
   }
 
   // 如果找不到可用的Python，返回null以便调用者知道需要处理这种情况
-  
   return null;
 };
 
@@ -92,11 +89,10 @@ const fixPythonCommand = (command: string): string => {
     
     // 如果找不到可用的Python，保留原始命令
     if (!pythonExecutable) {
-      
       return command;
     }
-    
-    console.log(`将Python命令从 ${command.split(' ')[0]} 替换为 ${pythonExecutable}`);
+
+    logger.debug(`将Python命令从 ${command.split(' ')[0]} 替换为 ${pythonExecutable}`);
     return command.replace(/^(python|python3|py)/, pythonExecutable);
   }
   return command;
@@ -140,10 +136,10 @@ export async function POST(request: NextRequest) {
         }
       )
     }
-    
+
     // 解析超时参数，默认为5分钟，最小为60秒，最大为30分钟
     const commandTimeout = timeout ? Math.min(Math.max(Number(timeout), 60000), 1800000) : 300000
-    console.log(`命令超时设置: ${commandTimeout}毫秒 (${commandTimeout/1000}秒)`)
+    logger.debug(`命令超时设置: ${commandTimeout}毫秒 (${commandTimeout/1000}秒)`)
 
     // 验证工作目录是否存在
     if (!fs.existsSync(workingDirectory)) {
@@ -154,20 +150,18 @@ export async function POST(request: NextRequest) {
     let optimizedCommand = fixPythonCommand(command)
     optimizedCommand = fixCdCommand(optimizedCommand)
     if (optimizedCommand !== command) {
-      
+      logger.debug(`命令已优化: ${command} -> ${optimizedCommand}`)
     }
 
     // 解析命令
     const commandParts = optimizedCommand.split(" ")
     const mainCommand = commandParts[0]
     const args = commandParts.slice(1)
-    
+
     // 记录详细环境信息
-    console.log(`操作系统: ${os.platform()} ${os.release()}`);
-    
-    console.log(`当前工作目录: ${process.cwd()}`);
-    
-    console.log(`环境变量PATH: ${process.env.PATH?.substring(0, 100)}...`);
+    logger.debug(`操作系统: ${os.platform()} ${os.release()}`);
+    logger.debug(`当前工作目录: ${process.cwd()}`);
+    logger.debug(`环境变量PATH: ${process.env.PATH?.substring(0, 100)}...`);
 
     // 创建一个新的 ReadableStream
     const encoder = new TextEncoder()
@@ -185,7 +179,7 @@ export async function POST(request: NextRequest) {
           try {
             originalEnqueue(chunk);
           } catch (err) {
-            
+            logger.warn(`Stream enqueue error: ${err}`);
           }
         };
 
@@ -200,7 +194,7 @@ export async function POST(request: NextRequest) {
             // @ts-ignore
             controller.enqueue = () => {};
           } catch (err) {
-            
+            logger.warn(`Stream close error: ${err}`);
           }
         };
         // ------------------------------------------------------------------------------
@@ -215,7 +209,7 @@ export async function POST(request: NextRequest) {
           stdio: ['pipe', 'pipe', 'pipe'],
           windowsHide: true,
           env: optimizedEnv
-        })
+        }) as any
 
         // 配置stdin为utf8编码
         if (childProcess.stdin) {
@@ -225,15 +219,15 @@ export async function POST(request: NextRequest) {
         // 将进程添加到全局列表
         if (childProcess.pid) {
           global.activeProcesses.set(childProcess.pid, childProcess)
-          
-          console.log(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ')}`)
+
+          logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ')}`)
 
           // 立即发送进程启动事件，确保前端获取到进程ID
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
                 type: "start",
-              processId: childProcess.pid,
+                processId: childProcess.pid,
                 message: `进程已启动 (PID: ${childProcess.pid})`,
                 timestamp: new Date().toISOString(),
               })}\n\n`,
@@ -262,22 +256,22 @@ export async function POST(request: NextRequest) {
                 })}\n\n`,
               ),
             )
-          }
-        } else {
           
+}        } else {
+          logger.warn(`进程启动成功但无法获取PID`);
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: "error",
                 message: "无法获取进程ID，交互功能可能不可用",
-              timestamp: new Date().toISOString(),
-            })}\n\n`,
-          ),
-        )
+                timestamp: new Date().toISOString(),
+              })}\n\n`,
+            ),
+          )
         }
 
         // 处理标准输出
-        childProcess.stdout?.on("data", (data) => {
+        childProcess.stdout?.on("data", (data: Buffer) => {
           // 使用utf-8解码，确保中文正确显示
           const text = data.toString('utf8')
           controller.enqueue(
@@ -292,7 +286,7 @@ export async function POST(request: NextRequest) {
         })
 
         // 处理错误输出
-        childProcess.stderr?.on("data", (data) => {
+        childProcess.stderr?.on("data", (data: Buffer) => {
           // 使用utf-8解码，确保中文正确显示
           const text = data.toString('utf8')
           
@@ -321,13 +315,13 @@ export async function POST(request: NextRequest) {
         })
 
         // 处理进程关闭
-        childProcess.on("close", (code) => {
+        childProcess.on("close", (code: number | null) => {
 
           // 从活动进程列表中移除
           if (global.activeProcesses && childProcess.pid) {
             global.activeProcesses.delete(childProcess.pid);
 
-            console.log(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
+            logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
           }
 
           // 发送关闭消息
@@ -375,13 +369,14 @@ export async function POST(request: NextRequest) {
         })
 
         // 处理进程错误
-        childProcess.on("error", (error) => {
-          
+        childProcess.on("error", (error: Error) => {
+          logger.error(`进程错误: ${error.message}`);
+
           // 从活动进程列表中移除
           if (global.activeProcesses && childProcess.pid) {
             global.activeProcesses.delete(childProcess.pid);
-            
-            console.log(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
+
+            logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
           }
           
           // 发送错误信息
@@ -427,9 +422,9 @@ export async function POST(request: NextRequest) {
           if (!childProcess.killed && childProcess.pid && global.activeProcesses.has(childProcess.pid)) {
             // 从活动进程列表中移除
             global.activeProcesses.delete(childProcess.pid);
-            
-            console.log(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
-          
+
+            logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
+
             // 尝试终止进程
             try {
               childProcess.kill();
@@ -443,7 +438,7 @@ export async function POST(request: NextRequest) {
                 ),
               )
             } catch (err) {
-              
+              logger.error(`终止超时进程失败: ${err}`);
             }
             
             controller.close();
@@ -460,7 +455,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    
+    logger.error(`命令执行异常: ${error instanceof Error ? error.message : '未知错误'}`);
     return new Response(
       JSON.stringify({
         success: false,

@@ -1,5 +1,6 @@
 import { ServerStorageService } from './server-storage-service';
 import { TMDBItem, ScheduledTask } from './storage';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * 服务器端存储管理器
@@ -42,7 +43,7 @@ export class ServerStorageManager {
       // 直接覆盖所有项目数据
       return ServerStorageService.writeItemsToFile(items);
     } catch (error) {
-      console.error(`[ServerStorageManager] 导入数据失败:`, error);
+      logger.error('ServerStorageManager', '导入数据失败', error);
       return false;
     }
   }
@@ -55,7 +56,7 @@ export class ServerStorageManager {
       const items = ServerStorageService.readItemsFromFile();
       return { items };
     } catch (error) {
-      console.error(`[ServerStorageManager] 导出数据失败:`, error);
+      logger.error('ServerStorageManager', '导出数据失败', error);
       return { items: [] };
     }
   }

@@ -2,7 +2,9 @@
 // import { readItems } from '@/lib/server-storage'; // 替换为StorageManager
 import { StorageManager } from '@/lib/data/storage';
 import { readScheduledTasks } from '@/lib/data/server-scheduled-tasks';
-import { TMDBItem, ScheduledTask } from '@/lib/data/storage';
+import { TMDBItem } from '@/types/tmdb-item';
+import { ScheduledTask } from '@/lib/data/storage';
+import { logger } from '@/lib/utils/logger';
 
 // 类型定义
 interface SyncItem {
@@ -111,6 +113,7 @@ export async function POST(request: NextRequest) {
     const invalidTaskCount = tasks.length - validTasks.length;
 
     if (invalidItemCount > 0 || invalidTaskCount > 0) {
+      logger.warn(`[API] 发现无效数据: ${invalidItemCount}个无效项目, ${invalidTaskCount}个无效任务`);
     }
 
     return NextResponse.json({

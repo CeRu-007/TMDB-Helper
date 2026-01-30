@@ -2,6 +2,7 @@ import axios from 'axios'
 import path from 'path'
 import { CSVData, parseCsvContent } from './csv-processor-client'
 import { processOverviewColumn } from './csv-processor-client'
+import { logger } from '@/lib/utils/logger'
 
 /**
  * 处理整个CSV数据中的overview列
@@ -81,7 +82,7 @@ export async function saveCSV(options: {
 }): Promise<boolean> {
   try {
     if (!options.csvData) {
-      console.log('No CSV data available')
+      logger.info('No CSV data available')
       options.toast({
         title: "错误",
         description: "没有CSV数据可保存",

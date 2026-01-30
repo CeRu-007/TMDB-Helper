@@ -3,6 +3,8 @@
  * 使用 Web Audio API 进行音频分析和 VAD 检测
  */
 
+import { logger } from '@/lib/utils/logger';
+
 export interface AudioAnalysisResult {
   /** 采样时间点 (秒) */
   timestamp: number
@@ -71,7 +73,7 @@ export class EnergyVAD {
     const bufferLength = this.analyser.frequencyBinCount
     this.dataArray = new Uint8Array(bufferLength)
 
-    console.log('[EnergyVAD] 音频上下文初始化完成')
+    logger.info('[EnergyVAD] 音频上下文初始化完成')
   }
 
   /**

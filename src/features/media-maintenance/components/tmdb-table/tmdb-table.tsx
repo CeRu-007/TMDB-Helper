@@ -1,24 +1,23 @@
 ﻿"use client"
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/lib/utils"
 import TableContextMenu from "../../../../shared/components/ui/table-context-menu"
 import BatchInsertRowDialog from "../batch-insert-row-dialog"
-import { 
-  Plus, 
-  Minus, 
-  ChevronDown, 
-  MoreHorizontal, 
+import { DELAY_1500MS } from "@/lib/constants/constants"
+import {
+  Plus,
+  ChevronDown,
+  MoreHorizontal,
   ArrowUp, 
   ArrowDown, 
   ArrowLeft, 
   ArrowRight,
   Copy,
-  Trash2,
-  Edit3
+  Trash2
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -47,14 +46,7 @@ export interface TMDBTableProps {
   showRowOperations?: boolean
 }
 
-// 剪贴板数据接口
-interface ClipboardData {
-  data: string[][]
-  startRow: number
-  startCol: number
-  endRow: number
-  endCol: number
-}
+
 
 // 拖拽框选配置
 const DEBOUNCE_DELAY = 16; // 鼠标移动防抖延迟，单位毫秒（约60fps）
@@ -118,7 +110,7 @@ const TMDBTableComponent = ({
   showRowOperations = true
 }: TMDBTableProps) => {
   // 列宽状态
-  const [columnWidths, setColumnWidths] = useState<number[]>([])
+  const [_columnWidths, _setColumnWidths] = useState<number[]>([])
   // 选中单元格状态
   const [selectedCells, setSelectedCells] = useState<{ row: number, col: number }[]>([])
   // 表格容器引用
@@ -133,9 +125,9 @@ const TMDBTableComponent = ({
   // 鼠标是否处于按下状态
   const [isMouseDown, setIsMouseDown] = useState(false)
   // 鼠标位置状态
-  const [mouseDownPosition, setMouseDownPosition] = useState<{ x: number, y: number } | null>(null)
+  const [_mouseDownPosition, _setMouseDownPosition] = useState<{ x: number, y: number } | null>(null)
   // 剪贴板数据
-  const [clipboardData, setClipboardData] = useState<string[][] | null>(null)
+  const [_clipboardData, _setClipboardData] = useState<string[][] | null>(null)
   // 编辑状态
   const [isEditing, setIsEditing] = useState(false)
   const [editCell, setEditCell] = useState<{ row: number, col: number, value: string } | null>(null)
@@ -144,7 +136,7 @@ const TMDBTableComponent = ({
   // 表格数据的本地副本
   const [localData, setLocalData] = useState<CSVData>(data)
   // 选择区域信息
-  const [selectionInfo, setSelectionInfo] = useState<{
+  const [_selectionInfo, _setSelectionInfo] = useState<{
     rows: number,
     cols: number,
     visible: boolean
@@ -162,16 +154,20 @@ const TMDBTableComponent = ({
   // 长按激活时间（毫秒）- 优化为200ms以提供更好的响应性
   const LONG_PRESS_DELAY = 200
   // 记录初始点击的单元格位置
-  const [initialClickCell, setInitialClickCell] = useState<{ row: number, col: number } | null>(null)
+  const [_initialClickCell, _setInitialClickCell] = useState<{ row: number, col: number } | null>(null)
   // 行选择状态
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
   // 全选状态
   const [isAllRowsSelected, setIsAllRowsSelected] = useState(false)
   // 批量插入行对话框状态
   const [showBatchInsertDialog, setShowBatchInsertDialog] = useState(false)
-  const [batchInsertCount, setBatchInsertCount] = useState<number>(1)
-  const [batchInsertPosition, setBatchInsertPosition] = useState<'before' | 'after'>('after')
+  const [_batchInsertCount, _setBatchInsertCount] = useState<number>(1)
+  const [_batchInsertPosition, _setBatchInsertPosition] = useState<'before' | 'after'>('after')
   const [targetRowIndex, setTargetRowIndex] = useState<number>(-1)
+
+  // 忽略未使用的props
+  void enableColumnResizing
+  void enableColumnReordering
   
   // 使用useRef存储最新状态，避免事件监听器频繁重新创建
   const stateRef = useRef({
@@ -195,25 +191,10 @@ const TMDBTableComponent = ({
       isShiftSelecting,
       history
     }
+    return
   })
   
-  // 缓存选中单元格的计算结果，避免每次渲染都重新计算
-  const selectedCellsSet = useMemo(() => {
-    const set = new Set<string>()
-    selectedCells.forEach(cell => {
-      set.add(`${cell.row}-${cell.col}`)
-    })
-    return set
-  }, [selectedCells])
   
-  // 缓存是否有选中单元格的结果
-  const hasSelectedCells = useMemo(() => selectedCells.length > 0, [selectedCells.length])
-  
-  // 缓存表格行数和列数
-  const tableSize = useMemo(() => ({
-    rows: localData.rows.length,
-    cols: localData.headers.length
-  }), [localData.rows.length, localData.headers.length])
   
   // 当外部数据变化时更新本地数据
   useEffect(() => {
@@ -224,8 +205,9 @@ const TMDBTableComponent = ({
   useEffect(() => {
     if (data && data.headers) {
       // 默认列宽为150px
-      setColumnWidths(data.headers.map(() => 150))
+      _setColumnWidths(data.headers.map(() => 150))
     }
+    return
   }, [data])
   
   // 监听全选状态变化，确保表格正确渲染
@@ -239,15 +221,16 @@ const TMDBTableComponent = ({
           const scrollArea = tableContainer.querySelector('[data-radix-scroll-area-viewport]');
           if (scrollArea) {
             // 强制重新计算滚动区域
-            const currentScrollTop = scrollArea.scrollTop;
-            scrollArea.style.height = scrollArea.style.height; // 触发重新计算
-            scrollArea.scrollTop = currentScrollTop;
+            const currentScrollTop = (scrollArea as HTMLElement).scrollTop;
+            (scrollArea as HTMLElement).style.height = (scrollArea as HTMLElement).style.height; // 触发重新计算
+            (scrollArea as HTMLElement).scrollTop = currentScrollTop;
           }
         }
       }, 50);
       
       return () => clearTimeout(timer);
     }
+    return
   }, [isAllRowsSelected, selectedRows.size])
   
   // 添加键盘事件监听
@@ -358,7 +341,7 @@ const TMDBTableComponent = ({
         if (isDragging || isShiftSelecting) {
           setIsShiftSelecting(false)
           setIsDragging(false)
-          setSelectionInfo(prev => ({ ...prev, visible: false }))
+          _setSelectionInfo(prev => ({ ...prev, visible: false }))
         } 
         // 否则清除选择
         else {
@@ -383,8 +366,8 @@ const TMDBTableComponent = ({
         
         // 隐藏选择区域信息（延迟一段时间）
         setTimeout(() => {
-          setSelectionInfo(prev => ({ ...prev, visible: false }))
-        }, 1500)
+          _setSelectionInfo(prev => ({ ...prev, visible: false }))
+        }, DELAY_1500MS)
       }
     }
     
@@ -465,7 +448,7 @@ const TMDBTableComponent = ({
       
       // 记录初始点击的单元格位置
       if (newSelection[0]) {
-        setInitialClickCell(newSelection[0])
+        _setInitialClickCell(newSelection[0])
       }
       
       // 使用长按定时器启用框选模式
@@ -475,7 +458,7 @@ const TMDBTableComponent = ({
         setIsDragging(true)
         setDragStart({ row, col })
         // 记录鼠标按下的位置（只在长按后记录）
-        setMouseDownPosition({ x: event.clientX, y: event.clientY })
+        _setMouseDownPosition({ x: event.clientX, y: event.clientY })
         
         // 清除定时器引用
         longPressTimerRef.current = null;
@@ -503,7 +486,6 @@ const TMDBTableComponent = ({
       
       // 优化：只有在选择区域发生变化时才更新选中单元格
       const selectionSize = rowCount * colCount
-      const currentSelectionKey = `${startRow}-${endRow}-${startCol}-${endCol}`
       
       // 使用更精确的比较，避免不必要的更新
       if (selectedCells.length !== selectionSize || 
@@ -547,9 +529,8 @@ const TMDBTableComponent = ({
     
     setIsDragging(false)
     setIsShiftSelecting(false)
-    setMouseDownPosition(null)
-    setCanStartDragging(false)
-    setInitialClickCell(null)
+    _setMouseDownPosition(null)
+    _setInitialClickCell(null)
     setIsMouseDown(false)
   }
   
@@ -564,14 +545,13 @@ const TMDBTableComponent = ({
     if (isDragging) {
       document.addEventListener('mouseup', handleMouseUp, { once: true })
     }
-    setMouseDownPosition(null)
-    setCanStartDragging(false)
-    setInitialClickCell(null)
+    _setMouseDownPosition(null)
+    _setInitialClickCell(null)
     setIsMouseDown(false)
   }
   
   // 处理单元格鼠标按下事件
-  const handleCellMouseDown = (row: number, col: number, event: React.MouseEvent) => {
+  const handleCellMouseDown = (_row: number, _col: number, event: React.MouseEvent) => {
     // 设置鼠标按下状态
     setIsMouseDown(true)
     
@@ -617,7 +597,7 @@ const TMDBTableComponent = ({
     setEditCell({
       row,
       col,
-      value: localData.rows[row][col]
+      value: localData.rows[row]![col]!
     })
     setIsEditing(true)
     
@@ -640,8 +620,8 @@ const TMDBTableComponent = ({
       const newData = { ...localData }
       newData.rows = [...newData.rows]
       if (newData.rows[editCell.row]) {
-        newData.rows[editCell.row] = [...newData.rows[editCell.row]]
-        newData.rows[editCell.row][editCell.col] = editCell.value
+        newData.rows[editCell.row] = [...newData.rows[editCell.row]!]
+        newData.rows[editCell.row]![editCell.col] = editCell.value
         
         setLocalData(newData)
         onCellChange?.(editCell.row, editCell.col, editCell.value)
@@ -731,12 +711,12 @@ const TMDBTableComponent = ({
         
         // 如果这一行还没有被修改过，创建它的副本
         if (!modifiedRows.has(cell.row)) {
-          newData.rows[cell.row] = [...newData.rows[cell.row]]
+          newData.rows[cell.row] = [...newData.rows[cell.row]!]
           modifiedRows.add(cell.row)
         }
         
         // 设置单元格内容为空字符串
-        newData.rows[cell.row][cell.col] = ''
+        newData.rows[cell.row]![cell.col] = ''
         
         // 触发单元格变更回调
         onCellChange?.(cell.row, cell.col, '')
@@ -771,7 +751,7 @@ const TMDBTableComponent = ({
         const isSelected = selectedCells.some(cell => cell.row === r && cell.col === c)
         
         if (isSelected && r < localData.rows.length && c < localData.headers.length) {
-          rowData.push(localData.rows[r][c])
+          rowData.push(localData.rows[r]![c]!)
         } else {
           rowData.push('')
         }
@@ -780,7 +760,7 @@ const TMDBTableComponent = ({
     }
     
     // 保存到剪贴板数据
-    setClipboardData(copyData)
+    _setClipboardData(copyData)
     
     // 转换为制表符分隔的文本，用于系统剪贴板
     const copyText = copyData.map(row => row.join('\t')).join('\n')
@@ -820,7 +800,7 @@ const TMDBTableComponent = ({
         .map(line => line.split('\t'))
       
       // 如果没有数据，直接返回
-      if (pasteData.length === 0 || (pasteData.length === 1 && pasteData[0].length === 0)) {
+      if (pasteData.length === 0 || (pasteData.length === 1 && pasteData[0]?.length === 0)) {
         return
       }
       
@@ -837,7 +817,7 @@ const TMDBTableComponent = ({
       
       // 计算粘贴区域的边界
       const endRow = Math.min(startRow + pasteData.length - 1, newData.rows.length - 1)
-      const endCol = Math.min(startCol + Math.max(...pasteData.map(row => row.length)) - 1, newData.headers.length - 1)
+      const endCol = Math.min(startCol + Math.max(...pasteData.map(row => row?.length || 0)) - 1, newData.headers.length - 1)
       
       // 创建新的选择区域
       const newSelection: { row: number, col: number }[] = []
@@ -846,20 +826,20 @@ const TMDBTableComponent = ({
       for (let r = startRow; r <= endRow; r++) {
         // 创建行的副本
         if (r < newData.rows.length) {
-          newData.rows[r] = [...newData.rows[r]]
+          newData.rows[r] = [...newData.rows[r]!]
           
           const pasteRow = pasteData[r - startRow]
           if (pasteRow) {
             for (let c = startCol; c <= endCol; c++) {
               const pasteCol = c - startCol
               if (pasteCol < pasteRow.length) {
-                newData.rows[r][c] = pasteRow[pasteCol]
+                newData.rows[r]![c] = pasteRow[pasteCol]!
                 
                 // 添加到选择区域
                 newSelection.push({ row: r, col: c })
                 
                 // 触发单元格变更回调
-                onCellChange?.(r, c, pasteRow[pasteCol])
+                onCellChange?.(r, c, pasteRow[pasteCol]!)
               }
             }
           }
@@ -929,7 +909,7 @@ const TMDBTableComponent = ({
     // 如果按住Shift键，扩展选择区域
     if (shiftKey && selectedCells.length > 0) {
       // 找出当前选择区域的起点
-      const anchorCell = selectedCells[0]
+      const anchorCell = selectedCells[0]!
       
       // 计算新的选择区域
       const startRow = Math.min(anchorCell.row, newRow)
@@ -955,8 +935,8 @@ const TMDBTableComponent = ({
   }
   
   // 检查单元格是否被选中
-  const isCellSelected = (row: number, col: number) => {
-    return selectedCells.some(cell => cell.row === row && cell.col === col)
+  const isCellSelected = (_row: number, _col: number) => {
+    return selectedCells.some(cell => cell.row === _row && cell.col === _col)
   }
   
   // 检查单元格是否是活动单元格
@@ -985,12 +965,12 @@ const TMDBTableComponent = ({
         
         // 如果这一行还没有被修改过，创建它的副本
         if (!modifiedRows.has(cell.row)) {
-          newData.rows[cell.row] = [...newData.rows[cell.row]]
+          newData.rows[cell.row] = [...newData.rows[cell.row]!]
           modifiedRows.add(cell.row)
         }
         
         // 更新单元格值
-        newData.rows[cell.row][cell.col] = cell.value
+        newData.rows[cell.row]![cell.col] = cell.value
         
         // 触发单元格变更回调
         onCellChange?.(cell.row, cell.col, cell.value)
@@ -1017,7 +997,7 @@ const TMDBTableComponent = ({
     
     // 重置拖拽状态
     setCanStartDragging(false)
-    setInitialClickCell(null)
+    _setInitialClickCell(null)
     setIsMouseDown(false)
   }
   
@@ -1103,7 +1083,7 @@ const TMDBTableComponent = ({
     const newData = { ...localData };
     
     // 复制列头
-    const originalHeader = newData.headers[index];
+    const originalHeader = newData.headers[index]!;
     newData.headers = [
       ...newData.headers.slice(0, index + 1),
       `${originalHeader}_副本`,
@@ -1131,13 +1111,16 @@ const TMDBTableComponent = ({
     const newData = { ...localData };
     
     // 交换列头
-    [newData.headers[fromIndex], newData.headers[toIndex]] = 
-    [newData.headers[toIndex], newData.headers[fromIndex]];
+    const tempHeader = newData.headers[fromIndex]!;
+    newData.headers[fromIndex] = newData.headers[toIndex]!;
+    newData.headers[toIndex] = tempHeader;
     
     // 交换每行对应的单元格
     newData.rows = newData.rows.map(row => {
       const newRow = [...row];
-      [newRow[fromIndex], newRow[toIndex]] = [newRow[toIndex], newRow[fromIndex]];
+      const tempCell = newRow[fromIndex]!;
+      newRow[fromIndex] = newRow[toIndex]!;
+      newRow[toIndex] = tempCell;
       return newRow;
     });
     
@@ -1189,7 +1172,7 @@ const TMDBTableComponent = ({
     if (episodeColumnIndex !== -1) {
       for (const row of newData.rows) {
         const episodeValue = row[episodeColumnIndex]?.trim();
-        const episodeNum = parseInt(episodeValue, 10);
+        const episodeNum = parseInt(episodeValue || '0', 10);
         if (!isNaN(episodeNum) && episodeNum > maxEpisodeNumber) {
           maxEpisodeNumber = episodeNum;
         }
@@ -1233,14 +1216,15 @@ const TMDBTableComponent = ({
   // 处理批量插入行对话框打开
   const handleBatchInsertRow = (index: number, position: 'before' | 'after', count: number) => {
     setTargetRowIndex(index);
-    setBatchInsertPosition(position);
-    setBatchInsertCount(count);
+    _setBatchInsertPosition(position);
+    _setBatchInsertCount(count);
     setShowBatchInsertDialog(true);
   };
 
   // 处理批量插入行应用
   const handleBatchInsertApply = (count: number, position: 'before' | 'after') => {
     batchInsertRows(targetRowIndex, count, position);
+    return
   };
 
   const deleteRow = (index: number) => {
@@ -1263,7 +1247,7 @@ const TMDBTableComponent = ({
     saveToHistory(localData);
     
     const newData = { ...localData };
-    const rowToDuplicate = [...newData.rows[index]];
+    const rowToDuplicate = [...newData.rows[index]!];
     
     newData.rows = [
       ...newData.rows.slice(0, index + 1),
@@ -1283,8 +1267,9 @@ const TMDBTableComponent = ({
     saveToHistory(localData);
     
     const newData = { ...localData };
-    [newData.rows[fromIndex], newData.rows[toIndex]] = 
-    [newData.rows[toIndex], newData.rows[fromIndex]];
+    const tempRow = newData.rows[fromIndex]!;
+    newData.rows[fromIndex] = newData.rows[toIndex]!;
+    newData.rows[toIndex] = tempRow;
     
     setLocalData(newData);
     onDataChange?.(newData);
@@ -1362,8 +1347,8 @@ const TMDBTableComponent = ({
     
     // 从后往前插入，避免索引问题
     for (let i = sortedIndices.length - 1; i >= 0; i--) {
-      const index = sortedIndices[i];
-      const rowToDuplicate = [...newData.rows[index]];
+      const index = sortedIndices[i]!;
+      const rowToDuplicate = [...newData.rows[index]!];
       newData.rows.splice(index + 1, 0, rowToDuplicate);
     }
     
@@ -1607,7 +1592,7 @@ const TMDBTableComponent = ({
                     )}
                     
                     {row.map((cell, colIndex) => {
-                      const columnName = localData.headers[colIndex];
+                      const columnName = localData.headers[colIndex]!;
                       const isBackdrop = isBackdropColumn(columnName);
                       const isUrl = isValidUrl(cell);
                       const shouldShowUrlFeatures = isBackdrop && isUrl && !(isEditing && editCell?.row === rowIndex && editCell?.col === colIndex);

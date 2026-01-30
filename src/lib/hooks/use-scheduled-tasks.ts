@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { ScheduledTask } from '@/lib/data/storage'
 import { StorageManager } from '@/lib/data/storage'
 import { taskScheduler } from '@/lib/data/task-scheduler'
-import { log } from '@/shared/lib/utils/logger'
-import { handleError } from '@/shared/lib/utils/error-handler'
+import { logger } from '@/lib/utils/logger'
+import { handleError } from '@/lib/utils/error-handler'
 import { perf } from '@/shared/lib/utils/performance-manager'
 
 interface UseScheduledTasksReturn {
@@ -34,7 +34,7 @@ export function useScheduledTasks(): UseScheduledTasksReturn {
       setAllTasks(tasks)
     } catch (error) {
       const appError = handleError(error, { context: 'updateRunningTasks' })
-      log.error('useScheduledTasks', '获取正在运行的任务失败', appError)
+      logger.error('[useScheduledTasks] 获取正在运行的任务失败', appError)
       setError(appError.userMessage)
     }
   }, [])
@@ -46,10 +46,10 @@ export function useScheduledTasks(): UseScheduledTasksReturn {
     
     try {
       await updateRunningTasks()
-      log.debug('useScheduledTasks', '任务列表刷新完成')
+      logger.debug('[useScheduledTasks] 任务列表刷新完成')
     } catch (error) {
       const appError = handleError(error, { context: 'refreshTasks' })
-      log.error('useScheduledTasks', '刷新任务列表失败', appError)
+      logger.error('[useScheduledTasks] 刷新任务列表失败', appError)
       setError(appError.userMessage)
     } finally {
       setLoading(false)
@@ -76,12 +76,12 @@ export function useScheduledTasks(): UseScheduledTasksReturn {
     // 自动修复定时任务 - 延迟到10秒后执行，避免启动时的频繁调用
     const fixTimeoutId = perf.setTimeout(async () => {
       try {
-        log.info('useScheduledTasks', '开始自动修复定时任务')
+        logger.info('[useScheduledTasks] 开始自动修复定时任务')
         await StorageManager.fixScheduledTaskAssociations()
         await updateRunningTasks()
-        log.info('useScheduledTasks', '定时任务自动修复完成')
+        logger.info('[useScheduledTasks] 定时任务自动修复完成')
       } catch (error) {
-        log.error('useScheduledTasks', '自动修复定时任务失败', error)
+        logger.error('[useScheduledTasks] 自动修复定时任务失败', error)
       }
     }, 10000)
 

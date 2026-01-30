@@ -1,8 +1,8 @@
 ﻿"use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { log } from '@/shared/lib/utils/logger'
-import { handleError, retryOperation } from '@/shared/lib/utils/error-handler'
+import { logger } from '@/lib/utils/logger'
+import { handleError, retryOperation } from '@/lib/utils/error-handler'
 import { perf } from '@/shared/lib/utils/performance-manager'
 import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
 import { REGIONS } from '@/lib/constants/regions'
@@ -66,7 +66,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
               newUpcomingItemsByRegion[region.id] = parsed
             }
           } catch (error) {
-            log.warn('useMediaNews', `解析缓存数据失败: ${region.id}`, error)
+            logger.warn(`[useMediaNews] 解析缓存数据失败: ${region.id}`, error)
             localStorage.removeItem(`upcomingItems_${region.id}`)
           }
         }
@@ -90,7 +90,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
               newRecentItemsByRegion[region.id] = parsed
             }
           } catch (error) {
-            log.warn('useMediaNews', `解析近期开播缓存数据失败: ${region.id}`, error)
+            logger.warn(`[useMediaNews] 解析近期开播缓存数据失败: ${region.id}`, error)
             localStorage.removeItem(`recentItems_${region.id}`)
           }
         }
@@ -110,7 +110,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
       if (cachedRecentLastUpdated) setRecentLastUpdated(cachedRecentLastUpdated)
 
     } catch (error) {
-      log.error('useMediaNews', '加载缓存数据失败', error)
+      logger.error('[useMediaNews] 加载缓存数据失败', error)
     }
   }, [selectedRegion])
 
@@ -170,7 +170,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
           localStorage.setItem(`upcomingItems_${region}`, JSON.stringify(data.results))
           localStorage.setItem('upcomingLastUpdated', timestamp)
         } catch (error) {
-          log.warn('useMediaNews', '缓存即将上线数据失败', error)
+          logger.warn('[useMediaNews] 缓存即将上线数据失败', error)
         }
       } else {
         throw new Error(data.error || '获取即将上线内容失败')
@@ -188,7 +188,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
       }
       
       // 静默记录日志，不显示用户错误
-      log.debug('useMediaNews', '获取即将上线内容失败', appError)
+      logger.debug('[useMediaNews] 获取即将上线内容失败', appError)
     } finally {
       if (!silent) setLoadingUpcoming(false)
       perf.endTiming(timingLabel)
@@ -241,7 +241,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
           localStorage.setItem(`recentItems_${region}`, JSON.stringify(data.results))
           localStorage.setItem('recentLastUpdated', timestamp)
         } catch (error) {
-          log.warn('useMediaNews', '缓存近期开播数据失败', error)
+          logger.warn('[useMediaNews] 缓存近期开播数据失败', error)
         }
       } else {
         throw new Error(data.error || '获取近期开播内容失败')
@@ -255,7 +255,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
       }
       
       // 静默记录日志，不显示用户错误
-      log.debug('useMediaNews', '获取近期开播内容失败', appError)
+      logger.debug('[useMediaNews] 获取近期开播内容失败', appError)
     } finally {
       if (!silent) setLoadingRecent(false)
       perf.endTiming(timingLabel)
@@ -264,7 +264,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
 
   // 刷新所有数据
   const refreshData = useCallback(async () => {
-    log.info('useMediaNews', '刷新所有媒体资讯数据')
+    logger.info('[useMediaNews] 刷新所有媒体资讯数据')
     await Promise.all([
       fetchUpcomingItems(selectedRegion, false),
       fetchRecentItems(selectedRegion, false)

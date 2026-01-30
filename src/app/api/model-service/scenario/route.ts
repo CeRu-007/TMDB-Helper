@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { ModelServiceStorage } from '@/lib/data/model-service-storage'
+import { logger } from '@/lib/utils/logger'
 
 // 类型定义
 interface ScenarioConfig {
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
       providers
     })
   } catch (error) {
-    console.error('获取使用场景配置失败:', error)
+    logger.error('获取使用场景配置失败:', error)
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : '未知错误'

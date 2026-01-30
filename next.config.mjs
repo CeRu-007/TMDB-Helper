@@ -14,8 +14,9 @@ const nextConfig = {
   // 启用 App Router 优化
   serverExternalPackages: ['sharp', 'canvas'],
   
+// TypeScript 配置：生产环境严格检查，开发环境宽松以避免编译阻塞
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
   
   images: {

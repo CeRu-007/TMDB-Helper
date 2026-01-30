@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod'
-import { log } from './logger'
+import { log } from '@/lib/utils/logger'
 
 // TMDB项目验证模式
 export const TMDBItemSchema = z.object({

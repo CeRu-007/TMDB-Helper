@@ -1,4 +1,5 @@
 import { ScheduledTask } from '../storage';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * TimerManager - Handles all timer-related operations for the TaskScheduler
@@ -20,9 +21,7 @@ export class TimerManager {
     executeCallback: (task: ScheduledTask) => Promise<void>,
   ): void {
     if (!task.enabled) {
-      console.log(
-        `[TimerManager] 任务 ${task.id} (${task.name}) 已禁用，不设置定时器`,
-      );
+      logger.debug('TimerManager', `任务已禁用，不设置定时器`, { id: task.id, name: task.name });
       return;
     }
 
@@ -44,9 +43,10 @@ export class TimerManager {
 
     // Set timer - no browser environment restrictions, ensure background execution
     const timer = setTimeout(async () => {
-      console.log(
-        `[TimerManager] 定时器触发: ${task.id} (${task.name}) 在 ${new Date().toLocaleString('zh-CN')}`,
-      );
+      logger.info('TimerManager', `定时器触发: ${task.name}`, {
+        id: task.id,
+        time: new Date().toLocaleString('zh-CN')
+      });
       await executeCallback(task);
     }, adjustedDelay);
 
@@ -63,9 +63,11 @@ export class TimerManager {
       hour12: false,
     });
 
-    console.log(
-      `[TimerManager] 已为任务 ${task.id} 设置定时器，将在 ${nextRunLocale} 执行 (延迟 ${Math.round(adjustedDelay / 1000 / 60)} 分钟)`,
-    );
+    logger.info('TimerManager', `已为任务设置定时器`, {
+      id: task.id,
+      nextRun: nextRunLocale,
+      delayMinutes: Math.round(adjustedDelay / 1000 / 60)
+    });
 
     // Set timer validation mechanism - check every 5 minutes if timer still exists
     this.scheduleTimerValidation(task.id, adjustedDelay, executeCallback);
@@ -101,9 +103,11 @@ export class TimerManager {
         nextRun.setDate(nextRun.getDate() + 1);
       }
 
-      console.log(
-        `[TimerManager] 计算每日任务下次执行时间: ${task.name} -> ${nextRun.toLocaleString('zh-CN')} (当前时间: ${now.toLocaleString('zh-CN')})`,
-      );
+      logger.debug('TimerManager', `计算每日任务下次执行时间`, {
+        name: task.name,
+        nextRun: nextRun.toLocaleString('zh-CN'),
+        now: now.toLocaleString('zh-CN')
+      });
       return nextRun;
     }
   }
@@ -161,9 +165,12 @@ export class TimerManager {
 
     const result =
       nearestNextRun || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    console.log(
-      `[TimerManager] 计算每周任务下次执行时间: ${task.name} -> ${result.toLocaleString('zh-CN')} (当前时间: ${now.toLocaleString('zh-CN')}, 目标星期: ${targetDays.join(',')})`,
-    );
+    logger.debug('TimerManager', `计算每周任务下次执行时间`, {
+      name: task.name,
+      nextRun: result.toLocaleString('zh-CN'),
+      now: now.toLocaleString('zh-CN'),
+      targetDays: targetDays.join(',')
+    });
     return result;
   }
 
@@ -192,7 +199,7 @@ export class TimerManager {
     }, validationInterval);
 
     this.timerValidations.set(taskId, validationTimer);
-    console.log(
+    logger.info(
       `[TimerManager] 为任务 ${taskId} 设置定时器验证，${Math.round(validationInterval / 60000)} 分钟后检查`,
     );
   }
@@ -207,7 +214,7 @@ export class TimerManager {
     try {
       // Check if timer still exists
       if (!this.timers.has(taskId)) {
-        console.warn(
+        logger.warn(
           `[TimerManager] 定时器异常: 任务 ${taskId} 的定时器已丢失`,
         );
         // Re-schedule the task if needed
@@ -222,7 +229,7 @@ export class TimerManager {
         );
       }
     } catch (error) {
-      console.error(`[TimerManager] 验证定时器时出错 (${taskId}):`, error);
+      logger.error('TimerManager', `验证定时器时出错 (${taskId})`, error);
     }
   }
 
@@ -235,9 +242,7 @@ export class TimerManager {
   ): Promise<void> {
     // This would need to be implemented with access to storage
     // For now, we'll just log the update
-    console.log(
-      `[TimerManager] 更新任务 ${taskId} 的下次执行时间到: ${nextRunTime}`,
-    );
+    logger.debug('TimerManager', `更新任务的下次执行时间`, { id: taskId, nextRunTime });
   }
 
   /**
@@ -298,7 +303,7 @@ export class TimerManager {
         }
       }
     } catch (error) {
-      console.error('[TimerManager] 验证所有定时器时出错:', error);
+      logger.error('TimerManager', '验证所有定时器时出错', error);
     }
   }
 }

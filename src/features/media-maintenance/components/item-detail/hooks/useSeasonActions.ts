@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import type { TMDBItem, Season } from "@/lib/data/storage"
+import { DELAY_1S, DELAY_2S } from "@/lib/constants/constants"
 
 interface UseSeasonActionsProps {
   localItem: TMDBItem
@@ -35,7 +36,7 @@ export function useSeasonActions({
   const handleSeasonClick = useCallback((seasonNumber: number) => {
     setSelectedSeason(seasonNumber)
     setCustomSeasonNumber(seasonNumber)
-    onShowFeedback(`已切换到第${seasonNumber}季`, 1000)
+    onShowFeedback(`已切换到第${seasonNumber}季`, DELAY_1S)
   }, [onShowFeedback])
 
   // 处理季数调整
@@ -109,7 +110,7 @@ export function useSeasonActions({
     setSelectedSeason(seasonNumber)
     setCustomSeasonNumber(seasonNumber)
 
-    onShowFeedback(`已添加第${seasonNumber}季，共${episodeCount}集`, 2000)
+    onShowFeedback(`已添加第${seasonNumber}季，共${episodeCount}集`, DELAY_2S)
   }, [localItem, editing, editData, onLocalItemUpdate, onEditDataUpdate, onShowFeedback])
 
   // 删除季数
@@ -148,7 +149,7 @@ export function useSeasonActions({
       setSelectedSeason(undefined)
     }
 
-    onShowFeedback(`已删除第${seasonNumber}季`, 2000)
+    onShowFeedback(`已删除第${seasonNumber}季`, DELAY_2S)
   }, [localItem, selectedSeason, onLocalItemUpdate, onShowFeedback])
 
   // 重置季数
@@ -182,7 +183,7 @@ export function useSeasonActions({
     updatedItem.completed = false
 
     onLocalItemUpdate(updatedItem)
-    onShowFeedback(`第${selectedSeason}季已重置`, 2000)
+    onShowFeedback(`第${selectedSeason}季已重置`, DELAY_2S)
   }, [selectedSeason, localItem.seasons, localItem, onLocalItemUpdate, onShowFeedback])
 
   // 处理总集数变更
@@ -241,7 +242,7 @@ export function useSeasonActions({
     }
 
     onLocalItemUpdate(updatedItem)
-    onShowFeedback(`第${selectedSeason}季集数已更新为${newCount}集`, 2000)
+    onShowFeedback(`第${selectedSeason}季集数已更新为${newCount}集`, DELAY_2S)
   }, [selectedSeason, localItem.seasons, localItem, onLocalItemUpdate, onShowFeedback])
 
   return {

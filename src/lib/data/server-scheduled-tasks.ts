@@ -2,6 +2,7 @@
 import path from 'path';
 import { ScheduledTask } from './storage';
 import { stringifyAuto } from '@/lib/utils/readable-compact-json';
+import { logger } from '@/lib/utils/logger';
 
 // 获取用户数据目录
 function getUserDataDir(userId: string = 'user_admin_system'): string {
@@ -81,17 +82,13 @@ export function addScheduledTask(
     const existingIndex = tasks.findIndex((t) => t.id === task.id);
     if (existingIndex !== -1) {
       // 更新现有任务
-      tasks[existingIndex] = task;
-      console.log(
-        `[ServerScheduledTasks] 更新现有任务: ${task.name} (${task.id})`,
-      );
-    } else {
-      // 添加新任务
-      tasks.push(task);
-      console.log(
-        `[ServerScheduledTasks] 添加新任务: ${task.name} (${task.id})`,
-      );
-    }
+        tasks[existingIndex] = task;
+        logger.debug('ServerScheduledTasks', `更新现有任务: ${task.name}`, { id: task.id });
+      } else {
+        // 添加新任务
+        tasks.push(task);
+        logger.debug('ServerScheduledTasks', `添加新任务: ${task.name}`, { id: task.id });
+      }
 
     return writeScheduledTasks(tasks, userId);
   } catch (error) {
@@ -115,9 +112,7 @@ export function updateScheduledTask(
     }
 
     tasks[taskIndex] = updatedTask;
-    console.log(
-      `[ServerScheduledTasks] 更新任务: ${updatedTask.name} (${updatedTask.id})`,
-    );
+    logger.debug('ServerScheduledTasks', `更新任务: ${updatedTask.name}`, { id: updatedTask.id });
 
     return writeScheduledTasks(tasks, userId);
   } catch (error) {

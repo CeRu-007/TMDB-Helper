@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback, memo } from "react"
+import React, { useState, useEffect, useRef, memo } from "react"
+import { logger } from '@/lib/utils/logger'
+import { DELAY_1S, DELAY_2S } from "@/lib/constants/constants"
 import {
   Sparkles,
   Tv,
@@ -72,11 +74,10 @@ interface ItemDetailDialogProps {
   displayMode?: "dialog" | "inline"
 }
 
-function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelete, onOpenScheduledTask, displayMode = "dialog" }: ItemDetailDialogProps) {
+const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, onOpenScheduledTask, displayMode = "dialog" }: ItemDetailDialogProps) {
   const contentRef = useRef<HTMLDivElement>(null)
   const [pythonCmd, setPythonCmd] = useState<string>(process.platform === 'win32' ? 'python' : 'python3')
-  
-  // 定义分类列表（必须在组件内部，因为包含 JSX）
+
   const CATEGORIES = [
     { id: "anime", name: "动漫", icon: <Sparkles className="h-4 w-4 mr-2" strokeWidth={2} /> },
     { id: "tv", name: "电视剧", icon: <Tv className="h-4 w-4 mr-2" strokeWidth={2} /> },
@@ -163,7 +164,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
       })
 
       if (!response.ok) {
-        console.error('获取现有数据失败:', response.statusText)
+        logger.error('获取现有数据失败:', response.statusText)
         return false
       }
 
@@ -189,7 +190,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
 
       return writeResponse.ok
     } catch (error) {
-      console.error('保存项目时出错:', error)
+      logger.error('保存项目时出错:', error)
       return false
     }
   }
@@ -276,7 +277,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     }
 
     updateLocalItem(updatedItem)
-    showFeedback(`第${seasonToDelete}季已删除`, 2000)
+    showFeedback(`第${seasonToDelete}季已删除`, DELAY_2S)
     setShowDeleteSeasonDialog(false)
     setSeasonToDelete(null)
 
@@ -314,7 +315,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     }
 
     updateLocalItem(updatedItem)
-    showFeedback(`第${selectedSeason}季已重置`, 2000)
+    showFeedback(`第${selectedSeason}季已重置`, DELAY_2S)
   }
 
   // 处理总集数变更
@@ -382,7 +383,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     }
 
     updateLocalItem(updatedItem)
-    showFeedback(`第${selectedSeason}季集数已更新为${newCount}集`, 2000)
+    showFeedback(`第${selectedSeason}季集数已更新为${newCount}集`, DELAY_2S)
     setShowEpisodeChangeDialog(false)
     setEpisodeChangeData(null)
   }
@@ -451,7 +452,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
     setSelectedSeason(seasonNumber)
     setCustomSeasonNumber(seasonNumber)
 
-    showFeedback(`已添加第${seasonNumber}季，共${episodeCount}集`, 2000)
+    showFeedback(`已添加第${seasonNumber}季，共${episodeCount}集`, DELAY_2S)
   }
 
   // 处理电影状态切换
@@ -1273,8 +1274,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
       />
     </>
   )
-}
+})
 
-// 导出优化后的组件
-export const ItemDetailDialog = memo(ItemDetailDialogComponent)
-export default ItemDetailDialog
+// 导出组件
+export const ItemDetailDialog = ItemDetailDialogComponent

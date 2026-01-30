@@ -5,6 +5,7 @@
 
 import { TMDBItem } from '../storage';
 import { StorageManager } from '../storage';
+import { logger } from '@/lib/utils/logger';
 
 export interface EpisodeMarkingResult {
   success: boolean;
@@ -32,9 +33,11 @@ export class EpisodeMarker {
     try {
       const { item, seasonNumber, episodeNumbers } = options;
 
-      console.log(
-        `[EpisodeMarker] 直接标记集数为已完成: 项目="${item.title}", 季=${seasonNumber}, 集数=[${episodeNumbers.join(', ')}]`,
-      );
+      logger.debug('EpisodeMarker', `直接标记集数为已完成`, {
+        title: item.title,
+        season: seasonNumber,
+        episodes: episodeNumbers
+      });
 
       // 获取最新的项目数据
       const allItems = await StorageManager.getItemsWithRetry();
@@ -44,11 +47,9 @@ export class EpisodeMarker {
         // 尝试通过标题查找
         targetItem = allItems.find((i) => i.title === item.title);
         if (targetItem) {
-          console.log(
-            `[EpisodeMarker] 通过标题找到项目: ${targetItem.title} (ID: ${targetItem.id})`,
-          );
+          logger.debug('EpisodeMarker', `通过标题找到项目: ${targetItem.title}`, { id: targetItem.id });
         } else {
-          console.error(`[EpisodeMarker] 无法找到项目: ${item.title}`);
+          logger.error('EpisodeMarker', `无法找到项目: ${item.title}`);
           return null;
         }
       }
@@ -56,9 +57,7 @@ export class EpisodeMarker {
       // 找到对应的季
       const season = targetItem.seasons?.find((s) => s.seasonNumber === seasonNumber);
       if (!season) {
-        console.error(
-          `[EpisodeMarker] 项目 ${targetItem.title} 没有第 ${seasonNumber} 季`,
-        );
+        logger.error('EpisodeMarker', `项目 ${targetItem.title} 没有第 ${seasonNumber} 季`);
         return null;
       }
 
@@ -82,17 +81,15 @@ export class EpisodeMarker {
         // 更新项目
         const updateSuccess = await StorageManager.updateItem(targetItem);
         if (updateSuccess) {
-          console.log(
-            `[EpisodeMarker] 成功标记 ${markedCount} 个集数: ${episodeNumbers.join(', ')}`,
-          );
+          logger.info('EpisodeMarker', `成功标记 ${markedCount} 个集数`, {
+            episodes: episodeNumbers
+          });
         } else {
-          console.error(`[EpisodeMarker] 更新项目失败: ${targetItem.title}`);
+          logger.error('EpisodeMarker', `更新项目失败: ${targetItem.title}`);
           return null;
         }
       } else {
-        console.log(
-          `[EpisodeMarker] 所有集数都已标记，无需重复标记`,
-        );
+        logger.debug('EpisodeMarker', '所有集数都已标记，无需重复标记');
       }
 
       // 检查项目是否完成
@@ -104,7 +101,7 @@ export class EpisodeMarker {
         projectCompleted,
       };
     } catch (error) {
-      console.error(`[EpisodeMarker] 标记集数时出错:`, error);
+      logger.error('EpisodeMarker', '标记集数时出错', error);
       return null;
     }
   }
@@ -174,7 +171,7 @@ export class EpisodeMarker {
       season.markedEpisodes = [];
       return await StorageManager.updateItem(item);
     } catch (error) {
-      console.error(`[EpisodeMarker] 清除标记时出错:`, error);
+      logger.error('EpisodeMarker', '清除标记时出错', error);
       return false;
     }
   }

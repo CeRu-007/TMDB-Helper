@@ -3,6 +3,8 @@
 @import '../styles/single-line-table.css';
 @import '../styles/glassmorphism.css';
 @import '../styles/login-animations.css';
+@import '../styles/z-index.css';
+@import '../styles/animations.css';
 
 /* Highlight.js GitHub样式 */
 .hljs {
@@ -182,49 +184,7 @@
   -webkit-line-clamp: 2;
 }
 
-/* 添加新的动画 */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.3s ease-out forwards;
-}
-
-/* 添加卡片悬停效果 - 移除投影 */
-.card-hover-effect {
-  transition: all 0.3s ease;
-}
-
-.card-hover-effect:hover {
-  transform: translateY(-2px);
-  border-color: hsl(var(--muted-foreground) / 0.3);
-}
-
-.dark .card-hover-effect:hover {
-  border-color: hsl(var(--muted-foreground) / 0.4);
-}
-
-/* 添加加载动画定义 */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
+/* 动画和过渡效果现在由 animations.css 统一管理 */
 
 /* 禁用Shift按下时的文本选择 */
 body.shift-select-mode {
@@ -242,53 +202,11 @@ body.shift-select-mode .episode-item {
 
 body.shift-select-mode .episode-item:hover {
   transform: scale(1.05);
-  z-index: 10;
+  z-index: var(--z-content);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
 
-/* 用户头像下拉菜单层级优化 - 简化z-index，因为日期导航栏已降低到z-10 */
-[data-dropdown-menu="true"],
-.user-dropdown-menu {
-  z-index: 100 !important; /* 简化z-index，高于日期导航栏的z-10即可 */
-  isolation: isolate !important;
-  transform: translateZ(0) !important;
-  will-change: transform !important;
-  contain: layout style paint !important;
-}
-
-/* 侧边栏布局下使用Portal渲染到body */
-[data-dropdown-menu="true"][data-layout="sidebar"] {
-  position: fixed !important;
-  z-index: 100 !important; /* 简化z-index，高于日期导航栏即可 */
-  isolation: isolate !important;
-  transform: translateZ(0) !important;
-  will-change: transform !important;
-  contain: layout style paint !important;
-  pointer-events: auto !important;
-}
-
-/* 用户抽屉菜单 */
-[data-user-drawer="true"] {
-  z-index: 101 !important; /* 略高于下拉菜单 */
-  isolation: isolate !important;
-  transform: translateZ(0) !important;
-  will-change: transform !important;
-  contain: layout style paint !important;
-}
-
-/* 确保Portal渲染的菜单不受其他样式影响 */
-body > [data-dropdown-menu="true"] {
-  position: fixed !important;
-  z-index: 100 !important;
-  /* 重置可能影响定位的属性 */
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  outline: none !important;
-  /* 确保渲染层优化 */
-  backface-visibility: hidden !important;
-  perspective: 1000px !important;
-}
+/* z-index 现在由 z-index.css 统一管理，以下样式已迁移到该文件 */
 
 /* 外观设置相关样式 */
 .compact-mode {

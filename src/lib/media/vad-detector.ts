@@ -4,6 +4,7 @@
  */
 
 import type { NonRealTimeVAD } from '@ricky0123/vad'
+import { logger } from '@/lib/utils/logger';
 
 // Silero VAD 配置参数
 export interface VADConfig {
@@ -78,9 +79,9 @@ export class VADetector {
       })
 
       this.loaded = true
-      console.log('[VAD] 模型加载完成')
+      logger.debug('VAD', '模型加载完成')
     } catch (error) {
-      console.error('[VAD] 模型加载失败:', error)
+      logger.error('VAD', '模型加载失败', error)
       throw new Error('VAD 模型加载失败')
     }
   }
@@ -112,14 +113,17 @@ export class VADetector {
       const audioDuration = audioFloat32Array.length / this.config.sampleRate
 
       const duration = (performance.now() - startTime) / 1000
-      console.log(`[VAD] 检测完成: ${segments.length} 个语音片段, 耗时 ${duration.toFixed(2)}s`)
+      logger.info('VAD', '检测完成', {
+        segmentCount: segments.length,
+        duration: duration.toFixed(2) + 's'
+      })
 
       return {
         segments,
         audioDuration
       }
     } catch (error) {
-      console.error('[VAD] 检测失败:', error)
+      logger.error('VAD', '检测失败', error)
       throw error
     }
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '@/lib/utils/logger';
 
 // 类型定义
 interface CsvDataObject {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const { filePath, data } = await request.json();
 
-    console.log('[API] CSV保存请求:', { filePath, dataType: typeof data, dataKeys: data ? Object.keys(data) : null });
+    logger.info('[API] CSV保存请求:', { filePath, dataType: typeof data, dataKeys: data ? Object.keys(data) : null });
 
     if (!filePath) {
       return NextResponse.json({
@@ -36,10 +37,10 @@ export async function POST(request: NextRequest) {
 
     // 确保目录存在
     const dir = path.dirname(filePath);
-    console.log('[API] 目录:', dir, '存在:', fs.existsSync(dir));
-    
+    logger.info('[API] 目录:', dir, '存在:', fs.existsSync(dir));
+
     if (!fs.existsSync(dir)) {
-      console.log('[API] 创建目录:', dir);
+      logger.info('[API] 创建目录:', dir);
       fs.mkdirSync(dir, { recursive: true });
     }
 
@@ -56,12 +57,12 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[API] CSV保存错误:', error);
-    
+    logger.error('[API] CSV保存错误:', error);
+
     return NextResponse.json({
       success: false,
       error: '保存CSV文件失败',
-      details: { 
+      details: {
         error: error instanceof Error ? error.message : String(error)
       }
     }, { status: 500 });
@@ -79,7 +80,7 @@ function serializeCsvData(data: CsvData): string {
   if (Array.isArray(data)) {
     // 如果是数组格式，假设第一行是表头
     if (data.length > 0) {
-      headers = data[0];
+      headers = data[0] || [];
       rows = data.slice(1).map(row => Array.isArray(row) ? row : [row]);
     }
   } else if (data.headers && data.rows) {

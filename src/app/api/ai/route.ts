@@ -1,7 +1,7 @@
 // API v2 AI Routes
 // This file serves as the entry point for AI-related API endpoints in v2
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 // Proxy handler for AI endpoints
 export async function GET(request: NextRequest) {

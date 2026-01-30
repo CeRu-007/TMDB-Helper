@@ -45,6 +45,7 @@ import {
   CircleDashed
 } from "lucide-react"
 import path from "path"
+import { logger } from '@/lib/utils/logger'
 
 // 导入新版表格组件
 import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
@@ -1217,7 +1218,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
           } catch (error) {
             // 这里应该不会执行到，因为readCSVFile已经处理了所有错误
             // 但为了安全起见，我们仍然保留这个捕获块
-            console.log("加载CSV数据时出错 (应该不会发生)");
+            logger.error("加载CSV数据时出错 (应该不会发生)");
             setActiveTab("process");
           }
         } else {

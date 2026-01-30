@@ -6,6 +6,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import { ServerConfigManager } from '@/lib/data/server-config-manager'
+import { logger } from '@/lib/utils/logger';
 
 const execAsync = promisify(exec);
 
@@ -39,7 +40,7 @@ async function executeTMDBImportCommand(command: string, workingDirectory: strin
             throw new Error(`工作目录不存在: ${workingDirectory}`);
         }
 
-        console.log(`[API] [执行命令] ${command} (在${workingDirectory})`);
+        logger.info(`[API] [执行命令] ${command} (在${workingDirectory})`);
 
         // 检查Python是否可用
         try {
@@ -108,7 +109,7 @@ function parseCSVPathFromOutput(output: string): string | null {
         const match = output.match(pattern);
         if (match && match[1]) {
             const csvPath = match[1].trim();
-            console.log(`[API] 找到CSV路径: ${csvPath} (使用模式: ${pattern})`);
+            logger.info(`[API] 找到CSV路径: ${csvPath} (使用模式: ${pattern})`);
             return csvPath;
         }
     }
@@ -149,7 +150,7 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
     }
 
     const headers = parseCSVLine(lines[0]);
-    console.log(`[API] CSV表头: ${headers.join(' | ')}`);
+    logger.info(`[API] CSV表头: ${headers.join(' | ')}`);
 
     const rows: string[][] = [];
 
@@ -159,8 +160,8 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
 
             // 验证行的字段数量
             if (row.length !== headers.length) {
-                
-                console.warn(`[API] 问题行内容: ${lines[i].substring(0, 100)}...`);
+
+                logger.warn(`[API] 问题行内容: ${lines[i].substring(0, 100)}...`);
 
                 // 尝试修复字段数量
                 while (row.length < headers.length) {
@@ -303,19 +304,19 @@ function autoRemoveMarkedEpisodes(csvData: { headers: string[], rows: string[][]
     if (isYoukuPlatform && episodesToRemove.length > 0) {
         // 移除最后一集，即只删除1到n-1集
         episodesToRemove.pop();
-        
+
     }
 
     if (episodesToRemove.length === 0) {
         return csvData; // 优酷特殊处理后没有要删除的集数
     }
 
-    console.log(`[API] 准备删除已完成的集数: ${episodesToRemove.join(', ')}`);
+    logger.info(`[API] 准备删除已完成的集数: ${episodesToRemove.join(', ')}`);
 
     // 使用范围删除策略
     const filteredRows = filterRowsByEpisodeRange(csvData.rows, episodeColumnIndex, episodesToRemove);
 
-    console.log(`[API] CSV行数变化: ${csvData.rows.length} -> ${filteredRows.length} (删除了${csvData.rows.length - filteredRows.length}行)`);
+    logger.info(`[API] CSV行数变化: ${csvData.rows.length} -> ${filteredRows.length} (删除了${csvData.rows.length - filteredRows.length}行)`);
 
     return {
         headers: csvData.headers,
@@ -331,7 +332,7 @@ function filterRowsByEpisodeRange(rows: string[][], episodeColumnIndex: number, 
         return rows;
     }
 
-    console.log(`[API] 要删除的集数: ${episodesToRemove.join(', ')}`);
+    logger.info(`[API] 要删除的集数: ${episodesToRemove.join(', ')}`);
 
     // 创建要删除的集数Set，提高查找效率
     const episodesToRemoveSet = new Set(episodesToRemove);
@@ -360,15 +361,15 @@ function filterRowsByEpisodeRange(rows: string[][], episodeColumnIndex: number, 
 
         // 检查是否需要删除
         if (episodesToRemoveSet.has(episodeNumber)) {
-            
+
             deletedCount++;
         } else {
-            
+
             filteredRows.push(row);
         }
     }
 
-    console.log(`[API] 过滤完成: 原始${rows.length}行 -> 保留${filteredRows.length}行 (删除${deletedCount}行)`);
+    logger.info(`[API] 过滤完成: 原始${rows.length}行 -> 保留${filteredRows.length}行 (删除${deletedCount}行)`);
     return filteredRows;
 }
 
@@ -478,7 +479,7 @@ async function markEpisodesAsCompleted(item: TMDBItem, seasonNumber: number, epi
         return null; // 没有需要标记的集数
     }
 
-    console.log(`[API] 将集数标记为已完成: 第${seasonNumber}季, 集数=${episodeNumbers.join(', ')}`);
+    logger.info(`[API] 将集数标记为已完成: 第${seasonNumber}季, 集数=${episodeNumbers.join(', ')}`);
 
     // 创建副本以避免直接修改原对象
     const updatedItem = JSON.parse(JSON.stringify(item)) as TMDBItem;
@@ -585,12 +586,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
             // 如果直接通过ID找到了项目，标记为有效
             if (item) {
-                console.log(`[API] 通过ID直接找到项目: ${item.title} (ID: ${item.id})`);
+                logger.info(`[API] 通过ID直接找到项目: ${item.title} (ID: ${item.id})`);
                 foundValidItem = true;
 
                 // 验证平台URL
                 if (!item.platformUrl) {
-                    console.error(`[API] 错误: 项目 ${item.title} (ID: ${item.id}) 缺少平台URL`);
+                    logger.error(`[API] 错误: 项目 ${item.title} (ID: ${item.id}) 缺少平台URL`);
                     return NextResponse.json({
                         success: false,
                         error: `项目 ${item.title} 没有设置平台URL`,
@@ -611,7 +612,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             if (requestData.metadata.tmdbId) {
                 const matchByTmdbId = items.find(i => i.tmdbId === requestData.metadata?.tmdbId);
                 if (matchByTmdbId) {
-                    console.log(`[API] 通过TMDB ID ${requestData.metadata.tmdbId} 找到项目: ${matchByTmdbId.title} (ID: ${matchByTmdbId.id})`);
+                    logger.info(`[API] 通过TMDB ID ${requestData.metadata.tmdbId} 找到项目: ${matchByTmdbId.title} (ID: ${matchByTmdbId.id})`);
                     item = matchByTmdbId;
                     requestData.itemId = matchByTmdbId.id;
                     foundValidItem = true;
@@ -628,7 +629,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 );
 
                 if (matchByTitle) {
-                    console.log(`[API] 通过标题 "${title}" 找到项目: ${matchByTitle.title} (ID: ${matchByTitle.id})`);
+                    logger.info(`[API] 通过标题 "${title}" 找到项目: ${matchByTitle.title} (ID: ${matchByTitle.id})`);
                     item = matchByTitle;
                     requestData.itemId = matchByTitle.id;
                     foundValidItem = true;
@@ -646,7 +647,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
             if (sortedItems.length > 0) {
                 const fallbackItem = sortedItems[0];
-                console.log(`[API] 使用最近创建的项目: ${fallbackItem.title} (ID: ${fallbackItem.id})`);
+                logger.info(`[API] 使用最近创建的项目: ${fallbackItem.title} (ID: ${fallbackItem.id})`);
                 requestData.itemId = fallbackItem.id;
                 item = fallbackItem;
                 foundValidItem = true;
@@ -838,9 +839,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                         );
                         if (index !== -1 && !indicesToEmpty.includes(index)) {
                             indicesToEmpty.push(index);
-                            console.log(`[API] 找到要清空数据的${type}列: ${csvData.headers[index]} (索引: ${index})`);
+                            logger.info(`[API] 找到要清空数据的${type}列: ${csvData.headers[index]} (索引: ${index})`);
                         } else if (index === -1) {
-                            console.log(`[API] 未找到${type}列，搜索名称: ${name}，CSV表头: [${csvData.headers.join(', ')}]`);
+                            logger.info(`[API] 未找到${type}列，搜索名称: ${name}，CSV表头: [${csvData.headers.join(', ')}]`);
                         }
                     });
                 });

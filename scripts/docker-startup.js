@@ -161,7 +161,7 @@ function healthCheck() {
   // 检查内存
   const memUsage = process.memoryUsage();
   const memLimitMB = 1024; // 1GB
-  checks.memory = memUsage.heapUsed < (memLimitMB * 1024 * 1024);
+  checks.memory = memUsage.heapUsed < (memLimitMB * 1024 * 1024); // 1GB内存限制
 
   // 检查环境变量
   const requiredEnvVars = ['NODE_ENV', 'PORT'];

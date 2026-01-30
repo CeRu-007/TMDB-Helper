@@ -1,6 +1,7 @@
 ﻿"use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import React, { useState, useRef, useEffect, useCallback } from "react"
+import { logger } from '@/lib/utils/logger'
 import {
   Upload,
   Play,
@@ -29,6 +30,7 @@ import { Badge } from "@/shared/components/ui/badge"
 import { useToast } from "@/shared/components/ui/use-toast"
 import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"
+import { DELAY_500MS, DELAY_2000MS } from '@/lib/constants/constants'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
 import { ImageProcessor } from "@/lib/media/image-processor-class"
 import JSZip from 'jszip'
@@ -188,7 +190,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
           siliconFlowModel: parsed.siliconFlowModel ?? DEFAULT_SETTINGS.siliconFlowModel
         })
       } catch (error) {
-        console.error('加载设置失败:', error)
+        logger.error('加载设置失败:', error)
       }
     }
   }, [toast])
@@ -298,7 +300,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     setVideos(prev => [...prev, ...newVideos])
 
     if (!isProcessing && processorReady) {
-      setTimeout(() => handleBatchExtraction(), 500)
+      setTimeout(() => handleBatchExtraction(), DELAY_500MS)
     }
   }
 
@@ -700,7 +702,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
         updateProgress(videoId, processedFrames, frames.length)
       } catch (error) {
-        console.warn('处理帧失败，跳过此帧:', error)
+        logger.warn('处理帧失败，跳过此帧:', error)
         continue
       }
     }
@@ -994,11 +996,11 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     navigator.clipboard.writeText(url)
       .then(() => {
         setCopyFeedback("已复制!")
-        setTimeout(() => setCopyFeedback(null), 2000)
+        setTimeout(() => setCopyFeedback(null), DELAY_2000MS)
       })
       .catch(() => {
         setCopyFeedback("复制失败")
-        setTimeout(() => setCopyFeedback(null), 2000)
+        setTimeout(() => setCopyFeedback(null), DELAY_2000MS)
       })
   }
 

@@ -20,6 +20,9 @@
     "build": "next build",
     "start": "cross-env NODE_ENV=production next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "task-daemon": "node scripts/task-scheduler-daemon.js",
     "task-daemon:dev": "node scripts/task-scheduler-daemon.js --port=4949 --interval=300",
     "docker:build": "docker build -t tmdb-helper .",
@@ -223,5 +226,14 @@
       "version": "0.5.2"
     }
   },
-  "electronMain": "electron/main.js"
+  "electronMain": "electron/main.js",
+  "lint-staged": {
+    "src/**/*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "src/**/*.{json,css,md}": [
+      "prettier --write"
+    ]
+  }
 }

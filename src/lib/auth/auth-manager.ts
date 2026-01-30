@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '@/lib/utils/logger';
 
 // Constants
 const AUTH_DIR = path.join(process.cwd(), 'data', 'auth');
@@ -54,7 +55,7 @@ export class AuthManager {
           'Please set a strong, random secret key.'
         );
       }
-      console.warn(
+      logger.warn(
         'WARNING: Using default JWT_SECRET for development only. ' +
         'Set JWT_SECRET environment variable for production use.'
       );
@@ -69,7 +70,7 @@ export class AuthManager {
           'Please set a strong, random secret key.'
         );
       }
-      console.warn('WARNING: Using default JWT_SECRET. This is insecure for production.');
+      logger.warn('WARNING: Using default JWT_SECRET. This is insecure for production.');
     }
 
     this._jwtSecret = secret;
@@ -275,7 +276,7 @@ export class AuthManager {
         );
       }
 
-      console.warn(
+      logger.warn(
         'WARNING: Creating default admin user (admin/admin) for development. ' +
         'Set ADMIN_USERNAME and ADMIN_PASSWORD environment variables for production use.'
       );

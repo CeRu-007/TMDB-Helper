@@ -2,6 +2,7 @@
 import { GenerationConfig } from '../types'
 import { SUMMARY_STYLES } from '../constants'
 import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
+import { logger } from '@/lib/utils/logger'
 
 export function useConfigManagement() {
   const [config, setConfig] = useState<GenerationConfig>({
@@ -49,7 +50,7 @@ export function useConfigManagement() {
             speechRecognitionModel = speechResult.scenario.primaryModelId
           }
         } catch (error) {
-          console.warn('🔧 [配置加载] 从模型服务系统加载模型失败:', error)
+          logger.warn('🔧 [配置加载] 从模型服务系统加载模型失败:', error)
         }
         
         // 兼容旧的配置存储方式
@@ -107,7 +108,7 @@ export function useConfigManagement() {
 
             setConfig(completeConfig)
           } catch (e) {
-            console.error('🔧 [配置加载] 解析配置失败:', e)
+            logger.error('🔧 [配置加载] 解析配置失败:', e)
             setConfig(prev => ({ ...prev, model: episodeGenerationModel }))
           }
         } else {
@@ -121,7 +122,7 @@ export function useConfigManagement() {
         // 标记配置已初始化
         setConfigInitialized(true)
       } catch (e) {
-        console.error('🔧 [配置加载] 加载配置时出错:', e)
+        logger.error('🔧 [配置加载] 加载配置时出错:', e)
         setConfigInitialized(true)
       }
     })()
@@ -144,7 +145,7 @@ export function useConfigManagement() {
         // 使用 ClientConfigManager 保存配置
         await ClientConfigManager.setItem('episode_generator_config', configJson)
       } catch (error) {
-        console.error('保存配置时出错:', error)
+        logger.error('保存配置时出错:', error)
       }
     }, 500)
 
@@ -160,7 +161,7 @@ export function useConfigManagement() {
         const settings = JSON.parse(globalSiliconFlowSettings)
         setSiliconFlowApiKey(settings.apiKey || '')
       } catch (error) {
-        console.error('解析硅基流动设置失败:', error)
+        logger.error('解析硅基流动设置失败:', error)
       }
     } else {
       // 兼容旧的设置
@@ -177,7 +178,7 @@ export function useConfigManagement() {
         const settings = JSON.parse(globalModelScopeSettings)
         setModelScopeApiKey(settings.apiKey || '')
       } catch (error) {
-        console.error('解析魔搭社区设置失败:', error)
+        logger.error('解析魔搭社区设置失败:', error)
       }
     } else {
       // 兼容旧的设置
@@ -209,7 +210,7 @@ export function useConfigManagement() {
           }
         }
       } catch (e) {
-        console.error('更新模型配置失败:', e)
+        logger.error('更新模型配置失败:', e)
       }
       
       setConfig(prev => ({ ...prev, model: newModel }))
@@ -227,7 +228,7 @@ export function useConfigManagement() {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'siliconflow_api_settings' || e.key === 'modelscope_api_settings') {
-        console.log('检测到API设置变化，重新加载')
+        logger.info('检测到API设置变化，重新加载')
         loadGlobalSettings()
       }
     }
@@ -236,7 +237,7 @@ export function useConfigManagement() {
 
     // 监听自定义事件（用于同一页面内的设置变化）
     const handleCustomSettingsChange = () => {
-      console.log('检测到自定义设置变化事件')
+      logger.info('检测到自定义设置变化事件')
       loadGlobalSettings()
     }
     window.addEventListener('siliconflow-settings-changed', handleCustomSettingsChange)
@@ -244,9 +245,9 @@ export function useConfigManagement() {
 
     // 监听全局设置对话框关闭事件
     const handleGlobalSettingsClose = (shouldReopenSettingsDialog: boolean, setShowSettingsDialog: (show: boolean) => void) => {
-      console.log('检测到全局设置关闭事件')
+      logger.info('检测到全局设置关闭事件')
       if (shouldReopenSettingsDialog) {
-        console.log('重新打开设置对话框')
+        logger.info('重新打开设置对话框')
         // 延迟一点时间确保全局设置对话框完全关闭
         setTimeout(() => {
           setShowSettingsDialog(true)

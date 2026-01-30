@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { logger } = require('./logger');
 
 // 配置目录列表
 const CONFIG_DIRS = [
@@ -73,14 +74,14 @@ function initDefaultConfig() {
       // 显示配置摘要
       const configKeys = Object.keys(envConfig).filter(key => !['version', 'lastUpdated'].includes(key));
       if (configKeys.length > 0) {
-        console.log('📋 [Docker Init] 预设配置项:', configKeys.join(', '));
+        logger.info('📋 [Docker Init] 预设配置项:', configKeys.join(', '));
       }
     } else {
       
       // 验证配置文件格式
       try {
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        console.log(`✅ [Docker Init] 配置文件格式正确，包含 ${Object.keys(config).length} 个配置项`);
+        logger.info(`✅ [Docker Init] 配置文件格式正确，包含 ${Object.keys(config).length} 个配置项`);
       } catch (parseError) {
         
         fs.writeFileSync(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2));
@@ -102,14 +103,14 @@ function checkFilePermissions() {
     const configPath = '/app/data/server-config.json';
     if (fs.existsSync(configPath)) {
       const stats = fs.statSync(configPath);
-      console.log(`📊 [Docker Init] 配置文件权限: ${stats.mode.toString(8)}`);
+      logger.info(`📊 [Docker Init] 配置文件权限: ${stats.mode.toString(8)}`);
     }
     
     // 检查目录权限
     CONFIG_DIRS.forEach(dir => {
       if (fs.existsSync(dir)) {
         const stats = fs.statSync(dir);
-        console.log(`📊 [Docker Init] 目录权限 ${dir}: ${stats.mode.toString(8)}`);
+        logger.info(`📊 [Docker Init] 目录权限 ${dir}: ${stats.mode.toString(8)}`);
       }
     });
 
@@ -123,9 +124,9 @@ function checkFilePermissions() {
  */
 function showEnvironmentInfo() {
 
-  console.log(`   - 工作目录: ${process.cwd()}`);
-  console.log(`   - 用户ID: ${process.getuid ? process.getuid() : 'N/A'}`);
-  console.log(`   - 组ID: ${process.getgid ? process.getgid() : 'N/A'}`);
+  logger.info(`   - 工作目录: ${process.cwd()}`);
+  logger.info(`   - 用户ID: ${process.getuid ? process.getuid() : 'N/A'}`);
+  logger.info(`   - 组ID: ${process.getgid ? process.getgid() : 'N/A'}`);
 
 }
 

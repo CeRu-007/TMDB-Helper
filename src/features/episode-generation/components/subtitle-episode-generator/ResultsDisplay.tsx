@@ -13,6 +13,7 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react"
+import { logger } from '@/lib/utils/logger'
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { Textarea } from "@/shared/components/ui/textarea"
@@ -128,7 +129,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         return nodeIndex >= 0 ? nodeIndex + targetOffset : offset
       }
     } catch (error) {
-      console.error('计算偏移量错误:', error)
+      logger.error('计算偏移量错误:', error)
       return 0
     }
   }
@@ -178,7 +179,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         startOffset = Math.min(lineIndex * 50 + charIndex, fullText.length)
       }
     } catch (error) {
-      console.error('计算起始位置错误:', error)
+      logger.error('计算起始位置错误:', error)
       startOffset = 0
     }
 
@@ -210,7 +211,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           endOffset = Math.min(lineIndex * 50 + charIndex, fullText.length)
         }
       } catch (error) {
-        console.error('计算结束位置错误:', error)
+        logger.error('计算结束位置错误:', error)
         endOffset = startOffset
       }
 
@@ -427,7 +428,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
   const handleConfirmRewrite = async (index: number) => {
     if (!selectedText.trim()) {
-      console.warn('没有选择要改写的文字')
+      logger.warn('没有选择要改写的文字')
       return
     }
 
@@ -445,7 +446,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         })
       }
     } catch (error) {
-      console.error('改写失败:', error)
+      logger.error('改写失败:', error)
     } finally {
       setIsRewritingText(false)
       handleCancelRewrite()

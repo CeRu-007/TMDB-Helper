@@ -1,6 +1,7 @@
 import React from "react"
 import { GenerationConfig } from '../types'
 import { TITLE_STYLES } from '../constants'
+import { logger } from '@/lib/utils/logger'
 
 interface TitleStyleTabProps {
   config: GenerationConfig
@@ -14,7 +15,7 @@ export function TitleStyleTab({
   const handleTitleStyleToggle = (styleId: string) => {
     // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
-      console.error('onConfigChange is not a function')
+      logger.error('onConfigChange is not a function')
       return
     }
 

@@ -1,6 +1,7 @@
 ﻿"use client"
 
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef } from "react"
+import { logger } from '@/lib/utils/logger'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Progress } from '@/shared/components/ui/progress'
@@ -11,6 +12,7 @@ import { Upload, Monitor, Search, Star, ExternalLink, Loader2, Image as ImageIco
 import { Switch } from '@/shared/components/ui/switch'
 import { toast } from '@/shared/lib/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { DELAY_1S, INTERVAL_5S, FILE_SIZE_10MB } from '@/lib/constants/constants'
 
 interface AnalysisProgress {
   similarSearch?: number
@@ -72,7 +74,7 @@ export function ImageRecognition() {
       return
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > FILE_SIZE_10MB) {
       toast({
         title: "文件过大",
         description: "图片文件大小不能超过10MB",
@@ -102,7 +104,7 @@ export function ImageRecognition() {
     // 防抖机制：检查距离上次分析是否超过5秒
     const now = Date.now()
     const timeSinceLastAnalysis = now - lastAnalysisTime
-    const minInterval = 5000 // 5秒间隔
+    const minInterval = INTERVAL_5S // 5秒间隔
 
     if (timeSinceLastAnalysis < minInterval) {
       const remainingTime = Math.ceil((minInterval - timeSinceLastAnalysis) / 1000)
@@ -138,10 +140,10 @@ export function ImageRecognition() {
     try {
       if (advancedSearchMode) {
         setProgress(prev => ({ ...prev, similarSearch: 20 }))
-        
+
         // 添加请求间隔，避免API调用过于频繁
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
+        await new Promise(resolve => setTimeout(resolve, DELAY_1S))
+
         const similarSearchResponse = await fetch('/api/media/image-recognition/similar-search', {
           method: 'POST',
           headers: {
@@ -166,14 +168,14 @@ export function ImageRecognition() {
         })
 
         // 添加请求间隔，避免API调用过于频繁
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, DELAY_1S))
       }
 
       setProgress(prev => ({ ...prev, featureExtraction: 20 }))
-      
+
       // 添加请求间隔，避免API调用过于频繁
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      await new Promise(resolve => setTimeout(resolve, DELAY_1S))
+
       const analysisResponse = await fetch('/api/media/image-recognition/analyze', {
         method: 'POST',
         headers: {
@@ -198,10 +200,10 @@ export function ImageRecognition() {
       setProgress(prev => ({ ...prev, featureExtraction: 100 }))
 
       setProgress(prev => ({ ...prev, databaseMatching: 20 }))
-      
+
       // 添加请求间隔，避免API调用过于频繁
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      await new Promise(resolve => setTimeout(resolve, DELAY_1S))
+
       const searchResponse = await fetch('/api/media/image-recognition/search', {
         method: 'POST',
         headers: {
@@ -243,7 +245,7 @@ export function ImageRecognition() {
       })
 
     } catch (error) {
-      console.error('分析过程出错:', error)
+      logger.error('分析过程出错:', error)
       
       let errorMessage = '分析过程中出现错误'
       if (error instanceof Error) {

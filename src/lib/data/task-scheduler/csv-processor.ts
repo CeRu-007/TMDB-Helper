@@ -4,6 +4,7 @@
  */
 
 import { TMDBItem, ScheduledTask } from '../storage';
+import { logger } from '@/lib/utils/logger';
 
 export interface CSVProcessResult {
   success: boolean;
@@ -42,9 +43,7 @@ export class CSVProcessor {
 
       // 获取已标记的集数
       const markedEpisodes = this.getMarkedEpisodes(item, seasonNumber);
-      console.log(
-        `[CSVProcessor] 已标记的集数: [${markedEpisodes.join(', ')}]`,
-      );
+      logger.debug('CSVProcessor', `已标记的集数: [${markedEpisodes.join(', ')}]`);
 
       if (markedEpisodes.length === 0) {
         return {

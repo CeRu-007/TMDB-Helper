@@ -9,6 +9,7 @@ import {
   Loader2,
   FileText
 } from "lucide-react"
+import { logger } from '@/lib/utils/logger'
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
@@ -17,6 +18,7 @@ import { VideoAnalyzer } from "@/lib/media/video-analyzer"
 import { VideoAnalysisStep, createDefaultAnalysisSteps, updateStepStatus } from "@/features/episode-generation/components/video-analysis-feedback"
 import { VideoAnalysisFeedback } from "@/features/episode-generation/components/video-analysis-feedback"
 import { EmptyStateProps } from './types'
+import { DELAY_500MS, DELAY_1S } from "@/lib/constants/constants"
 
 export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
   const [videoUrl, setVideoUrl] = useState('')
@@ -46,21 +48,21 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
 
       // 开始下载
       setAnalysisSteps(updateStepStatus(steps, 'download', 'running', '正在下载视频...'))
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise(resolve => setTimeout(resolve, DELAY_1S))
 
       // 下载完成，开始提取
       setAnalysisSteps(prev => updateStepStatus(
         updateStepStatus(prev, 'download', 'completed', '音频提取完成'),
         'extract', 'running', '正在进行语音识别...'
       ))
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise(resolve => setTimeout(resolve, DELAY_1S))
 
       // 提取完成，开始字幕提取
       setAnalysisSteps(prev => updateStepStatus(
         updateStepStatus(prev, 'extract', 'completed', '内容提取完成'),
         'subtitle', 'running', '正在检测和提取字幕内容...'
       ))
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise(resolve => setTimeout(resolve, DELAY_1S))
 
       // 字幕提取完成，开始AI分析
       setAnalysisSteps(prev => updateStepStatus(
@@ -76,13 +78,13 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
         updateStepStatus(prev, 'analyze', 'completed', 'AI分析完成'),
         'generate', 'running', '正在生成分集简介...'
       ))
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, DELAY_500MS))
 
       // 全部完成
       setAnalysisSteps(prev => updateStepStatus(prev, 'generate', 'completed', '简介生成完成'))
 
     } catch (error) {
-      console.error('音频转写失败:', error)
+      logger.error('音频转写失败:', error)
       const errorMessage = error instanceof Error ? error.message : '未知错误'
       setAnalysisError(`音频转写失败: ${errorMessage}`)
 

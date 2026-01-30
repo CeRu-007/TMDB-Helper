@@ -4,6 +4,7 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react"
+import { logger } from '@/lib/utils/logger'
 import { Label } from "@/shared/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Checkbox } from "@/shared/components/ui/checkbox"
@@ -131,7 +132,7 @@ export function VideoAnalysisTab({
                         })
                       }
                     } catch (error) {
-                      console.error('保存语音识别场景配置失败:', error)
+                      logger.error('保存语音识别场景配置失败:', error)
                     }
                   })()
                 }

@@ -1,4 +1,5 @@
 import { ChatHistory, Message } from '@/types/ai-chat'
+import { logger } from '@/lib/utils/logger'
 
 // IndexedDB缓存管理器
 class ChatHistoryCache {
@@ -120,7 +121,7 @@ class ChatSyncManager {
     // 防抖处理，避免频繁同步到服务器
     this.syncQueue = this.syncQueue.then(() => 
       this.flushUpdates()
-    ).catch(console.error)
+    ).catch(logger.error)
   }
 
   private async flushUpdates(): Promise<void> {
@@ -141,10 +142,10 @@ class ChatSyncManager {
       })
 
       if (!response.ok) {
-        console.warn('服务器同步失败，数据已保存在本地缓存')
+        logger.warn('服务器同步失败，数据已保存在本地缓存')
       }
     } catch (error) {
-      console.error('同步到服务器失败:', error)
+      logger.error('同步到服务器失败:', error)
       // 数据已经在本地缓存中，下次会重试同步
     }
   }
@@ -177,7 +178,7 @@ class ChatSyncManager {
         }
       }
     } catch (error) {
-      console.error('从服务器获取聊天历史失败:', error)
+      logger.error('从服务器获取聊天历史失败:', error)
     }
 
     return null
@@ -192,7 +193,7 @@ class ChatSyncManager {
       if (cachedChats.length > 0) {
         // 异步从服务器获取最新数据
         this.fetchFromServerAndUpdateCache().catch(error => {
-          console.warn('异步更新缓存失败:', error)
+          logger.warn('异步更新缓存失败:', error)
         })
         return cachedChats
       }
@@ -200,12 +201,12 @@ class ChatSyncManager {
       // 缓存为空，直接从服务器获取
       return await this.fetchFromServer()
     } catch (error) {
-      console.error('获取聊天历史时发生错误:', error)
+      logger.error('获取聊天历史时发生错误:', error)
       // 尝试直接从服务器获取作为最后的备选方案
       try {
         return await this.fetchFromServer()
       } catch (serverError) {
-        console.error('从服务器获取数据也失败:', serverError)
+        logger.error('从服务器获取数据也失败:', serverError)
         return []
       }
     }
@@ -234,20 +235,20 @@ class ChatSyncManager {
           
           return histories
         } else {
-          console.warn('服务器返回的数据格式不正确:', result)
+          logger.warn('服务器返回的数据格式不正确:', result)
         }
       } else {
-        console.warn('服务器响应错误:', response.status, response.statusText)
+        logger.warn('服务器响应错误:', response.status, response.statusText)
       }
     } catch (error) {
-      console.error('从服务器获取聊天历史失败:', error)
+      logger.error('从服务器获取聊天历史失败:', error)
     }
 
     // API失败时，尝试从缓存返回现有数据
     try {
       return await this.cache.getAllCachedChats()
     } catch (cacheError) {
-      console.error('从缓存获取数据也失败:', cacheError)
+      logger.error('从缓存获取数据也失败:', cacheError)
       return []
     }
   }
@@ -258,7 +259,7 @@ class ChatSyncManager {
       // 这里可以添加缓存和服务器数据的差异对比逻辑
       // 如果服务器有新数据，可以触发相应的UI更新
     } catch (error) {
-      console.error('更新缓存失败:', error)
+      logger.error('更新缓存失败:', error)
     }
   }
 
@@ -276,7 +277,7 @@ class ChatSyncManager {
         request.onsuccess = () => resolve()
       })
     } catch (error) {
-      console.error('从缓存删除失败:', error)
+      logger.error('从缓存删除失败:', error)
     }
 
     // 从服务器删除
@@ -286,10 +287,10 @@ class ChatSyncManager {
       })
       
       if (!response.ok) {
-        console.error('从服务器删除失败:', response.status, response.statusText)
+        logger.error('从服务器删除失败:', response.status, response.statusText)
       }
     } catch (error) {
-      console.error('从服务器删除失败:', error)
+      logger.error('从服务器删除失败:', error)
     }
   }
 }

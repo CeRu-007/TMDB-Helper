@@ -8,6 +8,7 @@ import { StorageManager } from '../storage';
 import { taskExecutionLogger } from '../task-execution-logger';
 import { DistributedLock } from '@/lib/utils/distributed-lock';
 import { TMDBImportWorkflow } from './tmdb-import-workflow';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * 任务执行器
@@ -30,13 +31,13 @@ export class TaskExecutor {
   ): Promise<void> {
     const maxRetries = 3;
     const currentTime = new Date().toLocaleString('zh-CN');
-    console.log(
+    logger.info(
       `[TaskExecutor] 准备执行任务: ${task.id} (${task.name}) 在 ${currentTime} (重试次数: ${retryCount})`,
     );
 
     // 检查任务是否已在执行中
     if (this.currentExecution.has(task.id)) {
-      console.warn(
+      logger.warn(
         `[TaskExecutor] 任务 ${task.id} (${task.name}) 已在执行中，跳过本次执行`,
       );
       return;
@@ -44,7 +45,7 @@ export class TaskExecutor {
 
     // 检查任务是否已禁用
     if (!task.enabled) {
-      console.warn(
+      logger.warn(
         `[TaskExecutor] 任务 ${task.id} (${task.name}) 已禁用，跳过执行`,
       );
       return;
@@ -53,12 +54,12 @@ export class TaskExecutor {
     try {
       await this._executeTaskInternal(task);
     } catch (error) {
-      console.error(`[TaskExecutor] 任务执行失败: ${task.name}`, error);
+      logger.error(`[TaskExecutor] 任务执行失败: ${task.name}`, error);
 
       // 如果还有重试次数，延迟重试
       if (retryCount < maxRetries) {
         const retryDelay = Math.pow(2, retryCount) * 60000; // 指数退避: 1min, 2min, 4min
-        console.log(
+        logger.info(
           `[TaskExecutor] 将在 ${retryDelay / 60000} 分钟后重试任务: ${task.name} (第${retryCount + 1}次重试)`,
         );
 
@@ -66,7 +67,7 @@ export class TaskExecutor {
           this.executeTaskWithRetry(task, retryCount + 1);
         }, retryDelay);
       } else {
-        console.error(`[TaskExecutor] 任务 ${task.name} 所有重试都失败了`);
+        logger.error(`[TaskExecutor] 任务 ${task.name} 所有重试都失败了`);
       }
     }
   }
@@ -84,7 +85,7 @@ export class TaskExecutor {
     );
 
     if (!lockResult.success) {
-      console.warn(
+      logger.warn(
         `[TaskExecutor] 任务 ${task.id} (${task.name}) 获取锁失败，可能已在其他进程中执行`,
       );
       return;
@@ -98,7 +99,7 @@ export class TaskExecutor {
       try {
         await taskExecutionLogger.startTaskExecution(task.id);
       } catch (logError) {
-        console.warn(`[TaskExecutor] 启动执行日志记录失败:`, logError);
+        logger.warn(`[TaskExecutor] 启动执行日志记录失败:`, logError);
       }
 
       try {
@@ -109,7 +110,7 @@ export class TaskExecutor {
           'info',
         );
       } catch (logError) {
-        console.warn(`[TaskExecutor] 记录初始化日志失败:`, logError);
+        logger.warn(`[TaskExecutor] 记录初始化日志失败:`, logError);
       }
 
       // 更新任务的最后执行时间
@@ -119,17 +120,17 @@ export class TaskExecutor {
       try {
         await taskExecutionLogger.updateProgress(task.id, 5);
       } catch (logError) {
-        console.warn(`[TaskExecutor] 更新进度失败:`, logError);
+        logger.warn(`[TaskExecutor] 更新进度失败:`, logError);
       }
 
       // 执行任务
       if (task.type === 'tmdb-import') {
         await this.executeTMDBImportTask(task);
       } else {
-        console.warn(`[TaskExecutor] 未知任务类型: ${task.type}`);
+        logger.warn(`[TaskExecutor] 未知任务类型: ${task.type}`);
       }
     } catch (error) {
-      console.error(`[TaskExecutor] 执行任务时发生错误: ${task.name}`, error);
+      logger.error(`[TaskExecutor] 执行任务时发生错误: ${task.name}`, error);
       throw error;
     } finally {
       // 释放分布式锁
@@ -148,7 +149,7 @@ export class TaskExecutor {
     const relatedItem = await this.getRelatedItem(task);
 
     if (!relatedItem) {
-      console.error(`[TaskExecutor] 无法找到任务关联的项目: ${task.id}`);
+      logger.error(`[TaskExecutor] 无法找到任务关联的项目: ${task.id}`);
       throw new Error(`找不到任务关联的项目 (itemId: ${task.itemId})`);
     }
 
@@ -196,7 +197,7 @@ export class TaskExecutor {
       if (season && season.markedEpisodes && season.numberOfEpisodes) {
         const isCompleted = season.markedEpisodes.length === season.numberOfEpisodes;
         if (isCompleted) {
-          console.log(
+          logger.info(
             `[TaskExecutor] 项目已完结，自动删除任务: ${task.name}`,
           );
           await this.deleteCompletedTask(task);
@@ -215,7 +216,7 @@ export class TaskExecutor {
       // 策略1: 通过ID匹配
       let item = items.find((i) => i.id === task.itemId);
       if (item) {
-        console.log(
+        logger.debug(
           `[TaskExecutor] 通过ID找到项目: ${item.title} (ID: ${item.id})`,
         );
         return item;
@@ -225,7 +226,7 @@ export class TaskExecutor {
       if (task.itemTmdbId) {
         item = items.find((i) => i.tmdbId === task.itemTmdbId);
         if (item) {
-          console.log(
+          logger.debug(
             `[TaskExecutor] 通过TMDB ID找到项目: ${item.title} (ID: ${item.id})`,
           );
           return item;
@@ -236,19 +237,19 @@ export class TaskExecutor {
       if (task.itemTitle) {
         item = items.find((i) => i.title === task.itemTitle);
         if (item) {
-          console.log(
+          logger.debug(
             `[TaskExecutor] 通过标题找到项目: ${item.title} (ID: ${item.id})`,
           );
           return item;
         }
       }
 
-      console.error(
+      logger.error(
         `[TaskExecutor] 无法找到关联的项目: itemId=${task.itemId}, itemTitle=${task.itemTitle}, itemTmdbId=${task.itemTmdbId}`,
       );
       return null;
     } catch (error) {
-      console.error(`[TaskExecutor] 获取关联项目时出错:`, error);
+      logger.error(`[TaskExecutor] 获取关联项目时出错:`, error);
       return null;
     }
   }
@@ -260,16 +261,16 @@ export class TaskExecutor {
     try {
       const success = await StorageManager.deleteScheduledTask(task.id);
       if (success) {
-        console.log(
+        logger.info(
           `[TaskExecutor] 成功删除已完结的任务: ${task.name}`,
         );
       } else {
-        console.error(
+        logger.error(
           `[TaskExecutor] 删除已完结的任务失败: ${task.name}`,
         );
       }
     } catch (error) {
-      console.error(
+      logger.error(
         `[TaskExecutor] 删除已完结的任务时出错: ${task.name}`,
         error,
       );
@@ -280,7 +281,7 @@ export class TaskExecutor {
    * 手动执行任务
    */
   public async executeTaskManually(task: ScheduledTask): Promise<void> {
-    console.log(`[TaskExecutor] 手动执行任务: ${task.name}`);
+    logger.info(`[TaskExecutor] 手动执行任务: ${task.name}`);
     await this.executeTaskWithRetry(task);
   }
 

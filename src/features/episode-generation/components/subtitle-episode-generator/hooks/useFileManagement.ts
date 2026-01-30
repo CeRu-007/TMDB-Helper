@@ -2,6 +2,7 @@
 import { useToast } from '@/shared/components/ui/use-toast'
 import { SubtitleFile } from '../types'
 import { parseSubtitleFile } from '../utils'
+import { logger } from '@/lib/utils/logger'
 
 export function useFileManagement() {
   const [subtitleFiles, setSubtitleFiles] = useState<SubtitleFile[]>([])
@@ -44,7 +45,7 @@ export function useFileManagement() {
           description: `${file.name} 已成功解析为 ${episodes.length} 集`,
         })
       } catch (error) {
-        console.error('文件处理失败:', error)
+        logger.error('文件处理失败:', error)
         toast({
           title: "文件处理失败",
           description: `${file.name} 处理时出现错误`,

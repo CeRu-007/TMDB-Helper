@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserIdFromRequest } from '@/lib/auth/user-utils'
+import { TIMEOUT_30S, INTERVAL_10S, INTERVAL_15S } from '@/lib/constants/constants'
 
 // 存储活跃的SSE连接
 const connections = new Map<string, {
@@ -11,20 +12,20 @@ const connections = new Map<string, {
 // 定期清理超时连接
 setInterval(() => {
   const now = Date.now()
-  const timeout = 30000 // 30秒超时
-  
+  const timeout = TIMEOUT_30S // 30秒超时
+
   for (const [connectionId, connection] of connections.entries()) {
     if (now - connection.lastPing > timeout) {
       try {
         connection.controller.close()
       } catch (error) {
-        
+
       }
       connections.delete(connectionId)
-      
+
     }
   }
-}, 10000) // 每10秒检查一次
+}, INTERVAL_10S) // 每10秒检查一次
 
 /**
  * GET /api/system/realtime-sync - 建立Server-Sent Events连接
@@ -71,11 +72,11 @@ export async function GET(request: NextRequest) {
             clearInterval(heartbeat)
           }
         } catch (error) {
-          
+
           clearInterval(heartbeat)
           connections.delete(connectionId)
         }
-      }, 15000) // 每15秒发送心跳
+      }, INTERVAL_15S) // 每15秒发送心跳
 
       // 连接关闭时清理
       request.signal.addEventListener('abort', () => {

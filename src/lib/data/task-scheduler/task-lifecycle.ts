@@ -7,6 +7,7 @@ import { ScheduledTask } from '../storage';
 import { TaskManager } from './task-manager';
 import { TaskExecutor } from './task-executor';
 import { TimerManager } from './timer-manager';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * 任务生命周期管理器
@@ -26,7 +27,7 @@ export class TaskLifecycle {
     try {
       // 确保任务有ID
       if (!task.id) {
-        console.error('[TaskLifecycle] 添加任务失败：任务缺少ID');
+        logger.error('TaskLifecycle', '添加任务失败：任务缺少ID');
         return false;
       }
 
@@ -40,10 +41,7 @@ export class TaskLifecycle {
 
       return success;
     } catch (error) {
-      console.error(
-        '[TaskLifecycle] 添加任务时出错:',
-        error instanceof Error ? error.message : String(error),
-      );
+      logger.error('TaskLifecycle', '添加任务时出错', error);
       return false;
     }
   }
@@ -55,7 +53,7 @@ export class TaskLifecycle {
     try {
       // 确保任务有ID
       if (!task.id) {
-        console.error('[TaskLifecycle] 更新任务失败：任务缺少ID');
+        logger.error('TaskLifecycle', '更新任务失败：任务缺少ID');
         return false;
       }
 
@@ -90,10 +88,7 @@ export class TaskLifecycle {
 
       return success;
     } catch (error) {
-      console.error(
-        '[TaskLifecycle] 更新任务时出错:',
-        error instanceof Error ? error.message : String(error),
-      );
+      logger.error('TaskLifecycle', '更新任务时出错', error);
       return false;
     }
   }
@@ -109,10 +104,7 @@ export class TaskLifecycle {
       // 从存储中删除任务
       return await this.taskManager.deleteTask(taskId);
     } catch (error) {
-      console.error(
-        '[TaskLifecycle] 删除任务时出错:',
-        error instanceof Error ? error.message : String(error),
-      );
+      logger.error('TaskLifecycle', '删除任务时出错', error);
       return false;
     }
   }
@@ -124,10 +116,7 @@ export class TaskLifecycle {
     try {
       return this.timerManager.cancelTask(taskId);
     } catch (error) {
-      console.error(
-        '[TaskLifecycle] 取消任务时出错:',
-        error instanceof Error ? error.message : String(error),
-      );
+      logger.error('TaskLifecycle', '取消任务时出错', error);
       return false;
     }
   }

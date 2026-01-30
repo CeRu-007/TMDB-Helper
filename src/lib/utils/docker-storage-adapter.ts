@@ -3,6 +3,12 @@
  * 确保存储优化功能在Docker容器中正常工作
  */
 
+import {
+  FILE_SIZE_25MB,
+  FILE_SIZE_50MB,
+  FILE_SIZE_100MB
+} from '@/lib/constants/constants'
+
 interface DockerEnvironment {
   isDocker: boolean;
   hasWritePermission: boolean;
@@ -150,7 +156,7 @@ export class DockerStorageAdapter {
         useIndexedDB: true,
         useFileSystem: false,
         useMemoryCache: true,
-        maxCacheSize: env.isDocker ? 50 * 1024 * 1024 : 100 * 1024 * 1024, // Docker环境减少内存使用
+        maxCacheSize: env.isDocker ? FILE_SIZE_50MB : FILE_SIZE_100MB, // Docker环境减少内存使用
         cacheTTL: 30 * 60 * 1000 // 30分钟
       };
     } else {
@@ -159,7 +165,7 @@ export class DockerStorageAdapter {
         useIndexedDB: false,
         useFileSystem: env.hasWritePermission,
         useMemoryCache: true,
-        maxCacheSize: env.isDocker ? 25 * 1024 * 1024 : 50 * 1024 * 1024, // Docker环境减少内存使用
+        maxCacheSize: env.isDocker ? FILE_SIZE_25MB : FILE_SIZE_50MB, // Docker环境减少内存使用
         cacheTTL: 60 * 60 * 1000 // 1小时
       };
     }

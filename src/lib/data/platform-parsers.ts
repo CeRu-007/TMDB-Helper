@@ -21,53 +21,54 @@ interface NetflixModel {
   };
 }
 
-interface DisneyContentData {
-  title?: string;
-  description?: string;
-  genres?: Array<{ name?: string } | string>;
-  director?: Array<{ name?: string } | string>;
-  actor?: Array<{ name?: string } | string>;
-  images?: Array<{
-    purpose?: string;
-    url?: string;
-  }>;
-}
+// 以下类型定义保留以供将来使用
+// interface DisneyContentData {
+//   title?: string;
+//   description?: string;
+//   genres?: Array<{ name?: string } | string>;
+//   director?: Array<{ name?: string } | string>;
+//   actor?: Array<{ name?: string } | string>;
+//   images?: Array<{
+//     purpose?: string;
+//     url?: string;
+//   }>;
+// }
 
-interface PrimeContentData {
-  title?: string;
-  description?: string;
-  genres?: Array<{ name?: string } | string>;
-  credits?: Array<{
-    role?: string;
-    displayName?: string;
-  }>;
-  images?: Array<{
-    type?: string;
-    url?: string;
-  }>;
-}
+// interface PrimeContentData {
+//   title?: string;
+//   description?: string;
+//   genres?: Array<{ name?: string } | string>;
+//   credits?: Array<{
+//     role?: string;
+//     displayName?: string;
+//   }>;
+//   images?: Array<{
+//     type?: string;
+//     url?: string;
+//   }>;
+// }
 
-interface SpotifyAlbumInfo {
-  directors?: Array<{ name?: string }>;
-  actors?: Array<{ name?: string }>;
-}
+// interface SpotifyAlbumInfo {
+//   directors?: Array<{ name?: string }>;
+//   actors?: Array<{ name?: string }>;
+// }
 
-interface AppleCoverInfo {
-  director_list?: Array<{ name?: string }>;
-  leading_actor_list?: Array<{ name?: string }>;
-}
+// interface AppleCoverInfo {
+//   director_list?: Array<{ name?: string }>;
+//   leading_actor_list?: Array<{ name?: string }>;
+// }
 
-interface HBOContent {
-  genres?: Array<{ name?: string }>;
-  credits?: Array<{
-    role?: string;
-    name?: string;
-  }>;
-  images?: Array<{
-    type?: string;
-    url?: string;
-  }>;
-}
+// interface HBOContent {
+//   genres?: Array<{ name?: string }>;
+//   credits?: Array<{
+//     role?: string;
+//     name?: string;
+//   }>;
+//   images?: Array<{
+//     type?: string;
+//     url?: string;
+//   }>;
+// }
 
 // 通用状态对象类型
 interface StateObject {
@@ -84,7 +85,7 @@ export interface PlatformParser {
 export const NetflixParser: PlatformParser = {
   name: 'Netflix',
   domains: ['netflix.com'],
-  parse: (html: string, url: string) => {
+  parse: (html: string, _url: string) => {
     const metadata: Partial<ExtractedMetadata> = {};
 
     try {
@@ -93,7 +94,7 @@ export const NetflixParser: PlatformParser = {
         /netflix\.reactContext\s*=\s*({.+?});/,
       );
       if (reactContextMatch) {
-        const reactContext = JSON.parse(reactContextMatch[1]);
+        const reactContext = JSON.parse(reactContextMatch[1]!);
         const models = reactContext?.models;
 
         if (models) {
@@ -109,52 +110,52 @@ export const NetflixParser: PlatformParser = {
           if (videoData) {
             const summary = videoData.summary || videoData;
 
-            metadata.title = summary.title;
-            metadata.originalTitle = summary.originalTitle;
-            metadata.description = summary.synopsis || summary.logline;
-            metadata.year = summary.releaseYear;
-            metadata.duration = summary.runtime;
-            metadata.rating = summary.userRating?.average;
+            metadata.title = (summary as any).title;
+            metadata.originalTitle = (summary as any).originalTitle;
+            metadata.description = (summary as any).synopsis || (summary as any).logline;
+            metadata.year = (summary as any).releaseYear;
+            metadata.duration = (summary as any).runtime;
+            metadata.rating = (summary as any).userRating?.average;
 
             // 类型信息
-            if (summary.genres) {
-              metadata.genre = summary.genres.map((g) =>
+            if ((summary as any).genres) {
+              metadata.genre = (summary as any).genres.map((g: any) =>
                 typeof g === 'object' && g !== null && 'name' in g
-                  ? (g as { name?: string }).name || String(g)
+                  ? g.name || String(g)
                   : String(g)
               );
             }
 
             // 演员信息
-            if (summary.cast) {
-              metadata.cast = summary.cast.map((c) =>
+            if ((summary as any).cast) {
+              metadata.cast = (summary as any).cast.map((c: any) =>
                 typeof c === 'object' && c !== null && 'name' in c
-                  ? (c as { name?: string }).name || String(c)
+                  ? c.name || String(c)
                   : String(c)
               );
             }
 
             // 导演信息
-            if (summary.creators) {
-              metadata.director = summary.creators.map((c) =>
+            if ((summary as any).creators) {
+              metadata.director = (summary as any).creators.map((c: any) =>
                 typeof c === 'object' && c !== null && 'name' in c
-                  ? (c as { name?: string }).name || String(c)
+                  ? c.name || String(c)
                   : String(c)
               );
             }
 
             // 剧集信息
-            if (summary.type === 'show') {
-              metadata.episodeCount = summary.episodeCount;
-              metadata.seasonCount = summary.seasonCount;
+            if ((summary as any).type === 'show') {
+              metadata.episodeCount = (summary as any).episodeCount;
+              metadata.seasonCount = (summary as any).seasonCount;
             }
 
             // 图片
-            if (summary.boxart) {
-              metadata.posterUrl = summary.boxart.url;
+            if ((summary as any).boxart) {
+              metadata.posterUrl = (summary as any).boxart.url;
             }
-            if (summary.storyart) {
-              metadata.backdropUrl = summary.storyart.url;
+            if ((summary as any).storyart) {
+              metadata.backdropUrl = (summary as any).storyart.url;
             }
           }
         }
@@ -171,13 +172,13 @@ export const NetflixParser: PlatformParser = {
       // 提取成熟度评级
       const maturityMatch = html.match(/maturity[^>]*>([^<]+)</i);
       if (maturityMatch) {
-        metadata.rating = Number.parseFloat(maturityMatch[1]);
+        metadata.rating = Number.parseFloat(maturityMatch[1]!);
       }
 
       // 提取语言信息
       const audioMatch = html.match(/audio[^>]*language[^>]*>([^<]+)</i);
       if (audioMatch) {
-        metadata.language = audioMatch[1].trim();
+        metadata.language = audioMatch[1]!.trim();
       }
     } catch (error) {}
 
@@ -189,7 +190,7 @@ export const NetflixParser: PlatformParser = {
 export const PrimeVideoParser: PlatformParser = {
   name: 'Prime Video',
   domains: ['primevideo.com', 'amazon.com', 'amazon.cn'],
-  parse: (html: string, url: string) => {
+  parse: (html: string, _url: string) => {
     const metadata: Partial<ExtractedMetadata> = {};
 
     try {
@@ -199,7 +200,7 @@ export const PrimeVideoParser: PlatformParser = {
       );
 
       if (jsonLdMatches) {
-        for (const match of jsonLdMatches) {
+        for (const _match of jsonLdMatches) {
           try {
             const jsonContent = match
               .replace(/<script[^>]*>/, '')
@@ -221,7 +222,7 @@ export const PrimeVideoParser: PlatformParser = {
 
               if (data.director) {
                 metadata.director = Array.isArray(data.director)
-                  ? data.director.map((d) =>
+                  ? data.director.map((d: any) =>
                       typeof d === 'object' && d !== null && 'name' in d
                         ? (d as { name?: string }).name || String(d)
                         : String(d)
@@ -233,7 +234,7 @@ export const PrimeVideoParser: PlatformParser = {
 
               if (data.actor) {
                 metadata.cast = Array.isArray(data.actor)
-                  ? data.actor.map((a) =>
+                  ? data.actor.map((a: any) =>
                       typeof a === 'object' && a !== null && 'name' in a
                         ? (a as { name?: string }).name || String(a)
                         : String(a)
@@ -263,7 +264,7 @@ export const PrimeVideoParser: PlatformParser = {
       const primeDataMatch = html.match(/window\.ue_pti\s*=\s*({.+?});/);
       if (primeDataMatch) {
         try {
-          const primeData = JSON.parse(primeDataMatch[1]);
+          const _primeData = JSON.parse(primeDataMatch[1]!);
           // 处理 Prime Video 特有的数据结构
         } catch (e) {
           // 忽略解析错误
@@ -273,7 +274,7 @@ export const PrimeVideoParser: PlatformParser = {
       // 从页面元素提取
       const runtimeMatch = html.match(/(\d+)\s*(?:min|分钟)/i);
       if (runtimeMatch) {
-        metadata.duration = Number.parseInt(runtimeMatch[1]);
+        metadata.duration = Number.parseInt(runtimeMatch[1]!);
       }
     } catch (error) {}
 
@@ -285,7 +286,7 @@ export const PrimeVideoParser: PlatformParser = {
 export const DisneyPlusParser: PlatformParser = {
   name: 'Disney+',
   domains: ['disneyplus.com'],
-  parse: (html: string, url: string) => {
+  parse: (html: string, _url: string) => {
     const metadata: Partial<ExtractedMetadata> = {};
 
     try {
@@ -294,22 +295,22 @@ export const DisneyPlusParser: PlatformParser = {
         /window\.__INITIAL_STATE__\s*=\s*({.+?});/,
       );
       if (initialStateMatch) {
-        const initialState = JSON.parse(initialStateMatch[1]);
+        const initialState = JSON.parse(initialStateMatch[1]!);
 
         // 查找内容数据
         const contentData = findContentInState(initialState);
         if (contentData) {
-          metadata.title = contentData.title;
-          metadata.originalTitle = contentData.originalTitle;
+          metadata.title = contentData.title as string;
+          metadata.originalTitle = contentData.originalTitle as string;
           metadata.description =
             contentData.description || contentData.synopsis;
-          metadata.year = contentData.releaseYear;
+          metadata.year = contentData.releaseYear as number;
           metadata.duration = contentData.runtimeMillis
             ? Math.round(contentData.runtimeMillis / 60000)
             : undefined;
 
           if (contentData.genres) {
-            metadata.genre = contentData.genres.map((g) =>
+            metadata.genre = (contentData.genres as any[]).map((g: any) =>
               typeof g === 'object' && g !== null && 'name' in g
                 ? (g as { name?: string }).name || String(g)
                 : String(g)
@@ -317,11 +318,11 @@ export const DisneyPlusParser: PlatformParser = {
           }
 
           if (contentData.participants) {
-            const directors = contentData.participants.filter(
+            const directors = (contentData.participants as any[]).filter(
               (p): p is { role?: string; displayName?: string } =>
                 typeof p === 'object' && p !== null && (p as { role?: string }).role === 'Director',
             );
-            const actors = contentData.participants.filter(
+            const actors = (contentData.participants as any[]).filter(
               (p): p is { role?: string; displayName?: string } =>
                 typeof p === 'object' && p !== null && (p as { role?: string }).role === 'Actor',
             );
@@ -336,11 +337,11 @@ export const DisneyPlusParser: PlatformParser = {
           }
 
           if (contentData.images) {
-            const poster = contentData.images.find(
+            const poster = (contentData.images as any[]).find(
               (img): img is { purpose?: string; url?: string } =>
                 typeof img === 'object' && img !== null && (img as { purpose?: string }).purpose === 'poster',
             );
-            const backdrop = contentData.images.find(
+            const backdrop = (contentData.images as any[]).find(
               (img): img is { purpose?: string; url?: string } =>
                 typeof img === 'object' && img !== null && (img as { purpose?: string }).purpose === 'hero',
             );

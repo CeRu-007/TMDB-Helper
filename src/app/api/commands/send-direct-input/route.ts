@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server"
 import { spawn } from "child_process"
+import { logger } from "@/lib/utils/logger"
 
-// 声明全局activeProcesses类型
+// 声明全局activeProcesses类型（与execute-command-interactive保持一致）
 declare global {
-  var activeProcesses: Map<number, any> | undefined;
+  var activeProcesses: Map<number, any>;
 }
 
 export async function POST(request: NextRequest) {
@@ -38,33 +39,36 @@ export async function POST(request: NextRequest) {
     } 
     // 2. 尝试获取第一个可用进程
     else if (global.activeProcesses.size > 0) {
-      targetProcessId = [...global.activeProcesses.keys()][0]
-      targetProcess = global.activeProcesses.get(targetProcessId)
+      const keys = [...global.activeProcesses.keys()]
+      targetProcessId = keys[0]
+      if (targetProcessId !== undefined) {
+        targetProcess = global.activeProcesses.get(targetProcessId)
+      }
       
     }
     // 3. 没有可用进程，尝试创建一个简单的交互式进程
     else {
-      
       // 这只是一个后备方案，创建一个简单的命令行进程
       try {
         const isWindows = process.platform === 'win32'
         const shellCommand = isWindows ? 'cmd.exe' : 'bash'
         const shellArgs = isWindows ? ['/C', 'echo 输入已发送，但无活动进程接收'] : ['-c', 'echo 输入已发送，但无活动进程接收']
-        
+
         // 尝试创建一个简单的shell进程
-        const childProcess = spawn(shellCommand, shellArgs, { 
+        const childProcess = spawn(shellCommand, shellArgs, {
           stdio: ['pipe', 'pipe', 'pipe'],
           shell: true
         })
-        
+
         if (childProcess.pid) {
           targetProcessId = childProcess.pid
           targetProcess = childProcess
           global.activeProcesses.set(targetProcessId, childProcess)
-          
+
+          logger.warn(`创建临时shell进程 ${childProcess.pid} 作为后备方案`);
         }
       } catch (err) {
-        
+        logger.error(`创建临时shell进程失败: ${err}`);
       }
     }
     
@@ -99,8 +103,8 @@ export async function POST(request: NextRequest) {
 
       const inputToSend = `${input}\n`
       targetProcess.stdin.write(inputToSend)
-      console.log(`成功向进程 ${targetProcessId} 发送输入: "${input}" (带回车)`)
-      
+      logger.info(`成功向进程 ${targetProcessId} 发送输入: "${input}" (带回车)`)
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -112,7 +116,8 @@ export async function POST(request: NextRequest) {
         }
       )
     } catch (error) {
-      
+      logger.error(`发送直接输入失败: ${error instanceof Error ? error.message : '未知错误'}`);
+
       return new Response(
         JSON.stringify({
           success: false,
@@ -125,7 +130,8 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    
+    logger.error(`发送直接输入处理异常: ${error instanceof Error ? error.message : '未知错误'}`);
+
     return new Response(
       JSON.stringify({
         success: false,

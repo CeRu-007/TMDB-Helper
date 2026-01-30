@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
-import os from "os"
+import { TIMEOUT_5S } from "@/lib/constants/constants"
+import { logger } from "@/lib/utils/logger"
 
 // 声明全局activeProcesses类型
 declare global {
@@ -35,7 +36,7 @@ const isProcessRunning = async (pid: number): Promise<boolean> => {
       return result.trim() !== '';
     }
   } catch (error) {
-    
+    logger.debug(`检查进程状态失败: ${error}`);
     return false;
   }
 };
@@ -59,16 +60,16 @@ export async function POST(request: NextRequest) {
 
     // 获取活动进程
     const childProcess = global.activeProcesses.get(processId)
-    
-    console.log(`尝试向进程 ${processId} 发送输入: "${input}"${sendDirectly ? ' (直接发送带回车)' : ''}`)
-    console.log(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`)
+
+    logger.debug(`尝试向进程 ${processId} 发送输入: "${input}"${sendDirectly ? ' (直接发送带回车)' : ''}`)
+    logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`)
 
     if (!childProcess) {
       // 检查进程是否存在于系统中但不在我们的映射中
       const isRunning = await isProcessRunning(processId);
-      
+
       if (isRunning) {
-        
+        logger.warn(`进程 ${processId} 存在但不受应用程序控制`);
         return new Response(
           JSON.stringify({
             success: false,
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
             const timeout = setTimeout(() => {
             childProcess.stdin?.removeListener('error', onError);
               reject(new Error('写入超时'));
-            }, 5000);
+            }, TIMEOUT_5S);
 
           // 错误处理
           const onError = (err: Error) => {
@@ -184,17 +185,17 @@ export async function POST(request: NextRequest) {
         );
       } catch (error) {
         lastError = error;
-        
+
         // 如果是Windows且使用\n发送失败，尝试使用\r\n
         if (process.platform === 'win32' && sendDirectly && i === 0 && input.indexOf('\r\n') === -1) {
-          
+          logger.debug(`尝试使用Windows行终止符发送输入`);
           try {
             const winEOL = '\r\n';
             const inputToSend = `${input}${winEOL}`;
-            
+
             const writeResult = childProcess.stdin.write(inputToSend, 'utf8');
             if (writeResult) {
-              
+              logger.info(`使用Windows行终止符成功发送输入`);
               return new Response(
                 JSON.stringify({
                   success: true,
@@ -206,14 +207,15 @@ export async function POST(request: NextRequest) {
               );
             }
           } catch (winError) {
-            
+            logger.debug(`Windows行终止符发送失败: ${winError}`);
           }
         }
         
         if (i < MAX_RETRIES - 1) {
           // 指数退避策略
           const backoffDelay = RETRY_DELAY * Math.pow(2, i);
-          
+
+          logger.debug(`发送输入失败，${backoffDelay}ms后重试 (${i + 1}/${MAX_RETRIES})`);
           await delay(backoffDelay);
           continue;
         }
@@ -221,7 +223,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 所有重试都失败了
-    
+    logger.error(`向进程 ${processId} 发送输入失败，已重试${MAX_RETRIES}次`);
+
       return new Response(
         JSON.stringify({
           success: false,
@@ -234,7 +237,7 @@ export async function POST(request: NextRequest) {
         }
     );
   } catch (error) {
-    
+    logger.error(`发送输入处理异常: ${error instanceof Error ? error.message : '未知错误'}`);
     return new Response(
       JSON.stringify({
         success: false,

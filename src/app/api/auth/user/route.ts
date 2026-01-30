@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthMiddleware } from '@/lib/auth/auth-middleware';
-import { UserManager } from '@/lib/auth/user-manager';
 import { AuthManager } from '@/lib/auth/auth-manager';
+import { ErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * GET /api/auth/user - 获取当前用户信息
@@ -57,10 +58,10 @@ export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
     });
 
   } catch (error) {
-    console.error('获取用户信息失败:', error);
+    logger.error('获取用户信息失败:', error);
     return NextResponse.json(
-      { success: false, error: '服务器内部错误' },
-      { status: 500 }
+      { success: false, error: ErrorHandler.toUserMessage(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 });
@@ -96,7 +97,7 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
     // 在 Next.js API 路由中始终在服务端运行
     // 目前我们只记录这些更新操作，因为服务端无法直接修改客户端存储
     // 如果需要持久化用户信息变更，需要实现服务器端存储机制
-    console.log(`在服务器端接收到用户信息更新请求: displayName=${displayName}, avatarUrl=${avatarUrl}`);
+    logger.info(`在服务器端接收到用户信息更新请求: displayName=${displayName}, avatarUrl=${avatarUrl}`);
 
     // 返回更新后的用户信息
     const adminUser = AuthManager.getAdminUser();
@@ -132,10 +133,10 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
     });
 
   } catch (error) {
-    console.error('更新用户信息失败:', error);
+    logger.error('更新用户信息失败:', error);
     return NextResponse.json(
-      { success: false, error: '服务器内部错误' },
-      { status: 500 }
+      { success: false, error: ErrorHandler.toUserMessage(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 });
@@ -157,7 +158,7 @@ export const DELETE = AuthMiddleware.withAuth(async (request: NextRequest) => {
     // Next.js API路由始终在服务器端运行
     // 在服务器端环境中，我们不能清除客户端特定的存储（如localStorage）
     // 这种情况下，我们可以记录操作或者不执行任何操作
-    console.log('服务器端：接收到清除用户数据请求');
+    logger.info('服务器端：接收到清除用户数据请求');
 
     return NextResponse.json({
       success: true,
@@ -165,10 +166,10 @@ export const DELETE = AuthMiddleware.withAuth(async (request: NextRequest) => {
     });
 
   } catch (error) {
-    console.error('重置用户数据失败:', error);
+    logger.error('重置用户数据失败:', error);
     return NextResponse.json(
-      { success: false, error: '服务器内部错误' },
-      { status: 500 }
+      { success: false, error: ErrorHandler.toUserMessage(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 });

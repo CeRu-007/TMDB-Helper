@@ -5,8 +5,7 @@ import { Badge } from "@/shared/components/ui/badge"
 import { ExternalLink, MousePointer2, Zap } from "lucide-react"
 import type { TMDBItem } from "@/lib/data/storage"
 import { Button } from "@/shared/components/ui/button"
-
-const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+import { CLICK_RESET_DELAY, WEEKDAY_NAMES, POSTER_ASPECT_RATIO, TMDB_IMAGE_BASE_URL, TMDB_POSTER_SIZE } from "@/lib/constants/constants"
 
 interface MediaCardProps {
   item: TMDBItem
@@ -20,92 +19,104 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
   const [isClicked, setIsClicked] = useState(false)
 
   // 判断是否每日更新
-  const isDailyUpdate = item.isDailyUpdate === true || (item.isDailyUpdate === undefined && (item.category === "tv" || item.category === "short"))
+  const isDailyUpdate = Boolean(
+    item.isDailyUpdate ||
+    (item.isDailyUpdate === undefined && (item.category === "tv" || item.category === "short"))
+  )
 
   // 获取进度
-  const getProgress = () => {
-    // 计算电视剧进度 - 使用 seasons 的 currentEpisode
-    if (!item.seasons || item.seasons.length === 0) {
-      return 0
-    }
+  const getProgress = (): number => {
+    if (!item.seasons?.length) return 0;
 
-    const totalCompleted = item.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0)
-    const totalEpisodes = item.seasons.reduce((sum, season) => sum + season.totalEpisodes, 0)
+    const totalCompleted = item.seasons.reduce(
+      (sum, season) => sum + (season.currentEpisode || 0),
+      0
+    );
+    const totalEpisodes = item.seasons.reduce(
+      (sum, season) => sum + season.totalEpisodes,
+      0
+    );
 
-    return totalEpisodes > 0 ? (totalCompleted / totalEpisodes) * 100 : 0
-  }
-
-  // 评分设置为null，修复右下角评分问题
-  const rating = null
+    return totalEpisodes > 0 ? (totalCompleted / totalEpisodes) * 100 : 0;
+  };
 
   // 计算已完成集数 - 使用 seasons 的 currentEpisode
-  const completedEpisodes = item.seasons
-    ? item.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0)
-    : 0
+  const completedEpisodes = item.seasons?.reduce(
+    (sum, season) => sum + (season.currentEpisode || 0),
+    0
+  ) ?? 0;
 
   // 获取仅时间部分
-  const getTimeOnly = () => item.airTime || "19:00"
+  const getTimeOnly = (): string => item.airTime ?? "19:00";
 
   // 检查是否有第二播出日
-  const hasSecondWeekday = typeof item.secondWeekday === 'number' && item.secondWeekday >= 0
+  const hasSecondWeekday = typeof item.secondWeekday === 'number' && item.secondWeekday >= 0;
 
   // 获取播出时间显示文本
-  const getAirTimeDisplay = () => {
-    const airTime = getTimeOnly()
-    const weekdays = []
+  const getAirTimeDisplay = (): string => {
+    const airTime = getTimeOnly();
+    const weekdays: string[] = [];
 
     // 处理主要播出日（转换0=周日到6=周六的格式）
-    const adjustedWeekday1 = item.weekday === 0 ? 6 : item.weekday! - 1
-    weekdays.push(WEEKDAYS[adjustedWeekday1])
+    if (item.weekday !== undefined && item.weekday !== null) {
+      const adjustedWeekday1 = item.weekday === 0 ? 6 : item.weekday - 1;
+      weekdays.push(WEEKDAY_NAMES[adjustedWeekday1]);
+    }
 
     // 处理第二播出日
     if (hasSecondWeekday) {
-      const adjustedWeekday2 = item.secondWeekday === 0 ? 6 : item.secondWeekday - 1
-      weekdays.push(WEEKDAYS[adjustedWeekday2])
+      const adjustedWeekday2 = item.secondWeekday === 0 ? 6 : item.secondWeekday - 1;
+      weekdays.push(WEEKDAY_NAMES[adjustedWeekday2]);
     }
 
-    return `${weekdays.join('')} ${airTime}`
-  }
+    return `${weekdays.join('')} ${airTime}`;
+  };
 
   // 获取更新信息文本
-  const getUpdateText = () => {
+  const getUpdateText = (): string => {
     // 已完结的剧集
     if (item.status === "completed") {
-      return item.totalEpisodes ? `全${item.totalEpisodes}集` : "已完结"
+      return item.totalEpisodes ? `全${item.totalEpisodes}集` : "已完结";
     }
 
     // 有季信息的剧集，显示最新季进度
     if (item.seasons?.length) {
-      const latestSeason = [...item.seasons]
-        .sort((a, b) => b.seasonNumber - a.seasonNumber)[0]
+      const latestSeason = item.seasons.reduce(
+        (latest, season) =>
+          season.seasonNumber > (latest?.seasonNumber ?? -1) ? season : latest,
+        null as typeof item.seasons[0] | null
+      );
 
-      return `维护至第${latestSeason?.currentEpisode || 0}集`
+      return `维护至第${latestSeason?.currentEpisode ?? 0}集`;
     }
 
     // 单季剧集显示总进度
-    return `维护至第${completedEpisodes}集`
-  }
+    return `维护至第${completedEpisodes}集`;
+  };
 
   // 获取完结日期
-  const getCompletionDate = () => {
+  const getCompletionDate = (): string | null => {
     try {
-      return new Date(item.updatedAt)
-        .toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+      return new Date(item.updatedAt).toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
     } catch {
-      return null
+      return null;
     }
-  }
+  };
 
-  const handleImageError = () => {
-    setImageError(true)
-  }
+  const handleImageError = (): void => {
+    setImageError(true);
+  };
 
-  const handleCardClick = () => {
-    setIsClicked(true)
-    onClick()
+  const handleCardClick = (): void => {
+    setIsClicked(true);
+    onClick();
     // 快速重置点击状态
-    setTimeout(() => setIsClicked(false), 80)
-  }
+    setTimeout(() => setIsClicked(false), CLICK_RESET_DELAY);
+  };
 
   return (
     <div
@@ -163,7 +174,11 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
 
         {/* 海报图片 */}
         <img
-          src={!imageError ? item.posterUrl : "/placeholder.svg?height=300&width=200"}
+          src={
+            !imageError
+              ? item.posterUrl
+              : `${TMDB_IMAGE_BASE_URL}/${TMDB_POSTER_SIZE}/placeholder.jpg`
+          }
           alt={item.title}
           className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
           onError={handleImageError}

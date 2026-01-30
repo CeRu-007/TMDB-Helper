@@ -2,6 +2,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const { logger } = require('./logger');
+
+// 文件大小常量（字节）
+const FILE_SIZE_100MB = 100 * 1024 * 1024;
+const FILE_SIZE_200MB = 200 * 1024 * 1024;
 
 function getDirectorySize(dirPath) {
   if (!fs.existsSync(dirPath)) {
@@ -34,7 +39,7 @@ function analyzeDirectory(name, dirPath) {
   const size = getDirectorySize(dirPath);
   const exists = fs.existsSync(dirPath);
 
-  console.log(`${exists ? '📁' : '❌'} ${name.padEnd(25)} ${exists ? formatSize(size) : '不存在'}`);
+  logger.info(`${exists ? '📁' : '❌'} ${name.padEnd(25)} ${exists ? formatSize(size) : '不存在'}`);
   return size;
 }
 
@@ -59,12 +64,12 @@ directories.forEach(([name, dirPath]) => {
   totalSize += size;
 });
 
-console.log('\n' + '='.repeat(50));
-console.log(`📊 总计大小: ${formatSize(totalSize)}`);
+logger.info('\n' + '='.repeat(50));
+logger.info(`📊 总计大小: ${formatSize(totalSize)}`);
 
 // 分析 .next 子目录
 if (fs.existsSync('.next')) {
-  console.log('\n📦 .next 子目录:');
+  logger.info('\n📦 .next 子目录:');
 
   const nextSubDirs = [
     ['standalone', '.next/standalone'],
@@ -81,7 +86,7 @@ if (fs.existsSync('.next')) {
 
 // 分析 TMDB-Import-master 子目录
 if (fs.existsSync('TMDB-Import-master')) {
-  console.log('\n📦 TMDB-Import-master 子目录:');
+  logger.info('\n📦 TMDB-Import-master 子目录:');
 
   const tmdbSubDirs = [
     ['tmdb-import', 'TMDB-Import-master/tmdb-import'],
@@ -95,7 +100,7 @@ if (fs.existsSync('TMDB-Import-master')) {
 }
 
 // 预估打包后大小
-console.log('\n📦 预估打包后大小:');
+logger.info('\n📦 预估打包后大小:');
 
 const nextSize = getDirectorySize('.next/standalone') + getDirectorySize('.next/static');
 const electronSize = getDirectorySize('electron');
@@ -104,15 +109,15 @@ const publicSize = fs.existsSync('public/images/tmdb-helper-logo-new.png') ?
 
 const estimatedSize = nextSize + electronSize + publicSize;
 
-console.log(`  Next.js 构建产物: ${formatSize(nextSize)}`);
-console.log(`  Electron 主进程: ${formatSize(electronSize)}`);
-console.log(`  公共资源: ${formatSize(publicSize)}`);
-console.log(`  预估安装包大小: ${formatSize(estimatedSize)}`);
+logger.info(`  Next.js 构建产物: ${formatSize(nextSize)}`);
+logger.info(`  Electron 主进程: ${formatSize(electronSize)}`);
+logger.info(`  公共资源: ${formatSize(publicSize)}`);
+logger.info(`  预估安装包大小: ${formatSize(estimatedSize)}`);
 
-if (estimatedSize > 200 * 1024 * 1024) { // 200MB
-  console.log('\n⚠️  警告: 预估安装包大小超过 200MB，建议优化');
-} else if (estimatedSize > 100 * 1024 * 1024) { // 100MB
-  console.log('\n⚠️  注意: 预估安装包大小超过 100MB，可以考虑进一步优化');
+if (estimatedSize > FILE_SIZE_200MB) {
+  logger.warn('\n⚠️  警告: 预估安装包大小超过 200MB，建议优化');
+} else if (estimatedSize > FILE_SIZE_100MB) {
+  logger.warn('\n⚠️  注意: 预估安装包大小超过 100MB，可以考虑进一步优化');
 } else {
-  console.log('\n✅ 预估安装包大小合理');
+  logger.info('\n✅ 预估安装包大小合理');
 }

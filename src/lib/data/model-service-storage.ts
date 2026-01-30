@@ -6,6 +6,7 @@ import {
 } from '@/types/model-service';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { logger } from '@/lib/utils/logger';
 
 // 本地数据存储路径
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -116,7 +117,7 @@ export class ModelServiceStorage {
 
       // 检查文件是否为空或只包含空白字符
       if (!data || data.trim() === '') {
-        console.warn('模型服务配置文件为空，创建默认配置');
+        logger.warn('模型服务配置文件为空，创建默认配置');
         await this.createDefaultConfig();
         return DEFAULT_CONFIG;
       }
@@ -150,16 +151,16 @@ export class ModelServiceStorage {
 
       return result
     } catch (error) {
-      console.warn('读取模型服务配置失败，创建默认配置:', error);
+      logger.warn('读取模型服务配置失败，创建默认配置:', error);
 
       // 如果是JSON解析错误，备份损坏的文件并重新创建
       if (error instanceof SyntaxError) {
         try {
           const backupPath = `${MODEL_SERVICE_CONFIG_PATH}.backup.${Date.now()}`;
           await fs.copyFile(MODEL_SERVICE_CONFIG_PATH, backupPath);
-          console.warn(`已备份损坏的配置文件到: ${backupPath}`);
+          logger.warn(`已备份损坏的配置文件到: ${backupPath}`);
         } catch (backupError) {
-          console.warn('备份损坏文件失败:', backupError);
+          logger.warn('备份损坏文件失败:', backupError);
         }
       }
 
@@ -196,7 +197,7 @@ export class ModelServiceStorage {
       // 原子性重命名到目标文件
       await fs.rename(tempFilePath, MODEL_SERVICE_CONFIG_PATH);
 
-      console.log('模型服务配置已保存到本地文件');
+      logger.info('模型服务配置已保存到本地文件');
     } catch (error) {
       // 清理临时文件
       try {
@@ -324,13 +325,13 @@ export class ModelServiceStorage {
     try {
       // 检查是否已经存在配置
       await fs.access(MODEL_SERVICE_CONFIG_PATH);
-      console.log('模型服务配置已存在，跳过创建');
+      logger.info('模型服务配置已存在，跳过创建');
       return;
     } catch {
       // 配置不存在，创建默认配置
-      console.log('模型服务配置文件不存在，创建默认配置...');
+      logger.info('模型服务配置文件不存在，创建默认配置...');
       await this.saveConfig(DEFAULT_CONFIG);
-      console.log('🎉 模型服务默认配置创建完成');
+      logger.info('🎉 模型服务默认配置创建完成');
     }
   }
 

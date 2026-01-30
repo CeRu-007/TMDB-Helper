@@ -2,10 +2,11 @@
 import { ModelServiceStorage } from '@/lib/data/model-service-storage'
 import { ModelServiceConfig, ModelProvider, ModelConfig, UsageScenario } from '@/shared/types/model-service'
 import { ApiResponse } from '@/types/common'
+import { logger } from '@/lib/utils/logger'
 
 // Standardized error response helper
 function createErrorResponse(message: string, status: number = 500) {
-  console.error(`模型服务API错误: ${message}`)
+  logger.error(`模型服务API错误: ${message}`)
   return NextResponse.json({
     success: false,
     error: message
@@ -110,7 +111,7 @@ export async function PUT(request: NextRequest) {
     // Log scenario updates
     if (action.startsWith('update-scenario')) {
       const count = Array.isArray(data) ? data.length : 1
-      console.log(`更新场景: ${count} 个场景已更新`)
+      logger.info(`更新场景: ${count} 个场景已更新`)
     }
 
     const updatedConfig = await ModelServiceStorage.getConfig()

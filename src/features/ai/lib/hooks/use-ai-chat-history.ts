@@ -2,6 +2,7 @@
 import { ChatHistory, Message } from '@/types/ai-chat'
 import { chatSyncManager } from '@/features/ai/lib/utils/chat-history-cache'
 import { storageService } from '@/lib/storage/storage-service'
+import { logger } from '@/lib/utils/logger'
 
 export const useAiChatHistory = (
   messages: Message[],
@@ -15,7 +16,7 @@ export const useAiChatHistory = (
       const histories = await chatSyncManager.getAllChatHistories()
       setChatHistories(histories)
     } catch (error) {
-      console.error('加载对话历史失败:', error)
+      logger.error('加载对话历史失败:', error)
       try {
         const stored = storageService.get<string>('ai-chat-histories', '')
         if (stored) {
@@ -31,7 +32,7 @@ export const useAiChatHistory = (
           setChatHistories(histories)
         }
       } catch (localError) {
-        console.error('从本地存储加载失败:', localError)
+        logger.error('从本地存储加载失败:', localError)
       }
     }
   }, [])
@@ -42,11 +43,11 @@ export const useAiChatHistory = (
         await chatSyncManager.queueUpdate(history)
       }
     } catch (error) {
-      console.error('保存对话历史失败:', error)
+      logger.error('保存对话历史失败:', error)
       try {
         storageService.set('ai-chat-histories', histories)
       } catch (localError) {
-        console.error('本地存储保存也失败:', localError)
+        logger.error('本地存储保存也失败:', localError)
       }
     }
   }, [])
@@ -116,7 +117,7 @@ export const useAiChatHistory = (
     try {
       await chatSyncManager.deleteChatHistory(chatId)
     } catch (error) {
-      console.error('删除对话失败:', error)
+      logger.error('删除对话失败:', error)
     }
     
     const updatedHistories = chatHistories.filter(h => h.id !== chatId)
@@ -134,7 +135,7 @@ export const useAiChatHistory = (
         await chatSyncManager.getAllChatHistories()
         await loadChatHistories()
       } catch (error) {
-        console.error('初始化聊天功能失败:', error)
+        logger.error('初始化聊天功能失败:', error)
       }
     }
     

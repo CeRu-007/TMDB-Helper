@@ -1,0 +1,33 @@
+# 依赖
+node_modules
+.pnp
+.pnp.js
+
+# 构建输出
+.next
+out
+dist
+build
+
+# 生产文件
+*.min.js
+*.min.css
+
+# 配置文件
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# 其他
+.DS_Store
+*.log
+.env
+.env.*
+
+# 特定文件
+next-env.d.ts
+tsconfig.tsbuildinfo
+public
+
+# 脚本
+scripts

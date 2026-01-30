@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import React, { useState } from 'react';
+import { logger } from '@/lib/utils/logger';
 import {
   Dialog,
   DialogContent,
@@ -158,7 +159,7 @@ export default function ExportDataDialog({
     } catch (error) {
       // Fallback to memory data
       if (items && items.length > 0) {
-        console.warn('使用内存数据作为API降级方案');
+        logger.warn('使用内存数据作为API降级方案');
         return { items };
       }
       throw new Error('无法获取数据');
@@ -204,7 +205,7 @@ export default function ExportDataDialog({
         return result.success && result.items ? result.items : [];
       }
     } catch (error) {
-      console.warn('API获取项目失败，使用内存数据');
+      logger.warn('API获取项目失败，使用内存数据');
     }
 
     return items || [];
@@ -215,7 +216,7 @@ export default function ExportDataDialog({
     try {
       return await StorageManager.getScheduledTasks();
     } catch (error) {
-      console.warn('获取定时任务失败');
+      logger.warn('获取定时任务失败');
       return [];
     }
   };

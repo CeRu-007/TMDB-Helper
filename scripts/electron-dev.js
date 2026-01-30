@@ -1,6 +1,7 @@
 const { spawn } = require('child_process');
 const { createServer } = require('http');
 const path = require('path');
+const { logger } = require('./logger');
 
 const port = 3000;
 let nextProcess = null;
@@ -47,7 +48,7 @@ function waitForServer(url, timeout = 30000) {
 
 // 清理进程
 function cleanup() {
-  console.log('🧹 清理进程...');
+  logger.info('🧹 清理进程...');
   if (nextProcess) {
     nextProcess.kill('SIGTERM');
     nextProcess = null;
@@ -62,13 +63,13 @@ async function startElectronDev() {
   // 检查端口
   const isPortAvailable = await checkPort(port);
   if (!isPortAvailable) {
-    console.error('❌ 端口 3000 已被占用，请先关闭占用该端口的进程');
+    logger.error('❌ 端口 3000 已被占用，请先关闭占用该端口的进程');
     process.exit(1);
   } else {
-    console.log('✅ 端口 3000 可用');
+    logger.info('✅ 端口 3000 可用');
 
     // 启动 Next.js 开发服务器
-    console.log('🚀 启动 Next.js 开发服务器...');
+    logger.info('🚀 启动 Next.js 开发服务器...');
     nextProcess = spawn('npm', ['run', 'dev'], {
       stdio: 'inherit',
       shell: true,
@@ -79,23 +80,23 @@ async function startElectronDev() {
     });
 
     nextProcess.on('error', (error) => {
-      console.error('❌ Next.js 启动失败:', error);
+      logger.error('❌ Next.js 启动失败:', error);
       process.exit(1);
     });
 
     // 等待服务器启动
     try {
-      console.log('⏳ 等待 Next.js 服务器启动...');
+      logger.info('⏳ 等待 Next.js 服务器启动...');
       await waitForServer(`http://localhost:${port}`);
-      console.log('✅ Next.js 服务器已启动');
+      logger.info('✅ Next.js 服务器已启动');
     } catch (error) {
-      console.error('❌ Next.js 服务器启动超时:', error);
+      logger.error('❌ Next.js 服务器启动超时:', error);
       process.exit(1);
     }
   }
 
   // 启动 Electron
-  console.log('🚀 启动 Electron 应用...');
+  logger.info('🚀 启动 Electron 应用...');
   electronProcess = spawn('electron', ['.'], {
     stdio: 'inherit',
     shell: true,
@@ -107,12 +108,12 @@ async function startElectronDev() {
   });
 
   electronProcess.on('error', (error) => {
-    console.error('❌ Electron 启动失败:', error);
+    logger.error('❌ Electron 启动失败:', error);
     process.exit(1);
   });
 
   electronProcess.on('close', (code) => {
-    console.log(`🚪 Electron 已退出，退出码: ${code}`);
+    logger.info(`🚪 Electron 已退出，退出码: ${code}`);
     cleanup();
     process.exit(code);
   });
@@ -120,20 +121,20 @@ async function startElectronDev() {
 
 // 错误处理
 process.on('SIGINT', () => {
-  console.log('\n👋 收到 SIGINT 信号，正在退出...');
+  logger.info('\n👋 收到 SIGINT 信号，正在退出...');
   cleanup();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log('\n👋 收到 SIGTERM 信号，正在退出...');
+  logger.info('\n👋 收到 SIGTERM 信号，正在退出...');
   cleanup();
   process.exit(0);
 });
 
 // 启动
 startElectronDev().catch((error) => {
-  console.error('❌ 启动失败:', error);
+  logger.error('❌ 启动失败:', error);
   cleanup();
   process.exit(1);
 });

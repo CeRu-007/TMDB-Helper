@@ -4,6 +4,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from './ui/button'
 import { Alert, AlertDescription } from './ui/alert'
+import { logger } from '@/lib/utils/logger'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -49,7 +50,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     // 在开发环境下打印错误
     if (process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary caught an error:', error, errorInfo)
+      logger.error('ErrorBoundary caught an error:', error, errorInfo)
     }
   }
 

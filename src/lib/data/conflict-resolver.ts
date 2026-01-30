@@ -5,6 +5,7 @@
 
 import { ScheduledTask } from '@/lib/data/storage';
 import { ConflictInfo } from './conflict-detector';
+import { logger } from '@/lib/utils/logger';
 
 export interface Resolution {
   taskId: string;
@@ -75,7 +76,7 @@ export class ConflictResolver {
 
     if (resolution) {
       this.resolutionHistory.push(resolution);
-      console.log(`[ConflictResolver] 冲突解决完成:`, {
+      logger.info(`[ConflictResolver] 冲突解决完成:`, {
         task: resolution.taskName,
         strategy: resolution.strategy,
         originalTime: resolution.originalTime.toLocaleString('zh-CN'),

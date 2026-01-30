@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { TIMEOUT_10S, FILE_SIZE_5MB } from '@/lib/constants/constants'
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       },
-      signal: AbortSignal.timeout(10000) // 10秒超时
+      signal: AbortSignal.timeout(TIMEOUT_10S) // 10秒超时
     })
 
     if (!response.ok) {
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     // 检查文件大小（限制为5MB）
     const contentLength = response.headers.get('content-length')
-    if (contentLength && parseInt(contentLength) > 5 * 1024 * 1024) {
+    if (contentLength && parseInt(contentLength) > FILE_SIZE_5MB) {
       return NextResponse.json({
         success: false,
         error: '图片文件过大，请使用小于5MB的图片'
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
     const imageBuffer = await response.arrayBuffer()
 
     // 再次检查实际大小
-    if (imageBuffer.byteLength > 5 * 1024 * 1024) {
+    if (imageBuffer.byteLength > FILE_SIZE_5MB) {
       return NextResponse.json({
         success: false,
         error: '图片文件过大，请使用小于5MB的图片'

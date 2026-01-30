@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { TIMEOUT_10S } from '@/lib/constants/constants'
+import { logger } from '@/lib/utils/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +21,7 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(TIMEOUT_10S)
     })
     
     if (response.ok) {
@@ -40,8 +42,8 @@ export async function POST(request: NextRequest) {
       })
     }
   } catch (error) {
-    console.error('测试连接失败:', error)
-    
+    logger.error('测试连接失败:', error)
+
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
         return NextResponse.json({

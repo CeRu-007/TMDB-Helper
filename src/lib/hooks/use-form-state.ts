@@ -1,10 +1,11 @@
 /**
  * 表单状态管理 Hook
- * 
+ *
  * 简化表单状态管理，提供验证、重置和提交功能
  */
 
 import { useState, useCallback } from 'react'
+import { logger } from '@/lib/utils/logger'
 
 export interface FormFieldConfig<T = unknown> {
   value: T
@@ -123,7 +124,7 @@ export function useFormState<T extends Record<string, unknown>>({
       }
       return true
     } catch (error) {
-      console.error('Form submission error:', error)
+      logger.error('Form submission error:', error)
       return false
     } finally {
       setIsSubmitting(false)

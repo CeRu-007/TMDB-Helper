@@ -4,6 +4,7 @@ import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
 import { GenerationConfig } from '../types'
 import { GENERATION_STYLES } from '../constants'
 import { buildPromptForStyle, parseGeneratedContent } from '../utils'
+import { logger } from '@/lib/utils/logger'
 
 export interface ApiCallResult {
   episodeNumber: number
@@ -62,12 +63,12 @@ export function useApiCalls(config: GenerationConfig) {
       let errorMessage = `API调用失败 (${response.status})`
       try {
         const responseText = await response.text()
-        console.error('API错误原始响应:', responseText.substring(0, 500))
+        logger.error('API错误原始响应:', responseText.substring(0, 500))
 
         // 检查是否是HTML响应
         if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
           errorMessage = 'API端点返回错误页面，请检查API密钥配置'
-          console.error('收到HTML响应:', responseText.substring(0, 200))
+          logger.error('收到HTML响应:', responseText.substring(0, 200))
         } else {
           let errorData = null
           try {
@@ -93,7 +94,7 @@ export function useApiCalls(config: GenerationConfig) {
               }
             }
           } catch (parseError) {
-            console.error('解析API错误响应失败:', parseError)
+            logger.error('解析API错误响应失败:', parseError)
             errorMessage = `API返回非JSON响应: ${responseText.substring(0, 100)}`
           }
 
@@ -228,7 +229,7 @@ export function useApiCalls(config: GenerationConfig) {
           }
         }
       } catch (e) {
-        console.error('处理API错误响应失败:', e)
+        logger.error('处理API错误响应失败:', e)
         errorMessage = `网络错误或响应格式异常: ${e.message}`
       }
       throw new Error(errorMessage)
@@ -237,14 +238,14 @@ export function useApiCalls(config: GenerationConfig) {
     const result = await response.json()
     
     if (!result.success) {
-      console.error('API返回失败结果:', result)
+      logger.error('API返回失败结果:', result)
       throw new Error(result.error || 'API调用失败')
     }
 
     const content = result.data.content
 
     if (!content) {
-      console.error('API返回内容为空')
+      logger.error('API返回内容为空')
       throw new Error('API返回内容为空，请重试')
     }
 
@@ -253,7 +254,7 @@ export function useApiCalls(config: GenerationConfig) {
     
     // 如果生成的简介太短，标记为低置信度
     if (parsedResult.generatedSummary.length < 30) {
-      console.warn(`生成的简介太短(${parsedResult.generatedSummary.length}字)，建议重新生成`)
+      logger.warn(`生成的简介太短(${parsedResult.generatedSummary.length}字)，建议重新生成`)
       parsedResult.confidence = Math.min(parsedResult.confidence, 0.3)
     }
 
@@ -272,7 +273,7 @@ export function useApiCalls(config: GenerationConfig) {
 
     // 如果是改写操作且有选中文字信息，使用特殊的处理逻辑
     if (operation === 'rewrite' && selectedTextInfo) {
-      console.log('执行改写操作，选中文字:', selectedTextInfo.text)
+      logger.info('执行改写操作，选中文字:', selectedTextInfo.text)
       prompt = `请对以下文字进行改写，保持原意但使用不同的表达方式：
 
 【需要改写的文字】

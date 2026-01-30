@@ -2,6 +2,8 @@
 import { getUserIdFromRequest } from '@/lib/auth/user-utils'
 // import { clearUserData } from '@/lib/user-aware-storage' // 替换为StorageManager
 import { StorageManager } from '@/lib/data/storage'
+import { ErrorHandler } from '@/lib/utils/error-handler'
+import { logger } from '@/lib/utils/logger'
 
 /**
  * 清空用户存储数据
@@ -25,10 +27,10 @@ export async function POST(request: NextRequest) {
       error: '清空存储功能暂未实现'
     }, { status: 501 })
   } catch (error) {
-    
+    logger.error('清空存储失败', error)
     return NextResponse.json({
       success: false,
-      error: '服务器内部错误'
-    }, { status: 500 })
+      error: ErrorHandler.toUserMessage(error)
+    }, { status: ErrorHandler.getStatusCode(error) })
   }
 }

@@ -13,6 +13,7 @@ import { Label } from "@/shared/components/ui/label"
 import { Badge } from "@/shared/components/ui/badge"
 import { useToast } from "@/shared/lib/hooks/use-toast"
 import { ClientConfigManager } from "@/shared/lib/utils/client-config-manager"
+import { DELAY_1S } from "@/lib/constants/constants"
 import axios from "axios"
 import path from "path"
 import "@/styles/table-fix.css"
@@ -343,7 +344,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         if (description.includes("平台抓取")) {
           setTimeout(() => {
             handleLoadCsv()
-          }, 1000)
+          }, DELAY_1S)
         }
       }
 

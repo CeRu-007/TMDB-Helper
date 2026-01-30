@@ -2,6 +2,7 @@
 import { StorageManager, ScheduledTask } from '@/lib/data/storage';
 // import { readItems } from '@/lib/server-storage'; // 替换为StorageManager
 import { readScheduledTasks } from '@/lib/data/server-scheduled-tasks';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * 服务端定时任务检查API
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         if (timeDiff > 5 * 60 * 1000) {
           // 检查是否在合理的补偿时间窗口内（24小时内）
           if (timeDiff <= 24 * 60 * 60 * 1000) {
-            console.log(`[API] 发现错过的任务: ${task.name} (${task.id}), 预定时间: ${nextRunTime.toLocaleString('zh-CN')}`);
+            logger.info(`[API] 发现错过的任务: ${task.name} (${task.id}), 预定时间: ${nextRunTime.toLocaleString('zh-CN')}`);
             missedTasks.push(task);
           }
         } else if (timeDiff > -60 * 60 * 1000) {

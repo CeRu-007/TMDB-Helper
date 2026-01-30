@@ -1,17 +1,11 @@
 import type { NextRequest, NextResponse } from "next/server"
 import { spawn } from 'child_process'
 import { BaseAPIRoute } from '@/lib/api/base-api-route'
+import { logger } from "@/lib/utils/logger"
 
-// 进程信息接口
-interface ProcessInfo {
-  process: ReturnType<typeof spawn>;
-  startTime: Date;
-  command: string;
-}
-
-// 声明全局activeProcesses类型
+// 声明全局activeProcesses类型（与execute-command-interactive保持一致）
 declare global {
-  var activeProcesses: Map<number, ProcessInfo>;
+  var activeProcesses: Map<number, any>;
 }
 
 // 初始化全局进程列表
@@ -49,7 +43,7 @@ class TerminateProcessRoute extends BaseAPIRoute {
       if (process.platform === 'win32') {
         const { exec } = require('child_process')
         exec(`taskkill /F /T /PID ${pid}`, (error: Error | null) => {
-          if (error) console.error(`终止进程 ${pid} 失败:`, error)
+          if (error) logger.error(`终止进程 ${pid} 失败: ${error}`)
         })
       } else {
         // Unix系统：终止进程组

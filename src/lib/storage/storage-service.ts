@@ -10,7 +10,7 @@
  *   StorageService.remove('user-preferences')
  */
 
-import { log } from '@/shared/lib/utils/logger'
+import { logger } from '@/lib/utils/logger'
 
 class StorageService {
   private static instance: StorageService;
@@ -44,7 +44,7 @@ class StorageService {
       window.localStorage.removeItem(testKey);
       return true;
     } catch (error) {
-      log.warn('StorageService', 'localStorage is not available:', error);
+      logger.warn('[StorageService] localStorage is not available', error);
       return false;
     }
   }
@@ -58,16 +58,16 @@ class StorageService {
    */
   public set<T>(key: string, value: T): void {
     if (!this.isAvailable) {
-      log.warn('StorageService', `Storage not available, skipping set operation for key: ${key}`);
+      logger.warn(`[StorageService] Storage not available, skipping set operation for key: ${key}`);
       return;
     }
 
     try {
       const serialized = JSON.stringify(value);
       window.localStorage.setItem(key, serialized);
-      log.debug('StorageService', `Set value for key: ${key}`);
+      logger.debug(`[StorageService] Set value for key: ${key}`);
     } catch (error) {
-      log.error('StorageService', `Failed to set value for key ${key}:`, error);
+      logger.error(`[StorageService] Failed to set value for key ${key}`, error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`StorageService.set failed for key '${key}': ${errorMessage}`);
     }
@@ -82,26 +82,26 @@ class StorageService {
    */
   public get<T>(key: string, defaultValue: T): T {
     if (!this.isAvailable) {
-      log.warn('StorageService', `Storage not available, returning default value for key: ${key}`);
+      logger.warn(`[StorageService] Storage not available, returning default value for key: ${key}`);
       return defaultValue;
     }
 
     try {
       const serialized = window.localStorage.getItem(key);
       if (serialized === null) {
-        log.debug('StorageService', `Key not found, returning default value: ${key}`);
+        logger.debug(`[StorageService] Key not found, returning default value: ${key}`);
         return defaultValue;
       }
 
       // Try to parse JSON
       try {
         const value = JSON.parse(serialized) as T;
-        log.debug('StorageService', `Retrieved value for key: ${key}`);
+        logger.debug(`[StorageService] Retrieved value for key: ${key}`);
         return value;
       } catch (parseError) {
         // JSON parse failed - might be a plain string instead of JSON object
         // Try returning the raw string value (if type compatible)
-        log.warn('StorageService', `JSON parse failed for key ${key}, attempting to return raw value:`, parseError);
+        logger.warn(`[StorageService] JSON parse failed for key ${key}, attempting to return raw value`, parseError);
 
         // If expected type is string, return raw value
         if (typeof defaultValue === 'string') {
@@ -109,11 +109,11 @@ class StorageService {
         }
 
         // Otherwise return default value
-        log.warn('StorageService', `Expected type is not string for key ${key}, returning default value`);
+        logger.warn(`[StorageService] Expected type is not string for key ${key}, returning default value`);
         return defaultValue;
       }
     } catch (error) {
-      log.error('StorageService', `Failed to get value for key ${key}, returning default:`, error);
+      logger.error(`[StorageService] Failed to get value for key ${key}, returning default`, error);
       return defaultValue;
     }
   }
@@ -125,15 +125,15 @@ class StorageService {
    */
   public remove(key: string): void {
     if (!this.isAvailable) {
-      log.warn('StorageService', `Storage not available, skipping remove operation for key: ${key}`);
+      logger.warn(`[StorageService] Storage not available, skipping remove operation for key: ${key}`);
       return;
     }
 
     try {
       window.localStorage.removeItem(key);
-      log.debug('StorageService', `Removed value for key: ${key}`);
+      logger.debug(`[StorageService] Removed value for key: ${key}`);
     } catch (error) {
-      log.error('StorageService', `Failed to remove value for key ${key}:`, error);
+      logger.error(`[StorageService] Failed to remove value for key ${key}`, error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`StorageService.remove failed for key '${key}': ${errorMessage}`);
     }
@@ -146,15 +146,15 @@ class StorageService {
    */
   public clear(): void {
     if (!this.isAvailable) {
-      log.warn('StorageService', 'Storage not available, skipping clear operation');
+      logger.warn('[StorageService] Storage not available, skipping clear operation');
       return;
     }
 
     try {
       window.localStorage.clear();
-      log.info('StorageService', 'Cleared all storage values');
+      logger.info('[StorageService] Cleared all storage values');
     } catch (error) {
-      log.error('StorageService', 'Failed to clear storage:', error);
+      logger.error('[StorageService] Failed to clear storage', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`StorageService.clear failed: ${errorMessage}`);
     }
@@ -174,7 +174,7 @@ class StorageService {
     try {
       return window.localStorage.getItem(key) !== null;
     } catch (error) {
-      log.error('StorageService', `Failed to check key ${key}:`, error);
+      logger.error(`[StorageService] Failed to check key ${key}`, error);
       return false;
     }
   }
@@ -199,7 +199,7 @@ class StorageService {
       }
       return keys;
     } catch (error) {
-      log.error('StorageService', 'Failed to get storage keys:', error);
+      logger.error('[StorageService] Failed to get storage keys', error);
       return [];
     }
   }
@@ -226,7 +226,7 @@ class StorageService {
       }
       return totalSize;
     } catch (error) {
-      log.error('StorageService', 'Failed to calculate storage size:', error);
+      logger.error('[StorageService] Failed to calculate storage size', error);
       return 0;
     }
   }
@@ -248,7 +248,7 @@ class StorageService {
       }
     }
 
-    log.info('StorageService', `Removed ${removedCount} keys matching pattern: ${pattern}`);
+    logger.info(`[StorageService] Removed ${removedCount} keys matching pattern: ${pattern}`);
     return removedCount;
   }
 }

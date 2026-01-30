@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import type { TMDBItem } from "@/lib/data/storage"
+import { DELAY_1500MS } from "@/lib/constants/constants"
 
 interface UseItemDetailStateProps {
   item: TMDBItem
@@ -59,7 +60,7 @@ export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) 
   }
 
   // 显示复制反馈
-  const showFeedback = (message: string, duration: number = 1500) => {
+  const showFeedback = (message: string, duration: number = DELAY_1500MS) => {
     setCopyFeedback(message)
     setTimeout(() => setCopyFeedback(null), duration)
   }

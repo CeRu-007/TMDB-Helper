@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react"
 import { VideoProcessor, type ProcessProgress } from "@/lib/media/video-processor"
+import { logger } from '@/lib/utils/logger'
 
 interface BoundingBox {
   id: string
@@ -91,19 +92,19 @@ export function useHardSubtitle(): UseHardSubtitleReturn {
       ocrModelId: ""
     }
 
-    console.log('[Config] localStorage保存的配置:', savedConfig)
+    logger.debug('[Config] localStorage保存的配置:', savedConfig)
 
     if (savedConfig && savedConfig !== 'undefined' && savedConfig !== 'null') {
       try {
         const parsed = JSON.parse(savedConfig)
-        console.log('[Config] 解析后的配置:', parsed)
+        logger.debug('[Config] 解析后的配置:', parsed)
         return { ...defaultConfig, ...parsed }
       } catch (e) {
-        console.error('加载保存的配置失败:', e)
+        logger.error('加载保存的配置失败:', e)
         return defaultConfig
       }
     }
-    console.log('[Config] 使用默认配置')
+    logger.debug('[Config] 使用默认配置')
     return defaultConfig
   })
 
@@ -112,7 +113,7 @@ export function useHardSubtitle(): UseHardSubtitleReturn {
     const updatedConfig = typeof newConfig === 'function' 
       ? newConfig(config)
       : newConfig
-    console.log('[Config] 保存配置到 localStorage:', updatedConfig)
+    logger.debug('[Config] 保存配置到 localStorage:', updatedConfig)
     localStorage.setItem('hard-subtitle-config', JSON.stringify(updatedConfig))
     setConfig(updatedConfig)
   }, [config])
@@ -193,13 +194,13 @@ export function useHardSubtitle(): UseHardSubtitleReturn {
 
   // 开始提取
   const startExtraction = useCallback(async () => {
-    if (!videoRef.current) {
-      console.error("视频元素未找到")
+    if (!videoFile && !videoUrl) {
+      logger.error("视频元素未找到")
       return
     }
 
     if (subtitleRegions.length === 0) {
-      console.error("请先添加字幕区域")
+      logger.error("请先添加字幕区域")
       return
     }
 
@@ -288,11 +289,11 @@ export function useHardSubtitle(): UseHardSubtitleReturn {
       setSubtitles(result.subtitles)
       setExtractedFrames(result.frames)
       setTotalTime(totalSeconds) // 设置总耗时
+      setStatusMessage("处理完成")
       setProgress(100)
-      setStatusMessage(`处理完成！识别到 ${result.subtitles.length} 条字幕，总耗时 ${minutes}分${seconds}秒`)
     } catch (error) {
-      console.error("提取失败:", error)
-      setStatusMessage(error instanceof Error ? error.message : "提取失败")
+      logger.error("提取失败:", error)
+      setStatusMessage(`处理失败: ${error instanceof Error ? error.message : '未知错误'}`)
     } finally {
       setIsProcessing(false)
       processorRef.current = null

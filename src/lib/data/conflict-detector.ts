@@ -4,6 +4,7 @@
  */
 
 import { ScheduledTask } from '@/lib/data/storage';
+import { logger } from '@/lib/utils/logger';
 
 export interface ConflictInfo {
   taskId: string;
@@ -46,7 +47,7 @@ export class ConflictDetector {
    */
   public registerScheduledTask(task: ScheduledTask, scheduledTime: Date): void {
     this.scheduledTasks.set(task.id, { task, scheduledTime });
-    console.log(
+    logger.info(
       `[ConflictDetector] 注册任务: ${task.name} 计划执行时间: ${scheduledTime.toLocaleString('zh-CN')}`,
     );
   }
@@ -75,7 +76,7 @@ export class ConflictDetector {
       ? Math.min(this.config.detectionWindowMs, 30000) // 严格模式最多30秒
       : this.config.detectionWindowMs;
 
-    console.log(
+    logger.info(
       `[ConflictDetector] 检测任务冲突: ${task.name}, 目标时间: ${targetTime.toLocaleString('zh-CN')}, 检测窗口: ${windowMs}ms`,
     );
 
@@ -104,7 +105,7 @@ export class ConflictDetector {
     }
 
     if (conflicts.length > 0) {
-      console.log(
+      logger.info(
         `[ConflictDetector] 检测到 ${conflicts.length} 个冲突:`,
         conflicts.map((c) => ({
           task: c.taskName,

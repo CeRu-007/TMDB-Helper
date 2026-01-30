@@ -3,12 +3,14 @@
  * 负责处理项目关联、完结项目检查和清理
  */
 
-import { StorageManager, ScheduledTask, TMDBItem } from '../storage';
+import { StorageManager, ScheduledTask } from '../storage';
+import { TMDBItem } from '@/types/tmdb-item';
 import { taskExecutionLogger } from '../task-execution-logger';
-import {
+import { logger } from '@/lib/utils/logger';
+import { RelinkTaskResult } from './types';
+import type {
   RelatedItemStrategy,
   RelatedItemResult,
-  RelinkTaskResult,
   CompletedProjectCheckResult,
 } from './types';
 
@@ -31,7 +33,7 @@ export class ProjectManager {
       // 策略1：直接通过ID匹配
       const foundItem = items.find((item) => item.id === task.itemId);
       if (foundItem) {
-        console.log(
+        logger.debug(
           `[ProjectManager] 直接通过ID找到了项目: ${foundItem.title} (ID: ${foundItem.id})`,
         );
         return foundItem;
@@ -41,7 +43,7 @@ export class ProjectManager {
       if (task.itemTmdbId) {
         const tmdbMatch = items.find((item) => item.tmdbId === task.itemTmdbId);
         if (tmdbMatch) {
-          console.log(
+          logger.debug(
             `[ProjectManager] 通过TMDB ID找到了项目: ${tmdbMatch.title} (ID: ${tmdbMatch.id})`,
           );
           await this.updateTaskItemId(task.id, tmdbMatch.id);
@@ -53,7 +55,7 @@ export class ProjectManager {
       if (task.itemTitle) {
         const titleMatch = items.find((item) => item.title === task.itemTitle);
         if (titleMatch) {
-          console.log(
+          logger.debug(
             `[ProjectManager] 通过标题精确匹配找到了项目: ${titleMatch.title} (ID: ${titleMatch.id})`,
           );
           await this.updateTaskItemId(task.id, titleMatch.id);
@@ -75,7 +77,7 @@ export class ProjectManager {
           // 如果只有一个匹配项，直接使用
           if (possibleItems.length === 1) {
             const matchItem = possibleItems[0];
-            console.log(
+            logger.debug(
               `[ProjectManager] 选择唯一的模糊匹配项: ${matchItem.title} (ID: ${matchItem.id})`,
             );
             await this.updateTaskItemId(task.id, matchItem.id);
@@ -95,7 +97,7 @@ export class ProjectManager {
               ),
           );
           const bestMatch = sameTypeItems[0];
-          console.log(
+          logger.debug(
             `[ProjectManager] 从多个同类型候选项中选择创建时间最接近的: ${bestMatch.title} (ID: ${bestMatch.id})`,
           );
           await this.updateTaskItemId(task.id, bestMatch.id);
@@ -113,14 +115,14 @@ export class ProjectManager {
           )
           .slice(0, 10); // 获取最近创建的10个项目
 
-        console.log(
+        logger.debug(
           `[ProjectManager] 最近创建的项目: ${recentItems.map((item) => `${item.title} (ID: ${item.id}, 创建时间: ${item.createdAt})`).join(', ')}`,
         );
 
         if (recentItems.length > 0) {
           // 选择第一个项目作为应急措施
           const emergencyItem = recentItems[0];
-          console.log(
+          logger.warn(
             `[ProjectManager] 应急修复: 将使用最近创建的项目 ${emergencyItem.title} (ID: ${emergencyItem.id}) 替代问题ID`,
           );
           await this.updateTaskItemId(task.id, emergencyItem.id);
@@ -143,7 +145,7 @@ export class ProjectManager {
         // 如果只有一个匹配项，直接使用
         if (nameMatchItems.length === 1) {
           const nameMatch = nameMatchItems[0];
-          console.log(
+          logger.debug(
             `[ProjectManager] 通过任务名称找到匹配项: ${nameMatch.title} (ID: ${nameMatch.id})`,
           );
           await this.updateTaskItemId(task.id, nameMatch.id);
@@ -164,9 +166,9 @@ export class ProjectManager {
         );
 
         const closestMatch = sortedByDate[0];
-        console.log(
-          `[ProjectManager] 从多个名称匹配项中选择创建时间最接近的: ${closestMatch.title} (ID: ${closestMatch.id})`,
-        );
+        logger.debug(
+            `[ProjectManager] 从多个名称匹配项中选择创建时间最接近的: ${closestMatch.title} (ID: ${closestMatch.id})`,
+          );
         await this.updateTaskItemId(task.id, closestMatch.id);
         return closestMatch;
       }
@@ -179,7 +181,7 @@ export class ProjectManager {
 
       if (sortedByDate.length > 0) {
         const lastResortItem = sortedByDate[0];
-        console.log(
+        logger.warn(
           `[ProjectManager] 备用策略: 使用最近创建的项目 ${lastResortItem.title} (ID: ${lastResortItem.id})`,
         );
         await this.updateTaskItemId(task.id, lastResortItem.id);
@@ -187,13 +189,13 @@ export class ProjectManager {
       }
 
       // 如果所有策略都失败，返回null
-      console.warn(
+      logger.warn(
         `[ProjectManager] 无法找到任务 ${task.id} (${task.name}) 的关联项目，所有匹配策略均失败`,
       );
 
       return null;
     } catch (error) {
-      console.error(
+      logger.error(
         `[ProjectManager] 获取关联项目时出错:`,
         error instanceof Error ? error.message : String(error),
       );
@@ -208,7 +210,7 @@ export class ProjectManager {
     task: ScheduledTask,
   ): Promise<RelinkTaskResult> {
     try {
-      console.log(`[ProjectManager] 尝试重新关联任务 ${task.id} (${task.name})`);
+      logger.debug(`[ProjectManager] 尝试重新关联任务 ${task.id} (${task.name})`);
 
       // 获取所有项目
       const items = await StorageManager.getItemsWithRetry();
@@ -222,7 +224,7 @@ export class ProjectManager {
 
       // 策略1: 通过TMDB ID匹配
       if (task.itemTmdbId) {
-        console.log(
+        logger.debug(
           `[ProjectManager] 尝试通过TMDB ID (${task.itemTmdbId}) 匹配项目`,
         );
         const matchByTmdbId = items.find(
@@ -230,7 +232,7 @@ export class ProjectManager {
         );
 
         if (matchByTmdbId) {
-          console.log(
+          logger.debug(
             `[ProjectManager] 通过TMDB ID匹配到项目: ${matchByTmdbId.title} (ID: ${matchByTmdbId.id})`,
           );
           return {
@@ -243,7 +245,7 @@ export class ProjectManager {
 
       // 策略2: 通过项目标题匹配
       if (task.itemTitle) {
-        console.log(
+        logger.debug(
           `[ProjectManager] 尝试通过标题 (${task.itemTitle}) 匹配项目`,
         );
 
@@ -258,7 +260,7 @@ export class ProjectManager {
         );
 
         if (matchByTitle) {
-          console.log(
+          logger.debug(
             `[ProjectManager] 通过标题匹配到项目: ${matchByTitle.title} (ID: ${matchByTitle.id})`,
           );
           return {
@@ -272,7 +274,7 @@ export class ProjectManager {
       // 策略3: 通过任务名称提取可能的标题
       if (task.name) {
         const possibleTitle = task.name.replace(/\s*定时任务$/, '');
-        console.log(
+        logger.debug(
           `[ProjectManager] 尝试通过任务名称提取的标题 (${possibleTitle}) 匹配项目`,
         );
 
@@ -287,7 +289,7 @@ export class ProjectManager {
         );
 
         if (matchByTaskName) {
-          console.log(
+          logger.debug(
             `[ProjectManager] 通过任务名称匹配到项目: ${matchByTaskName.title} (ID: ${matchByTaskName.id})`,
           );
           return {
@@ -306,7 +308,7 @@ export class ProjectManager {
 
       if (sortedItems.length > 0) {
         const fallbackItem = sortedItems[0];
-        console.log(
+        logger.debug(
           `[ProjectManager] 使用最近创建的项目: ${fallbackItem.title} (ID: ${fallbackItem.id})`,
         );
 
@@ -346,7 +348,7 @@ export class ProjectManager {
         await StorageManager.updateScheduledTask(tasks[taskIndex]);
       }
     } catch (error) {
-      console.error(
+      logger.error(
         `[ProjectManager] 更新任务itemId时出错:`,
         error instanceof Error ? error.message : String(error),
       );
@@ -420,7 +422,7 @@ export class ProjectManager {
    */
   public async deleteCompletedTask(task: ScheduledTask): Promise<void> {
     try {
-      console.log(
+      logger.info(
         `[ProjectManager] 删除已完结项目的定时任务: ${task.name} (ID: ${task.id})`,
       );
 
@@ -446,14 +448,14 @@ export class ProjectManager {
             source: 'scheduled_task',
           });
         } catch (syncError) {
-          console.error(
+          logger.error(
             `[ProjectManager] 通知实时同步管理器失败:`,
             syncError,
           );
         }
       }
     } catch (error) {
-      console.error(
+      logger.error(
         `[ProjectManager] 删除已完结任务时出错:`,
         error instanceof Error ? error.message : String(error),
       );
@@ -504,7 +506,7 @@ export class ProjectManager {
             }
           }
         } catch (error) {
-          console.error(
+          logger.error(
             `[ProjectManager] 清理任务 ${task.id} 时出错:`,
             error,
           );
@@ -512,12 +514,12 @@ export class ProjectManager {
       }
 
       if (deletedCount > 0) {
-        console.log(
+        logger.info(
           `[ProjectManager] 清理了 ${deletedCount} 个已完结项目的任务`,
         );
       }
     } catch (error) {
-      console.error(
+      logger.error(
         `[ProjectManager] 清理已完结项目任务时出错:`,
         error instanceof Error ? error.message : String(error),
       );

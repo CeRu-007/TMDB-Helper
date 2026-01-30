@@ -7,6 +7,7 @@
 
 import { TMDBItem } from './storage';
 import { StorageManager } from './storage';
+import { logger } from '@/lib/utils/logger';
 
 export interface ConsistencyCheckResult {
   isConsistent: boolean;
@@ -70,7 +71,7 @@ export class DataConsistencyValidator {
    */
   public updateConfig(newConfig: Partial<ValidationConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('[DataConsistencyValidator] 配置已更新:', this.config);
+    logger.info('[DataConsistencyValidator] 配置已更新:', this.config);
 
     // 重启定时验证
     if (this.config.enabled) {
@@ -89,7 +90,7 @@ export class DataConsistencyValidator {
       await this.validateConsistency();
     }
 
-    console.log(
+    logger.info(
       `[DataConsistencyValidator] 已启动定期验证，间隔: ${this.config.checkIntervalMs}ms`,
     );
   }
@@ -99,7 +100,7 @@ export class DataConsistencyValidator {
    */
   public stopPeriodicValidation(): void {
     // 由于已移除定时器，此方法暂时为空
-    console.log('[DataConsistencyValidator] 定期验证已停止');
+    logger.info('[DataConsistencyValidator] 定期验证已停止');
   }
 
   /**
@@ -107,14 +108,14 @@ export class DataConsistencyValidator {
    */
   public async validateConsistency(): Promise<ConsistencyCheckResult> {
     if (this.isValidating) {
-      console.log('[DataConsistencyValidator] 验证正在进行中，跳过');
+      logger.info('[DataConsistencyValidator] 验证正在进行中，跳过');
       return this.getLastValidationResult();
     }
 
     this.isValidating = true;
     this.lastValidationTime = Date.now();
 
-    console.log('[DataConsistencyValidator] 开始数据一致性验证');
+    logger.info('[DataConsistencyValidator] 开始数据一致性验证');
 
     const result: ConsistencyCheckResult = {
       isConsistent: true,
@@ -134,11 +135,11 @@ export class DataConsistencyValidator {
 
       try {
         backendItems = await this.getBackendItems();
-        console.log(
+        logger.info(
           `[DataConsistencyValidator] 成功获取后端数据: ${backendItems.length} 个项目`,
         );
       } catch (backendError) {
-        console.warn(
+        logger.warn(
           '[DataConsistencyValidator] 后端数据获取失败，使用前端数据作为参考:',
           backendError,
         );
@@ -153,7 +154,7 @@ export class DataConsistencyValidator {
 
       // 如果后端数据不可用，进行简化验证
       if (!backendDataAvailable) {
-        console.log('[DataConsistencyValidator] 后端数据不可用，执行简化验证');
+        logger.info('[DataConsistencyValidator] 后端数据不可用，执行简化验证');
         result.isConsistent = true; // 假设一致，因为无法比较
         result.errors.push('无法验证数据一致性：后端数据不可用');
         return result;
@@ -217,14 +218,14 @@ export class DataConsistencyValidator {
         );
       }
 
-      console.log(
+      logger.info(
         `[DataConsistencyValidator] 验证完成: 检查${result.totalChecked}项，发现${result.inconsistentItems.length}个不一致，修复${result.fixedCount}个`,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       result.errors.push(errorMessage);
-      console.error('[DataConsistencyValidator] 验证失败:', error);
+      logger.error('[DataConsistencyValidator] 验证失败:', error);
     } finally {
       this.isValidating = false;
       this.addToHistory(result);
@@ -242,7 +243,7 @@ export class DataConsistencyValidator {
       const items = await StorageManager.getItems();
       return items;
     } catch (error) {
-      console.error('[DataConsistencyValidator] 获取前端数据失败:', error);
+      logger.error('[DataConsistencyValidator] 获取前端数据失败:', error);
       return [];
     }
   }
@@ -260,8 +261,8 @@ export class DataConsistencyValidator {
 
       for (const endpoint of endpoints) {
         try {
-          console.log(
-            `[DataConsistencyValidator] 尝试从 ${endpoint} 获取后端数据`,
+          logger.info(
+            `[DataConsistencyValidator] 尝试从 ${endpoint} 获取后端数据`
           );
 
           const response = await fetch(endpoint, {
@@ -283,17 +284,17 @@ export class DataConsistencyValidator {
               items = data.items || [];
             }
 
-            console.log(
-              `[DataConsistencyValidator] 从 ${endpoint} 成功获取 ${items.length} 个项目`,
+            logger.info(
+              `[DataConsistencyValidator] 从 ${endpoint} 成功获取 ${items.length} 个项目`
             );
             return items;
           } else {
-            console.warn(
-              `[DataConsistencyValidator] ${endpoint} 返回 ${response.status}: ${response.statusText}`,
+            logger.warn(
+              `[DataConsistencyValidator] ${endpoint} 返回 ${response.status}: ${response.statusText}`
             );
           }
         } catch (endpointError) {
-          console.warn(
+          logger.warn(
             `[DataConsistencyValidator] ${endpoint} 请求失败:`,
             endpointError,
           );
@@ -303,10 +304,10 @@ export class DataConsistencyValidator {
       // 所有端点都失败，抛出错误
       throw new Error('所有后端 API 端点都不可用');
     } catch (error) {
-      console.error('[DataConsistencyValidator] 获取后端数据失败:', error);
+      logger.error('[DataConsistencyValidator] 获取后端数据失败:', error);
 
       // 回退到本地存储
-      console.log('[DataConsistencyValidator] 回退到本地存储数据');
+      logger.info('[DataConsistencyValidator] 回退到本地存储数据');
       return await StorageManager.getItems();
     }
   }
@@ -385,7 +386,7 @@ export class DataConsistencyValidator {
           fixedCount++;
         }
       } catch (error) {
-        console.error(
+        logger.error(
           `[DataConsistencyValidator] 修复失败: ${inconsistency.itemId}`,
           error,
         );
@@ -434,11 +435,11 @@ export class DataConsistencyValidator {
     try {
       const success = await StorageManager.updateItem(item);
       if (success) {
-        console.log(`[DataConsistencyValidator] 已同步到后端: ${item.id}`);
+        logger.info(`[DataConsistencyValidator] 已同步到后端: ${item.id}`);
       }
       return success;
     } catch (error) {
-      console.error(
+      logger.error(
         `[DataConsistencyValidator] 同步到后端失败: ${item.id}`,
         error,
       );
@@ -452,10 +453,10 @@ export class DataConsistencyValidator {
   private async syncToFrontend(item: TMDBItem): Promise<boolean> {
     try {
       // 数据现在直接存储在服务端，不需要手动同步到前端
-      console.log(`[DataConsistencyValidator] 数据已在服务端更新: ${item.id}`);
+      logger.info(`[DataConsistencyValidator] 数据已在服务端更新: ${item.id}`);
       return true;
     } catch (error) {
-      console.error(`[DataConsistencyValidator] 同步失败: ${item.id}`, error);
+      logger.error(`[DataConsistencyValidator] 同步失败: ${item.id}`, error);
       return false;
     }
   }

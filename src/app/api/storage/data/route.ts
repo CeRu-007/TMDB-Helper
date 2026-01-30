@@ -2,6 +2,8 @@
 import { TMDBItem, ScheduledTask } from '@/lib/types';
 import { ServerStorageManager } from '@/lib/data/server-storage-manager';
 import { getUserIdFromRequest } from '@/lib/auth/user-utils';
+import { ErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/utils/logger';
 
 // POST /api/storage/data - 导入数据
 export async function POST(request: NextRequest) {
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
-    console.log(
+    logger.info(
       `[API] 导入数据 - 用户ID: ${userId}, 项目数: ${items.length}, 任务数: ${tasks.length}`,
     );
 
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
     // 任务数据暂时保存到客户端localStorage
     if (validTasks.length > 0) {
       // 这里可以添加任务数据的处理逻辑
-      console.log(`[API] 导入 ${validTasks.length} 个任务（暂时仅记录）`);
+      logger.info(`[API] 导入 ${validTasks.length} 个任务（暂时仅记录）`);
     }
 
     return NextResponse.json(
@@ -64,13 +66,13 @@ export async function POST(request: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
+    logger.error('导入数据失败', error)
     return NextResponse.json(
       {
-        error: '服务器内部错误',
+        error: ErrorHandler.toUserMessage(error),
         success: false,
-        details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: ErrorHandler.getStatusCode(error) },
     );
   }
 }
@@ -80,7 +82,7 @@ export async function GET(request: NextRequest) {
   try {
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
-    console.log(`[API] 导出数据 - 用户ID: ${userId}`);
+    logger.info(`[API] 导出数据 - 用户ID: ${userId}`);
 
     const { items, tasks } = await ServerStorageManager.exportData();
 
@@ -99,14 +101,14 @@ export async function GET(request: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
+    logger.error('导出数据失败', error)
     return NextResponse.json(
       {
-        error: '导出数据失败',
-        details: error instanceof Error ? error.message : String(error),
+        error: ErrorHandler.toUserMessage(error),
         items: [],
         tasks: [],
       },
-      { status: 500 },
+      { status: ErrorHandler.getStatusCode(error) },
     );
   }
 }

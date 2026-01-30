@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs'
 import { BrowserInterruptDetector } from '@/lib/utils/browser-interrupt-detector';
+import { logger } from '@/lib/utils/logger';
 
 import { ServerConfigManager } from '@/lib/data/server-config-manager'
 
@@ -30,7 +31,7 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
   }
 
   const headers = parseCSVLine(lines[0]);
-  console.log(`[API] CSV表头: ${headers.join(' | ')}`);
+  logger.info(`[API] CSV表头: ${headers.join(' | ')}`);
 
   const rows: string[][] = [];
 
@@ -40,8 +41,8 @@ function parseCSV(csvContent: string): { headers: string[], rows: string[][] } {
 
       // 验证行的字段数量
       if (row.length !== headers.length) {
-        
-        console.warn(`[API] 问题行内容: ${lines[i].substring(0, 100)}...`);
+
+        logger.warn(`[API] 问题行内容: ${lines[i].substring(0, 100)}...`);
 
         // 补齐或截断字段以匹配表头数量
         while (row.length < headers.length) {
@@ -253,9 +254,9 @@ export async function POST(request: NextRequest) {
             );
             if (index !== -1 && !indicesToEmpty.includes(index)) {
               indicesToEmpty.push(index);
-              console.log(`[API] 找到要清空数据的${type}列: ${csvData.headers[index]} (索引: ${index})`);
+              logger.info(`[API] 找到要清空数据的${type}列: ${csvData.headers[index]} (索引: ${index})`);
             } else if (index === -1) {
-              console.log(`[API] 未找到${type}列，搜索名称: ${name}，CSV表头: [${csvData.headers.join(', ')}]`);
+              logger.info(`[API] 未找到${type}列，搜索名称: ${name}，CSV表头: [${csvData.headers.join(', ')}]`);
             }
           });
         });
@@ -375,9 +376,9 @@ export async function POST(request: NextRequest) {
       }
 
       if (!result.success) {
-        
-        console.error(`[API] 进程输出 (stdout):`, result.stdout?.substring(0, 500) || '无输出');
-        console.error(`[API] 进程错误 (stderr):`, result.stderr?.substring(0, 500) || '无错误输出');
+
+        logger.error(`[API] 进程输出 (stdout):`, result.stdout?.substring(0, 500) || '无输出');
+        logger.error(`[API] 进程错误 (stderr):`, result.stderr?.substring(0, 500) || '无错误输出');
 
         // 使用浏览器中断检测器分析错误
         const interruptResult = BrowserInterruptDetector.analyzeError(
@@ -427,10 +428,10 @@ export async function POST(request: NextRequest) {
       let importedEpisodes;
       try {
         importedEpisodes = parseImportedEpisodes(result.stdout || '');
-        console.log(`[API] TMDB导入成功，导入的集数: ${importedEpisodes.join(', ')}`);
+        logger.info(`[API] TMDB导入成功，导入的集数: ${importedEpisodes.join(', ')}`);
       } catch (parseError) {
-        
-        console.log(`[API] 原始输出:`, result.stdout?.substring(0, 1000) || '无输出');
+
+        logger.info(`[API] 原始输出:`, result.stdout?.substring(0, 1000) || '无输出');
         importedEpisodes = []; // 默认为空数组
       }
 
@@ -554,7 +555,7 @@ async function executeTMDBImportWithInteraction(
     child.stdout.on('data', (data) => {
       const output = data.toString();
       stdout += output;
-      console.log(`[API] TMDB导入输出: ${output.trim()}`);
+      logger.info(`[API] TMDB导入输出: ${output.trim()}`);
 
       // 检测交互式提示
       const lowerOutput = output.toLowerCase();
@@ -577,7 +578,7 @@ async function executeTMDBImportWithInteraction(
     child.stderr.on('data', (data) => {
       const output = data.toString();
       stderr += output;
-      console.log(`[API] TMDB导入错误: ${output.trim()}`);
+      logger.info(`[API] TMDB导入错误: ${output.trim()}`);
 
       // 检查是否是致命错误
       const lowerOutput = output.toLowerCase();
@@ -603,9 +604,9 @@ async function executeTMDBImportWithInteraction(
             stderr
           });
         } else {
-          
-          console.error(`[API] 标准输出:`, stdout.substring(0, 500));
-          console.error(`[API] 标准错误:`, stderr.substring(0, 500));
+
+          logger.error(`[API] 标准输出:`, stdout.substring(0, 500));
+          logger.error(`[API] 标准错误:`, stderr.substring(0, 500));
 
           let errorMessage = `进程异常结束，退出码: ${code}`;
           if (signal) {
@@ -694,7 +695,7 @@ function parseImportedEpisodes(output: string): number[] {
   // 排序并去重
   const uniqueEpisodes = [...new Set(importedEpisodes)].sort((a, b) => a - b);
 
-  console.log(`[API] 解析到的导入集数: ${uniqueEpisodes.join(', ')}`);
+  logger.info(`[API] 解析到的导入集数: ${uniqueEpisodes.join(', ')}`);
 
   return uniqueEpisodes;
 }

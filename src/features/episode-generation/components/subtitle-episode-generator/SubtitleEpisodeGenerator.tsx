@@ -7,6 +7,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Upload, Sparkles, AlertCircle } from "lucide-react"
 import { useScenarioModels } from "@/shared/lib/hooks/useScenarioModels"
 import { useToast } from "@/shared/components/ui/use-toast"
+import { logger } from '@/lib/utils/logger'
 
 // 导入类型和常量
 import { ExportConfig } from './types'
@@ -162,7 +163,7 @@ export function SubtitleEpisodeGenerator({
         })
       }
     } catch (error) {
-      console.error('自动导入字幕失败:', error)
+      logger.error('自动导入字幕失败:', error)
     }
   }, [processFiles, toast])
 

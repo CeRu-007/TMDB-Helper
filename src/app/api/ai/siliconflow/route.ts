@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// 类型定义
-interface SiliconFlowMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-interface SiliconFlowRequest {
-  model: string;
-  messages: SiliconFlowMessage[];
-  temperature?: number;
-  max_tokens?: number;
-  stream: boolean;
-}
+import { logger } from '@/lib/utils/logger';
 
 interface SiliconFlowChoice {
   message: {
@@ -144,12 +131,12 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: Error) {
-    
+  } catch (error: unknown) {
+    logger.error('硅基流动API调用失败:', error);
     return NextResponse.json(
-      { 
+      {
         error: '服务器内部错误',
-        details: error.message
+        details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );
@@ -190,12 +177,12 @@ export async function GET(request: NextRequest) {
       data: data.data || []
     });
 
-  } catch (error: Error) {
-    
+  } catch (error: unknown) {
+    logger.error('获取硅基流动模型列表失败:', error);
     return NextResponse.json(
-      { 
+      {
         error: '服务器内部错误',
-        details: error.message
+        details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );

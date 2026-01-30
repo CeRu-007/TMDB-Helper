@@ -3,6 +3,8 @@
  * 用于视频帧内容分析：字幕检测、人物检测等
  */
 
+import { logger } from '@/lib/utils/logger';
+
 export interface SiliconFlowConfig {
   apiKey: string;
   baseUrl?: string;
@@ -57,7 +59,7 @@ export class SiliconFlowAPI {
       
       return dataUrl;
     } catch (error) {
-      
+      logger.error('SiliconFlowAPI', '图像转换失败', error);
       throw new Error(`图像转换失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }

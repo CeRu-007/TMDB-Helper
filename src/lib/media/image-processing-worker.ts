@@ -4,6 +4,24 @@
 // 告诉TypeScript这是一个Worker上下文
 declare const self: Worker;
 
+// 导入 logger（如果可用）
+// 注意：Worker 环境中可能无法使用完整的 logger，这里使用 console 作为回退
+const workerLogger = {
+  info: (context: string, message: string, data?: any) => {
+    // Worker 中直接使用 console
+    console.log(`[${context}] ${message}`, data || '');
+  },
+  debug: (context: string, message: string, data?: any) => {
+    console.log(`[${context}] ${message}`, data || '');
+  },
+  warn: (context: string, message: string, data?: any) => {
+    console.warn(`[${context}] ${message}`, data || '');
+  },
+  error: (context: string, message: string, error?: any) => {
+    console.error(`[${context}] ${message}`, error || '');
+  }
+};
+
 // 定义消息类型接口
 interface WorkerMessage {
   type: 'staticScore' | 'subtitleScore' | 'peopleScore' | 'batchAnalysis' | 'test';
@@ -34,7 +52,7 @@ self.postMessage({ type: 'workerLoaded', status: 'ready' });
 // 接收主线程消息
 self.onmessage = (e: MessageEvent<WorkerMessage>) => {
   try {
-    const { type, imageData, width, height, options, taskId, data } = e.data;
+    const { type, imageData, width, height, options, taskId } = e.data;
     
     // 处理测试消息，用于初始化检查
     if (type === 'test') {
@@ -156,30 +174,28 @@ function batchAnalyzeImage(
   
   try {
     // 创建分析结果对象
-    let results: Record<string, number | boolean | Uint8ClampedArray | {
-  r: number;
-  g: number;
-  b: number;
-  a: number;
-}[]> = {};
-    
+    let results: Record<string, number | boolean | Uint8Array | any> = {};
+
     // 计算基本分数
     results.staticScore = calculateStaticScore(imageData, effectiveSampleRate);
     results.subtitleScore = calculateSubtitleScore(imageData, width, height, subtitleDetectionStrength);
     results.peopleScore = calculatePeopleScore(imageData, effectiveSampleRate);
     results.emptyFrameScore = detectEmptyFrame(imageData, effectiveSampleRate);
     results.diversityScore = calculateDiversityScore(imageData, effectiveSampleRate);
-    
+
     // 如果不是简化分析，添加更详细的分析结果
     if (!simplifiedAnalysis) {
       results.edgeMap = generateEdgeMap(imageData, width, height, effectiveSampleRate);
       results.colorProfile = analyzeColorProfile(imageData, effectiveSampleRate);
     }
-    
-    console.log(`已完成图像分析 (${simplifiedAnalysis ? '简化模式' : '完整模式'}), 尺寸: ${width}x${height}`);
+
+    workerLogger.debug('ImageProcessingWorker', `已完成图像分析`, {
+      mode: simplifiedAnalysis ? '简化模式' : '完整模式',
+      size: `${width}x${height}`
+    });
     return results;
   } catch (error) {
-    
+    workerLogger.error('ImageProcessingWorker', '批量分析失败', error);
     // 返回默认结果
     return {
       staticScore: 0.5,
@@ -209,12 +225,12 @@ function calculateDiversityScore(imageData: ImageData, sampleRate: number = 2): 
     for (let x = 0; x < width; x += effectiveSampleRate) {
       const idx = (y * width + x) * 4;
       if (idx >= data.length - 3) continue;
-      
+
       // 更粗粒度的颜色量化，从16个级别减少到8个级别
-      const r = Math.floor(data[idx] / 32) * 32;
-      const g = Math.floor(data[idx + 1] / 32) * 32;
-      const b = Math.floor(data[idx + 2] / 32) * 32;
-      
+      const r = Math.floor(data[idx]! / 32) * 32;
+      const g = Math.floor(data[idx + 1]! / 32) * 32;
+      const b = Math.floor(data[idx + 2]! / 32) * 32;
+
       // 将RGB合并为单个整数键值，减少Map开销
       const colorKey = (r << 16) | (g << 8) | b;
       colorBuckets.set(colorKey, (colorBuckets.get(colorKey) || 0) + 1);
@@ -261,7 +277,7 @@ function calculateSimplifiedBrightnessVariation(imageData: ImageData, sampleRate
       if (idx >= data.length - 3) continue;
       
       // 快速亮度计算
-      const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3 / 255;
+      const brightness = (data[idx]! + data[idx + 1]! + data[idx + 2]!) / 3 / 255;
       brightnessValues.push(brightness);
     }
   }
@@ -278,7 +294,7 @@ function calculateSimplifiedBrightnessVariation(imageData: ImageData, sampleRate
   let sampleCount = 0;
   
   for (let i = 0; i < brightnessValues.length; i += sampleStep) {
-    const diff = brightnessValues[i] - avg;
+    const diff = ((brightnessValues[i] ?? 0) ?? 0) - avg;
     variance += diff * diff;
     sampleCount++;
   }
@@ -306,7 +322,6 @@ function calculateStaticScore(imageData: ImageData, sampleRate: number = 1): num
   // 1. 边缘密度分析
   let edgeCount = 0;
   let totalPixels = 0;
-  const stride = Math.max(1, Math.floor(4 * sampleRate)); // 考虑每像素4个通道
   
   // 使用2D采样而非1D，更好地捕获图像特征
   for (let y = 0; y < height; y += sampleRate) {
@@ -316,11 +331,11 @@ function calculateStaticScore(imageData: ImageData, sampleRate: number = 1): num
     for (let x = 0; x < width; x += sampleRate) {
       const pixelOffset = rowOffset + (x * 4);
       if (pixelOffset >= data.length - 4) continue;
-      
-      const r = data[pixelOffset];
-      const g = data[pixelOffset + 1];
-      const b = data[pixelOffset + 2];
-      
+
+      const r = data[pixelOffset]!!;
+      const g = data[pixelOffset + 1]!!;
+      const b = data[pixelOffset + 2]!!;
+
       // 计算像素亮度 - 使用更准确的亮度公式
       const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
       
@@ -343,23 +358,23 @@ function calculateStaticScore(imageData: ImageData, sampleRate: number = 1): num
   
   // 2. 颜色多样性分析
   const colorHistogram: {[key: string]: number} = {};
-  
+
   // 采样计算颜色分布
   for (let i = 0; i < data.length; i += 4 * sampleRate * 2) {
     if (i >= data.length - 4) break;
-    
-    const r = Math.floor(data[i] / 32) * 32;     // 量化为8个区间
-    const g = Math.floor(data[i+1] / 32) * 32;
-    const b = Math.floor(data[i+2] / 32) * 32;
-    
+
+    const r = Math.floor(data[i]! / 32) * 32;     // 量化为8个区间
+    const g = Math.floor(data[i + 1]! / 32) * 32;
+    const b = Math.floor(data[i + 2]! / 32) * 32;
+
     const colorKey = `${r},${g},${b}`;
     colorHistogram[colorKey] = (colorHistogram[colorKey] || 0) + 1;
   }
-  
+
   // 计算颜色多样性 (熵)
   let entropy = 0;
   const totalColors = Object.values(colorHistogram).reduce((sum, val) => sum + val, 0);
-  
+
   for (const color of Object.values(colorHistogram)) {
     const p = color / totalColors;
     entropy -= p * Math.log2(p);
@@ -384,9 +399,9 @@ function calculateStaticScore(imageData: ImageData, sampleRate: number = 1): num
       
       // 检测该点是否有边缘
       if (x > 0 && y > 0) {
-        const r = data[pixelOffset];
-        const g = data[pixelOffset + 1];
-        const b = data[pixelOffset + 2];
+        const r = data[pixelOffset]!;
+        const g = data[pixelOffset + 1]!;
+        const b = data[pixelOffset + 2]!;
         
         const leftOffset = pixelOffset - 4;
         const topOffset = pixelOffset - (width * 4);
@@ -395,46 +410,46 @@ function calculateStaticScore(imageData: ImageData, sampleRate: number = 1): num
           const currentBrightness = 0.299 * r + 0.587 * g + 0.114 * b;
           
           const leftBrightness = 
-            0.299 * data[leftOffset] + 
-            0.587 * data[leftOffset + 1] + 
+            0.299 * data[leftOffset]! + 
+            0.587 * data[leftOffset + 1]! + 
             0.114 * data[leftOffset + 2];
             
           const topBrightness = 
-            0.299 * data[topOffset] + 
-            0.587 * data[topOffset + 1] + 
+            0.299 * data[topOffset]! + 
+            0.587 * data[topOffset + 1]! + 
             0.114 * data[topOffset + 2];
           
           // 如果与左侧或上方像素有明显差异，认为有边缘
-          if (Math.abs(currentBrightness - leftBrightness) > 20 || 
+          if (Math.abs(currentBrightness - leftBrightness) > 20 ||
               Math.abs(currentBrightness - topBrightness) > 20) {
-            gridEdgeDensity[gridY][gridX]++;
+            gridEdgeDensity[gridY]![gridX]!++;
           }
         }
       }
-      
-      gridSamples[gridY][gridX]++;
+
+      gridSamples[gridY]![gridX]!++;
     }
   }
-  
+
   // 计算每个网格的边缘密度
   const gridScores = [];
   for (let y = 0; y < gridSize; y++) {
     for (let x = 0; x < gridSize; x++) {
-      if (gridSamples[y][x] > 0) {
-        const score = gridEdgeDensity[y][x] / gridSamples[y][x];
+      if (gridSamples[y]![x]! > 0) {
+        const score = gridEdgeDensity[y]![x]! / gridSamples[y]![x]!;
         gridScores.push(score);
       }
     }
   }
-  
+
   // 计算内容丰富度 - 基于网格边缘密度的均值和方差
   if (gridScores.length > 0) {
     // 计算平均边缘密度
     const avgScore = gridScores.reduce((sum, val) => sum + val, 0) / gridScores.length;
-    
+
     // 计算中心区域的边缘密度 (中心区域更重要)
-    const centerScore = gridSamples[1][1] > 0 ? 
-      gridEdgeDensity[1][1] / gridSamples[1][1] : 0;
+    const centerScore = gridSamples[1]![1]! > 0 ?
+      gridEdgeDensity[1]![1]! / gridSamples[1]![1]! : 0;
     
     // 计算方差 - 内容分布的均匀性
     const variance = gridScores.reduce((sum, val) => sum + Math.pow(val - avgScore, 2), 0) / gridScores.length;
@@ -517,7 +532,7 @@ function detectHorizontalLines(data: Uint8ClampedArray, width: number, height: n
       const idx = (y * width + x) * 4;
       
       // 计算亮度
-      const luma = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+      const luma = 0.299 * data[idx]! + 0.587 * data[idx + 1]! + 0.114 * data[idx + 2]!;
       
       // 检测亮度变化
       if (prevLuma >= 0) {
@@ -565,9 +580,9 @@ function analyzeBottomArea(data: Uint8ClampedArray, width: number, height: numbe
       const idx = (y * width + x) * 4;
       
       // 简化的颜色表示
-      const color = Math.floor(data[idx] / 32) * 32 + 
-                   Math.floor(data[idx + 1] / 32) * 32 + 
-                   Math.floor(data[idx + 2] / 32) * 32;
+      const color = Math.floor(data[idx]! / 32) * 32 + 
+                   Math.floor(data[idx + 1]! / 32) * 32 + 
+                   Math.floor(data[idx + 2]! / 32) * 32;
       
       // 检测颜色变化
       if (prevColor >= 0 && prevColor !== color) {
@@ -604,37 +619,36 @@ function detectTextRegions(data: Uint8ClampedArray, width: number, height: numbe
   // 简化的Sobel边缘检测
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
-      const idx = (y * width + x) * 4;
-      
+      const _idx = (y * width + x) * 4;
+
       // 获取周围像素
       const topIdx = ((y - 1) * width + x) * 4;
       const bottomIdx = ((y + 1) * width + x) * 4;
       const leftIdx = (y * width + (x - 1)) * 4;
       const rightIdx = (y * width + (x + 1)) * 4;
-      
+
       // 计算亮度
-      const centerLuma = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-      const topLuma = 0.299 * data[topIdx] + 0.587 * data[topIdx + 1] + 0.114 * data[topIdx + 2];
-      const bottomLuma = 0.299 * data[bottomIdx] + 0.587 * data[bottomIdx + 1] + 0.114 * data[bottomIdx + 2];
-      const leftLuma = 0.299 * data[leftIdx] + 0.587 * data[leftIdx + 1] + 0.114 * data[leftIdx + 2];
-      const rightLuma = 0.299 * data[rightIdx] + 0.587 * data[rightIdx + 1] + 0.114 * data[rightIdx + 2];
-      
+      const topLuma = 0.299 * data[topIdx]! + 0.587 * data[topIdx + 1]! + 0.114 * data[topIdx + 2]!;
+      const bottomLuma = 0.299 * data[bottomIdx]! + 0.587 * data[bottomIdx + 1]! + 0.114 * data[bottomIdx + 2]!;
+      const leftLuma = 0.299 * data[leftIdx]! + 0.587 * data[leftIdx + 1]! + 0.114 * data[leftIdx + 2]!;
+      const rightLuma = 0.299 * data[rightIdx]! + 0.587 * data[rightIdx + 1]! + 0.114 * data[rightIdx + 2]!;
+
       // 计算梯度
       const dx = rightLuma - leftLuma;
       const dy = bottomLuma - topLuma;
       const gradient = Math.sqrt(dx * dx + dy * dy);
-      
+
       // 存储边缘强度
       edgeDensity[y * width + x] = gradient;
       maxEdgeDensity = Math.max(maxEdgeDensity, gradient);
     }
   }
-  
+
   // 如果没有显著边缘，返回低分数
   if (maxEdgeDensity < 10) {
     return 0.1;
   }
-  
+
   // 归一化边缘密度
   for (let i = 0; i < edgeDensity.length; i++) {
     edgeDensity[i] /= maxEdgeDensity;
@@ -655,7 +669,7 @@ function detectTextRegions(data: Uint8ClampedArray, width: number, height: numbe
       // 分析块内的边缘
       for (let y = by * blockSize; y < (by + 1) * blockSize && y < height; y++) {
         for (let x = bx * blockSize; x < (bx + 1) * blockSize && x < width; x++) {
-          const edge = edgeDensity[y * width + x];
+          const edge = (edgeDensity[y * width + x] ?? 0);
           if (edge > 0.2) { // 边缘阈值
             edgeCount++;
           }
@@ -692,22 +706,22 @@ function detectHighContrast(data: Uint8ClampedArray, width: number, height: numb
   
   for (let y = bottomStart; y < height; y += yStep) {
     for (let x = 0; x < width; x += xStep) {
-      const idx = (y * width + x) * 4;
-      
+      const _idx = (y * width + x) * 4;
+
       // 计算局部对比度
       let minLuma = 255;
       let maxLuma = 0;
-      
+
       // 检查3x3邻域
       for (let ny = -1; ny <= 1; ny++) {
         for (let nx = -1; nx <= 1; nx++) {
           const newY = y + ny;
           const newX = x + nx;
-          
+
           if (newY >= 0 && newY < height && newX >= 0 && newX < width) {
             const neighborIdx = (newY * width + newX) * 4;
-            const luma = 0.299 * data[neighborIdx] + 0.587 * data[neighborIdx + 1] + 0.114 * data[neighborIdx + 2];
-            
+            const luma = 0.299 * data[neighborIdx]! + 0.587 * data[neighborIdx + 1]! + 0.114 * data[neighborIdx + 2]!;
+
             minLuma = Math.min(minLuma, luma);
             maxLuma = Math.max(maxLuma, luma);
           }
@@ -747,9 +761,9 @@ function calculatePeopleScore(imageData: ImageData, sampleRate: number = 4): num
       const pixelOffset = (y * width + x) * 4;
       if (pixelOffset >= data.length - 4) continue;
       
-      const r = data[pixelOffset];
-      const g = data[pixelOffset + 1];
-      const b = data[pixelOffset + 2];
+      const r = data[pixelOffset]!;
+      const g = data[pixelOffset + 1]!;
+      const b = data[pixelOffset + 2]!;
       
       // 计算网格位置
       const gridX = Math.min(gridSize - 1, Math.floor(x / width * gridSize));
@@ -779,7 +793,7 @@ function calculatePeopleScore(imageData: ImageData, sampleRate: number = 4): num
       // 综合两种模型的结果
       if (isSkinRGB || isSkinYCbCr) {
       skinColorPixels++;
-        gridScores[gridY][gridX]++;
+        gridScores[gridY]![gridX]!++;
     }
     
     totalPixels++;
@@ -806,40 +820,40 @@ function calculatePeopleScore(imageData: ImageData, sampleRate: number = 4): num
       const weight = 1 / (1 + distance) * (distance < 1 ? centerWeight : 1);
       
       // 计算该区域的肤色比例
-      const regionRatio = gridCounts[y][x] > 0 ? gridScores[y][x] / gridCounts[y][x] : 0;
-      
+      const regionRatio = gridCounts[y]![x]! > 0 ? gridScores[y]![x]! / gridCounts[y]![x]! : 0;
+
       weightedRegionScore += regionRatio * weight;
       totalWeight += weight;
     }
   }
-  
+
   // 标准化加权分数
   const normalizedRegionScore = totalWeight > 0 ? weightedRegionScore / totalWeight : 0;
-  
+
   // 3. 检测人脸特征的可能性 - 基于区域分布模式
   // 人脸通常在上半部分有较高的肤色比例
   const topHalfSkinRatio = (
-    gridScores[0][0] + gridScores[0][1] + gridScores[0][2] +
-    gridScores[1][0] + gridScores[1][1] + gridScores[1][2]
+    gridScores[0]![0]! + gridScores[0]![1]! + gridScores[0]![2]! +
+    gridScores[1]![0]! + gridScores[1]![1]! + gridScores[1]![2]!
   ) / (
-    gridCounts[0][0] + gridCounts[0][1] + gridCounts[0][2] +
-    gridCounts[1][0] + gridCounts[1][1] + gridCounts[1][2] || 1
+    gridCounts[0]![0]! + gridCounts[0]![1]! + gridCounts[0]![2]! +
+    gridCounts[1]![0]! + gridCounts[1]![1]! + gridCounts[1]![2]! || 1
   );
   
   // 中心区域通常有更高的肤色比例
-  const centerSkinRatio = gridCounts[1][1] > 0 ? gridScores[1][1] / gridCounts[1][1] : 0;
-  
+  const centerSkinRatio = gridCounts[1]![1]! > 0 ? gridScores[1]![1]! / gridCounts[1]![1]! : 0;
+
   // 检测面部对称性 - 左右区域肤色比例相近
   const leftSkinRatio = (
-    gridScores[0][0] + gridScores[1][0] + gridScores[2][0]
+    gridScores[0]![0]! + gridScores[1]![0]! + gridScores[2]![0]!
   ) / (
-    gridCounts[0][0] + gridCounts[1][0] + gridCounts[2][0] || 1
+    gridCounts[0]![0]! + gridCounts[1]![0]! + gridCounts[2]![0]! || 1
   );
-  
+
   const rightSkinRatio = (
-    gridScores[0][2] + gridScores[1][2] + gridScores[2][2]
+    gridScores[0]![2]! + gridScores[1]![2]! + gridScores[2]![2]!
   ) / (
-    gridCounts[0][2] + gridCounts[1][2] + gridCounts[2][2] || 1
+    gridCounts[0]![2]! + gridCounts[1]![2]! + gridCounts[2]![2]! || 1
   );
   
   // 对称性分数 - 左右肤色比例差异越小，对称性越高
@@ -885,13 +899,13 @@ function generateEdgeMap(imageData: ImageData, width: number, height: number, sa
         const rightOffset = pixelOffset + (sampleRate * 4);
         if (rightOffset < data.length) {
           const currentBrightness = 
-            0.299 * data[pixelOffset] + 
-            0.587 * data[pixelOffset + 1] + 
-            0.114 * data[pixelOffset + 2];
+            0.299 * data[pixelOffset]! + 
+            0.587 * data[pixelOffset + 1]! + 
+            0.114 * data[pixelOffset + 2]!;
           
           const rightBrightness = 
-            0.299 * data[rightOffset] + 
-            0.587 * data[rightOffset + 1] + 
+            0.299 * data[rightOffset]! + 
+            0.587 * data[rightOffset + 1]! + 
             0.114 * data[rightOffset + 2];
             
           if (Math.abs(currentBrightness - rightBrightness) > 30) {
@@ -905,9 +919,9 @@ function generateEdgeMap(imageData: ImageData, width: number, height: number, sa
         const downOffset = pixelOffset + (width * sampleRate * 4);
         if (downOffset < data.length) {
           const currentBrightness = 
-            0.299 * data[pixelOffset] + 
-            0.587 * data[pixelOffset + 1] + 
-            0.114 * data[pixelOffset + 2];
+            0.299 * data[pixelOffset]! + 
+            0.587 * data[pixelOffset + 1]! + 
+            0.114 * data[pixelOffset + 2]!;
             
           const downBrightness = 
             0.299 * data[downOffset] + 
@@ -920,7 +934,7 @@ function generateEdgeMap(imageData: ImageData, width: number, height: number, sa
         }
       }
       
-      edgeMap[mapIndex++] = isEdge ? 255 : 0;
+      edgeMap[mapIndex++]! = isEdge ? 255 : 0;
     }
   }
   
@@ -936,16 +950,16 @@ function analyzeColorProfile(imageData: ImageData, sampleRate: number = 4): {dom
   // 采样计算颜色分布
   for (let i = 0; i < data.length; i += 4 * sampleRate) {
     if (i >= data.length - 4) break;
-    
-    const r = Math.floor(data[i] / 32) * 32;     // 量化为8个区间
-    const g = Math.floor(data[i+1] / 32) * 32;
-    const b = Math.floor(data[i+2] / 32) * 32;
-    
+
+    const r = Math.floor(data[i]! / 32) * 32;     // 量化为8个区间
+    const g = Math.floor(data[i + 1]! / 32) * 32;
+    const b = Math.floor(data[i + 2]! / 32) * 32;
+
     const colorKey = `${r},${g},${b}`;
     colorHistogram[colorKey] = (colorHistogram[colorKey] || 0) + 1;
     totalSamples++;
   }
-  
+
   // 排序找出主要颜色
   const sortedColors = Object.entries(colorHistogram)
     .sort((a, b) => b[1] - a[1])
@@ -953,7 +967,7 @@ function analyzeColorProfile(imageData: ImageData, sampleRate: number = 4): {dom
       color,
       percentage: count / totalSamples
     }));
-  
+
   // 提取前5个主要颜色的百分比
   const dominantColors = sortedColors
     .slice(0, 5)
@@ -999,21 +1013,21 @@ function detectEmptyFrame(imageData: ImageData, sampleRate: number = 2): number 
     for (let x = 0; x < width; x += sampleRate) {
       const pixelOffset = (y * width + x) * 4;
       if (pixelOffset >= data.length - 4) continue;
-      
-      const r = Math.floor(data[pixelOffset] / 16) * 16;     // 量化为16个区间
-      const g = Math.floor(data[pixelOffset + 1] / 16) * 16;
-      const b = Math.floor(data[pixelOffset + 2] / 16) * 16;
-      
+
+      const r = Math.floor(data[pixelOffset]! / 16) * 16;     // 量化为16个区间
+      const g = Math.floor(data[pixelOffset + 1]! / 16) * 16;
+      const b = Math.floor(data[pixelOffset + 2]! / 16) * 16;
+
       const colorKey = `${r},${g},${b}`;
       colorHistogram[colorKey] = (colorHistogram[colorKey] || 0) + 1;
       totalSamples++;
     }
   }
-  
+
   // 排序找出主要颜色
   const sortedColors = Object.entries(colorHistogram)
     .sort((a, b) => b[1] - a[1]);
-  
+
   // 计算主色占比
   if (sortedColors.length > 0) {
     features.dominantColorRatio = sortedColors[0][1] / totalSamples;
@@ -1040,9 +1054,9 @@ function detectEmptyFrame(imageData: ImageData, sampleRate: number = 2): number 
       const pixelOffset = rowOffset + (x * 4);
       if (pixelOffset >= data.length - 4) continue;
       
-      const r = data[pixelOffset];
-      const g = data[pixelOffset + 1];
-      const b = data[pixelOffset + 2];
+      const r = data[pixelOffset]!;
+      const g = data[pixelOffset + 1]!;
+      const b = data[pixelOffset + 2]!;
       
       // 计算亮度
       const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -1077,9 +1091,9 @@ function detectEmptyFrame(imageData: ImageData, sampleRate: number = 2): number 
       
       // 检测该点是否有内容 (简化为边缘检测)
       if (x > 0 && y > 0) {
-        const r = data[pixelOffset];
-        const g = data[pixelOffset + 1];
-        const b = data[pixelOffset + 2];
+        const r = data[pixelOffset]!;
+        const g = data[pixelOffset + 1]!;
+        const b = data[pixelOffset + 2]!;
         
         const leftOffset = pixelOffset - 4;
         const topOffset = pixelOffset - (width * 4);
@@ -1088,24 +1102,26 @@ function detectEmptyFrame(imageData: ImageData, sampleRate: number = 2): number 
           const currentBrightness = 0.299 * r + 0.587 * g + 0.114 * b;
           
           const leftBrightness = 
-            0.299 * data[leftOffset] + 
-            0.587 * data[leftOffset + 1] + 
+            0.299 * data[leftOffset]! + 
+            0.587 * data[leftOffset + 1]! + 
             0.114 * data[leftOffset + 2];
             
           const topBrightness = 
-            0.299 * data[topOffset] + 
-            0.587 * data[topOffset + 1] + 
+            0.299 * data[topOffset]! + 
+            0.587 * data[topOffset + 1]! + 
             0.114 * data[topOffset + 2];
           
           // 如果与左侧或上方像素有明显差异，认为有内容
           if (Math.abs(currentBrightness - leftBrightness) > 20 || 
               Math.abs(currentBrightness - topBrightness) > 20) {
-            gridContent[gridY][gridX]++;
+            if (gridContent[gridY] && gridContent[gridY]![gridX] !== undefined) {
+              gridContent[gridY]![gridX]!++;
+            }
           }
         }
       }
       
-      gridSamples[gridY][gridX]++;
+      gridSamples[gridY]![gridX]!++;
     }
   }
   
@@ -1138,9 +1154,9 @@ function detectEmptyFrame(imageData: ImageData, sampleRate: number = 2): number 
   for (let i = 0; i < data.length; i += 4 * sampleRate) {
     if (i >= data.length - 4) break;
     
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
+    const r = data[i]!;
+    const g = data[i + 1]!;
+    const b = data[i + 2]!;
     
     const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
     const binIndex = Math.min(9, Math.floor(brightness / 25.6)); // 0-255 -> 0-9
@@ -1181,29 +1197,29 @@ function detectEmptyFrame(imageData: ImageData, sampleRate: number = 2): number 
       
       // 计算中心像素亮度
       const centerBrightness = 
-        0.299 * data[centerOffset] + 
-        0.587 * data[centerOffset + 1] + 
-        0.114 * data[centerOffset + 2];
+        0.299 * data[centerOffset]! + 
+        0.587 * data[centerOffset + 1]! + 
+        0.114 * data[centerOffset + 2]!;
       
       // 计算周围像素亮度
       const leftBrightness = 
-        0.299 * data[leftOffset] + 
-        0.587 * data[leftOffset + 1] + 
+        0.299 * data[leftOffset]! + 
+        0.587 * data[leftOffset + 1]! + 
         0.114 * data[leftOffset + 2];
         
       const rightBrightness = 
-        0.299 * data[rightOffset] + 
-        0.587 * data[rightOffset + 1] + 
+        0.299 * data[rightOffset]! + 
+        0.587 * data[rightOffset + 1]! + 
         0.114 * data[rightOffset + 2];
         
       const topBrightness = 
-        0.299 * data[topOffset] + 
-        0.587 * data[topOffset + 1] + 
+        0.299 * data[topOffset]! + 
+        0.587 * data[topOffset + 1]! + 
         0.114 * data[topOffset + 2];
         
       const bottomBrightness = 
-        0.299 * data[bottomOffset] + 
-        0.587 * data[bottomOffset + 1] + 
+        0.299 * data[bottomOffset]! + 
+        0.587 * data[bottomOffset + 1]! + 
         0.114 * data[bottomOffset + 2];
       
       // 简化的拉普拉斯算子
@@ -1230,9 +1246,9 @@ function detectEmptyFrame(imageData: ImageData, sampleRate: number = 2): number 
       const pixelOffset = (y * width + x) * 4;
       if (pixelOffset >= data.length - 4) continue;
       
-      const r = data[pixelOffset];
-      const g = data[pixelOffset + 1];
-      const b = data[pixelOffset + 2];
+      const r = data[pixelOffset]!;
+      const g = data[pixelOffset + 1]!;
+      const b = data[pixelOffset + 2]!;
       
       const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
       brightnessSamples.push(brightness);

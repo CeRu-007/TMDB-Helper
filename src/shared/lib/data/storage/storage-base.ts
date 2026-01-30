@@ -1,3 +1,6 @@
+import type { TMDBItem } from '@/types/tmdb-item';
+import { TIMEOUT_15S } from '@/lib/constants/constants';
+
 export class StorageBase {
   protected static readonly STORAGE_KEY = 'tmdb_helper_items';
   protected static readonly SCHEDULED_TASKS_KEY = 'tmdb_helper_scheduled_tasks';
@@ -35,7 +38,7 @@ export class StorageBase {
     options: RequestInit = {},
   ): Promise<Response> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_15S);
 
     try {
       const response = await fetch(url, {
@@ -55,7 +58,6 @@ export class StorageBase {
     } catch (error) {
       clearTimeout(timeoutId);
 
-      // Simplified error handling
       if (error instanceof DOMException && error.name === 'AbortError') {
         throw new Error('请求超时：API调用超过15秒未响应');
       }
@@ -65,7 +67,7 @@ export class StorageBase {
         throw new Error(
           isLocalhost
             ? '本地服务器连接失败：请确认Next.js开发服务器正在运行'
-            : '网络连接失败：无法连接到服务器'
+            : '网络连接失败：无法连接到服务器',
         );
       }
 
@@ -79,7 +81,7 @@ export class StorageBase {
    */
   protected static async getItemsWithRetry(
     retries = this.MAX_RETRIES,
-  ): Promise<unknown[]> {
+  ): Promise<TMDBItem[]> {
     if (!this.USE_FILE_STORAGE) {
       return [];
     }
@@ -94,7 +96,7 @@ export class StorageBase {
       }
 
       const data = await response.json();
-      return data.items || [];
+      return (data.items || []) as TMDBItem[];
     } catch (error) {
       if (retries > 0) {
         await new Promise((resolve) => setTimeout(resolve, this.RETRY_DELAY));

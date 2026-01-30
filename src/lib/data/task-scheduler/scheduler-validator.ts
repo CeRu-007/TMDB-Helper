@@ -12,6 +12,7 @@ import { TaskExecutor } from './task-executor';
 import { DistributedLock } from '@/lib/utils/distributed-lock';
 import { configManager } from '@/shared/lib/utils/config-manager';
 import { performanceMonitor } from '@/shared/lib/utils/performance-monitor';
+import { logger } from '@/lib/utils/logger';
 // import { StorageSyncManager } from '../storage-sync-manager'; // 该模块不存在，已注释
 
 /**
@@ -63,7 +64,7 @@ export class SchedulerValidator {
       if (validationResult.invalidTasks > 0) {
         // 记录详细信息
         validationResult.details.forEach((detail) => {
-          console.log(`[SchedulerValidator] 任务关联修复: ${detail}`);
+          logger.info(`[SchedulerValidator] 任务关联修复: ${detail}`);
         });
       }
 
@@ -85,12 +86,12 @@ export class SchedulerValidator {
       try {
         const result = await StorageManager.validateAndFixTaskAssociations();
         if (result.invalidTasks > 0) {
-          console.log(
+          logger.info(
             `[SchedulerValidator] 启动时修复了 ${result.invalidTasks} 个无效任务`,
           );
         }
       } catch (error) {
-        console.error(
+        logger.error(
           '[SchedulerValidator] 启动时验证任务关联失败:',
           error,
         );
@@ -100,18 +101,18 @@ export class SchedulerValidator {
       try {
         await this.projectManager.cleanupCompletedProjectTasks();
       } catch (error) {
-        console.error(
+        logger.error(
           '[SchedulerValidator] 启动时清理已完结项目失败:',
           error,
         );
       }
 
       this.isInitialized = true;
-      console.log(
+      logger.info(
         `[SchedulerValidator] 初始化完成，已加载 ${tasks.length} 个定时任务 (${enabledTasks.length} 个已启用)`,
       );
     } catch (error) {
-      console.error(
+      logger.error(
         '[SchedulerValidator] 初始化失败:',
         error instanceof Error ? error.message : String(error),
       );
@@ -142,7 +143,7 @@ export class SchedulerValidator {
             }
           }
         } catch (error) {
-          console.error(
+          logger.error(
             '[SchedulerValidator] 定期验证任务关联失败:',
             error,
           );
@@ -151,7 +152,7 @@ export class SchedulerValidator {
       60 * 60 * 1000,
     ); // 每小时执行一次
 
-    console.log('[SchedulerValidator] 已启动定期任务关联验证 (每小时一次)');
+    logger.info('[SchedulerValidator] 已启动定期任务关联验证 (每小时一次)');
   }
 
   /**
@@ -180,13 +181,13 @@ export class SchedulerValidator {
           const tasks = await StorageManager.getScheduledTasks();
           await this.checkMissedTasks(tasks);
         } catch (error) {
-          console.error('[SchedulerValidator] 定期检查错过任务失败:', error);
+          logger.error('[SchedulerValidator] 定期检查错过任务失败:', error);
         }
       },
       10 * 60 * 1000,
     ); // 每10分钟执行一次
 
-    console.log('[SchedulerValidator] 已启动定期错过任务检查 (每10分钟一次)');
+    logger.info('[SchedulerValidator] 已启动定期错过任务检查 (每10分钟一次)');
   }
 
   /**
@@ -214,7 +215,7 @@ export class SchedulerValidator {
         try {
           await this.projectManager.cleanupCompletedProjectTasks();
         } catch (error) {
-          console.error(
+          logger.error(
             '[SchedulerValidator] 定期清理已完结项目任务失败:',
             error,
           );
@@ -223,7 +224,7 @@ export class SchedulerValidator {
       60 * 60 * 1000,
     ); // 每小时执行一次
 
-    console.log(
+    logger.info(
       '[SchedulerValidator] 已启动定期已完结项目任务清理 (每小时一次)',
     );
   }
@@ -253,13 +254,13 @@ export class SchedulerValidator {
         try {
           await this.timerManager.validateAllTimers();
         } catch (error) {
-          console.error('[SchedulerValidator] 定期验证定时器失败:', error);
+          logger.error('[SchedulerValidator] 定期验证定时器失败:', error);
         }
       },
       30 * 60 * 1000,
     ); // 每30分钟执行一次
 
-    console.log('[SchedulerValidator] 已启动定期定时器验证 (每30分钟一次)');
+    logger.info('[SchedulerValidator] 已启动定期定时器验证 (每30分钟一次)');
   }
 
   /**
@@ -291,7 +292,7 @@ export class SchedulerValidator {
 
         // 如果当前时间超过了预定执行时间超过5分钟，认为是错过的任务
         if (timeDiff > 5 * 60 * 1000) {
-          console.log(
+          logger.info(
             `[SchedulerValidator] 发现错过的任务: ${task.name} (${task.id}), 预定时间: ${nextRunTime.toLocaleString('zh-CN')}, 当前时间: ${now.toLocaleString('zh-CN')}`,
           );
 
@@ -302,14 +303,14 @@ export class SchedulerValidator {
 
           // 检查是否在合理的补偿时间窗口内（24小时内）
           if (timeDiff <= 24 * 60 * 60 * 1000) {
-            console.log(
+            logger.info(
               `[SchedulerValidator] 执行错过的任务: ${task.name} (${task.id})`,
             );
 
             // 立即执行错过的任务
             await this.taskExecutor.executeTaskWithRetry(task);
           } else {
-            console.log(
+            logger.warn(
               `[SchedulerValidator] 任务 ${task.name} (${task.id}) 错过时间过长 (${Math.round(timeDiff / (60 * 60 * 1000))} 小时)，跳过执行并重新调度`,
             );
 
@@ -318,7 +319,7 @@ export class SchedulerValidator {
           }
         }
       } catch (error) {
-        console.error(
+        logger.error(
           `[SchedulerValidator] 检查错过任务 ${task.id} 时出错:`,
           error,
         );

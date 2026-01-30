@@ -3,6 +3,8 @@
  * 替代localStorage，所有配置都存储在服务端
  */
 
+import { logger } from '@/lib/utils/logger';
+
 // Constants
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const API_ENDPOINT = '/api/system/config';
@@ -29,13 +31,13 @@ export class ClientConfigManager {
       if (typeof window !== 'undefined' && window.localStorage) {
         const value = localStorage.getItem(key);
         if (value !== null) {
-          console.log(`🔄 [ClientConfigManager] 从localStorage恢复配置: ${key}`);
+          logger.info(`🔄 [ClientConfigManager] 从localStorage恢复配置: ${key}`);
           this.updateCache(key, value);
           return value;
         }
       }
     } catch (error) {
-      console.warn('从localStorage读取配置失败:', error);
+      logger.warn('从localStorage读取配置失败:', error);
     }
     return null;
   }
@@ -44,10 +46,10 @@ export class ClientConfigManager {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(key, value);
-        console.log(`💾 [ClientConfigManager] 已保存配置到localStorage: ${key}`);
+        logger.info(`💾 [ClientConfigManager] 已保存配置到localStorage: ${key}`);
       }
     } catch (error) {
-      console.warn('保存配置到localStorage失败:', error);
+      logger.warn('保存配置到localStorage失败:', error);
     }
   }
 
@@ -80,7 +82,7 @@ export class ClientConfigManager {
       
       // 特殊处理 AbortError（超时错误）
       if (error instanceof Error && error.name === 'AbortError') {
-        console.warn(`获取配置项超时: ${key}`);
+        logger.warn(`获取配置项超时: ${key}`);
         throw new Error(`Request timeout for key: ${key}`);
       }
       
@@ -102,7 +104,7 @@ export class ClientConfigManager {
         try {
           valueToReturn = JSON.stringify(value);
         } catch (error) {
-          console.error('JSON序列化失败:', error);
+          logger.error('JSON序列化失败:', error);
           return this.getFromLocalStorage(key);
         }
       }
@@ -111,7 +113,7 @@ export class ClientConfigManager {
       this.setToLocalStorage(key, String(valueToReturn));
       return valueToReturn !== undefined ? String(valueToReturn) : null;
     } catch (error) {
-      console.error('获取配置项失败，可能是服务不可用:', error);
+      logger.error('获取配置项失败，可能是服务不可用:', error);
       return this.getFromLocalStorage(key);
     }
   }
@@ -126,7 +128,7 @@ export class ClientConfigManager {
       });
 
       if (!response.ok) {
-        console.warn(`设置配置失败: ${response.status} ${response.statusText}`);
+        logger.warn(`设置配置失败: ${response.status} ${response.statusText}`);
         this.setToLocalStorage(key, value);
         return false;
       }
@@ -138,11 +140,11 @@ export class ClientConfigManager {
         return true;
       }
 
-      console.warn('设置配置失败:', data.error);
+      logger.warn('设置配置失败:', data.error);
       this.setToLocalStorage(key, value);
       return false;
     } catch (error) {
-      console.error('设置配置项失败，可能是服务不可用:', error);
+      logger.warn('设置配置失败:', data.error);
       this.setToLocalStorage(key, value);
       return false;
     }
@@ -158,7 +160,7 @@ export class ClientConfigManager {
       });
 
       if (!response.ok) {
-        console.warn(`删除配置失败: ${response.status} ${response.statusText}`);
+        logger.warn(`删除配置失败: ${response.status} ${response.statusText}`);
         return false;
       }
 
@@ -169,10 +171,10 @@ export class ClientConfigManager {
         return true;
       }
 
-      console.warn('删除配置失败:', data.error);
-      return false;
+      logger.warn('删除配置失败:', data.error);
+        return false;
     } catch (error) {
-      console.error('删除配置项失败:', error);
+      logger.error('删除配置项失败:', error);
       return false;
     }
   }
@@ -184,14 +186,14 @@ export class ClientConfigManager {
       });
 
       if (!response.ok) {
-        console.warn(`获取配置失败: ${response.status} ${response.statusText}`);
+        logger.warn(`获取配置失败: ${response.status} ${response.statusText}`);
         return {};
       }
 
       const data = await response.json();
       return data.success ? (data.fullConfig || data.config) : {};
     } catch (error) {
-      console.error('获取完整配置失败:', error);
+      logger.error('获取完整配置失败:', error);
       return {};
     }
   }
@@ -206,7 +208,7 @@ export class ClientConfigManager {
       });
 
       if (!response.ok) {
-        console.warn(`更新配置失败: ${response.status} ${response.statusText}`);
+        logger.warn(`更新配置失败: ${response.status} ${response.statusText}`);
         return false;
       }
 
@@ -218,10 +220,10 @@ export class ClientConfigManager {
         return true;
       }
 
-      console.warn('更新配置失败:', data.error);
-      return false;
+      logger.warn('更新配置失败:', data.error);
+        return false;
     } catch (error) {
-      console.error('更新配置项失败:', error);
+      logger.error('更新配置项失败:', error);
       return false;
     }
   }
@@ -241,7 +243,7 @@ export class ClientConfigManager {
       });
       return response.ok;
     } catch (error) {
-      console.log('🔍 [ClientConfigManager] 服务端不可用:', error instanceof Error ? error.message : '网络错误');
+      logger.info('🔍 [ClientConfigManager] 服务端不可用:', error instanceof Error ? error.message : '网络错误');
       return false;
     }
   }
@@ -279,14 +281,14 @@ export class ClientConfigManager {
       });
 
       if (!response.ok) {
-        console.warn(`获取配置信息失败: ${response.status} ${response.statusText}`);
+        logger.warn(`获取配置信息失败: ${response.status} ${response.statusText}`);
         return null;
       }
 
       const data = await response.json();
       return data.success ? data.info : null;
     } catch (error) {
-      console.error('获取配置文件信息失败:', error);
+      logger.error('获取配置文件信息失败:', error);
       return null;
     }
   }
@@ -301,14 +303,14 @@ export class ClientConfigManager {
       });
 
       if (!response.ok) {
-        console.warn(`导出配置失败: ${response.status} ${response.statusText}`);
+        logger.warn(`导出配置失败: ${response.status} ${response.statusText}`);
         return null;
       }
 
       const data = await response.json();
       return data.success ? data.configJson : null;
     } catch (error) {
-      console.error('导出配置失败:', error);
+      logger.error('导出配置失败:', error);
       return null;
     }
   }
@@ -323,7 +325,7 @@ export class ClientConfigManager {
       });
 
       if (!response.ok) {
-        console.warn(`导入配置失败: ${response.status} ${response.statusText}`);
+        logger.warn(`导入配置失败: ${response.status} ${response.statusText}`);
         return false;
       }
 
@@ -333,10 +335,10 @@ export class ClientConfigManager {
         return true;
       }
 
-      console.warn('导入配置失败:', data.error);
-      return false;
+      logger.warn('导入配置失败:', data.error);
+        return false;
     } catch (error) {
-      console.error('导入配置失败:', error);
+      logger.error('导入配置失败:', error);
       return false;
     }
   }
@@ -351,7 +353,7 @@ export class ClientConfigManager {
       });
 
       if (!response.ok) {
-        console.warn(`重置配置失败: ${response.status} ${response.statusText}`);
+        logger.warn(`重置配置失败: ${response.status} ${response.statusText}`);
         return false;
       }
 
@@ -361,10 +363,10 @@ export class ClientConfigManager {
         return true;
       }
 
-      console.warn('重置配置失败:', data.error);
-      return false;
+      logger.warn('重置配置失败:', data.error);
+        return false;
     } catch (error) {
-      console.error('重置配置失败:', error);
+      logger.error('重置配置失败:', error);
       return false;
     }
   }

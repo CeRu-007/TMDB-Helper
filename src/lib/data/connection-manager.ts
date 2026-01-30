@@ -1,5 +1,6 @@
 import { performanceMonitor } from '@/shared/lib/utils/performance-monitor'
 import { errorRecoveryManager } from '@/shared/lib/utils/error-recovery-manager'
+import { logger } from '@/lib/utils/logger'
 
 export interface ConnectionEvent {
   type: 'connection_status'
@@ -45,7 +46,7 @@ export class ConnectionManager {
           this.isConnected = false
 
           if (process.env.NODE_ENV === 'development') {
-            console.warn('[ConnectionManager] Connection timeout')
+            logger.warn('[ConnectionManager] Connection timeout')
           }
         }
       }, 10000)

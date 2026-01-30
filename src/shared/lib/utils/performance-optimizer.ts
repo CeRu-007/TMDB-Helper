@@ -3,6 +3,8 @@
  * 用于监控和优化应用性能
  */
 
+import { DELAY_1S, INTERVAL_1H } from '@/lib/constants/constants';
+
 interface PerformanceMetrics {
   pageLoadTime: number;
   apiResponseTime: number;
@@ -119,7 +121,7 @@ export class PerformanceOptimizer {
       if (confirm('检测到资源加载失败，是否重新加载页面？')) {
         window.location.reload();
       }
-    }, 1000);
+    }, DELAY_1S);
   }
 
   /**
@@ -326,7 +328,7 @@ export class PerformanceOptimizer {
     // 定期清理缓存
     setInterval(() => {
       this.cleanupExpiredCache();
-    }, 60 * 60 * 1000); // 每小时检查一次
+    }, INTERVAL_1H); // 每小时检查一次
 
   }
 }

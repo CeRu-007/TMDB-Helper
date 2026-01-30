@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthManager } from '@/lib/auth/auth-manager';
+import { ErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * GET /api/auth/init - 检查认证系统初始化状态
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const hasAdmin = AuthManager.hasAdminUser();
     
@@ -15,10 +17,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    
+    logger.error('检查认证系统初始化状态失败', error)
     return NextResponse.json(
-      { success: false, error: '服务器内部错误' },
-      { status: 500 }
+      { success: false, error: ErrorHandler.toUserMessage(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 }
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/auth/init - 初始化认证系统
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // 检查是否已经初始化
     if (AuthManager.hasAdminUser()) {
@@ -54,10 +56,10 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    
+    logger.error('初始化认证系统失败', error)
     return NextResponse.json(
-      { success: false, error: '服务器内部错误' },
-      { status: 500 }
+      { success: false, error: ErrorHandler.toUserMessage(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * POST /api/analyze-csv-episodes - 分析CSV文件中剩余的集数
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // 解析CSV头部，查找集数列
     const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
-    console.log(`[API] CSV头部: [${headers.join(', ')}]`);
+    logger.info(`[API] CSV头部: [${headers.join(', ')}]`);
 
     // 尝试多种可能的集数列名
     const possibleEpisodeColumns = [
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (episodeColumnIndex === -1) {
-      console.error(`[API] 无法找到集数列，可用列: [${headers.join(', ')}]`);
+      logger.error(`[API] 无法找到集数列，可用列: [${headers.join(', ')}]`);
       return NextResponse.json(
         {
           success: false,
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
             value: episodeNumberStr,
             error,
           });
-          console.warn(`[API] ${error} (第${i + 2}行)`);
+          logger.warn(`[API] ${error} (第${i + 2}行)`);
         }
       } else {
         const error = `列数不足: ${columns.length} < ${episodeColumnIndex + 1}`;
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
     }
 
     const sortedEpisodes = remainingEpisodes.sort((a, b) => a - b);
-    console.log(`[API] CSV中剩余的集数: [${sortedEpisodes.join(', ')}]`);
+    logger.info(`[API] CSV中剩余的集数: [${sortedEpisodes.join(', ')}]`);
 
     return NextResponse.json(
       {

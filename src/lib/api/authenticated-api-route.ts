@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BaseAPIRoute } from './base-api-route'
 import { getUserIdFromRequest } from '@/lib/auth/user-utils'
+import { logger } from '@/lib/utils/logger'
 
 export abstract class AuthenticatedAPIRoute extends BaseAPIRoute {
   protected abstract handleAuthenticated(
@@ -40,7 +41,7 @@ export abstract class AuthenticatedAPIRoute extends BaseAPIRoute {
       // Apply CORS headers to all responses
       return this.handleCORS(response)
     } catch (error) {
-      console.error('Authenticated API Route Error:', error)
+      logger.error('Authenticated API Route Error:', error)
 
       const message = error instanceof Error ? error.message : 'Internal server error'
       const statusCode = this.getStatusCodeFromError(error)
