@@ -616,21 +616,6 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                                   <span>{result.vote_average.toFixed(1)}</span>
                                 </>
                               )}
-                              {selectedResult?.id === result.id && (
-                                <>
-                                  <span>•</span>
-                                  <a
-                                    href={`https://www.themoviedb.org/${result.media_type}/${result.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <ExternalLink className="h-2.5 w-2.5" />
-                                    <span>TMDB: {result.id}</span>
-                                  </a>
-                                </>
-                              )}
                             </div>
                             {selectedResult?.id === result.id && result.overview && (
                               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
@@ -639,6 +624,16 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                             )}
                           </div>
                           <div className="flex-shrink-0 flex items-center gap-1">
+                            <a
+                              href={`https://www.themoviedb.org/${result.media_type}/${result.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-accent text-muted-foreground hover:text-blue-600 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                              title="在 TMDB 查看详情"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
                             {result.backdrop_path && (
                               <ImageIcon className="h-2.5 w-2.5 text-blue-500" />
                             )}
