@@ -60,6 +60,7 @@ interface TMDBSearchResult {
   overview?: string
   vote_average?: number
   original_language?: string
+  adult?: boolean
 }
 
 interface AddItemDialogProps {
@@ -600,6 +601,12 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                             <div className="font-medium text-xs truncate">{getDisplayTitle(result)}</div>
                             <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 flex-wrap">
                               <span>剧集</span>
+                              {result.adult && (
+                                <>
+                                  <span>•</span>
+                                  <Badge variant="destructive" className="text-xs px-1.5 py-0 h-auto">成人</Badge>
+                                </>
+                              )}
                               <span>•</span>
                               <span>{formatDate(result.first_air_date)}</span>
                               {result.vote_average && (
