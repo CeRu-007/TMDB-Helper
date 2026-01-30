@@ -1,4 +1,4 @@
-import { BaseEntity } from '../common'
+import { BaseEntity } from "../common"
 
 // Authentication types
 export interface User extends BaseEntity {
@@ -15,9 +15,9 @@ export interface User extends BaseEntity {
 }
 
 export enum UserRole {
-  ADMIN = 'admin',
-  USER = 'user',
-  VIEWER = 'viewer'
+  ADMIN = "admin",
+  USER = "user",
+  VIEWER = "viewer",
 }
 
 export interface UserProfile {
@@ -30,7 +30,7 @@ export interface UserProfile {
 }
 
 export interface UserPreferences {
-  theme: 'light' | 'dark' | 'system'
+  theme: "light" | "dark" | "system"
   language: string
   notifications: NotificationPreferences
   privacy: PrivacyPreferences
@@ -46,14 +46,14 @@ export interface NotificationPreferences {
 }
 
 export interface PrivacyPreferences {
-  profileVisibility: 'public' | 'private'
+  profileVisibility: "public" | "private"
   activityVisibility: boolean
   dataCollection: boolean
   analytics: boolean
 }
 
 export interface UIPreferences {
-  layout: 'sidebar' | 'topbar'
+  layout: "sidebar" | "topbar"
   pageSize: number
   showHiddenFiles: boolean
   compactMode: boolean
