@@ -1,7 +1,6 @@
-import type { NextRequest } from "next/server"
+import { NextRequest } from "next/server"
 import { spawn } from "child_process"
 import fs from "fs"
-import path from "path"
 import os from "os"
 import { logger } from "@/lib/utils/logger"
 
@@ -155,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     // 解析命令
     const commandParts = optimizedCommand.split(" ")
-    const mainCommand = commandParts[0]
+    const mainCommand = commandParts[0] || ''
     const args = commandParts.slice(1)
 
     // 记录详细环境信息

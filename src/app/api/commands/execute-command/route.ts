@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // 解析命令
     const commandParts = command.split(" ")
-    const mainCommand = commandParts[0]
+    const mainCommand = commandParts[0] || ''
     const args = commandParts.slice(1)
 
     return new Promise((resolve) => {

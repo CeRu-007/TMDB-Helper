@@ -1,6 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-// import { writeItems, readItems } from '@/lib/server-storage'; // 移除迁移功能
-import { StorageManager } from '@/lib/data/storage';
+import { ServerStorageService } from '@/lib/data/server-storage-service';
 import { TMDBItem } from '@/lib/data/storage';
 
 /**
@@ -35,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 读取现有的服务器端数据
-    const existingItems = readItems();
+    const existingItems = ServerStorageService.readItemsFromFile();
 
     // 合并数据，避免重复
     const mergedItems = [...existingItems];
@@ -67,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 写入文件
-    const success = writeItems(mergedItems);
+    const success = ServerStorageService.writeItemsToFile(mergedItems);
     
     if (success) {
       

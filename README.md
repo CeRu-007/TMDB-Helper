@@ -9,7 +9,7 @@
   [![Version](https://img.shields.io/badge/version-0.5.2-blue.svg)](https://github.com/CeRu-007/TMDB-Helper)
   [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
   [![Docker](https://img.shields.io/badge/docker-supported-brightgreen.svg)](https://hub.docker.com/r/ceru007/tmdb-helper)
-  [![Next.js](https://img.shields.io/badge/Next.js-15.2.4-black.svg)](https://nextjs.org/)
+  [![Next.js](https://img.shields.io/badge/Next.js-15.2.6-black.svg)](https://nextjs.org/)
   [![Electron](https://img.shields.io/badge/Electron-33.4.11-9FEAF9.svg)](https://www.electronjs.org/)
 
   [功能特性](#-功能特性) · [快速开始](#-快速开始) · [部署指南](#-部署指南) · [贡献指南](#-贡献指南)

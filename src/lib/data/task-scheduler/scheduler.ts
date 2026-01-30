@@ -9,6 +9,7 @@
  */
 
 import { ScheduledTask, TMDBItem } from '../storage';
+import { TaskSchedulerAdvancedConfig } from '../task-scheduler-config';
 import { TaskManager } from './task-manager';
 import { TaskExecutor } from './task-executor';
 import { TimerManager } from './timer-manager';

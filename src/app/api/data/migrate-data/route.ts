@@ -22,30 +22,13 @@ export async function POST(request: NextRequest) {
 
     const { action } = await request.json();
 
-    // 移除了tmdb_items优化功能，现在使用自动紧凑格式保存
-
-    // 执行迁移
-    const migrated = migrateExistingData(userId);
-
-    if (migrated) {
-      // 获取迁移后的统计信息
-      const stats = getUserStats(userId);
-
-      return NextResponse.json({
-        success: true,
-        message: '数据迁移成功',
-        userId,
-        stats,
-        migrated: true,
-      });
-    } else {
-      return NextResponse.json({
-        success: true,
-        message: '没有需要迁移的数据',
-        userId,
-        migrated: false,
-      });
-    }
+    // 迁移功能已移除
+    return NextResponse.json({
+      success: false,
+      message: '数据迁移功能已移除，系统现在使用自动用户隔离存储',
+      userId,
+      migrated: false,
+    });
   } catch (error) {
     return NextResponse.json(
       {

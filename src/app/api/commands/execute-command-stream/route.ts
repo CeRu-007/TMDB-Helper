@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       start(controller) {
         const commandParts = command.split(" ")
-        const mainCommand = commandParts[0]
+        const mainCommand = commandParts[0] || ''
         const args = commandParts.slice(1)
 
         const childProcess = spawn(mainCommand, args, {

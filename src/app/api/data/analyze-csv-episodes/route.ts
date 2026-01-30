@@ -59,6 +59,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 解析CSV头部，查找集数列
+    if (!lines[0]) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'CSV文件没有标题行',
+        },
+        { status: 400 },
+      );
+    }
+
     const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
     logger.info(`[API] CSV头部: [${headers.join(', ')}]`);
 
@@ -82,7 +92,7 @@ export async function POST(request: NextRequest) {
         h.toLowerCase().includes(possibleName.toLowerCase()),
       );
       if (episodeColumnIndex !== -1) {
-        matchedColumnName = headers[episodeColumnIndex];
+        matchedColumnName = headers[episodeColumnIndex] || '';
         break;
       }
     }
@@ -110,10 +120,12 @@ export async function POST(request: NextRequest) {
 
     for (let i = 0; i < dataLines.length; i++) {
       const line = dataLines[i];
+      if (!line) continue;
+
       const columns = parseCSVLine(line);
 
       if (columns.length > episodeColumnIndex) {
-        const episodeNumberStr = columns[episodeColumnIndex].trim();
+        const episodeNumberStr = columns[episodeColumnIndex]?.trim() || '';
         const episodeNumber = parseInt(episodeNumberStr);
 
         if (!isNaN(episodeNumber)) {

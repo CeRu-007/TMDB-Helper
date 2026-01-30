@@ -20,7 +20,6 @@ export const GET = AuthMiddleware.withAuth(async (request: NextRequest) => {
 
     // 检查是否在服务器端环境中（Next.js API路由始终在服务器端运行）
     // 在 Next.js 中，API 路由始终在服务器端执行
-    const isServerEnvironment = true;
 
     // 在 Next.js API 路由中始终在服务端运行
     // 使用AuthManager获取用户信息
@@ -92,7 +91,6 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
     }
 
     // Next.js API路由始终在服务器端运行
-    const isServerEnvironment = true;
 
     // 在 Next.js API 路由中始终在服务端运行
     // 目前我们只记录这些更新操作，因为服务端无法直接修改客户端存储

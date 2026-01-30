@@ -37,9 +37,9 @@ class LoginRoute extends BaseAPIRoute {
     )
 
     if (!rateLimitResult.allowed) {
-      const _lockedMinutes = Math.ceil((rateLimitResult.lockedUntil! - Date.now()) / (60 * 1000))
+      const lockedMinutes = Math.ceil((rateLimitResult.lockedUntil! - Date.now()) / (60 * 1000))
       return this.rateLimitResponse(
-        'Too many login attempts. Please try again later.',
+        `Too many login attempts. Please try again after ${lockedMinutes} minute(s).`,
         Math.ceil((rateLimitResult.lockedUntil! - Date.now()) / 1000)
       )
     }

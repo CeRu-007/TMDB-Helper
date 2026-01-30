@@ -1,5 +1,4 @@
 import type { NextRequest, NextResponse } from "next/server"
-import { spawn } from 'child_process'
 import { BaseAPIRoute } from '@/lib/api/base-api-route'
 import { logger } from "@/lib/utils/logger"
 
