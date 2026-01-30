@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useMemo } from 'react';
 import { ExternalLink, Filter, TrendingUp, Star, Globe, Play, Sparkles, GripVertical, ArrowUpDown } from 'lucide-react';
@@ -91,9 +91,10 @@ const SortablePlatformCard: React.FC<{
             "flex-shrink-0 transition-transform duration-300",
             !isDragMode && "group-hover:scale-105"
           )}>
-            <PlatformLogo 
+            <PlatformLogo
               name={platform.name}
               logoUrl={platform.logoUrl}
+              fallbackEmoji={platform.fallbackEmoji}
               size="sm"
             />
           </div>
@@ -140,7 +141,7 @@ const StreamingPlatformNav: React.FC = () => {
         // 根据保存的顺序重新排序平台
         return allPlatforms.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
       } catch (e) {
-        
+        console.error('Failed to load platform order:', e);
         return getFilteredPlatforms('全部');
       }
     }
@@ -165,17 +166,13 @@ const StreamingPlatformNav: React.FC = () => {
     if (selectedCategory === '全部') {
       return platforms;
     }
-    return platforms.filter(platform => platform.category === selectedCategory);
+    return platforms.filter(platform => platform.region === selectedCategory);
   }, [selectedCategory, platforms]);
 
   // 处理分类切换
   const handleCategoryChange = (category: CategoryType) => {
     setSelectedCategory(category);
-    if (category === '全部') {
-      setPlatforms(getFilteredPlatforms('全部'));
-    } else {
-      setPlatforms(getFilteredPlatforms(category));
-    }
+    setPlatforms(getFilteredPlatforms(category));
   };
 
   // 处理拖拽结束
@@ -325,28 +322,22 @@ const StreamingPlatformNav: React.FC = () => {
           </DndContext>
         </div>
 
-        {/* 空状态 - 重新设计 */}
+        {/* 空状态 */}
         {filteredPlatforms.length === 0 && (
           <div className="text-center py-16">
             <div className="max-w-md mx-auto">
-              <div className="relative mb-8">
-                <div className="w-32 h-32 mx-auto bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full flex items-center justify-center">
-                  <Filter className="w-16 h-16 text-blue-400 dark:text-purple-400" />
-                </div>
-                <div className="absolute inset-0 w-32 h-32 mx-auto bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full animate-ping" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-4">
+              <Filter className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 未找到匹配的平台
               </h3>
-              <p className="text-gray-500 dark:text-gray-500 mb-6 leading-relaxed">
-                尝试选择不同的分类<br />
-                我们正在不断添加更多优质平台
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
+                尝试选择不同的分类查看更多平台
               </p>
               <Button
                 onClick={() => handleCategoryChange('全部')}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-full hover:scale-105 transition-transform duration-300 shadow-lg shadow-blue-500/25"
+                variant="outline"
               >
-                重置筛选条件
+                查看全部平台
               </Button>
             </div>
           </div>

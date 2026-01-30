@@ -6,15 +6,17 @@ import { cn } from '@/lib/utils';
 interface PlatformLogoProps {
   name: string;
   logoUrl?: string;
+  fallbackEmoji?: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
-const PlatformLogo: React.FC<PlatformLogoProps> = ({ 
-  name, 
-  logoUrl, 
-  className, 
-  size = 'md' 
+const PlatformLogo: React.FC<PlatformLogoProps> = ({
+  name,
+  logoUrl,
+  fallbackEmoji,
+  className,
+  size = 'md'
 }) => {
   const [imageError, setImageError] = useState(false);
 
@@ -24,16 +26,16 @@ const PlatformLogo: React.FC<PlatformLogoProps> = ({
     lg: 'w-16 h-16'
   };
 
-  // 如果没有logoUrl或logoUrl为空，显示首字母占位符
+  // 如果没有logoUrl或logoUrl为空，显示fallbackEmoji或首字母占位符
   if (!logoUrl || logoUrl.trim() === '' || imageError) {
-    const firstLetter = name.charAt(0).toUpperCase();
+    const displayContent = fallbackEmoji || name.charAt(0).toUpperCase();
     return (
       <div className={cn(
         'flex items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold',
         sizeClasses[size],
         className
       )}>
-        {firstLetter}
+        {displayContent}
       </div>
     );
   }

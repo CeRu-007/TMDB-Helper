@@ -1,4 +1,7 @@
-// 流媒体平台类型定义
+// Re-export Platform from media/platform-data.ts to maintain compatibility
+export type { Platform } from '@/lib/media/platform-data';
+
+// 流媒体平台类型定义（用于其他功能）
 export interface StreamingPlatform {
   id: string
   name: string
@@ -10,21 +13,6 @@ export interface StreamingPlatform {
   category: 'comprehensive' | 'specialized'
   features: string[]
   color: string
-}
-
-// 平台导航数据结构定义
-export interface Platform {
-  id: string
-  name: string
-  category: '国际平台' | '国内平台'
-  description: string
-  rating: number
-  color: string // Tailwind渐变类名
-  url: string
-  region: string
-  popular: boolean
-  logo?: string // Logo URL
-  fallbackEmoji: string // 默认emoji
 }
 
 // 平台定价信息
