@@ -1000,7 +1000,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
             </DialogHeader>
 
             {/* 网格布局 */}
-            <div className="p-6 pt-0 grid grid-cols-4 gap-6 flex-1 overflow-hidden min-h-0">
+            <div className="p-4 pt-0 grid grid-cols-4 gap-6 flex-1 overflow-hidden min-h-0">
               {/* 左侧：海报区域 */}
               <div className="col-span-1 max-w-full overflow-hidden flex flex-col min-h-0">
                 <div className="flex-1 flex flex-col pr-2 min-h-0">
@@ -1149,7 +1149,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
               {/* 右侧：内容区域 */}
               <div className="col-span-3 flex flex-col min-h-0 overflow-hidden">
                 {/* 操作按钮 */}
-                <div className="flex flex-wrap gap-2 mb-4 items-center min-h-[40px]">
+                <div className="flex flex-wrap gap-2 mb-3 items-center">
                   <Button
                     variant="outline"
                     className="flex items-center transition-all duration-300 hover:scale-105"
@@ -1168,7 +1168,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
 
                 {/* 标签页切换 */}
                 <Tabs value={detailTab} onValueChange={setDetailTab} className="flex-1 flex flex-col min-h-0">
-                  <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+                  <TabsList className="grid w-full grid-cols-2 mb-3">
                     <TabsTrigger value="details" className="flex items-center transition-all duration-300">
                       <Info className="h-4 w-4 mr-2" />
                       详情
@@ -1180,7 +1180,7 @@ function ItemDetailDialogComponent({ item, open, onOpenChange, onUpdate, onDelet
                   </TabsList>
 
                   {/* 详情标签内容 */}
-                  <TabsContent value="details" className="transition-opacity duration-300 ease-in-out flex-1 min-h-0">
+                  <TabsContent value="details" className="flex-1 min-h-0 mt-0">
                     <DetailsTab
                       item={localItem}
                       selectedSeason={selectedSeason}

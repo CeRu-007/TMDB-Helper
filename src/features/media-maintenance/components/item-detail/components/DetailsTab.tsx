@@ -50,9 +50,9 @@ export function DetailsTab({
   onClearRefreshError
 }: DetailsTabProps) {
   return (
-    <div className="transition-opacity duration-300 ease-in-out flex-1 min-h-0">
+    <div className="flex-1 min-h-0">
       <ScrollArea className="h-full">
-        <div className="space-y-6 pr-2">
+        <div className="space-y-4 pr-2">
           {/* 剧集内容 */}
           {item.mediaType === "movie" ? (
             <>
