@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import React, { useState } from "react"
 import {
@@ -27,7 +27,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Columns,
-  Rows
+  Rows,
+  FileText
 } from "lucide-react"
 import DateIntervalDialog from "@/shared/components/ui/date-interval-dialog"
 import MinutesDialog from "@/shared/components/ui/minutes-dialog"
@@ -51,6 +52,7 @@ export interface TableContextMenuProps {
   onDuplicateRow?: (index: number) => void
   onDuplicateColumn?: (index: number) => void
   onBatchInsertRow?: (index: number, position: 'before' | 'after', count: number) => void
+  onOpenOverviewEdit?: (row: number, col: number) => void
 }
 
 export default function TableContextMenu({
@@ -68,7 +70,8 @@ export default function TableContextMenu({
   onDeleteColumn,
   onDuplicateRow,
   onDuplicateColumn,
-  onBatchInsertRow
+  onBatchInsertRow,
+  onOpenOverviewEdit
 }: TableContextMenuProps) {
   // 日期间隔对话框状态
   const [dateDialogOpen, setDateDialogOpen] = useState(false)
@@ -79,7 +82,7 @@ export default function TableContextMenu({
   
   // 检查选中的单元格是否在同一列
   const isSameColumn = () => {
-    if (selectedCells.length <= 1) return false
+    if (selectedCells.length <= 1) return true // 单个单元格或空视为在同一列
     
     const firstCol = selectedCells[0].col
     return selectedCells.every(cell => cell.col === firstCol)
@@ -87,7 +90,7 @@ export default function TableContextMenu({
   
   // 检查选中的单元格是否在同一行
   const isSameRow = () => {
-    if (selectedCells.length <= 1) return false
+    if (selectedCells.length <= 1) return true // 单个单元格或空视为在同一行
     
     const firstRow = selectedCells[0].row
     return selectedCells.every(cell => cell.row === firstRow)
@@ -95,7 +98,7 @@ export default function TableContextMenu({
   
   // 获取选中单元格的列索引
   const getSelectedColumn = () => {
-    if (!isSameColumn()) return -1
+    if (selectedCells.length === 0) return -1
     return selectedCells[0].col
   }
   
@@ -107,12 +110,39 @@ export default function TableContextMenu({
   
   // 获取选中单元格的值
   const getSelectedValues = () => {
-    if (!isSameColumn()) return []
+    if (selectedCells.length === 0) return []
     
     const colIndex = selectedCells[0].col
     return selectedCells
       .map(cell => data.rows[cell.row][colIndex])
       .filter(value => value !== undefined)
+  }
+  
+  // 检查选中的列是否是overview列或name列（支持批量编辑的列）
+  const isSelectedBatchEditColumn = () => {
+    if (selectedCells.length === 0) return false
+    
+    // 如果只有一个单元格选中，直接检查是否是overview列或name列
+    if (selectedCells.length === 1) {
+      const colIndex = selectedCells[0].col
+      const columnName = data.headers[colIndex]?.toLowerCase()
+      return columnName === 'overview' || columnName === 'name'
+    }
+    
+    // 如果有多个单元格选中，检查是否都在同一列且是overview列或name列
+    if (!isSameColumn()) return false
+    
+    const colIndex = selectedCells[0].col
+    const columnName = data.headers[colIndex]?.toLowerCase()
+    return columnName === 'overview' || columnName === 'name'
+  }
+  
+  // 获取选中列的显示名称
+  const getSelectedColumnName = () => {
+    if (selectedCells.length === 0) return ''
+    const colIndex = selectedCells[0].col
+    const columnName = data.headers[colIndex]
+    return columnName || ''
   }
   
   // 检查选中的列是否是日期列
@@ -332,6 +362,23 @@ export default function TableContextMenu({
             </ContextMenuSubContent>
           </ContextMenuSub>
 
+          <ContextMenuSeparator />
+          
+          {/* 特殊列操作 */}
+          <ContextMenuItem
+            onClick={() => {
+              const rowIndex = getSelectedRow()
+              const colIndex = getSelectedColumn()
+              if (rowIndex >= 0 && colIndex >= 0 && onOpenOverviewEdit) {
+                onOpenOverviewEdit(rowIndex, colIndex)
+              }
+            }}
+            disabled={!isSelectedBatchEditColumn() || selectedCells.length === 0}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            <span>批量编辑...</span>
+          </ContextMenuItem>
+          
           <ContextMenuSeparator />
           
           {/* 日期操作 */}
