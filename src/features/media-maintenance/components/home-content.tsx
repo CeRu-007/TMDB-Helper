@@ -51,7 +51,7 @@ export function HomeContent({ homeState, mediaNews }: HomeContentProps) {
                 </TabsTrigger>
                 <TabsTrigger value="progress" className="flex items-center space-x-2">
                   <BarChart2 className="h-4 w-4" />
-                  <span>追剧进度</span>
+                  <span>维护进度</span>
                 </TabsTrigger>
               </TabsList>
 

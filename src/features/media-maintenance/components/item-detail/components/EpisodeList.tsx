@@ -8,7 +8,7 @@ import { PlayCircle, Tv, PlusCircle, Clock, Zap, Calendar } from "lucide-react"
 import type { Season, Episode, TMDBItem } from "@/lib/data/storage"
 
 interface EpisodeListProps {
-  mediaType: "movie" | "tv"
+  mediaType: "tv"
   selectedSeason: number | undefined
   currentSeason: Season | undefined
   editing: boolean
@@ -35,7 +35,7 @@ export function EpisodeList({
   const [inputValue, setInputValue] = useState<string>("")
   const episodeInputRef = useRef<HTMLInputElement>(null)
 
-  // 当前观看到的集数
+  // 当前维护到的集数
   const currentEpisode = currentSeason?.currentEpisode || 0
   const totalEpisodes = currentSeason?.totalEpisodes || 0
 
@@ -203,9 +203,9 @@ export function EpisodeList({
             {/* 进度详情 */}
             <div className="flex items-center justify-between text-sm text-foreground/80">
               <div className="flex items-center space-x-3">
-                <span>已完成: <span className="font-semibold text-green-600">{currentEpisode}</span></span>
+                <span>已维护: <span className="font-semibold text-green-600">{currentEpisode}</span></span>
                 <span className="text-foreground/30">|</span>
-                <span>未完成: <span className="font-semibold text-orange-600">{totalEpisodes - currentEpisode}</span></span>
+                <span>待维护: <span className="font-semibold text-orange-600">{totalEpisodes - currentEpisode}</span></span>
               </div>
               <span className="text-foreground/70">{progressPercentage}%</span>
             </div>
@@ -213,7 +213,7 @@ export function EpisodeList({
             {/* 完成状态提示 */}
             {currentEpisode === currentSeason.totalEpisodes && currentEpisode > 0 && (
               <div className="flex items-center justify-center p-2 text-sm text-green-600 bg-green-500/10 rounded-lg">
-                ✅ 全季已完成
+                ✅ 全季已维护完成
               </div>
             )}
           </div>

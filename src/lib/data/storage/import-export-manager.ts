@@ -107,7 +107,7 @@ export class ImportExportManager extends StorageBase {
         }
 
         // mediaType值检查
-        if (!['movie', 'tv'].includes(item.mediaType)) {
+        if (item.mediaType !== 'tv') {
           return false;
         }
 

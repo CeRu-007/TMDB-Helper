@@ -114,7 +114,7 @@ export const commonSchemas = {
   mediaItem: z.object({
     id: z.union([z.string(), z.number()]),
     title: z.string(),
-    type: z.enum(['movie', 'tv', 'episode']),
+    type: z.enum(['tv', 'episode']),
     overview: z.string().optional(),
     releaseDate: z.string().optional(),
     posterPath: z.string().optional(),

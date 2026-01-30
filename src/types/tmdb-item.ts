@@ -5,7 +5,7 @@ export interface TMDBItem {
   year?: number
   tmdbId?: string
   imdbId?: string
-  mediaType: "tv" | "movie"
+  mediaType: "tv"
   posterUrl?: string
   posterPath?: string
   backdropPath?: string
@@ -52,6 +52,6 @@ export interface Season {
   seasonNumber: number
   name?: string
   totalEpisodes: number
-  currentEpisode?: number  // 当前观看到的集数（输入框式设计使用）
+  currentEpisode?: number  // 当前维护到的集数（输入框式设计使用）
   episodes?: Episode[]  // 保留向后兼容，但输入框式设计不使用
 } 

@@ -53,15 +53,6 @@ export function useTMDBIntegration({
           description: `上传数据至TMDB第${customSeasonNumber}季`,
           icon: createElement(Terminal, { className: "h-4 w-4" }),
         })
-      } else if (item.mediaType === "movie") {
-        const tmdbCommand = `${pythonCmd} -m tmdb-import "https://www.themoviedb.org/movie/${item.tmdbId}?language=${selectedLanguage}"`
-        commands.push({
-          type: "tmdb",
-          title: `上传至TMDB电影`,
-          command: tmdbCommand,
-          description: `上传数据至TMDB电影页面`,
-          icon: createElement(Terminal, { className: "h-4 w-4" }),
-        })
       }
     }
 

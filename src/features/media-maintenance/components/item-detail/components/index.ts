@@ -3,7 +3,6 @@ export { ItemDetailDialog } from './ItemDetailDialog'
 
 // 子组件
 export { SeasonSelector } from './SeasonSelector'
-export { EpisodeStatusCard } from './EpisodeStatusCard'
 export { MediaInfoCard } from './MediaInfoCard'
 export { EpisodeItem } from './EpisodeItem'
 export { EpisodeList } from './EpisodeList'

@@ -72,7 +72,7 @@ export interface TMDBSeasonData {
 export interface TMDBItemData {
   tmdbId: string
   title: string
-  mediaType: "movie" | "tv"
+  mediaType: "tv"
   posterUrl?: string | undefined
   backdropUrl?: string | undefined
   backdropPath?: string | null | undefined
@@ -85,7 +85,7 @@ export interface TMDBItemData {
   platformUrl?: string | undefined
   weekday?: number | undefined
   seasons?: TMDBSeasonData[] | undefined
-  recommendedCategory?: "anime" | "tv" | "kids" | "variety" | "short" | "movie" | undefined
+  recommendedCategory?: "anime" | "tv" | "kids" | "variety" | "short" | undefined
   voteAverage?: number | null | undefined
   overview?: string | null | undefined
 }
@@ -330,7 +330,7 @@ export class TMDBService {
   }
 
   /**
-   * 搜索电影和电视剧
+   * 搜索电视剧
    */
   static async search(query: string, page: number = 1): Promise<any> {
     try {

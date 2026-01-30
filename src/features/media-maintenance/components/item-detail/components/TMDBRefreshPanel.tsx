@@ -16,10 +16,6 @@ export function TMDBRefreshPanel({
   isRefreshingTMDBData,
   onRefresh
 }: TMDBRefreshPanelProps) {
-  if (item.mediaType !== "movie") {
-    return null
-  }
-
   return (
     <Card variant="frosted">
       <CardHeader>

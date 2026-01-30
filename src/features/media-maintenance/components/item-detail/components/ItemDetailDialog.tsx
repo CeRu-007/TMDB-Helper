@@ -455,7 +455,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     showFeedback(`已添加第${seasonNumber}季，共${episodeCount}集`, DELAY_2S)
   }
 
-  // 处理电影状态切换
+  // 处理词条状态切换
   function handleMovieToggle(completed: boolean) {
     const updatedItem = {
       ...localItem,
@@ -537,17 +537,15 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
   }
 
   // 获取进度信息
-  const progress = localItem.mediaType === "movie"
-    ? { completed: localItem.completed ? 1 : 0, total: 1 }
-    : localItem.seasons?.length
-      ? {
-          completed: localItem.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0),
-          total: localItem.seasons.reduce((sum, season) => sum + season.totalEpisodes, 0)
-        }
-      : {
-          completed: localItem.seasons?.[0]?.currentEpisode || 0,
-          total: localItem.seasons?.[0]?.totalEpisodes || 0
-        }
+  const progress = localItem.seasons?.length
+    ? {
+        completed: localItem.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0),
+        total: localItem.seasons.reduce((sum, season) => sum + season.totalEpisodes, 0)
+      }
+    : {
+        completed: localItem.seasons?.[0]?.currentEpisode || 0,
+        total: localItem.seasons?.[0]?.totalEpisodes || 0
+      }
 
   const isDailyUpdate = localItem.isDailyUpdate
 
@@ -855,11 +853,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
             <DialogHeader className="p-6 pb-2 flex flex-row items-start justify-between">
               <div className="flex-1 pr-4">
                 <DialogTitle className="text-xl flex items-center">
-                  {localItem.mediaType === "movie" ? (
-                    <Film className="mr-2 h-5 w-5" />
-                  ) : (
-                    <Tv className="mr-2 h-5 w-5" />
-                  )}
+                  <Tv className="mr-2 h-5 w-5" />
                   {localItem.logoUrl ? (
                     <div className="h-10 max-w-[200px] flex items-center">
                       <CachedImage
@@ -915,31 +909,24 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       {progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0}% 已完成
                     </Badge>
                   )}
-                  {localItem.mediaType === "movie" && (
-                    <Badge variant={localItem.completed ? "default" : "outline"}>
-                      {localItem.completed ? "已观看" : "未观看"}
-                    </Badge>
-                  )}
                 </div>
               </div>
 
               <div className="flex items-center space-x-2 pr-2">
-                {localItem.mediaType === "tv" && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 transition-transform hover:scale-110"
-                    title="刷新TMDB数据"
-                    onClick={refreshSeasonFromTMDB}
-                    disabled={isRefreshingTMDBData}
-                  >
-                    {isRefreshingTMDBData ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 transition-transform hover:scale-110"
+                  title="刷新TMDB数据"
+                  onClick={refreshSeasonFromTMDB}
+                  disabled={isRefreshingTMDBData}
+                >
+                  {isRefreshingTMDBData ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                </Button>
                 {localItem.tmdbUrl && (
                   <Button
                     variant="outline"
@@ -1193,7 +1180,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       selectedLanguage={selectedLanguage}
                       CATEGORIES={CATEGORIES}
                       WEEKDAYS={WEEKDAYS}
-                      onMovieToggle={handleMovieToggle}
                       onSeasonClick={handleSeasonClick}
                       onResetSeason={handleResetSeason}
                       onDeleteSeason={handleDeleteSeason}

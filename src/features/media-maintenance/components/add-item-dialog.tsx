@@ -11,15 +11,14 @@ import { Badge, badgeVariants } from "@/shared/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { BackgroundImage } from "@/shared/components/ui/background-image"
-import { 
-  Tv, 
-  Search, 
-  Info, 
-  Star, 
-  ExternalLink, 
-  Loader2, 
+import {
+  Tv,
+  Search,
+  Info,
+  Star,
+  ExternalLink,
+  Loader2,
   Sparkles,
-  Clapperboard,
   Baby,
   Popcorn,
   Ticket,
@@ -53,7 +52,7 @@ interface TMDBSearchResult {
   id: number
   title: string
   name?: string
-  media_type: "movie" | "tv"
+  media_type: "tv"
   poster_path?: string
   backdrop_path?: string
   first_air_date?: string
@@ -196,7 +195,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       }
 
       const results = result.data.results
-        .filter((item: { media_type: string }) => item.media_type === "movie" || item.media_type === "tv")
+        .filter((item: { media_type: string }) => item.media_type === "tv")
         .slice(0, 10) // 限制显示10个结果
 
       setSearchResults(results)
@@ -529,7 +528,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
             添加新词条
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            搜索并添加电影或剧集到收藏列表
+            搜索并添加电视剧到维护列表
           </DialogDescription>
         </DialogHeader>
 
@@ -543,7 +542,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
-                    placeholder="搜索电影或剧集..."
+                    placeholder="搜索电视剧..."
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="pr-10 h-9 text-sm"
@@ -600,9 +599,9 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-xs truncate">{getDisplayTitle(result)}</div>
                             <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 flex-wrap">
-                              <span>{result.media_type === "movie" ? "电影" : "剧集"}</span>
+                              <span>剧集</span>
                               <span>•</span>
-                              <span>{formatDate(result.release_date || result.first_air_date)}</span>
+                              <span>{formatDate(result.first_air_date)}</span>
                               {result.vote_average && (
                                 <>
                                   <span>•</span>
@@ -662,7 +661,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
               <div className="text-center py-6 text-muted-foreground">
                 <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-20" />
                 <p className="text-base font-medium mb-1">开始搜索</p>
-                <p className="text-sm">在上方输入电影或剧集名称进行搜索</p>
+                <p className="text-sm">在上方输入电视剧名称进行搜索</p>
               </div>
             )}
 

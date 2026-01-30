@@ -119,9 +119,6 @@ export class EpisodeMarker {
     if (item.mediaType === 'tv' && season.numberOfEpisodes) {
       // 电视剧：检查是否所有集数都已标记
       return season.markedEpisodes?.length === season.numberOfEpisodes;
-    } else if (item.mediaType === 'movie') {
-      // 电影：只要有标记就认为完成
-      return season.markedEpisodes && season.markedEpisodes.length > 0;
     }
 
     return false;

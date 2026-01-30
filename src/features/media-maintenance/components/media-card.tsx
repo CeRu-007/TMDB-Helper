@@ -40,7 +40,7 @@ export default function MediaCard({ item, onClick, showAirTime = false }: MediaC
     return totalEpisodes > 0 ? (totalCompleted / totalEpisodes) * 100 : 0;
   };
 
-  // 计算已完成集数 - 使用 seasons 的 currentEpisode
+  // 计算已维护集数 - 使用 seasons 的 currentEpisode
   const completedEpisodes = item.seasons?.reduce(
     (sum, season) => sum + (season.currentEpisode || 0),
     0

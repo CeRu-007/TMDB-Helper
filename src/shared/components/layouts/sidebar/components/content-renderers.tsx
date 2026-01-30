@@ -605,7 +605,7 @@ function MediaNewsCard({ item, onAdd }: { item: TMDBItem; onAdd: () => void }) {
             <div className="flex items-center gap-3 transform transition-transform duration-300 group-hover:scale-105">
               <button
                 className="flex items-center justify-center h-11 w-11 rounded-full bg-blue-500/90 hover:bg-blue-600 text-white transition-all shadow-lg hover:shadow-blue-500/50 group-hover:rotate-3"
-                title="添加到我的列表"
+                title="添加到维护列表"
                 onClick={handleAddClick}
               >
                 <Plus className="h-5 w-5" />
@@ -626,7 +626,7 @@ function MediaNewsCard({ item, onAdd }: { item: TMDBItem; onAdd: () => void }) {
             {/* Time text */}
             <div className="absolute bottom-4 left-0 right-0 text-center">
               <span className="text-xs font-medium text-white/95 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
-                剧集
+                {item.mediaType === 'movie' ? '电影' : '剧集'}
                 <span className="mx-1">·</span>
                 {timeText}
               </span>
@@ -639,7 +639,7 @@ function MediaNewsCard({ item, onAdd }: { item: TMDBItem; onAdd: () => void }) {
             {item.title}
           </h3>
           <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-            <span className="flex items-center">剧集</span>
+            <span className="flex items-center">{item.mediaType === 'movie' ? '电影' : '剧集'}</span>
             <span className="mx-1">·</span>
             <span className="flex items-center">{timeText}</span>
           </div>

@@ -644,7 +644,7 @@ export function ImageRecognition() {
                     </div>
                   </div>
 
-                  {/* 电影匹配结果 */}
+                  {/* 匹配结果 */}
                   <div className="p-4 flex-1">
                     {currentMovies.length === 0 ? (
                       <div className="flex items-center justify-center text-gray-500 dark:text-gray-400 py-8">
