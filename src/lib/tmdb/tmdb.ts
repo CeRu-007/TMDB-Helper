@@ -335,7 +335,7 @@ export class TMDBService {
   static async search(query: string, page: number = 1): Promise<any> {
     try {
       const apiKey = await this.getApiKey()
-      const url = `${this.BASE_URL}/search/multi?api_key=${apiKey}&language=zh-CN&query=${encodeURIComponent(query)}&page=${page}`
+      const url = `${this.BASE_URL}/search/multi?api_key=${apiKey}&language=zh-CN&query=${encodeURIComponent(query)}&page=${page}&include_adult=true`
 
       const response = await fetch(url, {
         headers: {
