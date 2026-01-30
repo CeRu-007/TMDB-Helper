@@ -37,105 +37,70 @@ interface DuplicatePattern {
 type ViewMode = 'edit' | 'batch-auto' | 'batch-manual'
 type ManualMatchMode = 'text' | 'position'
 
-// 渲染带删除线高亮的文本（自动模式 - 根据前缀/后缀匹配）
-function renderAutoHighlightedText(
+type TextSelection = { start: number, end: number, text: string }
+
+// 通用的文本高亮渲染函数
+function renderHighlightedText(
   text: string,
-  pattern: string
+  matchText: string,
+  matchType: 'prefix' | 'suffix' | 'text' | 'position' = 'text',
+  selection?: TextSelection
 ): React.ReactNode {
-  if (!text || !pattern) return text
+  if (!text) return text
+  if (!matchText && matchType !== 'position') return text
 
-  let matchIndex = -1
-  let isPrefix = false
+  let before = ''
+  let match = ''
+  let after = ''
 
-  if (text.endsWith(pattern)) {
-    matchIndex = text.length - pattern.length
-    isPrefix = false
-  } else if (text.startsWith(pattern)) {
-    matchIndex = 0
-    isPrefix = true
+  switch (matchType) {
+    case 'prefix':
+      if (text.startsWith(matchText)) {
+        match = matchText
+        after = text.substring(matchText.length)
+      } else {
+        return text
+      }
+      break
+
+    case 'suffix':
+      if (text.endsWith(matchText)) {
+        before = text.substring(0, text.length - matchText.length)
+        match = matchText
+      } else {
+        return text
+      }
+      break
+
+    case 'text':
+      const index = text.indexOf(matchText)
+      if (index === -1) return text
+      before = text.substring(0, index)
+      match = matchText
+      after = text.substring(index + matchText.length)
+      break
+
+    case 'position':
+      if (!selection) return text
+      const { start, end } = selection
+      if (start >= end || end > text.length) return text
+      before = text.substring(0, start)
+      match = text.substring(start, end)
+      after = text.substring(end)
+      break
   }
 
-  if (matchIndex === -1) return text
-
-  if (isPrefix) {
-    // 前缀匹配
-    const match = text.substring(0, pattern.length)
-    const after = text.substring(pattern.length)
-    return (
-      <>
-        <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-0.5 rounded">
-          {match}
-        </span>
-        {after}
-      </>
-    )
-  } else {
-    // 后缀匹配
-    const before = text.substring(0, matchIndex)
-    const match = text.substring(matchIndex)
-    return (
-      <>
-        {before}
-        <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-0.5 rounded">
-          {match}
-        </span>
-      </>
-    )
-  }
-}
-
-// 渲染带删除线高亮的文本（手动模式 - 文本匹配）
-function renderManualTextHighlightedText(
-  text: string,
-  selectedText: string
-): React.ReactNode {
-  if (!text || !selectedText) return text
-
-  const index = text.indexOf(selectedText)
-  if (index === -1) return text
-
-  const before = text.substring(0, index)
-  const match = text.substring(index, index + selectedText.length)
-  const after = text.substring(index + selectedText.length)
+  const highlightClass = "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-0.5 rounded"
 
   return (
     <>
       {before}
-      <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-0.5 rounded">
+      <span className={highlightClass}>
         {match}
       </span>
       {after}
     </>
   )
-}
-
-// 渲染带删除线高亮的文本（手动模式 - 位置匹配）
-function renderManualPositionHighlightedText(
-  text: string,
-  selection: { start: number, end: number, text: string } | null
-): React.ReactNode {
-  if (!text || !selection) return text
-
-  const { start, end } = selection
-
-  // 检查：该位置是否有内容（不管内容是什么）
-  if (start < end && end <= text.length) {
-    const textAtPosition = text.substring(start, end)
-    const before = text.substring(0, start)
-    const after = text.substring(end)
-    return (
-      <>
-        {before}
-        <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-0.5 rounded">
-          {textAtPosition}
-        </span>
-        {after}
-      </>
-    )
-  }
-
-  // 如果该位置超出文本范围，返回原文
-  return text
 }
 
 export default function BatchEditDialog({
@@ -169,53 +134,68 @@ export default function BatchEditDialog({
     }
   }, [open, value])
 
-  // 计算受影响的行（自动模式）
-  const autoAffectedRows = useMemo(() => {
-    if (viewMode !== 'batch-auto' || !selectedPattern) return []
+  // 计算受影响的行
+  const affectedRowsMap = useMemo(() => {
+    const result = {
+      auto: [] as number[],
+      manualText: [] as number[],
+      manualPosition: [] as number[]
+    }
 
-    return allColumnData
-      .filter(({ value: text }) => {
-        if (!text) return false
-        return text.endsWith(selectedPattern.pattern) || text.startsWith(selectedPattern.pattern)
-      })
-      .map(({ rowIndex }) => rowIndex)
-  }, [viewMode, selectedPattern, allColumnData])
+    // 自动模式：匹配前缀或后缀
+    if (selectedPattern) {
+      result.auto = allColumnData
+        .filter(({ value }) => value && (
+          value.endsWith(selectedPattern.pattern) ||
+          value.startsWith(selectedPattern.pattern)
+        ))
+        .map(({ rowIndex }) => rowIndex)
+    }
 
-  // 计算受影响的行（手动模式 - 文本匹配）
-  const manualTextAffectedRows = useMemo(() => {
-    if (viewMode !== 'batch-manual' || !manualSelection) return []
+    // 手动模式
+    if (manualSelection) {
+      // 文本匹配
+      result.manualText = allColumnData
+        .filter(({ value }) => value && value.includes(manualSelection.text))
+        .map(({ rowIndex }) => rowIndex)
 
-    return allColumnData
-      .filter(({ value: text }) => {
-        if (!text) return false
-        return text.includes(manualSelection.text)
-      })
-      .map(({ rowIndex }) => rowIndex)
-  }, [viewMode, manualSelection, allColumnData])
+      // 位置匹配
+      const { start, end } = manualSelection
+      result.manualPosition = allColumnData
+        .filter(({ value }) => value && start < end && end <= value.length)
+        .map(({ rowIndex }) => rowIndex)
+    }
 
-  // 计算受影响的行（手动模式 - 位置匹配）
-  const manualPositionAffectedRows = useMemo(() => {
-    if (viewMode !== 'batch-manual' || !manualSelection) return []
+    return result
+  }, [selectedPattern, manualSelection, allColumnData])
 
-    return allColumnData
-      .filter(({ value: text }) => {
-        if (!text) return false
-        const { start, end } = manualSelection
+  const autoAffectedRows = affectedRowsMap.auto
+  const manualTextAffectedRows = affectedRowsMap.manualText
+  const manualPositionAffectedRows = affectedRowsMap.manualPosition
 
-        // 检查：该位置是否有内容（不管内容是什么）
-        return start < end && end <= text.length
-      })
-      .map(({ rowIndex }) => rowIndex)
-  }, [viewMode, manualSelection, allColumnData])
+  // 获取当前受影响的行
+  const currentAffectedRows = useMemo(() => {
+    if (viewMode === 'batch-auto') return autoAffectedRows
+    if (viewMode === 'batch-manual') {
+      return manualMatchMode === 'text' ? manualTextAffectedRows : manualPositionAffectedRows
+    }
+    return []
+  }, [viewMode, manualMatchMode, autoAffectedRows, manualTextAffectedRows, manualPositionAffectedRows])
 
-  // 检测重复模式 - 动态检测连续出现2次以上的模式
+  // 更新受影响的行
+  useEffect(() => {
+    setAffectedRows(currentAffectedRows)
+  }, [currentAffectedRows])
+
+  // 检测重复模式 - 查找在多个文本中出现的前缀或后缀
   const duplicatePatterns = useMemo(() => {
     if (viewMode === 'edit' || allColumnData.length === 0) {
       return []
     }
 
-    const patterns: Map<string, DuplicatePattern> = new Map()
+    const patterns = new Map<string, DuplicatePattern>()
 
+    // 收集所有可能的模式
     allColumnData.forEach(({ value: text }) => {
       if (!text || text.length < 5) return
 
@@ -225,91 +205,49 @@ export default function BatchEditDialog({
       for (let len = minLength; len <= maxLength; len++) {
         // 检测后缀
         const suffix = text.slice(-len)
-        if (suffix.trim().length === 0) continue
-
-        let count = 0
-        const occurrences: number[] = []
-
-        allColumnData.forEach(({ rowIndex, value: otherText }) => {
-          if (otherText && otherText.endsWith(suffix)) {
-            count++
-            if (!occurrences.includes(rowIndex)) {
-              occurrences.push(rowIndex)
-            }
-          }
-        })
-
-        if (count >= 2) {
-          const existing = patterns.get(suffix)
-          if (existing) {
-            existing.count = count
-            existing.occurrences = occurrences
-          } else {
-            patterns.set(suffix, {
-              pattern: suffix,
-              count: count,
-              occurrences: occurrences
-            })
-          }
-        }
+        if (suffix.trim()) addPattern(suffix, patterns, allColumnData, 'ends')
 
         // 检测前缀
         const prefix = text.slice(0, len)
-        if (prefix.trim().length === 0) continue
-
-        let prefixCount = 0
-        const prefixOccurrences: number[] = []
-
-        allColumnData.forEach(({ rowIndex, value: otherText }) => {
-          if (otherText && otherText.startsWith(prefix)) {
-            prefixCount++
-            if (!prefixOccurrences.includes(rowIndex)) {
-              prefixOccurrences.push(rowIndex)
-            }
-          }
-        })
-
-        if (prefixCount >= 2) {
-          const existing = patterns.get(prefix)
-          if (existing) {
-            existing.count = prefixCount
-            existing.occurrences = prefixOccurrences
-          } else {
-            patterns.set(prefix, {
-              pattern: prefix,
-              count: prefixCount,
-              occurrences: prefixOccurrences
-            })
-          }
-        }
+        if (prefix.trim()) addPattern(prefix, patterns, allColumnData, 'starts')
       }
     })
 
     return Array.from(patterns.values())
       .filter(p => p.count >= 2)
       .sort((a, b) => {
-        if (b.count !== a.count) {
-          return b.count - a.count
-        }
+        // 优先按出现次数排序，其次按模式长度排序
+        if (b.count !== a.count) return b.count - a.count
         return b.pattern.length - a.pattern.length
       })
       .slice(0, 15)
   }, [viewMode, allColumnData, currentRowIndex])
 
-  // 更新受影响的行
-  useEffect(() => {
-    if (viewMode === 'batch-auto') {
-      setAffectedRows(autoAffectedRows)
-    } else if (viewMode === 'batch-manual') {
-      if (manualMatchMode === 'text') {
-        setAffectedRows(manualTextAffectedRows)
-      } else {
-        setAffectedRows(manualPositionAffectedRows)
+  // 辅助函数：添加模式到集合
+  function addPattern(
+    pattern: string,
+    patterns: Map<string, DuplicatePattern>,
+    data: { rowIndex: number, value: string }[],
+    matchType: 'starts' | 'ends'
+  ) {
+    let count = 0
+    const occurrences: number[] = []
+
+    data.forEach(({ rowIndex, value }) => {
+      if (value && (matchType === 'starts' ? value.startsWith(pattern) : value.endsWith(pattern))) {
+        count++
+        occurrences.push(rowIndex)
       }
-    } else {
-      setAffectedRows([])
+    })
+
+    if (count >= 2) {
+      patterns.set(pattern, {
+        pattern,
+        count,
+        occurrences
+      })
     }
-  }, [viewMode, autoAffectedRows, manualMatchMode, manualTextAffectedRows, manualPositionAffectedRows])
+  }
 
   const handleSave = () => {
     if (viewMode !== 'edit' && affectedRows.length > 0 && onBatchSave) {
@@ -353,35 +291,20 @@ export default function BatchEditDialog({
   }
 
   const isBatchMode = viewMode !== 'edit'
-  const currentAffectedCount = affectedRows.length
-
-  // 获取当前手动模式受影响的行
-  const currentManualAffectedRows = useMemo(() => {
-    if (manualMatchMode === 'text') {
-      return manualTextAffectedRows
-    } else {
-      return manualPositionAffectedRows
-    }
-  }, [manualMatchMode, manualTextAffectedRows, manualPositionAffectedRows])
+  const currentAffectedCount = currentAffectedRows.length
 
   // 获取预览数据 - 只返回受影响的行数据
   const previewData = useMemo(() => {
-    if (viewMode === 'batch-auto' && selectedPattern) {
-      return allColumnData
-        .filter(({ rowIndex }) => autoAffectedRows.includes(rowIndex))
-        .slice(0, 10)
-    }
-    if (viewMode === 'batch-manual' && manualSelection) {
-      return allColumnData
-        .filter(({ rowIndex }) => currentManualAffectedRows.includes(rowIndex))
-        .slice(0, 10)
-    }
-    return []
-  }, [viewMode, selectedPattern, manualSelection, allColumnData, autoAffectedRows, currentManualAffectedRows])
+    if (!isBatchMode || currentAffectedRows.length === 0) return []
+
+    return allColumnData
+      .filter(({ rowIndex }) => currentAffectedRows.includes(rowIndex))
+      .slice(0, 10)
+  }, [isBatchMode, currentAffectedRows, allColumnData])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden p-0">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden p-0">
         {/* 头部 */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="text-lg">编辑{columnName}</DialogTitle>
@@ -435,7 +358,7 @@ export default function BatchEditDialog({
         )}
 
         {/* 内容区域 */}
-        <div className="px-6 py-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+        <div className="px-6 py-4 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           {/* 普通编辑模式 */}
           {viewMode === 'edit' && (
             <div className="space-y-3">
@@ -637,11 +560,19 @@ export default function BatchEditDialog({
                       <div className="text-xs text-muted-foreground mb-1">行 {rowIndex + 1}</div>
                       <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
                         {viewMode === 'batch-auto' && selectedPattern
-                          ? renderAutoHighlightedText(text, selectedPattern.pattern)
+                          ? (() => {
+                              // 检查是前缀还是后缀
+                              if (text.startsWith(selectedPattern.pattern)) {
+                                return renderHighlightedText(text, selectedPattern.pattern, 'prefix')
+                              } else if (text.endsWith(selectedPattern.pattern)) {
+                                return renderHighlightedText(text, selectedPattern.pattern, 'suffix')
+                              }
+                              return text
+                            })()
                           : viewMode === 'batch-manual' && manualSelection
                             ? manualMatchMode === 'text'
-                              ? renderManualTextHighlightedText(text, manualSelection.text)
-                              : renderManualPositionHighlightedText(text, manualSelection)
+                              ? renderHighlightedText(text, manualSelection.text, 'text')
+                              : renderHighlightedText(text, '', 'position', manualSelection)
                             : text
                         }
                       </div>

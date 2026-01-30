@@ -662,23 +662,10 @@ const TMDBTableComponent = ({
 
   // 处理批量编辑对话框保存
   const handleBatchEditSave = (value: string) => {
-    if (batchEditData) {
-      // 保存当前状态到历史记录
-      saveToHistory(localData);
-      
-      // 更新数据
-      const newData = { ...localData }
-      newData.rows = [...newData.rows]
-      if (newData.rows[batchEditData.row]) {
-        newData.rows[batchEditData.row] = [...newData.rows[batchEditData.row]!]
-        newData.rows[batchEditData.row]![batchEditData.col] = value
-        
-        setLocalData(newData)
-        onCellChange?.(batchEditData.row, batchEditData.col, value)
-        onDataChange?.(newData)
-      }
-    }
-    
+    if (!batchEditData) return
+
+    saveToHistory(localData)
+    updateCellData(batchEditData.row, batchEditData.col, value)
     setBatchEditData(null)
   }
 
@@ -686,48 +673,51 @@ const TMDBTableComponent = ({
   const handleBatchSave = (matchInfo: { pattern: string, replaceWith: string, affectedRows: number[] }) => {
     if (!batchEditData) return
 
-    // 获取当前编辑的列索引
-    const colIndex = batchEditData.col
-    const columnName = batchEditData.columnName.toLowerCase()
+    const { col, columnName } = batchEditData
+    const isOverview = columnName.toLowerCase() === 'overview'
 
-    // 保存当前状态到历史记录
-    saveToHistory(localData);
+    saveToHistory(localData)
 
-    // 更新数据
     const newData = { ...localData }
     newData.rows = [...newData.rows]
 
     matchInfo.affectedRows.forEach(rowIndex => {
       if (rowIndex >= 0 && rowIndex < newData.rows.length) {
-        newData.rows[rowIndex] = [...newData.rows[rowIndex]!]
-        const originalText = newData.rows[rowIndex]![colIndex]!
-        let modifiedText = originalText
+        const originalText = newData.rows[rowIndex]![col]!
+        const modifiedText = applyBatchModification(originalText, matchInfo, isOverview)
 
-        // 根据列类型和匹配模式进行处理
-        if (columnName === 'overview') {
-          // overview列：检查后缀或前缀
-          if (originalText.endsWith(matchInfo.pattern)) {
-            modifiedText = originalText.slice(0, -matchInfo.pattern.length) + matchInfo.replaceWith
-          } else if (originalText.startsWith(matchInfo.pattern)) {
-            modifiedText = matchInfo.replaceWith + originalText.slice(matchInfo.pattern.length)
-          }
-        } else if (columnName === 'name') {
-          // name列：使用文本替换或位置替换
-          // 这里使用简单的文本替换逻辑
-          const index = originalText.indexOf(matchInfo.pattern)
-          if (index !== -1) {
-            modifiedText = originalText.slice(0, index) + matchInfo.replaceWith + originalText.slice(index + matchInfo.pattern.length)
-          }
-        }
-
-        newData.rows[rowIndex]![colIndex] = modifiedText
-        onCellChange?.(rowIndex, colIndex, modifiedText)
+        newData.rows[rowIndex]![col] = modifiedText
+        onCellChange?.(rowIndex, col, modifiedText)
       }
     })
 
     setLocalData(newData)
     onDataChange?.(newData)
     setBatchEditData(null)
+  }
+
+  // 应用批量修改规则
+  function applyBatchModification(
+    text: string,
+    matchInfo: { pattern: string, replaceWith: string },
+    isOverview: boolean
+  ): string {
+    if (isOverview) {
+      // overview列：处理前缀和后缀
+      if (text.endsWith(matchInfo.pattern)) {
+        return text.slice(0, -matchInfo.pattern.length) + matchInfo.replaceWith
+      }
+      if (text.startsWith(matchInfo.pattern)) {
+        return matchInfo.replaceWith + text.slice(matchInfo.pattern.length)
+      }
+    } else {
+      // 其他列：文本替换
+      const index = text.indexOf(matchInfo.pattern)
+      if (index !== -1) {
+        return text.slice(0, index) + matchInfo.replaceWith + text.slice(index + matchInfo.pattern.length)
+      }
+    }
+    return text
   }
 
   // 获取指定列的所有数据用于重复检测
@@ -739,6 +729,21 @@ const TMDBTableComponent = ({
       rowIndex,
       value: row[colIndex] || ''
     }))
+  }
+
+  // 更新单元格数据
+  function updateCellData(row: number, col: number, value: string) {
+    const newData = { ...localData }
+    newData.rows = [...newData.rows]
+
+    if (newData.rows[row]) {
+      newData.rows[row] = [...newData.rows[row]!]
+      newData.rows[row]![col] = value
+    }
+
+    setLocalData(newData)
+    onCellChange?.(row, col, value)
+    onDataChange?.(newData)
   }
   
   // 取消编辑
@@ -1547,126 +1552,137 @@ const TMDBTableComponent = ({
           <div className="relative w-full" style={{ paddingBottom: '4px' }}>
             <Table className="w-full" style={{ tableLayout: 'fixed', minWidth: '100%' }}>
                         <TableHeader>
-                            <TableRow>{showRowNumbers && (
-                                <TableHead className="w-16 text-center bg-muted/50 sticky left-0 z-10">
-                                  <div className="flex items-center justify-center space-x-1">
-                                    <input
-                                      type="checkbox"
-                                      checked={isAllRowsSelected}
-                                      onChange={(e) => handleSelectAllRows(e.target.checked)}
-                                      className="w-4 h-4"
-                                    />
-                                    <span className="text-xs">#</span>
-                                  </div>
-                                </TableHead>
-                              )}{localData.headers.map((header, index) => {
-                                  const isOverview = header.toLowerCase() === 'overview';
-                                  return (
-                                    <TableHead
-                                      key={index}
-                                      data-column={header.toLowerCase().replace(/\s+/g, '_')}
-                                      className={cn("relative group", isOverview && "overview-header")}
-                                      style={{
-                                        minWidth: isOverview ? '400px' : '100px',
-                                        maxWidth: isOverview ? '600px' : '250px',
-                                        width: isOverview ? '400px' : `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
-                                      }}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <span className="truncate">{header}</span>
-                                        {showColumnOperations && (
-                                          <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                              >
-                                                <ChevronDown className="h-3 w-3" />
-                                              </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48">
-                                              <DropdownMenuItem onClick={() => insertColumn(index, 'before')}>
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                在左侧插入列
-                                              </DropdownMenuItem>
-                                              <DropdownMenuItem onClick={() => insertColumn(index, 'after')}>
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                在右侧插入列
-                                              </DropdownMenuItem>
-                                              <DropdownMenuItem onClick={() => duplicateColumn(index)}>
-                                                <Copy className="mr-2 h-4 w-4" />
-                                                复制列
-                                              </DropdownMenuItem>
-                                              <DropdownMenuSeparator />
-                                              <DropdownMenuItem onClick={() => moveColumn(index, 'left')} disabled={index === 0}>
-                                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                                左移
-                                              </DropdownMenuItem>
-                                              <DropdownMenuItem onClick={() => moveColumn(index, 'right')} disabled={index === localData.headers.length - 1}>
-                                                <ArrowRight className="mr-2 h-4 w-4" />
-                                                右移
-                                              </DropdownMenuItem>
-                                              <DropdownMenuSeparator />
-                                              <DropdownMenuItem onClick={() => deleteColumn(index)} disabled={localData.headers.length <= 1} className="text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                删除列
-                                              </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                          </DropdownMenu>
-                                        )}
-                                      </div>
-                                    </TableHead>
-                                  );
-                                })}</TableRow>
-                        </TableHeader>
+          <TableRow>
+            {showRowNumbers && (
+              <TableHead className="w-16 text-center bg-muted/50 sticky left-0 z-10">
+                <div className="flex items-center justify-center space-x-1">
+                  <input
+                    type="checkbox"
+                    checked={isAllRowsSelected}
+                    onChange={(e) => handleSelectAllRows(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-xs">#</span>
+                </div>
+              </TableHead>
+            )}
+
+            {localData.headers.map((header, index) => {
+              const isOverview = header.toLowerCase() === 'overview'
+              const headerStyle = {
+                minWidth: isOverview ? '400px' : '100px',
+                maxWidth: isOverview ? '600px' : '250px',
+                width: isOverview ? '400px' : `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
+              }
+
+              return (
+                <TableHead
+                  key={index}
+                  data-column={header.toLowerCase().replace(/\s+/g, '_')}
+                  className={cn("relative group", isOverview && "overview-header")}
+                  style={headerStyle}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="truncate">{header}</span>
+
+                    {showColumnOperations && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => insertColumn(index, 'before')}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            在左侧插入列
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => insertColumn(index, 'after')}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            在右侧插入列
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => duplicateColumn(index)}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            复制列
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => moveColumn(index, 'left')} disabled={index === 0}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            左移
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => moveColumn(index, 'right')} disabled={index === localData.headers.length - 1}>
+                            <ArrowRight className="mr-2 h-4 w-4" />
+                            右移
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => deleteColumn(index)} disabled={localData.headers.length <= 1} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            删除列
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </TableHead>
+              )
+            })}
+          </TableRow>
+        </TableHeader>
             <TableBody>
                 {localData.rows.map((row, rowIndex) => (
-                          <TableRow key={rowIndex} style={{ height: rowHeight }} className="group">{showRowNumbers && (
-                      <TableCell className="w-16 text-center bg-muted/50 sticky left-0 z-10 border-r">
-                        <div className="flex items-center justify-center space-x-1">
-                          <input type="checkbox" checked={selectedRows.has(rowIndex)} onChange={(e) => handleRowSelect(rowIndex, e.target.checked)} className="w-4 h-4" />
-                          <span className="text-xs text-muted-foreground">{rowIndex + 1}</span>
-                          {showRowOperations && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <MoreHorizontal className="h-3 w-3" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start" className="w-48">
-                                <DropdownMenuItem onClick={() => insertRow(rowIndex, 'before')}>
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  在上方插入行
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => insertRow(rowIndex, 'after')}>
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  在下方插入行
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => duplicateRow(rowIndex)}>
-                                  <Copy className="mr-2 h-4 w-4" />
-                                  复制行
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => moveRow(rowIndex, 'up')} disabled={rowIndex === 0}>
-                                  <ArrowUp className="mr-2 h-4 w-4" />
-                                  上移
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => moveRow(rowIndex, 'down')} disabled={rowIndex === localData.rows.length - 1}>
-                                  <ArrowDown className="mr-2 h-4 w-4" />
-                                  下移
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => deleteRow(rowIndex)} disabled={localData.rows.length <= 1} className="text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  删除行
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                        </div>
-                      </TableCell>
-                    )}{row.map((cell, colIndex) => {
+          <TableRow key={rowIndex} style={{ height: rowHeight }} className="group">
+            {showRowNumbers && (
+              <TableCell className="w-16 text-center bg-muted/50 sticky left-0 z-10 border-r">
+                <div className="flex items-center justify-center space-x-1">
+                  <input type="checkbox" checked={selectedRows.has(rowIndex)} onChange={(e) => handleRowSelect(rowIndex, e.target.checked)} className="w-4 h-4" />
+                  <span className="text-xs text-muted-foreground">{rowIndex + 1}</span>
+
+                  {showRowOperations && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreHorizontal className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <DropdownMenuItem onClick={() => insertRow(rowIndex, 'before')}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          在上方插入行
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => insertRow(rowIndex, 'after')}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          在下方插入行
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => duplicateRow(rowIndex)}>
+                          <Copy className="mr-2 h-4 w-4" />
+                          复制行
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => moveRow(rowIndex, 'up')} disabled={rowIndex === 0}>
+                          <ArrowUp className="mr-2 h-4 w-4" />
+                          上移
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => moveRow(rowIndex, 'down')} disabled={rowIndex === localData.rows.length - 1}>
+                          <ArrowDown className="mr-2 h-4 w-4" />
+                          下移
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => deleteRow(rowIndex)} disabled={localData.rows.length <= 1} className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          删除行
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              </TableCell>
+            )}
+
+            {row.map((cell, colIndex) => {
                       const columnName = localData.headers[colIndex]!;
                       const isBackdrop = isBackdropColumn(columnName);
                       const isUrl = isValidUrl(cell);
@@ -1680,35 +1696,50 @@ const TMDBTableComponent = ({
                           handleCellClick(rowIndex, colIndex, e);
                         }
                       };
-                      const cellContent = isOverview ? (
-                        <div className={cn("px-2 py-1 text-sm h-full whitespace-nowrap overflow-hidden text-ellipsis", shouldShowUrlFeatures && "hover:text-primary hover:underline cursor-pointer transition-colors")} title={cell || ''} style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {cell}
-                        </div>
-                      ) : (
-                        <div className={cn("truncate px-2 py-1 text-sm h-full", shouldShowUrlFeatures && "hover:text-primary hover:underline cursor-pointer transition-colors")} title={shouldShowUrlFeatures ? "按住Ctrl点击查看图片" : undefined}>
-                          {cell}
-                        </div>
-                      );
+                      const getCellContent = () => {
+                        const baseClass = "px-2 py-1 text-sm h-full"
+                        const hoverClass = shouldShowUrlFeatures ? "hover:text-primary hover:underline cursor-pointer transition-colors" : ""
+
+                        if (isOverview) {
+                          return (
+                            <div className={cn(baseClass, hoverClass, "whitespace-nowrap overflow-hidden text-ellipsis")}
+                                 title={cell || ''}
+                                 style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {cell}
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <div className={cn(baseClass, "truncate", hoverClass)}
+                               title={shouldShowUrlFeatures ? "按住Ctrl点击查看图片" : undefined}>
+                            {cell}
+                          </div>
+                        )
+                      }
+
                       const getCellStyle = () => {
                         if (isOverview) {
-                          return { minWidth: '400px', maxWidth: '600px', width: '400px' };
+                          return { minWidth: '400px', maxWidth: '600px', width: '400px' }
                         }
                         return {
                           minWidth: '100px',
                           maxWidth: '250px',
                           width: `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
-                        };
-                      };
+                        }
+                      }
+                      const isEditingThisCell = isEditing && editCell?.row === rowIndex && editCell?.col === colIndex
+
                       return (
                         <TableCell
                           key={colIndex}
                           className={cn(
                             isCellSelected(rowIndex, colIndex) && "bg-primary/20",
                             isActiveCell(rowIndex, colIndex) && "ring-2 ring-primary",
-                            isDragging && canStartDragging && dragStart?.row === rowIndex && dragStart?.col === colIndex && "cursor-crosshair",
+                            (isDragging && canStartDragging && dragStart?.row === rowIndex && dragStart?.col === colIndex) && "cursor-crosshair",
                             isShiftSelecting && "cursor-crosshair",
-                            canStartDragging && isDragging && "cursor-crosshair",
-                            isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? "relative whitespace-nowrap overflow-hidden" : "relative select-none whitespace-nowrap overflow-hidden cursor-text hover:bg-accent/30 transition-colors",
+                            (canStartDragging && isDragging) && "cursor-crosshair",
+                            isEditingThisCell ? "relative whitespace-nowrap overflow-hidden" : "relative select-none whitespace-nowrap overflow-hidden cursor-text hover:bg-accent/30 transition-colors",
                             isOverview && "overview-cell"
                           )}
                           onClick={handleUrlClick}
@@ -1716,14 +1747,14 @@ const TMDBTableComponent = ({
                           onContextMenu={() => handleContextMenu(rowIndex, colIndex)}
                           onMouseMove={(e) => handleMouseMove(rowIndex, colIndex, e)}
                           onMouseDown={(e) => {
-                            if (!(isEditing && editCell?.row === rowIndex && editCell?.col === colIndex)) {
+                            if (!isEditingThisCell) {
                               handleCellMouseDown(rowIndex, colIndex, e)
                             }
                           }}
                           data-column={columnName.toLowerCase().replace(/\s+/g, '_')}
                           style={getCellStyle()}
                         >
-                          {isEditing && editCell?.row === rowIndex && editCell?.col === colIndex ? (
+                          {isEditingThisCell ? (
                             <input
                               ref={editInputRef}
                               className="w-full h-full px-2 py-1 border-2 border-primary rounded focus:ring-2 focus:ring-primary/50 focus:outline-none bg-background text-sm absolute inset-0"
@@ -1738,11 +1769,12 @@ const TMDBTableComponent = ({
                               style={{ zIndex: 50 }}
                             />
                           ) : (
-                            cellContent
+                            getCellContent()
                           )}
                         </TableCell>
-                      );
-                    })}</TableRow>
+                      )
+                    })}
+          </TableRow>
                 ))}
             </TableBody>
           </Table>

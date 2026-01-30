@@ -118,31 +118,22 @@ export default function TableContextMenu({
       .filter(value => value !== undefined)
   }
   
-  // 检查选中的列是否是overview列或name列（支持批量编辑的列）
+  // 检查选中的列是否是支持批量编辑的列（overview或name）
   const isSelectedBatchEditColumn = () => {
     if (selectedCells.length === 0) return false
-    
-    // 如果只有一个单元格选中，直接检查是否是overview列或name列
-    if (selectedCells.length === 1) {
-      const colIndex = selectedCells[0].col
-      const columnName = data.headers[colIndex]?.toLowerCase()
-      return columnName === 'overview' || columnName === 'name'
-    }
-    
-    // 如果有多个单元格选中，检查是否都在同一列且是overview列或name列
-    if (!isSameColumn()) return false
-    
+
+    // 多个单元格时必须确保在同一列
+    if (selectedCells.length > 1 && !isSameColumn()) return false
+
     const colIndex = selectedCells[0].col
     const columnName = data.headers[colIndex]?.toLowerCase()
     return columnName === 'overview' || columnName === 'name'
   }
-  
+
   // 获取选中列的显示名称
   const getSelectedColumnName = () => {
     if (selectedCells.length === 0) return ''
-    const colIndex = selectedCells[0].col
-    const columnName = data.headers[colIndex]
-    return columnName || ''
+    return data.headers[selectedCells[0].col] || ''
   }
   
   // 检查选中的列是否是日期列
