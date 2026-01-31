@@ -1,5 +1,5 @@
 // Components
-export { StreamingPlatformNav } from './components/streaming-platform-nav'
+export { default as StreamingPlatformNav } from './components/streaming-platform-nav'
 export { PlatformLogo } from './components/platform-logo'
 export { SmartTooltip } from './components/smart-tooltip'
 
