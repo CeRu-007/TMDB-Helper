@@ -42,22 +42,169 @@ export function EpisodeList({
   // 计算统计信息
   const progressPercentage = totalEpisodes > 0 ? Math.round((currentEpisode / totalEpisodes) * 100) : 0
   const remainingEpisodes = Math.max(0, totalEpisodes - currentEpisode)
-  
+
   // 上次更新时间
   const lastUpdated = new Date(item.updatedAt)
   const daysSinceUpdate = Math.floor((Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24))
-  
-  // 平均维护速度（集/周）
+
+  // 创建时间
   const createdAt = new Date(item.createdAt)
-  const weeksSinceCreation = Math.max(1, Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24 * 7)))
-  const averageSpeed = weeksSinceCreation > 0 ? (currentEpisode / weeksSinceCreation).toFixed(1) : "0"
-  
-  // 预计完成日期
+  const daysSinceCreation = Math.max(1, Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)))
+  const weeksSinceCreation = Math.max(1, Math.floor(daysSinceCreation / 7))
+
+  // 判断数据是否可靠（创建超过14天且有一定更新）
+  const isDataReliable = daysSinceCreation >= 14 && currentEpisode >= 3
+
+  // 获取下一个指定星期几的日期
+  const getNextWeekdayDate = (fromDate: Date, targetWeekday: number): Date => {
+    const date = new Date(fromDate)
+    const currentWeekday = date.getDay()
+    let daysDiff = targetWeekday - currentWeekday
+    if (daysDiff <= 0) daysDiff += 7
+    date.setDate(date.getDate() + daysDiff)
+    return date
+  }
+
+  // 计算预计完成日期和平均速度
   let estimatedCompletionDate: Date | null = null
-  if (parseFloat(averageSpeed) > 0 && remainingEpisodes > 0) {
-    const weeksToComplete = Math.ceil(remainingEpisodes / parseFloat(averageSpeed))
-    estimatedCompletionDate = new Date()
-    estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + (weeksToComplete * 7))
+  let averageSpeed = "0"
+  let speedUnit = "集/周"
+  let isConservativeEstimate = false
+
+  if (remainingEpisodes > 0) {
+    // 每日更新词条
+    if (item.isDailyUpdate) {
+      speedUnit = "集/天"
+
+      if (isDataReliable) {
+        // 数据可靠：计算实际每日平均，排除开播当天的一次性多集标记
+        // 如果开播当天标记了超过3集，假设实际每日更新是剩余天数平均
+        let effectiveDays = daysSinceCreation
+        let effectiveEpisodes = currentEpisode
+
+        // 开播第一天如果标记超过3集，按1集计算（假设是补标记）
+        if (currentEpisode > 3 && daysSinceCreation >= 1) {
+          effectiveEpisodes = currentEpisode - (currentEpisode - 1)
+          effectiveDays = daysSinceCreation
+        }
+
+        const dailySpeed = effectiveEpisodes / effectiveDays
+        averageSpeed = dailySpeed.toFixed(1)
+
+        const daysToComplete = Math.ceil(remainingEpisodes / Math.max(dailySpeed, 0.5))
+        estimatedCompletionDate = new Date()
+        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + daysToComplete)
+      } else {
+        // 数据不可靠：保守估计每日1集
+        isConservativeEstimate = true
+        averageSpeed = "1.0"
+        estimatedCompletionDate = new Date()
+        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + remainingEpisodes)
+      }
+    }
+    // 周双更词条（有第二播出日）
+    else if (typeof item.secondWeekday === 'number' && typeof item.weekday === 'number') {
+      speedUnit = "每周2集"
+
+      if (isDataReliable) {
+        // 数据可靠：对比实际速度和播出节奏，取更保守的
+        const actualWeeklySpeed = currentEpisode / weeksSinceCreation
+        const scheduledSpeed = 2 // 播出节奏是2集/周
+
+        // 取较慢的速度（更保守的估计）
+        const effectiveSpeed = Math.min(actualWeeklySpeed, scheduledSpeed)
+        averageSpeed = effectiveSpeed.toFixed(1)
+
+        const weeksToComplete = Math.ceil(remainingEpisodes / effectiveSpeed)
+
+        // 从最近的播出日开始计算
+        const today = new Date()
+        const nextPrimaryAirDate = getNextWeekdayDate(today, item.weekday)
+        const nextSecondaryAirDate = getNextWeekdayDate(today, item.secondWeekday)
+        const nextAirDate = nextPrimaryAirDate < nextSecondaryAirDate ? nextPrimaryAirDate : nextSecondaryAirDate
+
+        estimatedCompletionDate = new Date(nextAirDate)
+        // 每周推进2集
+        for (let i = 0; i < weeksToComplete - 1; i++) {
+          estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + 7)
+        }
+      } else {
+        // 数据不可靠：按播出设置2集/周
+        isConservativeEstimate = true
+        averageSpeed = "2.0"
+
+        const weeksToComplete = Math.ceil(remainingEpisodes / 2)
+        const today = new Date()
+        const nextPrimaryAirDate = getNextWeekdayDate(today, item.weekday)
+        const nextSecondaryAirDate = getNextWeekdayDate(today, item.secondWeekday)
+        const nextAirDate = nextPrimaryAirDate < nextSecondaryAirDate ? nextPrimaryAirDate : nextSecondaryAirDate
+
+        estimatedCompletionDate = new Date(nextAirDate)
+        for (let i = 0; i < weeksToComplete - 1; i++) {
+          estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + 7)
+        }
+      }
+    }
+    // 周单更词条（只有主播出日）
+    else if (typeof item.weekday === 'number') {
+      speedUnit = "每周1集"
+
+      if (isDataReliable) {
+        // 数据可靠：对比实际速度和播出节奏
+        const actualWeeklySpeed = currentEpisode / weeksSinceCreation
+        const scheduledSpeed = 1 // 播出节奏是1集/周
+
+        // 取较慢的速度
+        const effectiveSpeed = Math.min(actualWeeklySpeed, scheduledSpeed)
+        averageSpeed = effectiveSpeed.toFixed(1)
+
+        const weeksToComplete = Math.ceil(remainingEpisodes / effectiveSpeed)
+
+        // 从下一个播出日开始，每周推进
+        const nextAirDate = getNextWeekdayDate(new Date(), item.weekday)
+        estimatedCompletionDate = new Date(nextAirDate)
+        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + (weeksToComplete - 1) * 7)
+      } else {
+        // 数据不可靠：按播出设置1集/周
+        isConservativeEstimate = true
+        averageSpeed = "1.0"
+
+        const nextAirDate = getNextWeekdayDate(new Date(), item.weekday)
+        estimatedCompletionDate = new Date(nextAirDate)
+        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + (remainingEpisodes - 1) * 7)
+      }
+    }
+    // 无播出设置的词条
+    else {
+      // 数据可靠：使用历史平均
+      if (isDataReliable) {
+        const weeklySpeed = currentEpisode / weeksSinceCreation
+        averageSpeed = weeklySpeed.toFixed(1)
+
+        if (weeklySpeed > 0) {
+          const weeksToComplete = Math.ceil(remainingEpisodes / weeklySpeed)
+          estimatedCompletionDate = new Date()
+          estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + weeksToComplete * 7)
+        }
+      } else {
+        // 数据不可靠：保守估计每周1集
+        isConservativeEstimate = true
+        averageSpeed = "1.0"
+        estimatedCompletionDate = new Date()
+        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + remainingEpisodes * 7)
+      }
+    }
+  } else {
+    // 已完成，显示历史速度
+    if (item.isDailyUpdate) {
+      speedUnit = "集/天"
+      averageSpeed = daysSinceCreation > 0 ? (currentEpisode / daysSinceCreation).toFixed(1) : currentEpisode.toFixed(1)
+    } else if (typeof item.weekday === 'number') {
+      speedUnit = typeof item.secondWeekday === 'number' ? "每周2集" : "每周1集"
+      averageSpeed = weeksSinceCreation > 0 ? (currentEpisode / weeksSinceCreation).toFixed(1) : currentEpisode.toFixed(1)
+    } else {
+      averageSpeed = weeksSinceCreation > 0 ? (currentEpisode / weeksSinceCreation).toFixed(1) : "0"
+    }
   }
   
   const formatDate = (date: Date) => {
@@ -184,7 +331,9 @@ export function EpisodeList({
                 <Zap className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <div className="min-w-0">
                   <div className="text-muted-foreground">平均速度</div>
-                  <div className="font-medium">{averageSpeed} 集/周</div>
+                  <div className="font-medium">
+                    {item.isDailyUpdate || !item.weekday ? `${averageSpeed} ${speedUnit}` : speedUnit}
+                  </div>
                 </div>
               </div>
 
@@ -192,7 +341,9 @@ export function EpisodeList({
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-muted-foreground">预计完成</div>
+                  <div className="text-muted-foreground">
+                    {isConservativeEstimate ? '预计完成(保守)' : '预计完成'}
+                  </div>
                   <div className="font-medium truncate">
                     {estimatedCompletionDate ? formatDate(estimatedCompletionDate) : '-'}
                   </div>

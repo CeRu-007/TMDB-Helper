@@ -92,19 +92,16 @@ export class RequestValidator {
   }
 
   static validateJSONBody(request: NextRequest): Promise<boolean> {
-    return new Promise((resolve) => {
-      const clone = request.clone()
-      clone.text()
-        .then(text => {
-          try {
-            JSON.parse(text)
-            resolve(true)
-          } catch {
-            resolve(false)
-          }
-        })
-        .catch(() => resolve(false))
-    })
+    return request.clone().text()
+      .then(text => {
+        try {
+          JSON.parse(text)
+          return true
+        } catch {
+          return false
+        }
+      })
+      .catch(() => false)
   }
 }
 
@@ -142,18 +139,12 @@ export class ResponseHelper {
   }
 
   private static generateETag(data: ArrayBuffer | Uint8Array): string {
-    // Simple hash function for ETag generation
-    const hash = this.simpleHash(data)
-    return `"${hash}"`
-  }
-
-  private static simpleHash(data: ArrayBuffer | Uint8Array): string {
     const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data
     let hash = 0
     for (let i = 0; i < bytes.length; i++) {
       hash = ((hash << 5) - hash + bytes[i]) & 0xffffffff
     }
-    return Math.abs(hash).toString(36)
+    return `"${Math.abs(hash).toString(36)}"`
   }
 }
 

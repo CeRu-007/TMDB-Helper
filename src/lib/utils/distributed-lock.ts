@@ -16,25 +16,17 @@ export interface LockInfo {
 
 export class DistributedLock {
   private static readonly LOCK_PREFIX = 'tmdb_helper_lock_';
-  private static readonly DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5分钟默认超时
-  private static readonly CLEANUP_INTERVAL = 5 * 60 * 1000; // 5分钟清理间隔（减少频繁清理）
+  private static readonly DEFAULT_TIMEOUT = 5 * 60 * 1000;
   private static readonly PROCESS_ID = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
-  // private static cleanupTimer: NodeJS.Timeout | null = null; // 已移除定时器
   private static activeLocks = new Map<string, LockInfo>();
 
   /**
    * 初始化分布式锁系统
    */
   static initialize(): void {
-    // 已移除定时器检查
-
     logger.info(`[DistributedLock] 初始化分布式锁系统，进程ID: ${this.PROCESS_ID}`);
-    
-    // 只在启动时清理一次过期锁（移除定时器）
     this.cleanupExpiredLocks();
 
-    // 页面卸载时清理所有锁
     if (typeof window !== 'undefined') {
       window.addEventListener('beforeunload', () => {
         this.releaseAllLocks();
@@ -328,16 +320,11 @@ export class DistributedLock {
    */
   private static async releaseAllLocks(): Promise<void> {
     logger.info(`[DistributedLock] 释放所有锁，进程ID: ${this.PROCESS_ID}`);
-    
+
     const locksToRelease = Array.from(this.activeLocks.keys());
     
     for (const lockKey of locksToRelease) {
       await this.releaseLock(lockKey);
-    }
-
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
-      this.cleanupTimer = null;
     }
   }
 

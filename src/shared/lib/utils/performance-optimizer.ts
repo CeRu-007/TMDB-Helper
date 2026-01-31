@@ -45,9 +45,8 @@ export class PerformanceOptimizer {
         memoryUsage: this.getMemoryUsage(),
         timestamp: Date.now()
       });
-
     } catch (error) {
-      
+      // 静默处理性能记录错误
     }
   }
 
@@ -65,10 +64,6 @@ export class PerformanceOptimizer {
       memoryUsage: this.getMemoryUsage(),
       timestamp: Date.now()
     });
-
-    if (responseTime > 3000) {
-      
-    }
   }
 
   /**
@@ -93,19 +88,14 @@ export class PerformanceOptimizer {
   static monitorChunkLoading(): void {
     if (typeof window === 'undefined') return;
 
-    // 监听chunk加载错误
     window.addEventListener('error', (event) => {
       if (event.filename && event.filename.includes('_next/static/chunks/')) {
-        
         this.handleChunkLoadError(event.filename);
       }
     });
 
-    // 监听未处理的Promise拒绝
     window.addEventListener('unhandledrejection', (event) => {
-      if (event.reason && event.reason.message && 
-          event.reason.message.includes('ChunkLoadError')) {
-        
+      if (event.reason?.message?.includes('ChunkLoadError')) {
         this.handleChunkLoadError('unknown');
       }
     });
@@ -114,9 +104,7 @@ export class PerformanceOptimizer {
   /**
    * 处理chunk加载错误
    */
-  private static handleChunkLoadError(chunkName: string): void {
-    
-    // 延迟重新加载页面，给用户一些时间
+  private private static handleChunkLoadError(chunkName: string): void {
     setTimeout(() => {
       if (confirm('检测到资源加载失败，是否重新加载页面？')) {
         window.location.reload();
@@ -138,22 +126,20 @@ export class PerformanceOptimizer {
   /**
    * 记录性能指标
    */
-  private static recordMetric(metric: PerformanceMetrics): void {
+  private private static recordMetric(metric: PerformanceMetrics): void {
     try {
       const metrics = this.getMetrics();
       metrics.push(metric);
 
-      // 保持最大数量限制
       if (metrics.length > this.MAX_METRICS_COUNT) {
         metrics.splice(0, metrics.length - this.MAX_METRICS_COUNT);
       }
 
-      // 检查是否在浏览器环境中
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
         localStorage.setItem(this.METRICS_KEY, JSON.stringify(metrics));
       }
     } catch (error) {
-      
+      // 静默处理存储错误
     }
   }
 
@@ -162,14 +148,12 @@ export class PerformanceOptimizer {
    */
   static getMetrics(): PerformanceMetrics[] {
     try {
-      // 检查是否在浏览器环境中
       if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
         return [];
       }
       const stored = localStorage.getItem(this.METRICS_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      
       return [];
     }
   }
@@ -227,7 +211,7 @@ export class PerformanceOptimizer {
 
       localStorage.setItem(this.CACHE_STATS_KEY, JSON.stringify(stats));
     } catch (error) {
-      
+      // 静默处理缓存统计更新错误
     }
   }
 
@@ -244,7 +228,6 @@ export class PerformanceOptimizer {
         lastCleanup: Date.now()
       };
     } catch (error) {
-      
       return {
         hits: 0,
         misses: 0,
@@ -262,27 +245,17 @@ export class PerformanceOptimizer {
       const stats = this.getCacheStats();
       const now = Date.now();
 
-      // 检查是否需要清理
       if (now - stats.lastCleanup < this.CACHE_CLEANUP_INTERVAL) {
         return;
       }
 
-      let cleanedCount = 0;
-      const keysToRemove: string[] = [];
-
       // 已切换到服务端存储，跳过本地缓存清理
-      // no-op
 
-      // 更新清理时间
       stats.lastCleanup = now;
       stats.size = this.calculateCacheSize();
       localStorage.setItem(this.CACHE_STATS_KEY, JSON.stringify(stats));
-
-      if (cleanedCount > 0) {
-        
-      }
     } catch (error) {
-      
+      // 静默处理缓存清理错误
     }
   }
 
@@ -302,7 +275,7 @@ export class PerformanceOptimizer {
         }
       }
     } catch (error) {
-      
+      // 静默处理缓存大小计算错误
     }
     return size;
   }
@@ -313,10 +286,8 @@ export class PerformanceOptimizer {
   static initialize(): void {
     if (typeof window === 'undefined') return;
 
-    // 监控chunk加载
     this.monitorChunkLoading();
 
-    // 记录页面加载性能
     if (document.readyState === 'complete') {
       this.recordPageLoad();
     } else {
@@ -325,11 +296,9 @@ export class PerformanceOptimizer {
       });
     }
 
-    // 定期清理缓存
     setInterval(() => {
       this.cleanupExpiredCache();
-    }, INTERVAL_1H); // 每小时检查一次
-
+    }, INTERVAL_1H);
   }
 }
 
