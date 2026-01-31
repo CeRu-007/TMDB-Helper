@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ExternalLink, Filter, TrendingUp, Star, Globe, Play, Sparkles, GripVertical, ArrowUpDown } from 'lucide-react';
+import { ExternalLink, Search, GripVertical, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import PlatformLogo from './platform-logo';
 import SmartTooltip from './smart-tooltip';
 import { 
@@ -130,6 +130,7 @@ const SortablePlatformCard: React.FC<{
 
 const StreamingPlatformNav: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('全部');
+  const [searchQuery, setSearchQuery] = useState('');
   const [platforms, setPlatforms] = useState<Platform[]>(() => {
     // 从本地存储加载自定义排序
     const savedOrder = localStorage.getItem('platformOrder');
@@ -160,22 +161,30 @@ const StreamingPlatformNav: React.FC = () => {
     })
   );
 
-  // 筛选逻辑
+  // 筛选逻辑 - 支持分类和搜索
   const filteredPlatforms = useMemo(() => {
-    if (selectedCategory === '全部') {
-      return platforms;
+    let result = platforms;
+    
+    // 分类筛选
+    if (selectedCategory !== '全部') {
+      result = result.filter(platform => platform.region === selectedCategory);
     }
-    return platforms.filter(platform => platform.region === selectedCategory);
-  }, [selectedCategory, platforms]);
+    
+    // 搜索筛选
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(platform => 
+        platform.name.toLowerCase().includes(query) ||
+        platform.description.toLowerCase().includes(query)
+      );
+    }
+    
+    return result;
+  }, [selectedCategory, platforms, searchQuery]);
 
-  // 处理分类切换
+  // 处理分类切换 - 只切换分类，不重置搜索
   const handleCategoryChange = (category: CategoryType) => {
     setSelectedCategory(category);
-    if (category === '全部') {
-      setPlatforms(getFilteredPlatforms('全部'));
-    } else {
-      setPlatforms(getFilteredPlatforms(category));
-    }
   };
 
   // 处理拖拽结束
@@ -203,102 +212,97 @@ const StreamingPlatformNav: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-900 dark:via-blue-950/30 dark:to-purple-950/30 relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      {/* 背景装饰 - 参考登录页 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
+      </div>
 
-      {/* 精细网格背景 */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(147,197,253,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(147,197,253,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+      {/* 网格背景 */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8881_1px,transparent_1px),linear-gradient(to_bottom,#8881_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
-      <div className="relative z-10 w-full px-4 sm:px-6 py-8">
-        {/* 头部区域容器 - 统一左对齐 */}
-        <div className="max-w-7xl mx-auto">
-          {/* 精美的页面标题区域 - 居左显示 */}
-          <div className="text-left mb-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl">
-                <Play className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-yellow-500" />
-                <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-600 to-purple-600 dark:from-white dark:via-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
-                  流媒体平台导航
-                </h1>
-                <Sparkles className="w-5 h-5 text-purple-500" />
-              </div>
+      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-8">
+        {/* 顶部区域 - 类似导航站的简洁头部 */}
+        <div className="max-w-4xl mx-auto mb-10">
+          {/* 搜索框 - 居中显示 */}
+          <div className="relative mb-8">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+              <Search className="w-5 h-5" />
             </div>
-            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
-              探索全球顶级流媒体平台，获取丰富的元数据信息
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                <span>全球覆盖</span>
-              </div>
-              <div className="w-1 h-1 bg-gray-400 rounded-full" />
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span>精选推荐</span>
-              </div>
-              <div className="w-1 h-1 bg-gray-400 rounded-full" />
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                <span>实时更新</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 分类筛选和排序控制区域 */}
-          <div className="mb-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* 分类筛选 */}
-              <div className="flex flex-wrap gap-2 sm:gap-3">
-                {categories.map((category) => (
-                  <Button
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleCategoryChange(category)}
-                    disabled={isDragMode}
-                    className={cn(
-                      "transition-all duration-300 rounded-full text-xs sm:text-sm",
-                      selectedCategory === category
-                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
-                        : "bg-white dark:bg-slate-800/90 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-blue-300 dark:hover:border-purple-400/50 hover:scale-105 hover:shadow-md",
-                      isDragMode && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </div>
-
-              {/* 排序控制按钮 */}
-              <Button
-                variant={isDragMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIsDragMode(!isDragMode)}
-                className={cn(
-                  "transition-all duration-300 rounded-full flex items-center gap-2 text-xs sm:text-sm",
-                  isDragMode
-                    ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30"
-                    : "bg-white dark:bg-slate-800/90 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-orange-300 dark:hover:border-orange-400/50 hover:scale-105 hover:shadow-md"
-                )}
+            <Input
+              type="text"
+              placeholder="搜索平台..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-14 pl-12 pr-4 text-base bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-gray-200 dark:border-slate-700 rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-slate-900/50 focus-visible:ring-2 focus-visible:ring-blue-500/50"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
-                <ArrowUpDown className="w-4 h-4" />
-                {isDragMode ? '完成排序' : '自定义排序'}
-              </Button>
-            </div>
-
-            {/* 拖拽模式提示 */}
-            {isDragMode && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                  <GripVertical className="w-4 h-4" />
-                  拖拽模式已启用：直接拖拽卡片来重新排序，点击"完成排序"退出
-                </p>
-              </div>
+                ×
+              </button>
             )}
           </div>
+
+          {/* 分类标签栏 - 居中显示 */}
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => handleCategoryChange(category)}
+                disabled={isDragMode}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200",
+                  selectedCategory === category
+                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800",
+                  isDragMode && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* 操作栏 */}
+        <div className="max-w-7xl mx-auto mb-6 flex items-center justify-between">
+          {/* 左侧：当前分类标题 + 结果数 */}
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {searchQuery ? `"${searchQuery}" 的搜索结果` : (selectedCategory === '全部' ? '全部平台' : selectedCategory)}
+            </h2>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              ({filteredPlatforms.length})
+            </span>
+          </div>
+
+          {/* 右侧：排序控制 */}
+          <button
+            onClick={() => setIsDragMode(!isDragMode)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-all duration-200",
+              isDragMode
+                ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800"
+            )}
+          >
+            <ArrowUpDown className="w-4 h-4" />
+            {isDragMode ? '完成排序' : '排序'}
+          </button>
+        </div>
+
+        {/* 拖拽模式提示 */}
+        {isDragMode && (
+          <div className="max-w-7xl mx-auto mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+            <GripVertical className="w-4 h-4" />
+            拖拽卡片可调整顺序，点击"完成排序"保存
+          </div>
+        )}
 
         {/* 平台网格 - 可拖拽排序 */}
         <div className="max-w-7xl mx-auto">
@@ -325,30 +329,21 @@ const StreamingPlatformNav: React.FC = () => {
           </DndContext>
         </div>
 
-        {/* 空状态 - 重新设计 */}
+        {/* 空状态 */}
         {filteredPlatforms.length === 0 && (
-          <div className="text-center py-16">
-            <div className="max-w-md mx-auto">
-              <div className="relative mb-8">
-                <div className="w-32 h-32 mx-auto bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full flex items-center justify-center">
-                  <Filter className="w-16 h-16 text-blue-400 dark:text-purple-400" />
-                </div>
-                <div className="absolute inset-0 w-32 h-32 mx-auto bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full animate-ping" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-4">
-                未找到匹配的平台
-              </h3>
-              <p className="text-gray-500 dark:text-gray-500 mb-6 leading-relaxed">
-                尝试选择不同的分类<br />
-                我们正在不断添加更多优质平台
-              </p>
-              <Button
-                onClick={() => handleCategoryChange('全部')}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-full hover:scale-105 transition-transform duration-300 shadow-lg shadow-blue-500/25"
-              >
-                重置筛选条件
-              </Button>
-            </div>
+          <div className="max-w-7xl mx-auto text-center py-16">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              未找到匹配的平台
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('全部');
+              }}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              清除筛选条件
+            </button>
           </div>
         )}
       </div>
