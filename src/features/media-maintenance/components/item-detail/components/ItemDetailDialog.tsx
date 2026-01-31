@@ -549,14 +549,18 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   const isDailyUpdate = localItem.isDailyUpdate
 
-  // 辅助函数：检查元素是否在弹出组件内
+  // 辅助函数：检查元素是否在弹出组件或对话框内
   function isInPopover(element: HTMLElement | null): boolean {
     let current = element
     while (current) {
       if (current.hasAttribute('data-radix-select-content') ||
           current.hasAttribute('data-radix-popover-content') ||
+          current.getAttribute('role') === 'dialog' ||
+          current.hasAttribute('data-radix-scroll-area-viewport') ||
           current.closest('[data-radix-select-content]') ||
-          current.closest('[data-radix-popover-content]')) {
+          current.closest('[data-radix-popover-content]') ||
+          current.closest('[role="dialog"]') ||
+          current.closest('[data-radix-scroll-area-viewport]')) {
         return true
       }
       current = current.parentElement
