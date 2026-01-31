@@ -5,6 +5,22 @@
 @import '../styles/login-animations.css';
 @import '../styles/z-index.css';
 @import '../styles/animations.css';
+@import '../styles/schedule-styles.css';
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 /* Highlight.js GitHub样式 */
 .hljs {

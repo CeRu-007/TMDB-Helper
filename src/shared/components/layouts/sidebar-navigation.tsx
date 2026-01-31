@@ -23,7 +23,8 @@ import {
   FileText,
   Search,
   BookOpen,
-  Type
+  Type,
+  CalendarDays
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/shared/components/ui/button"
@@ -69,7 +70,8 @@ const menuItems: MenuItem[] = [
     submenu: [
       { id: "upcoming", label: "即将上线", icon: <Clock className="h-3 w-3" /> },
       { id: "recent", label: "近期开播", icon: <Play className="h-3 w-3" /> },
-      { id: "streaming-nav", label: "平台导航", icon: <Film className="h-3 w-3" /> }
+      { id: "streaming-nav", label: "平台导航", icon: <Film className="h-3 w-3" /> },
+      { id: "schedule", label: "时间表", icon: <CalendarDays className="h-3 w-3" /> }
     ]
   },
   {

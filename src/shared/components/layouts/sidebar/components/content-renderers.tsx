@@ -22,6 +22,7 @@ import { ItemDetailDialog } from "@/features/media-maintenance/components/item-d
 import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
 import StreamingPlatformNav from "@/features/streaming-nav/components/streaming-platform-nav"
 import { SidebarRegionNavigation } from "./sidebar-region-navigation"
+import { ScheduleView } from "@/features/schedule/components/schedule-view"
 
 interface ContentRenderersProps {
   contentKey: string
@@ -241,6 +242,15 @@ export function ContentRenderers({
       onShowAddDialog,
       ApiKeySetupGuide
     })
+  }
+
+  // News - schedule
+  if (contentKey === 'news-schedule') {
+    return (
+      <div className="h-full overflow-hidden">
+        <ScheduleView />
+      </div>
+    )
   }
 
   // Thumbnails - extract
@@ -560,12 +570,15 @@ function MediaNewsCard({ item, onAdd }: { item: TMDBItem; onAdd: () => void }) {
   const isUpcoming = new Date(item.releaseDate) > new Date()
   const badgeColor = isUpcoming ? "bg-blue-500" : "bg-green-500"
 
-  const daysDiff = Math.abs(Math.ceil((new Date(item.releaseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+  const today = new Date()
+  const releaseDate = new Date(item.releaseDate)
+  const daysDiff = Math.abs(Math.ceil((releaseDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+
   const timeText = isUpcoming
     ? daysDiff <= 0 ? "今天上线" : daysDiff === 1 ? "明天上线" : `${daysDiff}天后上线`
     : daysDiff <= 0 ? "今天开播" : daysDiff === 1 ? "昨天开播" : `${daysDiff}天前开播`
 
-  const handleAddClick = (e: React.MouseEvent) => {
+  function handleAddClick(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
 
