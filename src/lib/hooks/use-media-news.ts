@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { logger } from "@/lib/utils/logger"
 import { handleError, retryOperation } from "@/lib/utils/error-handler"
-import { perf } from "@/shared/lib/utils/performance-manager"
+import { perf } from "@/lib/utils/performance-manager"
 import { REGIONS } from "@/lib/constants/regions"
 
 export interface MediaNewsItem {
@@ -48,12 +48,18 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
   const [recentLastUpdated, setRecentLastUpdated] = useState<string | null>(null)
   const [isMissingApiKey, setIsMissingApiKey] = useState(false)
 
-  // 缓存加载的辅助函数
+  // Cache keys for better maintainability
+  const cacheKeys = useMemo(() => ({
+    getItemsKey: (type: "upcoming" | "recent", regionId: string) => `${type}Items_${regionId}`,
+    getTimestampKey: (type: "upcoming" | "recent") => `${type}LastUpdated`
+  }), [])
+
+  // Cache loading helper
   const loadCacheForType = useCallback((type: "upcoming" | "recent"): Record<string, MediaNewsItem[]> => {
     const itemsByRegion: Record<string, MediaNewsItem[]> = {}
 
     REGIONS.forEach(region => {
-      const cached = localStorage.getItem(`${type}Items_${region.id}`)
+      const cached = localStorage.getItem(cacheKeys.getItemsKey(type, region.id))
       if (cached) {
         try {
           const parsed = JSON.parse(cached)
@@ -62,13 +68,13 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
           }
         } catch (error) {
           logger.warn(`[useMediaNews] 解析${type}缓存数据失败: ${region.id}`, error)
-          localStorage.removeItem(`${type}Items_${region.id}`)
+          localStorage.removeItem(cacheKeys.getItemsKey(type, region.id))
         }
       }
     })
 
     return itemsByRegion
-  }, [])
+  }, [cacheKeys])
 
   // 加载缓存数据
   const loadCachedData = useCallback(() => {
@@ -93,8 +99,8 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
       }
 
       // 加载更新时间
-      const cachedUpcomingLastUpdated = localStorage.getItem("upcomingLastUpdated")
-      const cachedRecentLastUpdated = localStorage.getItem("recentLastUpdated")
+      const cachedUpcomingLastUpdated = localStorage.getItem(cacheKeys.getTimestampKey("upcoming"))
+      const cachedRecentLastUpdated = localStorage.getItem(cacheKeys.getTimestampKey("recent"))
       if (cachedUpcomingLastUpdated) setUpcomingLastUpdated(cachedUpcomingLastUpdated)
       if (cachedRecentLastUpdated) setRecentLastUpdated(cachedRecentLastUpdated)
     } catch (error) {
@@ -168,8 +174,8 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
 
           // 缓存数据
           try {
-            localStorage.setItem(`${type}Items_${region}`, JSON.stringify(data.results))
-            localStorage.setItem(`${type}LastUpdated`, timestamp)
+            localStorage.setItem(cacheKeys.getItemsKey(type, region), JSON.stringify(data.results))
+            localStorage.setItem(cacheKeys.getTimestampKey(type), timestamp)
           } catch (error) {
             logger.warn(`[useMediaNews] 缓存${type === "upcoming" ? "即将上线" : "近期开播"}数据失败`, error)
           }

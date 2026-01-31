@@ -18,7 +18,7 @@ import { Badge } from "@/shared/components/ui/badge"
 import { Terminal, FolderOpen, FileText, RefreshCw, Save, Info, Eye, EyeOff, AlertCircle } from "lucide-react"
 import TMDBImportUpdater from "@/features/tmdb-import/components/tmdb-import-updater"
 import DependencyInstaller from "@/features/system/components/dependency-installer"
-import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
+import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import type { TMDBConfig, ToolsTabState } from "./types"
 
 interface ToolsSettingsPanelProps {

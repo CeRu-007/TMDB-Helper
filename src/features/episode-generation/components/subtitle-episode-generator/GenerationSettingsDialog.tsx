@@ -9,7 +9,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { useToast } from "@/shared/components/ui/use-toast"
 import { EpisodeConfigClient } from "@/lib/media/episode-config-client"
-import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
+import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import { GenerationSettingsDialogProps } from './types'
 import { GENERATION_STYLES, TITLE_STYLES } from './constants'
 import { GenerationTab } from './tabs/GenerationTab'

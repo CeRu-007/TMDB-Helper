@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { MessageSquare, Plus, PanelRight } from "lucide-react"
 import { useUser } from "@/shared/components/user-identity-provider"
-import { useScenarioModels } from "@/shared/lib/hooks/useScenarioModels"
+import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
 import { useModelService } from "@/lib/contexts/ModelServiceContext"
 import { Message } from "@/types/ai-chat"
 

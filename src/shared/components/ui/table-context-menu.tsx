@@ -33,7 +33,7 @@ import {
 import DateIntervalDialog from "@/shared/components/ui/date-interval-dialog"
 import MinutesDialog from "@/shared/components/ui/minutes-dialog"
 import NumberRangeDialog from "@/shared/components/ui/number-range-dialog"
-import { isDateColumn, isTimeColumn, isNumericColumn, isValidDateString, generateNumberSequence } from "@/shared/lib/utils/date-utils"
+import { isDateColumn, isTimeColumn, isNumericColumn, isValidDateString, generateNumberSequence } from "@/lib/utils/date-utils"
 import type { CSVData } from "@/types/csv-editor"
 
 export interface TableContextMenuProps {

@@ -1,15 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 
-// 导入图标
+// Icons
 import {
   Clock,
   CheckCircle2,
   Calendar,
-  FileText,
-  Video,
   Loader2,
   AlertTriangle,
   Plus,
@@ -17,7 +15,7 @@ import {
   RefreshCw
 } from "lucide-react"
 
-// 导入 hooks
+// Hooks
 import { useHomeState } from '@/features/media-maintenance/lib/hooks/use-home-state'
 import { useCategoryFilter } from '@/features/media-maintenance/lib/hooks/use-category-filter'
 import { useWeekdayFilter } from '@/features/media-maintenance/lib/hooks/use-weekday-filter'
@@ -26,11 +24,35 @@ import { useMediaNews } from '@/features/media-maintenance/lib/hooks/use-media-n
 import { useData } from "@/shared/components/client-data-provider"
 import { useToast } from "@/lib/hooks/use-toast"
 
-// 导入常量
+// Constants
 import { categories, type Category } from '@/lib/constants/categories'
 import type { MediaItem } from '@/types/media'
 
-// Media news types
+// Components
+import { SidebarLayout } from "@/shared/components/layouts/sidebar-layout"
+import { WeekdayNavigation } from '@/features/media-maintenance/components/weekday-navigation'
+import { RegionNavigation } from '@/features/media-news/components/region-navigation'
+import { Button } from "@/shared/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
+import { Badge } from "@/shared/components/ui/badge"
+import MediaCard from "@/features/media-maintenance/components/media-card"
+import { ErrorState } from "@/features/media-maintenance/components/error-state"
+
+// Dialog components
+import AddItemDialog from "@/features/media-maintenance/components/add-item-dialog"
+import SettingsDialog from "@/features/system/components/settings-dialog/SettingsDialog"
+import GlobalScheduledTasksDialog from "@/features/scheduled-tasks/components/global-scheduled-tasks-dialog/global-scheduled-tasks-dialog"
+import { TaskExecutionLogsDialog } from "@/features/scheduled-tasks/components/task-execution-logs-dialog"
+import ScheduledTaskDialog from "@/features/scheduled-tasks/components/scheduled-task-dialog"
+import ImportDataDialog from "@/features/data-management/components/import-data-dialog"
+import ExportDataDialog from "@/features/data-management/components/export-data-dialog"
+
+// Feature components
+import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
+import VideoThumbnailExtractor from "@/features/image-processing/components/video-thumbnail-extractor"
+import { ImageCropper } from "@/features/image-processing/components/image-cropper"
+
+// Types
 interface MediaNewsData {
   upcomingItems: MediaItem[]
   recentItems: MediaItem[]
@@ -42,37 +64,13 @@ interface MediaNewsData {
   fetchRecentItems: (region: string, force?: boolean) => Promise<void>
 }
 
-// 导入组件
-import { SidebarLayout } from "@/shared/components/layouts/sidebar-layout"
-import { WeekdayNavigation } from '@/features/media-maintenance/components/weekday-navigation'
-import { RegionNavigation } from '@/features/media-news/components/region-navigation'
-import { Button } from "@/shared/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
-import { Badge } from "@/shared/components/ui/badge"
-import MediaCard from "@/features/media-maintenance/components/media-card"
-
-// 导入对话框组件
-import AddItemDialog from "@/features/media-maintenance/components/add-item-dialog"
-import SettingsDialog from "@/features/system/components/settings-dialog/SettingsDialog"
-import GlobalScheduledTasksDialog from "@/features/scheduled-tasks/components/global-scheduled-tasks-dialog/global-scheduled-tasks-dialog"
-import { TaskExecutionLogsDialog } from "@/features/scheduled-tasks/components/task-execution-logs-dialog"
-import ScheduledTaskDialog from "@/features/scheduled-tasks/components/scheduled-task-dialog"
-import ImportDataDialog from "@/features/data-management/components/import-data-dialog"
-import ExportDataDialog from "@/features/data-management/components/export-data-dialog"
-
-// 导入其他功能组件
-import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
-import VideoThumbnailExtractor from "@/features/image-processing/components/video-thumbnail-extractor"
-import { ImageCropper } from "@/features/image-processing/components/image-cropper"
-
-// 导入共享组件
-import { ErrorState } from "@/features/media-maintenance/components/error-state"
-
-
-// 判断当前环境是否为客户端
-const isClientEnv = typeof window !== 'undefined'
-
-const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: number, categories: Category[], isCompleted: boolean = false) => {
+// Helper functions
+const getEmptyStateMessage = (
+  selectedCategory: string,
+  selectedDayFilter: number,
+  categories: Category[],
+  isCompleted: boolean = false
+): string => {
   if (selectedCategory !== "all") {
     const categoryName = categories.find(c => c.id === selectedCategory)?.name
     const suffix = isCompleted ? "暂无已完结词条" : "暂无词条"
@@ -88,114 +86,100 @@ const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: numbe
   return isCompleted ? `${weekdayName}暂无已完结词条` : `${weekdayName}暂无词条`
 }
 
-const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaNewsData, items: MediaItem[], selectedRegion: string) => {
-  const isUpcoming = mediaNewsType === 'upcoming'
-  const newsData = isUpcoming ? mediaNews.upcomingItems : mediaNews.recentItems
-  const loading = isUpcoming ? mediaNews.loadingUpcoming : mediaNews.loadingRecent
-  const error = isUpcoming ? mediaNews.upcomingError : mediaNews.recentError
-  const fetchFunction = () => isUpcoming
-    ? mediaNews.fetchUpcomingItems(selectedRegion, false)
-    : mediaNews.fetchRecentItems(selectedRegion, false)
+const MediaNewsLoadingState = () => (
+  <div className="flex justify-center items-center h-48">
+    <div className="flex flex-col items-center">
+      <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
+      <p className="text-sm text-gray-500 dark:text-gray-400">加载中，请稍候...</p>
+    </div>
+  </div>
+)
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-48">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">加载中，请稍候...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    const errorMessage = mediaNews.isMissingApiKey
-      ? '请按照上方指南配置TMDB API密钥'
-      : '无法连接到TMDB服务，请检查网络连接或稍后重试'
-
-    return (
-      <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
-        <div className="flex flex-col items-center text-center mb-4">
-          <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
-          <p className="text-red-600 dark:text-red-300 font-medium mb-1">{error}</p>
-          <p className="text-red-500 dark:text-red-400 text-sm mb-4">{errorMessage}</p>
-          <Button
-            onClick={fetchFunction}
-            variant="outline"
-            className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            重试
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  if (newsData.length === 0) {
-    const noDataMessage = isUpcoming
-      ? { title: '暂无即将上线的内容', desc: '未找到未来30天内上线的影视动态' }
-      : { title: '暂无近期开播的内容', desc: '未找到过去30天内刚刚开播的影视动态' }
-
-    return (
-      <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
-        <p className="text-gray-500 dark:text-gray-400 mb-1">{noDataMessage.title}</p>
-        <p className="text-gray-400 dark:text-gray-500 text-sm">{noDataMessage.desc}</p>
-      </div>
-    )
-  }
-
-  const filteredItems = newsData.filter(newsItem =>
-    !items.some(item =>
-      item.tmdbId === newsItem.id.toString() &&
-      item.mediaType === newsItem.mediaType
-    )
-  )
+const MediaNewsErrorState = ({
+  error,
+  isMissingApiKey,
+  onRetry
+}: {
+  error: string
+  isMissingApiKey: boolean
+  onRetry: () => void
+}) => {
+  const errorMessage = isMissingApiKey
+    ? '请按照上方指南配置TMDB API密钥'
+    : '无法连接到TMDB服务，请检查网络连接或稍后重试'
 
   return (
-    <div className="grid grid-cols-6 gap-6 overflow-y-auto max-h-[calc(100vh-350px)]">
-      {filteredItems.map((item) => (
-        <div key={`${item.mediaType}-${item.id}`} className="group">
-          <div className="mb-2">
-            <Badge className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-              {new Date(item.releaseDate).toLocaleDateString('zh-CN')}
-            </Badge>
-          </div>
-          <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl">
-            <img
-              src={item.posterUrl ? `https://image.tmdb.org/t/p/w500${item.posterUrl}` : "/placeholder.svg"}
-              alt={item.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="mt-2">
-            <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
-              {item.title}
-            </h3>
-          </div>
-        </div>
-      ))}
+    <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
+      <div className="flex flex-col items-center text-center mb-4">
+        <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
+        <p className="text-red-600 dark:text-red-300 font-medium mb-1">{error}</p>
+        <p className="text-red-500 dark:text-red-400 text-sm mb-4">{errorMessage}</p>
+        <Button
+          onClick={onRetry}
+          variant="outline"
+          className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          重试
+        </Button>
+      </div>
     </div>
   )
 }
 
+const MediaNewsEmptyState = ({ isUpcoming }: { isUpcoming: boolean }) => {
+  const noDataMessage = isUpcoming
+    ? { title: '暂无即将上线的内容', desc: '未找到未来30天内上线的影视动态' }
+    : { title: '暂无近期开播的内容', desc: '未找到过去30天内刚刚开播的影视动态' }
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
+      <p className="text-gray-500 dark:text-gray-400 mb-1">{noDataMessage.title}</p>
+      <p className="text-gray-400 dark:text-gray-500 text-sm">{noDataMessage.desc}</p>
+    </div>
+  )
+}
+
+const MediaNewsGrid = ({ items }: { items: MediaItem[] }) => (
+  <div className="grid grid-cols-6 gap-6 overflow-y-auto max-h-[calc(100vh-350px)]">
+    {items.map((item) => (
+      <div key={`${item.mediaType}-${item.id}`} className="group">
+        <div className="mb-2">
+          <Badge className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+            {new Date(item.releaseDate).toLocaleDateString('zh-CN')}
+          </Badge>
+        </div>
+        <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl">
+          <img
+            src={item.posterUrl ? `https://image.tmdb.org/t/p/w500${item.posterUrl}` : "/placeholder.svg"}
+            alt={item.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="mt-2">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+            {item.title}
+          </h3>
+        </div>
+      </div>
+    ))}
+  </div>
+)
+
 export default function HomePage() {
   const { toast } = useToast()
 
-  // 使用自定义 hooks 管理状态
+  // State management
   const homeState = useHomeState()
   const { filterItemsByCategory } = useCategoryFilter()
   const { getFilteredItems: getWeekdayFilteredItems } = useWeekdayFilter()
   const { currentDay } = useCurrentDay()
 
-  // 影视资讯相关
   const [selectedRegion, setSelectedRegion] = useState<string>("CN")
   const [mediaNewsType, setMediaNewsType] = useState<'upcoming' | 'recent'>('upcoming')
   const mediaNews = useMediaNews(selectedRegion)
 
-  
-
-  // 使用增强的数据提供者获取数据和方法
+  // Data management
   const {
     items,
     loading,
@@ -207,45 +191,70 @@ export default function HomePage() {
     deleteItem: handleDeleteItem
   } = useData()
 
-  // 根据状态获取词条
-  const getItemsByStatus = (status: "ongoing" | "completed") => {
-    return items.filter((item) => item.status === status)
-  }
+  // Computed values
+  const itemsByStatus = useMemo(() => ({
+    ongoing: items.filter((item) => item.status === "ongoing"),
+    completed: items.filter((item) => item.status === "completed")
+  }), [items])
 
-  const ongoingItems = getItemsByStatus("ongoing")
-  const completedItems = getItemsByStatus("completed")
+  const filteredItems = useMemo(() => ({
+    ongoing: filterItemsByCategory(itemsByStatus.ongoing, homeState.selectedCategory),
+    completed: filterItemsByCategory(itemsByStatus.completed, homeState.selectedCategory)
+  }), [itemsByStatus, homeState.selectedCategory, filterItemsByCategory])
 
-  // 统计数据
-  const totalItems = items.length
+  const filteredCounts = useMemo(() => ({
+    ongoing: filteredItems.ongoing.length,
+    completed: filteredItems.completed.length
+  }), [filteredItems])
 
-  // 根据当前选择的分类过滤统计数据
-  const filteredOngoingItems = filterItemsByCategory(ongoingItems, homeState.selectedCategory)
-  const filteredCompletedItems = filterItemsByCategory(completedItems, homeState.selectedCategory)
-  const filteredOngoingCount = filteredOngoingItems.length
-  const filteredCompletedCount = filteredCompletedItems.length
-
-
-
-  // 获取最终筛选后的词条
   const getFinalFilteredItems = (items: MediaItem[]) => {
     const categoryFiltered = filterItemsByCategory(items, homeState.selectedCategory)
     return getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
   }
 
-  // 渲染内容
+  // Media news rendering
+  const renderMediaNews = (type: 'upcoming' | 'recent') => {
+    const newsData = type === 'upcoming' ? mediaNews.upcomingItems : mediaNews.recentItems
+    const loading = type === 'upcoming' ? mediaNews.loadingUpcoming : mediaNews.loadingRecent
+    const error = type === 'upcoming' ? mediaNews.upcomingError : mediaNews.recentError
+    const fetchFunction = () => type === 'upcoming'
+      ? mediaNews.fetchUpcomingItems(selectedRegion, false)
+      : mediaNews.fetchRecentItems(selectedRegion, false)
+
+    if (loading) return <MediaNewsLoadingState />
+    if (error) return (
+      <MediaNewsErrorState
+        error={error}
+        isMissingApiKey={mediaNews.isMissingApiKey}
+        onRetry={fetchFunction}
+      />
+    )
+    if (newsData.length === 0) return <MediaNewsEmptyState isUpcoming={type === 'upcoming'} />
+
+    const filteredItems = newsData.filter(newsItem =>
+      !items.some(item =>
+        item.tmdbId === newsItem.id.toString() &&
+        item.mediaType === newsItem.mediaType
+      )
+    )
+
+    return <MediaNewsGrid items={filteredItems} />
+  }
+
+  // Main content rendering
   const renderContent = () => {
     if (loadError) {
-      return <ErrorState error={loadError} onRefresh={handleRefresh} onOpenSettings={() => homeState.setShowSettingsDialog(true)} />;
+      return <ErrorState error={loadError} onRefresh={handleRefresh} onOpenSettings={() => homeState.setShowSettingsDialog(true)} />
     }
 
     return (
-        <div className="w-full h-full">
-          <Tabs value={homeState.activeTab} onValueChange={homeState.setActiveTab} className="w-full h-full overflow-hidden">
+      <div className="w-full h-full">
+        <Tabs value={homeState.activeTab} onValueChange={homeState.setActiveTab} className="w-full h-full overflow-hidden">
           <TabsContent value="ongoing">
             <WeekdayNavigation
               selectedDayFilter={homeState.selectedDayFilter}
               onDayFilterChange={homeState.setSelectedDayFilter}
-              filteredItems={filteredOngoingItems}
+              filteredItems={filteredItems.ongoing}
               categories={categories}
               selectedCategory={homeState.selectedCategory}
               activeTab={homeState.activeTab}
@@ -254,7 +263,7 @@ export default function HomePage() {
             />
             <div className="mt-6 overflow-y-auto">
               <div className="grid grid-cols-6 gap-x-6 gap-y-4">
-                {getFinalFilteredItems(ongoingItems).map((item) => (
+                {getFinalFilteredItems(itemsByStatus.ongoing).map((item) => (
                   <div key={item.id} className="transform scale-[0.98] origin-top-left">
                     <MediaCard
                       item={item}
@@ -265,7 +274,7 @@ export default function HomePage() {
                 ))}
               </div>
 
-              {getFinalFilteredItems(ongoingItems).length === 0 && (
+              {getFinalFilteredItems(itemsByStatus.ongoing).length === 0 && (
                 <div className="text-center py-16">
                   <div className="p-8 max-w-md mx-auto">
                     <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
@@ -287,7 +296,7 @@ export default function HomePage() {
             <WeekdayNavigation
               selectedDayFilter={homeState.selectedDayFilter}
               onDayFilterChange={homeState.setSelectedDayFilter}
-              filteredItems={filteredCompletedItems}
+              filteredItems={filteredItems.completed}
               categories={categories}
               selectedCategory={homeState.selectedCategory}
               activeTab={homeState.activeTab}
@@ -296,7 +305,7 @@ export default function HomePage() {
             />
             <div className="mt-6 overflow-y-auto">
               <div className="grid grid-cols-6 gap-x-6 gap-y-4">
-                {getFinalFilteredItems(completedItems).map((item) => (
+                {getFinalFilteredItems(itemsByStatus.completed).map((item) => (
                   <div key={item.id} className="transform scale-[0.98] origin-top-left">
                     <MediaCard
                       item={item}
@@ -307,7 +316,7 @@ export default function HomePage() {
                 ))}
               </div>
 
-              {getFinalFilteredItems(completedItems).length === 0 && (
+              {getFinalFilteredItems(itemsByStatus.completed).length === 0 && (
                 <div className="text-center py-16">
                   <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
                   <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -376,7 +385,7 @@ export default function HomePage() {
             />
 
             <div className="overflow-y-auto">
-              {renderMediaNews(mediaNewsType, mediaNews, items, selectedRegion)}
+              {renderMediaNews(mediaNewsType)}
             </div>
           </TabsContent>
 
@@ -412,13 +421,13 @@ export default function HomePage() {
           </TabsContent>
         </Tabs>
       </div>
-    );
+    )
   }
 
   return (
     <>
       <SidebarLayout
-        totalItems={totalItems}
+        totalItems={items.length}
         runningTasks={homeState.runningTasks}
         onShowAddDialog={() => homeState.setShowAddDialog(true)}
         onShowSettingsDialog={(section) => {
@@ -474,8 +483,8 @@ export default function HomePage() {
         selectedDayFilter={homeState.selectedDayFilter}
         selectedCategory={homeState.selectedCategory}
         categories={categories}
-        filteredOngoingItems={filteredOngoingItems}
-        filteredCompletedItems={filteredCompletedItems}
+        filteredOngoingItems={filteredItems.ongoing}
+        filteredCompletedItems={filteredItems.completed}
         getFilteredItems={getFinalFilteredItems}
         setActiveTab={homeState.setActiveTab}
         setSelectedDayFilter={homeState.setSelectedDayFilter}

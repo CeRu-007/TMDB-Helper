@@ -1,53 +1,57 @@
-﻿"use client"
+"use client"
 
-import { useMemo } from 'react'
 import { TMDBItem } from '@/lib/data/storage'
-import { categories } from '@/lib/constants/categories'
+import { categories } from "@/lib/constants/categories"
 
-export interface UseCategoryFilterReturn {
-  categories: typeof categories
-  filterItemsByCategory: (items: TMDBItem[], selectedCategory: string) => TMDBItem[]
+// Category matching patterns for better maintainability
+const CATEGORY_PATTERNS = {
+  anime: ["动漫", "anime"],
+  kids: ["少儿", "儿童"],
+  variety: ["综艺"],
+  short: ["短剧"]
+} as const
+
+function matchesCategory(item: TMDBItem, category: string): boolean {
+  // Prefer the category field if available
+  if (item.category) {
+    return item.category === category
+  }
+
+  // Special case for TV - must be TV type and not match other categories
+  if (category === "tv") {
+    if (item.mediaType !== "tv") return false
+
+    const title = item.title.toLowerCase()
+    const notes = item.notes?.toLowerCase() || ""
+
+    // Exclude if matches any other category patterns
+    return !Object.values(CATEGORY_PATTERNS).some(patterns =>
+      patterns.some(keyword =>
+        title.includes(keyword.toLowerCase()) ||
+        notes.includes(keyword.toLowerCase())
+      )
+    )
+  }
+
+  // For other categories, check keyword patterns
+  const patterns = CATEGORY_PATTERNS[category as keyof typeof CATEGORY_PATTERNS]
+  if (!patterns) return true
+
+  const title = item.title.toLowerCase()
+  const notes = item.notes?.toLowerCase() || ""
+
+  return patterns.some(keyword =>
+    title.includes(keyword.toLowerCase()) ||
+    notes.includes(keyword.toLowerCase())
+  )
 }
 
-export function useCategoryFilter(): UseCategoryFilterReturn {
-  const filterItemsByCategory = useMemo(() => {
-    return (items: TMDBItem[], selectedCategory: string): TMDBItem[] => {
-      if (selectedCategory === "all") return items
+export function useCategoryFilter() {
+  const filterItemsByCategory = (items: TMDBItem[], selectedCategory: string): TMDBItem[] => {
+    if (selectedCategory === "all") return items
 
-      // 优先使用category字段筛选
-      return items.filter(item => {
-        // 如果有category字段，直接用它判断
-        if (item.category) {
-          return item.category === selectedCategory
-        }
-
-        // 没有category字段时，使用备用逻辑
-        const title = item.title.toLowerCase()
-        const notes = item.notes?.toLowerCase() || ""
-
-        switch(selectedCategory) {
-          case "anime":
-            return title.includes("动漫") || notes.includes("动漫") ||
-                   title.includes("anime") || notes.includes("anime")
-          case "tv":
-            return item.mediaType === "tv" &&
-                   !title.includes("动漫") && !notes.includes("动漫") &&
-                   !title.includes("综艺") && !notes.includes("综艺") &&
-                   !title.includes("少儿") && !notes.includes("少儿") &&
-                   !title.includes("短剧") && !notes.includes("短剧")
-          case "kids":
-            return title.includes("少儿") || notes.includes("少儿") ||
-                   title.includes("儿童") || notes.includes("儿童")
-          case "variety":
-            return title.includes("综艺") || notes.includes("综艺")
-          case "short":
-            return title.includes("短剧") || notes.includes("短剧")
-          default:
-            return true
-        }
-      })
-    }
-  }, [])
+    return items.filter(item => matchesCategory(item, selectedCategory))
+  }
 
   return {
     categories,

@@ -6,7 +6,7 @@ import { StorageManager } from '@/lib/data/storage'
 import { taskScheduler } from '@/lib/data/task-scheduler'
 import { logger } from '@/lib/utils/logger'
 import { handleError } from '@/lib/utils/error-handler'
-import { perf } from '@/shared/lib/utils/performance-manager'
+import { perf } from '@/lib/utils/performance-manager'
 
 interface UseScheduledTasksReturn {
   runningTasks: ScheduledTask[]

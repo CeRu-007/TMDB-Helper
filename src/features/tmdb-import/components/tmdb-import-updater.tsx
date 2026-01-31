@@ -5,7 +5,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Badge } from "@/shared/components/ui/badge"
 import { Progress } from "@/shared/components/ui/progress"
-import { useToast } from "@/shared/lib/hooks/use-toast"
+import { useToast } from "@/lib/hooks/use-toast"
 import {
   Download,
   RefreshCw,

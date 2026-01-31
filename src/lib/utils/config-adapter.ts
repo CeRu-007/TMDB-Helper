@@ -3,8 +3,6 @@
  * 为现有的配置管理器提供Docker环境适配
  */
 
-import { DockerConfigManager } from './docker-config-manager';
-
 export class ConfigAdapter {
   /**
    * 获取配置项
@@ -18,7 +16,7 @@ export class ConfigAdapter {
         return data.success ? data.value : null;
       }
     } catch (error) {
-      
+      // 静默处理错误
     }
     return null;
   }
@@ -45,7 +43,7 @@ export class ConfigAdapter {
         return data.success;
       }
     } catch (error) {
-      
+      // 静默处理错误
     }
     return false;
   }
@@ -54,162 +52,9 @@ export class ConfigAdapter {
    * 删除配置项
    */
   static removeItem(key: string): void {
-    if (DockerConfigManager.isDockerEnvironment()) {
-      this.removeFromDockerConfig(key);
-      return;
-    }
-    
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.removeItem(key);
     }
-  }
-
-  /**
-   * 从Docker配置中获取值
-   */
-  private static getFromDockerConfig(key: string): string | null {
-    const config = DockerConfigManager.getConfig();
-    
-    // 映射常见的localStorage键到Docker配置
-    switch (key) {
-      case 'tmdb_api_key':
-        return config.tmdbApiKey || null;
-      case 'tmdb_import_path':
-        return config.tmdbImportPath || null;
-      case 'siliconflow_api_key':
-        return config.siliconFlowApiKey || null;
-      case 'siliconflow_api_settings':
-        return config.siliconFlowApiKey ? JSON.stringify({
-          apiKey: config.siliconFlowApiKey,
-          thumbnailFilterModel: config.siliconFlowThumbnailModel || 'Qwen/Qwen2.5-VL-32B-Instruct'
-        }) : null;
-      case 'modelscope_api_key':
-        return config.modelScopeApiKey || null;
-      case 'modelscope_api_settings':
-        return config.modelScopeApiKey ? JSON.stringify({
-          apiKey: config.modelScopeApiKey,
-          episodeGenerationModel: config.modelScopeEpisodeModel || 'Qwen/Qwen3-32B'
-        }) : null;
-      case 'general_settings':
-        return config.generalSettings ? JSON.stringify(config.generalSettings) : null;
-      case 'appearance_settings':
-        return config.appearanceSettings ? JSON.stringify(config.appearanceSettings) : null;
-      case 'video_thumbnail_settings':
-        return config.videoThumbnailSettings ? JSON.stringify(config.videoThumbnailSettings) : null;
-      case 'task_scheduler_config':
-        return config.taskSchedulerConfig ? JSON.stringify(config.taskSchedulerConfig) : null;
-      default:
-        // 对于其他键，尝试从appConfig中获取
-        return config.appConfig?.[key] || null;
-    }
-  }
-
-  /**
-   * 设置值到Docker配置
-   */
-  private static setToDockerConfig(key: string, value: string): void {
-    switch (key) {
-      case 'tmdb_api_key':
-        DockerConfigManager.setTmdbApiKey(value);
-        break;
-      case 'tmdb_import_path':
-        DockerConfigManager.setTmdbImportPath(value);
-        break;
-      case 'siliconflow_api_key':
-        DockerConfigManager.setSiliconFlowApiKey(value);
-        break;
-      case 'siliconflow_api_settings':
-        try {
-          const settings = JSON.parse(value);
-          if (settings.apiKey) {
-            DockerConfigManager.setSiliconFlowApiKey(settings.apiKey);
-          }
-          if (settings.thumbnailFilterModel) {
-            const config = DockerConfigManager.getConfig();
-            config.siliconFlowThumbnailModel = settings.thumbnailFilterModel;
-            DockerConfigManager.saveConfig(config);
-          }
-        } catch (e) {
-          
-        }
-        break;
-      case 'general_settings':
-        try {
-          DockerConfigManager.setGeneralSettings(JSON.parse(value));
-        } catch (e) {
-          
-        }
-        break;
-      case 'appearance_settings':
-        try {
-          DockerConfigManager.setAppearanceSettings(JSON.parse(value));
-        } catch (e) {
-          
-        }
-        break;
-      case 'video_thumbnail_settings':
-        try {
-          DockerConfigManager.setVideoThumbnailSettings(JSON.parse(value));
-        } catch (e) {
-          
-        }
-        break;
-      case 'task_scheduler_config':
-        try {
-          DockerConfigManager.setTaskSchedulerConfig(JSON.parse(value));
-        } catch (e) {
-          
-        }
-        break;
-      default:
-        // 对于其他键，保存到appConfig中
-        const appConfig = DockerConfigManager.getAppConfig();
-        appConfig[key] = value;
-        DockerConfigManager.setAppConfig(appConfig);
-        break;
-    }
-  }
-
-  /**
-   * 从Docker配置中删除值
-   */
-  private static removeFromDockerConfig(key: string): void {
-    const config = DockerConfigManager.getConfig();
-    
-    switch (key) {
-      case 'tmdb_api_key':
-        delete config.tmdbApiKey;
-        break;
-      case 'tmdb_import_path':
-        delete config.tmdbImportPath;
-        break;
-      case 'siliconflow_api_key':
-        delete config.siliconFlowApiKey;
-        break;
-      case 'siliconflow_api_settings':
-        delete config.siliconFlowApiKey;
-        delete config.siliconFlowThumbnailModel;
-        break;
-      case 'general_settings':
-        delete config.generalSettings;
-        break;
-      case 'appearance_settings':
-        delete config.appearanceSettings;
-        break;
-      case 'video_thumbnail_settings':
-        delete config.videoThumbnailSettings;
-        break;
-      case 'task_scheduler_config':
-        delete config.taskSchedulerConfig;
-        break;
-      default:
-        if (config.appConfig) {
-          delete config.appConfig[key];
-        }
-        break;
-    }
-    
-    DockerConfigManager.saveConfig(config);
   }
 
   /**
@@ -220,10 +65,10 @@ export class ConfigAdapter {
   }
 
   /**
-   * 迁移现有localStorage数据到Docker配置
+   * 迁移现有localStorage数据到服务端配置
    */
   static async migrateExistingData(): Promise<void> {
-    if (!DockerConfigManager.isDockerEnvironment() || typeof window === 'undefined') {
+    if (typeof window === 'undefined') {
       return;
     }
 
@@ -263,7 +108,6 @@ export class ConfigAdapter {
         });
 
         if (response.ok) {
-          
           // 清除已迁移的localStorage数据
           keysToMigrate.forEach(key => {
             if (localStorageData[key]) {
@@ -273,7 +117,7 @@ export class ConfigAdapter {
         }
       }
     } catch (error) {
-      
+      // 静默处理错误
     }
   }
 }

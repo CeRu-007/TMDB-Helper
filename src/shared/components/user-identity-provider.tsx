@@ -7,7 +7,7 @@ import ExportDataDialog from "@/features/data-management/components/export-data-
 import { UserManager, UserInfo } from "@/lib/auth/user-manager"
 import { formatUserDateTime } from "@/lib/utils"
 import { useAuth } from "@/shared/components/auth-provider"
-import { useIsClient } from "@/shared/lib/hooks/use-is-client"
+import { useIsClient } from "@/lib/hooks/use-is-client"
 import { useData } from "@/shared/components/client-data-provider"
 import { useTheme } from "next-themes"
 import {
@@ -27,7 +27,7 @@ import {
   Sidebar
 } from "lucide-react"
 
-import { useToast } from "@/shared/lib/hooks/use-toast"
+import { useToast } from "@/lib/hooks/use-toast"
 import { UserAvatarImage } from "@/shared/components/ui/smart-avatar"
 
 /**

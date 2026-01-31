@@ -56,7 +56,7 @@ import { saveCSV, handleSaveError } from "@/lib/data/csv-save-helper"
 import { validateCsvData, fixCsvData } from "@/lib/data/csv-validator"
 import FixTMDBImportBugDialog from "./fix-tmdb-import-bug-dialog"
 import axios from "axios"
-import { ClientConfigManager } from "@/shared/lib/utils/client-config-manager"
+import { ClientConfigManager } from "@/lib/utils/client-config-manager"
 
 // 定义显式空值标记常量
 export const EXPLICIT_EMPTY_VALUE = "__EMPTY__"

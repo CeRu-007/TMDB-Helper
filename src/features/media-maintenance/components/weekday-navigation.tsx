@@ -1,11 +1,10 @@
 ﻿"use client"
 
 import React from 'react'
-import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { TMDBItem } from '@/lib/data/storage'
-import { WEEKDAYS } from '@/lib/constants/weekdays'
+import { WEEKDAYS } from "@/lib/constants/weekdays"
 import { Calendar, Clock, CheckCircle2 } from 'lucide-react'
 
 interface WeekdayNavigationProps {
@@ -29,8 +28,6 @@ export function WeekdayNavigation({
   onActiveTabChange,
   currentDay = 0
 }: WeekdayNavigationProps) {
-  const containerClasses = "bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10"
-
   // 获取指定日期的词条数量
   const getItemsByDay = (items: TMDBItem[], day: number) => {
     return items.filter((item) =>
@@ -39,19 +36,30 @@ export function WeekdayNavigation({
     )
   }
 
+  // Get button classes based on state
+  const getDayButtonClasses = (isSelected: boolean, isToday: boolean) => {
+    const baseClasses = "flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+
+    if (isSelected) {
+      return `${baseClasses} bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 ${
+        isToday ? "!border-2 !border-yellow-400 relative z-10" : "border border-blue-300 dark:border-blue-600"
+      }`
+    }
+
+    return `${baseClasses} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 ${
+      isToday ? "!border-2 !border-yellow-400 relative z-10" : ""
+    }`
+  }
+
   return (
-    <div className={containerClasses}>
+    <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10">
       <div className="mx-auto px-6">
         <div className="flex justify-between items-center py-3">
           {/* 左侧：日期导航按钮 */}
           <div className="flex space-x-1 overflow-x-auto">
             <button
               onClick={() => onDayFilterChange("recent")}
-              className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                selectedDayFilter === "recent"
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
+              className={getDayButtonClasses(selectedDayFilter === "recent", false)}
             >
               最近更新
             </button>
@@ -67,13 +75,7 @@ export function WeekdayNavigation({
                 <button
                   key={day}
                   onClick={() => onDayFilterChange(jsWeekday)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isSelected
-                      ? isToday
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                        : "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  } ${isToday ? "!border-2 !border-yellow-400 relative z-10" : ""}`}
+                  className={getDayButtonClasses(isSelected, isToday)}
                 >
                   <div className="flex items-center space-x-1">
                     <span>{day}</span>

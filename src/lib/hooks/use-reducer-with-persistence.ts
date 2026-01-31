@@ -7,10 +7,10 @@
 import { useReducer, useEffect, useCallback } from 'react'
 import { storageService } from '../storage/storage-service'
 
-export interface ReducerWithPersistenceOptions<T, A = unknown> {
+export interface ReducerWithPersistenceOptions<T> {
   key: string
   initialState: T
-  reducer: (state: T, action: A) => T
+  reducer: (state: T, action: { type: string; payload?: unknown }) => T
   persist?: boolean
   onStateChange?: (state: T) => void
 }
@@ -18,13 +18,13 @@ export interface ReducerWithPersistenceOptions<T, A = unknown> {
 /**
  * 创建一个带持久化的 reducer hook
  */
-export function useReducerWithPersistence<T, A = unknown>({
+export function useReducerWithPersistence<T>({
   key,
   initialState,
   reducer,
   persist = true,
   onStateChange
-}: ReducerWithPersistenceOptions<T, A>) {
+}: ReducerWithPersistenceOptions<T>) {
   // 从 localStorage 恢复初始状态
   const getInitialState = useCallback((): T => {
     if (persist) {

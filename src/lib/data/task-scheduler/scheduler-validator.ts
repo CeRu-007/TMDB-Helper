@@ -10,8 +10,8 @@ import { TimerManager } from './timer-manager';
 import { ProjectManager } from './project-manager';
 import { TaskExecutor } from './task-executor';
 import { DistributedLock } from '@/lib/utils/distributed-lock';
-import { configManager } from '@/shared/lib/utils/config-manager';
-import { performanceMonitor } from '@/shared/lib/utils/performance-monitor';
+import { configManager } from '@/lib/utils/config-manager';
+import { performanceMonitor } from '@/lib/utils/performance-monitor';
 import { logger } from '@/lib/utils/logger';
 // import { StorageSyncManager } from '../storage-sync-manager'; // 该模块不存在，已注释
 

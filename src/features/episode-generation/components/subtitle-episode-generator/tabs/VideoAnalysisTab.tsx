@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/shared/components/ui/checkbox"
 import { Badge } from "@/shared/components/ui/badge"
 import { GenerationConfig } from '../types'
-import { useScenarioModels } from "@/shared/lib/hooks/useScenarioModels"
+import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
 
 interface VideoAnalysisTabProps {
   config: GenerationConfig

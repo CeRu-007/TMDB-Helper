@@ -11,9 +11,9 @@ import { Slider } from "@/shared/components/ui/slider"
 import { Checkbox } from "@/shared/components/ui/checkbox"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { Badge } from "@/shared/components/ui/badge"
-import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
+import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import { GenerationConfig } from '../types'
-import { useScenarioModels } from "@/shared/lib/hooks/useScenarioModels"
+import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
 
 interface GenerationTabProps {
   config: GenerationConfig

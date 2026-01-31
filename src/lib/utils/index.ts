@@ -1,10 +1,25 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-// 导出类型安全工具
-export * from './type-guards';
-export * from './runtime-validation';
+// Core utilities
+export * from './date-utils'
+export * from './format-utils'
+export * from './validators'
+export * from './api-client'
 
+// Configuration management
+export * from './config-manager'
+export * from './client-config-manager'
+export * from './config-migration'
+export * from './config-adapter'
+
+// Performance and error recovery
+export * from './performance-monitor'
+export * from './performance-manager'
+export * from './performance-optimizer'
+export * from './error-recovery-manager'
+
+// 本地特有的工具函数
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -63,7 +78,6 @@ export function safeJsonParse<T = unknown>(value: unknown, defaultValue: T | nul
   
   // 如果不是字符串，返回默认值
   if (typeof value !== 'string') {
-    
     return defaultValue;
   }
   
@@ -74,14 +88,12 @@ export function safeJsonParse<T = unknown>(value: unknown, defaultValue: T | nul
   
   // 如果是"[object Object]"这样的无效JSON，返回默认值
   if (value === '[object Object]' || value.includes('[object Object]')) {
-    
     return defaultValue;
   }
   
   try {
     return JSON.parse(value) as T;
   } catch (error) {
-    
     return defaultValue;
   }
 }
@@ -107,15 +119,6 @@ export function suppressRefWarnings() {
       }
     };
   }
-}
-
-// 格式化日期
-export function formatDate(date: Date) {
-  return date.toLocaleDateString("zh-CN", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 /**
@@ -223,7 +226,6 @@ export function getPlatformInfo(url?: string) {
       };
     }
   } catch (error) {
-    
     return { 
       name: '未知平台', 
       icon: 'generic',
@@ -232,3 +234,7 @@ export function getPlatformInfo(url?: string) {
     };
   }
 }
+
+// 导出本地特有的其他工具函数
+export * from './type-guards';
+export * from './runtime-validation';

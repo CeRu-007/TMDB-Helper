@@ -7,7 +7,7 @@ import { Badge } from "@/shared/components/ui/badge"
 import { Progress } from "@/shared/components/ui/progress"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Separator } from "@/shared/components/ui/separator"
-import { useToast } from "@/shared/lib/hooks/use-toast"
+import { useToast } from "@/lib/hooks/use-toast"
 import {
   CheckCircle2,
   AlertCircle,

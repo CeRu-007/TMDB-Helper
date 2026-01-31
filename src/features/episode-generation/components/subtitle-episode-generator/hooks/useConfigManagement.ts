@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
 import { GenerationConfig } from '../types'
 import { SUMMARY_STYLES } from '../constants'
-import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
+import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import { logger } from '@/lib/utils/logger'
 
 export function useConfigManagement() {

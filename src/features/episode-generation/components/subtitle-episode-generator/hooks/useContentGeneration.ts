@@ -1,6 +1,6 @@
 ﻿import { useState, useCallback } from 'react'
 import { useToast } from '@/shared/components/ui/use-toast'
-import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
+import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { SubtitleFile, SubtitleEpisode, GenerationConfig, EnhanceOperation, GenerationStatus, GenerationResult } from '../types'
 import { GENERATION_STYLES } from '../constants'
 import { timestampToMinutes } from '../utils'

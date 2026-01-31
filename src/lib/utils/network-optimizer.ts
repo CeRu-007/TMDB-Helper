@@ -476,7 +476,7 @@ export class TMDBNetworkOptimizer {
 
   private async loadApiKey(): Promise<void> {
     if (typeof window !== 'undefined') {
-      const { ClientConfigManager } = await import('@/shared/lib/utils/client-config-manager');
+      const { ClientConfigManager } = await import('@/lib/utils/client-config-manager');
       this.apiKey = await ClientConfigManager.getItem('tmdb_api_key');
     }
   }

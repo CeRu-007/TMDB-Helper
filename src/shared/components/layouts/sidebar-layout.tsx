@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { TMDBItem } from "@/types/tmdb-item"
 import { Task } from "@/types/tasks"
-import { LayoutPreferencesManager } from "@/shared/lib/utils/layout-preferences"
+import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
 import {
   AppHeader,
   SidebarContainer,

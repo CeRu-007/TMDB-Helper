@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Upload, Monitor, Search, Star, ExternalLink, Loader2, Image as ImageIcon, AlertCircle, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
 import { Switch } from '@/shared/components/ui/switch'
-import { toast } from '@/shared/lib/hooks/use-toast'
+import { toast } from '@/lib/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { DELAY_1S, INTERVAL_5S, FILE_SIZE_10MB } from '@/lib/constants/constants'
 

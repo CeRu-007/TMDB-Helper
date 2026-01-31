@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/shared/components/ui/tooltip"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
 import { Button } from "@/shared/components/ui/button"
 import { Upload, Sparkles, AlertCircle } from "lucide-react"
-import { useScenarioModels } from "@/shared/lib/hooks/useScenarioModels"
+import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
 import { useToast } from "@/shared/components/ui/use-toast"
 import { logger } from '@/lib/utils/logger'
 

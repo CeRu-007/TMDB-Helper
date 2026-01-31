@@ -13,7 +13,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Checkbox } from "@/shared/components/ui/checkbox"
-import { formatDate, generateDateSequence, parseDate } from "@/shared/lib/utils/date-utils"
+import { formatDate, generateDateSequence, parseDate } from "@/lib/utils/date-utils"
 
 export interface DateIntervalDialogProps {
   open: boolean

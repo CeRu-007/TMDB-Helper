@@ -25,7 +25,7 @@ import {
 } from "lucide-react"
 import type { TMDBItem, Episode, Season } from "@/types/tmdb-item"
 import { cn } from "@/lib/utils"
-import { ClientConfigManager } from "@/shared/lib/utils/client-config-manager"
+import { ClientConfigManager } from "@/lib/utils/client-config-manager"
 
 // UI 组件
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"

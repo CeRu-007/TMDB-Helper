@@ -28,7 +28,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Progress } from "@/shared/components/ui/progress"
 import { Badge } from "@/shared/components/ui/badge"
 import { useToast } from "@/shared/components/ui/use-toast"
-import { useScenarioModels } from '@/shared/lib/hooks/useScenarioModels'
+import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"
 import { DELAY_500MS, DELAY_2000MS } from '@/lib/constants/constants'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"

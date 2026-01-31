@@ -24,8 +24,8 @@ import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 import { Download, FileText, Database, Settings, Info } from 'lucide-react';
 import { useData } from '@/shared/components/client-data-provider';
 import { StorageManager, TMDBItem, ScheduledTask } from '@/lib/data/storage';
-import { useToast } from '@/shared/lib/hooks/use-toast';
-import { dataRecoveryManager } from '@/shared/lib/data/data-recovery-manager';
+import { useToast } from '@/lib/hooks/use-toast';
+import { dataRecoveryManager } from '@/lib/data/data-recovery-manager';
 
 interface ExportDataDialogProps {
   open: boolean;

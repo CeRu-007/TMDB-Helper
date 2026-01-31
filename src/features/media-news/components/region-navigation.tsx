@@ -22,6 +22,32 @@ export function RegionNavigation({
   recentItemsByRegion,
   items
 }: RegionNavigationProps) {
+  // Get items for the current media type
+  const getItemsByRegion = (regionId: string) => {
+    return mediaNewsType === 'upcoming'
+      ? (upcomingItemsByRegion[regionId] || [])
+      : (recentItemsByRegion[regionId] || [])
+  }
+
+  // Filter out items that already exist in the user's list
+  const getValidItems = (regionItems: any[]) => {
+    return regionItems.filter(item =>
+      !items.some(existingItem =>
+        existingItem.tmdbId === item.id.toString() &&
+        existingItem.mediaType === item.mediaType
+      )
+    )
+  }
+
+  // Get button classes for media type toggle
+  const getMediaTypeButtonClasses = (type: 'upcoming' | 'recent') => {
+    const isActive = mediaNewsType === type
+    const baseClasses = "px-2.5 py-1 rounded-sm text-sm font-medium transition-all duration-200"
+
+    return isActive
+      ? `${baseClasses} bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 shadow-sm`
+      : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50`
+  }
   return (
     <div className="mb-4 border-b border-blue-100/70 dark:border-blue-900/30 pb-3">
       <div className="max-w-7xl mx-auto px-6">
@@ -56,19 +82,12 @@ export function RegionNavigation({
                       </div>
                       <div className="mt-1 space-y-0.5">
                         {group.regions.map(regionId => {
-                          const region = REGIONS.find(r => r.id === regionId);
-                          if (!region) return null;
+                          const region = REGIONS.find(r => r.id === regionId)
+                          if (!region) return null
 
-                          const isActive = selectedRegion === regionId;
-                          const regionItems = mediaNewsType === 'upcoming'
-                            ? (upcomingItemsByRegion[regionId] || [])
-                            : (recentItemsByRegion[regionId] || []);
-                          const validItems = regionItems.filter(item =>
-                            !items.some(existingItem =>
-                              existingItem.tmdbId === item.id.toString() &&
-                              existingItem.mediaType === item.mediaType
-                            )
-                          );
+                          const isActive = selectedRegion === regionId
+                          const regionItems = getItemsByRegion(regionId)
+                          const validItems = getValidItems(regionItems)
 
                           return (
                             <button
@@ -100,7 +119,7 @@ export function RegionNavigation({
                                 </span>
                               )}
                             </button>
-                          );
+                          )
                         })}
                       </div>
                     </div>
@@ -114,11 +133,7 @@ export function RegionNavigation({
           <div className="inline-flex p-0.5 rounded-md shadow-sm border border-blue-100 dark:border-blue-900/50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
             <button
               onClick={() => setMediaNewsType('upcoming')}
-              className={`px-2.5 py-1 rounded-sm text-sm font-medium transition-all duration-200 ${
-                mediaNewsType === 'upcoming'
-                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-              }`}
+              className={getMediaTypeButtonClasses('upcoming')}
             >
               <div className="flex items-center space-x-1.5">
                 <Calendar className="h-3.5 w-3.5" />
@@ -127,11 +142,7 @@ export function RegionNavigation({
             </button>
             <button
               onClick={() => setMediaNewsType('recent')}
-              className={`px-2.5 py-1 rounded-sm text-sm font-medium transition-all duration-200 ${
-                mediaNewsType === 'recent'
-                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-              }`}
+              className={getMediaTypeButtonClasses('recent')}
             >
               <div className="flex items-center space-x-1.5">
                 <PlayCircle className="h-3.5 w-3.5" />

@@ -99,38 +99,39 @@ export class TaskManager extends StorageBase {
    * 规范化任务对象，确保所有必要字段都存在
    */
   private static normalizeTask(task: unknown): ScheduledTask {
+    const taskObj = task as any;
     const normalized: ScheduledTask = {
-      id: task.id || uuidv4(),
-      itemId: task.itemId || '',
-      itemTitle: task.itemTitle || '',
-      itemTmdbId: task.itemTmdbId || undefined,
-      name: task.name || '未命名任务',
+      id: taskObj.id || uuidv4(),
+      itemId: taskObj.itemId || '',
+      itemTitle: taskObj.itemTitle || '',
+      itemTmdbId: taskObj.itemTmdbId || undefined,
+      name: taskObj.name || '未命名任务',
       type: 'tmdb-import',
       schedule: {
-        type: task.schedule?.type || 'weekly',
-        dayOfWeek: task.schedule?.dayOfWeek ?? new Date().getDay(),
-        secondDayOfWeek: task.schedule?.secondDayOfWeek ?? undefined,
-        hour: task.schedule?.hour ?? new Date().getHours(),
-        minute: task.schedule?.minute ?? 0,
+        type: taskObj.schedule?.type || 'weekly',
+        dayOfWeek: taskObj.schedule?.dayOfWeek ?? new Date().getDay(),
+        secondDayOfWeek: taskObj.schedule?.secondDayOfWeek ?? undefined,
+        hour: taskObj.schedule?.hour ?? new Date().getHours(),
+        minute: taskObj.schedule?.minute ?? 0,
       },
       action: {
-        seasonNumber: task.action?.seasonNumber ?? 1,
-        autoUpload: task.action?.autoUpload ?? true,
-        conflictAction: task.action?.conflictAction ?? 'w',
-        autoRemoveMarked: task.action?.autoRemoveMarked ?? true,
-        autoConfirm: task.action?.autoConfirm !== false,
-        autoMarkUploaded: task.action?.autoMarkUploaded !== false,
-        removeAirDateColumn: task.action?.removeAirDateColumn === true,
-        removeRuntimeColumn: task.action?.removeRuntimeColumn === true,
-        removeBackdropColumn: task.action?.removeBackdropColumn === true,
+        seasonNumber: taskObj.action?.seasonNumber ?? 1,
+        autoUpload: taskObj.action?.autoUpload ?? true,
+        conflictAction: taskObj.action?.conflictAction ?? 'w',
+        autoRemoveMarked: taskObj.action?.autoRemoveMarked ?? true,
+        autoConfirm: taskObj.action?.autoConfirm !== false,
+        autoMarkUploaded: taskObj.action?.autoMarkUploaded !== false,
+        removeAirDateColumn: taskObj.action?.removeAirDateColumn === true,
+        removeRuntimeColumn: taskObj.action?.removeRuntimeColumn === true,
+        removeBackdropColumn: taskObj.action?.removeBackdropColumn === true,
       },
-      enabled: task.enabled ?? false,
-      lastRun: task.lastRun || undefined,
-      nextRun: task.nextRun || undefined,
-      lastRunStatus: task.lastRunStatus,
-      lastRunError: task.lastRunError,
-      createdAt: task.createdAt || new Date().toISOString(),
-      updatedAt: task.updatedAt || new Date().toISOString(),
+      enabled: taskObj.enabled ?? false,
+      lastRun: taskObj.lastRun ?? undefined,
+      nextRun: taskObj.nextRun ?? undefined,
+      lastRunStatus: taskObj.lastRunStatus,
+      lastRunError: taskObj.lastRunError,
+      createdAt: taskObj.createdAt || new Date().toISOString(),
+      updatedAt: taskObj.updatedAt || new Date().toISOString(),
     };
     // 增强的项目ID验证（修复：允许时间戳格式的ID）
     if (!normalized.itemId || normalized.itemId.trim() === '') {
@@ -190,7 +191,7 @@ export class TaskManager extends StorageBase {
           if (!normalizedTask.itemTitle)
             normalizedTask.itemTitle = relatedItem.title;
           if (!normalizedTask.itemTmdbId)
-            normalizedTask.itemTmdbId = relatedItem.tmdbId;
+            normalizedTask.itemTmdbId = (relatedItem as any).tmdbId;
           // console.log(
           //   `[TaskManager] 补充项目信息: ${relatedItem.title} (ID: ${relatedItem.id})`,
           // );
@@ -259,7 +260,7 @@ export class TaskManager extends StorageBase {
           if (!normalizedTask.itemTitle)
             normalizedTask.itemTitle = relatedItem.title;
           if (!normalizedTask.itemTmdbId)
-            normalizedTask.itemTmdbId = relatedItem.tmdbId;
+            normalizedTask.itemTmdbId = (relatedItem as any).tmdbId;
           logger.info(
             `[TaskManager] 补充项目信息: ${relatedItem.title} (ID: ${relatedItem.id})`,
           );

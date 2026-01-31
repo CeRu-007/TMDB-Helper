@@ -1,5 +1,5 @@
-import { performanceMonitor } from '@/shared/lib/utils/performance-monitor'
-import { errorRecoveryManager } from '@/shared/lib/utils/error-recovery-manager'
+import { performanceMonitor } from '@/lib/utils/performance-monitor'
+import { errorRecoveryManager } from '@/lib/utils/error-recovery-manager'
 import { logger } from '@/lib/utils/logger'
 
 export interface ConnectionEvent {

@@ -3,8 +3,11 @@
  * 提供请求拦截、响应处理、缓存管理等功能
  */
 
-import { log } from './logger'
-import { handleError, retryOperation } from './error-handler'
+import { Logger } from '@/lib/utils/logger'
+import { handleError, retryOperation } from '@/lib/utils/error-handler'
+import { INTERVAL_5MIN } from '@/lib/constants/constants'
+
+const log = new Logger({ prefix: 'API' })
 
 export interface ApiConfig {
   baseURL?: string
@@ -57,7 +60,7 @@ class ApiClient {
     return null
   }
 
-  private setCache(key: string, data: unknown, ttl: number = 5 * 60 * 1000): void {
+  private setCache(key: string, data: unknown, ttl: number = INTERVAL_5MIN): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),

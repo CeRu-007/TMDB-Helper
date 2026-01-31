@@ -11,10 +11,10 @@ import { logger } from '@/lib/utils/logger'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Button } from "@/shared/components/ui/button"
-import { useToast } from "@/shared/lib/hooks/use-toast"
+import { useToast } from "@/lib/hooks/use-toast"
 import { useAuth } from "@/shared/components/auth-provider"
 import { useModelService } from "@/lib/contexts/ModelServiceContext"
-import { ClientConfigManager } from '@/shared/lib/utils/client-config-manager'
+import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import { safeJsonParse } from '@/lib/utils'
 import { ModelProvider, ModelConfig } from '@/shared/types/model-service'
 import { SettingsMenu } from "./SettingsMenu"

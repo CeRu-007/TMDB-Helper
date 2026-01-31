@@ -1,16 +1,16 @@
 /**
  * 表单状态管理 Hook
- *
+ * 
  * 简化表单状态管理，提供验证、重置和提交功能
  */
 
 import { useState, useCallback } from 'react'
 import { logger } from '@/lib/utils/logger'
 
-export interface FormFieldConfig<T = unknown> {
-  value: T
+export interface FormFieldConfig {
+  value: unknown
   required?: boolean
-  validator?: (value: T) => string | null
+  validator?: (value: unknown) => string | null
 }
 
 export interface FormState<T> {
@@ -76,7 +76,7 @@ export function useFormState<T extends Record<string, unknown>>({
   }, [values, validators, validateField, onValidate])
 
   // 更新字段值
-  const setFieldValue = useCallback((field: keyof T, value: T[keyof T]) => {
+  const setFieldValue = useCallback((field: keyof T, value: unknown) => {
     setValues(prev => ({ ...prev, [field]: value }))
     setIsDirty(true)
 

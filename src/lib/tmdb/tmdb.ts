@@ -110,7 +110,7 @@ export class TMDBService {
   // 客户端版本 - 只在浏览器环境中使用
   private static async getApiKeyClient(): Promise<string> {
     // 客户端无法直接访问环境变量,所以尝试从localStorage获取
-    const { ClientConfigManager } = await import('@/shared/lib/utils/client-config-manager');
+    const { ClientConfigManager } = await import('@/lib/utils/client-config-manager');
     const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
 
     if (!apiKey) {

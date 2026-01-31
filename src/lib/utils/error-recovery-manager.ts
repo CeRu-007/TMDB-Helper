@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 错误恢复管理器
  * 处理实时同步系统中的错误恢复和容错机制
  */
@@ -25,7 +25,7 @@ interface RecoveryStrategy {
   onMaxRetriesReached?: (error: Error) => void
 }
 
-class ErrorRecoveryManager {
+export class ErrorRecoveryManager {
   private static instance: ErrorRecoveryManager
   private errorHistory: ErrorContext[] = []
   private maxHistorySize = 100
