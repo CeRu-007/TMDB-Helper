@@ -16,7 +16,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       config: {
-        tmdbApiKey: config.tmdbApiKey ? '***已配置***' : null,
+        hasTmdbApiKey: !!process.env.TMDB_API_KEY,
         tmdbImportPath: config.tmdbImportPath,
         siliconFlowApiKey: config.siliconFlowApiKey ? '***已配置***' : null,
         siliconFlowThumbnailModel: config.siliconFlowThumbnailModel,
@@ -26,8 +26,6 @@ export async function GET() {
         appearanceSettings: config.appearanceSettings,
         videoThumbnailSettings: config.videoThumbnailSettings,
         taskSchedulerConfig: config.taskSchedulerConfig,
-        // 添加配置状态标识
-        hasApiKey: !!config.tmdbApiKey,
         hasSiliconFlowApiKey: !!config.siliconFlowApiKey,
         hasModelScopeApiKey: !!config.modelScopeApiKey
       }
@@ -45,7 +43,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      tmdbApiKey,
       tmdbImportPath,
       siliconFlowApiKey,
       siliconFlowThumbnailModel,
@@ -58,27 +55,10 @@ export async function POST(request: NextRequest) {
       action 
     } = body;
 
-    // 保存TMDB配置
-    if (tmdbApiKey) {
-      console.log(`🔑 接收到TMDB API密钥保存请求: ${tmdbApiKey.substring(0, 8)}...`);
-
-      try {
-        ServerConfigManager.setConfigItem('tmdbApiKey', tmdbApiKey);
-        
-      } catch (error) {
-        
-        return NextResponse.json(
-          { success: false, error: `API密钥保存失败: ${error instanceof Error ? error.message : '未知错误'}` },
-          { status: 500 }
-        );
-      }
-    }
-
     if (tmdbImportPath) {
       ServerConfigManager.setConfigItem('tmdbImportPath', tmdbImportPath);
     }
 
-    // 保存硅基流动API配置
     if (siliconFlowApiKey) {
       ServerConfigManager.setConfigItem('siliconFlowApiKey', siliconFlowApiKey);
     }
@@ -87,7 +67,6 @@ export async function POST(request: NextRequest) {
       ServerConfigManager.setConfigItem('siliconFlowThumbnailModel', siliconFlowThumbnailModel);
     }
 
-    // 保存魔搭社区API配置
     if (modelScopeApiKey) {
       ServerConfigManager.setConfigItem('modelScopeApiKey', modelScopeApiKey);
     }
@@ -96,7 +75,6 @@ export async function POST(request: NextRequest) {
       ServerConfigManager.setConfigItem('modelScopeEpisodeModel', modelScopeEpisodeModel);
     }
 
-    // 保存其他配置
     if (generalSettings) {
       ServerConfigManager.setConfigItem('generalSettings', generalSettings);
     }
@@ -128,7 +106,6 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE() {
   try {
-    // 重置为默认配置
     ServerConfigManager.resetToDefault();
     
     return NextResponse.json({

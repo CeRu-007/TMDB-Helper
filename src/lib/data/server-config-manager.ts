@@ -55,8 +55,8 @@ interface EpisodeGeneratorConfig {
  * 服务端配置接口
  */
 export interface ServerConfig {
-  // TMDB相关配置
-  tmdbApiKey?: string;
+  // TMDB相关配置（API Key 已内置，不再支持用户配置）
+  // tmdbApiKey?: string; // 已移除，使用内置官方 API
   tmdbImportPath?: string;
 
   // 硅基流动API配置
@@ -206,7 +206,7 @@ export class ServerConfigManager {
 
       // 以下字段在首次创建时包含，设为空字符串而不是null
       // 这样配置文件结构完整，但不会覆盖用户后续的设置
-      tmdbApiKey: '',
+      // tmdbApiKey: '', // 已移除，使用内置官方 API
       tmdbImportPath: '',
       siliconFlowApiKey: '',
       siliconFlowApiSettings: '',
@@ -280,7 +280,7 @@ export class ServerConfigManager {
    */
   private static mapKeys(rawConfig: Record<string, unknown>): ServerConfig {
     const keyMapping: Record<string, string> = {
-      tmdb_api_key: 'tmdbApiKey',
+      // tmdb_api_key: 'tmdbApiKey', // 已移除，使用内置官方 API
       tmdb_import_path: 'tmdbImportPath',
       siliconflow_api_key: 'siliconFlowApiKey',
       siliconflow_thumbnail_model: 'siliconFlowThumbnailModel',
@@ -492,22 +492,16 @@ export class ServerConfigManager {
       // 检查是否需要完整验证（配置版本不匹配或缺少关键字段）
       const needsFullValidation =
         config.version !== this.CONFIG_VERSION ||
-        !config.tmdbApiKey ||
         !config.siliconFlowApiKey ||
         !config.modelScopeApiKey;
 
       if (needsFullValidation) {
-        if (process.env.NODE_ENV === 'development') {
-        }
         const defaultConfig = this.getDefaultConfig();
         const mergedConfig = {
           ...defaultConfig, // 先设置完整结构
           ...config, // 再用用户配置覆盖（保留用户数据优先）
         };
         validatedConfig = this.validateConfig(mergedConfig);
-      } else {
-        if (process.env.NODE_ENV === 'development') {
-        }
       }
 
       // 备份现有配置
@@ -542,19 +536,12 @@ export class ServerConfigManager {
         const savedContent = fs.readFileSync(configPath, 'utf8');
         const savedConfig = JSON.parse(savedContent);
 
-        // ⚠️ 关键验证：检查用户配置是否保存成功
-        if (config.tmdbApiKey && !savedConfig.tmdbApiKey) {
-          throw new Error('API密钥保存失败');
-        }
-
         // 只在调试模式下输出详细日志，且限制频率
         const shouldLogSave =
           process.env.NODE_ENV === 'development' &&
           (!this.lastSaveLogTime || Date.now() - this.lastSaveLogTime > 5000);
 
         if (shouldLogSave) {
-          if (config.tmdbApiKey) {
-          }
           this.lastSaveLogTime = Date.now();
         }
       } else {

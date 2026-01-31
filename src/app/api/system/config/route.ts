@@ -49,7 +49,7 @@ function getCachedConfig(): ServerConfig {
 function maskSensitiveKeys(config: ServerConfig): ServerConfig {
   return {
     ...config,
-    tmdbApiKey: config.tmdbApiKey ? `${config.tmdbApiKey.substring(0, 8)}...` : undefined,
+    tmdbApiKey: undefined,
     siliconFlowApiKey: config.siliconFlowApiKey ? `${config.siliconFlowApiKey.substring(0, 8)}...` : undefined,
     modelScopeApiKey: config.modelScopeApiKey ? `${config.modelScopeApiKey.substring(0, 8)}...` : undefined
   }

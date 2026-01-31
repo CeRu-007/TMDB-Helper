@@ -14,7 +14,7 @@ export async function handleTmdbFeedRequest(
   feedType: FeedType
 ): Promise<NextResponse> {
   try {
-    const apiKey = process.env.TMDB_API_KEY || ServerConfigManager.getConfig().tmdbApiKey;
+    const apiKey = process.env.TMDB_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(

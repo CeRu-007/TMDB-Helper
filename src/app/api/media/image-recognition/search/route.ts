@@ -47,9 +47,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 获取TMDB API密钥
-    const config = ServerConfigManager.getConfig()
-    const apiKey = process.env.TMDB_API_KEY || config.tmdbApiKey
+    const apiKey = process.env.TMDB_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json<ApiResponse<null>>(

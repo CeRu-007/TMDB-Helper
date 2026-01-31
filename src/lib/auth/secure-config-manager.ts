@@ -111,53 +111,16 @@ export class SecureConfigManager {
     };
   }
   
-  /**
-   * 获取TMDB API密钥
-   */
   static async getTmdbApiKey(): Promise<string> {
-    // 优先从服务端配置获取
-    try {
-      const config = await this.getConfig();
-      if (config.tmdbApiKey) {
-        return config.tmdbApiKey;
-      }
-    } catch (error) {
-      
-    }
-
-    // 其次使用环境变量
     const apiKey = process.env.TMDB_API_KEY;
 
     if (!apiKey) {
-      throw new Error('TMDB API密钥未配置，请在设置中配置或设置环境变量TMDB_API_KEY');
+      throw new Error('TMDB API密钥未配置');
     }
 
     return apiKey;
   }
-  
-  /**
-   * 设置TMDB API密钥
-   */
-  static async setTmdbApiKey(apiKey: string): Promise<void> {
-    if (!apiKey || apiKey.trim().length === 0) {
-      throw new Error('API密钥不能为空');
-    }
 
-    // 保存到服务端配置
-    await this.saveConfig({ tmdbApiKey: apiKey.trim() });
-  }
-  
-  /**
-   * 验证API密钥格式（已移除验证，允许任何输入）
-   */
-  static validateApiKey(apiKey: string): boolean {
-    // 不再验证，允许任何输入
-    return true;
-  }
-  
-  /**
-   * 清除配置
-   */
   static clearConfig(): void {
     try {
       if (typeof window !== 'undefined') {
@@ -188,23 +151,5 @@ export class SecureConfigManager {
   /**
    * 迁移旧的API密钥存储
    */
-  static async migrateOldApiKey(): Promise<void> {
-    try {
-      if (typeof window === 'undefined') return;
-      
-      const oldApiKey = localStorage.getItem('tmdb_api_key');
-      if (oldApiKey && !(await this.hasConfig())) {
-        await this.setTmdbApiKey(oldApiKey);
-        localStorage.removeItem('tmdb_api_key');
-        
-      }
-    } catch (error) {
-      
-    }
-  }
-}
-
-// 自动迁移旧的API密钥
-if (typeof window !== 'undefined') {
-  SecureConfigManager.migrateOldApiKey();
+  // 迁移功能已移除，TMDB API Key 现在使用内置官方 API
 }

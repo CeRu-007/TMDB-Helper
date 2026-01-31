@@ -506,37 +506,24 @@ export class NetworkOptimizer {
 // TMDB API专用网络优化器
 export class TMDBNetworkOptimizer {
   private optimizer: NetworkOptimizer;
-  private apiKey: string | null = null;
-  private baseURL = 'https://api.tmdb.org/3'; // 使用备用域名
+  private apiKey: string;
+  private baseURL = 'https://api.tmdb.org/3';
 
   constructor() {
     this.optimizer = NetworkOptimizer.getInstance();
-    this.loadApiKey();
-  }
-
-  private async loadApiKey(): Promise<void> {
-    if (typeof window !== 'undefined') {
-      const { ClientConfigManager } = await import('./client-config-manager');
-      this.apiKey = await ClientConfigManager.getItem('tmdb_api_key');
-    }
-  }
-
-  private async getAuthParams(): Promise<Record<string, string>> {
-    if (!this.apiKey) {
-      await this.loadApiKey();
-    }
-    return this.apiKey ? { api_key: this.apiKey } : {};
+    // 使用内置的 TMDB API Key
+    this.apiKey = process.env.TMDB_API_KEY || '';
   }
 
   private buildUrl(endpoint: string, params: Record<string, any> = {}): string {
-    const allParams = { ...this.getAuthParams(), ...params };
+    const allParams = { api_key: this.apiKey, ...params };
     const searchParams = new URLSearchParams();
-    
-    Object.entries(allParams).forEach(([key, value]) => {
+
+    for (const [key, value] of Object.entries(allParams)) {
       if (value !== undefined && value !== null) {
         searchParams.append(key, String(value));
       }
-    });
+    }
 
     return `${this.baseURL}${endpoint}?${searchParams.toString()}`;
   }

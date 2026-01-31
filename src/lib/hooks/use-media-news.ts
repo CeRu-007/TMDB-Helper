@@ -148,7 +148,7 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
           const errorText = await response.text()
           if (response.status === 400 && errorText.includes("API密钥未配置")) {
             setIsMissingApiKey(true)
-            throw new Error("TMDB API密钥未配置，请在设置中配置")
+            throw new Error("TMDB API密钥未配置")
           }
           if (response.status === 401) {
             setIsMissingApiKey(true)

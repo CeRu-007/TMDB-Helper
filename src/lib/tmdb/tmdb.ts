@@ -107,48 +107,12 @@ export class TMDBService {
   private static readonly NETWORK_LOGO_CACHE_PREFIX = "tmdb_network_logo_"  // 网络标志缓存前缀
   private static readonly CACHE_EXPIRY = 24 * 60 * 60 * 1000 // 24小时
 
-  // 客户端版本 - 只在浏览器环境中使用
-  private static async getApiKeyClient(): Promise<string> {
-    // 客户端无法直接访问环境变量,所以尝试从localStorage获取
-    const { ClientConfigManager } = await import('@/lib/utils/client-config-manager');
-    const apiKey = await ClientConfigManager.getItem("tmdb_api_key");
-
+  private static async getApiKey(): Promise<string> {
+    const apiKey = process.env.TMDB_API_KEY;
     if (!apiKey) {
-      throw new Error("TMDB API密钥未设置");
+      throw new Error("TMDB API密钥未配置");
     }
     return apiKey;
-  }
-
-  // 服务端版本 - 只在Node.js环境中使用
-  private static async getApiKeyServer(): Promise<string> {
-    // 优先使用环境变量中的密钥,其次使用用户配置的密钥
-    const apiKey = process.env.TMDB_API_KEY;
-    if (apiKey) {
-      return apiKey;
-    }
-
-    const { ServerConfigManager } = await import('../data/server-config-manager');
-    const config = ServerConfigManager.getConfig();
-    const userApiKey = config.tmdbApiKey;
-
-    if (!userApiKey) {
-      throw new Error("TMDB API密钥未设置");
-    }
-    return userApiKey;
-  }
-
-  // 主方法 - 根据环境选择合适的实现
-  private static async getApiKey(): Promise<string> {
-    try {
-      if (typeof window !== 'undefined') {
-        return await this.getApiKeyClient();
-      } else {
-        return await this.getApiKeyServer();
-      }
-    } catch (error) {
-
-      throw new Error("TMDB API密钥未设置");
-    }
   }
 
   // 缓存标志路径
