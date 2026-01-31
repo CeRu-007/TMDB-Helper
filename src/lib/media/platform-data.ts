@@ -229,17 +229,17 @@ export const platforms: Platform[] = [
     fallbackEmoji: '🦊'
   },
   {
-    id: 'ixigua',
-    name: '西瓜视频',
+    id: 'douyin',
+    name: '抖音',
     category: '中国大陆',
-    description: '字节跳动旗下短视频和中视频平台',
+    description: '字节跳动旗下短视频平台',
     rating: 4.0,
     color: 'from-red-500 to-red-600',
-    url: 'https://www.ixigua.com',
+    url: 'https://www.douyin.com',
     region: '中国大陆',
     popular: true,
-    logoUrl: 'https://www.google.com/s2/favicons?domain=ixigua.com&sz=64',
-    fallbackEmoji: '🍉'
+    logoUrl: 'https://www.google.com/s2/favicons?domain=douyin.com&sz=64',
+    fallbackEmoji: '🎵'
   },
   {
     id: 'iqiyi',
