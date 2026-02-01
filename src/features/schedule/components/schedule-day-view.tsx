@@ -146,8 +146,8 @@ function ScheduleTimelineItem({
   isFollowing, 
   onToggleFollowing, 
   onClick 
-}: ScheduleTimelineItemProps) {
-  function handleToggleFollowing(e: React.MouseEvent) {
+}: ScheduleTimelineItemProps): React.ReactElement {
+  function handleToggleFollowing(e: React.MouseEvent): void {
     e.stopPropagation()
     onToggleFollowing()
   }
@@ -187,18 +187,31 @@ function ScheduleTimelineItem({
               "text-xs font-medium",
               episode.published ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"
             )}>
-              更新至{episode.pubIndex}
+              {episode.pubIndex.startsWith('更新') ? episode.pubIndex : `更新至${episode.pubIndex}`}
             </span>
           </div>
 
           <div className="flex flex-wrap gap-1">
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">
-              小说改
-            </Badge>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">
-              玄幻
-            </Badge>
+            {episode.types?.map(type => (
+              <Badge key={type} variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">
+                {type}
+              </Badge>
+            ))}
           </div>
+
+          {episode.platforms && episode.platforms.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {episode.platforms.map((platform, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 h-4 bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700"
+                >
+                  {platform}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex-shrink-0 flex flex-col items-center gap-0.5">

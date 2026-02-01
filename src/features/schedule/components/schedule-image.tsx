@@ -12,6 +12,7 @@ interface ScheduleImageProps {
 }
 
 const BILIBILI_IMAGE_DOMAINS = ['hdslb.com', 'biliimg.com', 'bilibili.com']
+const IQIYI_IMAGE_DOMAINS = ['iqiyipic.com', 'iqiyi.com']
 
 export function ScheduleImage({ src, alt, className, fallbackClassName }: ScheduleImageProps) {
   const [error, setError] = useState(false)
@@ -32,7 +33,12 @@ export function ScheduleImage({ src, alt, className, fallbackClassName }: Schedu
       processed.toLowerCase().includes(domain)
     )
 
-    if (isBilibiliImage && !processed.includes('/api/schedule/image-proxy')) {
+    const isIqiyiImage = IQIYI_IMAGE_DOMAINS.some(domain =>
+      processed.toLowerCase().includes(domain)
+    )
+
+    // B站和爱奇艺的图片都需要代理，因为都有防盗链保护
+    if ((isBilibiliImage || isIqiyiImage) && !processed.includes('/api/schedule/image-proxy')) {
       processed = `/api/schedule/image-proxy?url=${encodeURIComponent(processed)}`
     }
 

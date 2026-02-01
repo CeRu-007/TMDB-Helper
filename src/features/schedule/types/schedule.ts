@@ -7,6 +7,10 @@ export interface ScheduleEpisode {
   published: boolean
   url?: string
   duration?: number
+  types?: string[]
+  platform?: string
+  platforms?: string[]
+  platformUrls?: Record<string, string>
 }
 
 export interface ScheduleDay {

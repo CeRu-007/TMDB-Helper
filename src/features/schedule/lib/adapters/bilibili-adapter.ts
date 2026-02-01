@@ -59,6 +59,7 @@ class BilibiliScheduleAdapter implements PlatformScheduleAdapter {
   }
 
   private transformEpisode(episode: any): ScheduleEpisode {
+    const types = episode.tags?.map((tag: any) => tag.text) || []
     return {
       id: `${episode.season_id}_${episode.episode_id}`,
       title: episode.title,
@@ -67,7 +68,9 @@ class BilibiliScheduleAdapter implements PlatformScheduleAdapter {
       pubIndex: episode.pub_index_show || episode.pub_index,
       published: episode.published === 1,
       url: episode.url,
-      duration: episode.duration
+      duration: episode.duration,
+      types,
+      platform: '哔哩哔哩'
     }
   }
 

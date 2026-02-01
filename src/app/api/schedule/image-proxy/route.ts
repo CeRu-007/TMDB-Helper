@@ -8,6 +8,18 @@ const ALLOWED_HOSTS = [
   'archive.biliimg.com',
   'pic.bilibili.com',
   'i.328888.xyz',
+  // 爱奇艺图片域名
+  'pic0.iqiyipic.com',
+  'pic1.iqiyipic.com',
+  'pic2.iqiyipic.com',
+  'pic3.iqiyipic.com',
+  'pic4.iqiyipic.com',
+  'pic5.iqiyipic.com',
+  'pic6.iqiyipic.com',
+  'pic7.iqiyipic.com',
+  'pic8.iqiyipic.com',
+  'pic9.iqiyipic.com',
+  'iqiyipic.com',
 ]
 
 function validateUrl(urlString: string): URL | null {
@@ -43,11 +55,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // 根据图片来源设置正确的Referer
+    const isIqiyiImage = url.hostname.includes('iqiyipic.com')
+    const referer = isIqiyiImage ? 'https://www.iqiyi.com/' : 'https://www.bilibili.com/'
+
     const response = await fetch(decodedUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://www.bilibili.com/',
-        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        'Referer': referer,
+        'Accept': 'image/webp,image/avif,image/apng,image/*,*/*;q=0.8',
       },
       cache: 'force-cache',
     })

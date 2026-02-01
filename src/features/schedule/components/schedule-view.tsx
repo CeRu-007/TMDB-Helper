@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { ScheduleDay, ScheduleEpisode } from '../types/schedule'
 import { schedulePlatformManager } from '../lib/platform-manager'
+import { initializeScheduleModule } from '../lib/platform-config'
 import { ScheduleWeekView } from './schedule-week-view'
 import { ScheduleDayView } from './schedule-day-view'
 import { ScheduleDetailPanel } from './schedule-detail-panel'
@@ -24,7 +25,7 @@ interface ScheduleViewProps {
 type CategoryType = 'all' | 'anime' | 'domestic' | 'following'
 type ViewMode = 'week' | 'day'
 
-const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] as const
 
 const CATEGORIES = [
   { id: 'all' as CategoryType, label: '全部', color: 'bg-gray-500' },
@@ -32,6 +33,60 @@ const CATEGORIES = [
   { id: 'domestic' as CategoryType, label: '国创', color: 'bg-amber-500' },
   { id: 'following' as CategoryType, label: '已追', color: 'bg-rose-500' },
 ] as const
+
+interface TodayInfo {
+  today: number
+  monthYear: string
+  todayDate: string
+}
+
+function getTodayInfo(): TodayInfo {
+  const now = new Date()
+  const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1
+  
+  return {
+    today: dayOfWeek,
+    monthYear: `${now.getFullYear()}年${now.getMonth() + 1}月`,
+    todayDate: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  }
+}
+
+function buildWeekData(scheduleData: ScheduleDay[], todayIndex: number): ScheduleDay[] {
+  return WEEKDAYS.map((_, index) => {
+    const dayOfWeek = index + 1
+    const matchingDays = scheduleData.filter(day => day.dayOfWeek === dayOfWeek)
+
+    if (matchingDays.length === 0) {
+      return {
+        date: '',
+        dayOfWeek,
+        isToday: index === todayIndex,
+        episodes: []
+      }
+    }
+
+    const episodes = schedulePlatformManager.mergeEpisodes(matchingDays.flatMap(day => day.episodes))
+    const isToday = matchingDays.some(day => day.isToday) || index === todayIndex
+    const date = matchingDays.find(day => day.isToday)?.date || matchingDays[0].date
+
+    return { date, dayOfWeek, isToday, episodes }
+  })
+}
+
+function filterEpisodesByCategory(
+  weekData: ScheduleDay[],
+  category: CategoryType,
+  followingIds: Set<string>
+): ScheduleDay[] {
+  if (category !== 'following') {
+    return weekData
+  }
+
+  return weekData.map(day => ({
+    ...day,
+    episodes: day.episodes.filter(ep => followingIds.has(ep.id))
+  }))
+}
 
 export function ScheduleView({ className }: ScheduleViewProps) {
   const [loading, setLoading] = useState(false)
@@ -43,31 +98,24 @@ export function ScheduleView({ className }: ScheduleViewProps) {
   const [selectedEpisode, setSelectedEpisode] = useState<ScheduleEpisode | null>(null)
   const [hoveredDay, setHoveredDay] = useState<number | null>(null)
 
-  const dateInfo = useMemo(() => {
-    const d = new Date()
-    const dayOfWeek = d.getDay() === 0 ? 6 : d.getDay() - 1
-    return {
-      today: dayOfWeek,
-      monthYear: `${d.getFullYear()}年${d.getMonth() + 1}月`,
-      todayDate: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    }
-  }, [])
+  const dateInfo = useMemo(() => getTodayInfo(), [])
 
   useEffect(() => {
     setSelectedDay(dateInfo.today)
   }, [dateInfo.today])
 
   useEffect(() => {
+    initializeScheduleModule()
     fetchSchedule()
   }, [])
 
   const fetchSchedule = async () => {
     setLoading(true)
     try {
-      const results = await schedulePlatformManager.fetchMultipleSchedules(['bilibili'])
+      const results = await schedulePlatformManager.fetchMultipleSchedules(['bilibili', 'iqiyi'])
       const schedules = Array.from(results.values())
       const merged = schedulePlatformManager.mergeSchedules(...schedules)
-      
+
       if (merged.result?.list) {
         setScheduleData(merged.result.list)
       }
@@ -78,25 +126,15 @@ export function ScheduleView({ className }: ScheduleViewProps) {
     }
   }
 
-  const weekData = useMemo(() => {
-    return WEEKDAYS.map((_, index) => {
-      const dayData = scheduleData.find(day => day.dayOfWeek === index + 1)
-      const isToday = dayData?.date === dateInfo.todayDate || index === dateInfo.today
-      return dayData || { date: '', dayOfWeek: index + 1, isToday, episodes: [] }
-    })
-  }, [scheduleData, dateInfo])
+  const weekData = useMemo(
+    () => buildWeekData(scheduleData, dateInfo.today),
+    [scheduleData, dateInfo.today]
+  )
 
-  const filteredWeekData = useMemo(() => {
-    return weekData.map(day => ({
-      ...day,
-      episodes: day.episodes.filter(episode => {
-        if (selectedCategory === 'following') {
-          return followingIds.has(episode.id)
-        }
-        return true
-      })
-    }))
-  }, [weekData, selectedCategory, followingIds])
+  const filteredWeekData = useMemo(
+    () => filterEpisodesByCategory(weekData, selectedCategory, followingIds),
+    [weekData, selectedCategory, followingIds]
+  )
 
   const currentDayData = filteredWeekData[selectedDay]
 
@@ -110,10 +148,6 @@ export function ScheduleView({ className }: ScheduleViewProps) {
       }
       return newSet
     })
-  }
-
-  function navigateWeek(direction: 'prev' | 'next') {
-    console.log('Navigate', direction)
   }
 
   function handleNavigateDay(delta: number) {
@@ -132,11 +166,11 @@ export function ScheduleView({ className }: ScheduleViewProps) {
             </div>
             <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
             <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white dark:hover:bg-gray-600" onClick={() => navigateWeek('prev')}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white dark:hover:bg-gray-600">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="px-2 text-sm text-gray-900 dark:text-gray-100 min-w-[80px] text-center font-medium">{dateInfo.monthYear}</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white dark:hover:bg-gray-600" onClick={() => navigateWeek('next')}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white dark:hover:bg-gray-600">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

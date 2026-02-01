@@ -98,13 +98,29 @@ export function ScheduleEpisodeCard({
             episode.published ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400",
             isCompact ? "text-[10px]" : "text-xs"
           )}>
-            更新至{episode.pubIndex}
+            {episode.pubIndex.startsWith('更新') ? episode.pubIndex : `更新至${episode.pubIndex}`}
           </span>
           <span className="text-xs text-gray-500 flex items-center gap-1">
             <Clock className="h-3 w-3" />
             {episode.pubTime.substring(0, 5)}
           </span>
         </div>
+        {episode.platforms && episode.platforms.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {episode.platforms.map((platform, index) => (
+              <Badge
+                key={index}
+                variant="outline"
+                className={cn(
+                  "text-[10px] px-1.5 py-0 h-auto bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700",
+                  isCompact && "text-[9px] px-1 py-0"
+                )}
+              >
+                {platform}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
