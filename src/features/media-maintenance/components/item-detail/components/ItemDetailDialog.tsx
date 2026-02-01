@@ -61,7 +61,7 @@ import { useItemImagesPreloader } from "@/lib/hooks/useItemImagesPreloader"
 import ScheduledTaskDialog from "@/features/scheduled-tasks/components/scheduled-task-dialog"
 import FixTMDBImportBugDialog from "@/features/tmdb-import/components/fix-tmdb-import-bug-dialog"
 
-const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
 
 type CategoryType = "anime" | "tv" | "kids" | "variety" | "short";
 
