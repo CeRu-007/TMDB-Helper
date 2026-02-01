@@ -1030,7 +1030,9 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                               <Label htmlFor="edit-category" className="text-xs text-muted-foreground">分类</Label>
                               <Select
                                 value={editData.category || "none"}
-                                onValueChange={(value) => setEditData({...editData, category: value as CategoryType})}
+                                onValueChange={function handleCategoryChange(value) {
+                                  setEditData({...editData, category: value as CategoryType})
+                                }}
                               >
                                 <SelectTrigger className="h-8">
                                   <SelectValue placeholder="选择分类" />
@@ -1053,7 +1055,9 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                               <Label htmlFor="edit-status" className="text-xs text-muted-foreground">状态</Label>
                               <Select
                                 value={editData.status}
-                                onValueChange={(value) => setEditData({...editData, status: value as "ongoing" | "completed"})}
+                                onValueChange={function handleStatusChange(value) {
+                                  setEditData({...editData, status: value as "ongoing" | "completed"})
+                                }}
                               >
                                 <SelectTrigger className="h-8">
                                   <SelectValue />
@@ -1083,7 +1087,9 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                             <Label htmlFor="edit-weekday" className="text-xs text-muted-foreground">播出日</Label>
                             <Select
                               value={editData.weekday?.toString() || "none"}
-                              onValueChange={(value) => setEditData({...editData, weekday: value === "none" ? undefined : parseInt(value)})}
+                              onValueChange={function handleWeekdayChange(value) {
+                                setEditData({...editData, weekday: value === "none" ? undefined : parseInt(value)})
+                              }}
                             >
                               <SelectTrigger className="h-8">
                                 <SelectValue placeholder="选择播出日" />
@@ -1109,6 +1115,52 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                                 className="h-4 w-4"
                               />
                             </div>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <Label htmlFor="edit-second-weekday" className="text-xs text-muted-foreground">第二播出日</Label>
+                            <Select
+                              value={editData.secondWeekday?.toString() || "none"}
+                              onValueChange={function handleSecondWeekdayChange(value) {
+                                setEditData({...editData, secondWeekday: value === "none" ? undefined : parseInt(value)})
+                              }}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="选择星期" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">无</SelectItem>
+                                {WEEKDAYS.map((day, index) => (
+                                  <SelectItem key={index} value={index.toString()}>{day}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <Label htmlFor="edit-platform-url" className="text-xs text-muted-foreground">播出平台URL</Label>
+                            <Input
+                              id="edit-platform-url"
+                              value={editData.platformUrl || ""}
+                              onChange={function handlePlatformUrlChange(e) {
+                              setEditData({...editData, platformUrl: e.target.value})
+                            }}
+                              placeholder="https://example.com/show-page"
+                              className="h-8"
+                            />
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <Label htmlFor="edit-backdrop-url" className="text-xs text-muted-foreground">背景图URL</Label>
+                            <Input
+                              id="edit-backdrop-url"
+                              value={editData.backdropUrl || ""}
+                              onChange={function handleBackdropUrlChange(e) {
+                              setEditData({...editData, backdropUrl: e.target.value})
+                            }}
+                              placeholder="https://example.com/backdrop.jpg"
+                              className="h-8"
+                            />
                           </div>
                         </div>
                       </ScrollArea>
