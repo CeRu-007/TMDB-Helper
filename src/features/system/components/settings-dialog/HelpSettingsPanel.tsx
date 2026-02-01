@@ -4,8 +4,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
+import { Badge } from "@/shared/components/ui/badge"
 import { Info, HelpCircle, ExternalLink, ChevronUp, ChevronDown } from "lucide-react"
 import type { AppInfo, HelpTabState } from "./types"
+import { VersionUpdatePanel } from "../VersionUpdatePanel"
+import { useUpdateCheck } from "@/lib/hooks/use-update-check"
 
 interface HelpSettingsPanelProps {
   helpTab: HelpTabState['activeTab']
@@ -22,6 +25,8 @@ export default function HelpSettingsPanel({
   isVersionDescriptionExpanded,
   setIsVersionDescriptionExpanded
 }: HelpSettingsPanelProps) {
+  const { hasUpdate } = useUpdateCheck()
+
   return (
     <div className="space-y-6">
       <div>
@@ -35,12 +40,24 @@ export default function HelpSettingsPanel({
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setHelpTab("about")}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${helpTab === "about"
+            className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${helpTab === "about"
               ? "border-blue-500 text-blue-600 dark:text-blue-400"
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
               }`}
           >
             关于应用
+          </button>
+          <button
+            onClick={() => setHelpTab("updates")}
+            className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${helpTab === "updates"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+          >
+            版本更新
+            {hasUpdate && (
+              <Badge className="h-2 w-2 rounded-full bg-red-500 p-0" />
+            )}
           </button>
         </nav>
       </div>
@@ -141,6 +158,12 @@ export default function HelpSettingsPanel({
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {helpTab === "updates" && (
+        <div className="mt-6">
+          <VersionUpdatePanel />
         </div>
       )}
     </div>
