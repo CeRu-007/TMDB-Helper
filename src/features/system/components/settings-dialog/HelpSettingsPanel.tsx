@@ -5,7 +5,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
-import { Info, HelpCircle, ExternalLink, ChevronUp, ChevronDown } from "lucide-react"
+import { Info, HelpCircle, ExternalLink } from "lucide-react"
 import type { AppInfo, HelpTabState } from "./types"
 import { VersionUpdatePanel } from "../VersionUpdatePanel"
 import { useUpdateCheck } from "@/lib/hooks/use-update-check"
@@ -14,16 +14,12 @@ interface HelpSettingsPanelProps {
   helpTab: HelpTabState['activeTab']
   setHelpTab: (tab: HelpTabState['activeTab']) => void
   appInfo: AppInfo
-  isVersionDescriptionExpanded: boolean
-  setIsVersionDescriptionExpanded: (expanded: boolean) => void
 }
 
 export default function HelpSettingsPanel({
   helpTab,
   setHelpTab,
-  appInfo,
-  isVersionDescriptionExpanded,
-  setIsVersionDescriptionExpanded
+  appInfo
 }: HelpSettingsPanelProps) {
   const { hasUpdate } = useUpdateCheck()
 
@@ -94,41 +90,6 @@ export default function HelpSettingsPanel({
                 <div>
                   <h4 className="font-medium text-gray-900 dark:text-gray-100">{appInfo.name}</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">版本 {appInfo.version}</p>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {appInfo.versionInfo.title}
-                      </h5>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {appInfo.versionInfo.releaseDate}
-                      </span>
-                    </div>
-                    {appInfo.versionInfo.description && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsVersionDescriptionExpanded(!isVersionDescriptionExpanded)}
-                        className="h-8 w-8 p-0 ml-2"
-                      >
-                        {isVersionDescriptionExpanded ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
-
-                  {appInfo.versionInfo.description && isVersionDescriptionExpanded && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                      <div className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
-                        {appInfo.versionInfo.description}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div>

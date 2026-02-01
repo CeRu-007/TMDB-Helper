@@ -112,11 +112,6 @@ export interface HelpTabState {
 export interface AppInfo {
   name: string
   version: string
-  versionInfo: {
-    title: string
-    description: string
-    releaseDate: string
-  }
 }
 
 // 密码修改相关类型
