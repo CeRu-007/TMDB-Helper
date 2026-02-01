@@ -125,20 +125,16 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     showFeedback,
   } = useItemDetailState({ item, onUpdate })
 
-  // 清除刷新错误
   const onClearRefreshError = () => {
     setRefreshError(null)
   }
 
-  // 本地状态
   const [selectedSeason, setSelectedSeason] = useState<number | undefined>(undefined)
   const [customSeasonNumber, setCustomSeasonNumber] = useState(1)
   const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
 
-  // 使用图片预加载hook
   useItemImagesPreloader(item)
 
-  // TMDB集成相关逻辑
   const { commands: tmdbCommands } = useTMDBIntegration({
     item: localItem,
     customSeasonNumber,
@@ -146,10 +142,8 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     pythonCmd
   })
 
-  // 获取当前季节数据
   const currentSeason = localItem.seasons?.find(s => s.seasonNumber === selectedSeason) || null
 
-  // 获取内联模式容器
   function getInlineContainer(): HTMLElement | null {
     if (typeof document === 'undefined') return null
     return document.body
@@ -189,16 +183,13 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  // 同步本地状态与传入的item
   useEffect(() => {
     setLocalItem(item)
     setEditData(item)
   }, [item])
 
-  // 初始化设置
   useEffect(() => {
     const initializeSettings = async () => {
-      // 初始化python命令
       try {
         const pythonCommand = await ClientConfigManager.getItem('python_command')
         if (pythonCommand?.trim()) {
@@ -206,7 +197,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         }
       } catch {}
 
-      // 加载外观设置
       try {
         const savedSettings = await ClientConfigManager.getItem("appearance_settings")
         const parsed = savedSettings ? JSON.parse(savedSettings) : null
@@ -228,7 +218,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     initializeSettings()
   }, [])
 
-  // 监听季数变化，初始化选中季数
   useEffect(() => {
     const seasons = localItem.seasons || []
 
@@ -242,21 +231,19 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }, [localItem])
 
-  // 处理季数切换
-  function handleSeasonClick(seasonNumber: number) {
+  function handleSeasonClick(seasonNumber: number): void {
     setSelectedSeason(seasonNumber)
     setCustomSeasonNumber(seasonNumber)
     showFeedback(`已切换到第${seasonNumber}季`, 1000)
   }
 
-  // 处理删除季数
-  function handleDeleteSeason() {
+  function handleDeleteSeason(): void {
     if (!selectedSeason) return
     setSeasonToDelete(selectedSeason)
     setShowDeleteSeasonDialog(true)
   }
 
-  async function confirmDeleteSeason() {
+  async function confirmDeleteSeason(): Promise<void> {
     if (!seasonToDelete || !localItem.seasons) return
 
     const updatedSeasons = localItem.seasons.filter(s => s.seasonNumber !== seasonToDelete)
@@ -288,7 +275,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  async function handleResetSeason() {
+  async function handleResetSeason(): Promise<void> {
     if (!selectedSeason || !currentSeason) return
 
     const updatedSeasons = localItem.seasons?.map(season => {
@@ -319,8 +306,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  // 处理总集数变更
-  function handleTotalEpisodesChange(newCount: number) {
+  function handleTotalEpisodesChange(newCount: number): void {
     if (!selectedSeason || !localItem.seasons) return
 
     const currentSeason = localItem.seasons.find(function(s: Season) { return s.seasonNumber === selectedSeason })
@@ -337,8 +323,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     })
   }
 
-  // 确认集数变更
-  async function confirmEpisodeChange() {
+  async function confirmEpisodeChange(): Promise<void> {
     if (!episodeChangeData || !selectedSeason || !localItem.seasons) return
 
     const { oldCount, newCount } = episodeChangeData
@@ -348,14 +333,12 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         let updatedEpisodes = [...(season.episodes || [])]
 
         if (newCount > oldCount) {
-          // 添加新剧集
           const newEpisodes = Array.from({ length: newCount - oldCount }, (_, i) => ({
             number: oldCount + i + 1,
             completed: false,
           }))
           updatedEpisodes = [...updatedEpisodes, ...newEpisodes]
         } else {
-          // 减少剧集
           updatedEpisodes = updatedEpisodes.slice(0, newCount)
         }
 
@@ -385,7 +368,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
     const success = await saveItemDirectly(updatedItem)
     if (success) {
-      updateLocalItem(updatedItem, false) // onUpdate 已经在 saveItemDirectly 中调用了
+      updateLocalItem(updatedItem, false)
       showFeedback(`第${selectedSeason}季集数已更新为${newCount}集`, DELAY_2S)
       setShowEpisodeChangeDialog(false)
       setEpisodeChangeData(null)
@@ -394,12 +377,12 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  function cancelEpisodeChange() {
+  function cancelEpisodeChange(): void {
     setShowEpisodeChangeDialog(false)
     setEpisodeChangeData(null)
   }
 
-  async function handleAddSeason(seasonNumber: number, episodeCount: number) {
+  async function handleAddSeason(seasonNumber: number, episodeCount: number): Promise<void> {
     if (seasonNumber < 1 || episodeCount < 1) return
 
     const seasonExists = localItem.seasons?.some(s => s.seasonNumber === seasonNumber)
@@ -457,7 +440,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  async function handleMovieToggle(completed: boolean) {
+  async function handleMovieToggle(completed: boolean): Promise<void> {
     const updatedItem = {
       ...localItem,
       completed,
@@ -473,8 +456,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  // 刷新TMDB数据
-  async function refreshSeasonFromTMDB() {
+  async function refreshSeasonFromTMDB(): Promise<void> {
     if (!editData.tmdbId) {
       showFeedback("没有TMDB ID，无法刷新数据")
       return
@@ -484,51 +466,54 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     setRefreshError(null)
 
     try {
-      const response = await fetch('/api/tmdb/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': 'user_admin_system'
-        },
-        body: JSON.stringify({
-          tmdbId: editData.tmdbId,
-          mediaType: editData.mediaType,
-          seasonNumber: selectedSeason,
-          language: selectedLanguage
-        })
-      })
+      const tmdbUrl = `https://www.themoviedb.org/${editData.mediaType}/${editData.tmdbId}`
+
+      const response = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data = await response.json()
+      const apiResponse = await response.json()
+      const tmdbData = apiResponse.success ? apiResponse.data : null
 
-      if (data.error) {
-        throw new Error(data.error)
+      if (!tmdbData) {
+        throw new Error(apiResponse.error || "未能从TMDB获取到有效数据")
       }
 
       const updatedItem = {
         ...localItem,
-        ...data,
+        posterUrl: tmdbData.posterUrl,
+        posterPath: tmdbData.posterPath,
+        backdropUrl: tmdbData.backdropUrl,
+        backdropPath: tmdbData.backdropPath,
+        logoUrl: tmdbData.logoUrl,
+        logoPath: tmdbData.logoPath,
+        networkId: tmdbData.networkId,
+        networkName: tmdbData.networkName,
+        networkLogoUrl: tmdbData.networkLogoUrl,
+        overview: tmdbData.overview,
+        seasons: tmdbData.seasons?.map((newSeason: Season) => {
+          const existingSeason = localItem.seasons?.find(function(s: Season) { return s.seasonNumber === newSeason.seasonNumber })
+          return {
+            ...newSeason,
+            currentEpisode: existingSeason?.currentEpisode ?? newSeason.currentEpisode
+          }
+        }),
         updatedAt: new Date().toISOString()
       }
 
       setLocalItem(updatedItem)
-      onUpdate(updatedItem)
 
-      let feedbackText
-      if (data.hasNewBackdrop) {
-        feedbackText = editData.mediaType === "tv" 
-          ? "TMDB数据、背景图、标志、网络logo和简介已成功刷新" 
-          : "TMDB数据、背景图、标志和简介已成功刷新"
-      } else {
-        feedbackText = editData.mediaType === "tv" 
-          ? "TMDB数据、标志、网络logo和简介已成功刷新" 
-          : "TMDB数据、标志和简介已成功刷新"
+      const success = await saveItemDirectly(updatedItem)
+      if (!success) {
+        throw new Error("数据更新后保存失败")
       }
 
-      showFeedback(feedbackText)
+      const baseText = "TMDB数据、标志和简介已成功刷新"
+      const extraText = editData.mediaType === "tv" ? "、网络logo" : ""
+      const backdropText = tmdbData.hasNewBackdrop ? "、背景图" : ""
+      showFeedback(`${baseText}${extraText}${backdropText}`)
 
     } catch (error) {
       setRefreshError(error instanceof Error ? error.message : "刷新TMDB数据失败，请稍后再试")
@@ -537,12 +522,10 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  // 处理语言变化
-  function handleLanguageChange(languageCode: string) {
+  function handleLanguageChange(languageCode: string): void {
     setSelectedLanguage(languageCode)
   }
 
-  // 获取进度信息
   const progress = localItem.seasons?.length
     ? {
         completed: localItem.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0),
@@ -555,7 +538,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   const isDailyUpdate = localItem.isDailyUpdate
 
-  // 辅助函数：检查元素是否在弹出组件或对话框内
   function isInPopover(element: HTMLElement | null): boolean {
     let current = element
     while (current) {
@@ -576,7 +558,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   // 辅助函数：查找可滚动元素
   function findScrollableElement(start: HTMLElement): HTMLElement | null {
-    let current: HTMLElement | null = start
+    let current = start
     while (current && current !== contentRef.current) {
       const style = window.getComputedStyle(current)
       const overflowY = style.overflowY
@@ -592,8 +574,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     return null
   }
 
-  // 辅助函数：处理滚动
-  function handleScroll(deltaY: number, target: Element) {
+  function handleScroll(deltaY: number, target: Element): void {
     if (!contentRef.current) return
 
     if (isInPopover(target as HTMLElement)) {
@@ -616,8 +597,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  // 辅助函数：清理容器样式
-  function cleanupContainerStyles(container: HTMLElement) {
+  function cleanupContainerStyles(container: HTMLElement): void {
     try {
       if (container.dataset.tmhManaged) {
         const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
@@ -636,7 +616,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  // 辅助函数：设置容器样式
   function setupContainerStyles(container: HTMLElement): void {
     try {
       container.dataset.tmhPrevOverflow = container.style.overflow || ''
@@ -739,7 +718,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     return undefined
   }, [open, displayMode])
 
-  // 防御性修复：组件挂载时如果发现之前遗留的样式标记（例如热重载或异常卸载导致）且当前 dialog 未打开，尝试清理
   useEffect(() => {
     if (typeof document === 'undefined') return
     try {
@@ -751,7 +729,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     } catch {}
   }, [open, displayMode])
 
-  async function handleEpisodeProgressUpdate(currentEpisode: number, seasonNumber: number) {
+  async function handleEpisodeProgressUpdate(currentEpisode: number, seasonNumber: number): Promise<void> {
     if (!localItem.seasons) return
 
     const updatedSeasons = localItem.seasons.map(season =>
@@ -779,8 +757,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  // 处理保存编辑
-  async function handleSaveEdit() {
+  async function handleSaveEdit(): Promise<void> {
     if (isSaving) return
 
     setIsSaving(true)
@@ -807,7 +784,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  // Helper function to get air time display
   const getAirTime = (weekday?: number): string => {
     if (weekday === undefined) return ""
     const days = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
