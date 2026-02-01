@@ -11,61 +11,39 @@ interface ScheduleImageProps {
   fallbackClassName?: string
 }
 
-const BILIBILI_IMAGE_DOMAINS = ['hdslb.com', 'biliimg.com', 'bilibili.com']
-const IQIYI_IMAGE_DOMAINS = ['iqiyipic.com', 'iqiyi.com']
+const PROXY_IMAGE_DOMAINS = ['hdslb.com', 'biliimg.com', 'bilibili.com', 'iqiyipic.com', 'iqiyi.com']
 
 export function ScheduleImage({ src, alt, className, fallbackClassName }: ScheduleImageProps) {
-  const [error, setError] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading')
 
   const processedSrc = useMemo(() => {
     if (!src) return ''
 
-    let processed = src
-
+    // Normalize URL protocol
+    let normalized = src
     if (src.startsWith('//')) {
-      processed = 'https:' + src
+      normalized = `https:${src}`
     } else if (src.startsWith('http:')) {
-      processed = src.replace('http:', 'https:')
+      normalized = src.replace('http:', 'https:')
     }
 
-    const isBilibiliImage = BILIBILI_IMAGE_DOMAINS.some(domain =>
-      processed.toLowerCase().includes(domain)
+    // Check if image needs proxy
+    const needsProxy = PROXY_IMAGE_DOMAINS.some(domain =>
+      normalized.toLowerCase().includes(domain)
     )
 
-    const isIqiyiImage = IQIYI_IMAGE_DOMAINS.some(domain =>
-      processed.toLowerCase().includes(domain)
-    )
-
-    // B站和爱奇艺的图片都需要代理，因为都有防盗链保护
-    if ((isBilibiliImage || isIqiyiImage) && !processed.includes('/api/schedule/image-proxy')) {
-      processed = `/api/schedule/image-proxy?url=${encodeURIComponent(processed)}`
+    if (needsProxy && !normalized.includes('/api/schedule/image-proxy')) {
+      normalized = `/api/schedule/image-proxy?url=${encodeURIComponent(normalized)}`
     }
 
-    return processed
+    return normalized
   }, [src])
 
   useEffect(() => {
-    if (!src) {
-      setError(true)
-      setLoading(false)
-      return
-    }
-
-    setError(false)
-    setLoading(true)
+    setImageState(src ? 'loading' : 'error')
   }, [src])
 
-  function handleError() {
-    setError(true)
-    setLoading(false)
-  }
-
-  function handleLoad() {
-    setLoading(false)
-  }
-
-  if (error || !processedSrc) {
+  if (imageState === 'error' || !processedSrc) {
     return (
       <div className={cn(
         "flex items-center justify-center bg-gray-200 dark:bg-gray-700",
@@ -77,8 +55,8 @@ export function ScheduleImage({ src, alt, className, fallbackClassName }: Schedu
   }
 
   return (
-    <>
-      {loading && (
+    <div className="relative w-full h-full">
+      {imageState === 'loading' && (
         <div className={cn(
           "absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700 animate-pulse",
           className
@@ -91,13 +69,13 @@ export function ScheduleImage({ src, alt, className, fallbackClassName }: Schedu
         alt={alt}
         className={cn(
           "w-full h-full object-cover transition-opacity duration-300",
-          loading ? "opacity-0" : "opacity-100",
+          imageState === 'loaded' ? "opacity-100" : "opacity-0",
           className
         )}
-        onError={handleError}
-        onLoad={handleLoad}
+        onError={() => setImageState('error')}
+        onLoad={() => setImageState('loaded')}
         loading="lazy"
       />
-    </>
+    </div>
   )
 }

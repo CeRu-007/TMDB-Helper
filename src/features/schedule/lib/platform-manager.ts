@@ -1,4 +1,4 @@
-import { PlatformScheduleAdapter, ScheduleResponse, ScheduleDay } from '../types/schedule'
+import { PlatformScheduleAdapter, ScheduleResponse, ScheduleDay, ScheduleEpisode } from '../types/schedule'
 import { bilibiliAdapter } from './adapters/bilibili-adapter'
 import { iqiyiAdapter } from './adapters/iqiyi-adapter'
 
@@ -124,13 +124,11 @@ class SchedulePlatformManager {
   }
 
   normalizeTitle(title: string): string {
-    const normalized = title
+    return title
       .trim()
       .toLowerCase()
       .replace(/[\s\u3000-\u303F\uFF00-\uFFEF]+/g, ' ')
       .replace(/['"()（）\[\]【】]/g, '')
-
-    return normalized
   }
 
   mergeEpisodes(episodes: ScheduleEpisode[]): ScheduleEpisode[] {
@@ -138,7 +136,6 @@ class SchedulePlatformManager {
 
     episodes.forEach(ep => {
       const key = this.normalizeTitle(ep.title)
-      console.log('[Merge] Original:', ep.title, '| Normalized:', key, '| Platform:', ep.platform)
 
       if (!grouped.has(key)) {
         grouped.set(key, [])
@@ -146,48 +143,46 @@ class SchedulePlatformManager {
       grouped.get(key)!.push(ep)
     })
 
-    console.log('[Merge] Groups:', Array.from(grouped.keys()))
-
     return Array.from(grouped.values()).map(group => this.mergeEpisodeGroup(group))
   }
 
   private mergeEpisodeGroup(group: ScheduleEpisode[]): ScheduleEpisode {
     const primary = group[0]
-    const platforms: string[] = []
+    const platformSet = new Set<string>()
     const platformUrls: Record<string, string> = {}
-    const pubTimes = new Set<string>()
-    const pubIndexes = new Set<string>()
-    const types = new Set<string>()
+    const pubTimeSet = new Set<string>()
+    const pubIndexSet = new Set<string>()
+    const typeSet = new Set<string>()
 
-    group.forEach(ep => {
+    for (const ep of group) {
       if (ep.platform) {
-        platforms.push(ep.platform)
+        platformSet.add(ep.platform)
       }
       if (ep.url && ep.platform) {
         platformUrls[ep.platform] = ep.url
       }
       if (ep.pubTime && ep.pubTime !== '00:00') {
-        pubTimes.add(ep.pubTime)
+        pubTimeSet.add(ep.pubTime)
       }
       if (ep.pubIndex && ep.pubIndex !== '更新中') {
-        pubIndexes.add(ep.pubIndex)
+        pubIndexSet.add(ep.pubIndex)
       }
       if (ep.types) {
-        ep.types.forEach(type => types.add(type))
+        for (const type of ep.types) {
+          typeSet.add(type)
+        }
       }
-    })
-
-    const merged: ScheduleEpisode = {
-      ...primary,
-      platforms: platforms.length > 0 ? [...new Set(platforms)] : undefined,
-      platformUrls: Object.keys(platformUrls).length > 0 ? platformUrls : undefined,
-      pubTime: pubTimes.size > 0 ? Array.from(pubTimes)[0] : primary.pubTime,
-      pubIndex: pubIndexes.size > 0 ? Array.from(pubIndexes)[0] : primary.pubIndex,
-      types: types.size > 0 ? Array.from(types) : primary.types,
-      published: group.some(ep => ep.published)
     }
 
-    return merged
+    return {
+      ...primary,
+      platforms: platformSet.size > 0 ? Array.from(platformSet) : undefined,
+      platformUrls: Object.keys(platformUrls).length > 0 ? platformUrls : undefined,
+      pubTime: pubTimeSet.size > 0 ? Array.from(pubTimeSet)[0] : primary.pubTime || '00:00',
+      pubIndex: pubIndexSet.size > 0 ? Array.from(pubIndexSet)[0] : primary.pubIndex || '更新中',
+      types: typeSet.size > 0 ? Array.from(typeSet) : primary.types,
+      published: group.some(ep => ep.published)
+    }
   }
 
   private createErrorResponse(message: string): ScheduleResponse {

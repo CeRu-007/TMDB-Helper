@@ -31,6 +31,14 @@ const categoryFilters = {
 export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleSectionProps) {
   const { items, loading } = useData()
 
+  // 处理卡片点击
+  const handleCardClick = (itemId: string) => {
+    const item = items.find(i => i.id === itemId)
+    if (item) {
+      homeState.setSelectedItem(item)
+    }
+  }
+
   // 根据分类筛选词条
   const filterItemsByCategory = (items: TMDBItem[]) => {
     if (homeState.selectedCategory === "all") return items
@@ -163,7 +171,8 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
             <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
               <MediaCard
                 item={item}
-                onClick={() => homeState.setSelectedItem(item)}
+                itemId={item.id}
+                onItemClick={handleCardClick}
               />
             </div>
           ))}

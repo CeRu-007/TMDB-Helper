@@ -9,19 +9,15 @@ import { cn } from "@/lib/utils"
 // 使用基础的Radix Dialog根组件
 const Dialog = DialogPrimitive.Root
 
-// 简单的触发器组件
 const DialogTrigger = DialogPrimitive.Trigger
 
-// 简单的Portal组件
 const DialogPortal = ({ ...props }: DialogPrimitive.DialogPortalProps) => (
   <DialogPrimitive.Portal {...props} />
 )
 DialogPortal.displayName = "DialogPortal"
 
-// 简单的Close组件
 const DialogClose = DialogPrimitive.Close
 
-// 重新实现的DialogOverlay组件，避免ref警告
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -35,8 +31,6 @@ const DialogOverlay = React.forwardRef<
   />
 ))
 DialogOverlay.displayName = "DialogOverlay"
-
-// 重新实现的DialogContent组件，避免ref警告
 const DialogContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
@@ -45,16 +39,20 @@ const DialogContent = React.forwardRef<
     showOverlay?: boolean;
     container?: HTMLElement | null;
     position?: 'fixed' | 'absolute';
+    disableAnimation?: boolean;
   }
->(({ className, children, showCloseButton = true, showOverlay = true, container, position = 'fixed', ...props }, ref) => (
+>(({ className, children, showCloseButton = true, showOverlay = true, container, position = 'fixed', disableAnimation = false, ...props }, ref) => (
   <DialogPortal container={container as any}>
-    {showOverlay && <DialogOverlay />}
+    {showOverlay && (
+      <DialogOverlay className={disableAnimation ? "animate-none" : ""} />
+    )}
     <DialogPrimitive.Content
       ref={ref as any}
       className={cn(
         position === 'fixed'
-          ? "fixed left-[50%] top-[50%] z-[100] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg"
+          ? "fixed left-[50%] top-[50%] z-[100] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 sm:rounded-lg"
           : "absolute inset-0 z-[100] w-full h-full bg-transparent p-0 sm:rounded-none",
+        disableAnimation ? "" : "duration-200",
         className
       )}
       {...props}
@@ -71,7 +69,6 @@ const DialogContent = React.forwardRef<
 ))
 DialogContent.displayName = "DialogContent"
 
-// 简单的Header组件
 const DialogHeader = ({
   className,
   ...props
@@ -86,7 +83,6 @@ const DialogHeader = ({
 )
 DialogHeader.displayName = "DialogHeader"
 
-// 简单的Footer组件
 const DialogFooter = ({
   className,
   ...props
@@ -100,8 +96,6 @@ const DialogFooter = ({
   />
 )
 DialogFooter.displayName = "DialogFooter"
-
-// 简单的Title组件
 const DialogTitle = React.forwardRef<
   HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
@@ -117,9 +111,8 @@ const DialogTitle = React.forwardRef<
 ))
 DialogTitle.displayName = "DialogTitle"
 
-// 简单的Description组件
 const DialogDescription = React.forwardRef<
-  HTMLParagraphElement, 
+  HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description

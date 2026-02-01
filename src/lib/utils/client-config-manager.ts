@@ -8,7 +8,7 @@ import { logger } from '@/lib/utils/logger';
 // Constants
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const API_ENDPOINT = '/api/system/config';
-const REQUEST_TIMEOUT = 5000;
+const REQUEST_TIMEOUT = 10000; // 增加到10秒，避免服务器响应慢导致超时
 
 // Client Config Manager Class
 export class ClientConfigManager {

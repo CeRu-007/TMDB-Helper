@@ -323,31 +323,12 @@ export class ServerConfigManager {
         return this.configCache;
       }
 
-      // 防止并发加载
       if (this.isLoading) {
-        // 如果正在加载，返回现有缓存（如果有的话）
         if (this.configCache) {
           return this.configCache;
         }
-        // 如果没有缓存，等待加载完成
-
-        let attempts = 0;
-        while (this.isLoading && attempts < 50) {
-          // 最多等待5秒，使用异步等待而不是同步命令
-          const { execSync } = require('child_process');
-          try {
-            execSync('timeout /t 0 /nobreak', {
-              stdio: 'ignore',
-              timeout: 100 // 添加超时限制
-            });
-          } catch (e) {
-            // 忽略超时错误
-          }
-          attempts++;
-        }
-        if (this.configCache) {
-          return this.configCache;
-        }
+        logger.warn('[ServerConfigManager] 配置正在加载中，返回默认配置');
+        return this.getDefaultConfig();
       }
 
       this.isLoading = true;
@@ -355,19 +336,16 @@ export class ServerConfigManager {
       const configPath = this.getConfigPath();
 
       if (!fs.existsSync(configPath)) {
-        // 如果配置文件不存在，创建默认配置
-
         const defaultConfig = this.getDefaultConfig();
         this.saveConfig(defaultConfig);
-        // 更新缓存
         this.configCache = defaultConfig;
         this.cacheExpiry = now + this.CONFIG_CACHE_DURATION;
+        this.isLoading = false;
         return defaultConfig;
       }
 
       const configData = fs.readFileSync(configPath, 'utf8');
       const rawConfig = JSON.parse(configData);
-      // 减少日志输出 - 只在调试模式下输出详细信息，且限制频率
       const shouldLogConfig =
         process.env.NODE_ENV === 'development' &&
         (!this.lastConfigLogTime ||
@@ -377,30 +355,23 @@ export class ServerConfigManager {
         this.lastConfigLogTime = Date.now();
       }
 
-      // 映射键名
       const config = this.mapKeys(rawConfig);
-      if (shouldLogConfig) {
-      }
 
-      // 检查版本兼容性
       if (config.version !== this.CONFIG_VERSION) {
-        // ⚠️ 关键修复：保留用户现有配置，只添加缺失的默认字段
         const defaultConfig = this.getDefaultConfig();
         const upgradedConfig = this.validateConfig({
-          ...defaultConfig, // 先设置默认值
-          ...config, // 然后用用户配置覆盖（保留用户数据优先）
-          version: this.CONFIG_VERSION, // 更新版本号
-          lastUpdated: Date.now(), // 更新时间戳
+          ...defaultConfig,
+          ...config,
+          version: this.CONFIG_VERSION,
+          lastUpdated: Date.now(),
         });
 
         this.saveConfig(upgradedConfig);
-        // 更新缓存
         this.configCache = upgradedConfig;
         this.cacheExpiry = now + this.CONFIG_CACHE_DURATION;
         return upgradedConfig;
       }
 
-      // 更新缓存
       this.configCache = config;
       this.cacheExpiry = now + this.CONFIG_CACHE_DURATION;
       this.isLoading = false;
@@ -408,7 +379,6 @@ export class ServerConfigManager {
     } catch (error) {
       this.isLoading = false;
 
-      // ⚠️ 关键修复：出错时不要直接覆盖，先尝试恢复备份
       const configPath = this.getConfigPath();
       const backupPath = `${configPath}.backup`;
 
@@ -416,16 +386,16 @@ export class ServerConfigManager {
         try {
           const backupData = fs.readFileSync(backupPath, 'utf8');
           const backupConfig = JSON.parse(backupData);
-
+          this.configCache = backupConfig;
+          this.cacheExpiry = Date.now() + this.CONFIG_CACHE_DURATION;
           return backupConfig;
         } catch (backupError) {}
       }
 
-      // 最后的备选方案：创建默认配置（但记录警告）
-
       const defaultConfig = this.getDefaultConfig();
       this.saveConfig(defaultConfig);
-      this.isLoading = false;
+      this.configCache = defaultConfig;
+      this.cacheExpiry = Date.now() + this.CONFIG_CACHE_DURATION;
       return defaultConfig;
     }
   }

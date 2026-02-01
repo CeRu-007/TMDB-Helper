@@ -141,7 +141,10 @@ export class ServerStorageService {
    */
   static addItemToFile(item: TMDBItem): boolean {
     try {
-      const items = this.readItemsFromFile(); // 使用缓存
+      // 清除缓存，确保从文件读取最新数据
+      this.clearCache();
+
+      const items = this.readItemsFromFile();
       const existingIndex = items.findIndex((i) => i.id === item.id);
 
       if (existingIndex !== -1) {
@@ -168,7 +171,10 @@ export class ServerStorageService {
    */
   static updateItemToFile(item: TMDBItem): boolean {
     try {
-      const items = this.readItemsFromFile(); // 使用缓存
+      // 清除缓存，确保从文件读取最新数据
+      this.clearCache();
+
+      const items = this.readItemsFromFile();
       const index = items.findIndex((i) => i.id === item.id);
 
       if (index === -1) {
@@ -195,7 +201,10 @@ export class ServerStorageService {
    */
   static deleteItemFromFile(id: string): boolean {
     try {
-      const items = this.readItemsFromFile(); // 使用缓存
+      // 清除缓存，确保从文件读取最新数据
+      this.clearCache();
+
+      const items = this.readItemsFromFile();
       const filteredItems = items.filter((i) => i.id !== id);
 
       if (filteredItems.length === items.length) {

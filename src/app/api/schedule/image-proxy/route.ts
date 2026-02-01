@@ -20,7 +20,15 @@ const ALLOWED_HOSTS = [
   'pic8.iqiyipic.com',
   'pic9.iqiyipic.com',
   'iqiyipic.com',
-]
+] as const
+
+const BILIBILI_REFERER = 'https://www.bilibili.com/'
+const IQIYI_REFERER = 'https://www.iqiyi.com/'
+
+const DEFAULT_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'image/webp,image/avif,image/apng,image/*,*/*;q=0.8',
+} as const
 
 function validateUrl(urlString: string): URL | null {
   try {
@@ -57,13 +65,12 @@ export async function GET(request: NextRequest) {
   try {
     // 根据图片来源设置正确的Referer
     const isIqiyiImage = url.hostname.includes('iqiyipic.com')
-    const referer = isIqiyiImage ? 'https://www.iqiyi.com/' : 'https://www.bilibili.com/'
+    const referer = isIqiyiImage ? IQIYI_REFERER : BILIBILI_REFERER
 
     const response = await fetch(decodedUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        ...DEFAULT_HEADERS,
         'Referer': referer,
-        'Accept': 'image/webp,image/avif,image/apng,image/*,*/*;q=0.8',
       },
       cache: 'force-cache',
     })

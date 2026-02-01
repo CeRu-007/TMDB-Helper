@@ -1,15 +1,10 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
-
-// 导入图标
+import { useState, useCallback, useMemo } from "react"
 import {
   Clock,
   CheckCircle2,
   Calendar,
-  FileText,
-  Video,
   Loader2,
   AlertTriangle,
   Plus,
@@ -26,11 +21,9 @@ import { useMediaNews } from '@/features/media-maintenance/lib/hooks/use-media-n
 import { useData } from "@/shared/components/client-data-provider"
 import { useToast } from "@/lib/hooks/use-toast"
 
-// 导入常量
 import { categories, type Category } from '@/lib/constants/categories'
 import type { MediaItem } from '@/types/media'
 
-// Media news types
 interface MediaNewsData {
   upcomingItems: MediaItem[]
   recentItems: MediaItem[]
@@ -51,7 +44,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { Badge } from "@/shared/components/ui/badge"
 import MediaCard from "@/features/media-maintenance/components/media-card"
 
-// 导入对话框组件
 import AddItemDialog from "@/features/media-maintenance/components/add-item-dialog"
 import SettingsDialog from "@/features/system/components/settings-dialog/SettingsDialog"
 import GlobalScheduledTasksDialog from "@/features/scheduled-tasks/components/global-scheduled-tasks-dialog/global-scheduled-tasks-dialog"
@@ -59,18 +51,11 @@ import { TaskExecutionLogsDialog } from "@/features/scheduled-tasks/components/t
 import ScheduledTaskDialog from "@/features/scheduled-tasks/components/scheduled-task-dialog"
 import ImportDataDialog from "@/features/data-management/components/import-data-dialog"
 import ExportDataDialog from "@/features/data-management/components/export-data-dialog"
-
-// 导入其他功能组件
 import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
 import VideoThumbnailExtractor from "@/features/image-processing/components/video-thumbnail-extractor"
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"
-
-// 导入共享组件
 import { ErrorState } from "@/features/media-maintenance/components/error-state"
 
-
-// 判断当前环境是否为客户端
-const isClientEnv = typeof window !== 'undefined'
 
 const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: number, categories: Category[], isCompleted: boolean = false) => {
   if (selectedCategory !== "all") {
@@ -179,23 +164,34 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
   )
 }
 
+interface MediaCardListProps {
+  items: MediaItem[]
+  onItemClick: (itemId: string) => void
+  showAirTime: boolean
+}
+
+const MediaCardList = function MediaCardList({ items, onItemClick, showAirTime }: MediaCardListProps) {
+  return (
+    <div className="grid grid-cols-6 gap-x-6 gap-y-4">
+      {items.map((item) => (
+        <div key={item.id} className="transform scale-[0.98] origin-top-left">
+          <MediaCard item={item} itemId={item.id} onItemClick={onItemClick} showAirTime={showAirTime} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const { toast } = useToast()
-
-  // 使用自定义 hooks 管理状态
   const homeState = useHomeState()
   const { filterItemsByCategory } = useCategoryFilter()
   const { getFilteredItems: getWeekdayFilteredItems } = useWeekdayFilter()
   const { currentDay } = useCurrentDay()
-
-  // 影视资讯相关
   const [selectedRegion, setSelectedRegion] = useState<string>("CN")
   const [mediaNewsType, setMediaNewsType] = useState<'upcoming' | 'recent'>('upcoming')
   const mediaNews = useMediaNews(selectedRegion)
 
-  
-
-  // 使用增强的数据提供者获取数据和方法
   const {
     items,
     loading,
@@ -207,30 +203,37 @@ export default function HomePage() {
     deleteItem: handleDeleteItem
   } = useData()
 
-  // 根据状态获取词条
-  const getItemsByStatus = (status: "ongoing" | "completed") => {
-    return items.filter((item) => item.status === status)
-  }
+  const handleCardClick = useCallback((itemId: string) => {
+    const item = items.find(i => i.id === itemId)
+    if (item) {
+      homeState.setSelectedItem(item)
+    }
+  }, [items, homeState])
 
-  const ongoingItems = getItemsByStatus("ongoing")
-  const completedItems = getItemsByStatus("completed")
+  const ongoingItems = useMemo(() => items.filter((item) => item.status === "ongoing"), [items])
+  const completedItems = useMemo(() => items.filter((item) => item.status === "completed"), [items])
 
-  // 统计数据
   const totalItems = items.length
 
-  // 根据当前选择的分类过滤统计数据
   const filteredOngoingItems = filterItemsByCategory(ongoingItems, homeState.selectedCategory)
   const filteredCompletedItems = filterItemsByCategory(completedItems, homeState.selectedCategory)
   const filteredOngoingCount = filteredOngoingItems.length
   const filteredCompletedCount = filteredCompletedItems.length
 
-
-
-  // 获取最终筛选后的词条
-  const getFinalFilteredItems = (items: MediaItem[]) => {
+  const getFinalFilteredItems = useCallback((items: MediaItem[]) => {
     const categoryFiltered = filterItemsByCategory(items, homeState.selectedCategory)
     return getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
-  }
+  }, [filterItemsByCategory, getWeekdayFilteredItems, homeState.selectedCategory, homeState.selectedDayFilter])
+
+  const finalOngoingItems = useMemo(() => {
+    const categoryFiltered = filterItemsByCategory(ongoingItems, homeState.selectedCategory)
+    return getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
+  }, [ongoingItems, getFinalFilteredItems])
+
+  const finalCompletedItems = useMemo(() => {
+    const categoryFiltered = filterItemsByCategory(completedItems, homeState.selectedCategory)
+    return getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
+  }, [completedItems, getFinalFilteredItems])
 
   // 渲染内容
   const renderContent = () => {
@@ -253,19 +256,13 @@ export default function HomePage() {
               currentDay={currentDay}
             />
             <div className="mt-6 overflow-y-auto">
-              <div className="grid grid-cols-6 gap-x-6 gap-y-4">
-                {getFinalFilteredItems(ongoingItems).map((item) => (
-                  <div key={item.id} className="transform scale-[0.98] origin-top-left">
-                    <MediaCard
-                      item={item}
-                      onClick={() => homeState.setSelectedItem(item)}
-                      showAirTime={true}
-                    />
-                  </div>
-                ))}
-              </div>
+              <MediaCardList
+              items={finalOngoingItems}
+              onItemClick={handleCardClick}
+              showAirTime={true}
+            />
 
-              {getFinalFilteredItems(ongoingItems).length === 0 && (
+              {finalOngoingItems.length === 0 && (
                 <div className="text-center py-16">
                   <div className="p-8 max-w-md mx-auto">
                     <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
@@ -295,19 +292,13 @@ export default function HomePage() {
               currentDay={currentDay}
             />
             <div className="mt-6 overflow-y-auto">
-              <div className="grid grid-cols-6 gap-x-6 gap-y-4">
-                {getFinalFilteredItems(completedItems).map((item) => (
-                  <div key={item.id} className="transform scale-[0.98] origin-top-left">
-                    <MediaCard
-                      item={item}
-                      onClick={() => homeState.setSelectedItem(item)}
-                      showAirTime={true}
-                    />
-                  </div>
-                ))}
-              </div>
+              <MediaCardList
+              items={finalCompletedItems}
+              onItemClick={handleCardClick}
+              showAirTime={true}
+            />
 
-              {getFinalFilteredItems(completedItems).length === 0 && (
+              {finalCompletedItems.length === 0 && (
                 <div className="text-center py-16">
                   <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
                   <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">

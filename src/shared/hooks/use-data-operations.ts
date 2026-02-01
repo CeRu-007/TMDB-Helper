@@ -51,18 +51,13 @@ export function useDataOperations(
         )
       )
 
-      const success = await StorageManager.updateItem(item)
-      if (!success) {
-        throw new Error("更新项目失败")
-      }
-
       await realtimeSyncManager.notifyDataChange({
         type: 'item_updated',
         data: item
       })
     } catch (err) {
       setError("更新项目失败")
-      setItems(items) // Revert on error
+      setItems(items)
     }
   }
 
@@ -89,7 +84,7 @@ export function useDataOperations(
       })
     } catch (err) {
       setError("删除项目失败")
-      setItems(items) // Revert on error
+      setItems(items)
     }
   }
 

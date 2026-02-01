@@ -51,12 +51,15 @@ export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) 
   }, [item])
 
   // 更新项目的统一方法
-  const updateLocalItem = (updatedItem: TMDBItem) => {
+  const updateLocalItem = (updatedItem: TMDBItem, notifyOnUpdate: boolean = true) => {
     setLocalItem(updatedItem)
     if (editing) {
       setEditData(updatedItem)
     }
-    onUpdate(updatedItem)
+    // 如果 notifyOnUpdate 为 true，才调用 onUpdate 回调
+    if (notifyOnUpdate) {
+      onUpdate(updatedItem)
+    }
   }
 
   // 显示复制反馈

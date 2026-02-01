@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, memo } from "react"
 import { logger } from '@/lib/utils/logger'
 import { DELAY_1S, DELAY_2S } from "@/lib/constants/constants"
+import { realtimeSyncManager } from "@/lib/data/realtime-sync-manager"
 import {
   Sparkles,
   Tv,
@@ -154,43 +155,36 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     return document.body
   }
 
-  // 直接保存项目到文件系统
   async function saveItemDirectly(updatedItem: TMDBItem): Promise<boolean> {
     try {
-      // 获取现有数据
-      const response = await fetch('/api/storage/file-operations', {
-        method: 'GET',
-        headers: { 'x-user-id': 'user_admin_system' }
-      })
-
-      if (!response.ok) {
-        logger.error('获取现有数据失败:', response.statusText)
-        return false
-      }
-
-      const { items = [] } = await response.json()
-
-      // 更新或添加项目
-      const index = items.findIndex(i => i.id === updatedItem.id)
-      if (index !== -1) {
-        items[index] = updatedItem
-      } else {
-        items.push(updatedItem)
-      }
-
-      // 保存数据
-      const writeResponse = await fetch('/api/storage/file-operations', {
-        method: 'POST',
+      const response = await fetch('/api/storage/item', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'x-user-id': 'user_admin_system'
         },
-        body: JSON.stringify({ items })
+        body: JSON.stringify({ item: updatedItem })
       })
 
-      return writeResponse.ok
+      if (!response.ok) {
+        const errorData = await response.json()
+        logger.error('[saveItemDirectly] 保存项目失败:', errorData.error || response.statusText)
+        return false
+      }
+
+      await response.json()
+      onUpdate(updatedItem)
+
+      realtimeSyncManager.notifyDataChange({
+        type: 'item_updated',
+        data: updatedItem
+      }).catch((syncError) => {
+        logger.warn('[saveItemDirectly] 发送实时同步事件失败:', syncError)
+      })
+
+      return true
     } catch (error) {
-      logger.error('保存项目时出错:', error)
+      logger.error('[saveItemDirectly] 保存项目时出错:', error)
       return false
     }
   }
@@ -262,8 +256,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     setShowDeleteSeasonDialog(true)
   }
 
-  // 确认删除季数
-  function confirmDeleteSeason() {
+  async function confirmDeleteSeason() {
     if (!seasonToDelete || !localItem.seasons) return
 
     const updatedSeasons = localItem.seasons.filter(s => s.seasonNumber !== seasonToDelete)
@@ -276,23 +269,26 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       updatedAt: new Date().toISOString()
     }
 
-    updateLocalItem(updatedItem)
-    showFeedback(`第${seasonToDelete}季已删除`, DELAY_2S)
-    setShowDeleteSeasonDialog(false)
-    setSeasonToDelete(null)
+    const success = await saveItemDirectly(updatedItem)
+    if (success) {
+      updateLocalItem(updatedItem, false)
+      showFeedback(`第${seasonToDelete}季已删除`, DELAY_2S)
+      setShowDeleteSeasonDialog(false)
+      setSeasonToDelete(null)
 
-    // 更新选中的季
-    if (updatedSeasons.length > 0) {
-      const maxSeason = Math.max(...updatedSeasons.map(s => s.seasonNumber))
-      setSelectedSeason(maxSeason)
-      setCustomSeasonNumber(maxSeason)
+      if (updatedSeasons.length > 0) {
+        const maxSeason = Math.max(...updatedSeasons.map(s => s.seasonNumber))
+        setSelectedSeason(maxSeason)
+        setCustomSeasonNumber(maxSeason)
+      } else {
+        setSelectedSeason(undefined)
+      }
     } else {
-      setSelectedSeason(undefined)
+      showFeedback('删除季数失败，请重试')
     }
   }
 
-  // 处理重置季数
-  function handleResetSeason() {
+  async function handleResetSeason() {
     if (!selectedSeason || !currentSeason) return
 
     const updatedSeasons = localItem.seasons?.map(season => {
@@ -314,8 +310,13 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       updatedAt: new Date().toISOString()
     }
 
-    updateLocalItem(updatedItem)
-    showFeedback(`第${selectedSeason}季已重置`, DELAY_2S)
+    const success = await saveItemDirectly(updatedItem)
+    if (success) {
+      updateLocalItem(updatedItem, false)
+      showFeedback(`第${selectedSeason}季已重置`, DELAY_2S)
+    } else {
+      showFeedback('重置季数失败，请重试')
+    }
   }
 
   // 处理总集数变更
@@ -337,7 +338,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
   }
 
   // 确认集数变更
-  function confirmEpisodeChange() {
+  async function confirmEpisodeChange() {
     if (!episodeChangeData || !selectedSeason || !localItem.seasons) return
 
     const { oldCount, newCount } = episodeChangeData
@@ -382,30 +383,31 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       updatedAt: new Date().toISOString(),
     }
 
-    updateLocalItem(updatedItem)
-    showFeedback(`第${selectedSeason}季集数已更新为${newCount}集`, DELAY_2S)
-    setShowEpisodeChangeDialog(false)
-    setEpisodeChangeData(null)
+    const success = await saveItemDirectly(updatedItem)
+    if (success) {
+      updateLocalItem(updatedItem, false) // onUpdate 已经在 saveItemDirectly 中调用了
+      showFeedback(`第${selectedSeason}季集数已更新为${newCount}集`, DELAY_2S)
+      setShowEpisodeChangeDialog(false)
+      setEpisodeChangeData(null)
+    } else {
+      showFeedback('更新集数失败，请重试')
+    }
   }
 
-  // 取消集数变更
   function cancelEpisodeChange() {
     setShowEpisodeChangeDialog(false)
     setEpisodeChangeData(null)
   }
 
-  // 添加新季
-  function handleAddSeason(seasonNumber: number, episodeCount: number) {
+  async function handleAddSeason(seasonNumber: number, episodeCount: number) {
     if (seasonNumber < 1 || episodeCount < 1) return
 
-    // 检查季是否已存在
     const seasonExists = localItem.seasons?.some(s => s.seasonNumber === seasonNumber)
     if (seasonExists) {
       showFeedback(`第${seasonNumber}季已存在`)
       return
     }
 
-    // 创建新季
     const newSeason = {
       seasonNumber,
       totalEpisodes: episodeCount,
@@ -415,11 +417,9 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       })),
     }
 
-    // 更新季列表
     const updatedSeasons = [...(localItem.seasons || []), newSeason]
       .sort((a, b) => a.seasonNumber - b.seasonNumber)
 
-    // 更新剧集列表
     const updatedEpisodes = [
       ...(localItem.episodes || []),
       ...newSeason.episodes.map(ep => ({
@@ -436,27 +436,28 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       updatedAt: new Date().toISOString()
     }
 
-    updateLocalItem(updatedItem)
+    const success = await saveItemDirectly(updatedItem)
+    if (success) {
+      updateLocalItem(updatedItem, false)
 
-    // 更新编辑状态
-    if (editing) {
-      setEditData({
-        ...editData,
-        seasons: updatedSeasons,
-        episodes: updatedEpisodes,
-        totalEpisodes: updatedItem.totalEpisodes
-      })
+      if (editing) {
+        setEditData({
+          ...editData,
+          seasons: updatedSeasons,
+          episodes: updatedEpisodes,
+          totalEpisodes: updatedItem.totalEpisodes
+        })
+      }
+
+      setSelectedSeason(seasonNumber)
+      setCustomSeasonNumber(seasonNumber)
+      showFeedback(`已添加第${seasonNumber}季，共${episodeCount}集`, DELAY_2S)
+    } else {
+      showFeedback('添加季数失败，请重试')
     }
-
-    // 选中新添加的季
-    setSelectedSeason(seasonNumber)
-    setCustomSeasonNumber(seasonNumber)
-
-    showFeedback(`已添加第${seasonNumber}季，共${episodeCount}集`, DELAY_2S)
   }
 
-  // 处理词条状态切换
-  function handleMovieToggle(completed: boolean) {
+  async function handleMovieToggle(completed: boolean) {
     const updatedItem = {
       ...localItem,
       completed,
@@ -464,7 +465,12 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       updatedAt: new Date().toISOString(),
     }
 
-    updateLocalItem(updatedItem)
+    const success = await saveItemDirectly(updatedItem)
+    if (success) {
+      updateLocalItem(updatedItem, false)
+    } else {
+      showFeedback('更新状态失败，请重试')
+    }
   }
 
   // 刷新TMDB数据
@@ -745,8 +751,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     } catch {}
   }, [open, displayMode])
 
-  // 处理剧集进度更新
-  function handleEpisodeProgressUpdate(currentEpisode: number, seasonNumber: number) {
+  async function handleEpisodeProgressUpdate(currentEpisode: number, seasonNumber: number) {
     if (!localItem.seasons) return
 
     const updatedSeasons = localItem.seasons.map(season =>
@@ -766,7 +771,12 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       updatedAt: new Date().toISOString(),
     }
 
-    updateLocalItem(updatedItem)
+    const success = await saveItemDirectly(updatedItem)
+    if (success) {
+      updateLocalItem(updatedItem, false)
+    } else {
+      showFeedback('更新进度失败，请重试')
+    }
   }
 
   // 处理保存编辑
@@ -808,6 +818,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
+          disableAnimation={true}
           className={cn(
             displayMode === 'inline'
               ? "absolute rounded-none max-w-none h-[100vh] bg-transparent border-none overscroll-none touch-none"

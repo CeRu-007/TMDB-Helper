@@ -1,53 +1,5 @@
-import type { PlatformScheduleAdapter, ScheduleResponse, ScheduleDay, ScheduleEpisode } from '../types/schedule'
-
-interface IqiyiTabResponse {
-  code: number
-  cards: Array<{
-    blocks: Array<{
-      native_ext: {
-        daily_hot_tab: {
-          nav: Array<{
-            date: string
-            day_of_week: string
-            today?: string
-            option: string
-          }>
-        }
-      }
-    }>
-  }>
-}
-
-interface IqiyiContentResponse {
-  code: number
-  cards: Array<{
-    blocks: Array<{
-      block_id: string
-      images: Array<{
-        url: string
-        name: string
-      }>
-      metas: Array<{
-        text: string
-        name: string
-      }>
-      actions?: {
-        click_event: {
-          data: {
-            album_id: string
-            tv_id?: string
-          }
-        }
-      }
-      statistics?: {
-        r_taid: string
-      }
-      other?: {
-        offical_id: string
-      }
-    }>
-  }>
-}
+import type { PlatformScheduleAdapter, ScheduleResponse, ScheduleDay, ScheduleEpisode } from '../../types/schedule'
+import type { IqiyiTabResponse, IqiyiContentResponse } from '../../api/iqiyi-types'
 
 interface IqiyiDateTab {
   date: string
@@ -108,9 +60,13 @@ class IqiyiScheduleAdapter implements PlatformScheduleAdapter {
       const scheduleYear = this.determineScheduleYear(dateTabs)
       const contentResults = await this.fetchAllContent(dateTabs, scheduleYear)
 
-      const days = dateTabs
-        .map((tab, index) => this.transformDay(tab, contentResults[index], scheduleYear))
-        .filter((day): day is ScheduleDay => day !== null)
+      const days: ScheduleDay[] = []
+    for (let i = 0; i < dateTabs.length; i++) {
+      const day = this.transformDay(dateTabs[i], contentResults[i] ?? null, scheduleYear)
+      if (day) {
+        days.push(day)
+      }
+    }
 
       return {
         code: 0,
@@ -155,19 +111,18 @@ class IqiyiScheduleAdapter implements PlatformScheduleAdapter {
     const today = this.getToday()
     const baseYear = today.getFullYear()
 
-    const closestTab = dateTabs.reduce((closest, tab) => {
+    let closestTab: IqiyiDateTab | null = null
+    let minDistance = Infinity
+
+    for (const tab of dateTabs) {
       const tabDate = this.parseDate(tab.date, baseYear)
-      const closestDate = closest ? this.parseDate(closest.date, baseYear) : null
+      const distance = Math.abs(tabDate.getTime() - today.getTime())
 
-      if (!closestDate) {
-        return tab
+      if (distance < minDistance) {
+        minDistance = distance
+        closestTab = tab
       }
-
-      const tabDistance = Math.abs(tabDate.getTime() - today.getTime())
-      const closestDistance = Math.abs(closestDate.getTime() - today.getTime())
-
-      return tabDistance < closestDistance ? tab : closest
-    }, null as IqiyiDateTab | null)
+    }
 
     if (!closestTab) {
       return baseYear
@@ -287,14 +242,18 @@ class IqiyiScheduleAdapter implements PlatformScheduleAdapter {
   }
 
   private parseDate(dateStr: string, year: number): Date {
-    const [month, day] = dateStr.split('-').map(Number)
+    const parts = dateStr.split('-')
+    const month = Number(parts[0])
+    const day = Number(parts[1])
     const date = new Date(year, month - 1, day)
     date.setHours(0, 0, 0, 0)
     return date
   }
 
   private formatDate(dateStr: string, year: number): string {
-    const [month, day] = dateStr.split('-').map(Number)
+    const parts = dateStr.split('-')
+    const month = Number(parts[0])
+    const day = Number(parts[1])
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   }
 
