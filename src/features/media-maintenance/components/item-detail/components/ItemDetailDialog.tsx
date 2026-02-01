@@ -983,23 +983,25 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
               {/* 左侧：海报区域 */}
               <div className="col-span-1 max-w-full overflow-hidden flex flex-col min-h-0">
                 <div className="flex-1 flex flex-col pr-2 min-h-0">
-                  {/* 海报区域 */}
-                  <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
-                    {localItem.posterUrl ? (
-                      <CachedImage
-                        src={localItem.posterUrl}
-                        alt={localItem.title}
-                        className="w-full h-full object-cover"
-                        loading="eager"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="text-center p-4">
-                        <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">海报</p>
-                      </div>
-                    )}
-                  </div>
+                  {/* 海报区域 - 编辑模式下隐藏 */}
+                  {!editing && (
+                    <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
+                      {localItem.posterUrl ? (
+                        <CachedImage
+                          src={localItem.posterUrl}
+                          alt={localItem.title}
+                          className="w-full h-full object-cover"
+                          loading="eager"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="text-center p-4">
+                          <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground">海报</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* 条目信息区域 */}
                   {editing ? (
