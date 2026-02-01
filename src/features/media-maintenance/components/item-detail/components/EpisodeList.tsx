@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
-import { PlayCircle, Tv, PlusCircle, Clock, Zap, Calendar } from "lucide-react"
+import { PlayCircle, Tv, PlusCircle, Clock, Zap, Calendar, ChevronUp, ChevronDown } from "lucide-react"
 import type { Season, Episode, TMDBItem } from "@/lib/data/storage"
 
 interface EpisodeListProps {
@@ -55,12 +55,15 @@ export function EpisodeList({
   // 判断数据是否可靠（创建超过14天且有一定更新）
   const isDataReliable = daysSinceCreation >= 14 && currentEpisode >= 3
 
-  // 获取下一个指定星期几的日期
   const getNextWeekdayDate = (fromDate: Date, targetWeekday: number): Date => {
     const date = new Date(fromDate)
     const currentWeekday = date.getDay()
     let daysDiff = targetWeekday - currentWeekday
-    if (daysDiff <= 0) daysDiff += 7
+
+    if (daysDiff <= 0) {
+      daysDiff += 7
+    }
+
     date.setDate(date.getDate() + daysDiff)
     return date
   }
@@ -207,7 +210,7 @@ export function EpisodeList({
     }
   }
   
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date): string => {
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
@@ -224,39 +227,56 @@ export function EpisodeList({
     return null
   }
 
-  // 处理输入框变更
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>): void {
     const value = e.target.value
-    // 只允许数字和空值
     if (value === "" || /^\d+$/.test(value)) {
       setInputValue(value)
     }
   }
 
-  // 更新进度
-  function updateProgress() {
-    if (!selectedSeason || !currentSeason) return
+  function updateProgress(): void {
+    if (!selectedSeason || !currentSeason) {
+      return
+    }
 
     const targetEpisode = parseInt(inputValue, 10)
-    if (isNaN(targetEpisode) || targetEpisode < 0) return
+    if (isNaN(targetEpisode) || targetEpisode < 0) {
+      return
+    }
 
-    // 限制在有效范围内
     const clampedEpisode = Math.min(Math.max(targetEpisode, 0), currentSeason.totalEpisodes)
-
     onEpisodeProgressUpdate(clampedEpisode, selectedSeason)
     setInputValue(clampedEpisode.toString())
   }
 
-  // 处理输入框失焦
-  function handleInputBlur() {
+  function handleInputBlur(): void {
     updateProgress()
   }
 
-  // 处理回车键
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
     if (e.key === "Enter") {
       updateProgress()
     }
+  }
+
+  function handleIncrement(): void {
+    if (!selectedSeason || !currentSeason) {
+      return
+    }
+
+    const newEpisode = Math.min(currentEpisode + 1, currentSeason.totalEpisodes)
+    onEpisodeProgressUpdate(newEpisode, selectedSeason)
+    setInputValue(newEpisode.toString())
+  }
+
+  function handleDecrement(): void {
+    if (!selectedSeason || !currentSeason) {
+      return
+    }
+
+    const newEpisode = Math.max(currentEpisode - 1, 0)
+    onEpisodeProgressUpdate(newEpisode, selectedSeason)
+    setInputValue(newEpisode.toString())
   }
 
   return (
@@ -290,17 +310,39 @@ export function EpisodeList({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">维护至:</span>
-                <Input
-                  type="number"
-                  min="0"
-                  max={currentSeason.totalEpisodes}
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
-                  onKeyDown={handleKeyDown}
-                  placeholder={`0-${currentSeason.totalEpisodes}`}
-                  className="h-8 w-28"
-                />
+                <div className="relative flex items-center">
+                  <Input
+                    type="number"
+                    min="0"
+                    max={currentSeason.totalEpisodes}
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    onBlur={handleInputBlur}
+                    onKeyDown={handleKeyDown}
+                    placeholder={`0-${currentSeason.totalEpisodes}`}
+                    className="h-9 w-28 pr-9 focus:outline-none focus-visible:ring-0 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
+                    <button
+                      type="button"
+                      onClick={handleIncrement}
+                      disabled={currentEpisode >= currentSeason.totalEpisodes}
+                      className="h-[18px] w-6 flex items-center justify-center hover:bg-muted/50 rounded-t transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                      aria-label="增加集数"
+                    >
+                      <ChevronUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDecrement}
+                      disabled={currentEpisode <= 0}
+                      className="h-[18px] w-6 flex items-center justify-center hover:bg-muted/50 rounded-b transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                      aria-label="减少集数"
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
               </div>
               <span className="text-xs text-muted-foreground">/ {currentSeason.totalEpisodes} 集</span>
             </div>

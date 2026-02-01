@@ -28,118 +28,120 @@ const categoryFilters = {
     title.includes("短剧") || notes.includes("短剧"),
 } as const;
 
-export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleSectionProps) {
+export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleSectionProps): JSX.Element {
   const { items, loading } = useData()
 
-  // 处理卡片点击
-  const handleCardClick = (itemId: string) => {
-    const item = items.find(i => i.id === itemId)
+  function handleCardClick(itemId: string): void {
+    const item = items.find(function(i: TMDBItem) {
+      return i.id === itemId
+    })
+
     if (item) {
       homeState.setSelectedItem(item)
     }
   }
 
-  // 根据分类筛选词条
-  const filterItemsByCategory = (items: TMDBItem[]) => {
-    if (homeState.selectedCategory === "all") return items
+  function filterItemsByCategory(itemsToFilter: TMDBItem[]): TMDBItem[] {
+    if (homeState.selectedCategory === "all") {
+      return itemsToFilter
+    }
 
-    return items.filter(item => {
-      // 优先使用明确的分类
+    return itemsToFilter.filter(function(item: TMDBItem) {
       if (item.category) {
         return item.category === homeState.selectedCategory
       }
 
-      // 备用逻辑：使用关键词匹配
       const title = item.title.toLowerCase()
       const notes = item.notes?.toLowerCase() || ""
       const category = homeState.selectedCategory as keyof typeof categoryFilters
 
       const filter = categoryFilters[category]
-      if (!filter) return true
+      if (!filter) {
+        return true
+      }
 
-      return category === 'tv'
-        ? filter(title, notes, item.mediaType)
-        : filter(title, notes)
+      if (category === 'tv') {
+        return filter(title, notes, item.mediaType)
+      }
+
+      return filter(title, notes)
     })
   }
 
-  const getItemsByDay = (items: TMDBItem[], day: number) => {
-    return items.filter((item) => 
-      item.weekday === day || 
-      (typeof item.secondWeekday === 'number' && item.secondWeekday === day)
-    )
+  function getItemsByDay(itemsToFilter: TMDBItem[], day: number): TMDBItem[] {
+    return itemsToFilter.filter(function(item: TMDBItem) {
+      return (
+        item.weekday === day ||
+        (typeof item.secondWeekday === 'number' && item.secondWeekday === day)
+      )
+    })
   }
 
-  const getFilteredItems = (items: TMDBItem[]) => {
-    const filteredByCategory = filterItemsByCategory(items)
-    
+  function getFilteredItems(itemsToFilter: TMDBItem[]): TMDBItem[] {
+    const filteredByCategory = filterItemsByCategory(itemsToFilter)
+
     if (homeState.selectedDayFilter === "recent") {
-      // 获取当前JS的星期几（0=周日，1=周一，...，6=周六）
       const jsWeekday = new Date().getDay()
 
-      // 计算到指定weekday的天数差（考虑循环）
-      const getDayDifference = (targetWeekday: number) => {
+      function getDayDifference(targetWeekday: number): number {
         const safeTarget = targetWeekday % 7
         let diff = safeTarget - jsWeekday
-        if (diff < 0) diff += 7
+
+        if (diff < 0) {
+          diff += 7
+        }
+
         return diff
       }
 
-      // 获取条目距离今天最近的播出weekday
-      const getNearestWeekday = (it: TMDBItem) => {
-        const primaryDiff = getDayDifference(it.weekday)
-        if (typeof it.secondWeekday === 'number') {
-          const secondDiff = getDayDifference(it.secondWeekday)
-          return secondDiff < primaryDiff ? it.secondWeekday : it.weekday
+      function getNearestWeekday(item: TMDBItem): number {
+        const primaryDiff = getDayDifference(item.weekday)
+
+        if (typeof item.secondWeekday === 'number') {
+          const secondDiff = getDayDifference(item.secondWeekday)
+          return secondDiff < primaryDiff ? item.secondWeekday : item.weekday
         }
-        return it.weekday
+
+        return item.weekday
       }
 
-      // 判断是否为今天的播出日
-      const isToday = (it: TMDBItem) => {
-        return it.weekday === jsWeekday || it.secondWeekday === jsWeekday
+      function isToday(item: TMDBItem): boolean {
+        return item.weekday === jsWeekday || item.secondWeekday === jsWeekday
       }
 
-      return filteredByCategory.sort((a, b) => {
-        // 获取更新时间
+      return filteredByCategory.sort(function(a, b) {
         const timeA = new Date(a.updatedAt).getTime()
         const timeB = new Date(b.updatedAt).getTime()
-        
-        // 判断是否为今天的播出日
+
         const aIsToday = isToday(a)
         const bIsToday = isToday(b)
-        
-        // 第一优先级：今天的播出日
+
         if (aIsToday !== bIsToday) {
           return aIsToday ? -1 : 1
         }
-        
-        // 如果都是今天的内容，按更新时间排序
+
         if (aIsToday && bIsToday) {
           return timeB - timeA
         }
-        
-        // 第二优先级：按照未来最近的日期排序
+
         const aDayDiff = getDayDifference(getNearestWeekday(a))
         const bDayDiff = getDayDifference(getNearestWeekday(b))
-        
+
         if (aDayDiff !== bDayDiff) {
           return aDayDiff - bDayDiff
         }
 
-        // 最后按更新时间排序
-        return timeB - timeA
-      })
-    } else {
-      // 按指定日期筛选
-      const filteredItems = getItemsByDay(filteredByCategory, homeState.selectedDayFilter)
-      
-      return filteredItems.sort((a, b) => {
-        const timeA = new Date(a.updatedAt).getTime()
-        const timeB = new Date(b.updatedAt).getTime()
         return timeB - timeA
       })
     }
+
+    const filteredItems = getItemsByDay(filteredByCategory, homeState.selectedDayFilter)
+
+    return filteredItems.sort(function(a, b) {
+      const timeA = new Date(a.updatedAt).getTime()
+      const timeB = new Date(b.updatedAt).getTime()
+      return timeB - timeA
+    })
   }
 
   const ongoingItems = items.filter((item) => item.status === "ongoing")

@@ -16,52 +16,60 @@ interface ProgressSectionProps {
   categories: Array<{ id: string; name: string; icon: React.ReactNode }>
 }
 
-export function ProgressSection({ homeState, categories }: ProgressSectionProps) {
+export function ProgressSection({ homeState, categories }: ProgressSectionProps): JSX.Element {
   const { items, loading } = useData()
 
-  // 处理卡片点击
-  const handleCardClick = (itemId: string) => {
-    const item = items.find(i => i.id === itemId)
+  function handleCardClick(itemId: string): void {
+    const item = items.find(function(i: TMDBItem) {
+      return i.id === itemId
+    })
+
     if (item) {
       homeState.setSelectedItem(item)
     }
   }
 
-  // 根据分类筛选词条
-  const filterItemsByCategory = (items: TMDBItem[]) => {
-    if (homeState.selectedCategory === "all") return items
-    
-    return items.filter(item => {
+  function filterItemsByCategory(itemsToFilter: TMDBItem[]): TMDBItem[] {
+    if (homeState.selectedCategory === "all") {
+      return itemsToFilter
+    }
+
+    return itemsToFilter.filter(function(item: TMDBItem) {
       if (item.category) {
         return item.category === homeState.selectedCategory
       }
-      
-      // 备用逻辑
+
       const title = item.title.toLowerCase()
       const notes = item.notes?.toLowerCase() || ""
-      
-      switch(homeState.selectedCategory) {
+
+      switch (homeState.selectedCategory) {
         case "anime":
           return title.includes("动漫") || notes.includes("动漫")
         case "tv":
-          return item.mediaType === "tv" && 
-                 !title.includes("动漫") && !notes.includes("动漫") &&
-                 !title.includes("综艺") && !notes.includes("综艺")
+          return (
+            item.mediaType === "tv" &&
+            !title.includes("动漫") &&
+            !notes.includes("动漫") &&
+            !title.includes("综艺") &&
+            !notes.includes("综艺")
+          )
         case "kids":
           return title.includes("少儿") || notes.includes("少儿")
         case "variety":
           return title.includes("综艺") || notes.includes("综艺")
         case "short":
           return title.includes("短剧") || notes.includes("短剧")
-
         default:
           return true
       }
     })
   }
 
-  const getItemsByStatus = (status: "ongoing" | "completed") => {
-    return filterItemsByCategory(items.filter((item) => item.status === status))
+  function getItemsByStatus(status: "ongoing" | "completed"): TMDBItem[] {
+    const statusFilteredItems = items.filter(function(item: TMDBItem) {
+      return item.status === status
+    })
+    return filterItemsByCategory(statusFilteredItems)
   }
 
   const ongoingItems = getItemsByStatus("ongoing")
