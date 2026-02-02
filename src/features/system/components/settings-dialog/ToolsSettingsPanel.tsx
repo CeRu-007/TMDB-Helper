@@ -52,23 +52,6 @@ export default function ToolsSettingsPanel({
   saveTmdbConfig,
   isDockerEnv
 }: ToolsSettingsPanelProps) {
-  // 加载默认运行模式配置
-  useEffect(() => {
-    const loadDefaultMode = async () => {
-      try {
-        const defaultMode = await ClientConfigManager.getItem('tmdb_import_default_mode')
-        if (defaultMode === 'headless') {
-          setTmdbConfig(prev => ({ ...prev, headlessMode: true }))
-        } else if (defaultMode === 'gui') {
-          setTmdbConfig(prev => ({ ...prev, headlessMode: false }))
-        }
-      } catch (error) {
-        logger.error('加载默认运行模式失败:', error)
-      }
-    }
-    loadDefaultMode()
-  }, [])
-
   // 提取保存TMDB导入路径的逻辑
   const saveTmdbImportPath = useCallback(async (path: string) => {
     try {
@@ -195,56 +178,6 @@ export default function ToolsSettingsPanel({
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center">
-                <Terminal className="h-4 w-4 mr-2" />
-                默认运行模式
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                设置TMDB-Import工具的默认运行模式。用户可以在操作界面临时切换模式。
-              </p>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <Label className="text-sm font-medium">使用后台模式（无头）</Label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      浏览器在后台运行，不显示窗口，性能更好，适合自动化任务
-                    </p>
-                  </div>
-                  <Switch
-                    checked={tmdbConfig.headlessMode || false}
-                    onCheckedChange={(checked) => {
-                      setTmdbConfig(prev => ({ ...prev, headlessMode: checked }))
-                      // 保存到客户端配置
-                      ClientConfigManager.setItem('tmdb_import_default_mode', checked ? 'headless' : 'gui').catch(err => {
-                        logger.error('保存默认运行模式失败:', err)
-                      })
-                    }}
-                  />
-                </div>
-
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">当前默认:</span>
-                    <Badge variant={tmdbConfig.headlessMode ? "default" : "secondary"} className="text-xs">
-                      {tmdbConfig.headlessMode ? "后台模式" : "前台模式"}
-                    </Badge>
-                  </div>
-                  <code className="text-xs text-gray-600 dark:text-gray-400">
-                    {tmdbConfig.headlessMode
-                      ? `python -m tmdb-import --headless "URL"`
-                      : `python -m tmdb-import "URL"`
-                    }
-                  </code>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
                 <Info className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
@@ -268,44 +201,14 @@ export default function ToolsSettingsPanel({
           {tmdbImportPath ? (
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <CardTitle className="text-base">config.ini 配置</CardTitle>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => loadTmdbConfig(tmdbImportPath)}
-                      disabled={configLoading}
-                    >
-                      {configLoading ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4" />
-                      )}
-                      刷新
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={saveTmdbConfig}
-                      disabled={configSaving}
-                    >
-                      {configSaving ? (
-                        <Save className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}
-                      保存配置
-                    </Button>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <CardTitle className="text-base">config.ini 配置</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div className="md:col-span-2">
                     <Label className="text-sm font-medium">编码</Label>
                     <Select
                       value={tmdbConfig.encoding}
@@ -322,45 +225,20 @@ export default function ToolsSettingsPanel({
                     </Select>
                   </div>
 
-                  <div>
-                    <Label className="text-sm font-medium">日志级别</Label>
-                    <Select
-                      value={tmdbConfig.logging_level}
-                      onValueChange={(value) => setTmdbConfig(prev => ({ ...prev, logging_level: value }))}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="DEBUG">DEBUG</SelectItem>
-                        <SelectItem value="INFO">INFO</SelectItem>
-                        <SelectItem value="WARNING">WARNING</SelectItem>
-                        <SelectItem value="ERROR">ERROR</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-start space-x-2">
-                      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">浏览器设置</p>
-                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                          现在使用 Playwright 框架，仅支持 Chrome/Chromium 浏览器。无需手动配置浏览器类型。
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 pt-6">
+                  <div className="md:col-span-2 flex items-center space-x-2">
                     <Switch
                       id="save_user_profile"
                       checked={tmdbConfig.save_user_profile}
                       onCheckedChange={(checked) => setTmdbConfig(prev => ({ ...prev, save_user_profile: checked }))}
                     />
-                    <Label htmlFor="save_user_profile" className="text-sm font-medium">
-                      保存用户配置文件
-                    </Label>
+                    <div className="flex-1">
+                      <Label htmlFor="save_user_profile" className="text-sm font-medium">
+                        保存用户配置文件
+                      </Label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        开启则保存浏览器登录状态等用户数据，只能启动一个Chrome进程。关闭则不保存用户数据，以支持多任务进程并发
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -409,15 +287,80 @@ export default function ToolsSettingsPanel({
                 </div>
 
                 <div className="space-y-4">
+                  <div className="pb-2 border-b border-gray-200 dark:border-gray-700">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">图片上传设置</Label>
+                  </div>
+
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="backdrop_forced_upload"
                       checked={tmdbConfig.backdrop_forced_upload}
                       onCheckedChange={(checked) => setTmdbConfig(prev => ({ ...prev, backdrop_forced_upload: checked }))}
                     />
-                    <Label htmlFor="backdrop_forced_upload" className="text-sm font-medium">
-                      强制上传背景图
-                    </Label>
+                    <div className="flex-1">
+                      <Label htmlFor="backdrop_forced_upload" className="text-sm font-medium">
+                        强制上传背景图
+                      </Label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        即使 TMDB 已有背景图也强制上传
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="backdrop_vote_after_upload"
+                      checked={tmdbConfig.backdrop_vote_after_upload}
+                      onCheckedChange={(checked) => setTmdbConfig(prev => ({ ...prev, backdrop_vote_after_upload: checked }))}
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="backdrop_vote_after_upload" className="text-sm font-medium">
+                        上传后自动点赞
+                      </Label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        上传完背景图后自动点赞，增加图片权重
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pb-2 pt-4 border-b border-gray-200 dark:border-gray-700">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">CSV 导入设置</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="rename_csv_on_import"
+                      checked={tmdbConfig.rename_csv_on_import}
+                      onCheckedChange={(checked) => setTmdbConfig(prev => ({ ...prev, rename_csv_on_import: checked }))}
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="rename_csv_on_import" className="text-sm font-medium">
+                        导入时重命名 CSV
+                      </Label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        重命名 CSV 文件以支持同时处理多个导入任务
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="delete_csv_after_import"
+                      checked={tmdbConfig.delete_csv_after_import}
+                      onCheckedChange={(checked) => setTmdbConfig(prev => ({ ...prev, delete_csv_after_import: checked }))}
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="delete_csv_after_import" className="text-sm font-medium">
+                        导入后删除 CSV
+                      </Label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        导入完成后自动删除 CSV 文件，避免重复导入
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pb-2 pt-4 border-b border-gray-200 dark:border-gray-700">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">其他设置</Label>
                   </div>
 
                   <div>
@@ -425,7 +368,6 @@ export default function ToolsSettingsPanel({
                     <Textarea
                       value={tmdbConfig.filter_words}
                       onChange={(e) => setTmdbConfig(prev => ({ ...prev, filter_words: e.target.value }))}
-                      placeholder="番外,加更"
                       className="mt-1 h-20 resize-none"
                     />
                   </div>

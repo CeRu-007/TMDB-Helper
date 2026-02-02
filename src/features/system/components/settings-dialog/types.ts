@@ -4,13 +4,14 @@
 
 export interface TMDBConfig {
   encoding?: string
-  logging_level?: string
   save_user_profile?: boolean
   tmdb_username?: string
   tmdb_password?: string
   backdrop_forced_upload?: boolean
+  backdrop_vote_after_upload?: boolean
   filter_words?: string
-  headlessMode?: boolean
+  rename_csv_on_import?: boolean
+  delete_csv_after_import?: boolean
 }
 
 export interface GeneralSettings {

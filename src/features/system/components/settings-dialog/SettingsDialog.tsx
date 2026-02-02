@@ -27,7 +27,7 @@ import AppearanceSettingsPanel from "./AppearanceSettingsPanel"
 import SecuritySettingsPanel from "./SecuritySettingsPanel"
 import HelpSettingsPanel from "./HelpSettingsPanel"
 import { CheckCircle2, AlertCircle } from "lucide-react"
-import type { 
+import type {
   SettingsDialogProps,
   TMDBConfig,
   GeneralSettings,
@@ -44,6 +44,19 @@ import type {
   AppInfo,
   PasswordForm
 } from "./types"
+
+// TMDB配置默认值
+const DEFAULT_TMDB_CONFIG: TMDBConfig = {
+  encoding: 'utf-8-sig',
+  save_user_profile: true,
+  tmdb_username: '',
+  tmdb_password: '',
+  backdrop_forced_upload: false,
+  backdrop_vote_after_upload: false,
+  filter_words: '',
+  rename_csv_on_import: false,
+  delete_csv_after_import: false
+}
 
 export default function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
   const { toast } = useToast()
@@ -75,15 +88,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
   // TMDB配置相关状态
   const [tmdbImportPath, setTmdbImportPath] = useState("")
-  const [tmdbConfig, setTmdbConfig] = useState<TMDBConfig>({
-    encoding: 'utf-8-sig',
-    logging_level: 'INFO',
-    save_user_profile: true,
-    tmdb_username: '',
-    tmdb_password: '',
-    backdrop_forced_upload: false,
-    filter_words: ''
-  })
+  const [tmdbConfig, setTmdbConfig] = useState<TMDBConfig>(DEFAULT_TMDB_CONFIG)
   const [configLoading, setConfigLoading] = useState(false)
   const [configSaving, setConfigSaving] = useState(false)
   const [showTmdbPassword, setShowTmdbPassword] = useState(false)
@@ -513,7 +518,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         "appearance": () => saveAppearanceSettings(),
         "video-thumbnail": () => saveVideoThumbnailSettings(),
         "model-service": () => toast({ title: "成功", description: "模型服务设置已保存" }),
-        "tools": () => toast({ title: "成功", description: "工具设置已保存" }),
+        "tools": () => saveTmdbConfig(),
         "security": () => toast({ title: "成功", description: "安全设置已保存" })
       }
 
@@ -626,17 +631,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
       if (data.success && data.config) {
         // 使用默认值合并配置
-        const defaultConfig = {
-          encoding: 'utf-8-sig',
-          logging_level: 'INFO',
-          save_user_profile: true,
-          tmdb_username: '',
-          tmdb_password: '',
-          backdrop_forced_upload: false,
-          filter_words: ''
-        }
-
-        setTmdbConfig(data)
+        setTmdbConfig({
+          ...DEFAULT_TMDB_CONFIG,
+          ...data.config
+        })
       } else {
         logger.warn('TMDB配置API返回失败:', data.error)
         toast({
