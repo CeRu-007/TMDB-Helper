@@ -493,7 +493,8 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         networkName: tmdbData.networkName,
         networkLogoUrl: tmdbData.networkLogoUrl,
         overview: tmdbData.overview,
-        seasons: tmdbData.seasons?.map((newSeason: Season) => {
+        platformUrl: localItem.platformUrl,
+        seasons: tmdbData.seasons?.map(function(newSeason: Season) {
           const existingSeason = localItem.seasons?.find(function(s: Season) { return s.seasonNumber === newSeason.seasonNumber })
           return {
             ...newSeason,
