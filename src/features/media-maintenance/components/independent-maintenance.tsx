@@ -31,7 +31,8 @@ import {
   Clock,
   Square,
   Trash2,
-  Copy
+  Copy,
+  Activity as ActivityIcon
 } from "lucide-react"
 
 // 导入现有的集成工具组件
@@ -76,6 +77,9 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   const [isExecutingCommand, setIsExecutingCommand] = useState(false)
   const terminalRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // TMDB-Import 运行模式：前台模式（GUI）或后台模式（无头）
+  const [headlessMode, setHeadlessMode] = useState<boolean>(false)
 
   // 统一获取 TMDB-Import 工具路径：服务端配置为唯一来源
   const getTmdbImportPath = useCallback(async (): Promise<string | null> => {
@@ -140,15 +144,15 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   // 生成播出平台抓取命令
   const generatePlatformCommand = useCallback(() => {
     if (!platformUrl) return ""
-    return `python -m tmdb-import "${platformUrl}"`
-  }, [platformUrl])
+    return `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${platformUrl}"`
+  }, [platformUrl, headlessMode])
 
   // 生成TMDB抓取命令
   const generateTMDBCommand = useCallback((season: number) => {
     if (!tmdbId) return ""
     const tmdbUrl = `https://www.themoviedb.org/tv/${tmdbId}/season/${season}?language=${selectedLanguage}`
-    return `python -m tmdb-import "${tmdbUrl}"`
-  }, [tmdbId, selectedLanguage])
+    return `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${tmdbUrl}"`
+  }, [tmdbId, selectedLanguage, headlessMode])
 
   // 处理季数变化
   const handleSeasonChange = useCallback((newSeasonValue: string | number) => {
@@ -648,6 +652,38 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
               {/* 配置区域 */}
               <div className="space-y-3">
+                {/* 运行模式选择 */}
+                <div>
+                  <Label className="text-xs font-medium mb-1 block">
+                    运行模式
+                  </Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={!headlessMode ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setHeadlessMode(false)}
+                      className={`flex-1 h-8 text-xs ${!headlessMode ? "bg-green-600 hover:bg-green-700" : ""}`}
+                    >
+                      <Terminal className="h-3.5 w-3.5 mr-1" />
+                      前台模式
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={headlessMode ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setHeadlessMode(true)}
+                      className={`flex-1 h-8 text-xs ${headlessMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                    >
+                      <ActivityIcon className="h-3.5 w-3.5 mr-1" />
+                      后台模式
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {headlessMode ? "浏览器后台运行，性能更好" : "浏览器窗口可见，适合调试"}
+                  </p>
+                </div>
+
                 <div>
                   <Label htmlFor="platform-url" className="text-xs font-medium">
                     播出平台URL

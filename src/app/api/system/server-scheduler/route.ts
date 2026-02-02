@@ -203,8 +203,8 @@ class ServerScheduler {
       throw new Error('找不到TMDB-Import目录');
     }
 
-    // 构建导出命令
-    const extractCommand = `python -m tmdb-import.extractor -u "${item.platformUrl}" -s ${task.action.seasonNumber}`;
+    // 构建导出命令（定时任务固定使用后台模式）
+    const extractCommand = `python -m tmdb-import.extractor --headless -u "${item.platformUrl}" -s ${task.action.seasonNumber}`;
 
     const { stdout, stderr } = await execAsync(extractCommand, {
       cwd: tmdbImportDir,

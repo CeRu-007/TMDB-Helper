@@ -52,6 +52,23 @@ export default function ToolsSettingsPanel({
   saveTmdbConfig,
   isDockerEnv
 }: ToolsSettingsPanelProps) {
+  // 加载默认运行模式配置
+  useEffect(() => {
+    const loadDefaultMode = async () => {
+      try {
+        const defaultMode = await ClientConfigManager.getItem('tmdb_import_default_mode')
+        if (defaultMode === 'headless') {
+          setTmdbConfig(prev => ({ ...prev, headlessMode: true }))
+        } else if (defaultMode === 'gui') {
+          setTmdbConfig(prev => ({ ...prev, headlessMode: false }))
+        }
+      } catch (error) {
+        logger.error('加载默认运行模式失败:', error)
+      }
+    }
+    loadDefaultMode()
+  }, [])
+
   // 提取保存TMDB导入路径的逻辑
   const saveTmdbImportPath = useCallback(async (path: string) => {
     try {
@@ -173,6 +190,56 @@ export default function ToolsSettingsPanel({
                     </code>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center">
+                <Terminal className="h-4 w-4 mr-2" />
+                默认运行模式
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                设置TMDB-Import工具的默认运行模式。用户可以在操作界面临时切换模式。
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <Label className="text-sm font-medium">使用后台模式（无头）</Label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      浏览器在后台运行，不显示窗口，性能更好，适合自动化任务
+                    </p>
+                  </div>
+                  <Switch
+                    checked={tmdbConfig.headlessMode || false}
+                    onCheckedChange={(checked) => {
+                      setTmdbConfig(prev => ({ ...prev, headlessMode: checked }))
+                      // 保存到客户端配置
+                      ClientConfigManager.setItem('tmdb_import_default_mode', checked ? 'headless' : 'gui').catch(err => {
+                        logger.error('保存默认运行模式失败:', err)
+                      })
+                    }}
+                  />
+                </div>
+
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">当前默认:</span>
+                    <Badge variant={tmdbConfig.headlessMode ? "default" : "secondary"} className="text-xs">
+                      {tmdbConfig.headlessMode ? "后台模式" : "前台模式"}
+                    </Badge>
+                  </div>
+                  <code className="text-xs text-gray-600 dark:text-gray-400">
+                    {tmdbConfig.headlessMode
+                      ? `python -m tmdb-import --headless "URL"`
+                      : `python -m tmdb-import "URL"`
+                    }
+                  </code>
+                </div>
               </div>
             </CardContent>
           </Card>

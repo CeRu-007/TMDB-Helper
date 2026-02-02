@@ -162,7 +162,8 @@ export async function POST(request: NextRequest) {
       conflictAction = 'w',
       removeAirDateColumn = false,
       removeRuntimeColumn = false,
-      removeBackdropColumn = false
+      removeBackdropColumn = false,
+      headlessMode = false
     } = requestBody;
 
     if (!csvPath) {
@@ -343,7 +344,7 @@ export async function POST(request: NextRequest) {
       
       let result;
       try {
-        result = await executeTMDBImportWithInteraction(tmdbImportDir, tmdbUrl, conflictAction);
+        result = await executeTMDBImportWithInteraction(tmdbImportDir, tmdbUrl, conflictAction, headlessMode);
         
       } catch (processError) {
         
@@ -367,10 +368,11 @@ export async function POST(request: NextRequest) {
           error: errorMessage,
           errorType: errorType,
           details: {
-            command: `python -m tmdb-import "${tmdbUrl}"`,
+            command: `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${tmdbUrl}"`,
             workingDir: tmdbImportDir,
             originalError: processError instanceof Error ? processError.message : String(processError),
-            conflictAction: conflictAction
+            conflictAction: conflictAction,
+            headlessMode: headlessMode
           }
         }, { status: 200 }); // 改为200状态码，避免触发错误处理
       }
@@ -414,12 +416,13 @@ export async function POST(request: NextRequest) {
           errorType: errorType,
           isUserInterrupted: isUserInterrupted,
           details: {
-            command: `python -m tmdb-import "${tmdbUrl}"`,
+            command: `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${tmdbUrl}"`,
             workingDir: tmdbImportDir,
             stdout: result.stdout?.substring(0, 500) || '',
             stderr: result.stderr?.substring(0, 500) || '',
             conflictAction: conflictAction,
-            interruptAnalysis: interruptResult
+            interruptAnalysis: interruptResult,
+            headlessMode: headlessMode
           }
         }, { status: 200 }); // 改为200状态码，避免触发错误处理
       }
@@ -440,7 +443,8 @@ export async function POST(request: NextRequest) {
         importedEpisodes: importedEpisodes,
         message: `TMDB导入完成，成功导入 ${importedEpisodes.length} 集`,
         output: result.stdout?.substring(0, 1000) || '',
-        conflictAction: conflictAction
+        conflictAction: conflictAction,
+        headlessMode: headlessMode
       }, { status: 200 });
 
     } catch (execError: unknown) {
@@ -449,11 +453,12 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'TMDB导入命令执行失败',
         details: {
-          command: `python -m tmdb-import "${tmdbUrl}"`,
+          command: `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${tmdbUrl}"`,
           workingDir: tmdbImportDir,
           errorMessage: execError instanceof Error ? execError.message : String(execError),
           errorStack: execError instanceof Error ? execError.stack : undefined,
-          conflictAction: conflictAction
+          conflictAction: conflictAction,
+          headlessMode: headlessMode
         }
       }, { status: 500 });
     }
@@ -478,7 +483,8 @@ export async function POST(request: NextRequest) {
 async function executeTMDBImportWithInteraction(
   workingDir: string,
   tmdbUrl: string,
-  conflictAction: string
+  conflictAction: string,
+  headlessMode: boolean = false
 ): Promise<{ success: boolean; stdout: string; stderr: string; error?: string }> {
   return new Promise((resolve) => {
 
@@ -493,8 +499,15 @@ async function executeTMDBImportWithInteraction(
       }
     };
 
+    // 构建命令参数，根据 headlessMode 决定是否添加 --headless 标志
+    const commandArgs = ['-m', 'tmdb-import'];
+    if (headlessMode) {
+      commandArgs.push('--headless');
+    }
+    commandArgs.push(tmdbUrl);
+
     try {
-      child = spawn('python', ['-m', 'tmdb-import', tmdbUrl], {
+      child = spawn('python', commandArgs, {
         cwd: workingDir,
         stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env, PYTHONUNBUFFERED: '1' } // 确保Python输出不被缓冲

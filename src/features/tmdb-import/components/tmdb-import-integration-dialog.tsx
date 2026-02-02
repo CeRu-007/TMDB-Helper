@@ -125,6 +125,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     })()
   }, [open])
 
+  // TMDB-Import 运行模式：前台模式（GUI）或后台模式（无头）
+  const [headlessMode, setHeadlessMode] = useState<boolean>(false)
+
   // 添加操作锁，防止按钮互相触发
   const [operationLock, setOperationLock] = useState<string | null>(null)
 
@@ -161,7 +164,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 生成播出平台抓取命令
   const generatePlatformCommand = () => {
     if (!platformUrl) return ""
-    return `python -m tmdb-import "${platformUrl}"`
+    return `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${platformUrl}"`
   }
 
   // 生成TMDB抓取命令
@@ -174,15 +177,15 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     // 确保URL格式正确，移除多余的引号
     const tmdbUrl = `https://www.themoviedb.org/tv/${item.tmdbId}/season/${season}?language=${selectedLanguage}`
 
-    // 返回完整的命令字符串
-    return `${python} -m tmdb-import "${tmdbUrl}"`
+    // 返回完整的命令字符串，根据 headlessMode 决定是否添加 --headless 标志
+    return `${python} -m tmdb-import ${headlessMode ? '--headless' : ''} "${tmdbUrl}"`
   }
 
   // 更新显示的命令
   const updateDisplayedCommands = useCallback(() => {
     const tmdbCommand = generateTMDBCommand(selectedSeason)
     setDisplayedTMDBCommand(tmdbCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`)
-  }, [selectedSeason, item])
+  }, [selectedSeason, item, headlessMode])
 
   
   
@@ -923,9 +926,9 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       // 提取URL参数部分
       const tmdbUrl = cmdParts[cmdParts.length - 1];
 
-      // 构建完整的命令字符串，让服务器端API来处理环境检测和命令构建
-      // 使用通用的cd命令格式，让API端点根据实际运行环境来调整
-      const fullCommand = `cd "${tmdbImportPath}" && python -m tmdb-import ${tmdbUrl}`;
+      // 构建完整的命令字符串，根据 headlessMode 决定是否添加 --headless 标志
+      const headlessFlag = headlessMode ? '--headless' : '';
+      const fullCommand = `cd "${tmdbImportPath}" && python -m tmdb-import ${headlessFlag} ${tmdbUrl}`;
 
       // 在页面日志中显示将要执行的命令
       appendTerminalOutput(`将在页面终端执行命令: ${fullCommand}`, "info");
@@ -1718,7 +1721,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 </div>
 
                 {/* 配置和按钮区域 */}
-                <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="mt-3 grid grid-cols-3 gap-3">
                   {/* 左侧：URL和季数配置 */}
                   <div className="space-y-2">
                   <div>
@@ -1760,10 +1763,39 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             </div>
           </div>
 
+                  {/* 中间：运行模式选择 */}
+                  <div className="space-y-2">
+                    <Label className="text-xs mb-1 block">运行模式</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={!headlessMode ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setHeadlessMode(false)}
+                        className={`flex-1 h-7 text-xs ${!headlessMode ? "bg-green-600 hover:bg-green-700" : ""}`}
+                      >
+                        <Terminal className="h-3 w-3 mr-1" />
+                        前台
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={headlessMode ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setHeadlessMode(true)}
+                        className={`flex-1 h-7 text-xs ${headlessMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                      >
+                        <ActivityIcon className="h-3 w-3 mr-1" />
+                        后台
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {headlessMode ? "浏览器后台运行，性能更好" : "浏览器窗口可见，适合调试"}
+                    </p>
+                  </div>
+
                   {/* 右侧：按钮区域 */}
                   <div className="flex flex-col justify-end space-y-2">
-                    {/* 刷新按钮 */}
-                                        {/* 两个主要按钮 */}
+                    {/* 两个主要按钮 */}
                     <div className="grid grid-cols-2 gap-3">
                       <Button
                         onClick={(e) => startProcessing(e)}

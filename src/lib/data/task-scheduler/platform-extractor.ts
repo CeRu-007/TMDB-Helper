@@ -15,6 +15,7 @@ export interface PlatformExtractionOptions {
   platformUrl: string;
   seasonNumber: number;
   itemId: string;
+  headlessMode?: boolean;
 }
 
 /**
@@ -94,6 +95,7 @@ export class PlatformExtractor {
       platformUrl: item.platformUrl || '',
       seasonNumber: seasonNumber,
       itemId: item.id,
+      headlessMode: false, // 默认前台模式
     };
   }
 }

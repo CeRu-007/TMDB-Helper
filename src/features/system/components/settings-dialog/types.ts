@@ -10,6 +10,7 @@ export interface TMDBConfig {
   tmdb_password?: string
   backdrop_forced_upload?: boolean
   filter_words?: string
+  headlessMode?: boolean
 }
 
 export interface GeneralSettings {

@@ -12,7 +12,7 @@ const execAsync = promisify(exec);
  */
 export async function POST(request: NextRequest) {
   try {
-    const { platformUrl, seasonNumber, itemId } = await request.json();
+    const { platformUrl, seasonNumber, itemId, headlessMode = false } = await request.json();
     
     if (!platformUrl) {
       return NextResponse.json({
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 构建播出平台抓取命令
-    const extractCommand = `python -m tmdb-import "${platformUrl}"`;
+    const extractCommand = `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${platformUrl}"`;
 
     try {
       const { stdout, stderr } = await execAsync(extractCommand, {
@@ -124,7 +124,8 @@ export async function POST(request: NextRequest) {
           errorMessage: execError instanceof Error ? execError.message : String(execError),
           errorCode: execError instanceof Error && 'code' in execError ? (execError as Error & { code?: unknown }).code : undefined,
           stdout: execError instanceof Error && 'stdout' in execError ? (execError as Error & { stdout?: string }).stdout || '' : '',
-          stderr: execError instanceof Error && 'stderr' in execError ? (execError as Error & { stderr?: string }).stderr || '' : ''
+          stderr: execError instanceof Error && 'stderr' in execError ? (execError as Error & { stderr?: string }).stderr || '' : '',
+          headlessMode: headlessMode
         }
       }, { status: 500 });
     }

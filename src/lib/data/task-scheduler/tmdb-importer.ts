@@ -20,6 +20,7 @@ export interface TMDBImportOptions {
   removeAirDateColumn?: boolean;
   removeRuntimeColumn?: boolean;
   removeBackdropColumn?: boolean;
+  headlessMode?: boolean;
 }
 
 /**
@@ -120,6 +121,7 @@ export class TMDBImporter {
       removeAirDateColumn: task.action.removeAirDateColumn === true,
       removeRuntimeColumn: task.action.removeRuntimeColumn === true,
       removeBackdropColumn: task.action.removeBackdropColumn === true,
+      headlessMode: task.action.headlessMode === true,
     };
   }
 
