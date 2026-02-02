@@ -7,6 +7,7 @@ import { ScrollArea } from '@/shared/components/ui/scroll-area'
 import { Calendar, Clock, Heart, Play, ChevronLeft, ChevronRight } from 'lucide-react'
 import { ScheduleDay, ScheduleEpisode } from '../types/schedule'
 import { ScheduleImage } from './schedule-image'
+import type { CategoryType } from './schedule-view'
 import { cn } from '@/lib/utils'
 
 const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
@@ -14,19 +15,21 @@ const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '�
 interface ScheduleDayViewProps {
   dayData: ScheduleDay
   selectedDayIndex: number
+  selectedCategory: CategoryType
   onNavigateDay: (delta: number) => void
   onSelectEpisode: (episode: ScheduleEpisode) => void
   followingIds: Set<string>
   onToggleFollowing: (id: string) => void
 }
 
-export function ScheduleDayView({ 
-  dayData, 
+export function ScheduleDayView({
+  dayData,
   selectedDayIndex,
+  selectedCategory,
   onNavigateDay,
-  onSelectEpisode, 
-  followingIds, 
-  onToggleFollowing 
+  onSelectEpisode,
+  followingIds,
+  onToggleFollowing
 }: ScheduleDayViewProps) {
   const sortedEpisodes = [...dayData.episodes].sort((a, b) =>
     a.pubTime.localeCompare(b.pubTime)
@@ -71,9 +74,19 @@ export function ScheduleDayView({
             </div>
 
             <div className="text-center py-20 text-gray-400">
-              <Calendar className="h-16 w-16 mx-auto mb-4 opacity-30" />
-              <p>本日暂无更新</p>
-              <p className="text-sm mt-1 opacity-70">切换到其他日期看看吧~</p>
+              {selectedCategory === 'domestic' ? (
+                <>
+                  <Calendar className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <p className="text-base">暂无影剧数据</p>
+                  <p className="text-sm mt-1 opacity-70">功能开发中，敬请期待~</p>
+                </>
+              ) : (
+                <>
+                  <Calendar className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <p>本日暂无更新</p>
+                  <p className="text-sm mt-1 opacity-70">切换到其他日期看看吧~</p>
+                </>
+              )}
             </div>
           </div>
         </div>

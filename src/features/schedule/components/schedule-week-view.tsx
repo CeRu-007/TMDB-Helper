@@ -3,10 +3,12 @@
 import React from 'react'
 import { ScheduleDay, ScheduleEpisode } from '../types/schedule'
 import { ScheduleDayColumn } from './schedule-day-column'
+import type { CategoryType } from './schedule-view'
 
 interface ScheduleWeekViewProps {
   weekData: ScheduleDay[]
   selectedDay: number
+  selectedCategory: CategoryType
   onSelectDay: (day: number) => void
   onSelectEpisode: (episode: ScheduleEpisode) => void
   followingIds: Set<string>
@@ -15,10 +17,11 @@ interface ScheduleWeekViewProps {
   onHoverDay: (day: number | null) => void
 }
 
-export function ScheduleWeekView({ 
-  weekData, 
-  selectedDay, 
-  onSelectDay, 
+export function ScheduleWeekView({
+  weekData,
+  selectedDay,
+  selectedCategory,
+  onSelectDay,
   onSelectEpisode,
   followingIds,
   onToggleFollowing,
@@ -35,6 +38,7 @@ export function ScheduleWeekView({
             dayIndex={index}
             isSelected={selectedDay === index}
             isHovered={hoveredDay === index}
+            selectedCategory={selectedCategory}
             onSelect={() => onSelectDay(index)}
             onHover={() => onHoverDay(index)}
             onLeave={() => onHoverDay(null)}

@@ -22,6 +22,224 @@ src/features/schedule/
     └── schedule.ts       # 类型定义
 ```
 
+## 分类筛选功能
+
+### 功能概述
+
+时间表支持四种分类筛选：
+- **全部**：显示所有内容
+- **动漫**：只显示动漫内容
+- **影剧**：只显示影剧（电视剧）内容
+- **已追**：只显示用户已追的剧集
+
+### 实现原理
+
+#### 1. contentType 字段
+
+在 `ScheduleEpisode` 接口中添加了 `contentType` 字段，用于标识内容类型：
+
+```typescript
+export interface ScheduleEpisode {
+  // ... 其他字段
+  contentType?: 'anime' | 'domestic'
+}
+```
+
+#### 2. 适配器中设置 contentType
+
+每个平台适配器需要在 `transformEpisode` 方法中设置 `contentType` 字段：
+
+**动漫平台（如 B站、爱奇艺）：**
+```typescript
+private transformEpisode(episode: any): ScheduleEpisode {
+  return {
+    // ... 其他字段
+    contentType: 'anime'
+  }
+}
+```
+
+**影剧平台（如腾讯视频、优酷）：**
+```typescript
+private transformEpisode(episode: any): ScheduleEpisode {
+  return {
+    // ... 其他字段
+    contentType: 'domestic'
+  }
+}
+```
+
+#### 3. 筛选逻辑
+
+在 `schedule-view.tsx` 中实现了 `filterEpisodesByCategory` 函数：
+
+```typescript
+function filterEpisodesByCategory(
+  weekData: ScheduleDay[],
+  category: CategoryType,
+  followingIds: Set<string>
+): ScheduleDay[] {
+  // 全部：返回所有数据
+  if (category === 'all') {
+    return weekData
+  }
+
+  // 已追：只显示已追的剧集
+  if (category === 'following') {
+    return weekData.map(day => ({
+      ...day,
+      episodes: day.episodes.filter(ep => followingIds.has(ep.id))
+    }))
+  }
+
+  // 动漫：筛选 contentType 为 'anime' 的剧集
+  if (category === 'anime') {
+    return weekData.map(day => ({
+      ...day,
+      episodes: day.episodes.filter(ep => ep.contentType === 'anime')
+    }))
+  }
+
+  // 影剧：筛选 contentType 为 'domestic' 的剧集
+  if (category === 'domestic') {
+    return weekData.map(day => ({
+      ...day,
+      episodes: day.episodes.filter(ep => ep.contentType === 'domestic')
+    }))
+  }
+
+  return weekData
+}
+```
+
+#### 4. 空状态提示
+
+当选择某个分类但该分类没有数据时，会显示友好的空状态提示：
+
+**周视图和日视图中的空状态：**
+- **影剧分类无数据**：显示"暂无影剧数据，功能开发中，敬请期待~"
+- **其他分类无数据**：显示"暂无更新"或"本日暂无更新"
+
+**实现位置：**
+- `schedule-day-column.tsx` - 周视图的日列
+- `schedule-day-view.tsx` - 日视图
+
+```typescript
+{day.episodes.length === 0 && (
+  <div className="text-center py-8 text-gray-400">
+    {selectedCategory === 'domestic' ? (
+      <>
+        <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p className="text-xs">暂无影剧数据</p>
+        <p className="text-[10px] mt-1 opacity-70">功能开发中，敬请期待~</p>
+      </>
+    ) : (
+      <>
+        <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p className="text-xs">暂无更新</p>
+      </>
+    )}
+  </div>
+)}
+```
+
+### 集成新平台时的注意事项
+
+在实现新的平台适配器时，必须设置 `contentType` 字段：
+
+```typescript
+class YourPlatformAdapter implements PlatformScheduleAdapter {
+  private transformEpisode(episode: any): ScheduleEpisode {
+    return {
+      id: episode.id,
+      title: episode.title,
+      cover: episode.cover,
+      pubTime: episode.pubTime,
+      pubIndex: episode.pubIndex,
+      published: episode.published,
+      url: episode.url,
+      platform: '平台名称',
+      // ⚠️ 重要：必须设置 contentType 字段
+      contentType: 'anime'  // 或 'domestic'
+    }
+  }
+}
+```
+
+### 分类规则
+
+| 平台类型 | contentType | 示例 |
+|---------|-------------|------|
+| 动漫平台 | `'anime'` | B站、爱奇艺动漫、腾讯动漫 |
+| 影剧平台 | `'domestic'` | 腾讯视频、优酷、芒果TV |
+| 混合平台 | 根据剧集类型设置 | 如某平台既有动漫又有影剧，需要根据具体剧集设置 |
+
+### 测试建议
+
+1. **测试筛选功能**：
+   - 切换不同分类，验证是否正确筛选
+   - 检查空状态提示是否正确显示
+
+2. **测试多平台数据**：
+   - 确保动漫平台和影剧平台的数据能正确筛选
+   - 验证"全部"分类显示所有内容
+
+3. **测试边界情况**：
+   - 测试没有数据时的空状态
+   - 测试单个平台的数据筛选
+
+### 常见问题
+
+#### Q1: 为什么我的平台数据没有显示？
+
+**可能原因：**
+- 没有设置 `contentType` 字段
+- `contentType` 值设置错误
+
+**解决方法：**
+```typescript
+// 检查适配器中是否设置了 contentType
+console.log('[Debug] Content type:', episode.contentType)
+// 应该显示: 'anime' 或 'domestic'
+```
+
+#### Q2: 如何判断一个平台应该设置什么 contentType？
+
+**判断标准：**
+- **动漫平台**：主要提供动漫、番剧、国创等动画内容
+- **影剧平台**：主要提供电视剧、电影等真人影视内容
+
+**如果平台既有动漫又有影剧：**
+- 根据每个剧集的具体类型设置 `contentType`
+- 或者在适配器中根据剧集的标签/类型字段进行判断
+
+#### Q3: 可以添加更多分类吗？
+
+**可以扩展，但需要：**
+1. 修改 `CategoryType` 类型定义：
+   ```typescript
+   type CategoryType = 'all' | 'anime' | 'domestic' | 'following' | 'movie'
+   ```
+
+2. 更新 `CATEGORIES` 数组：
+   ```typescript
+   const CATEGORIES = [
+     { id: 'all', label: '全部', color: 'bg-gray-500' },
+     { id: 'anime', label: '动漫', color: 'bg-blue-500' },
+     { id: 'domestic', label: '影剧', color: 'bg-amber-500' },
+     { id: 'following', label: '已追', color: 'bg-rose-500' },
+     { id: 'movie', label: '电影', color: 'bg-purple-500' }
+   ]
+   ```
+
+3. 在 `filterEpisodesByCategory` 中添加对应的筛选逻辑
+
+### 未来扩展
+
+1. **智能分类**：基于剧集的标签、标题等信息自动判断内容类型
+2. **自定义分类**：允许用户自定义分类规则
+3. **多维度筛选**：支持按平台、类型、状态等多维度筛选
+
 ## 集成新平台API的步骤
 
 ### 1. 创建适配器类
@@ -77,7 +295,8 @@ class YourPlatformAdapter implements PlatformScheduleAdapter {
       pubTime: episode.pubTime, // 播出时间 (HH:MM)
       pubIndex: episode.pubIndex, // 更新集数
       published: episode.published, // 是否已发布
-      url: episode.url          // 播放页面URL
+      url: episode.url,          // 播放页面URL
+      contentType: 'anime'      // ⚠️ 必须设置：'anime'（动漫）或 'domestic'（影剧）
     }
   }
 }
@@ -641,6 +860,7 @@ interface ScheduleEpisode {
   pubIndex: string          // 更新集数
   published: boolean        // 是否已发布
   url: string               // 播放页面URL
+  contentType?: 'anime' | 'domestic'  // 内容类型：动漫或影剧
 }
 ```
 
@@ -720,6 +940,7 @@ export interface ScheduleEpisode {
   platform?: string               // 原有字段，单个平台名称
   platforms?: string[]            // 新增：所有平台名称数组
   platformUrls?: Record<string, string>  // 新增：平台名称到URL的映射
+  contentType?: 'anime' | 'domestic'    // 新增：内容类型（动漫/影剧）
 }
 ```
 
@@ -970,6 +1191,7 @@ buildWeekData（按星期几）：
 | `types` | 合并所有类型 | `["热血"]` + `["冒险", "动作"]` → `["热血", "冒险", "动作"]` |
 | `published` | 任一平台已发布即为已发布 | `false` + `true` → `true` |
 | `cover` | 使用第一个平台的封面 | 保留原值 |
+| `contentType` | 使用第一个平台的类型 | 如果第一个平台是动漫，则为 `'anime'` |
 
 ### 调试技巧
 
@@ -1024,14 +1246,24 @@ console.log('[Fetch] Week data:', weekData)
    }
    ```
 
-3. **数据转换正确**：
+3. **⚠️ 必须设置 `contentType` 字段**：
+   ```typescript
+   return {
+     contentType: 'anime'  // 动漫平台
+     // 或
+     contentType: 'domestic'  // 影剧平台
+   }
+   ```
+
+4. **数据转换正确**：
    - 确保 `title` 字段包含剧集名称
    - 不要在标题中添加额外的标签或后缀
 
-4. **测试合并效果**：
+5. **测试合并效果**：
    - 选择一个已知在多个平台都有剧集的标题
    - 验证是否正确合并为一个条目
    - 检查平台标签和播放按钮是否正确显示
+   - 测试分类筛选功能是否正常工作
 
 ### 常见问题
 

@@ -70,7 +70,8 @@ class BilibiliScheduleAdapter implements PlatformScheduleAdapter {
       url: episode.url,
       duration: episode.duration,
       types,
-      platform: '哔哩哔哩'
+      platform: '哔哩哔哩',
+      contentType: 'anime'
     }
   }
 

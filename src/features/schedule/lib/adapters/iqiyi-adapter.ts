@@ -213,7 +213,8 @@ class IqiyiScheduleAdapter implements PlatformScheduleAdapter {
       published: true,
       url,
       types,
-      platform: '爱奇艺'
+      platform: '爱奇艺',
+      contentType: 'anime'
     }
   }
 

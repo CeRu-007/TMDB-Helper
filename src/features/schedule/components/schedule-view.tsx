@@ -29,8 +29,8 @@ const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '�
 
 const CATEGORIES = [
   { id: 'all' as CategoryType, label: '全部', color: 'bg-gray-500' },
-  { id: 'anime' as CategoryType, label: '番剧', color: 'bg-blue-500' },
-  { id: 'domestic' as CategoryType, label: '国创', color: 'bg-amber-500' },
+  { id: 'anime' as CategoryType, label: '动漫', color: 'bg-blue-500' },
+  { id: 'domestic' as CategoryType, label: '影剧', color: 'bg-amber-500' },
   { id: 'following' as CategoryType, label: '已追', color: 'bg-rose-500' },
 ] as const
 
@@ -78,14 +78,36 @@ function filterEpisodesByCategory(
   category: CategoryType,
   followingIds: Set<string>
 ): ScheduleDay[] {
-  if (category !== 'following') {
+  // 全部：返回所有数据
+  if (category === 'all') {
     return weekData
   }
 
-  return weekData.map(day => ({
-    ...day,
-    episodes: day.episodes.filter(ep => followingIds.has(ep.id))
-  }))
+  // 已追：只显示已追的剧集
+  if (category === 'following') {
+    return weekData.map(day => ({
+      ...day,
+      episodes: day.episodes.filter(ep => followingIds.has(ep.id))
+    }))
+  }
+
+  // 动漫：筛选 contentType 为 'anime' 的剧集
+  if (category === 'anime') {
+    return weekData.map(day => ({
+      ...day,
+      episodes: day.episodes.filter(ep => ep.contentType === 'anime')
+    }))
+  }
+
+  // 影剧：筛选 contentType 为 'domestic' 的剧集
+  if (category === 'domestic') {
+    return weekData.map(day => ({
+      ...day,
+      episodes: day.episodes.filter(ep => ep.contentType === 'domestic')
+    }))
+  }
+
+  return weekData
 }
 
 export function ScheduleView({ className }: ScheduleViewProps) {
@@ -235,9 +257,10 @@ export function ScheduleView({ className }: ScheduleViewProps) {
             <span className="text-sm text-gray-500">加载中...</span>
           </div>
         ) : viewMode === 'week' ? (
-          <ScheduleWeekView 
+          <ScheduleWeekView
             weekData={filteredWeekData}
             selectedDay={selectedDay}
+            selectedCategory={selectedCategory}
             onSelectDay={setSelectedDay}
             onSelectEpisode={setSelectedEpisode}
             followingIds={followingIds}
@@ -246,9 +269,10 @@ export function ScheduleView({ className }: ScheduleViewProps) {
             onHoverDay={setHoveredDay}
           />
         ) : (
-          <ScheduleDayView 
+          <ScheduleDayView
             dayData={currentDayData}
             selectedDayIndex={selectedDay}
+            selectedCategory={selectedCategory}
             onNavigateDay={handleNavigateDay}
             onSelectEpisode={setSelectedEpisode}
             followingIds={followingIds}

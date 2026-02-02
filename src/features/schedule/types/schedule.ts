@@ -11,6 +11,7 @@ export interface ScheduleEpisode {
   platform?: string
   platforms?: string[]
   platformUrls?: Record<string, string>
+  contentType?: 'anime' | 'domestic'
 }
 
 export interface ScheduleDay {

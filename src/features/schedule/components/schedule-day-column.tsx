@@ -3,9 +3,10 @@
 import React from 'react'
 import { Badge } from '@/shared/components/ui/badge'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
-import { Clock } from 'lucide-react'
+import { Clock, Calendar } from 'lucide-react'
 import { ScheduleDay, ScheduleEpisode } from '../types/schedule'
 import { ScheduleEpisodeCard } from './schedule-episode-card'
+import type { CategoryType } from './schedule-view'
 import { cn } from '@/lib/utils'
 
 const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
@@ -15,6 +16,7 @@ interface ScheduleDayColumnProps {
   dayIndex: number
   isSelected: boolean
   isHovered: boolean
+  selectedCategory: CategoryType
   onSelect: () => void
   onHover: () => void
   onLeave: () => void
@@ -28,6 +30,7 @@ export function ScheduleDayColumn({
   dayIndex,
   isSelected,
   isHovered,
+  selectedCategory,
   onSelect,
   onHover,
   onLeave,
@@ -87,8 +90,18 @@ export function ScheduleDayColumn({
           ))}
           {day.episodes.length === 0 && (
             <div className="text-center py-8 text-gray-400">
-              <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">暂无更新</p>
+              {selectedCategory === 'domestic' ? (
+                <>
+                  <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">暂无影剧数据</p>
+                  <p className="text-[10px] mt-1 opacity-70">功能开发中，敬请期待~</p>
+                </>
+              ) : (
+                <>
+                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">暂无更新</p>
+                </>
+              )}
             </div>
           )}
         </div>
