@@ -1725,7 +1725,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   {/* 左侧：URL和季数配置 */}
                   <div className="space-y-2">
                   <div>
-                      <Label htmlFor="platform-url-tab" className="text-xs">播出平台URL</Label>
+                      <Label htmlFor="platform-url-tab" className="text-xs mb-1 block">播出平台URL</Label>
                       <Input
                         id="platform-url-tab"
                         value={platformUrl}
@@ -1765,30 +1765,32 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
                   {/* 中间：运行模式选择 */}
                   <div className="space-y-2">
-                    <Label className="text-xs mb-1 block">运行模式</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={!headlessMode ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setHeadlessMode(false)}
-                        className={`flex-1 h-7 text-xs ${!headlessMode ? "bg-green-600 hover:bg-green-700" : ""}`}
-                      >
-                        <Terminal className="h-3 w-3 mr-1" />
-                        前台
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={headlessMode ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setHeadlessMode(true)}
-                        className={`flex-1 h-7 text-xs ${headlessMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
-                      >
-                        <ActivityIcon className="h-3 w-3 mr-1" />
-                        后台
-                      </Button>
+                    <div>
+                      <Label className="text-xs mb-1 block">运行模式</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={!headlessMode ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setHeadlessMode(false)}
+                          className={`flex-1 h-7 text-xs ${!headlessMode ? "bg-green-600 hover:bg-green-700" : ""}`}
+                        >
+                          <Terminal className="h-3 w-3 mr-1" />
+                          前台
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={headlessMode ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setHeadlessMode(true)}
+                          className={`flex-1 h-7 text-xs ${headlessMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                        >
+                          <ActivityIcon className="h-3 w-3 mr-1" />
+                          后台
+                        </Button>
+                      </div>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-[10px] text-muted-foreground">
                       {headlessMode ? "浏览器后台运行，性能更好" : "浏览器窗口可见，适合调试"}
                     </p>
                   </div>
