@@ -1,38 +1,28 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { ModelServiceStorage } from '@/lib/data/model-service-storage'
-import { ModelServiceConfig, ModelProvider, ModelConfig, UsageScenario } from '@/shared/types/model-service'
-import { ApiResponse } from '@/types/common'
+import { ModelProvider, ModelConfig, UsageScenario } from '@/shared/types/model-service'
 import { logger } from '@/lib/utils/logger'
 
-// Standardized error response helper
+// Standardized response helper with UTF-8 charset
+function createJsonResponse(data: Record<string, unknown>, status: number = 200) {
+  const response = NextResponse.json(data, { status })
+  response.headers.set('Content-Type', 'application/json; charset=utf-8')
+  return response
+}
+
+// Standardized error response
 function createErrorResponse(message: string, status: number = 500) {
   logger.error(`模型服务API错误: ${message}`)
-  return NextResponse.json({
-    success: false,
-    error: message
-  }, { status })
-}
-
-// Standardized success response helper
-function createSuccessResponse<T>(data: T, message?: string) {
-  return NextResponse.json<ApiResponse<T>>({
-    success: true,
-    data,
-    ...(message && { message })
-  })
-}
-
-// Cache control headers for GET requests
-const CACHE_HEADERS = {
-  'Cache-Control': 'no-cache, no-store, must-revalidate',
-  'Pragma': 'no-cache',
-  'Expires': '0'
+  return createJsonResponse({ success: false, error: message }, status)
 }
 
 export async function GET(request: NextRequest) {
   try {
     const modelServiceConfig = await ModelServiceStorage.getConfig()
-    return createSuccessResponse({ config: modelServiceConfig })
+    return createJsonResponse({
+      success: true,
+      config: modelServiceConfig
+    })
   } catch (error) {
     return createErrorResponse(
       error instanceof Error ? error.message : '获取配置失败'
@@ -50,7 +40,10 @@ export async function POST(request: NextRequest) {
     }
 
     await ModelServiceStorage.saveConfig(config)
-    return createSuccessResponse({}, '模型服务配置已保存')
+    return createJsonResponse({
+      success: true,
+      message: '模型服务配置已保存'
+    })
   } catch (error) {
     return createErrorResponse(
       error instanceof Error ? error.message : '保存配置失败'
@@ -72,24 +65,17 @@ interface ActionHandlers {
   'update-scenarios': ActionHandler<UsageScenario[]>
 }
 
-// Action handlers mapping for better maintainability
+// Action handlers mapping
 const ACTION_HANDLERS: ActionHandlers = {
-  'add-provider': (data: Omit<ModelProvider, 'id' | 'createdAt' | 'updatedAt'>) =>
-    ModelServiceStorage.addProvider(data),
-  'update-provider': (data: ModelProvider) =>
-    ModelServiceStorage.updateProvider(data),
-  'delete-provider': (data: { id: string }) =>
-    ModelServiceStorage.deleteProvider(data.id),
-  'add-model': (data: Omit<ModelConfig, 'id' | 'createdAt' | 'updatedAt'>) =>
-    ModelServiceStorage.addModel(data),
-  'update-model': (data: ModelConfig) =>
-    ModelServiceStorage.updateModel(data),
-  'delete-model': (data: { id: string }) =>
-    ModelServiceStorage.deleteModel(data.id),
-  'update-scenario': (data: UsageScenario | UsageScenario[]) =>
+  'add-provider': (data) => ModelServiceStorage.addProvider(data),
+  'update-provider': (data) => ModelServiceStorage.updateProvider(data),
+  'delete-provider': (data) => ModelServiceStorage.deleteProvider(data.id),
+  'add-model': (data) => ModelServiceStorage.addModel(data),
+  'update-model': (data) => ModelServiceStorage.updateModel(data),
+  'delete-model': (data) => ModelServiceStorage.deleteModel(data.id),
+  'update-scenario': (data) =>
     ModelServiceStorage.updateScenarios(Array.isArray(data) ? data : [data]),
-  'update-scenarios': (data: UsageScenario[]) =>
-    ModelServiceStorage.updateScenarios(data)
+  'update-scenarios': (data) => ModelServiceStorage.updateScenarios(data)
 }
 
 export async function PUT(request: NextRequest) {
@@ -115,7 +101,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const updatedConfig = await ModelServiceStorage.getConfig()
-    return createSuccessResponse({ config: updatedConfig }, '操作成功')
+    return createJsonResponse({
+      success: true,
+      config: updatedConfig,
+      message: '操作成功'
+    })
   } catch (error) {
     return createErrorResponse(
       error instanceof Error ? error.message : '更新配置失败'

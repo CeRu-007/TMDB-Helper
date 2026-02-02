@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 模型服务设置面板
  */
 
@@ -345,16 +345,49 @@ export default function ModelServiceSettingsPanel({
   }
 
   const handleSaveBuiltinProvider = async (providerId: string, apiKey: string) => {
+    const builtinProviders = {
+      'siliconflow-builtin': {
+        type: 'siliconflow' as const,
+        name: '硅基流动',
+        apiBaseUrl: 'https://api.siliconflow.cn/v1'
+      },
+      'modelscope-builtin': {
+        type: 'modelscope' as const,
+        name: '魔搭社区',
+        apiBaseUrl: 'https://api-inference.modelscope.cn/v1'
+      }
+    }
+
+    const providerConfig = builtinProviders[providerId as keyof typeof builtinProviders]
+    if (!providerConfig) return
+
+    const providerData = {
+      id: providerId,
+      name: providerConfig.name,
+      type: providerConfig.type,
+      apiKey,
+      apiBaseUrl: providerConfig.apiBaseUrl,
+      enabled: true,
+      isBuiltIn: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+
     try {
-      await fetch('/api/model-service', {
+      const response = await fetch('/api/model-service', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'update-provider',
-          data: { id: providerId, apiKey }
+          data: providerData
         })
       })
-      window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+
+      if (response.ok) {
+        window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+      } else {
+        logger.error('保存内置提供商失败:', response.status)
+      }
     } catch (error) {
       logger.error('保存内置提供商失败:', error)
     }
@@ -574,10 +607,19 @@ export default function ModelServiceSettingsPanel({
                       <Input
                         type={showSiliconFlowApiKey ? "text" : "password"}
                         value={apiSettings.siliconFlow?.apiKey || ""}
-                        onChange={(e) => setApiSettings({
-                          ...apiSettings,
-                          siliconFlow: { ...apiSettings.siliconFlow!, apiKey: e.target.value }
-                        })}
+                        onChange={(e) => {
+                          const newApiKey = e.target.value;
+                          setApiSettings({
+                            ...apiSettings,
+                            siliconFlow: {
+                              ...(apiSettings.siliconFlow || {
+                                thumbnailFilterModel: "Qwen/Qwen2.5-VL-32B-Instruct"
+                              }),
+                              apiKey: newApiKey
+                            }
+                          });
+                          handleSaveBuiltinProvider("siliconflow-builtin", newApiKey);
+                        }}
                         placeholder="输入硅基流动API密钥"
                         className="flex-1"
                       />
@@ -624,10 +666,19 @@ export default function ModelServiceSettingsPanel({
                       <Input
                         type={showModelScopeApiKey ? "text" : "password"}
                         value={apiSettings.modelScope?.apiKey || ""}
-                        onChange={(e) => setApiSettings({
-                          ...apiSettings,
-                          modelScope: { ...apiSettings.modelScope!, apiKey: e.target.value }
-                        })}
+                        onChange={(e) => {
+                          const newApiKey = e.target.value;
+                          setApiSettings({
+                            ...apiSettings,
+                            modelScope: {
+                              ...(apiSettings.modelScope || {
+                                episodeGenerationModel: "Qwen/Qwen3-32B"
+                              }),
+                              apiKey: newApiKey
+                            }
+                          });
+                          handleSaveBuiltinProvider("modelscope-builtin", newApiKey);
+                        }}
                         placeholder="输入魔搭社区API密钥"
                         className="flex-1"
                       />

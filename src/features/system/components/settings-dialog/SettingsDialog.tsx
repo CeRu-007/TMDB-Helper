@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 设置对话框主组件
  *
  * 使用复合模式组织各个设置面板
@@ -56,6 +56,16 @@ const DEFAULT_TMDB_CONFIG: TMDBConfig = {
   filter_words: '',
   rename_csv_on_import: false,
   delete_csv_after_import: false
+}
+
+// 辅助函数：查找内置提供商
+function findBuiltinProvider(
+  providers: Array<{ id: string; type: string; isBuiltIn: boolean }>,
+  id: string,
+  type: string
+) {
+  return providers.find(p => p.id === id && p.isBuiltIn) ||
+         providers.find(p => p.type === type && p.isBuiltIn)
 }
 
 export default function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
@@ -200,11 +210,23 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // Docker环境状态
   const [isDockerEnv, setIsDockerEnv] = useState(false)
 
+  // 辅助函数：更新API设置
+  const updateApiSetting = useCallback((providerKey: 'siliconFlow' | 'modelScope', apiKey: string, defaultModel: string) => {
+    setApiSettings(prev => ({
+      ...prev,
+      [providerKey]: {
+        ...(prev[providerKey] || { [`${providerKey}Model`]: defaultModel }),
+        apiKey
+      }
+    }))
+  }, [])
+
   // 初始化设置
   useEffect(() => {
     if (typeof window === "undefined") return
 
     const initializeSettings = async () => {
+      logger.info('初始化设置...')
       try {
         // 清除缓存
         ClientConfigManager.clearCache()
@@ -234,14 +256,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         if (!savedTmdbImportPath && typeof window !== "undefined") {
           const localPath = localStorage.getItem("tmdb_import_path")
           if (localPath) {
-            logger.info('🔄 [SettingsDialog] 从localStorage恢复tmdb_import_path配置')
             savedTmdbImportPath = localPath
             // 自动迁移到ClientConfigManager
             try {
               await ClientConfigManager.setItem("tmdb_import_path", localPath)
-              logger.info('✅ [SettingsDialog] 已迁移tmdb_import_path到ClientConfigManager')
             } catch (error) {
-              logger.warn('⚠️ [SettingsDialog] 迁移tmdb_import_path到ClientConfigManager失败:', error)
+              logger.warn('迁移tmdb_import_path到ClientConfigManager失败:', error)
             }
           }
         }
@@ -320,9 +340,13 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               if (data.config.providers) {
                 const customProviders = data.config.providers.filter((p: { isBuiltIn: boolean }) => p.isBuiltIn === false)
                 setCustomProviders(customProviders)
+              } else {
+                setCustomProviders([])
               }
               if (data.config.models) {
                 setConfiguredModels(data.config.models)
+              } else {
+                setConfiguredModels([])
               }
               if (data.config.scenarios) {
                 const initialScenarioSettings: ScenarioSettings = {}
@@ -339,34 +363,42 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   }
                 })
                 setScenarioSettings(initialScenarioSettings)
+              } else {
+                setScenarioSettings({})
               }
 
               // 加载API设置
-              const siliconflowProvider = data.config.providers?.find((p: { type: string; isBuiltIn: boolean }) => p.type === 'siliconflow' && p.isBuiltIn)
+              const providers = data.config.providers || []
+              const siliconflowProvider = findBuiltinProvider(providers, 'siliconflow-builtin', 'siliconflow')
+              const modelscopeProvider = findBuiltinProvider(providers, 'modelscope-builtin', 'modelscope')
+
               if (siliconflowProvider) {
-                setApiSettings(prev => ({
-                  ...prev,
-                  siliconFlow: {
-                    ...prev.siliconFlow!,
-                    apiKey: siliconflowProvider.apiKey || ""
-                  }
-                }))
+                updateApiSetting('siliconFlow', siliconflowProvider.apiKey || '', 'Qwen/Qwen2.5-VL-32B-Instruct')
               }
 
-              const modelscopeProvider = data.config.providers?.find((p: { type: string; isBuiltIn: boolean }) => p.type === 'modelscope' && p.isBuiltIn)
               if (modelscopeProvider) {
-                setApiSettings(prev => ({
-                  ...prev,
-                  modelScope: {
-                    ...prev.modelScope!,
-                    apiKey: modelscopeProvider.apiKey || ""
-                  }
-                }))
+                updateApiSetting('modelScope', modelscopeProvider.apiKey || '', 'Qwen/Qwen3-32B')
               }
+            } else {
+              logger.warn('加载模型服务配置失败，响应数据无效:', data)
+              // 提供默认值
+              setCustomProviders([])
+              setConfiguredModels([])
+              setScenarioSettings({})
             }
+          } else {
+            logger.warn('加载模型服务配置失败，状态码:', response.status)
+            // 提供默认值
+            setCustomProviders([])
+            setConfiguredModels([])
+            setScenarioSettings({})
           }
         } catch (error) {
           logger.warn('加载模型服务配置失败:', error)
+          // 提供默认值
+          setCustomProviders([])
+          setConfiguredModels([])
+          setScenarioSettings({})
           // 不抛出错误，继续初始化其他设置
         }
 
@@ -406,44 +438,71 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const refreshModelServiceConfig = useCallback(async () => {
     try {
       const response = await fetch('/api/model-service')
-      if (!response.ok) return
+      if (!response.ok) {
+        logger.warn('获取模型服务配置失败，状态码:', response.status)
+        resetModelServiceState()
+        return
+      }
 
       const data = await response.json()
-      if (!data.success || !data.config) return
-
-      setModelServiceConfig(data.config)
-
-      // 更新自定义提供商
-      if (data.config.providers) {
-        setCustomProviders(data.config.providers.filter((p: { isBuiltIn: boolean }) => !p.isBuiltIn))
+      if (!data.success || !data.config) {
+        logger.warn('获取模型服务配置失败，响应数据无效:', data)
+        resetModelServiceState()
+        return
       }
 
-      // 更新配置的模型
-      if (data.config.models) {
-        setConfiguredModels(data.config.models)
-      }
+      const config = data.config
+      setModelServiceConfig(config)
+      updateModelServiceState(config)
+    } catch (error) {
+      logger.warn('刷新模型服务配置失败:', error)
+      resetModelServiceState()
+    }
+  }, [])
 
-      // 更新场景设置
-      if (data.config.scenarios) {
-        const updatedScenarioSettings: ScenarioSettings = {}
-        data.config.scenarios.forEach((scenario: {
-  type: string;
-  selectedModelIds?: string[];
-  primaryModelId?: string;
-  parameters?: Record<string, unknown>
-}) => {
-          updatedScenarioSettings[scenario.type] = {
-            selectedModelIds: scenario.selectedModelIds || [],
-            primaryModelId: scenario.primaryModelId || '',
-            parameters: scenario.parameters || {}
-          }
-        })
-        setScenarioSettings(updatedScenarioSettings)
-          }
-        } catch (error) {
-          logger.warn('刷新模型服务配置失败:', error)
+  // 辅助函数：重置模型服务状态
+  const resetModelServiceState = useCallback(() => {
+    setCustomProviders([])
+    setConfiguredModels([])
+    setScenarioSettings({})
+  }, [])
+
+  // 辅助函数：更新模型服务状态
+  const updateModelServiceState = useCallback((config: any) => {
+    const providers = config.providers || []
+    const customProviders = providers.filter((p: { isBuiltIn: boolean }) => !p.isBuiltIn)
+    const siliconflowProvider = findBuiltinProvider(providers, 'siliconflow-builtin', 'siliconflow')
+    const modelscopeProvider = findBuiltinProvider(providers, 'modelscope-builtin', 'modelscope')
+
+    setCustomProviders(customProviders)
+    setConfiguredModels(config.models || [])
+
+    if (siliconflowProvider) {
+      updateApiSetting('siliconFlow', siliconflowProvider.apiKey || '', 'Qwen/Qwen2.5-VL-32B-Instruct')
+    }
+
+    if (modelscopeProvider) {
+      updateApiSetting('modelScope', modelscopeProvider.apiKey || '', 'Qwen/Qwen3-32B')
+    }
+
+    // 更新场景设置
+    const scenarioSettings: ScenarioSettings = {}
+    if (config.scenarios) {
+      config.scenarios.forEach((scenario: {
+        type: string
+        selectedModelIds?: string[]
+        primaryModelId?: string
+        parameters?: Record<string, unknown>
+      }) => {
+        scenarioSettings[scenario.type] = {
+          selectedModelIds: scenario.selectedModelIds || [],
+          primaryModelId: scenario.primaryModelId || '',
+          parameters: scenario.parameters || {}
         }
-      }, [])
+      })
+    }
+    setScenarioSettings(scenarioSettings)
+  }, [updateApiSetting])
 
   // 监听模型服务配置更新事件
   useEffect(() => {
@@ -452,53 +511,69 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     const handleConfigUpdate = async () => {
       try {
         const response = await fetch('/api/model-service')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success && data.config) {
-            setConfiguredModels(data.config.models || [])
-            setCustomProviders(data.config.providers?.filter((p: { isBuiltIn: boolean }) => p.isBuiltIn === false) || [])
-
-            const siliconflowProvider = data.config.providers?.find((p: { type: string; isBuiltIn: boolean }) => p.type === 'siliconflow' && p.isBuiltIn)
-            if (siliconflowProvider) {
-              setApiSettings(prev => ({
-                ...prev,
-                siliconFlow: { ...prev.siliconFlow!, apiKey: siliconflowProvider.apiKey || '' }
-              }))
-            }
-
-            const modelscopeProvider = data.config.providers?.find((p: { type: string; isBuiltIn: boolean }) => p.type === 'modelscope' && p.isBuiltIn)
-            if (modelscopeProvider) {
-              setApiSettings(prev => ({
-                ...prev,
-                modelScope: { ...prev.modelScope!, apiKey: modelscopeProvider.apiKey || '' }
-              }))
-            }
-
-            const updatedScenarioSettings: ScenarioSettings = {}
-            data.config.scenarios.forEach((scenario: {
-  type: string;
-  selectedModelIds?: string[];
-  primaryModelId?: string;
-  parameters?: Record<string, unknown>
-}) => {
-              const validModelIds = scenario.selectedModelIds?.filter((modelId: string) =>
-                data.config.models.some((model: { id: string }) => model.id === modelId)
-              ) || []
-              const validPrimaryId = validModelIds.includes(scenario.primaryModelId || '')
-                ? scenario.primaryModelId
-                : validModelIds[0] || ''
-              updatedScenarioSettings[scenario.type] = {
-                selectedModelIds: validModelIds,
-                primaryModelId: validPrimaryId,
-                parameters: scenario.parameters || {}
-              }
-            })
-            setScenarioSettings(updatedScenarioSettings)
-          }
+        if (!response.ok) {
+          logger.warn('同步模型服务配置失败，状态码:', response.status)
+          resetModelServiceState()
+          return
         }
+
+        const data = await response.json()
+        if (!data.success || !data.config) {
+          logger.warn('同步模型服务配置失败，响应数据无效:', data)
+          resetModelServiceState()
+          return
+        }
+
+        const config = data.config
+        setModelServiceConfig(config)
+        setConfiguredModels(config.models || [])
+        setCustomProviders(config.providers?.filter((p: { isBuiltIn: boolean }) => !p.isBuiltIn) || [])
+
+        // 更新API设置
+        const providers = config.providers || []
+        const siliconflowProvider = findBuiltinProvider(providers, 'siliconflow-builtin', 'siliconflow')
+        const modelscopeProvider = findBuiltinProvider(providers, 'modelscope-builtin', 'modelscope')
+
+        if (siliconflowProvider) {
+          setApiSettings(prev => ({
+            ...prev,
+            siliconFlow: { ...prev.siliconFlow!, apiKey: siliconflowProvider.apiKey || '' }
+          }))
+        }
+
+        if (modelscopeProvider) {
+          setApiSettings(prev => ({
+            ...prev,
+            modelScope: { ...prev.modelScope!, apiKey: modelscopeProvider.apiKey || '' }
+          }))
+        }
+
+        // 更新场景设置（过滤无效的模型ID）
+        const updatedScenarioSettings: ScenarioSettings = {}
+        if (config.scenarios) {
+          const validModelIds = new Set(config.models.map((m: { id: string }) => m.id))
+          config.scenarios.forEach((scenario: {
+            type: string
+            selectedModelIds?: string[]
+            primaryModelId?: string
+            parameters?: Record<string, unknown>
+          }) => {
+            const filteredModelIds = (scenario.selectedModelIds || []).filter(id => validModelIds.has(id))
+            const primaryId = filteredModelIds.includes(scenario.primaryModelId || '')
+              ? scenario.primaryModelId
+              : filteredModelIds[0] || ''
+
+            updatedScenarioSettings[scenario.type] = {
+              selectedModelIds: filteredModelIds,
+              primaryModelId: primaryId,
+              parameters: scenario.parameters || {}
+            }
+          })
+        }
+        setScenarioSettings(updatedScenarioSettings)
       } catch (error) {
-        logger.warn('同步场景设置失败:', error)
-        // 不抛出错误，避免影响其他功能
+        logger.warn('同步模型服务配置失败:', error)
+        resetModelServiceState()
       }
     }
 
