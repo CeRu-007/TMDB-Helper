@@ -127,7 +127,7 @@ export class ItemManager {
     // 使用文件存储
     if (typeof window !== 'undefined') {
       try {
-        const response = await this.makeApiCall(`${this.API_BASE_URL}/item`, {
+        const response = await ItemManager.makeApiCall(`${ItemManager.API_BASE_URL}/item`, {
           method: 'POST',
           body: JSON.stringify({ item }),
         });
@@ -158,7 +158,7 @@ export class ItemManager {
       try {
         logger.debug('ItemManager', `开始更新项目: ${updatedItem.title} (ID: ${updatedItem.id})`);
 
-        const response = await this.makeApiCall(`${this.API_BASE_URL}/item`, {
+        const response = await ItemManager.makeApiCall(`${ItemManager.API_BASE_URL}/item`, {
           method: 'PUT',
           body: JSON.stringify({ item: updatedItem }),
         });
@@ -179,11 +179,11 @@ export class ItemManager {
       }
     }
     // 使用原始的localStorage方法
-    if (!this.isClient()) {
+    if (!ItemManager.isClient()) {
       return false;
     }
     try {
-      const items = this.getItems();
+      const items = ItemManager.getItems();
       const index = items.findIndex((item) => item.id === updatedItem.id);
       if (index !== -1) {
         items[index] = updatedItem;
@@ -202,8 +202,8 @@ export class ItemManager {
     // 使用文件存储
     if (typeof window !== 'undefined') {
       try {
-        const response = await this.makeApiCall(
-          `${this.API_BASE_URL}/item?id=${encodeURIComponent(id)}`,
+        const response = await ItemManager.makeApiCall(
+          `${ItemManager.API_BASE_URL}/item?id=${encodeURIComponent(id)}`,
           { method: 'DELETE' },
         );
 
@@ -232,7 +232,7 @@ export class ItemManager {
    */
   static async findItemById(id: string): Promise<unknown | null> {
     try {
-      const items = await this.getItemsWithRetry();
+      const items = await ItemManager.getItemsWithRetry();
       const item = items.find((item) => item.id === id);
       return item || null;
     } catch (error) {
@@ -245,7 +245,7 @@ export class ItemManager {
    */
   static async hasAnyItems(): Promise<boolean> {
     try {
-      const items = await this.getItemsWithRetry();
+      const items = await ItemManager.getItemsWithRetry();
       return items.length > 0;
     } catch (_error) {
       return false;
