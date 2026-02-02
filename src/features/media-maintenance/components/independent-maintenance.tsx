@@ -81,15 +81,15 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   // TMDB-Import 运行模式：前台模式（GUI）或后台模式（无头）
   const [headlessMode, setHeadlessMode] = useState<boolean>(false)
 
-  // 缓存生成的命令
-  const [platformCommand, setPlatformCommand] = useState("")
-  const [tmdbCommand, setTmdbCommand] = useState("")
+  // 生成播出平台抓取命令
+  const generatePlatformCommand = useCallback((): string => {
+    return `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${platformUrl}"`
+  }, [headlessMode, platformUrl])
 
-  // 更新缓存的命令
-  useEffect(() => {
-    setPlatformCommand(`python -m tmdb-import ${headlessMode ? '--headless' : ''} "${platformUrl}"`)
-    setTmdbCommand(`python -m tmdb-import ${headlessMode ? '--headless' : ''} "https://www.themoviedb.org/tv/${tmdbId}/season/${selectedSeason}?language=${selectedLanguage}"`)
-  }, [headlessMode, platformUrl, tmdbId, selectedSeason, selectedLanguage])
+  // 生成TMDB抓取命令
+  const generateTmdbCommand = useCallback((): string => {
+    return `python -m tmdb-import ${headlessMode ? '--headless' : ''} "https://www.themoviedb.org/tv/${tmdbId}/season/${selectedSeason}?language=${selectedLanguage}"`
+  }, [headlessMode, tmdbId, selectedSeason, selectedLanguage])
 
   // 统一获取 TMDB-Import 工具路径：服务端配置为唯一来源
   const getTmdbImportPath = useCallback(async (): Promise<string | null> => {
@@ -371,8 +371,8 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
   // 执行平台抓取
   const handlePlatformExtraction = useCallback(async () => {
-    const command = platformCommand
-    if (!command || !platformUrl) {
+    const command = generatePlatformCommand()
+    if (!platformUrl) {
       toast({
         title: "错误",
         description: "请输入有效的播出平台URL",
@@ -396,12 +396,12 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
     appendTerminalOutput(`切换到工作目录: ${savedTmdbImportPath}`, "info")
     await executeCommand(command, "播出平台抓取", savedTmdbImportPath)
     setIsProcessing(false)
-  }, [platformCommand, platformUrl, executeCommand, toast, appendTerminalOutput])
+  }, [generatePlatformCommand, platformUrl, executeCommand, toast, appendTerminalOutput, getTmdbImportPath])
 
   // 执行TMDB导入
   const handleTmdbImport = useCallback(async () => {
-    const command = tmdbCommand
-    if (!command || !tmdbId) {
+    const command = generateTmdbCommand()
+    if (!tmdbId) {
       toast({
         title: "错误",
         description: "请输入有效的TMDB ID",
@@ -425,7 +425,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
     appendTerminalOutput(`切换到工作目录: ${savedTmdbImportPath}`, "info")
     await executeCommand(command, "TMDB导入", savedTmdbImportPath)
     setIsProcessing(false)
-  }, [tmdbCommand, tmdbId, executeCommand, toast, appendTerminalOutput])
+  }, [generateTmdbCommand, tmdbId, executeCommand, toast, appendTerminalOutput, getTmdbImportPath])
 
   // 发送快速命令
   const sendQuickCommand = useCallback(async (input: string) => {
@@ -611,13 +611,13 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
               <div className="bg-gray-900 text-green-400 p-2 lg:p-3 rounded-md font-mono text-xs overflow-hidden">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 w-0 truncate text-xs">{platformCommand || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}</div>
+                    <div className="flex-1 w-0 truncate text-xs">{generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}</div>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-6 ml-2 flex-shrink-0"
                       onClick={() => {
-                        const cmd = platformCommand
+                        const cmd = generatePlatformCommand()
                         if (cmd) {
                           navigator.clipboard.writeText(cmd)
                           toast({ title: "已复制", description: "播出平台命令已复制到剪贴板" })
@@ -628,13 +628,13 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     </Button>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 w-0 truncate text-xs">{tmdbCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/${tmdbId || 'TMDB_ID'}/season/${selectedSeason}?language=zh-CN"`}</div>
+                    <div className="flex-1 w-0 truncate text-xs">{generateTmdbCommand() || `python -m tmdb-import "https://www.themoviedb.org/tv/${tmdbId || 'TMDB_ID'}/season/${selectedSeason}?language=zh-CN"`}</div>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-6 ml-2 flex-shrink-0"
                       onClick={() => {
-                        const cmd = tmdbCommand
+                        const cmd = generateTmdbCommand()
                         if (cmd) {
                           navigator.clipboard.writeText(cmd)
                           toast({ title: "已复制", description: "TMDB命令已复制到剪贴板" })

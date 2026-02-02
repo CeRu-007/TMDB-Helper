@@ -473,95 +473,51 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 从CSV文件读取数据
   const readCSVFile = async (workingDirectory: string): Promise<boolean> => {
     try {
-            
-      try {
-        // 使用API路由读取CSV文件
+      const response = await axios.post('/api/csv/read', { workingDirectory })
 
-        // 使用try-catch包裹axios请求，防止错误传播到控制台
-        try {
-        const response = await axios.post('/api/csv/read', { workingDirectory });
-
-        if (!response.data.success) {
-          throw new Error(response.data.error || '读取CSV文件失败');
-        }
-
-        const csvData = response.data.data;
-        
-        // 确保数据格式正确 - 新API返回数组，需要转换为期望的格式
-        const formattedCsvData = Array.isArray(csvData) ? { rows: csvData } : csvData;
-        
-        // 验证CSV数据
-        const validation = validateCsvData(formattedCsvData);
-        if (!validation.valid) {
-          
-          // 尝试修复CSV数据
-          const fixedData = fixCsvData(formattedCsvData);
-          setCsvData(fixedData);
-
-          // 保存修复后的CSV数据
-          await axios.post('/api/csv/save', {
-            filePath: path.join(workingDirectory, 'import.csv'),
-            data: fixedData
-          });
-
-          appendTerminalOutput(`CSV数据已自动修复并保存，原因: ${validation.errors.join(', ')}`, "warning");
-        } else {
-          setCsvData(formattedCsvData);
-        }
-
-        // 生成CSV内容用于显示
-        const content = serializeCsvData(csvData);
-        setCsvContent(content);
-
-        appendTerminalOutput("CSV文件读取成功", "success");
-        
-        
-        return true;
-        } catch (axiosError: unknown) {
-          // 特殊处理404错误（文件不存在）
-          if (axiosError && typeof axiosError === 'object' && 'response' in axiosError && axiosError.response && typeof axiosError.response === 'object' && 'status' in axiosError.response && axiosError.response.status === 404) {
-            const errorMessage = '未找到CSV文件。请先运行平台元数据抓取命令生成CSV文件。';
-            appendTerminalOutput(errorMessage, "error");
-            appendTerminalOutput("提示：切换到\"处理\"标签页，使用上方的TMDB导入命令抓取元数据。", "info");
-            appendTerminalOutput("1. 首先运行播出平台命令获取基本信息", "info");
-            appendTerminalOutput("2. 然后运行TMDB命令获取详细元数据", "info");
-            appendTerminalOutput("3. 命令执行成功后会自动生成import.csv文件", "info");
-
-            // 静默处理错误，不抛出异常
-            
-          } else if (axiosError.message && axiosError.message.includes('文件不存在')) {
-            const errorMessage = '未找到CSV文件。请先运行平台元数据抓取命令生成CSV文件。';
-            appendTerminalOutput(errorMessage, "error");
-            appendTerminalOutput("提示：切换到\"处理\"标签页，使用上方的TMDB导入命令抓取元数据。", "info");
-            appendTerminalOutput("1. 首先运行播出平台命令获取基本信息", "info");
-            appendTerminalOutput("2. 然后运行TMDB命令获取详细元数据", "info");
-            appendTerminalOutput("3. 命令执行成功后会自动生成import.csv文件", "info");
-
-            // 静默处理错误，不抛出异常
-            
-          } else {
-            // 其他错误
-            const errorMessage = axiosError.message || '未知错误';
-            appendTerminalOutput(`读取CSV文件失败: ${errorMessage}`, "error");
-            
-          }
-
-          return false;
-        }
-      } catch (error: unknown) {
-        // 捕获并处理所有其他错误
-
-        appendTerminalOutput(`读取CSV文件过程中出错: ${error.message || '未知错误'}`, "error");
-        return false;
+      if (!response.data.success) {
+        throw new Error(response.data.error || '读取CSV文件失败')
       }
-    } catch (outerError: unknown) {
-      // 捕获所有可能的外部错误
 
-      appendTerminalOutput("读取CSV文件时出现未预期的错误，请检查控制台日志", "error");
-      return false;
-    } finally {
-          }
-  };
+      const csvData = response.data.data
+      const formattedCsvData = Array.isArray(csvData) ? { rows: csvData } : csvData
+
+      const validation = validateCsvData(formattedCsvData)
+      if (!validation.valid) {
+        const fixedData = fixCsvData(formattedCsvData)
+        setCsvData(fixedData)
+
+        await axios.post('/api/csv/save', {
+          filePath: path.join(workingDirectory, 'import.csv'),
+          data: fixedData
+        })
+
+        appendTerminalOutput(`CSV数据已自动修复并保存，原因: ${validation.errors.join(', ')}`, "warning")
+      } else {
+        setCsvData(formattedCsvData)
+      }
+
+      const content = serializeCsvData(csvData)
+      setCsvContent(content)
+
+      appendTerminalOutput("CSV文件读取成功", "success")
+      return true
+    } catch (axiosError: unknown) {
+      if (axiosError && typeof axiosError === 'object' && 'response' in axiosError && axiosError.response && typeof axiosError.response === 'object' && 'status' in axiosError.response && axiosError.response.status === 404) {
+        const errorMessage = '未找到CSV文件。请先运行平台元数据抓取命令生成CSV文件。'
+        appendTerminalOutput(errorMessage, "error")
+        appendTerminalOutput("提示：切换到\"处理\"标签页，使用上方的TMDB导入命令抓取元数据。", "info")
+        appendTerminalOutput("1. 首先运行播出平台命令获取基本信息", "info")
+        appendTerminalOutput("2. 然后运行TMDB命令获取详细元数据", "info")
+        appendTerminalOutput("3. 命令执行成功后会自动生成import.csv文件", "info")
+      } else {
+        const errorMessage = axiosError instanceof Error ? axiosError.message : '未知错误'
+        appendTerminalOutput(`读取CSV文件失败: ${errorMessage}`, "error")
+      }
+
+      return false
+    }
+  }
 
   
   // 开始处理流程
@@ -686,100 +642,74 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   // 统一的编码修复函数
   const fixEncoding = (text: string, preserveCsvStructure: boolean = true): string => {
-    try {
-      // 检查是否需要修复
-      if (!/[\u00e0-\u00ff]{2,}|[\ufffd]/.test(text)) {
-        return text; // 没有明显的乱码特征，直接返回
-      }
-
-      let result = text;
-
-      // 简单修复UTF-8被错误解析为Latin1的情况
-      try {
-        if (/[\u00e0-\u00ef][\u00bc-\u00bf][\u0080-\u00bf]/.test(text)) {
-          result = decodeURIComponent(escape(text));
-        }
-      } catch (e) {
-        // 如果简单修复失败，继续使用复杂修复
-      }
-
-      // 如果需要保护CSV结构，使用高级修复逻辑
-      if (preserveCsvStructure) {
-        // 特殊字符替换映射表 - 不包含可能影响CSV结构的字符
-        const specialCharMap: Record<string, string> = {
-          "\ufffd": "", // Unicode替换字符，通常表示无法解码的字符
-          "Â": "",      // 常见乱码前缀
-          "â": "",      // 常见乱码前缀
-          "Ã": "",      // 常见乱码前缀
-          "ã": "",      // 常见乱码前缀
-          "Å": "",      // 常见乱码前缀
-          "å": "",      // 常见乱码前缀
-          // 可以根据需要添加更多映射
-        };
-
-        // 分行处理，保护CSV结构
-        const lines = result.split('\n');
-        const fixedLines = lines.map(line => {
-          // 使用引号状态追踪器来防止修改引号内的逗号
-          let insideQuotes = false;
-          let processedLine = '';
-
-          for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-
-            // 追踪引号状态
-            if (char === '"') {
-              // 检查是否是转义引号 ("")
-              if (i + 1 < line.length && line[i + 1] === '"') {
-                processedLine += '""'; // 保留转义引号
-                i++; // 跳过下一个引号
-              } else {
-                insideQuotes = !insideQuotes;
-                processedLine += char;
-              }
-            }
-            // 保护逗号，特别是引号内的逗号
-            else if (char === ',') {
-              processedLine += char; // 总是保留逗号，它们是CSV结构的关键
-            }
-            // 处理可能的乱码字符
-            else if (!insideQuotes && Object.keys(specialCharMap).includes(char)) {
-              processedLine += specialCharMap[char] || char;
-            }
-            // 尝试修复UTF-8错误解析为Latin1的情况，但只在非引号内时
-            else if (!insideQuotes && /[\u00e0-\u00ff]{2}/.test(char + (line[i+1] || ''))) {
-              try {
-                // 只处理当前字符，避免越界
-                const fixed = decodeURIComponent(escape(char));
-                if (fixed && fixed !== char) {
-                  processedLine += fixed;
-                } else {
-                  processedLine += char;
-                }
-              } catch {
-                processedLine += char;
-              }
-            }
-            // 其他字符保持不变
-            else {
-              processedLine += char;
-            }
-          }
-
-          return processedLine;
-        });
-
-        return fixedLines.join('\n');
-      }
-
-      return result;
-    } catch (e) {
-
+    // 检查是否需要修复
+    if (!/[\u00e0-\u00ff]{2,}|[\ufffd]/.test(text)) {
+      return text
     }
 
-    // 如果所有方法都失败，返回原文本
-    return text;
-  };
+    let result = text
+
+    // 简单修复UTF-8被错误解析为Latin1的情况
+    if (/[\u00e0-\u00ef][\u00bc-\u00bf][\u0080-\u00bf]/.test(text)) {
+      try {
+        result = decodeURIComponent(escape(text))
+      } catch {
+        // 修复失败，使用原文本
+      }
+    }
+
+    // 如果需要保护CSV结构，使用高级修复逻辑
+    if (preserveCsvStructure) {
+      const specialCharMap: Record<string, string> = {
+        "\ufffd": "",
+        "Â": "",
+        "â": "",
+        "Ã": "",
+        "ã": "",
+        "Å": "",
+        "å": ""
+      }
+
+      const lines = result.split('\n')
+      const fixedLines = lines.map(line => {
+        let insideQuotes = false
+        let processedLine = ''
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i]
+
+          if (char === '"') {
+            if (i + 1 < line.length && line[i + 1] === '"') {
+              processedLine += '""'
+              i++
+            } else {
+              insideQuotes = !insideQuotes
+              processedLine += char
+            }
+          } else if (char === ',') {
+            processedLine += char
+          } else if (!insideQuotes && specialCharMap[char]) {
+            processedLine += specialCharMap[char]
+          } else if (!insideQuotes && /[\u00e0-\u00ff]{2}/.test(char + (line[i + 1] || ''))) {
+            try {
+              const fixed = decodeURIComponent(escape(char))
+              processedLine += fixed && fixed !== char ? fixed : char
+            } catch {
+              processedLine += char
+            }
+          } else {
+            processedLine += char
+          }
+        }
+
+        return processedLine
+      })
+
+      return fixedLines.join('\n')
+    }
+
+    return result
+  }
 
   // 添加终端输出
   const appendTerminalOutput = (
@@ -1058,23 +988,20 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     if (!csvContent) return
 
     try {
-      // 解析当前CSV内容
       const parsedData = parseCsvContent(csvContent)
-      // 重新序列化为格式化的CSV文本
       const formattedCsvText = serializeCsvData(parsedData)
       setCsvContent(formattedCsvText)
 
       toast({
         title: "格式化成功",
         description: "CSV内容已格式化",
-        variant: "default",
+        variant: "default"
       })
-    } catch (error) {
-      
+    } catch {
       toast({
         title: "格式化失败",
         description: "CSV内容格式不正确，无法格式化",
-        variant: "destructive",
+        variant: "destructive"
       })
     }
   }
@@ -1165,114 +1092,54 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   }
 
   // 添加全屏模式状态
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // 添加紧凑模式状态
-  const [isCompactMode, setIsCompactMode] = useState(false); // 默认使用标准模式
+  const [isCompactMode, setIsCompactMode] = useState(false)
 
-  // 不再自动设置紧凑模式，始终保持标准模式
+  // 确保始终使用标准模式
   useEffect(() => {
-    // 确保始终使用标准模式
-    setIsCompactMode(false);
-    // 不再根据inTab状态切换模式
-  }, []);
-
-  // 调试函数
-  // 确保表格组件只有在完全准备好后才会渲染
-  useEffect(() => {
-    if (csvData && (activeTab === "edit" || inTab)) {
-      // 表格组件现在直接渲染，不需要延迟加载
-      
-    }
-  }, [csvData, activeTab, inTab])
+    setIsCompactMode(false)
+  }, [])
 
   // 在inTab模式下自动尝试加载CSV数据
   useEffect(() => {
     const loadCsvData = async () => {
       if (inTab && !csvData) {
-        
-        const savedTmdbImportPath = await getTmdbImportPath();
+        const savedTmdbImportPath = await getTmdbImportPath()
         if (savedTmdbImportPath) {
-          try {
-            // 使用readCSVFile函数加载CSV数据
-            // 由于readCSVFile已经处理了所有错误，这里不需要再捕获错误
-            const result = await readCSVFile(savedTmdbImportPath);
-            if (result) {
-              
-              // 不再自动切换到编辑标签
-              // setActiveTab("edit");
-
-              // 确保处理标签页内容正确显示
-              if (activeTab === "process") {
-                
-              }
-            } else {
-
-              // 在加载失败的情况下，初始化处理标签页
-              setActiveTab("process");
-            }
-          } catch (error) {
-            // 这里应该不会执行到，因为readCSVFile已经处理了所有错误
-            // 但为了安全起见，我们仍然保留这个捕获块
-            logger.error("加载CSV数据时出错 (应该不会发生)");
-            setActiveTab("process");
+          const result = await readCSVFile(savedTmdbImportPath)
+          if (!result) {
+            setActiveTab("process")
           }
         } else {
-          
-          setActiveTab("process");
+          setActiveTab("process")
         }
       }
-    };
+    }
 
-    // 使用顶层try-catch包裹loadCsvData调用，确保不会有未捕获的错误
-    (async () => {
-      try {
-        await loadCsvData();
-      } catch (error) {
-        // 捕获所有可能的错误，防止它们传播到控制台
-        
-      }
-    })();
-  }, [inTab, csvData]);
+    loadCsvData().catch(() => {
+      setActiveTab("process")
+    })
+  }, [inTab, csvData])
 
   // 添加标签切换处理器
   const handleTabChange = (value: string) => {
-    
-    // 如果点击的是当前已激活的标签，不做任何操作
     if (value === activeTab) {
-      
-      return;
+      return
     }
 
     setActiveTab(value)
 
-    // 如果切换到处理标签页，确保表格状态正确
-    if (value === "process") {
-      
+    if (value === "edit" && !csvData) {
+      getTmdbImportPath().then(savedTmdbImportPath => {
+        if (savedTmdbImportPath) {
+          readCSVFile(savedTmdbImportPath)
+        }
+      }).catch(() => {
+        // 忽略错误
+      })
     }
-    // 如果切换到编辑标签页，增加渲染计数以强制刷新内容
-    else if (value === "edit") {
-      
-      // 确保有CSV数据可供编辑
-      if (!csvData) {
-        
-        (async () => {
-          try {
-            const savedTmdbImportPath = await getTmdbImportPath();
-            if (savedTmdbImportPath) {
-              const success = await readCSVFile(savedTmdbImportPath);
-                              if (success) {
-                                
-                              }
-                          }
-                        } catch (error) {
-                          
-                        }
-                      })();
-                    } else {
-                      // 已有CSV数据，直接刷新编辑页面
-                      
-                    }    }
   }
   // 添加CSS样式
   useEffect(() => {
