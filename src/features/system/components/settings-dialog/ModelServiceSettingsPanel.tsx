@@ -16,7 +16,7 @@ import { Badge } from "@/shared/components/ui/badge"
 import { Checkbox } from "@/shared/components/ui/checkbox"
 import { Slider } from "@/shared/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Database, Plus, Trash2, Edit, Eye, EyeOff, CheckCircle2, AlertCircle, RefreshCw, ChevronUp, ChevronDown, Film } from "lucide-react"
+import { Database, Plus, Trash2, Edit, Eye, EyeOff, ExternalLink, CheckCircle2, AlertCircle, RefreshCw, ChevronUp, ChevronDown, Film } from "lucide-react"
 import type { 
   ModelServiceTabState,
   ApiSettings,
@@ -574,13 +574,23 @@ export default function ModelServiceSettingsPanel({
                       <Input
                         type={showSiliconFlowApiKey ? "text" : "password"}
                         value={apiSettings.siliconFlow?.apiKey || ""}
-                        onChange={(e) => setApiSettings({ 
-                          ...apiSettings, 
-                          siliconFlow: { ...apiSettings.siliconFlow!, apiKey: e.target.value } 
+                        onChange={(e) => setApiSettings({
+                          ...apiSettings,
+                          siliconFlow: { ...apiSettings.siliconFlow!, apiKey: e.target.value }
                         })}
                         placeholder="输入硅基流动API密钥"
                         className="flex-1"
                       />
+                      <a
+                        href="https://cloud.siliconflow.cn/akManage"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="跳转到硅基流动API密钥页面"
+                      >
+                        <Button variant="outline" size="icon" asChild>
+                          <span><ExternalLink className="h-4 w-4" /></span>
+                        </Button>
+                      </a>
                       <Button
                         variant="outline"
                         size="icon"
@@ -614,13 +624,23 @@ export default function ModelServiceSettingsPanel({
                       <Input
                         type={showModelScopeApiKey ? "text" : "password"}
                         value={apiSettings.modelScope?.apiKey || ""}
-                        onChange={(e) => setApiSettings({ 
-                          ...apiSettings, 
-                          modelScope: { ...apiSettings.modelScope!, apiKey: e.target.value } 
+                        onChange={(e) => setApiSettings({
+                          ...apiSettings,
+                          modelScope: { ...apiSettings.modelScope!, apiKey: e.target.value }
                         })}
                         placeholder="输入魔搭社区API密钥"
                         className="flex-1"
                       />
+                      <a
+                        href="https://www.modelscope.cn/my/myaccesstoken"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="跳转到魔搭社区API密钥页面"
+                      >
+                        <Button variant="outline" size="icon" asChild>
+                          <span><ExternalLink className="h-4 w-4" /></span>
+                        </Button>
+                      </a>
                       <Button
                         variant="outline"
                         size="icon"
