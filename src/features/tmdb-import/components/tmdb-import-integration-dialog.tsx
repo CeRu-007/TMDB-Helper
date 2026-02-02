@@ -97,7 +97,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     })()
   }, [])
 
-  const [displayedTMDBCommand, setDisplayedTMDBCommand] = useState("")
   const [activeTab, setActiveTab] = useState<string>("process") // 默认显示处理标签
   const [csvData, setCsvData] = useState<CSVData | null>(null)
   const [csvContent, setCsvContent] = useState<string>("")
@@ -180,17 +179,11 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     // 返回完整的命令字符串，根据 headlessMode 决定是否添加 --headless 标志
     return `${python} -m tmdb-import ${headlessMode ? '--headless' : ''} "${tmdbUrl}"`
   }
-
-  // 更新显示的命令
-  const updateDisplayedCommands = useCallback(() => {
-    const tmdbCommand = generateTMDBCommand(selectedSeason)
-    setDisplayedTMDBCommand(tmdbCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`)
-  }, [selectedSeason, item, headlessMode])
-
   
+    
+    
   
-  
-  // 发送终端输入
+    // 发送终端输入
   const sendTerminalInput = async () => {
     if (!terminalInput.trim() || !currentProcessId) return
 
@@ -1705,8 +1698,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex-1 min-w-0 mr-2 w-0">
                       <div className="font-mono text-xs truncate"
-                           title={displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
-                        {displayedTMDBCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
+                           title={generateTMDBCommand(selectedSeason) || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
+                        {generateTMDBCommand(selectedSeason) || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
                       </div>
                     </div>
                                 <Button
@@ -2246,25 +2239,12 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     // 保存选择的季数到服务端配置
     void ClientConfigManager.setItem(`tmdb_season_${item.id}`, season.toString());
-
-    // 更新显示的TMDB命令
-    const tmdbCommand = generateTMDBCommand(season)
-    setDisplayedTMDBCommand(tmdbCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${season}?language=${selectedLanguage}"`)
   }
 
   // 处理语言变化
   const handleLanguageChange = (languageCode: string) => {
     setSelectedLanguage(languageCode)
-
-    // 更新显示的TMDB命令
-    const tmdbCommand = generateTMDBCommand(selectedSeason)
-    setDisplayedTMDBCommand(tmdbCommand || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=${languageCode}"`)
   }
-
-  // 在组件挂载和item变化时初始化命令显示
-  useEffect(() => {
-    updateDisplayedCommands()
-  }, []) // 移除依赖，只在组件挂载时执行一次
 
   // 处理CSV数据变更
   const handleCsvDataChange = (newData: CSVDataType) => {
