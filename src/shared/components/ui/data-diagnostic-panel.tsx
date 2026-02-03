@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import React, { useState, useEffect } from 'react'
 import { AlertTriangle, CheckCircle, RefreshCw, Download, Trash2, Info } from 'lucide-react'

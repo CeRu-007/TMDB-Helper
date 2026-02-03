@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { taskScheduler } from "@/lib/data/task-scheduler/scheduler"
 
 /**

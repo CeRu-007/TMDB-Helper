@@ -1,4 +1,4 @@
-﻿import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import type { ExtractedMetadata } from "@/lib/data/metadata-extractor"
 import { getPlatformParser, PlatformParser } from "@/lib/data/platform-parsers"
 import { ApiResponse } from "@/types/common"

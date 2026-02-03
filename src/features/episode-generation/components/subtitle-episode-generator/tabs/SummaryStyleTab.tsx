@@ -1,4 +1,4 @@
-﻿import React from "react"
+import React from "react"
 import { useToast } from "@/shared/components/ui/use-toast"
 import { GenerationConfig } from '../types'
 import { getAllSummaryStyles } from '@/features/episode-generation/plugins/plugin-service'

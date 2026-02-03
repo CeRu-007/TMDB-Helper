@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { GenerationConfig } from '../types'
 import { SUMMARY_STYLES } from '../constants'
 import { ClientConfigManager } from '@/lib/utils/client-config-manager'

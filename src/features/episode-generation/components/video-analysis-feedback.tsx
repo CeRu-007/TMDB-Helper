@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import React from "react"
 import { AlertCircle, CheckCircle2, Loader2, XCircle, Clock, Film, Wand2, FileText } from "lucide-react"

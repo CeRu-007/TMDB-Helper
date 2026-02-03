@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { ChatHistory, Message } from '@/types/ai-chat'
 import { chatSyncManager } from '@/features/ai/lib/utils/chat-history-cache'
 import { storageService } from '@/lib/storage/storage-service'

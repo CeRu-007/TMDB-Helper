@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/lib/utils"

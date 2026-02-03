@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { StorageManager } from '@/lib/data/storage';
 import { logger } from '@/lib/utils/logger';
 

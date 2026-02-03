@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, memo, useEffect } from "react"
 import { Badge } from "@/shared/components/ui/badge"

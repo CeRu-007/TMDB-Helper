@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import React, { useState } from "react"
 import { TMDBTable as BaseTMDBTable } from "@/features/media-maintenance/components/tmdb-table/tmdb-table"

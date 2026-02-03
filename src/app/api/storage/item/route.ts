@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ServerStorageManager } from '@/lib/data/server-storage-manager';
 import { TMDBItem } from '@/lib/data/storage';
 import { getUserIdFromRequest } from '@/lib/auth/user-utils';

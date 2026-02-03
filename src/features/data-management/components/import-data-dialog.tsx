@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { DELAY_2S } from '@/lib/constants/constants';

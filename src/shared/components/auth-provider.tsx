@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthCheck } from '@/shared/hooks/use-auth-check'
 import { useAuthActions } from '@/shared/hooks/use-auth-actions'
+import type { AuthUser } from '@/shared/types/auth.types'
 
 // Constants
 const ADMIN_USER_ID = 'admin'
@@ -12,13 +13,6 @@ const DEFAULT_ADMIN_USER = {
   id: ADMIN_USER_ID,
   username: ADMIN_USER_ID,
   lastLoginAt: new Date().toISOString()
-}
-
-// Types
-export interface AuthUser {
-  id: string
-  username: string
-  lastLoginAt?: string
 }
 
 export interface AuthState {

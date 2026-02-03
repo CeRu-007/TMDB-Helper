@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react'
+import { useEffect } from 'react'
 import { imagePreloaderService } from '@/lib/media/image-preloader-service'
 
 interface ItemImages {

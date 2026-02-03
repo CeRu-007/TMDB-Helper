@@ -1,4 +1,4 @@
-﻿import fs from 'fs';
+import fs from 'fs';
 import path from 'path';
 import { ScheduledTask } from './storage';
 import { stringifyAuto } from '@/lib/utils/readable-compact-json';

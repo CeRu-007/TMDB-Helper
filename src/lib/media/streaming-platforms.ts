@@ -1,4 +1,4 @@
-﻿import { StreamingPlatform } from '@/features/streaming-nav/lib/types'
+import { StreamingPlatform } from '@/features/streaming-nav/lib/types'
 
 export const streamingPlatforms: StreamingPlatform[] = [
   // 国内影视平台

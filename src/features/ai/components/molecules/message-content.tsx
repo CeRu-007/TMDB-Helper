@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { Markdown } from "@/shared/components/ui/markdown"
 import { Loader2, Paperclip } from "lucide-react"
 

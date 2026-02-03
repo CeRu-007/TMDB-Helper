@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { Button } from "@/shared/components/ui/button"
 import { CornerDownLeft, Loader2 } from "lucide-react"

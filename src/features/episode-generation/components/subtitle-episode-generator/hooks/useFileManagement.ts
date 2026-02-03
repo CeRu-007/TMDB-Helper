@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useToast } from '@/shared/components/ui/use-toast'
 import { SubtitleFile } from '../types'
 import { parseSubtitleFile } from '../utils'

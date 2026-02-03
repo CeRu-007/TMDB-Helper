@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { Button } from "@/shared/components/ui/button"
 import { AlertTriangle, Wifi, Key, Server, RefreshCw, Settings } from "lucide-react"

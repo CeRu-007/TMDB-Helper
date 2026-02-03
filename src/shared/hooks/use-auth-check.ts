@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { AuthUser } from '@/shared/components/auth-provider'
+import type { AuthUser } from '@/shared/types/auth.types'
 
 export function useAuthCheck(isElectron: boolean): {
   user: AuthUser | null

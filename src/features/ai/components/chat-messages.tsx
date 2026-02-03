@@ -1,4 +1,4 @@
-﻿import React, { useRef } from 'react'
+import React, { useRef } from 'react'
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { ChatMessageItem } from "./chat-message-item"
 import { Message } from "@/types/ai-chat"

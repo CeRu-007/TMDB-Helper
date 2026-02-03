@@ -1,4 +1,4 @@
-﻿import { useCallback } from 'react'
+import { useCallback } from 'react'
 import { SubtitleEpisode, GenerationResult } from '../types'
 import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { GenerationConfig } from '../types'

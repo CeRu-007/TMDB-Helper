@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from 'next/navigation'
-import { AuthUser } from '@/shared/components/auth-provider'
+import type { AuthUser } from '@/shared/types/auth.types'
 
 export function useAuthActions() {
   const router = useRouter()

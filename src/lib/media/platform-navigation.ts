@@ -1,4 +1,4 @@
-﻿import { Platform, PlatformCategory } from '@/features/streaming-nav/lib/types'
+import { Platform, PlatformCategory } from '@/features/streaming-nav/lib/types'
 
 // 分类配置
 export const platformCategories: PlatformCategory[] = [

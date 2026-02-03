@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useCallback, useRef } from "react"
 import { VideoProcessor, type ProcessProgress } from "@/lib/media/video-processor"

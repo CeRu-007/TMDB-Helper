@@ -1,4 +1,4 @@
-﻿import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import type { AdvancedExtractedMetadata, ExtractionConfig } from "@/lib/data/advanced-metadata-extractor"
 import { ApiResponse } from "@/types/common"
 import { TIMEOUT_10S, TIMEOUT_30S } from "@/lib/constants/constants"

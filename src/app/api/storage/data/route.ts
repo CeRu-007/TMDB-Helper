@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { TMDBItem, ScheduledTask } from '@/lib/types';
 import { ServerStorageManager } from '@/lib/data/server-storage-manager';
 import { getUserIdFromRequest } from '@/lib/auth/user-utils';

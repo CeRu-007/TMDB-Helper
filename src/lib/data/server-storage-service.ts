@@ -1,4 +1,4 @@
-﻿import { TMDBItem } from '@/lib/data/storage';
+import { TMDBItem } from '@/lib/data/storage';
 import { logger } from '@/lib/utils/logger';
 
 /**

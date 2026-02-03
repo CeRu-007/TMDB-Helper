@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { readScheduledTasks, writeScheduledTasks } from '@/lib/data/server-scheduled-tasks';
 import { StorageManager } from '@/lib/data/storage';
 import { ServerConfigManager } from '@/lib/data/server-config-manager';

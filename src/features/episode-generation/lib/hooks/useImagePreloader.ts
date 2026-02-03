@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react'
+import { useEffect } from 'react'
 import { imageCache } from '@/features/image-processing/lib/imageCache'
 
 interface UseImagePreloaderOptions {

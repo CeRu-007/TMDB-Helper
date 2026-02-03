@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { UserAvatarImage } from "@/shared/components/ui/smart-avatar"
 import { Bot } from "lucide-react"
 import { Message } from "@/types/ai-chat"

@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useToast } from '@/shared/components/ui/use-toast'
 import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { SubtitleFile, SubtitleEpisode, GenerationConfig, EnhanceOperation, GenerationStatus, GenerationResult } from '../types'

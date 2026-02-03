@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { Button } from "@/shared/components/ui/button"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { MessageSquare, PanelLeft, Trash2, Plus } from "lucide-react"

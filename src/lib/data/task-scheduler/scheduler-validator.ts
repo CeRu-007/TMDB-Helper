@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SchedulerValidator
  * 负责处理初始化、验证和定期检查
  */

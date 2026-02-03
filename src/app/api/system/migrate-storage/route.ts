@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ServerStorageService } from '@/lib/data/server-storage-service';
 import { TMDBItem } from '@/lib/data/storage';
 

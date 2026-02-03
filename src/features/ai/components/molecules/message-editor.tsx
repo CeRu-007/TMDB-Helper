@@ -1,4 +1,4 @@
-﻿import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect } from 'react'
 import { Button } from "@/shared/components/ui/button"
 import { AutoResizeTextarea } from "../auto-resize-textarea"
 

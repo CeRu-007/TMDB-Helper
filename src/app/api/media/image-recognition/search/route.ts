@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { ServerConfigManager } from '@/lib/data/server-config-manager'
 import { ApiResponse } from '@/types/common'
 
