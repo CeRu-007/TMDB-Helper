@@ -51,6 +51,7 @@ export class SecureConfigManager {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            action: 'set',
             key: `secure_${key}`,
             value: this.encrypt(JSON.stringify(value))
           })
@@ -61,7 +62,7 @@ export class SecureConfigManager {
         }
       }
     } catch (error) {
-      
+
       throw new Error('配置保存失败');
     }
   }

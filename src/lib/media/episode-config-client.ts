@@ -4,10 +4,10 @@ export class EpisodeConfigClient {
       await fetch('/api/system/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'episode_generator_config', value: json })
+        body: JSON.stringify({ action: 'set', key: 'episode_generator_config', value: json })
       })
     } catch (e) {
-      
+
     }
   }
 }

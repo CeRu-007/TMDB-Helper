@@ -147,18 +147,19 @@ export class ConfigManager {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'set',
           key: 'task_scheduler_config',
           value: configData
         })
       });
 
       if (response.ok) {
-        
+
       } else {
-        
+
       }
     } catch (error) {
-      
+
     }
   }
 
