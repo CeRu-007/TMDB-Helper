@@ -21,10 +21,10 @@ async function ensureDirectoryExists() {
 // 获取特定对话
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { chatId: string } }
+  { params }: { params: Promise<{ chatId: string }> }
 ) {
   try {
-    const { chatId } = params
+    const { chatId } = await params
 
     await ensureDirectoryExists()
 
@@ -79,10 +79,10 @@ export async function GET(
 // 删除特定对话
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { chatId: string } }
+  { params }: { params: Promise<{ chatId: string }> }
 ) {
   try {
-    const { chatId } = params
+    const { chatId } = await params
 
     logger.info(`删除对话 - chatId: ${chatId}`)
 

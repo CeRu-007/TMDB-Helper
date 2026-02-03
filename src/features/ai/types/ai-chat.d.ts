@@ -12,6 +12,7 @@ export interface Message {
   isEdited?: boolean
   originalContent?: string
   canContinue?: boolean
+  modelId?: string  // 存储生成此消息时使用的模型ID
 }
 
 export interface ChatHistory {

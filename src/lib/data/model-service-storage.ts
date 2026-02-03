@@ -46,8 +46,44 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     },
+    {
+      id: 'zhipu-builtin',
+      name: '智谱AI',
+      type: 'zhipu',
+      apiKey: '',
+      apiBaseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+      enabled: true,
+      isBuiltIn: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    },
   ],
-  models: [],
+  models: [
+    {
+      id: 'zhipu-glm-4-flash',
+      providerId: 'zhipu-builtin',
+      modelId: 'glm-4-flash',
+      displayName: 'GLM-4.7-Flash',
+      description: '智谱AI免费模型，30B参数，支持200K上下文，128K输出',
+      enabled: true,
+      capabilities: ['chat'],
+      isBuiltIn: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    },
+    {
+      id: 'zhipu-glm-4v-flash',
+      providerId: 'zhipu-builtin',
+      modelId: 'glm-4.6v-flash',
+      displayName: 'GLM-4.6V-Flash',
+      description: '智谱AI多模态免费模型，支持图像、视频、文件理解，128K上下文',
+      enabled: true,
+      capabilities: ['vision', 'chat'],
+      isBuiltIn: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    },
+  ],
   scenarios: [
     {
       type: 'thumbnail_filter',
@@ -55,8 +91,8 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
       description:
         '用于"视频缩略图提取"页面的AI智能筛选功能，自动识别包含人物且无字幕的优质帧',
       requiredCapabilities: ['vision'],
-      selectedModelIds: [],
-      primaryModelId: '',
+      selectedModelIds: ['zhipu-glm-4v-flash'],
+      primaryModelId: 'zhipu-glm-4v-flash',
     },
     {
       type: 'image_analysis',
@@ -64,8 +100,8 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
       description:
         '用于"影视识别"页面的图像分析功能，识别影视作品海报、剧照并进行内容分析',
       requiredCapabilities: ['vision'],
-      selectedModelIds: [],
-      primaryModelId: '',
+      selectedModelIds: ['zhipu-glm-4v-flash'],
+      primaryModelId: 'zhipu-glm-4v-flash',
     },
     {
       type: 'speech_to_text',
@@ -82,16 +118,16 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
       description:
         '用于"分集简介-AI生成"页面，基于视频内容或字幕生成精彩的分集简介',
       requiredCapabilities: ['chat'],
-      selectedModelIds: [],
-      primaryModelId: '',
+      selectedModelIds: ['zhipu-glm-4-flash'],
+      primaryModelId: 'zhipu-glm-4-flash',
     },
     {
       type: 'ai_chat',
       label: 'AI智能对话助手',
       description: '用于"AI聊天"页面，提供智能对话、问答和内容创作服务',
       requiredCapabilities: ['chat'],
-      selectedModelIds: [],
-      primaryModelId: '',
+      selectedModelIds: ['zhipu-glm-4-flash'],
+      primaryModelId: 'zhipu-glm-4-flash',
     },
     {
       type: 'subtitle_ocr',
@@ -99,8 +135,8 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
       description:
         '用于"硬字幕提取"页面，通过多模态视觉模型识别视频帧中的硬字幕文本',
       requiredCapabilities: ['vision'],
-      selectedModelIds: [],
-      primaryModelId: '',
+      selectedModelIds: ['zhipu-glm-4v-flash'],
+      primaryModelId: 'zhipu-glm-4v-flash',
     },
   ],
   version: '1.0.0',
@@ -131,14 +167,59 @@ export class ModelServiceStorage {
         lastUpdated: config.lastUpdated || Date.now()
       }
 
-      // 检查并补充缺失的默认场景
-      const existingTypes = new Set(result.scenarios.map(s => s.type))
+      // 检查并补充缺失的默认提供商
+      const existingProviderIds = new Set(result.providers.map(p => p.id))
       let needsSave = false
 
+      for (const defaultProvider of DEFAULT_CONFIG.providers) {
+        if (!existingProviderIds.has(defaultProvider.id)) {
+          result.providers.push({ ...defaultProvider })
+          needsSave = true
+          logger.info(`补充缺失的默认提供商: ${defaultProvider.name}`)
+        }
+      }
+
+      // 检查并补充缺失的默认模型
+      const existingModelIds = new Set(result.models.map(m => m.id))
+      for (const defaultModel of DEFAULT_CONFIG.models) {
+        if (!existingModelIds.has(defaultModel.id)) {
+          result.models.push({ ...defaultModel })
+          needsSave = true
+          logger.info(`补充缺失的默认模型: ${defaultModel.displayName}`)
+        }
+      }
+
+      // 检查并补充缺失的默认场景
+      const existingTypes = new Set(result.scenarios.map(s => s.type))
+      const modelIdsToUpdate = ['zhipu-glm-4-flash', 'zhipu-glm-4v-flash']
+      const modelExistsMap = new Map(modelIdsToUpdate.map(id => [id, result.models.some(m => m.id === id)]))
+
       for (const defaultScenario of DEFAULT_CONFIG.scenarios) {
-        if (!existingTypes.has(defaultScenario.type)) {
+        const existingScenario = result.scenarios.find(s => s.type === defaultScenario.type)
+
+        if (!existingScenario) {
           result.scenarios.push(defaultScenario)
           needsSave = true
+          logger.info(`补充缺失的默认场景: ${defaultScenario.label}`)
+          continue
+        }
+
+        // 检查场景是否需要更新（添加智谱AI模型）
+        if (!defaultScenario.selectedModelIds?.length) continue
+
+        const scenarioModelIds = new Set(existingScenario.selectedModelIds || [])
+
+        for (const modelId of defaultScenario.selectedModelIds) {
+          if (modelExistsMap.get(modelId) && !scenarioModelIds.has(modelId)) {
+            existingScenario.selectedModelIds = [...scenarioModelIds, modelId]
+            if (!existingScenario.primaryModelId) {
+              existingScenario.primaryModelId = modelId
+            }
+            needsSave = true
+            scenarioModelIds.add(modelId)
+            const modelDisplayName = DEFAULT_CONFIG.models.find(m => m.id === modelId)?.displayName || modelId
+            logger.info(`为场景 ${defaultScenario.label} 添加模型: ${modelDisplayName}`)
+          }
         }
       }
 
@@ -274,6 +355,12 @@ export class ModelServiceStorage {
   // 删除模型
   static async deleteModel(modelId: string): Promise<void> {
     const config = await this.getConfig();
+    const modelToDelete = config.models.find((m) => m.id === modelId);
+
+    if (modelToDelete?.isBuiltIn) {
+      throw new Error('内置模型不可删除');
+    }
+
     config.models = config.models.filter((m) => m.id !== modelId);
     await this.saveConfig(config);
   }

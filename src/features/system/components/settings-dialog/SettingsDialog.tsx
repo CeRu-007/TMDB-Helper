@@ -148,10 +148,15 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     modelScope: {
       apiKey: "",
       episodeGenerationModel: "Qwen/Qwen3-32B"
+    },
+    zhipu: {
+      apiKey: "",
+      chatModel: "glm-4-flash"
     }
   })
   const [showSiliconFlowApiKey, setShowSiliconFlowApiKey] = useState(false)
   const [showModelScopeApiKey, setShowModelScopeApiKey] = useState(false)
+  const [showZhipuApiKey, setShowZhipuApiKey] = useState(false)
   const [siliconFlowSaving, setSiliconFlowSaving] = useState(false)
   const [modelScopeSaving, setModelScopeSaving] = useState(false)
 
@@ -211,11 +216,11 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [isDockerEnv, setIsDockerEnv] = useState(false)
 
   // 辅助函数：更新API设置
-  const updateApiSetting = useCallback((providerKey: 'siliconFlow' | 'modelScope', apiKey: string, defaultModel: string) => {
+  const updateApiSetting = useCallback((providerKey: 'siliconFlow' | 'modelScope' | 'zhipu', apiKey: string, defaultModel: string) => {
     setApiSettings(prev => ({
       ...prev,
       [providerKey]: {
-        ...(prev[providerKey] || { [`${providerKey}Model`]: defaultModel }),
+        ...(prev[providerKey] || {}),
         apiKey
       }
     }))
@@ -371,6 +376,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               const providers = data.config.providers || []
               const siliconflowProvider = findBuiltinProvider(providers, 'siliconflow-builtin', 'siliconflow')
               const modelscopeProvider = findBuiltinProvider(providers, 'modelscope-builtin', 'modelscope')
+              const zhipuProvider = findBuiltinProvider(providers, 'zhipu-builtin', 'zhipu')
 
               if (siliconflowProvider) {
                 updateApiSetting('siliconFlow', siliconflowProvider.apiKey || '', 'Qwen/Qwen2.5-VL-32B-Instruct')
@@ -378,6 +384,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
               if (modelscopeProvider) {
                 updateApiSetting('modelScope', modelscopeProvider.apiKey || '', 'Qwen/Qwen3-32B')
+              }
+
+              if (zhipuProvider) {
+                updateApiSetting('zhipu', zhipuProvider.apiKey || '', 'glm-4-flash')
               }
             } else {
               logger.warn('加载模型服务配置失败，响应数据无效:', data)
@@ -978,6 +988,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             setShowSiliconFlowApiKey={setShowSiliconFlowApiKey}
             showModelScopeApiKey={showModelScopeApiKey}
             setShowModelScopeApiKey={setShowModelScopeApiKey}
+            showZhipuApiKey={showZhipuApiKey}
+            setShowZhipuApiKey={setShowZhipuApiKey}
           />
         )
       case "tools":

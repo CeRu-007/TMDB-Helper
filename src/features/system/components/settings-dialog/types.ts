@@ -69,6 +69,10 @@ export interface ApiSettings {
     apiKey: string
     episodeGenerationModel: string
   }
+  zhipu?: {
+    apiKey: string
+    chatModel: string
+  }
 }
 
 // 模型服务相关类型

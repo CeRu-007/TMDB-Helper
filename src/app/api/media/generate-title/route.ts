@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ApiResponse } from '@/types/common';
+import { NextRequest, NextResponse } from "next/server";
+import { ApiResponse } from "@/types/common";
+import { logger } from "@/lib/utils/logger";
 
-// 魔搭社区API配置
-const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1';
+// 默认API配置
+const DEFAULT_API_BASE = "https://api-inference.modelscope.cn/v1";
 
 // API 类型定义
 interface ModelMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
@@ -20,62 +21,90 @@ interface ModelRequestBody {
 
 interface GenerateTitleRequest {
   model: string;
-  firstMessage: string;
+  messages: Array<{ role: string; content: string }>;
   apiKey: string;
+  apiBaseUrl?: string;
+}
+
+const MODEL_DEEPSEEK_V3 = "deepseek-ai/DeepSeek-V3.1";
+const MODEL_QWEN3_NEXT = "Qwen/Qwen3-Next-80B-A3B-Instruct";
+const DEFAULT_TITLE = "新对话";
+const MAX_TITLE_LENGTH = 20;
+
+function adaptMessagesForModel(messages: ModelMessage[], model: string): ModelMessage[] {
+  if (model === MODEL_DEEPSEEK_V3) {
+    return messages.filter((m) => m.role !== "system");
+  }
+
+  if (model === MODEL_QWEN3_NEXT && !messages.some((m) => m.role === "system")) {
+    return [{ role: "system", content: "You are a helpful assistant." }, ...messages];
+  }
+
+  return messages;
+}
+
+function extractErrorDetails(errorData: string): string {
+  try {
+    const errorJson = JSON.parse(errorData);
+    return errorJson.error?.message || errorJson.message || errorData;
+  } catch {
+    return errorData;
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as GenerateTitleRequest;
-    const { model, firstMessage, apiKey } = body;
+    const { model, messages, apiKey, apiBaseUrl } = body;
 
     if (!apiKey) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: 'API密钥未提供',
+          error: "API密钥未提供",
           data: null
         },
         { status: 400 }
       );
     }
 
-    // 验证API密钥格式
-    if (!apiKey.startsWith('ms-')) {
+    const apiBase = apiBaseUrl || DEFAULT_API_BASE;
+
+    if (!model || !messages || messages.length === 0) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: 'API密钥格式不正确',
-          details: '请使用魔搭社区(ModelScope)的API密钥，格式应为ms-开头',
+          error: "缺少必要参数",
           data: null
         },
         { status: 400 }
       );
     }
 
-    if (!model || !firstMessage) {
+    const firstMessage = messages[0]?.content || "";
+    if (!firstMessage) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: '缺少必要参数',
+          error: "消息内容为空",
           data: null
         },
         { status: 400 }
       );
     }
 
-    console.log('调用魔搭社区API生成标题:', {
+    logger.info("调用API生成标题:", {
       model,
-      firstMessage: firstMessage.substring(0, 50) + '...',
-      apiKeyPrefix: apiKey.substring(0, 10) + '...'
+      firstMessage: firstMessage.substring(0, 50) + "...",
+      apiKeyPrefix: apiKey.substring(0, 10) + "..."
     });
 
-    // 构建专门用于生成标题的提示词
-    const titlePrompt = {
-      role: 'user',
-      content: `请基于以下用户消息生成一个简洁明了的对话标题（不超过20个字符）：
+    const titlePrompt: ModelMessage = {
+      role: "user",
+      content: `请基于以下对话内容生成一个简洁明了的对话标题（不超过20个字符）：
 
-用户消息：${firstMessage}
+对话内容：
+${firstMessage}
 
 要求：
 1. 标题应简洁明了，不超过20个字符
@@ -86,60 +115,36 @@ export async function POST(request: NextRequest) {
 请提供你的建议：`
     };
 
-    // 构建请求体
-    let requestBody: ModelRequestBody = {
+    const requestBody: ModelRequestBody = {
       model,
-      messages: [titlePrompt],
-      stream: false // 非流式响应
+      messages: adaptMessagesForModel([titlePrompt], model),
+      stream: false
     };
 
-    // DeepSeek-V3.1 特殊处理
-    const isDeepSeekV3 = model === 'deepseek-ai/DeepSeek-V3.1';
-    if (isDeepSeekV3) {
-      requestBody.messages = requestBody.messages.filter((m: ModelMessage) => m.role !== 'system');
-    }
+    logger.debug("发送标题生成请求体:", JSON.stringify(requestBody, null, 2));
 
-    // Qwen3-Next 特殊处理
-    const isQwen3Next = model === 'Qwen/Qwen3-Next-80B-A3B-Instruct';
-    if (isQwen3Next) {
-      if (!requestBody.messages.some((m: ModelMessage) => m.role === 'system')) {
-        requestBody.messages = [
-          { role: 'system', content: 'You are a helpful assistant.' },
-          ...requestBody.messages
-        ];
-      }
-    }
-
-    console.log('发送标题生成请求体:', JSON.stringify(requestBody, null, 2));
-
-    const response = await fetch(`${MODELSCOPE_API_BASE}/chat/completions`, {
-      method: 'POST',
+    const response = await fetch(`${apiBase}/chat/completions`, {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('API调用失败:', {
+      const errorDetails = extractErrorDetails(errorData);
+
+      logger.error("API调用失败:", {
         status: response.status,
         statusText: response.statusText,
-        error: errorData
+        error: errorDetails
       });
-
-      let errorDetails = errorData;
-      try {
-        const errorJson = JSON.parse(errorData);
-        errorDetails = errorJson.error?.message || errorJson.message || errorData;
-      } catch (e) {
-        // 保持原始错误信息
-      }
 
       return NextResponse.json(
         {
-          error: `魔搭社区API调用失败: ${response.status} ${response.statusText}`,
+          error: `API调用失败: ${response.status} ${response.statusText}`,
           details: errorDetails
         },
         { status: response.status }
@@ -147,33 +152,29 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await response.json();
-    const content = result.choices?.[0]?.message?.content || '';
+    const content = result.choices?.[0]?.message?.content || "";
 
-    // 清理生成的标题，确保不超过20个字符
     let title = content.trim();
-    if (title.length > 20) {
-      title = title.substring(0, 20) + '...';
+    if (title.length > MAX_TITLE_LENGTH) {
+      title = title.substring(0, MAX_TITLE_LENGTH) + "...";
     }
 
-    // 如果标题为空，使用默认标题
     if (!title) {
-      title = '新对话';
+      title = DEFAULT_TITLE;
     }
 
     return NextResponse.json<ApiResponse<{ title: string }>>({
       success: true,
-      data: {
-        title: title
-      }
+      data: { title }
     });
 
   } catch (error: unknown) {
-    console.error('服务器内部错误:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error("服务器内部错误:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
-        error: '服务器内部错误',
+        error: "服务器内部错误",
         data: null,
         details: errorMessage
       },

@@ -6,10 +6,26 @@
 import { PluginManager, allBuiltinPlugins, PluginType, ITitleStylePlugin, ISummaryStylePlugin, IEnhanceOperationPlugin, EpisodeContent } from './index'
 import { SubtitleEpisode, GenerationConfig, GenerationResult } from '../types'
 import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
+import { TITLE_STYLES } from '@/features/episode-generation/components/subtitle-episode-generator/constants'
 import { logger } from '@/lib/utils/logger'
 
 // 全局插件管理器实例
 let pluginManagerInstance: PluginManager | null = null
+
+/**
+ * 获取标题风格描述
+ */
+function getTitleStyleDescription(styleId: string): string {
+  const style = TITLE_STYLES.find(s => s.id === styleId)
+  return style ? style.name : styleId
+}
+
+/**
+ * 生成简介预览文本
+ */
+function generateSummaryPreview(styleId: string): string {
+  return `[按照${getTitleStyleDescription(styleId)}风格生成的简介内容]`
+}
 
 /**
  * 初始化插件系统
@@ -74,7 +90,7 @@ export function buildPromptWithPlugin(episode: SubtitleEpisode, config: Generati
 
   if (plugin.type === PluginType.SummaryStyle) {
     const summaryPlugin = plugin as ISummaryStylePlugin
-    return summaryPlugin.buildPrompt(episodeContent, {
+    let prompt = summaryPlugin.buildPrompt(episodeContent, {
       ...summaryPlugin.defaultConfig,
       minWordCount: config.summaryLength[0],
       maxWordCount: config.summaryLength[1],
@@ -82,6 +98,29 @@ export function buildPromptWithPlugin(episode: SubtitleEpisode, config: Generati
       customPrompt: config.customPrompt,
       selectedTitleStyle: config.selectedTitleStyle
     })
+
+    // 如果配置了 selectedTitleStyle，修改提示词要求同时生成标题和简介
+    if (config.selectedTitleStyle) {
+      // 在提示词中添加标题生成要求
+      const titleRequirement = `
+标题生成要求：
+- 请同时为此集生成一个${getTitleStyleDescription(config.selectedTitleStyle)}风格的标题
+- 标题应该简洁有力，不超过20个字
+- 标题应该能够概括本集的核心内容
+- 请将标题放在最前面，格式为"标题：[你的标题]"
+- 然后空一行，再生成简介内容
+
+输出格式示例：
+标题：XXX
+
+${generateSummaryPreview(config.selectedTitleStyle)}
+
+请严格按照上述格式输出，确保标题和简介都清晰可辨。`
+
+      prompt = prompt + titleRequirement
+    }
+
+    return prompt
   } else if (plugin.type === PluginType.TitleStyle) {
     const titlePlugin = plugin as ITitleStylePlugin
     return titlePlugin.buildPrompt(episodeContent, {
@@ -126,7 +165,39 @@ export function parseResultWithPlugin(
 
   if (plugin.type === PluginType.SummaryStyle) {
     const summaryPlugin = plugin as ISummaryStylePlugin
-    const parsed = summaryPlugin.parseResult(content, {
+
+    // 尝试从生成内容中提取标题
+    let extractedTitle = `第${episode.episodeNumber}集`
+    let contentForParsing = content
+
+    // 如果配置了 selectedTitleStyle，尝试从内容中提取标题
+    if (config.selectedTitleStyle) {
+      const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+
+      // 尝试查找标题（第一行或包含"标题"的行）
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        // 检查是否是标题行（包含"标题"关键字，且长度合理）
+        if (line.match(/^(标题[:：]?\s*)/i)) {
+          const titleMatch = line.replace(/^(标题[:：]?\s*)/i, '').trim()
+          if (titleMatch.length > 0 && titleMatch.length <= 30) {
+            extractedTitle = titleMatch
+            // 移除标题行，只保留简介内容
+            contentForParsing = lines.slice(i + 1).join('\n').trim()
+            break
+          }
+        } else if (line.length > 2 && line.length <= 30 && !line.includes('简介') && !line.includes('描述')) {
+          // 第一行可能是标题（如果没有明确的"标题："前缀）
+          extractedTitle = line
+          // 移除标题行，只保留简介内容
+          contentForParsing = lines.slice(i + 1).join('\n').trim()
+          break
+        }
+      }
+    }
+
+    // 使用过滤后的内容进行解析
+    const parsed = summaryPlugin.parseResult(contentForParsing, {
       ...summaryPlugin.defaultConfig,
       minWordCount: config.summaryLength[0],
       maxWordCount: config.summaryLength[1]
@@ -140,10 +211,10 @@ export function parseResultWithPlugin(
     return {
       episodeNumber: episode.episodeNumber,
       originalTitle: episode.title,
-      generatedTitle: `第${episode.episodeNumber}集`, // 简介插件不生成标题
+      generatedTitle: extractedTitle,
       generatedSummary: processedSummary,
       confidence: parsed.confidence || 0.5,
-      wordCount: parsed.wordCount,
+      wordCount: processedSummary.length,
       generationTime: Date.now(),
       model: config.model,
       styles: [styleId],

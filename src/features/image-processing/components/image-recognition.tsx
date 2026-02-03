@@ -197,6 +197,12 @@ export function ImageRecognition() {
       }
 
       const analysisData = await analysisResponse.json()
+      
+      // 检查分析是否成功
+      if (!analysisData.success || !analysisData.data) {
+        throw new Error(analysisData.error || '图像分析失败，无法获取分析结果')
+      }
+      
       setProgress(prev => ({ ...prev, featureExtraction: 100 }))
 
       setProgress(prev => ({ ...prev, databaseMatching: 20 }))
@@ -210,8 +216,8 @@ export function ImageRecognition() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          description: analysisData.description,
-          keywords: analysisData.keywords
+          description: analysisData.data.description,
+          keywords: analysisData.data.keywords
         })
       })
 
@@ -232,16 +238,21 @@ export function ImageRecognition() {
         imdbSearch: 100
       }))
 
+      // 检查搜索是否成功
+      if (!searchData.success || !searchData.data) {
+        throw new Error(searchData.error || '搜索失败，无法获取匹配结果')
+      }
+
       setAnalysisResult({
-        description: analysisData.description,
-        confidence: analysisData.confidence,
-        keywords: analysisData.keywords,
-        movies: searchData.movies
+        description: analysisData.data.description,
+        confidence: analysisData.data.confidence,
+        keywords: analysisData.data.keywords,
+        movies: searchData.data.movies || []
       })
 
       toast({
         title: "分析完成",
-        description: `找到 ${searchData.movies.length} 个匹配结果`
+        description: `找到 ${(searchData.data.movies || []).length} 个匹配结果`
       })
 
     } catch (error) {

@@ -1,4 +1,4 @@
-export type ModelProviderType = 'siliconflow' | 'modelscope' | 'custom'
+export type ModelProviderType = 'siliconflow' | 'modelscope' | 'zhipu' | 'custom'
 
 export interface ModelProvider {
   id: string
@@ -21,6 +21,7 @@ export interface ModelConfig {
   enabled: boolean
   capabilities: string[]
   parameters?: Record<string, any>
+  isBuiltIn?: boolean // 标记是否为内置模型，不可删除
   createdAt: number
   updatedAt: number
 }

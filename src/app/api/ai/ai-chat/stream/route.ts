@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 // 类型定义
 interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
@@ -14,12 +14,49 @@ interface StreamRequestBody {
 
 const MODELSCOPE_API_BASE = "https://api-inference.modelscope.cn/v1";
 const SILICONFLOW_API_BASE = "https://api.siliconflow.cn/v1";
+const ZHIPU_API_BASE = "https://open.bigmodel.cn/api/paas/v4";
+
+const MODEL_DEEPSEEK_V3 = "deepseek-ai/DeepSeek-V3.1";
+const MODEL_QWEN3_NEXT = "Qwen/Qwen3-Next-80B-A3B-Instruct";
+
+function determineApiBase(apiKey: string, customApiBaseUrl?: string): string {
+  if (customApiBaseUrl) {
+    return customApiBaseUrl.replace(/\/$/, "");
+  }
+
+  if (apiKey.startsWith("sk-")) {
+    return SILICONFLOW_API_BASE;
+  }
+
+  if (apiKey.startsWith("ms-")) {
+    return MODELSCOPE_API_BASE;
+  }
+
+  const parts = apiKey.split(".");
+  if (parts.length === 2) {
+    return ZHIPU_API_BASE;
+  }
+
+  return MODELSCOPE_API_BASE;
+}
+
+function adaptMessagesForModel(messages: ChatMessage[], model: string): ChatMessage[] {
+  if (model === MODEL_DEEPSEEK_V3) {
+    return messages.filter((m) => m.role !== "system");
+  }
+
+  if (model === MODEL_QWEN3_NEXT && !messages.some((m) => m.role === "system")) {
+    return [{ role: "system", content: "You are a helpful assistant." }, ...messages];
+  }
+
+  return messages;
+}
 
 // 将上游 SSE 原样透传给客户端，客户端解析 data: 行提取 delta
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { model, messages, apiKey } = body || {};
+    const { model, messages, apiKey, apiBaseUrl } = body || {};
 
     if (!apiKey || typeof apiKey !== "string") {
       return new Response(JSON.stringify({ error: "API密钥未提供" }), {
@@ -28,19 +65,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 根据API密钥格式确定提供商
-    let apiBase: string;
+    const apiBase = determineApiBase(apiKey, apiBaseUrl);
 
-    if (apiKey.startsWith("sk-")) {
-      // SiliconFlow API密钥
-      apiBase = SILICONFLOW_API_BASE;
-    } else if (apiKey.startsWith("ms-")) {
-      // ModelScope API密钥
-      apiBase = MODELSCOPE_API_BASE;
-    } else {
-      // 兼容旧版本，如果密钥格式不明确，尝试ModelScope
-      apiBase = MODELSCOPE_API_BASE;
-    }
     if (!model || !messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "缺少必要参数或消息格式错误" }), {
         status: 400,
@@ -48,23 +74,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const isDeepSeekV3 = model === "deepseek-ai/DeepSeek-V3.1";
-    const isQwen3Next = model === "Qwen/Qwen3-Next-80B-A3B-Instruct";
-
-    let requestBody: StreamRequestBody = {
+    const requestBody: StreamRequestBody = {
       model,
-      messages,
+      messages: adaptMessagesForModel(messages, model),
       stream: true,
     };
-
-    if (isDeepSeekV3) {
-      requestBody.messages = messages.filter((m: ChatMessage) => m.role !== "system");
-    }
-    if (isQwen3Next) {
-      if (!messages.some((m: ChatMessage) => m.role === "system")) {
-        requestBody.messages = [{ role: "system", content: "You are a helpful assistant." }, ...messages];
-      }
-    }
 
     const upstream = await fetch(`${apiBase}/chat/completions`, {
       method: "POST",
@@ -79,7 +93,7 @@ export async function POST(request: NextRequest) {
       const text = await upstream.text();
       return new Response(
         JSON.stringify({
-          error: `魔搭社区API调用失败: ${upstream.status} ${upstream.statusText}`,
+          error: `API调用失败: ${upstream.status} ${upstream.statusText}`,
           details: text,
         }),
         { status: upstream.status, headers: { "Content-Type": "application/json" } }
@@ -93,11 +107,11 @@ export async function POST(request: NextRequest) {
 
         try {
           controller.enqueue(encoder.encode(": ping\n\n"));
-          
+
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            
+
             controller.enqueue(value);
           }
 

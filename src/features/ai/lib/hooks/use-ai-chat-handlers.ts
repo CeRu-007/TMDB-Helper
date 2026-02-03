@@ -1,6 +1,5 @@
 ﻿import { useCallback } from 'react'
 import { Message } from '@/types/ai-chat'
-import { validateSuggestions } from '@/features/ai/lib/utils/ai-chat-helpers'
 import { logger } from '@/lib/utils/logger'
 
 interface UseAiChatHandlersProps {
@@ -16,7 +15,8 @@ interface UseAiChatHandlersProps {
   updateCurrentChat: (messages: Message[], chatId?: string) => Promise<void>
   processStream: (response: Response, messageId: string, setMessages: React.Dispatch<React.SetStateAction<Message[]>>, scrollToLatestMessage: () => void) => Promise<string>
   scrollToLatestMessage: () => void
-  getModelInfo: (modelId: string) => Promise<{ apiKey: string; modelId: string }>
+  getModelInfo: (modelId: string) => Promise<{ apiKey: string; modelId: string; apiBaseUrl?: string }>
+  fetchSuggestions: (lastMessage: string) => Promise<string[]>
 }
 
 export const useAiChatHandlers = ({
@@ -32,49 +32,9 @@ export const useAiChatHandlers = ({
   updateCurrentChat,
   processStream,
   scrollToLatestMessage,
-  getModelInfo
+  getModelInfo,
+  fetchSuggestions
 }: UseAiChatHandlersProps) => {
-
-  const fetchSuggestions = useCallback(async (lastMessage: string) => {
-    const defaultSuggestions = ['深入探讨剧情细节', '了解世界观设定', '探索相关作品']
-    
-    try {
-      const configResponse = await fetch('/api/system/config')
-      const configData = await configResponse.json()
-      
-      if (!configData.success || !configData.fullConfig.modelScopeApiKey) {
-        return defaultSuggestions
-      }
-
-      const recentMessages = messages
-        .filter(m => !m.isStreaming)
-        .slice(-3)
-        .map(m => ({ role: m.role, content: m.content }))
-
-      const finalMessages = recentMessages.length > 0 ? recentMessages : [{ role: 'user', content: '开始对话' }]
-
-      const response = await fetch('/api/ai/suggestions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: (await getModelInfo(selectedModel)).modelId,
-          messages: finalMessages,
-          lastMessage,
-          apiKey: (await getModelInfo(selectedModel)).apiKey
-        })
-      })
-
-      if (!response.ok) return defaultSuggestions
-
-      const data = await response.json()
-      if (!data.success || !Array.isArray(data.data.suggestions)) return defaultSuggestions
-
-      const validSuggestions = validateSuggestions(data.data.suggestions)
-      return validSuggestions.length > 0 ? validSuggestions : defaultSuggestions
-    } catch {
-      return defaultSuggestions
-    }
-  }, [messages, selectedModel, getModelInfo])
 
   const sendAIRequest = useCallback(async (
     userContent: string,
@@ -114,7 +74,7 @@ export const useAiChatHandlers = ({
     setMainAbortController(newAbortController)
 
     try {
-      const { apiKey, modelId } = await getModelInfo(selectedModel)
+      const { apiKey, modelId, apiBaseUrl } = await getModelInfo(selectedModel)
 
       const conversationMessages = messages
         .filter(m => !m.isStreaming)
@@ -132,7 +92,7 @@ export const useAiChatHandlers = ({
       const response = await fetch('/api/ai/ai-chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-        body: JSON.stringify({ model: modelId, messages: conversationMessages, apiKey }),
+        body: JSON.stringify({ model: modelId, messages: conversationMessages, apiKey, apiBaseUrl }),
         signal: newAbortController.signal
       })
 
@@ -150,13 +110,13 @@ export const useAiChatHandlers = ({
       setMessages(prevMessages => {
         const finalMessages = prevMessages.map(m =>
           m.id === assistantMessage.id
-            ? { ...m, content: assistantAccumulated, isStreaming: false, suggestions }
+            ? { ...m, content: assistantAccumulated, isStreaming: false, suggestions, modelId }
             : m
         )
         updateCurrentChat(finalMessages, chatId)
         return finalMessages
       })
-      
+
       scrollToLatestMessage()
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -196,7 +156,7 @@ export const useAiChatHandlers = ({
     if (!userMessage || userMessage.role !== 'user') return
 
     const messagesBeforeRegenerate = messages.slice(0, messageIndex)
-    
+
     const newAssistantMessage: Message = {
       id: `msg-${Date.now()}`,
       role: 'assistant',
@@ -214,7 +174,7 @@ export const useAiChatHandlers = ({
     setMainAbortController(newAbortController)
 
     try {
-      const { apiKey, modelId } = await getModelInfo(selectedModel)
+      const { apiKey, modelId, apiBaseUrl } = await getModelInfo(selectedModel)
       const conversationMessages = messagesBeforeRegenerate
         .filter(m => !m.isStreaming)
         .map(m => ({ role: m.role, content: m.content }))
@@ -222,7 +182,7 @@ export const useAiChatHandlers = ({
       const response = await fetch('/api/ai/ai-chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-        body: JSON.stringify({ model: modelId, messages: conversationMessages, apiKey }),
+        body: JSON.stringify({ model: modelId, messages: conversationMessages, apiKey, apiBaseUrl }),
         signal: newAbortController.signal
       })
 
@@ -269,7 +229,7 @@ export const useAiChatHandlers = ({
     setMainAbortController(newAbortController)
 
     try {
-      const { apiKey, modelId } = await getModelInfo(selectedModel)
+      const { apiKey, modelId, apiBaseUrl } = await getModelInfo(selectedModel)
       const conversationMessages = messages
         .filter(m => !m.isStreaming)
         .map(m => ({ role: m.role, content: m.content }))
@@ -279,7 +239,7 @@ export const useAiChatHandlers = ({
       const response = await fetch('/api/ai/ai-chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-        body: JSON.stringify({ model: modelId, messages: conversationMessages, apiKey }),
+        body: JSON.stringify({ model: modelId, messages: conversationMessages, apiKey, apiBaseUrl }),
         signal: newAbortController.signal
       })
 
@@ -297,7 +257,7 @@ export const useAiChatHandlers = ({
         updateCurrentChat(finalMessages)
         return finalMessages
       })
-      
+
       scrollToLatestMessage()
     } catch (error: unknown) {
       if (!(error instanceof Error && error.name === 'AbortError')) {
@@ -315,3 +275,4 @@ export const useAiChatHandlers = ({
     handleContinueGeneration
   }
 }
+

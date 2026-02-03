@@ -7,6 +7,7 @@ import { useUser } from "@/shared/components/user-identity-provider"
 import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
 import { useModelService } from "@/lib/contexts/ModelServiceContext"
 import { Message } from "@/types/ai-chat"
+import { logger } from "@/lib/utils/logger"
 
 import { useAiChatHistory } from "@/features/ai/lib/hooks/use-ai-chat-history"
 import { useAiStreamResponse } from "@/features/ai/lib/hooks/use-ai-stream-response"
@@ -101,20 +102,16 @@ export function AiChat() {
 
     return {
       apiKey,
-      modelId: currentModel.modelId || currentModel.id
+      modelId: currentModel.modelId || currentModel.id,
+      apiBaseUrl: provider.apiBaseUrl
     }
   }, [scenarioModels, getScenarioModels])
 
   const fetchSuggestions = useCallback(async (lastMessage: string) => {
     const defaultSuggestions = ['深入探讨剧情细节', '了解世界观设定', '探索相关作品']
-    
+
     try {
-      const configResponse = await fetch('/api/system/config')
-      const configData = await configResponse.json()
-      
-      if (!configData.success || !configData.fullConfig.modelScopeApiKey) {
-        return defaultSuggestions
-      }
+      logger.info('开始获取建议 (ai-chat)', { lastMessageLength: lastMessage?.length, messagesCount: messages.length })
 
       const recentMessages = messages
         .filter(m => !m.isStreaming)
@@ -123,25 +120,41 @@ export function AiChat() {
 
       const finalMessages = recentMessages.length > 0 ? recentMessages : [{ role: 'user', content: '开始对话' }]
 
+      logger.debug('准备调用建议API', { finalMessagesCount: finalMessages.length, selectedModel })
+
+      const modelInfo = await getModelInfo(selectedModel)
+      logger.debug('获取模型信息成功', { modelId: modelInfo.modelId, hasApiKey: !!modelInfo.apiKey, hasApiBaseUrl: !!modelInfo.apiBaseUrl })
+
       const response = await fetch('/api/ai/suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: (await getModelInfo(selectedModel)).modelId,
+          model: modelInfo.modelId,
           messages: finalMessages,
           lastMessage,
-          apiKey: (await getModelInfo(selectedModel)).apiKey
+          apiKey: modelInfo.apiKey,
+          apiBaseUrl: modelInfo.apiBaseUrl
         })
       })
 
-      if (!response.ok) return defaultSuggestions
+      if (!response.ok) {
+        logger.warn('获取建议失败', { status: response.status })
+        return defaultSuggestions
+      }
 
       const data = await response.json()
-      if (!data.success || !Array.isArray(data.data.suggestions)) return defaultSuggestions
+      logger.debug('建议API返回', { success: data.success, hasSuggestions: Array.isArray(data.data?.suggestions) })
+
+      if (!data.success || !Array.isArray(data.data.suggestions)) {
+        logger.warn('建议返回格式错误', { data })
+        return defaultSuggestions
+      }
 
       const validSuggestions = validateSuggestions(data.data.suggestions)
+      logger.info('获取建议成功', { count: validSuggestions.length, suggestions: validSuggestions })
       return validSuggestions.length > 0 ? validSuggestions : defaultSuggestions
-    } catch {
+    } catch (error) {
+      logger.error('获取建议异常:', error)
       return defaultSuggestions
     }
   }, [messages, selectedModel, getModelInfo])
@@ -163,7 +176,8 @@ export function AiChat() {
     updateCurrentChat,
     processStream,
     scrollToLatestMessage,
-    getModelInfo
+    getModelInfo,
+    fetchSuggestions
   })
 
   const { handleSubtitleTask } = useSubtitleTask({

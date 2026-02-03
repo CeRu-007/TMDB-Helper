@@ -12,7 +12,7 @@ interface UseSubtitleTaskProps {
   setIsInterrupting: (interrupting: boolean) => void
   setMainAbortController: (controller: AbortController | null) => void
   createNewChat: () => Promise<string>
-  getModelInfo: (modelId: string) => Promise<{ apiKey: string; modelId: string }>
+  getModelInfo: (modelId: string) => Promise<{ apiKey: string; modelId: string; apiBaseUrl?: string }>
   selectedModel: string
   processStream: (response: Response, messageId: string, setMessages: React.Dispatch<React.SetStateAction<Message[]>>, scrollToLatestMessage: () => void) => Promise<string>
   scrollToLatestMessage: () => void
@@ -91,7 +91,8 @@ export const useSubtitleTask = ({
         body: JSON.stringify({
           model: modelInfo.modelId,
           messages: [{ role: 'user', content: prompt }],
-          apiKey: modelInfo.apiKey
+          apiKey: modelInfo.apiKey,
+          apiBaseUrl: modelInfo.apiBaseUrl
         }),
         signal: newAbortController.signal
       })
@@ -119,12 +120,13 @@ export const useSubtitleTask = ({
               ...m,
               content: assistantAccumulated,
               isStreaming: false,
-              suggestions
+              suggestions,
+              modelId
             };
           }
           return m;
         });
-        
+
         updateCurrentChat(finalMessages, chatId);
         return finalMessages;
       });

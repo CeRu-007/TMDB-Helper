@@ -244,11 +244,21 @@ function parseAnalysisResult(content: string) {
     description = content.substring(0, 200) + (content.length > 200 ? '...' : '')
   }
 
+  // 确保description不为空
+  if (!description || description.trim().length === 0) {
+    description = '无法识别图片内容'
+  }
+
   // 如果没有找到关键词，尝试从描述中提取
   if (keywords.length === 0) {
     // 简单的关键词提取逻辑
     const commonWords = ['电影', '电视剧', '动漫', '海报', '剧照', '人物', '场景', '背景']
     keywords = commonWords.filter(word => content.includes(word))
+    
+    // 如果仍然没有关键词，提供默认关键词以避免搜索失败
+    if (keywords.length === 0) {
+      keywords = ['影视', '图像']
+    }
   }
 
   // 根据内容质量调整置信度

@@ -67,6 +67,8 @@ interface ModelServiceSettingsPanelProps {
   setShowSiliconFlowApiKey: (show: boolean) => void
   showModelScopeApiKey: boolean
   setShowModelScopeApiKey: (show: boolean) => void
+  showZhipuApiKey: boolean
+  setShowZhipuApiKey: (show: boolean) => void
 }
 
 export default function ModelServiceSettingsPanel({
@@ -108,6 +110,8 @@ export default function ModelServiceSettingsPanel({
   setShowSiliconFlowApiKey,
   showModelScopeApiKey,
   setShowModelScopeApiKey,
+  showZhipuApiKey,
+  setShowZhipuApiKey,
 }: ModelServiceSettingsPanelProps) {
 
   const handleAddProvider = () => {
@@ -237,6 +241,9 @@ export default function ModelServiceSettingsPanel({
       } else if (providerId === "modelscope-builtin") {
         apiKey = apiSettings.modelScope?.apiKey || ""
         apiBaseUrl = "https://api-inference.modelscope.cn/v1"
+      } else if (providerId === "zhipu-builtin") {
+        apiKey = apiSettings.zhipu?.apiKey || ""
+        apiBaseUrl = "https://open.bigmodel.cn/api/paas/v4"
       } else {
         const provider = customProviders.find(p => p.id === providerId)
         if (provider) {
@@ -320,8 +327,6 @@ export default function ModelServiceSettingsPanel({
   }
 
   const handleDeleteModel = async (modelId: string) => {
-    if (!confirm("确定要删除此模型吗?")) return
-
     try {
       const response = await fetch('/api/model-service', {
         method: 'PUT',
@@ -332,12 +337,13 @@ export default function ModelServiceSettingsPanel({
         })
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        if (result.success) {
-          setConfiguredModels(configuredModels.filter(m => m.id !== modelId))
-          window.dispatchEvent(new CustomEvent('model-service-config-updated'))
-        }
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setConfiguredModels(configuredModels.filter(m => m.id !== modelId))
+        window.dispatchEvent(new CustomEvent('model-service-config-updated'))
+      } else {
+        alert(result.error || '删除模型失败')
       }
     } catch (error) {
       logger.error('删除模型失败:', error)
@@ -355,6 +361,11 @@ export default function ModelServiceSettingsPanel({
         type: 'modelscope' as const,
         name: '魔搭社区',
         apiBaseUrl: 'https://api-inference.modelscope.cn/v1'
+      },
+      'zhipu-builtin': {
+        type: 'zhipu' as const,
+        name: '智谱AI',
+        apiBaseUrl: 'https://open.bigmodel.cn/api/paas/v4'
       }
     }
 
@@ -396,7 +407,8 @@ export default function ModelServiceSettingsPanel({
   const allProviders = [
     { id: "siliconflow-builtin", name: "硅基流动", type: "builtin" },
     { id: "modelscope-builtin", name: "魔搭社区", type: "builtin" },
-    ...customProviders.filter(p => p && p.id && p.name && !["siliconflow-builtin", "modelscope-builtin"].includes(p.id))
+    { id: "zhipu-builtin", name: "智谱AI", type: "builtin" },
+    ...customProviders.filter(p => p && p.id && p.name && !["siliconflow-builtin", "modelscope-builtin", "zhipu-builtin"].includes(p.id))
   ]
 
   const scenarios = [
@@ -711,6 +723,65 @@ export default function ModelServiceSettingsPanel({
                   </div>
                 </div>
               </div>
+
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">智谱AI</h4>
+                  <Badge>内置</Badge>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">提供免费GLM-4.7-Flash 模型</p>
+                <div className="space-y-3">
+                  <div>
+                    <Label>API密钥</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type={showZhipuApiKey ? "text" : "password"}
+                        value={apiSettings.zhipu?.apiKey || ""}
+                        onChange={(e) => {
+                          const newApiKey = e.target.value;
+                          setApiSettings({
+                            ...apiSettings,
+                            zhipu: {
+                              ...(apiSettings.zhipu || {
+                                chatModel: "glm-4-flash"
+                              }),
+                              apiKey: newApiKey
+                            }
+                          });
+                          handleSaveBuiltinProvider("zhipu-builtin", newApiKey);
+                        }}
+                        placeholder="内置免费模型已预配置，但需输入智谱AI API密钥"
+                        className="flex-1"
+                      />
+                      <a
+                        href="https://open.bigmodel.cn/usercenter/apikeys"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="跳转到智谱AI API密钥页面"
+                      >
+                        <Button variant="outline" size="icon" asChild>
+                          <span><ExternalLink className="h-4 w-4" /></span>
+                        </Button>
+                      </a>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setShowZhipuApiKey(!showZhipuApiKey)}
+                      >
+                        {showZhipuApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>API地址</Label>
+                    <Input
+                      value="https://open.bigmodel.cn/api/paas/v4"
+                      disabled
+                      className="bg-gray-50 dark:bg-gray-900"
+                    />
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -891,13 +962,18 @@ export default function ModelServiceSettingsPanel({
                               <Badge key={cap} variant="outline" className="text-xs">{cap}</Badge>
                             ))}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteModel(model.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {!model.isBuiltIn && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteModel(model.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {model.isBuiltIn && (
+                            <div className="w-8" />
+                          )}
                         </div>
                       </div>
                     )
