@@ -270,7 +270,7 @@ export class ServerConfigManager {
       }),
 
       // 其他配置字段设为undefined，等用户配置时再填入
-      generalSettings: undefined,
+      generalSettings: '',
       taskSchedulerConfig: undefined,
     };
   }
@@ -413,7 +413,6 @@ export class ServerConfigManager {
       'layout_preferences',
       'appearanceSettings',
       'episode_generator_config',
-      'generalSettings',
       'taskSchedulerConfig',
       'siliconFlowApiSettings',
       'modelScopeApiSettings',

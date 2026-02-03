@@ -93,6 +93,12 @@ class StorageService {
         return defaultValue;
       }
 
+      // Check if value is explicitly "undefined" string
+      if (serialized === 'undefined' || serialized === '"undefined"') {
+        logger.warn(`[StorageService] Value for key ${key} is undefined string, returning default value`);
+        return defaultValue;
+      }
+
       // Try to parse JSON
       try {
         const value = JSON.parse(serialized) as T;
@@ -101,7 +107,7 @@ class StorageService {
       } catch (parseError) {
         // JSON parse failed - might be a plain string instead of JSON object
         // Try returning the raw string value (if type compatible)
-        logger.warn(`[StorageService] JSON parse failed for key ${key}, attempting to return raw value`, parseError);
+        logger.debug(`[StorageService] JSON parse failed for key ${key}, returning raw string value`);
 
         // If expected type is string, return raw value
         if (typeof defaultValue === 'string') {
@@ -109,7 +115,7 @@ class StorageService {
         }
 
         // Otherwise return default value
-        logger.warn(`[StorageService] Expected type is not string for key ${key}, returning default value`);
+        logger.debug(`[StorageService] Expected type is not string for key ${key}, returning default value`);
         return defaultValue;
       }
     } catch (error) {

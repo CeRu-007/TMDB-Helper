@@ -144,7 +144,7 @@ export class ClientConfigManager {
       this.setToLocalStorage(key, value);
       return false;
     } catch (error) {
-      logger.warn('设置配置失败:', data.error);
+      logger.warn('设置配置失败:', error instanceof Error ? error.message : String(error));
       this.setToLocalStorage(key, value);
       return false;
     }
