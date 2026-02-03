@@ -1,7 +1,7 @@
 ﻿import React from "react"
 import { useToast } from "@/shared/components/ui/use-toast"
 import { GenerationConfig } from '../types'
-import { GENERATION_STYLES } from '../constants'
+import { getAllSummaryStyles } from '@/features/episode-generation/plugins/plugin-service'
 import { logger } from '@/lib/utils/logger'
 
 interface SummaryStyleTabProps {
@@ -79,7 +79,7 @@ export function SummaryStyleTab({
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          {GENERATION_STYLES.map((style) => {
+          {getAllSummaryStyles().map((style) => {
             const isSelected = config.selectedStyles.includes(style.id)
             const isDisabled = isOtherStyleDisabled && style.id !== 'imitate'
             

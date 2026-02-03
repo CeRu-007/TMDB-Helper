@@ -2,7 +2,7 @@
 import { useToast } from '@/shared/components/ui/use-toast'
 import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { SubtitleFile, SubtitleEpisode, GenerationConfig, EnhanceOperation, GenerationStatus, GenerationResult } from '../types'
-import { GENERATION_STYLES } from '../constants'
+import { getAllSummaryStyles } from '@/features/episode-generation/plugins/plugin-service'
 import { timestampToMinutes } from '../utils'
 import { useApiCalls } from './useApiCalls'
 import { DELAY_500MS, DELAY_800MS, DELAY_1500MS } from '@/lib/constants/constants'
@@ -46,7 +46,8 @@ export function useContentGeneration(
     const results: GenerationResult[] = []
 
     // 验证和过滤有效的风格ID
-    const validStyleIds = GENERATION_STYLES.map(s => s.id)
+    const allSummaryStyles = getAllSummaryStyles()
+    const validStyleIds = allSummaryStyles.map(s => s.id)
     const validSelectedStyles = config.selectedStyles.filter(styleId => {
       const isValid = validStyleIds.includes(styleId)
       if (!isValid) {
@@ -108,20 +109,21 @@ export function useContentGeneration(
               }
 
               // 添加失败的结果占位符
-              results.push({
-                episodeNumber: episode.episodeNumber,
-                originalTitle: episode.title || `第${episode.episodeNumber}集`,
-                generatedTitle: `第${episode.episodeNumber}集（模仿版本${i + 1}生成失败）`,
-                generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
-                confidence: 0,
-                wordCount: 0,
-                generationTime: Date.now(),
-                model: config.model,
-                styles: [styleId],
-                styleId: styleId,
-                styleName: `模仿 (版本${i + 1})`
-              })
-            }
+                        const allSummaryStyles = getAllSummaryStyles()
+                        const style = allSummaryStyles.find(s => s.id === styleId)
+                        results.push({
+                          episodeNumber: episode.episodeNumber,
+                          originalTitle: episode.title || `第${episode.episodeNumber}集`,
+                          generatedTitle: `第${episode.episodeNumber}集（模仿版本${i + 1}生成失败）`,
+                          generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
+                          confidence: 0,
+                          wordCount: 0,
+                          generationTime: Date.now(),
+                          model: config.model,
+                          styles: [styleId],
+                          styleId: styleId,
+                          styleName: `模仿 (版本${i + 1})`
+                        })            }
           }
         } else {
           // 普通风格的单次生成
@@ -147,7 +149,8 @@ export function useContentGeneration(
         // 检查是否是余额不足错误
         if (isInsufficientBalanceError(error)) {
           // 余额不足时，添加特殊的结果并停止生成
-          const style = GENERATION_STYLES.find(s => s.id === styleId)
+          const allSummaryStyles = getAllSummaryStyles()
+          const style = allSummaryStyles.find(s => s.id === styleId)
           results.push({
             episodeNumber: episode.episodeNumber,
             originalTitle: episode.title || `第${episode.episodeNumber}集`,
@@ -166,7 +169,8 @@ export function useContentGeneration(
         }
 
         // 添加失败的结果占位符
-        const style = GENERATION_STYLES.find(s => s.id === styleId)
+        const allSummaryStyles = getAllSummaryStyles()
+        const style = allSummaryStyles.find(s => s.id === styleId)
         results.push({
           episodeNumber: episode.episodeNumber,
           originalTitle: episode.title || `第${episode.episodeNumber}集`,

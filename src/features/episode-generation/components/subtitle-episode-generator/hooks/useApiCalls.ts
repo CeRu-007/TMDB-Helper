@@ -2,8 +2,7 @@
 import { SubtitleEpisode, GenerationResult } from '../types'
 import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { GenerationConfig } from '../types'
-import { GENERATION_STYLES } from '../constants'
-import { buildPromptForStyle, parseGeneratedContent } from '../utils'
+import { buildPromptWithPlugin, parseResultWithPlugin, initializePluginSystem, buildEnhancePromptWithPlugin, parseEnhanceResultWithPlugin, getEnhanceOperationConfig, getAllSummaryStyles } from '@/features/episode-generation/plugins/plugin-service'
 import { logger } from '@/lib/utils/logger'
 
 export interface ApiCallResult {
@@ -24,9 +23,12 @@ export interface ApiCallResult {
 export function useApiCalls(config: GenerationConfig) {
   const scenarioModels = useScenarioModels('episode_generation')
 
+  // 初始化插件系统
+  initializePluginSystem()
+
   // 调用API生成内容（为单个风格生成）
   const generateEpisodeContentForStyle = useCallback(async (episode: SubtitleEpisode, styleId: string): Promise<ApiCallResult> => {
-    const prompt = buildPromptForStyle(episode, config, styleId)
+    const prompt = buildPromptWithPlugin(episode, config, styleId)
 
     // 获取实际的模型ID
     const selectedModel = scenarioModels.availableModels.find(m => m.id === config.model)
@@ -160,7 +162,8 @@ export function useApiCalls(config: GenerationConfig) {
 
             if (isQuotaExceededError(errorData) || isQuotaExceededError(responseText)) {
               // 获取风格名称
-              const style = styleId ? GENERATION_STYLES.find(s => s.id === styleId) : null
+              const allStyles = getAllSummaryStyles()
+              const style = styleId ? allStyles.find(s => s.id === styleId) : null
               const styleName = style?.name || ''
               
               // 返回一个特殊的结果，表示配额超限
@@ -205,7 +208,8 @@ export function useApiCalls(config: GenerationConfig) {
 
             if (isInsufficientBalanceError(errorData) || isInsufficientBalanceError(responseText)) {
               // 获取风格名称
-              const style = styleId ? GENERATION_STYLES.find(s => s.id === styleId) : null
+              const allStyles = getAllSummaryStyles()
+              const style = styleId ? allStyles.find(s => s.id === styleId) : null
               const styleName = style?.name || ''
 
               // 返回一个特殊的结果，表示余额不足
@@ -249,8 +253,8 @@ export function useApiCalls(config: GenerationConfig) {
       throw new Error('API返回内容为空，请重试')
     }
 
-    // 解析生成的内容
-    const parsedResult = parseGeneratedContent(content, episode, config, styleId)
+    // 使用插件解析生成的内容
+    const parsedResult = parseResultWithPlugin(content, episode, config, styleId)
     
     // 如果生成的简介太短，标记为低置信度
     if (parsedResult.generatedSummary.length < 30) {
@@ -274,135 +278,12 @@ export function useApiCalls(config: GenerationConfig) {
     // 如果是改写操作且有选中文字信息，使用特殊的处理逻辑
     if (operation === 'rewrite' && selectedTextInfo) {
       logger.info('执行改写操作，选中文字:', selectedTextInfo.text)
-      prompt = `请对以下文字进行改写，保持原意但使用不同的表达方式：
-
-【需要改写的文字】
-${selectedTextInfo.text}
-
-【改写要求】
-1. 保持原文的核心意思和信息
-2. 使用不同的词汇和句式表达
-3. 让表达更加生动自然
-4. 保持与上下文的连贯性
-5. 字数与原文相近
-
-请直接输出改写后的文字，不要包含其他说明：`
-
+      prompt = buildEnhancePromptWithPlugin('', content, operation, selectedTextInfo.text)
       systemContent = "你是一位专业的文字编辑专家，擅长改写和优化文字表达。请严格按照用户要求进行改写，保持原意的同时提升表达质量。"
     } else {
-      // 使用原有的增强逻辑
-      const buildEnhancePrompt = (result: GenerationResult, operation: string): string => {
-        const currentTitle = result.generatedTitle
-        const currentSummary = result.generatedSummary
-
-        switch (operation) {
-          case 'polish':
-            return `请对以下影视剧集标题和简介进行专业润色，提升内容的吸引力和表达质量：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【润色要求】
-1. **词汇升级**：将平淡词汇替换为更生动、更有感染力的表达
-2. **句式优化**：调整句子结构，增强节奏感和可读性
-3. **情感渲染**：适度增强情感色彩，但不夸张造作
-4. **保持原意**：核心情节和信息点必须完全保留
-5. **长度控制**：标题15字内，简介120-200字为佳
-
-【参考标准】
-- 标题要有冲击力，能瞬间抓住观众注意力
-- 简介要有画面感，让读者产生观看欲望
-- 语言要精练有力，避免冗余表达
-
-请严格按照以下格式输出：
-标题：[润色后的标题]
-简介：[润色后的简介]`
-
-          case 'shorten':
-            return `请将以下影视剧集标题和简介进行专业精简，提炼出最核心的信息：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【精简策略】
-1. **核心提取**：识别并保留最关键的情节转折点和冲突
-2. **信息优先级**：主要人物关系 > 核心冲突 > 情节发展 > 背景信息
-3. **删除冗余**：去除修饰性词汇、重复表达和次要细节
-4. **保持吸引力**：即使精简也要保持悬念和观看欲望
-5. **严格控制**：标题10字内，简介60-80字
-
-【质量标准】
-- 每个字都有存在价值，不能再删减
-- 读完后能清楚了解本集的核心看点
-- 保持原有的情感基调和类型特色
-
-请严格按照以下格式输出：
-标题：[精简后的标题]
-简介：[精简后的简介]`
-
-          case 'expand':
-            return `请将以下影视剧集标题和简介进行专业扩写，丰富内容层次和细节描述：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【扩写方向】
-1. **情节深化**：补充关键情节的前因后果，增加转折细节
-2. **人物刻画**：丰富主要角色的动机、情感状态和关系变化
-3. **环境渲染**：适度增加场景描述，营造氛围感
-4. **悬念构建**：通过细节暗示增强观众的期待感
-5. **情感层次**：深化角色间的情感冲突和内心戏
-
-【扩写原则】
-- 所有新增内容必须符合剧情逻辑
-- 保持原有的节奏感，不拖沓冗长
-- 增强画面感和代入感
-- 标题可适度调整以匹配扩写内容
-- 简介控制在200-300字
-
-请严格按照以下格式输出：
-标题：[扩写后的标题]
-简介：[扩写后的简介]`
-
-          case 'proofread':
-            return `请对以下影视剧集标题和简介进行语法纠错和语句优化，使其更加通顺流畅：
-
-【原始内容】
-标题：${currentTitle}
-简介：${currentSummary}
-
-【纠错优化要求】
-1. **语法纠正**：修正语法错误、标点符号使用不当等问题
-2. **语句通顺**：优化句式结构，使表达更加流畅自然
-3. **用词准确**：选择更准确、恰当的词汇表达
-4. **逻辑清晰**：确保句子间逻辑关系清楚，表达连贯
-5. **风格统一**：保持整体语言风格的一致性
-
-【纠错原则】
-- 保持原意不变，只优化表达方式
-- 修正明显的语法和用词错误
-- 提升语言的准确性和流畅度
-- 保持内容的完整性和可读性
-- 适合正式的影视介绍场合
-
-【注意事项】
-- 不改变核心内容和信息量
-- 保持原有的语言风格特色
-- 确保修改后的内容更加专业和准确
-
-请严格按照以下格式输出：
-标题：[纠错后的标题]
-简介：[纠错后的简介]`
-
-          default:
-            return currentSummary
-        }
-      }
-
-      prompt = buildEnhancePrompt(content, operation)
+      // 使用插件系统构建提示词
+      const result = { generatedTitle: '', generatedSummary: content } as GenerationResult
+      prompt = buildEnhancePromptWithPlugin(result.generatedTitle, result.generatedSummary, operation)
       systemContent = `你是一位资深的影视内容编辑专家，专门负责优化电视剧、电影等影视作品的分集标题和剧情简介。你具备以下专业能力：
 
 1. **深度理解影视叙事**：熟悉各种影视类型的叙事特点和观众心理
