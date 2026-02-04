@@ -1,19 +1,21 @@
 import React, { useState, useRef, useEffect } from "react"
 import {
-  Edit,
   Check,
+  Copy,
+  Edit,
   X,
   ArrowUp,
-  Copy,
-  MoreHorizontal,
-  Sparkles,
-  Minus,
-  Plus,
+  AlertCircle,
   CheckCircle,
   Loader2,
-  AlertCircle
+  Minus,
+  MoreHorizontal,
+  Plus,
+  Sparkles,
+  Wand2
 } from "lucide-react"
 import { logger } from '@/lib/utils/logger'
+import { cn } from '@/lib/utils'
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { Textarea } from "@/shared/components/ui/textarea"
@@ -21,48 +23,56 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/shared/components/ui/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
-import { cn } from "@/lib/utils"
-import { ResultsDisplayProps, EnhanceOperation } from './types'
-import { truncateFileName, getOperationName } from './utils'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@/shared/components/ui/tooltip"
+import { AIImprovementPanel } from './components/AIImprovementPanel'
 import { REWRITE_MODE_STYLES } from './constants'
+import { ResultsDisplayProps, EnhanceOperation, GenerationResult } from './types'
+import { truncateFileName } from './utils'
 
-export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
+export function ResultsDisplay({
   results,
   onUpdateResult,
   onMoveToTop,
   onEnhanceContent,
-  isInsufficientBalanceError,
-  setShowInsufficientBalanceDialog
-}) => {
+  onAIImprovement,
+  aiImprovingIndex
+}: ResultsDisplayProps): JSX.Element {
+  // Editing state
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [editingSummary, setEditingSummary] = useState('')
+
+  // Enhancement state
   const [enhancingIndex, setEnhancingIndex] = useState<number | null>(null)
   const [enhancingOperation, setEnhancingOperation] = useState<string | null>(null)
+  const [improvementOpenIndex, setImprovementOpenIndex] = useState<number | null>(null)
 
-  // 改写相关状态
+  // Rewrite state
   const [rewritingIndex, setRewritingIndex] = useState<number | null>(null)
   const [selectedText, setSelectedText] = useState<string>('')
   const [selectionStart, setSelectionStart] = useState<number>(0)
   const [selectionEnd, setSelectionEnd] = useState<number>(0)
   const [isRewritingText, setIsRewritingText] = useState<boolean>(false)
 
-  // 自定义选择实现相关状态
+  // Custom selection state
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionHighlight, setSelectionHighlight] = useState<{start: number, end: number} | null>(null)
   const textContainerRef = useRef<HTMLDivElement>(null)
 
-  const handleStartEdit = (index: number, result: { generatedTitle: string; generatedSummary: string }) => {
+  function handleStartEdit(index: number, result: { generatedTitle: string; generatedSummary: string }): void {
     setEditingIndex(index)
     setEditingTitle(result.generatedTitle)
     setEditingSummary(result.generatedSummary)
   }
 
-  const handleEnhance = async (index: number, operation: EnhanceOperation) => {
-    if (enhancingIndex !== null) return // 防止重复操作
+  async function handleEnhance(index: number, operation: EnhanceOperation): Promise<void> {
+    if (enhancingIndex !== null) return
 
     setEnhancingIndex(index)
     setEnhancingOperation(operation)
@@ -75,8 +85,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     }
   }
 
-  // 自定义文字选择实现
-  const getTextNodeAtPosition = (container: Element, offset: number): {node: Text, offset: number} | null => {
+  // Text selection utilities
+  function getTextNodeAtPosition(container: Element, offset: number): {node: Text, offset: number} | null {
     let currentOffset = 0
     const walker = document.createTreeWalker(
       container,
@@ -98,7 +108,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     return null
   }
 
-  const getOffsetFromTextNode = (container: Element, targetNode: Node, targetOffset: number): number => {
+  function getOffsetFromTextNode(container: Element, targetNode: Node, targetOffset: number): number {
     let offset = 0
 
     try {
@@ -118,33 +128,34 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         node = walker.nextNode()
       }
 
-      // 如果没找到目标节点，尝试查找父节点
+      // Fallback handling for different node types
       if (targetNode.nodeType === Node.TEXT_NODE) {
         return offset + targetOffset
-      } else {
-        // 如果是元素节点，计算到该元素的偏移
-        const textContent = container.textContent || ''
-        const nodeText = targetNode.textContent || ''
-        const nodeIndex = textContent.indexOf(nodeText)
-        return nodeIndex >= 0 ? nodeIndex + targetOffset : offset
       }
+
+      // For element nodes, calculate offset to element
+      const textContent = container.textContent || ''
+      const nodeText = targetNode.textContent || ''
+      const nodeIndex = textContent.indexOf(nodeText)
+      return nodeIndex >= 0 ? nodeIndex + targetOffset : offset
     } catch (error) {
       logger.error('计算偏移量错误:', error)
       return 0
     }
   }
 
-  const handleCustomMouseDown = (e: React.MouseEvent, index: number) => {
+  function handleCustomMouseDown(e: React.MouseEvent, index: number): void {
     if (rewritingIndex !== index) return
 
     e.preventDefault()
     e.stopPropagation()
 
+    // Initialize selection state
     setIsSelecting(true)
     setSelectionHighlight(null)
     setSelectedText('')
 
-    // 完全禁用浏览器的选择
+    // Clear browser selection
     if (window.getSelection) {
       window.getSelection()?.removeAllRanges()
     }
@@ -152,84 +163,21 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     const container = textContainerRef.current
     if (!container) return
 
-    const startX = e.clientX
-    const startY = e.clientY
+    const { clientX: startX, clientY: startY } = e
     let startOffset = 0
 
-    // 计算起始位置
-    try {
-      if (document.caretRangeFromPoint) {
-        const startRange = document.caretRangeFromPoint(startX, startY)
-        if (startRange && container.contains(startRange.startContainer)) {
-          startOffset = getOffsetFromTextNode(container, startRange.startContainer, startRange.startOffset)
-        }
-      } else {
-        // 备用方法：简单的基于位置的估算
-        const rect = container.getBoundingClientRect()
-        const relativeX = startX - rect.left
-        const relativeY = startY - rect.top
-        const fullText = container.textContent || ''
+    // Calculate start position
+    startOffset = calculateTextPosition(container, startX, startY)
 
-        // 简单估算：基于相对位置计算大概的字符位置
-        const lineHeight = 20 // 估算行高
-        const charWidth = 8   // 估算字符宽度
-        const lineIndex = Math.floor(relativeY / lineHeight)
-        const charIndex = Math.floor(relativeX / charWidth)
-
-        startOffset = Math.min(lineIndex * 50 + charIndex, fullText.length)
-      }
-    } catch (error) {
-      logger.error('计算起始位置错误:', error)
-      startOffset = 0
-    }
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
+    const handleMouseMove = (moveEvent: MouseEvent): void => {
       moveEvent.preventDefault()
       moveEvent.stopPropagation()
 
-      let endOffset = startOffset
-
-      // 计算结束位置
-      try {
-        if (document.caretRangeFromPoint) {
-          const endRange = document.caretRangeFromPoint(moveEvent.clientX, moveEvent.clientY)
-          if (endRange && container.contains(endRange.startContainer)) {
-            endOffset = getOffsetFromTextNode(container, endRange.startContainer, endRange.startOffset)
-          }
-        } else {
-          // 备用方法：简单的基于位置的估算
-          const rect = container.getBoundingClientRect()
-          const relativeX = moveEvent.clientX - rect.left
-          const relativeY = moveEvent.clientY - rect.top
-          const fullText = container.textContent || ''
-
-          const lineHeight = 20
-          const charWidth = 8
-          const lineIndex = Math.floor(relativeY / lineHeight)
-          const charIndex = Math.floor(relativeX / charWidth)
-
-          endOffset = Math.min(lineIndex * 50 + charIndex, fullText.length)
-        }
-      } catch (error) {
-        logger.error('计算结束位置错误:', error)
-        endOffset = startOffset
-      }
-
-      const start = Math.min(startOffset, endOffset)
-      const end = Math.max(startOffset, endOffset)
-
-      if (end > start) {
-        const fullText = container.textContent || ''
-        const selectedText = fullText.substring(start, end)
-
-        setSelectionHighlight({ start, end })
-        setSelectedText(selectedText)
-        setSelectionStart(start)
-        setSelectionEnd(end)
-      }
+      const endOffset = calculateTextPosition(container, moveEvent.clientX, moveEvent.clientY)
+      updateSelection(startOffset, endOffset, container)
     }
 
-    const handleMouseUp = (upEvent: MouseEvent) => {
+    const handleMouseUp = (upEvent: MouseEvent): void => {
       upEvent.preventDefault()
       upEvent.stopPropagation()
 
@@ -237,11 +185,9 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       document.removeEventListener('mousemove', handleMouseMove, { capture: true })
       document.removeEventListener('mouseup', handleMouseUp, { capture: true })
 
-      // 确保浏览器选择被清除
+      // Ensure browser selection is cleared
       setTimeout(() => {
-        if (window.getSelection) {
-          window.getSelection()?.removeAllRanges()
-        }
+        window.getSelection()?.removeAllRanges()
       }, 0)
     }
 
@@ -249,33 +195,73 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     document.addEventListener('mouseup', handleMouseUp, { capture: true, passive: false })
   }
 
-  // 简单的单词选择功能（备用方案）
-  const handleWordClick = (e: React.MouseEvent, text: string) => {
+  function calculateTextPosition(container: HTMLElement, x: number, y: number): number {
+    try {
+      if (document.caretRangeFromPoint) {
+        const range = document.caretRangeFromPoint(x, y)
+        if (range && container.contains(range.startContainer)) {
+          return getOffsetFromTextNode(container, range.startContainer, range.startOffset)
+        }
+      }
+
+      // Fallback: position-based estimation
+      const rect = container.getBoundingClientRect()
+      const relativeX = x - rect.left
+      const relativeY = y - rect.top
+      const fullText = container.textContent || ''
+
+      const LINE_HEIGHT = 20
+      const CHAR_WIDTH = 8
+      const lineIndex = Math.floor(relativeY / LINE_HEIGHT)
+      const charIndex = Math.floor(relativeX / CHAR_WIDTH)
+
+      return Math.min(lineIndex * 50 + charIndex, fullText.length)
+    } catch (error) {
+      logger.error('计算位置错误:', error)
+      return 0
+    }
+  }
+
+  function updateSelection(startOffset: number, endOffset: number, container: HTMLElement): void {
+    const start = Math.min(startOffset, endOffset)
+    const end = Math.max(startOffset, endOffset)
+
+    if (end > start) {
+      const fullText = container.textContent || ''
+      const selected = fullText.substring(start, end)
+
+      setSelectionHighlight({ start, end })
+      setSelectedText(selected)
+      setSelectionStart(start)
+      setSelectionEnd(end)
+    }
+  }
+
+  function handleWordClick(e: React.MouseEvent, text: string): void {
     e.preventDefault()
     e.stopPropagation()
 
     const target = e.target as HTMLElement
-    const clickedText = target.textContent || ''
+    const clickedText = target.textContent?.trim() || ''
 
-    if (clickedText.trim()) {
-      const fullText = text
-      const startIndex = fullText.indexOf(clickedText.trim())
+    if (!clickedText) return
 
-      if (startIndex !== -1) {
-        const endIndex = startIndex + clickedText.trim().length
+    const fullText = text
+    const startIndex = fullText.indexOf(clickedText)
 
-        setSelectedText(clickedText.trim())
-        setSelectionStart(startIndex)
-        setSelectionEnd(endIndex)
-        setSelectionHighlight({ start: startIndex, end: endIndex })
-      }
-    }
+    if (startIndex === -1) return
+
+    const endIndex = startIndex + clickedText.length
+
+    setSelectedText(clickedText)
+    setSelectionStart(startIndex)
+    setSelectionEnd(endIndex)
+    setSelectionHighlight({ start: startIndex, end: endIndex })
   }
 
-  // 渲染带高亮的文字
-  const renderTextWithHighlight = (text: string, highlight: {start: number, end: number} | null) => {
+  function renderTextWithHighlight(text: string, highlight: {start: number, end: number} | null): JSX.Element {
     if (!highlight) {
-      // 将文字分割成单词，便于点击选择
+      // Split text into words for click selection
       const words = text.split(/(\s+)/)
       return (
         <span>
@@ -305,53 +291,42 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     )
   }
 
-  // 改写相关处理函数
-  const handleStartRewrite = (index: number) => {
+  function handleStartRewrite(index: number): void {
     setRewritingIndex(index)
+    resetSelectionState()
+    document.body.classList.add('rewrite-mode-active')
+  }
+
+  function resetSelectionState(): void {
     setSelectedText('')
     setSelectionStart(0)
     setSelectionEnd(0)
     setSelectionHighlight(null)
     setIsSelecting(false)
-
-    // 添加全局CSS类来禁用选择
-    document.body.classList.add('rewrite-mode-active')
   }
 
-  // 自定义选择模式下的超强浏览器行为控制系统
+  // Browser behavior control for rewrite mode
   useEffect(() => {
     if (rewritingIndex === null) return
 
-    // 完全禁用浏览器的文字选择功能
-    const globalEventBlocker = (event: Event) => {
+    // Block browser text selection
+    const globalEventBlocker = (event: Event): void => {
       const target = event.target as Element
+      const isInsideContainer = textContainerRef.current?.contains(target)
 
-      // 检查是否在自定义选择容器内
-      if (target && textContainerRef.current && textContainerRef.current.contains(target)) {
-        // 在自定义选择区域内，也要阻止浏览器默认行为
-        if (event.type === 'selectstart' || event.type === 'contextmenu') {
-          event.preventDefault()
-          event.stopPropagation()
-          event.stopImmediatePropagation()
-          return false
-        }
-      } else {
-        // 在其他区域，完全阻止所有选择相关事件
-        if (event.type === 'selectstart' ||
-            event.type === 'contextmenu' ||
-            event.type === 'copy' ||
-            event.type === 'cut' ||
-            event.type === 'mousedown' ||
-            event.type === 'mouseup') {
-          event.preventDefault()
-          event.stopPropagation()
-          event.stopImmediatePropagation()
-          return false
-        }
+      // Different blocking rules for inside/outside container
+      const shouldBlock = isInsideContainer
+        ? ['selectstart', 'contextmenu'].includes(event.type)
+        : ['selectstart', 'contextmenu', 'copy', 'cut', 'mousedown', 'mouseup'].includes(event.type)
+
+      if (shouldBlock) {
+        event.preventDefault()
+        event.stopPropagation()
+        event.stopImmediatePropagation()
       }
     }
 
-    // 注册全局事件阻止器 - 更激进的阻止
+    // Register global event blockers
     const eventTypes = ['selectstart', 'contextmenu', 'copy', 'cut', 'mouseup', 'mousedown', 'dragstart', 'drag']
     eventTypes.forEach(eventType => {
       document.addEventListener(eventType, globalEventBlocker, {
@@ -364,18 +339,16 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       })
     })
 
-    // ESC键处理
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && rewritingIndex !== null) {
+    // ESC key handler
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
         handleCancelRewrite()
-        return
       }
     }
 
-    // 键盘事件监听
     document.addEventListener('keydown', handleKeyDown, { capture: true, passive: false })
 
-    // 清理函数
+    // Cleanup
     return () => {
       eventTypes.forEach(eventType => {
         document.removeEventListener(eventType, globalEventBlocker, { capture: true })
@@ -383,68 +356,55 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       })
       document.removeEventListener('keydown', handleKeyDown, { capture: true })
 
-      // 最终清理
+      // Clear selection
       try {
         window.getSelection()?.removeAllRanges()
-      } catch {}
+      } catch {
+        // Ignore errors
+      }
     }
   }, [rewritingIndex])
 
-  const handleCancelRewrite = () => {
+  function handleCancelRewrite(): void {
     setRewritingIndex(null)
-    setSelectedText('')
-    setSelectionStart(0)
-    setSelectionEnd(0)
-    setSelectionHighlight(null)
-    setIsSelecting(false)
-
-    // 移除全局CSS类
+    resetSelectionState()
     document.body.classList.remove('rewrite-mode-active')
-
-    // 清除文字选择
-    if (window.getSelection) {
-      window.getSelection()?.removeAllRanges()
-    }
+    window.getSelection()?.removeAllRanges()
   }
 
-  const handleTextSelection = (index: number) => {
-    // 在自定义选择模式下，这个函数不再需要处理浏览器的选择
-    // 选择逻辑已经在 handleCustomMouseDown 中处理
+  function handleTextSelection(_index: number): void {
+    // Custom selection handles this
     return
   }
 
-  const handleSaveEdit = (index: number) => {
-    if (onUpdateResult) {
-      onUpdateResult(index, {
-        generatedTitle: editingTitle,
-        generatedSummary: editingSummary,
-        wordCount: editingSummary.length
-      })
-    }
-    setEditingIndex(null)
-    setEditingTitle('')
-    setEditingSummary('')
+  function handleSaveEdit(index: number): void {
+    if (!onUpdateResult) return
+
+    onUpdateResult(index, {
+      generatedTitle: editingTitle,
+      generatedSummary: editingSummary,
+      wordCount: editingSummary.length
+    })
+
+    resetEditingState()
   }
 
-  const handleConfirmRewrite = async (index: number) => {
+  async function handleConfirmRewrite(index: number): Promise<void> {
     if (!selectedText.trim()) {
       logger.warn('没有选择要改写的文字')
       return
     }
 
-    if (isRewritingText) return // 防止重复操作
+    if (isRewritingText) return
 
     setIsRewritingText(true)
 
     try {
-      // 调用现有的 onEnhanceContent 函数，传递选中文字信息
-      if (onEnhanceContent) {
-        await onEnhanceContent(index, 'rewrite', {
-          text: selectedText,
-          start: selectionStart,
-          end: selectionEnd
-        })
-      }
+      await onEnhanceContent?.(index, 'rewrite', {
+        text: selectedText,
+        start: selectionStart,
+        end: selectionEnd
+      })
     } catch (error) {
       logger.error('改写失败:', error)
     } finally {
@@ -453,7 +413,11 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     }
   }
 
-  const handleCancelEdit = () => {
+  function handleCancelEdit(): void {
+    resetEditingState()
+  }
+
+  function resetEditingState(): void {
     setEditingIndex(null)
     setEditingTitle('')
     setEditingSummary('')
@@ -718,6 +682,19 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               <div className="flex items-center space-x-3">
                 <span>🤖 {result.model.split('/').pop()}</span>
                 <span>🕒 {new Date(result.generationTime).toLocaleTimeString()}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  onClick={() => {
+                    const newIndex = improvementOpenIndex === index ? null : index
+                    setImprovementOpenIndex(newIndex)
+                  }}
+                  title="与AI改进简介"
+                >
+                  <Wand2 className="h-3 w-3 mr-1" />
+                  与AI改进
+                </Button>
               </div>
               {enhancingIndex === index && (
                 <div className="flex items-center space-x-1">
@@ -730,6 +707,12 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                   </span>
                 </div>
               )}
+              {aiImprovingIndex && aiImprovingIndex.resultIndex === index && (
+                <div className="flex items-center space-x-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span className="text-xs text-blue-600 dark:text-blue-400">AI改进中...</span>
+                </div>
+              )}
               {rewritingIndex === index && !isRewritingText && (
                 <div className="flex items-center space-x-1">
                   <Edit className="h-3 w-3 text-blue-500" />
@@ -737,6 +720,16 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                 </div>
               )}
             </div>
+
+            {improvementOpenIndex === index && (
+              <AIImprovementPanel
+                result={result}
+                resultIndex={index}
+                onUpdateResult={onUpdateResult || (() => {})}
+                onClose={() => setImprovementOpenIndex(null)}
+                onAIImprovement={onAIImprovement}
+              />
+            )}
           </div>
         ))}
       </div>

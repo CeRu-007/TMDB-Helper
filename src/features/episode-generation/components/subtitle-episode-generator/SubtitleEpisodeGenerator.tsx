@@ -34,7 +34,7 @@ export function SubtitleEpisodeGenerator({
   onOpenGlobalSettings
 }: {
   onOpenGlobalSettings?: (section: string) => void
-} = {}) {
+} = {}): JSX.Element {
   // 文件输入引用
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -98,7 +98,9 @@ export function SubtitleEpisodeGenerator({
     handleEnhanceContent,
     handleUpdateResult,
     handleMoveToTop,
-    handleBatchExportToTMDB
+    handleBatchExportToTMDB,
+    handleAIImprovement,
+    aiImprovingIndex
   } = useContentGeneration(config, subtitleFiles, selectedFile)
 
   // 使用视频分析hook
@@ -255,24 +257,10 @@ export function SubtitleEpisodeGenerator({
               onEnhanceContent={(resultIndex, operation, selectedTextInfo) =>
                 handleEnhanceContent(selectedFile.id, resultIndex, operation, selectedTextInfo)
               }
-              isInsufficientBalanceError={(error: unknown): boolean => {
-                if (typeof error === 'string') {
-                  return error.includes('account balance is insufficient') ||
-                         error.includes('余额已用完') ||
-                         error.includes('余额不足')
-                }
-
-                if (error && typeof error === 'object') {
-                  const errorStr = JSON.stringify(error).toLowerCase()
-                  return errorStr.includes('30001') ||
-                         errorStr.includes('account balance is insufficient') ||
-                         errorStr.includes('insufficient_balance') ||
-                         error.errorType === 'INSUFFICIENT_BALANCE'
-                }
-
-                return false
-              }}
-              setShowInsufficientBalanceDialog={setShowInsufficientBalanceDialog}
+              onAIImprovement={(resultIndex, prompt) =>
+                handleAIImprovement(selectedFile.id, resultIndex, prompt)
+              }
+              aiImprovingIndex={aiImprovingIndex}
             />
           ) : (
             <EmptyState

@@ -6,11 +6,9 @@ import {
 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { Progress } from "@/shared/components/ui/progress"
-import { cn } from "@/lib/utils"
 import { WorkAreaProps } from './types'
 import { truncateFileName } from './utils'
 import { ResultsDisplay } from './ResultsDisplay'
-import { EmptyState } from './EmptyState'
 
 export function WorkArea({
   file,
@@ -23,9 +21,9 @@ export function WorkArea({
   onUpdateResult,
   onMoveToTop,
   onEnhanceContent,
-  isInsufficientBalanceError,
-  setShowInsufficientBalanceDialog
-}: WorkAreaProps) {
+  onAIImprovement,
+  aiImprovingIndex
+}: WorkAreaProps): JSX.Element {
   return (
     <div className="h-full flex flex-col">
       {/* 文件信息和操作栏 */}
@@ -66,8 +64,8 @@ export function WorkArea({
             onUpdateResult={onUpdateResult}
             onMoveToTop={onMoveToTop}
             onEnhanceContent={onEnhanceContent}
-            isInsufficientBalanceError={isInsufficientBalanceError}
-            setShowInsufficientBalanceDialog={setShowInsufficientBalanceDialog}
+            onAIImprovement={onAIImprovement}
+            aiImprovingIndex={aiImprovingIndex}
           />
         ) : !apiConfigured ? (
           <div className="h-full flex items-center justify-center">

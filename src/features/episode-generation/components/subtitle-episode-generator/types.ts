@@ -138,7 +138,7 @@ export interface FileListProps {
 
 export interface WorkAreaProps {
   file: SubtitleFile
-  results: GenerationResult[] // 这里接收的是当前文件的结果数组
+  results: GenerationResult[]
   isGenerating: boolean
   progress: number
   onGenerate: () => void
@@ -147,8 +147,8 @@ export interface WorkAreaProps {
   onUpdateResult?: (resultIndex: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (resultIndex: number) => void
   onEnhanceContent?: (resultIndex: number, operation: EnhanceOperation, selectedTextInfo?: {text: string, start: number, end: number}) => void
-  isInsufficientBalanceError?: (error: { code?: string; message?: string }) => boolean
-  setShowInsufficientBalanceDialog?: (show: boolean) => void
+  onAIImprovement?: (resultIndex: number, prompt: string) => Promise<void>
+  aiImprovingIndex?: { fileId: string; resultIndex: number } | null
 }
 
 export interface ResultsDisplayProps {
@@ -156,8 +156,8 @@ export interface ResultsDisplayProps {
   onUpdateResult?: (index: number, updatedResult: Partial<GenerationResult>) => void
   onMoveToTop?: (index: number) => void
   onEnhanceContent?: (index: number, operation: EnhanceOperation, selectedTextInfo?: {text: string, start: number, end: number}) => void
-  isInsufficientBalanceError?: (error: { code?: string; message?: string }) => boolean
-  setShowInsufficientBalanceDialog?: (show: boolean) => void
+  onAIImprovement?: (resultIndex: number, prompt: string) => Promise<void>
+  aiImprovingIndex?: { fileId: string; resultIndex: number } | null
 }
 
 export interface EmptyStateProps {
