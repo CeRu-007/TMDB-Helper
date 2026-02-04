@@ -7,6 +7,126 @@ import { timestampToMinutes } from '../utils'
 import { useApiCalls } from './useApiCalls'
 import { DELAY_500MS, DELAY_800MS, DELAY_1500MS } from '@/lib/constants/constants'
 import { logger } from '@/lib/utils/logger'
+import { cleanTitleBrackets, cleanSummaryPrefixAndBrackets } from '@/features/episode-generation/lib/text-cleaner'
+
+// Error detection utilities
+function isInsufficientBalanceError(error: unknown): boolean {
+  // Check string errors
+  if (typeof error === 'string') {
+    const insufficientBalanceMessages = [
+      'account balance is insufficient',
+      '余额已用完',
+      '余额不足'
+    ]
+    return insufficientBalanceMessages.some(msg => error.includes(msg))
+  }
+
+  // Check object errors
+  if (error && typeof error === 'object') {
+    const errorObj = error as { code?: string; message?: string; errorType?: string }
+    const errorStr = JSON.stringify(error).toLowerCase()
+    const balanceIndicators = ['30001', 'account balance is insufficient', 'insufficient_balance']
+
+    return balanceIndicators.some(indicator => errorStr.includes(indicator)) ||
+           errorObj.errorType === 'INSUFFICIENT_BALANCE'
+  }
+
+  return false
+}
+
+// Helper function to create error result
+function createErrorResult(
+  episode: SubtitleEpisode,
+  styleId: string,
+  error: unknown,
+  model: string,
+  suffix?: string
+): GenerationResult {
+  const allSummaryStyles = getAllSummaryStyles()
+  const style = allSummaryStyles.find(s => s.id === styleId)
+
+  if (isInsufficientBalanceError(error)) {
+    return {
+      episodeNumber: episode.episodeNumber,
+      originalTitle: episode.title || `第${episode.episodeNumber}集`,
+      generatedTitle: `第${episode.episodeNumber}集`,
+      generatedSummary: '余额不足，无法生成内容',
+      confidence: 0,
+      wordCount: 0,
+      generationTime: Date.now(),
+      model,
+      styles: [styleId],
+      styleId,
+      styleName: style?.name || styleId,
+      error: 'INSUFFICIENT_BALANCE'
+    }
+  }
+
+  return {
+    episodeNumber: episode.episodeNumber,
+    originalTitle: episode.title || `第${episode.episodeNumber}集`,
+    generatedTitle: `第${episode.episodeNumber}集（${style?.name || styleId}风格生成失败${suffix ? ` - ${suffix}` : ''}）`,
+    generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
+    confidence: 0,
+    wordCount: 0,
+    generationTime: Date.now(),
+    model,
+    styles: [styleId],
+    styleId,
+    styleName: style?.name || styleId
+  }
+}
+
+// Helper function to process imitate style generation
+async function processImitateStyle(
+  episode: SubtitleEpisode,
+  config: GenerationConfig,
+  generateEpisodeContentForStyle: (episode: SubtitleEpisode, styleId: string) => Promise<GenerationResult>,
+  generateCount: number
+): Promise<GenerationResult[]> {
+  const results: GenerationResult[] = []
+
+  for (let i = 0; i < generateCount; i++) {
+    try {
+      const result = await generateEpisodeContentForStyle(episode, 'imitate')
+
+      // Check for insufficient balance
+      if (result.error === 'INSUFFICIENT_BALANCE') {
+        results.push(result)
+        return results
+      }
+
+      // Add version identifier for imitate style
+      result.styleName = `模仿 (版本${i + 1})`
+      results.push(result)
+
+      // Rate limiting delay between versions
+      if (i < generateCount - 1) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_800MS))
+      }
+    } catch (error) {
+      logger.error(`模仿风格第${i + 1}版本生成失败:`, error)
+
+      const errorResult = createErrorResult(
+        episode,
+        'imitate',
+        error,
+        config.model,
+        `模仿版本${i + 1}生成失败`
+      )
+
+      if (errorResult.error === 'INSUFFICIENT_BALANCE') {
+        results.push(errorResult)
+        return results
+      }
+
+      errorResult.styleName = `模仿 (版本${i + 1})`
+      results.push(errorResult)
+    }
+  }
+
+  return results
+}
 
 export function useContentGeneration(
   config: GenerationConfig,
@@ -22,36 +142,11 @@ export function useContentGeneration(
   const scenarioModels = useScenarioModels('episode_generation')
   const { generateEpisodeContentForStyle, enhanceContent } = useApiCalls(config)
 
-  // Error detection utilities
-  function isInsufficientBalanceError(error: unknown): boolean {
-    // Check string errors
-    if (typeof error === 'string') {
-      const insufficientBalanceMessages = [
-        'account balance is insufficient',
-        '余额已用完',
-        '余额不足'
-      ]
-      return insufficientBalanceMessages.some(msg => error.includes(msg))
-    }
-
-    // Check object errors
-    if (error && typeof error === 'object') {
-      const errorObj = error as { code?: string; message?: string; errorType?: string }
-      const errorStr = JSON.stringify(error).toLowerCase()
-      const balanceIndicators = ['30001', 'account balance is insufficient', 'insufficient_balance']
-
-      return balanceIndicators.some(indicator => errorStr.includes(indicator)) ||
-             errorObj.errorType === 'INSUFFICIENT_BALANCE'
-    }
-
-    return false
-  }
-
-  // 为所有选中的风格生成内容
+  // Generate content for all selected styles
   const generateEpisodeContent = useCallback(async (episode: SubtitleEpisode): Promise<GenerationResult[]> => {
     const results: GenerationResult[] = []
 
-    // 验证和过滤有效的风格ID
+    // Validate and filter valid style IDs
     const allSummaryStyles = getAllSummaryStyles()
     const validStyleIds = allSummaryStyles.map(s => s.id)
     const validSelectedStyles = config.selectedStyles.filter(styleId => {
@@ -67,77 +162,31 @@ export function useContentGeneration(
       return results
     }
 
-    // 为每个有效的选中风格单独生成
+    // Generate for each valid selected style
     for (const styleId of validSelectedStyles) {
       try {
-        // 处理模仿风格的特殊情况：需要生成多个版本
+        // Handle imitate style special case: generate multiple versions
         if (styleId === 'imitate' && config.imitateConfig?.generateCount) {
-          const generateCount = config.imitateConfig.generateCount
-          
-          for (let i = 0; i < generateCount; i++) {
-            try {
-              const result = await generateEpisodeContentForStyle(episode, styleId)
+          const imitateResults = await processImitateStyle(
+            episode,
+            config,
+            generateEpisodeContentForStyle,
+            config.imitateConfig.generateCount
+          )
 
-              // 检查是否是余额不足的结果
-              if (result.error === 'INSUFFICIENT_BALANCE') {
-                results.push(result)
-                return results // 余额不足时直接返回
-              }
-
-              // 为模仿风格的多个版本添加序号标识
-              result.styleName = `模仿 (版本${i + 1})`
-              results.push(result)
-
-              // 避免API限流，在版本之间添加延迟
-              if (i < generateCount - 1) {
-                await new Promise(resolve => setTimeout(resolve, DELAY_800MS))
-              }
-            } catch (error) {
-              logger.error(`模仿风格第${i + 1}版本生成失败:`, error)
-
-              // 检查是否是余额不足错误
-              if (isInsufficientBalanceError(error)) {
-                results.push({
-                  episodeNumber: episode.episodeNumber,
-                  originalTitle: episode.title || `第${episode.episodeNumber}集`,
-                  generatedTitle: `第${episode.episodeNumber}集`,
-                  generatedSummary: '余额不足，无法生成内容',
-                  confidence: 0,
-                  wordCount: 0,
-                  generationTime: Date.now(),
-                  model: config.model,
-                  styles: [styleId],
-                  styleId: styleId,
-                  styleName: `模仿 (版本${i + 1})`,
-                  error: 'INSUFFICIENT_BALANCE'
-                })
-                return results // 余额不足时直接返回
-              }
-
-              // 添加失败的结果占位符
-                        const allSummaryStyles = getAllSummaryStyles()
-                        const style = allSummaryStyles.find(s => s.id === styleId)
-                        results.push({
-                          episodeNumber: episode.episodeNumber,
-                          originalTitle: episode.title || `第${episode.episodeNumber}集`,
-                          generatedTitle: `第${episode.episodeNumber}集（模仿版本${i + 1}生成失败）`,
-                          generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
-                          confidence: 0,
-                          wordCount: 0,
-                          generationTime: Date.now(),
-                          model: config.model,
-                          styles: [styleId],
-                          styleId: styleId,
-                          styleName: `模仿 (版本${i + 1})`
-                        })            }
+          // Check if any insufficient balance error occurred
+          if (imitateResults.some(r => r.error === 'INSUFFICIENT_BALANCE')) {
+            results.push(...imitateResults)
+            return results
           }
+
+          results.push(...imitateResults)
         } else {
-          // 普通风格的单次生成
+          // Single generation for regular styles
           const result = await generateEpisodeContentForStyle(episode, styleId)
 
-          // 检查是否是余额不足的结果
+          // Check for insufficient balance
           if (result.error === 'INSUFFICIENT_BALANCE') {
-            // 余额不足时，直接返回已有结果，不继续生成其他风格
             results.push(result)
             break
           }
@@ -145,60 +194,28 @@ export function useContentGeneration(
           results.push(result)
         }
 
-        // 避免API限流，在风格之间添加短暂延迟
+        // Rate limiting delay between styles
         if (validSelectedStyles.length > 1 && styleId !== validSelectedStyles[validSelectedStyles.length - 1]) {
           await new Promise(resolve => setTimeout(resolve, DELAY_500MS))
         }
       } catch (error) {
         logger.error(`风格${styleId}生成失败:`, error)
-        
-        // 检查是否是余额不足错误
-        if (isInsufficientBalanceError(error)) {
-          // 余额不足时，添加特殊的结果并停止生成
-          const allSummaryStyles = getAllSummaryStyles()
-          const style = allSummaryStyles.find(s => s.id === styleId)
-          results.push({
-            episodeNumber: episode.episodeNumber,
-            originalTitle: episode.title || `第${episode.episodeNumber}集`,
-            generatedTitle: `第${episode.episodeNumber}集`,
-            generatedSummary: '余额不足，无法生成内容',
-            confidence: 0,
-            wordCount: 0,
-            generationTime: Date.now(),
-            model: config.model,
-            styles: [styleId],
-            styleId: styleId,
-            styleName: style?.name || styleId,
-            error: 'INSUFFICIENT_BALANCE'
-          })
+
+        const errorResult = createErrorResult(episode, styleId, error, config.model)
+        results.push(errorResult)
+
+        if (errorResult.error === 'INSUFFICIENT_BALANCE') {
           break
         }
-
-        // 添加失败的结果占位符
-        const allSummaryStyles = getAllSummaryStyles()
-        const style = allSummaryStyles.find(s => s.id === styleId)
-        results.push({
-          episodeNumber: episode.episodeNumber,
-          originalTitle: episode.title || `第${episode.episodeNumber}集`,
-          generatedTitle: `第${episode.episodeNumber}集（${style?.name || styleId}风格生成失败）`,
-          generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
-          confidence: 0,
-          wordCount: 0,
-          generationTime: Date.now(),
-          model: config.model,
-          styles: [styleId],
-          styleId: styleId,
-          styleName: style?.name || styleId
-        })
       }
     }
 
     return results
   }, [config, generateEpisodeContentForStyle])
 
-  // 批量生成单个文件
+  // Batch generate single file
   const handleBatchGenerate = useCallback(async () => {
-    // 检查是否有选中的文件
+    // Validation checks
     if (!selectedFile) {
       toast({
         title: "请选择文件",
@@ -208,7 +225,6 @@ export function useContentGeneration(
       return
     }
 
-    // 检查是否配置了模型服务
     if (!scenarioModels.getCurrentModel()) {
       toast({
         title: "未配置模型",
@@ -237,56 +253,40 @@ export function useContentGeneration(
       let successCount = 0
       let failCount = 0
 
-      // 计算总任务数（集数 × 风格数）
+      // Calculate total tasks (episodes × styles)
       const totalTasks = episodes.length * config.selectedStyles.length
       let completedTasks = 0
 
       for (let i = 0; i < episodes.length; i++) {
         const episode = episodes[i]
         if (!episode) continue
-        try {
-          // 为每个选中的风格生成内容
-          const episodeResults = await generateEpisodeContent(episode)
 
-          // 添加所有风格的结果
+        try {
+          const episodeResults = await generateEpisodeContent(episode)
           results.push(...episodeResults)
 
-          // 计算成功和失败的数量
+          // Count successes and failures
           const successResults = episodeResults.filter(r => r.confidence > 0)
           successCount += successResults.length
           failCount += episodeResults.length - successResults.length
 
-          // 更新进度
+          // Update progress
           completedTasks += config.selectedStyles.length
           setGenerationResults(prev => ({ ...prev, [selectedFile.id]: [...results] }))
           setGenerationProgress((completedTasks / totalTasks) * 100)
 
-          // 避免API限流，添加延迟
+          // Rate limiting delay
           if (i < episodes.length - 1) {
             await new Promise(resolve => setTimeout(resolve, DELAY_1500MS))
           }
         } catch (error) {
-          logger.error(`第${episode!.episodeNumber}集生成失败:`, error)
+          logger.error(`第${episode.episodeNumber}集生成失败:`, error)
           failCount += config.selectedStyles.length
           completedTasks += config.selectedStyles.length
 
-          // 为每个风格添加失败的结果占位符
+          // Add failure placeholders for each style
           for (const styleId of config.selectedStyles) {
-            const allSummaryStyles = getAllSummaryStyles()
-            const style = allSummaryStyles.find(s => s.id === styleId)
-            results.push({
-              episodeNumber: episode!.episodeNumber,
-              originalTitle: episode!.title || `第${episode!.episodeNumber}集`,
-              generatedTitle: `第${episode!.episodeNumber}集（${style?.name || styleId}风格生成失败）`,
-              generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
-              confidence: 0,
-              wordCount: 0,
-              generationTime: Date.now(),
-              model: config.model,
-              styles: [styleId],
-              styleId: styleId,
-              styleName: style?.name
-            } as GenerationResult)
+            results.push(createErrorResult(episode, styleId, error, config.model))
           }
 
           setGenerationResults(prev => ({ ...prev, [selectedFile.id]: [...results] }))
@@ -294,7 +294,7 @@ export function useContentGeneration(
         }
       }
 
-      // 显示生成结果摘要
+      // Show generation summary
       if (successCount > 0) {
         toast({
           title: "生成完成",
@@ -309,10 +309,8 @@ export function useContentGeneration(
       }
     } catch (error) {
       logger.error('批量生成失败:', error)
-      // 检查是否是余额不足错误
       if (isInsufficientBalanceError(error)) {
         setShowInsufficientBalanceDialog(true)
-        // 不显示额外的错误提示
       } else {
         toast({
           title: "生成失败",
@@ -331,8 +329,23 @@ export function useContentGeneration(
     setSubtitleFiles: (files: SubtitleFile[] | ((prev: SubtitleFile[]) => SubtitleFile[])) => void,
     setSelectedFile: (file: SubtitleFile | null) => void
   ): Promise<void> => {
-    // Validation checks
-    if (!validateBatchGeneration()) return
+    if (!scenarioModels.getCurrentModel()) {
+      toast({
+        title: "未配置模型",
+        description: "请先在设置中配置AI模型",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (subtitleFiles.length === 0) {
+      toast({
+        title: "无文件",
+        description: "请先上传字幕文件",
+        variant: "destructive"
+      })
+      return
+    }
 
     const validFiles = subtitleFiles.filter(file => file.episodes.length > 0)
     if (validFiles.length === 0) {
@@ -345,190 +358,118 @@ export function useContentGeneration(
     }
 
     // Initialize generation state
-    initializeBatchGeneration(setSubtitleFiles, validFiles)
-
-    try {
-      const { allResults, totalGenerated, successfulGenerated } = await processAllFiles(
-        validFiles,
-        setSubtitleFiles,
-        setSelectedFile
-      )
-
-      // Auto-select appropriate file for display
-      selectFileForDisplay(validFiles, allResults, setSelectedFile)
-
-      toast({
-        title: "批量生成完成",
-        description: `总计生成 ${totalGenerated} 个简介，成功 ${successfulGenerated} 个`,
-      })
-    } catch (error) {
-      handleBatchGenerationError(error)
-    } finally {
-      setIsGenerating(false)
-      setGenerationProgress(0)
-    }
-  }, [subtitleFiles, config, generateEpisodeContent, scenarioModels, selectedFile, toast])
-
-  function validateBatchGeneration(): boolean {
-    if (!scenarioModels.getCurrentModel()) {
-      toast({
-        title: "未配置模型",
-        description: "请先在设置中配置AI模型",
-        variant: "destructive"
-      })
-      return false
-    }
-
-    if (subtitleFiles.length === 0) {
-      toast({
-        title: "无文件",
-        description: "请先上传字幕文件",
-        variant: "destructive"
-      })
-      return false
-    }
-
-    return true
-  }
-
-  function initializeBatchGeneration(
-    setSubtitleFiles: (files: SubtitleFile[] | ((prev: SubtitleFile[]) => SubtitleFile[])) => void,
-    validFiles: SubtitleFile[]
-  ): void {
     setIsGenerating(true)
     setGenerationProgress(0)
     setGenerationResults({})
 
-    // Initialize all files status
     setSubtitleFiles((prev: SubtitleFile[]) => prev.map((file: SubtitleFile) => ({
       ...file,
       generationStatus: validFiles.some(vf => vf.id === file.id) ? 'pending' as GenerationStatus : file.generationStatus,
       generationProgress: 0,
       generatedCount: 0
     })) as SubtitleFile[])
-  }
 
-  async function processAllFiles(
-    validFiles: SubtitleFile[],
-    setSubtitleFiles: (files: SubtitleFile[] | ((prev: SubtitleFile[]) => SubtitleFile[])) => void,
-    setSelectedFile: (file: SubtitleFile | null) => void
-  ): Promise<{ allResults: Record<string, GenerationResult[]>; totalGenerated: number; successfulGenerated: number }> {
-    const allResults: Record<string, GenerationResult[]> = {}
-    const totalEpisodes = validFiles.reduce((sum, file) => sum + file.episodes.length, 0)
-    let processedEpisodes = 0
+    try {
+      const allResults: Record<string, GenerationResult[]> = {}
+      const totalEpisodes = validFiles.reduce((sum, file) => sum + file.episodes.length, 0)
+      let processedEpisodes = 0
+      let successfulGenerated = 0
+      let totalGenerated = 0
 
-    // Initialize results arrays
-    validFiles.forEach(file => {
-      allResults[file.id] = []
-    })
-
-    // Process each file
-    for (const file of validFiles) {
-      await processSingleFile(file, allResults, setSubtitleFiles, setSelectedFile, totalEpisodes, processedEpisodes)
-      processedEpisodes += file.episodes.length
-    }
-
-    // Calculate statistics
-    const allResultsFlat = Object.values(allResults).flat()
-    const totalGenerated = allResultsFlat.length
-    const successfulGenerated = allResultsFlat.filter(r => r.confidence > 0).length
-
-    logger.info(`批量生成完成: 总计 ${totalGenerated} 个，成功 ${successfulGenerated} 个，失败 ${totalGenerated - successfulGenerated} 个`)
-
-    return { allResults, totalGenerated, successfulGenerated }
-  }
-
-  async function processSingleFile(
-    file: SubtitleFile,
-    allResults: Record<string, GenerationResult[]>,
-    setSubtitleFiles: (files: SubtitleFile[] | ((prev: SubtitleFile[]) => SubtitleFile[])) => void,
-    setSelectedFile: (file: SubtitleFile | null) => void,
-    totalEpisodes: number,
-    processedEpisodes: number
-  ): Promise<void> {
-    logger.info(`开始处理文件: ${file.name}`)
-
-    // Set file status to generating
-    updateFileStatus(setSubtitleFiles, file.id, 'generating', 0, 0)
-
-    for (let i = 0; i < file.episodes.length; i++) {
-      const episode = file.episodes[i]
-      if (!episode) continue
-
-      try {
-        await processEpisode(episode, file, allResults, setSelectedFile)
-      } catch (error) {
-        handleEpisodeError(error, episode, file, allResults)
-      }
-
-      // Update progress
-      const currentFileProgress = ((i + 1) / file.episodes.length) * 100
-      const globalProgress = ((processedEpisodes + i + 1) / totalEpisodes) * 100
-
-      updateFileStatus(setSubtitleFiles, file.id, 'generating', currentFileProgress, i + 1)
-      setGenerationProgress(globalProgress)
-      setGenerationResults(prev => ({ ...prev, ...allResults }))
-
-      // Rate limiting delay
-      if (processedEpisodes + i < totalEpisodes - 1) {
-        await new Promise(resolve => setTimeout(resolve, DELAY_1500MS))
-      }
-    }
-
-    // Set final file status
-    const fileResults = allResults[file.id] || []
-    const hasFailures = fileResults.some((r: GenerationResult) => r.confidence === 0)
-    updateFileStatus(setSubtitleFiles, file.id, hasFailures ? 'failed' : 'completed', 100, file.episodes.length)
-  }
-
-  async function processEpisode(
-    episode: SubtitleEpisode,
-    file: SubtitleFile,
-    allResults: Record<string, GenerationResult[]>,
-    setSelectedFile: (file: SubtitleFile | null) => void
-  ): Promise<void> {
-    const originalSelectedFile = selectedFile
-    setSelectedFile(file)
-
-    const episodeResults = await generateEpisodeContent(episode)
-    const resultsWithFileName = episodeResults.map((result: GenerationResult) => ({
-      ...result,
-      fileName: file.name
-    }))
-
-    allResults[file.id]!.push(...resultsWithFileName)
-    setSelectedFile(originalSelectedFile)
-  }
-
-  function handleEpisodeError(
-    error: unknown,
-    episode: SubtitleEpisode,
-    file: SubtitleFile,
-    allResults: Record<string, GenerationResult[]>
-  ): void {
-    logger.error(`第${episode.episodeNumber}集生成失败:`, error)
-
-    // Add failure placeholders for each style
-    for (const styleId of config.selectedStyles) {
-      const allSummaryStyles = getAllSummaryStyles()
-      const style = allSummaryStyles.find(s => s.id === styleId)
-
-      allResults[file.id]!.push({
-        episodeNumber: episode.episodeNumber,
-        originalTitle: episode.title || `第${episode.episodeNumber}集`,
-        generatedTitle: `第${episode.episodeNumber}集（${style?.name || styleId}风格生成失败）`,
-        generatedSummary: `生成失败：${error instanceof Error ? error.message : '未知错误'}`,
-        confidence: 0,
-        wordCount: 0,
-        generationTime: Date.now(),
-        model: config.model,
-        styles: [styleId],
-        styleId: styleId,
-        styleName: style?.name,
-        fileName: file.name
+      // Initialize result arrays
+      validFiles.forEach(file => {
+        allResults[file.id] = []
       })
+
+      // Process each file
+      for (const file of validFiles) {
+        logger.info(`开始处理文件: ${file.name}`)
+        updateFileStatus(setSubtitleFiles, file.id, 'generating', 0, 0)
+
+        for (let i = 0; i < file.episodes.length; i++) {
+          const episode = file.episodes[i]
+          if (!episode) continue
+
+          const originalSelectedFile = selectedFile
+          setSelectedFile(file)
+
+          try {
+            const episodeResults = await generateEpisodeContent(episode)
+            const resultsWithFileName = episodeResults.map((result: GenerationResult) => ({
+              ...result,
+              fileName: file.name
+            }))
+
+            allResults[file.id]!.push(...resultsWithFileName)
+          } catch (error) {
+            logger.error(`第${episode.episodeNumber}集生成失败:`, error)
+
+            // Add failure placeholders
+            for (const styleId of config.selectedStyles) {
+              allResults[file.id]!.push(createErrorResult(episode, styleId, error, config.model))
+            }
+          }
+
+          setSelectedFile(originalSelectedFile)
+
+          // Update progress
+          const currentFileProgress = ((i + 1) / file.episodes.length) * 100
+          const globalProgress = ((processedEpisodes + i + 1) / totalEpisodes) * 100
+
+          updateFileStatus(setSubtitleFiles, file.id, 'generating', currentFileProgress, i + 1)
+          setGenerationProgress(globalProgress)
+          setGenerationResults(prev => ({ ...prev, ...allResults }))
+
+          // Rate limiting
+          if (processedEpisodes + i < totalEpisodes - 1) {
+            await new Promise(resolve => setTimeout(resolve, DELAY_1500MS))
+          }
+        }
+
+        // Set final file status
+        const fileResults = allResults[file.id] || []
+        const hasFailures = fileResults.some((r: GenerationResult) => r.confidence === 0)
+        updateFileStatus(setSubtitleFiles, file.id, hasFailures ? 'failed' : 'completed', 100, file.episodes.length)
+        processedEpisodes += file.episodes.length
+      }
+
+      // Calculate statistics
+      const allResultsFlat = Object.values(allResults).flat()
+      totalGenerated = allResultsFlat.length
+      successfulGenerated = allResultsFlat.filter(r => r.confidence > 0).length
+
+      logger.info(`批量生成完成: 总计 ${totalGenerated} 个，成功 ${successfulGenerated} 个，失败 ${totalGenerated - successfulGenerated} 个`)
+
+      // Auto-select appropriate file for display
+      if (!selectedFile && validFiles.length > 0) {
+        setSelectedFile(validFiles[0]!)
+      } else if (selectedFile && (allResults[selectedFile.id] || []).length === 0) {
+        const firstFileWithResults = validFiles.find(file => (allResults[file.id] || []).length > 0)
+        if (firstFileWithResults) {
+          setSelectedFile(firstFileWithResults!)
+        }
+      }
+
+      toast({
+        title: "批量生成完成",
+        description: `总计生成 ${totalGenerated} 个简介，成功 ${successfulGenerated} 个`,
+      })
+    } catch (error) {
+      logger.error('批量生成失败:', error)
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalanceDialog(true)
+      } else {
+        toast({
+          title: "批量生成失败",
+          description: error instanceof Error ? error.message : '未知错误',
+          variant: "destructive"
+        })
+      }
+    } finally {
+      setIsGenerating(false)
+      setGenerationProgress(0)
     }
-  }
+  }, [subtitleFiles, config, generateEpisodeContent, scenarioModels, selectedFile, toast])
 
   function updateFileStatus(
     setSubtitleFiles: (files: SubtitleFile[] | ((prev: SubtitleFile[]) => SubtitleFile[])) => void,
@@ -542,42 +483,6 @@ export function useContentGeneration(
         ? { ...f, generationStatus: status, generationProgress: progress, generatedCount }
         : f
     ) as SubtitleFile[])
-  }
-
-  function selectFileForDisplay(
-    validFiles: SubtitleFile[],
-    allResults: Record<string, GenerationResult[]>,
-    setSelectedFile: (file: SubtitleFile | null) => void
-  ): void {
-    if (validFiles.length === 0) return
-
-    if (!selectedFile) {
-      setSelectedFile(validFiles[0]!)
-      return
-    }
-
-    const currentFileResults = allResults[selectedFile.id] || []
-    if (currentFileResults.length === 0) {
-      const firstFileWithResults = validFiles.find(file => (allResults[file.id] || []).length > 0)
-      if (firstFileWithResults) {
-        setSelectedFile(firstFileWithResults!)
-      }
-    }
-  }
-
-  function handleBatchGenerationError(error: unknown): void {
-    logger.error('批量生成失败:', error)
-
-    if (isInsufficientBalanceError(error)) {
-      setShowInsufficientBalanceDialog(true)
-      return
-    }
-
-    toast({
-      title: "批量生成失败",
-      description: error instanceof Error ? error.message : '未知错误',
-      variant: "destructive"
-    })
   }
 
   // Content enhancement functionality
@@ -596,12 +501,52 @@ export function useContentGeneration(
       const enhancedContent = await enhanceContent(result.generatedSummary, operation, operationConfig, selectedTextInfo)
 
       if (operation === 'rewrite' && selectedTextInfo) {
-        await handleRewriteOperation(fileId, resultIndex, result.generatedSummary, enhancedContent, selectedTextInfo)
+        const newSummary = result.generatedSummary.substring(0, selectedTextInfo.start) +
+                          enhancedContent +
+                          result.generatedSummary.substring(selectedTextInfo.end)
+
+        setGenerationResults((prev: Record<string, GenerationResult[]>) => {
+          const fileResults = prev[fileId] || []
+          const newResults = [...fileResults]
+          if (newResults[resultIndex]) {
+            newResults[resultIndex] = { ...newResults[resultIndex], generatedSummary: newSummary, wordCount: newSummary.length }
+          }
+          return { ...prev, [fileId]: newResults }
+        })
       } else {
-        await handleStandardEnhancement(fileId, resultIndex, enhancedContent, result.generatedTitle)
+        const lines = enhancedContent.split('\n').filter((line: string) => line.trim())
+        let enhancedTitle = result.generatedTitle
+        let enhancedSummary = enhancedContent
+
+        if (lines.length >= 2) {
+          const titleMatch = lines[0].match(/^(?:标题[:：]?\s*)?(.+)$/)
+          if (titleMatch) {
+            enhancedTitle = titleMatch[1].trim()
+            enhancedSummary = lines.slice(1).join('\n').replace(/^(?:简介[:：]?\s*)?/, '').trim()
+          }
+        }
+
+        setGenerationResults((prev: Record<string, GenerationResult[]>) => {
+          const fileResults = prev[fileId] || []
+          const newResults = [...fileResults]
+          if (newResults[resultIndex]) {
+            newResults[resultIndex] = {
+              ...newResults[resultIndex],
+              generatedTitle: enhancedTitle,
+              generatedSummary: enhancedSummary,
+              wordCount: enhancedSummary.length
+            }
+          }
+          return { ...prev, [fileId]: newResults }
+        })
       }
     } catch (error) {
-      handleEnhancementError(error, operation)
+      console.error(`${getOperationName(operation)}失败:`, error)
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalanceDialog(true)
+      } else {
+        alert(`${getOperationName(operation)}失败：${error instanceof Error ? error.message : '未知错误'}`)
+      }
     }
   }, [generationResults, enhanceContent])
 
@@ -616,82 +561,6 @@ export function useContentGeneration(
     return configs[operation] || { temperature: 0.7, maxTokens: 800 }
   }
 
-  async function handleRewriteOperation(
-    fileId: string,
-    resultIndex: number,
-    originalSummary: string,
-    enhancedContent: string,
-    selectedTextInfo: {text: string, start: number, end: number}
-  ): Promise<void> {
-    const newSummary = originalSummary.substring(0, selectedTextInfo.start) +
-                      enhancedContent +
-                      originalSummary.substring(selectedTextInfo.end)
-
-    updateGenerationResult(fileId, resultIndex, {
-      generatedSummary: newSummary,
-      wordCount: newSummary.length
-    })
-  }
-
-  async function handleStandardEnhancement(
-    fileId: string,
-    resultIndex: number,
-    enhancedContent: string,
-    originalTitle: string
-  ): Promise<void> {
-    const { enhancedTitle, enhancedSummary } = parseEnhancedContent(enhancedContent, originalTitle)
-
-    updateGenerationResult(fileId, resultIndex, {
-      generatedTitle: enhancedTitle,
-      generatedSummary: enhancedSummary,
-      wordCount: enhancedSummary.length
-    })
-  }
-
-  function parseEnhancedContent(content: string, originalTitle: string): { enhancedTitle: string; enhancedSummary: string } {
-    const lines = content.split('\n').filter((line: string) => line.trim())
-
-    if (lines.length < 2) {
-      return { enhancedTitle: originalTitle, enhancedSummary: content }
-    }
-
-    const titleMatch = lines[0].match(/^(?:标题[:：]?\s*)?(.+)$/)
-    if (titleMatch) {
-      return {
-        enhancedTitle: titleMatch[1].trim(),
-        enhancedSummary: lines.slice(1).join('\n').replace(/^(?:简介[:：]?\s*)?/, '').trim()
-      }
-    }
-
-    return { enhancedTitle: originalTitle, enhancedSummary: content }
-  }
-
-  function updateGenerationResult(
-    fileId: string,
-    resultIndex: number,
-    updates: Partial<GenerationResult>
-  ): void {
-    setGenerationResults((prev: Record<string, GenerationResult[]>) => {
-      const fileResults = prev[fileId] || []
-      const newResults = [...fileResults]
-      if (newResults[resultIndex]) {
-        newResults[resultIndex] = { ...newResults[resultIndex], ...updates }
-      }
-      return { ...prev, [fileId]: newResults }
-    })
-  }
-
-  function handleEnhancementError(error: unknown, operation: EnhanceOperation): void {
-    console.error(`${getOperationName(operation)}失败:`, error)
-
-    if (isInsufficientBalanceError(error)) {
-      setShowInsufficientBalanceDialog(true)
-      return
-    }
-
-    alert(`${getOperationName(operation)}失败：${error instanceof Error ? error.message : '未知错误'}`)
-  }
-
   function getOperationName(operation: EnhanceOperation): string {
     const operationNames = {
       polish: '润色',
@@ -703,7 +572,7 @@ export function useContentGeneration(
     return operationNames[operation] || '处理'
   }
 
-  // AI改进功能
+  // AI improvement functionality
   const handleAIImprovement = useCallback(async (fileId: string, resultIndex: number, userPrompt: string) => {
     const results = generationResults[fileId] || []
     const result = results[resultIndex]
@@ -755,7 +624,6 @@ export function useContentGeneration(
       }
 
       const assistantContent = data.data.content
-
       const lines = assistantContent.split('\n').filter((line: string) => line.trim())
       let improvedTitle = result.generatedTitle
       let improvedSummary = assistantContent
@@ -763,8 +631,9 @@ export function useContentGeneration(
       if (lines.length >= 2) {
         const titleMatch = lines[0].match(/^(?:标题[:：]?\s*)?(.+)$/)
         if (titleMatch) {
-          improvedTitle = titleMatch[1].trim()
-          improvedSummary = lines.slice(1).join('\n').replace(/^(?:简介[:：]?\s*)?/, '').trim()
+          // Clean up title and summary
+          improvedTitle = cleanTitleBrackets(titleMatch[1].trim())
+          improvedSummary = cleanSummaryPrefixAndBrackets(lines.slice(1).join('\n'))
         }
       }
 
@@ -794,7 +663,7 @@ export function useContentGeneration(
     }
   }, [generationResults, config, scenarioModels.availableModels])
 
-  // 更新生成结果的函数
+  // Update generation result
   const handleUpdateResult = useCallback((fileId: string, resultIndex: number, updatedResult: Partial<any>) => {
     setGenerationResults((prev: Record<string, GenerationResult[]>) => {
       const fileResults = prev[fileId] || []
@@ -809,7 +678,7 @@ export function useContentGeneration(
     })
   }, [])
 
-  // 置顶风格简介的函数
+  // Move style summary to top
   const handleMoveToTop = useCallback((fileId: string, resultIndex: number) => {
     setGenerationResults((prev: Record<string, GenerationResult[]>) => {
       const fileResults = prev[fileId] || []
@@ -826,10 +695,9 @@ export function useContentGeneration(
     })
   }, [])
 
-  // 批量导出所有结果到TMDB格式
+  // Batch export all results to TMDB format
   const handleBatchExportToTMDB = useCallback(async (exportConfig: { includeTitle: boolean; includeOverview: boolean; includeRuntime: boolean }) => {
     try {
-      // 收集所有文件的结果
       const allResults: Array<{
         episodeNumber: number
         name: string
@@ -838,16 +706,16 @@ export function useContentGeneration(
         backdrop: string
       }> = []
 
-      let globalEpisodeNumber = 1 // 全局集数计数器，按文件顺序递增
+      let globalEpisodeNumber = 1
 
-      // 按文件顺序处理
+      // Process in file order
       for (const file of subtitleFiles) {
         const fileResults = generationResults[file.id] || []
 
-        // 按字幕文件内的集数排序
+        // Sort by episode number within subtitle file
         const sortedResults = fileResults.sort((a, b) => a.episodeNumber - b.episodeNumber)
 
-        // 按字幕文件内的集数分组，每个集数只取第一个风格的结果
+        // Group by episode number, take only first style result for each episode
         const episodeGroups = new Map<number, any>()
         for (const result of sortedResults) {
           if (!episodeGroups.has(result.episodeNumber)) {
@@ -855,28 +723,25 @@ export function useContentGeneration(
           }
         }
 
-        // 为每集创建导出数据
+        // Create export data for each episode
         for (const [, result] of episodeGroups) {
-          // 找到对应的原始集数据以获取时间戳
           const originalEpisode = file.episodes.find(ep => ep.episodeNumber === result.episodeNumber)
           const runtime = originalEpisode?.lastTimestamp ? timestampToMinutes(originalEpisode.lastTimestamp) : 0
 
           const exportItem = {
-            episodeNumber: globalEpisodeNumber, // 使用全局递增的集数
+            episodeNumber: globalEpisodeNumber,
             name: exportConfig.includeTitle ? result.generatedTitle : '',
             runtime: exportConfig.includeRuntime ? runtime : 0,
             overview: exportConfig.includeOverview ? result.generatedSummary : '',
-            backdrop: '' // 空的backdrop字段
+            backdrop: ''
           }
 
           allResults.push(exportItem)
-          globalEpisodeNumber++ // 递增全局集数
+          globalEpisodeNumber++
         }
       }
 
-      // 结果已经按文件顺序和集数顺序排列，无需重新排序
-
-      // 生成CSV内容
+      // Generate CSV content
       const headers = ['episode_number', 'name', 'runtime', 'overview', 'backdrop']
       const csvContent = [
         headers.join(','),
@@ -889,7 +754,7 @@ export function useContentGeneration(
         ].join(','))
       ].join('\n')
 
-      // 写入到TMDB-Import目录
+      // Write to TMDB-Import directory
       const response = await fetch('/api/external/write-tmdb-import', {
         method: 'POST',
         headers: {

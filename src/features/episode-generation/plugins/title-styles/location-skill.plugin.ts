@@ -3,7 +3,9 @@
  * 优先使用字幕中出现的具体地名、招式名、技能名作为标题核心
  */
 
-import { BasePlugin, PluginType, ITitleStylePlugin, EpisodeContent, ParsedTitle, TitleStyleConfig } from '../core'
+import { BasePlugin, PluginType, ITitleStylePlugin, EpisodeContent, ParsedTitle, TitleStyleConfig  } from '../core'
+
+import { cleanTitleText } from '../../lib/text-cleaner'
 
 export const locationSkillPlugin: ITitleStylePlugin = new (class extends BasePlugin implements ITitleStylePlugin {
   constructor() {
@@ -62,22 +64,8 @@ ${content.originalTitle ? `原标题：${content.originalTitle}` : ''}
   parseResult(generated: string, options?: Record<string, any>): ParsedTitle {
     const config = { ...this.defaultConfig, ...options }
     
-    // 清理内容
-    let title = generated.trim()
-    
-    // 移除可能的前缀（如"标题："、"Title:"等）
-    title = title.replace(/^(标题[:：]?\s*|Title[:：]?\s*)/i, '')
-    
-    // 移除引号
-    title = title.replace(/^["'«」『]|["'»』」]$/g, '')
-    
-    // 移除标点符号（除了问号、感叹号）
-    if (config.punctuationHandling === 'remove' || config.punctuationHandling === 'simplify') {
-      title = title.replace(/[，。、；：]/g, '')
-    }
-    
-    // 移除"第X集"、"第X话"等
-    title = title.replace(/第\s*\d+\s*[集话]/g, '')
+    // 使用统一的标题清理工具（包括清理前缀、引号、标点、方括号、"第X集"）
+    let title = cleanTitleText(generated)
     
     // 限制长度
     if (title.length > config.maxLength) {

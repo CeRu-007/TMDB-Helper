@@ -4,6 +4,7 @@
  */
 
 import { BasePlugin, PluginType, ISummaryStylePlugin, EpisodeContent, ParsedSummary, SummaryStyleConfig, SummaryConstraints } from '../core'
+import { cleanSummaryText } from '../../lib/text-cleaner'
 
 export const crunchyrollPlugin: ISummaryStylePlugin = new (class extends BasePlugin implements ISummaryStylePlugin {
   constructor() {
@@ -132,13 +133,6 @@ ${content.originalTitle ? `原标题：${content.originalTitle}` : ''}
   }
 
   postProcess(summary: string): string {
-    let processed = summary.replace(/\n{3,}/g, '\n\n')
-    processed = processed
-      .replace(/，/g, '，')
-      .replace(/。/g, '。')
-      .replace(/！/g, '！')
-      .replace(/？/g, '？')
-    
-    return processed.trim()
+    return cleanSummaryText(summary)
   }
 })()

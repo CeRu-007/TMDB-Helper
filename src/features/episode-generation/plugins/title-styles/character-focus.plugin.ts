@@ -3,7 +3,9 @@
  * 以主要角色名字和行动为标题重点，突出角色的成长与变化
  */
 
-import { BasePlugin, PluginType, ITitleStylePlugin, EpisodeContent, ParsedTitle, TitleStyleConfig } from '../core'
+import { BasePlugin, PluginType, ITitleStylePlugin, EpisodeContent, ParsedTitle, TitleStyleConfig  } from '../core'
+
+import { cleanTitleText } from '../../lib/text-cleaner'
 
 export const characterFocusPlugin: ITitleStylePlugin = new (class extends BasePlugin implements ITitleStylePlugin {
   constructor() {
@@ -62,21 +64,8 @@ ${content.originalTitle ? `原标题：${content.originalTitle}` : ''}
   parseResult(generated: string, options?: Record<string, any>): ParsedTitle {
     const config = { ...this.defaultConfig, ...options }
     
-    let title = generated.trim()
-    
-    // 移除前缀
-    title = title.replace(/^(标题[:：]?\s*|Title[:：]?\s*)/i, '')
-    
-    // 移除引号
-    title = title.replace(/^["'«」『]|["'»』」]$/g, '')
-    
-    // 移除标点
-    if (config.punctuationHandling === 'remove' || config.punctuationHandling === 'simplify') {
-      title = title.replace(/[，。、；：]/g, '')
-    }
-    
-    // 移除"第X集"
-    title = title.replace(/第\s*\d+\s*[集话]/g, '')
+    // 使用统一的标题清理工具（包括清理前缀、引号、标点、方括号、"第X集"）
+    let title = cleanTitleText(generated)
     
     // 限制长度
     if (title.length > config.maxLength) {

@@ -4,6 +4,7 @@
  */
 
 import { BasePlugin, PluginType, ISummaryStylePlugin, EpisodeContent, ParsedSummary, SummaryStyleConfig , SummaryConstraints } from '../core'
+import { cleanSummaryText } from '../../lib/text-cleaner'
 
 export const atmosphericPlugin: ISummaryStylePlugin = new (class extends BasePlugin implements ISummaryStylePlugin {
   constructor() {
@@ -62,16 +63,7 @@ ${content.originalTitle ? `原标题：${content.originalTitle}` : ''}
   parseResult(generated: string, options?: Record<string, any>): ParsedSummary {
     const config = { ...this.defaultConfig, ...options }
     
-    // 清理多余空白
-    let summary = generated.trim()
-    
-    // 移除可能的前缀
-    summary = summary.replace(/^(简介[:：]?\s*|描述[:：]?\s*|Description[:：]?\s*|Summary[:：]?\s*)/i, '')
-    
-    // 统计字数
-    const wordCount = summary.length
-    
-    // 计算置信度
+        const wordCount = generated.trim().length
     let confidence = 100
     if (wordCount < config.minWordCount * 0.8 || wordCount > config.maxWordCount * 1.2) {
       confidence = 60
@@ -79,16 +71,16 @@ ${content.originalTitle ? `原标题：${content.originalTitle}` : ''}
       confidence = 80
     }
 
+    
     return {
-      summary,
-      wordCount,
+      summary: generated.trim(),  // postProcess 会进一步清理
+      wordCount: generated.trim().length,  // 临时字数，postProcess 后会更新
       confidence,
       metadata: {
         pluginId: this.id,
         pluginVersion: this.version
       }
-    }
-  }
+    }}
 
   validate(summary: string, constraints?: SummaryConstraints) {
     const errors: string[] = []
@@ -117,16 +109,6 @@ ${content.originalTitle ? `原标题：${content.originalTitle}` : ''}
   }
 
   postProcess(summary: string): string {
-    // 移除多余的空行
-    let processed = summary.replace(/\n{3,}/g, '\n\n')
-    
-    // 统一中英文标点
-    processed = processed
-      .replace(/，/g, '，')
-      .replace(/。/g, '。')
-      .replace(/！/g, '！')
-      .replace(/？/g, '？')
-    
-    return processed.trim()
+    return cleanSummaryText(summary)
   }
 })()

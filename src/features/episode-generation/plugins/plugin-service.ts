@@ -8,6 +8,7 @@ import { SubtitleEpisode, GenerationConfig, GenerationResult } from '../types'
 import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { TITLE_STYLES } from '@/features/episode-generation/components/subtitle-episode-generator/constants'
 import { logger } from '@/lib/utils/logger'
+import { cleanTitleBrackets } from '../lib/text-cleaner'
 
 // 全局插件管理器实例
 let pluginManagerInstance: PluginManager | null = null
@@ -181,14 +182,16 @@ export function parseResultWithPlugin(
         if (line.match(/^(标题[:：]?\s*)/i)) {
           const titleMatch = line.replace(/^(标题[:：]?\s*)/i, '').trim()
           if (titleMatch.length > 0 && titleMatch.length <= 30) {
-            extractedTitle = titleMatch
+            // 清理标题外层的方括号
+            extractedTitle = cleanTitleBrackets(titleMatch)
             // 移除标题行，只保留简介内容
             contentForParsing = lines.slice(i + 1).join('\n').trim()
             break
           }
         } else if (line.length > 2 && line.length <= 30 && !line.includes('简介') && !line.includes('描述')) {
           // 第一行可能是标题（如果没有明确的"标题："前缀）
-          extractedTitle = line
+          // 清理标题外层的方括号
+          extractedTitle = cleanTitleBrackets(line)
           // 移除标题行，只保留简介内容
           contentForParsing = lines.slice(i + 1).join('\n').trim()
           break
