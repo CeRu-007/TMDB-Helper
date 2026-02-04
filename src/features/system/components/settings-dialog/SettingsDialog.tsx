@@ -194,7 +194,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [helpTab, setHelpTab] = useState<'about' | 'updates' | 'help' | 'feedback'>('about')
   const [appInfo] = useState<AppInfo>({
       name: 'TMDB Helper',
-      version: '0.5.4'
+      version: '0.5.6',
+      buildDate: '2024'
   })
   
     // 保存状态
