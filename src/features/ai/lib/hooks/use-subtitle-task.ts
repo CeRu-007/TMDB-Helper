@@ -121,7 +121,7 @@ export const useSubtitleTask = ({
               content: assistantAccumulated,
               isStreaming: false,
               suggestions,
-              modelId
+              modelId: modelInfo.modelId
             };
           }
           return m;
