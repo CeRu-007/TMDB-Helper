@@ -29,7 +29,7 @@ interface ContentRenderersProps {
   selectedItem: TMDBItem | null
   onUpdateItem: (item: TMDBItem) => void
   onDeleteItem: (id: string) => void
-  onOpenScheduledTask?: (item: TMDBItem) => void
+  onOpenScheduledTask?: ((item: TMDBItem) => void) | undefined
   onBackToList: () => void
   onOpenGlobalSettings: (section: string) => void
   onShowAddDialog: () => void
@@ -40,10 +40,10 @@ interface ContentRenderersProps {
   recentItems: TMDBItem[]
   loadingUpcoming: boolean
   loadingRecent: boolean
-  upcomingError: string | null
-  recentError: string | null
-  upcomingLastUpdated: string | null
-  recentLastUpdated: string | null
+  upcomingError: string | null | undefined
+  recentError: string | null | undefined
+  upcomingLastUpdated: string | null | undefined
+  recentLastUpdated: string | null | undefined
   selectedRegion: string
   mediaNewsType: 'upcoming' | 'recent'
   isMissingApiKey: boolean

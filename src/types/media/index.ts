@@ -1,5 +1,8 @@
 import { BaseEntity, FileInfo, Status } from '../common'
 
+// 导出基础类型
+export * from './base'
+
 // Media base types
 export interface MediaItem extends BaseEntity {
   title: string
