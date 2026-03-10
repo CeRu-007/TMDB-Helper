@@ -9,7 +9,7 @@ import GlobalScheduledTasksDialog from '@/features/scheduled-tasks/components/gl
 import { TaskExecutionLogsDialog } from '@/features/scheduled-tasks/components/task-execution-logs-dialog'
 import ImportDataDialog from '@/features/data-management/components/import-data-dialog'
 import ExportDataDialog from '@/features/data-management/components/export-data-dialog'
-import { UseHomeStateReturn } from '@/features/media-maintenance/lib/hooks/use-home-state'
+import { UseHomeStateReturn } from '@/stores/hooks'
 import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
 import { toast } from '@/shared/components/ui/use-toast'

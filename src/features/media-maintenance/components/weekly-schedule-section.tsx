@@ -5,7 +5,7 @@ import { WeekdayNavigation } from './weekday-navigation'
 import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
 import MediaCard from '@/features/media-maintenance/components/media-card'
-import { UseHomeStateReturn } from '@/features/media-maintenance/lib/hooks/use-home-state'
+import { UseHomeStateReturn } from '@/stores/hooks'
 
 interface WeeklyScheduleSectionProps {
   homeState: UseHomeStateReturn

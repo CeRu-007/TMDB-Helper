@@ -9,7 +9,7 @@ import { WeekdayNavigation } from './weekday-navigation'
 import { MediaNewsSection } from './media-news-section'
 import { ProgressSection } from './progress-section'
 import { WeeklyScheduleSection } from './weekly-schedule-section'
-import { UseHomeStateReturn } from '@/features/media-maintenance/lib/hooks/use-home-state'
+import { UseHomeStateReturn } from '@/stores/hooks'
 import { UseMediaNewsReturn } from '@/features/media-news/lib/hooks/use-media-news'
 interface HomeContentProps {
   homeState: UseHomeStateReturn

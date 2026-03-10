@@ -12,8 +12,8 @@ import {
   RefreshCw
 } from "lucide-react"
 
-// 导入 hooks
-import { useHomeState } from '@/features/media-maintenance/lib/hooks/use-home-state'
+// 导入 hooks - 使用 Zustand 版本
+import { useHomeState } from '@/stores/hooks'
 import { useCategoryFilter } from '@/features/media-maintenance/lib/hooks/use-category-filter'
 import { useWeekdayFilter } from '@/features/media-maintenance/lib/hooks/use-weekday-filter'
 import { useCurrentDay } from '@/features/media-maintenance/lib/hooks/use-current-day'
@@ -36,7 +36,7 @@ interface MediaNewsData {
 }
 
 // 导入组件
-import { SidebarLayout } from "@/shared/components/layouts/sidebar-layout"
+import { SidebarLayout } from "@/shared/components/layouts/sidebar-layout-v2"
 import { WeekdayNavigation } from '@/features/media-maintenance/components/weekday-navigation'
 import { RegionNavigation } from '@/features/media-news/components/region-navigation'
 import { Button } from "@/shared/components/ui/button"
@@ -409,40 +409,12 @@ export default function HomePage() {
   return (
     <>
       <SidebarLayout
-        totalItems={totalItems}
-        runningTasks={homeState.runningTasks}
-        onShowAddDialog={() => homeState.setShowAddDialog(true)}
-        onShowSettingsDialog={(section) => {
-          homeState.setSettingsInitialSection(section)
-          homeState.setShowSettingsDialog(true)
-        }}
-        onShowTasksDialog={() => homeState.setShowTasksDialog(true)}
-        onShowExecutionLogs={() => homeState.setShowExecutionLogs(true)}
-        onShowImportDialog={() => homeState.setShowImportDialog(true)}
-        onShowExportDialog={() => homeState.setShowExportDialog(true)}
-        // 词条详情相关
-        selectedItem={homeState.selectedItem}
-        onSelectedItemChange={homeState.setSelectedItem}
         onUpdateItem={handleUpdateItem}
         onDeleteItem={handleDeleteItem}
         onOpenScheduledTask={(item) => {
           homeState.setScheduledTaskItem(item);
           homeState.setShowScheduledTaskDialog(true);
         }}
-        // 影视资讯相关状态和函数
-        upcomingItems={mediaNews.upcomingItems}
-        recentItems={mediaNews.recentItems}
-        loadingUpcoming={mediaNews.loadingUpcoming}
-        loadingRecent={mediaNews.loadingRecent}
-        upcomingError={mediaNews.upcomingError}
-        recentError={mediaNews.recentError}
-        upcomingLastUpdated={mediaNews.upcomingLastUpdated}
-        recentLastUpdated={mediaNews.recentLastUpdated}
-        selectedRegion={selectedRegion}
-        mediaNewsType={mediaNewsType}
-        isMissingApiKey={mediaNews.isMissingApiKey}
-        upcomingItemsByRegion={mediaNews.upcomingItemsByRegion}
-        recentItemsByRegion={mediaNews.recentItemsByRegion}
         fetchUpcomingItems={(silent?: boolean, _retryCount?: number, region?: string) => {
           if (region) {
             mediaNews.fetchUpcomingItems(region, silent || false)
@@ -457,37 +429,6 @@ export default function HomePage() {
             mediaNews.fetchRecentItems(selectedRegion, silent || false)
           }
         }}
-        setMediaNewsType={setMediaNewsType}
-        setSelectedRegion={setSelectedRegion}
-        // 词条维护相关状态和函数
-        items={items}
-        activeTab={homeState.activeTab}
-        selectedDayFilter={homeState.selectedDayFilter}
-        selectedCategory={homeState.selectedCategory}
-        categories={categories}
-        filteredOngoingItems={filteredOngoingItems}
-        filteredCompletedItems={filteredCompletedItems}
-        getFilteredItems={getFinalFilteredItems}
-        setActiveTab={homeState.setActiveTab}
-        setSelectedDayFilter={homeState.setSelectedDayFilter}
-        setSelectedCategory={homeState.setSelectedCategory}
-        onItemClick={(item) => {
-          homeState.setSelectedItem(item);
-        }}
-        // 组件引用
-        RegionNavigation={() => <RegionNavigation
-          selectedRegion={selectedRegion}
-          setSelectedRegion={setSelectedRegion}
-          mediaNewsType={mediaNewsType}
-          setMediaNewsType={setMediaNewsType}
-          upcomingItemsByRegion={mediaNews.upcomingItemsByRegion}
-          recentItemsByRegion={mediaNews.recentItemsByRegion}
-          items={items}
-        />}
-        ApiKeySetupGuide={() => <div>ApiKeySetupGuide</div>}
-        VideoThumbnailExtractor={VideoThumbnailExtractor}
-        ImageCropper={ImageCropper}
-        WeekdayNavigation={() => <div>WeekdayNavigation</div>}
       >
         {/* 词条维护内容 */}
         <div id="main-content-container" className="relative min-h-0">
