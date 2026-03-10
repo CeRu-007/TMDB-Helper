@@ -25,7 +25,6 @@ import { Download, FileText, Database, Settings, Info } from 'lucide-react';
 import { useData } from '@/shared/components/client-data-provider';
 import { StorageManager, TMDBItem, ScheduledTask } from '@/lib/data/storage';
 import { useToast } from '@/lib/hooks/use-toast';
-import { dataRecoveryManager } from '@/lib/data/data-recovery-manager';
 
 interface ExportDataDialogProps {
   open: boolean;
@@ -36,7 +35,6 @@ interface ExportOptions {
   includeItems: boolean;
   includeTasks: boolean;
   format: 'json' | 'csv';
-  exactCopy: boolean; // 导出与data文件夹完全一致的文件
 }
 
 export default function ExportDataDialog({
@@ -47,7 +45,6 @@ export default function ExportDataDialog({
     includeItems: true,
     includeTasks: true,
     format: 'json',
-    exactCopy: false,
   });
   const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState<{
@@ -110,60 +107,26 @@ export default function ExportDataDialog({
     }
 
     // JSON export
-    const exportData = options.exactCopy
-      ? await getExactCopyData()
-      : await getFullBackupData();
+    const exportDataResult = await getFullBackupData();
 
-    if (!exportData || exportData.items.length === 0) {
+    if (!exportDataResult || exportDataResult.items.length === 0) {
       throw new Error('没有可导出的数据');
     }
 
-    const filename = options.exactCopy
-      ? 'tmdb_items.json'
-      : `tmdb-helper-backup-${new Date().toISOString().split('T')[0]}.json`;
-
-    const data = JSON.stringify(exportData, null, 2);
+    const filename = `tmdb-helper-backup-${new Date().toISOString().split('T')[0]}.json`;
+    const data = JSON.stringify(exportDataResult, null, 2);
     downloadFile(data, filename, 'application/json');
 
-    const itemCount = exportData.items.length;
-    const taskCount = (exportData as any).tasks?.length || 0;
+    const itemCount = exportDataResult.items.length;
+    const taskCount = exportDataResult.tasks?.length || 0;
 
     toast({
       title: '导出成功',
-      description: options.exactCopy
-        ? `已导出 ${itemCount} 个项目`
-        : `已导出 ${itemCount} 个项目和 ${taskCount} 个任务`,
+      description: `已导出 ${itemCount} 个项目和 ${taskCount} 个任务`,
       duration: 3000,
     });
 
     return true;
-  };
-
-  // 获取精确副本数据
-  const getExactCopyData = async () => {
-    try {
-      const response = await fetch('/api/storage/file-operations', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API请求失败: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (result.success && result.items) {
-        return { items: result.items };
-      }
-      throw new Error(result.error || 'API返回数据无效');
-    } catch (error) {
-      // Fallback to memory data
-      if (items && items.length > 0) {
-        logger.warn('使用内存数据作为API降级方案');
-        return { items };
-      }
-      throw new Error('无法获取数据');
-    }
   };
 
   // 获取完整备份数据
@@ -183,7 +146,7 @@ export default function ExportDataDialog({
     return {
       items,
       tasks,
-      version: '1.0.0',
+      version: '2.0.0', // 数据库版本
       exportDate: new Date().toISOString(),
       stats: {
         itemCount: items.length,
@@ -195,14 +158,14 @@ export default function ExportDataDialog({
   // 获取备份项目数据
   const getBackupItems = async (): Promise<TMDBItem[]> => {
     try {
-      const response = await fetch('/api/storage/file-operations', {
+      const response = await fetch('/api/storage/data', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
 
       if (response.ok) {
         const result = await response.json();
-        return result.success && result.items ? result.items : [];
+        return result.items || [];
       }
     } catch (error) {
       logger.warn('API获取项目失败，使用内存数据');
@@ -419,29 +382,6 @@ export default function ExportDataDialog({
                         <div className="font-medium">包含定时任务</div>
                         <div className="text-sm text-muted-foreground">
                           导出所有定时任务配置
-                        </div>
-                      </div>
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="exactCopy"
-                      checked={options.exactCopy}
-                      onCheckedChange={(checked) =>
-                        setOptions((prev) => ({
-                          ...prev,
-                          exactCopy: checked as boolean,
-                          includeItems: true,
-                          includeTasks: !checked,
-                        }))
-                      }
-                    />
-                    <Label htmlFor="exactCopy" className="flex-1">
-                      <div>
-                        <div className="font-medium">导出data文件副本</div>
-                        <div className="text-sm text-muted-foreground">
-                          导出与data/tmdb_items.json完全一致的文件
                         </div>
                       </div>
                     </Label>

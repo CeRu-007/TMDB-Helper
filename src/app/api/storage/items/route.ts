@@ -8,7 +8,10 @@ const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
 // GET /api/storage/items - 获取所有项目（管理员用户）
 export async function GET(request: NextRequest) {
   try {
-    // 直接从文件系统读取管理员的项目数据
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
+    // 从数据库读取管理员的项目数据
     const items = ServerStorageManager.getItems();
 
     return NextResponse.json({

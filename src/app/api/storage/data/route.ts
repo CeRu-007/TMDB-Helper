@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TMDBItem, ScheduledTask } from '@/lib/types';
 import { ServerStorageManager } from '@/lib/data/server-storage-manager';
 import { getUserIdFromRequest } from '@/lib/auth/user-utils';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
+import type { TMDBItem } from '@/types/tmdb-item';
+import type { ScheduledTask } from '@/lib/data/storage/types';
 
 // POST /api/storage/data - 导入数据
 export async function POST(request: NextRequest) {
   try {
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
     const data = await request.json();
     const { items, tasks = [] } = data;
 
@@ -27,37 +31,59 @@ export async function POST(request: NextRequest) {
       `[API] 导入数据 - 用户ID: ${userId}, 项目数: ${items.length}, 任务数: ${tasks.length}`,
     );
 
-    // 类型检查
-    const validItems = items.filter(
-      (item) =>
-        item &&
-        typeof item === 'object' &&
-        item.id &&
-        item.title &&
-        item.mediaType &&
-        item.tmdbId,
-    ) as TMDBItem[];
+    // 类型检查并补充缺失字段
+    const validItems: TMDBItem[] = [];
+    for (const item of items) {
+      if (item && typeof item === 'object' && item.id && item.title && item.mediaType) {
+        // 补充缺失字段
+        if (!item.createdAt) {
+          item.createdAt = new Date().toISOString();
+        }
+        if (!item.updatedAt) {
+          item.updatedAt = new Date().toISOString();
+        }
+        validItems.push(item as TMDBItem);
+      }
+    }
 
-    const validTasks = tasks.filter(
-      (task) =>
-        task && typeof task === 'object' && task.id && task.name && task.itemId,
-    ) as ScheduledTask[];
+    const validTasks: ScheduledTask[] = [];
+    for (const task of tasks) {
+      if (task && typeof task === 'object' && task.id && task.name && task.itemId) {
+        // 补充缺失字段
+        if (!task.createdAt) {
+          task.createdAt = new Date().toISOString();
+        }
+        if (!task.updatedAt) {
+          task.updatedAt = new Date().toISOString();
+        }
+        if (!task.type) {
+          task.type = 'tmdb-import';
+        }
+        validTasks.push(task as ScheduledTask);
+      }
+    }
 
-    // 使用ServerStorageManager处理导入（服务器端直接写入文件系统）
-    await ServerStorageManager.importData(validItems, validTasks);
+    // 使用 ServerStorageManager 处理导入
+    const success = ServerStorageManager.importData(validItems);
+    
+    // 导入任务
+    let tasksImported = 0;
+    for (const task of validTasks) {
+      if (ServerStorageManager.addTask(task)) {
+        tasksImported++;
+      }
+    }
 
-    // 任务数据暂时保存到客户端localStorage
-    if (validTasks.length > 0) {
-      // 这里可以添加任务数据的处理逻辑
-      logger.info(`[API] 导入 ${validTasks.length} 个任务（暂时仅记录）`);
+    if (success) {
+      logger.info(`[API] 导入成功: ${validItems.length} 个项目, ${tasksImported} 个任务`);
     }
 
     return NextResponse.json(
       {
-        success: true,
+        success,
         stats: {
           itemsImported: validItems.length,
-          tasksImported: validTasks.length,
+          tasksImported,
           itemsSkipped: items.length - validItems.length,
           tasksSkipped: tasks.length - validTasks.length,
         },
@@ -80,17 +106,20 @@ export async function POST(request: NextRequest) {
 // GET /api/storage/data - 导出数据
 export async function GET(request: NextRequest) {
   try {
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
     logger.info(`[API] 导出数据 - 用户ID: ${userId}`);
 
-    const { items, tasks } = await ServerStorageManager.exportData();
+    const { items, tasks } = ServerStorageManager.exportData();
 
     return NextResponse.json(
       {
         items,
         tasks,
-        version: '1.0.0',
+        version: '2.0.0', // 数据库版本
         exportDate: new Date().toISOString(),
         userId,
         stats: {

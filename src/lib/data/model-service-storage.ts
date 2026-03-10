@@ -4,22 +4,10 @@ import {
   ModelConfig,
   UsageScenario,
 } from '@/shared/types/model-service';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { logger } from '@/lib/utils/logger';
+import { configRepository } from '@/lib/database/repositories/config.repository';
 
-// 本地数据存储路径
-const DATA_DIR = path.join(process.cwd(), 'data');
-const MODEL_SERVICE_CONFIG_PATH = path.join(DATA_DIR, 'model-service.json');
-
-// 确保data目录存在
-async function ensureDataDir() {
-  try {
-    await fs.access(DATA_DIR);
-  } catch {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-  }
-}
+const CONFIG_KEY = 'model_service_config';
 
 // 默认配置
 const DEFAULT_CONFIG: ModelServiceConfig = {
@@ -144,145 +132,129 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
 };
 
 export class ModelServiceStorage {
-  // 读取配置
+  /**
+   * 读取配置（从数据库）
+   */
   static async getConfig(): Promise<ModelServiceConfig> {
-    await ensureDataDir()
-
     try {
-      const data = await fs.readFile(MODEL_SERVICE_CONFIG_PATH, 'utf-8')
+      const config = configRepository.get<ModelServiceConfig>(CONFIG_KEY);
 
-      if (!data || data.trim() === '') {
-        logger.warn('模型服务配置文件为空，创建默认配置')
-        await this.createDefaultConfig()
-        return DEFAULT_CONFIG
+      if (!config) {
+        logger.warn('模型服务配置不存在，创建默认配置');
+        await this.createDefaultConfig();
+        return DEFAULT_CONFIG;
       }
-
-      const config = JSON.parse(data)
 
       const result = {
         providers: config.providers || [],
         models: config.models || [],
         scenarios: config.scenarios || [],
         version: config.version || '1.0.0',
-        lastUpdated: config.lastUpdated || Date.now()
-      }
+        lastUpdated: config.lastUpdated || Date.now(),
+      };
 
       // 检查并补充缺失的默认提供商
-      const existingProviderIds = new Set(result.providers.map(p => p.id))
-      let needsSave = false
+      const existingProviderIds = new Set(result.providers.map((p) => p.id));
+      let needsSave = false;
 
       for (const defaultProvider of DEFAULT_CONFIG.providers) {
         if (!existingProviderIds.has(defaultProvider.id)) {
-          result.providers.push({ ...defaultProvider })
-          needsSave = true
-          logger.info(`补充缺失的默认提供商: ${defaultProvider.name}`)
+          result.providers.push({ ...defaultProvider });
+          needsSave = true;
+          logger.info(`补充缺失的默认提供商: ${defaultProvider.name}`);
         }
       }
 
       // 检查并补充缺失的默认模型
-      const existingModelIds = new Set(result.models.map(m => m.id))
+      const existingModelIds = new Set(result.models.map((m) => m.id));
       for (const defaultModel of DEFAULT_CONFIG.models) {
         if (!existingModelIds.has(defaultModel.id)) {
-          result.models.push({ ...defaultModel })
-          needsSave = true
-          logger.info(`补充缺失的默认模型: ${defaultModel.displayName}`)
+          result.models.push({ ...defaultModel });
+          needsSave = true;
+          logger.info(`补充缺失的默认模型: ${defaultModel.displayName}`);
         }
       }
 
       // 检查并补充缺失的默认场景
-      const existingTypes = new Set(result.scenarios.map(s => s.type))
-      const modelIdsToUpdate = ['zhipu-glm-4-flash', 'zhipu-glm-4v-flash']
-      const modelExistsMap = new Map(modelIdsToUpdate.map(id => [id, result.models.some(m => m.id === id)]))
+      const modelIdsToUpdate = ['zhipu-glm-4-flash', 'zhipu-glm-4v-flash'];
+      const modelExistsMap = new Map(
+        modelIdsToUpdate.map((id) => [
+          id,
+          result.models.some((m) => m.id === id),
+        ]),
+      );
 
       for (const defaultScenario of DEFAULT_CONFIG.scenarios) {
-        const existingScenario = result.scenarios.find(s => s.type === defaultScenario.type)
+        const existingScenario = result.scenarios.find(
+          (s) => s.type === defaultScenario.type,
+        );
 
         if (!existingScenario) {
-          result.scenarios.push(defaultScenario)
-          needsSave = true
-          logger.info(`补充缺失的默认场景: ${defaultScenario.label}`)
-          continue
+          result.scenarios.push(defaultScenario);
+          needsSave = true;
+          logger.info(`补充缺失的默认场景: ${defaultScenario.label}`);
+          continue;
         }
 
-        // 检查场景是否需要更新（添加智谱AI模型）
-        if (!defaultScenario.selectedModelIds?.length) continue
+        if (!defaultScenario.selectedModelIds?.length) continue;
 
-        const scenarioModelIds = new Set(existingScenario.selectedModelIds || [])
+        const scenarioModelIds = new Set(
+          existingScenario.selectedModelIds || [],
+        );
 
         for (const modelId of defaultScenario.selectedModelIds) {
           if (modelExistsMap.get(modelId) && !scenarioModelIds.has(modelId)) {
-            existingScenario.selectedModelIds = [...scenarioModelIds, modelId]
+            existingScenario.selectedModelIds = [...scenarioModelIds, modelId];
             if (!existingScenario.primaryModelId) {
-              existingScenario.primaryModelId = modelId
+              existingScenario.primaryModelId = modelId;
             }
-            needsSave = true
-            scenarioModelIds.add(modelId)
-            const modelDisplayName = DEFAULT_CONFIG.models.find(m => m.id === modelId)?.displayName || modelId
-            logger.info(`为场景 ${defaultScenario.label} 添加模型: ${modelDisplayName}`)
+            needsSave = true;
+            scenarioModelIds.add(modelId);
+            const modelDisplayName =
+              DEFAULT_CONFIG.models.find((m) => m.id === modelId)?.displayName ||
+              modelId;
+            logger.info(
+              `为场景 ${defaultScenario.label} 添加模型: ${modelDisplayName}`,
+            );
           }
         }
       }
 
       if (needsSave) {
-        await this.saveConfig(result)
+        await this.saveConfig(result);
       }
 
-      return result
+      return result;
     } catch (error) {
-      logger.warn('读取模型服务配置失败，创建默认配置:', error)
-
-      // 备份损坏的配置文件
-      if (error instanceof SyntaxError) {
-        try {
-          const backupPath = `${MODEL_SERVICE_CONFIG_PATH}.backup.${Date.now()}`
-          await fs.copyFile(MODEL_SERVICE_CONFIG_PATH, backupPath)
-          logger.warn(`已备份损坏的配置文件到: ${backupPath}`)
-        } catch (backupError) {
-          logger.warn('备份损坏文件失败:', backupError)
-        }
-      }
-
-      await this.createDefaultConfig()
-      return DEFAULT_CONFIG
+      logger.warn('读取模型服务配置失败，创建默认配置:', error);
+      await this.createDefaultConfig();
+      return DEFAULT_CONFIG;
     }
   }
 
-  // 保存配置
+  /**
+   * 保存配置（到数据库）
+   */
   static async saveConfig(config: ModelServiceConfig): Promise<void> {
-    await ensureDataDir()
-
-    const configToSave = {
-      ...config,
-      lastUpdated: Date.now()
-    }
-
-    const tempFilePath = `${MODEL_SERVICE_CONFIG_PATH}.tmp.${Date.now()}`
-
     try {
-      await fs.writeFile(tempFilePath, JSON.stringify(configToSave, null, 2), 'utf-8')
+      const configToSave = {
+        ...config,
+        lastUpdated: Date.now(),
+      };
 
-      // 验证JSON格式
-      const tempData = await fs.readFile(tempFilePath, 'utf-8')
-      JSON.parse(tempData)
-
-      // 原子性重命名
-      await fs.rename(tempFilePath, MODEL_SERVICE_CONFIG_PATH)
+      configRepository.set(CONFIG_KEY, configToSave);
     } catch (error) {
-      // 清理临时文件
-      try {
-        await fs.unlink(tempFilePath)
-      } catch {
-        // 忽略删除临时文件的错误
-      }
-      throw error
+      logger.error('[ModelServiceStorage] 保存配置失败', error);
+      throw error;
     }
   }
 
-  // 添加提供商
+  /**
+   * 添加提供商
+   */
   static async addProvider(provider: ModelProvider): Promise<void> {
     const config = await this.getConfig();
 
-    // 检查是否已存在
     const existingIndex = config.providers.findIndex(
       (p) => p.id === provider.id,
     );
@@ -295,25 +267,29 @@ export class ModelServiceStorage {
     await this.saveConfig(config);
   }
 
-  // 更新提供商
+  /**
+   * 更新提供商
+   */
   static async updateProvider(provider: ModelProvider): Promise<void> {
-    const config = await this.getConfig()
-    const index = config.providers.findIndex((p) => p.id === provider.id)
+    const config = await this.getConfig();
+    const index = config.providers.findIndex((p) => p.id === provider.id);
 
     if (index !== -1) {
       config.providers[index] = {
         ...config.providers[index],
         ...provider,
-        updatedAt: Date.now()
-      }
-      await this.saveConfig(config)
+        updatedAt: Date.now(),
+      };
+      await this.saveConfig(config);
     } else {
-      logger.warn('提供商不存在:', provider.id)
-      throw new Error('提供商不存在')
+      logger.warn('提供商不存在:', provider.id);
+      throw new Error('提供商不存在');
     }
   }
 
-  // 删除提供商
+  /**
+   * 删除提供商
+   */
   static async deleteProvider(providerId: string): Promise<void> {
     const config = await this.getConfig();
     config.providers = config.providers.filter((p) => p.id !== providerId);
@@ -324,11 +300,12 @@ export class ModelServiceStorage {
     await this.saveConfig(config);
   }
 
-  // 添加模型
+  /**
+   * 添加模型
+   */
   static async addModel(model: ModelConfig): Promise<void> {
     const config = await this.getConfig();
 
-    // 检查是否已存在
     const existingIndex = config.models.findIndex((m) => m.id === model.id);
     if (existingIndex !== -1) {
       config.models[existingIndex] = model;
@@ -339,7 +316,9 @@ export class ModelServiceStorage {
     await this.saveConfig(config);
   }
 
-  // 更新模型
+  /**
+   * 更新模型
+   */
   static async updateModel(model: ModelConfig): Promise<void> {
     const config = await this.getConfig();
     const index = config.models.findIndex((m) => m.id === model.id);
@@ -352,7 +331,9 @@ export class ModelServiceStorage {
     }
   }
 
-  // 删除模型
+  /**
+   * 删除模型
+   */
   static async deleteModel(modelId: string): Promise<void> {
     const config = await this.getConfig();
     const modelToDelete = config.models.find((m) => m.id === modelId);
@@ -365,46 +346,62 @@ export class ModelServiceStorage {
     await this.saveConfig(config);
   }
 
-  // 更新场景配置 - 合并场景而不是替换
+  /**
+   * 更新场景配置
+   */
   static async updateScenarios(scenarios: UsageScenario[]): Promise<void> {
-    const config = await this.getConfig()
-    const existingTypes = new Set(config.scenarios.map(s => s.type))
-    const updatedScenarios = [...config.scenarios]
+    const config = await this.getConfig();
+    const existingTypes = new Set(config.scenarios.map((s) => s.type));
+    const updatedScenarios = [...config.scenarios];
 
     for (const scenario of scenarios) {
-      const existingIndex = updatedScenarios.findIndex(s => s.type === scenario.type)
+      const existingIndex = updatedScenarios.findIndex(
+        (s) => s.type === scenario.type,
+      );
       if (existingIndex >= 0) {
         updatedScenarios[existingIndex] = {
           ...updatedScenarios[existingIndex],
           ...scenario,
-          selectedModelIds: scenario.selectedModelIds ?? updatedScenarios[existingIndex].selectedModelIds,
-          primaryModelId: scenario.primaryModelId ?? updatedScenarios[existingIndex].primaryModelId,
-          parameters: scenario.parameters ?? updatedScenarios[existingIndex].parameters
-        }
+          selectedModelIds:
+            scenario.selectedModelIds ??
+            updatedScenarios[existingIndex].selectedModelIds,
+          primaryModelId:
+            scenario.primaryModelId ??
+            updatedScenarios[existingIndex].primaryModelId,
+          parameters:
+            scenario.parameters ?? updatedScenarios[existingIndex].parameters,
+        };
       } else {
-        updatedScenarios.push(scenario)
+        updatedScenarios.push(scenario);
       }
     }
 
-    config.scenarios = updatedScenarios
-    await this.saveConfig(config)
+    config.scenarios = updatedScenarios;
+    await this.saveConfig(config);
   }
 
-  // 创建默认配置
+  /**
+   * 创建默认配置
+   */
   static async createDefaultConfig(): Promise<void> {
     try {
-      await fs.access(MODEL_SERVICE_CONFIG_PATH)
-      logger.info('模型服务配置已存在，跳过创建')
-      return
-    } catch {
-      logger.info('模型服务配置文件不存在，创建默认配置...')
-      await this.saveConfig(DEFAULT_CONFIG)
-      logger.info('模型服务默认配置创建完成')
+      const exists = configRepository.has(CONFIG_KEY);
+      if (exists) {
+        logger.info('模型服务配置已存在，跳过创建');
+        return;
+      }
+      logger.info('模型服务配置文件不存在，创建默认配置...');
+      await this.saveConfig(DEFAULT_CONFIG);
+      logger.info('模型服务默认配置创建完成');
+    } catch (error) {
+      logger.error('[ModelServiceStorage] 创建默认配置失败', error);
     }
   }
 
-  // 获取配置文件路径
+  /**
+   * 获取配置文件路径（兼容性方法，返回数据库键名）
+   */
   static getConfigPath(): string {
-    return MODEL_SERVICE_CONFIG_PATH
+    return `database:${CONFIG_KEY}`;
   }
 }

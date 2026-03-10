@@ -1,254 +1,213 @@
-import { TMDBItem } from '@/lib/data/storage';
+/**
+ * 服务器端数据库存储服务
+ * 基于 SQLite 的存储实现，替代原有的文件存储
+ */
+
+import { TMDBItem } from '@/types/tmdb-item';
 import { logger } from '@/lib/utils/logger';
+import { initializeDatabase } from '@/lib/database';
+import { checkAndMigrate } from '@/lib/database/migrations/json-to-sqlite';
+import { itemsRepository } from '@/lib/database/repositories/items.repository';
+import type { DatabaseResult } from './database/types';
+
+// 初始化标志
+let initialized = false;
 
 /**
- * 服务器端文件系统存储服务
- * 只在服务器端运行，处理文件系统操作
+ * 初始化数据库并执行迁移
+ */
+export async function initializeStorage(): Promise<void> {
+  if (initialized) {
+    return;
+  }
+
+  try {
+    // 初始化数据库
+    initializeDatabase();
+
+    // 检查并执行迁移
+    await checkAndMigrate();
+
+    initialized = true;
+    logger.info('[ServerStorageService] 数据库存储服务已初始化');
+  } catch (error) {
+    logger.error('[ServerStorageService] 初始化失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 服务器端数据库存储服务
+ * 只在服务器端运行，处理数据库操作
  */
 export class ServerStorageService {
   private static readonly ADMIN_USER_ID = 'user_admin_system';
 
-  // 缓存机制以减少文件I/O
-  private static itemsCache: TMDBItem[] | null = null;
-  private static cacheTimestamp: number | null = null;
-  private static readonly CACHE_TTL = 5000; // 5秒缓存时间
-
   /**
-   * 获取文件路径
+   * 确保数据库已初始化
    */
-  private static getPaths() {
-    const path = require('path');
-    const DATA_DIR = path.join(process.cwd(), 'data');
-    const USERS_DIR = path.join(DATA_DIR, 'users');
-    const USER_DIR = path.join(USERS_DIR, ServerStorageService.ADMIN_USER_ID);
-    const DATA_FILE = path.join(USER_DIR, 'tmdb_items.json');
-
-    return { DATA_DIR, USERS_DIR, USER_DIR, DATA_FILE };
-  }
-
-  /**
-   * 检查缓存是否仍然有效
-   */
-  private static isCacheValid(): boolean {
-    return (
-      this.cacheTimestamp !== null &&
-      this.itemsCache !== null &&
-      Date.now() - this.cacheTimestamp < this.CACHE_TTL
-    );
-  }
-
-  /**
-   * 确保数据目录存在
-   */
-  private static ensureDirectories(): void {
-    const fs = require('fs');
-    const { DATA_DIR, USERS_DIR, USER_DIR } = ServerStorageService.getPaths();
-
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-
-    if (!fs.existsSync(USERS_DIR)) {
-      fs.mkdirSync(USERS_DIR, { recursive: true });
-    }
-
-    if (!fs.existsSync(USER_DIR)) {
-      fs.mkdirSync(USER_DIR, { recursive: true });
+  private static ensureInitialized(): void {
+    if (!initialized) {
+      initializeDatabase();
+      initialized = true;
     }
   }
 
   /**
-   * 从文件系统读取所有项目
+   * 从数据库读取所有项目
    */
   static readItemsFromFile(): TMDBItem[] {
     try {
-      // 检查缓存
-      if (this.isCacheValid()) {
-        return [...this.itemsCache!]; // 返回副本以避免外部修改
-      }
-
-      const fs = require('fs');
-      const { DATA_FILE } = ServerStorageService.getPaths();
-
-      this.ensureDirectories();
-
-      // 检查文件是否存在
-      if (!fs.existsSync(DATA_FILE)) {
-        // 更新缓存
-        this.itemsCache = [];
-        this.cacheTimestamp = Date.now();
-        return [];
-      }
-
-      // 读取文件内容
-      const fileContent = fs.readFileSync(DATA_FILE, 'utf-8');
-      const items: TMDBItem[] = JSON.parse(fileContent);
-
-      // 更新缓存
-      this.itemsCache = items;
-      this.cacheTimestamp = Date.now();
-
-      return [...items]; // 返回副本以避免外部修改
+      this.ensureInitialized();
+      return itemsRepository.findAllWithRelations();
     } catch (error) {
-      // 如果读取失败，但缓存有效，返回缓存内容
-      if (this.itemsCache !== null) {
-        return [...this.itemsCache];
-      }
+      logger.error('[ServerStorageService] 读取项目失败:', error);
       return [];
     }
   }
 
   /**
-   * 清除缓存
-   */
-  private static clearCache(): void {
-    this.itemsCache = null;
-    this.cacheTimestamp = null;
-  }
-
-  /**
-   * 将所有项目写入文件系统
+   * 将所有项目写入数据库
    */
   static writeItemsToFile(items: TMDBItem[]): boolean {
     try {
-      const fs = require('fs');
-      const { DATA_FILE } = ServerStorageService.getPaths();
+      this.ensureInitialized();
 
-      this.ensureDirectories();
+      // 清除现有数据
+      itemsRepository.clear();
 
-      // 将数据写入文件
-      const serializedData = JSON.stringify(items, null, 2);
-      fs.writeFileSync(DATA_FILE, serializedData, 'utf-8');
+      // 批量导入
+      for (const item of items) {
+        itemsRepository.create(item);
+      }
 
-      // 更新缓存
-      this.itemsCache = [...items];
-      this.cacheTimestamp = Date.now();
-
-      logger.info(
-        `[ServerStorageService] 成功写入 ${items.length} 个词条到文件系统`,
-      );
+      logger.info(`[ServerStorageService] 成功写入 ${items.length} 个词条到数据库`);
       return true;
     } catch (error) {
-      logger.error(`[ServerStorageService] 写入数据到文件系统失败:`, error);
-      // 写入失败时清除缓存，强制下次读取从文件获取
-      this.clearCache();
+      logger.error('[ServerStorageService] 写入数据到数据库失败:', error);
       return false;
     }
   }
 
   /**
-   * 添加单个项目到文件
+   * 添加单个项目到数据库
    */
   static addItemToFile(item: TMDBItem): boolean {
     try {
-      // 清除缓存，确保从文件读取最新数据
-      this.clearCache();
+      this.ensureInitialized();
 
-      const items = this.readItemsFromFile();
-      const existingIndex = items.findIndex((i) => i.id === item.id);
-
-      if (existingIndex !== -1) {
+      const existing = itemsRepository.findByIdWithRelations(item.id);
+      if (existing) {
         // 更新现有项目
-        items[existingIndex] = item;
+        const result = itemsRepository.update(item);
+        if (result.success) {
+          logger.info(`[ServerStorageService] 成功更新项目: ${item.title}`);
+        }
+        return result.success;
       } else {
         // 添加新项目
-        items.push(item);
+        const result = itemsRepository.create(item);
+        if (result.success) {
+          logger.info(`[ServerStorageService] 成功添加项目: ${item.title}`);
+        }
+        return result.success;
       }
-
-      const result = this.writeItemsToFile(items);
-      if (result) {
-        logger.info(`[ServerStorageService] 成功添加项目: ${item.title}`);
-      }
-      return result;
     } catch (error) {
-      logger.error(`[ServerStorageService] 添加项目到文件失败:`, error);
+      logger.error('[ServerStorageService] 添加项目失败:', error);
       return false;
     }
   }
 
   /**
-   * 更新单个项目到文件
+   * 更新单个项目到数据库
    */
   static updateItemToFile(item: TMDBItem): boolean {
     try {
-      // 清除缓存，确保从文件读取最新数据
-      this.clearCache();
+      this.ensureInitialized();
 
-      const items = this.readItemsFromFile();
-      const index = items.findIndex((i) => i.id === item.id);
-
-      if (index === -1) {
-        logger.error(
-          `[ServerStorageService] 更新失败: 找不到ID为 ${item.id} 的项目`,
-        );
-        return false;
-      }
-
-      items[index] = item;
-      const result = this.writeItemsToFile(items);
-      if (result) {
+      const result = itemsRepository.update(item);
+      if (result.success) {
         logger.info(`[ServerStorageService] 成功更新项目: ${item.title}`);
       }
-      return result;
+      return result.success;
     } catch (error) {
-      logger.error(`[ServerStorageService] 更新项目到文件失败:`, error);
+      logger.error('[ServerStorageService] 更新项目失败:', error);
       return false;
     }
   }
 
   /**
-   * 从文件删除单个项目
+   * 从数据库删除单个项目
    */
   static deleteItemFromFile(id: string): boolean {
     try {
-      // 清除缓存，确保从文件读取最新数据
-      this.clearCache();
+      this.ensureInitialized();
 
-      const items = this.readItemsFromFile();
-      const filteredItems = items.filter((i) => i.id !== id);
-
-      if (filteredItems.length === items.length) {
-        logger.error(
-          `[ServerStorageService] 删除失败: 找不到ID为 ${id} 的项目`,
-        );
-        return false;
-      }
-
-      const result = this.writeItemsToFile(filteredItems);
-      if (result) {
+      const result = itemsRepository.deleteById(id);
+      if (result.success) {
         logger.info(`[ServerStorageService] 成功删除项目ID: ${id}`);
       }
-      return result;
+      return result.success;
     } catch (error) {
-      logger.error(`[ServerStorageService] 从文件删除项目失败:`, error);
+      logger.error('[ServerStorageService] 删除项目失败:', error);
       return false;
     }
   }
 
   /**
-   * 预加载缓存
+   * 预加载缓存（数据库模式下不需要，保持接口兼容）
    */
   static preloadCache(): void {
-    try {
-      this.readItemsFromFile(); // 这会自动填充缓存
-      logger.debug(`[ServerStorageService] 缓存预加载完成`);
-    } catch (error) {
-      logger.error(`[ServerStorageService] 缓存预加载失败:`, error);
-    }
+    this.ensureInitialized();
+    logger.debug('[ServerStorageService] 数据库模式，无需预加载缓存');
   }
 
   /**
-   * 获取当前缓存状态
+   * 获取当前缓存状态（数据库模式下返回数据库状态）
    */
   static getCacheStatus(): {
     isValid: boolean;
     itemCount: number;
     ageMs: number | null;
   } {
+    this.ensureInitialized();
+    const count = itemsRepository.getItemCount();
     return {
-      isValid: this.isCacheValid(),
-      itemCount: this.itemsCache?.length || 0,
-      ageMs: this.cacheTimestamp ? Date.now() - this.cacheTimestamp : null,
+      isValid: true,
+      itemCount: count,
+      ageMs: null,
     };
+  }
+
+  /**
+   * 批量导入项目
+   */
+  static importItems(items: TMDBItem[]): DatabaseResult<{ imported: number; skipped: number }> {
+    this.ensureInitialized();
+    return itemsRepository.importItems(items);
+  }
+
+  /**
+   * 根据 ID 获取项目
+   */
+  static getItemById(id: string): TMDBItem | undefined {
+    this.ensureInitialized();
+    return itemsRepository.findByIdWithRelations(id);
+  }
+
+  /**
+   * 根据 TMDB ID 获取项目
+   */
+  static getItemByTmdbId(tmdbId: string): TMDBItem | undefined {
+    this.ensureInitialized();
+    return itemsRepository.findByTmdbId(tmdbId);
+  }
+
+  /**
+   * 获取项目总数
+   */
+  static getItemCount(): number {
+    this.ensureInitialized();
+    return itemsRepository.getItemCount();
   }
 }

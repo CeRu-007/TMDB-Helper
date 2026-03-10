@@ -1,12 +1,9 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import fs from 'fs';
-import path from 'path';
 import { logger } from '@/lib/utils/logger';
+import { authRepository } from '@/lib/database/repositories/auth.repository';
 
 // Constants
-const AUTH_DIR = path.join(process.cwd(), 'data', 'auth');
-const AUTH_FILE = path.join(AUTH_DIR, 'admin.json');
 const DEFAULT_SESSION_EXPIRY_DAYS = 15;
 const ADMIN_USER_ID = 'admin';
 const BCRYPT_ROUNDS = 12;
@@ -77,12 +74,6 @@ export class AuthManager {
     return this._jwtSecret;
   }
 
-  private static ensureAuthDir(): void {
-    if (!fs.existsSync(AUTH_DIR)) {
-      fs.mkdirSync(AUTH_DIR, { recursive: true });
-    }
-  }
-
   private static getSessionExpiryDays(): number {
     const envValue = process.env.SESSION_EXPIRY_DAYS;
     if (envValue) {
@@ -95,54 +86,16 @@ export class AuthManager {
   }
 
   private static readAdminUser(): AdminUser | null {
-    this.ensureAuthDir();
-
-    if (!fs.existsSync(AUTH_FILE)) {
-      return null;
-    }
-
-    try {
-      const data = fs.readFileSync(AUTH_FILE, 'utf-8');
-      const user = JSON.parse(data) as Partial<AdminUser>;
-
-      // Fix legacy data
-      if (!user.sessionExpiryDays || isNaN(Number(user.sessionExpiryDays)) || Number(user.sessionExpiryDays) <= 0) {
-        const fixed: AdminUser = {
-          id: user.id || ADMIN_USER_ID,
-          username: user.username || 'admin',
-          passwordHash: user.passwordHash || '',
-          createdAt: user.createdAt || new Date().toISOString(),
-          lastLoginAt: user.lastLoginAt,
-          sessionExpiryDays: this.getSessionExpiryDays(),
-        };
-        void this.saveAdminUserAsync(fixed);
-        return fixed;
-      }
-
-      return user as AdminUser;
-    } catch {
-      return null;
-    }
+    return authRepository.getAdmin();
   }
 
   private static saveAdminUser(user: AdminUser): boolean {
-    this.ensureAuthDir();
-    try {
-      fs.writeFileSync(AUTH_FILE, JSON.stringify(user, null, 2), 'utf-8');
-      return true;
-    } catch {
-      return false;
-    }
+    const result = authRepository.upsertAdmin(user);
+    return result.success;
   }
 
   private static async saveAdminUserAsync(user: AdminUser): Promise<boolean> {
-    this.ensureAuthDir();
-    try {
-      await fs.promises.writeFile(AUTH_FILE, JSON.stringify(user, null, 2), 'utf-8');
-      return true;
-    } catch {
-      return false;
-    }
+    return this.saveAdminUser(user);
   }
 
   static async createAdminUser(username: string, password: string): Promise<boolean> {
