@@ -28,7 +28,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isInitializing, setIsInitializing] = useState(true)
 
   const { login, isAuthenticated } = useAuth()
   const router = useRouter()
@@ -54,32 +53,6 @@ export default function LoginPage() {
       if (r.remember && r.password) setPassword(r.password)
       if (r.remember) setRememberMe(true)
     })()
-  }, [])
-
-  useEffect(() => {
-    const checkInitialization = async () => {
-      try {
-        const response = await fetch('/api/auth/init')
-        const data = await response.json()
-
-        // 只有当 API 成功且未初始化时才尝试初始化
-        if (data.success && !data.initialized) {
-          const initResponse = await fetch('/api/auth/init', { method: 'POST' })
-          const initData = await initResponse.json()
-          if (!initData.success) {
-            console.error('系统初始化失败:', initData.error)
-          }
-        } else if (!data.success) {
-          console.error('检查初始化状态失败:', data.error)
-        }
-      } catch (error) {
-        console.error('初始化请求失败:', error)
-      } finally {
-        setIsInitializing(false)
-      }
-    }
-
-    checkInitialization()
   }, [])
 
   useEffect(() => {
@@ -113,17 +86,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/30 border-t-primary mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400 text-lg font-medium">正在初始化系统...</p>
-        </div>
-      </div>
-    )
   }
 
   return (
