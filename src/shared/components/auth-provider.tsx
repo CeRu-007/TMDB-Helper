@@ -124,7 +124,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }): JSX.Elem
     }
   }, [isAuthenticated, isLoading, router])
 
-  if (isLoading || !isAuthenticated) {
+  if (!isLoading && !isAuthenticated) {
     return null
   }
 
