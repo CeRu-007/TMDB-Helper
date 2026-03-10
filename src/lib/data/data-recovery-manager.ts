@@ -3,7 +3,7 @@
  * 处理数据导出过程中的错误恢复和数据验证
  */
 
-import { TMDBItem, ScheduledTask, StorageManager } from './storage';
+import type { TMDBItem, ScheduledTask } from '@/lib/data/storage/types';
 
 export interface DataValidationResult {
   isValid: boolean;
@@ -84,7 +84,7 @@ class DataRecoveryManager {
 
       // 验证任务数据
       try {
-        const tasks = await StorageManager.getScheduledTasks();
+        const tasks = await this.getTasksWithFallback();
         result.taskCount = tasks.length;
 
         // 验证任务数据结构
@@ -120,26 +120,30 @@ class DataRecoveryManager {
    */
   private async getItemsWithFallback(): Promise<TMDBItem[]> {
     const fallbackMethods = [
-      // 方法1: 从API获取
+      // 方法1: 从 storage/items API 获取
       async () => {
-        const response = await fetch('/api/storage/file-operations');
+        const response = await fetch('/api/storage/items');
         if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
         const result = await response.json();
         if (!result.success) throw new Error(result.error || 'API返回失败');
         return result.items || [];
       },
 
-      // 方法2: 从StorageManager获取
-      async () => await StorageManager.getItemsWithRetry(),
-
-      // 方法3: 直接从localStorage获取
+      // 方法2: 从 storage/data API 获取
       async () => {
-        if (typeof window === 'undefined' || !window.localStorage) {
-          throw new Error('localStorage不可用');
-        }
-        const data = localStorage.getItem('tmdb_helper_items');
-        if (!data) return [];
-        return JSON.parse(data);
+        const response = await fetch('/api/storage/data');
+        if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
+        const result = await response.json();
+        return result.items || [];
+      },
+
+      // 方法3: 从 file-operations API 获取（兼容旧接口）
+      async () => {
+        const response = await fetch('/api/storage/file-operations');
+        if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'API返回失败');
+        return result.items || [];
       },
     ];
 
@@ -148,7 +152,6 @@ class DataRecoveryManager {
     for (let i = 0; i < fallbackMethods.length; i++) {
       try {
         const items = await fallbackMethods[i]();
-
         return items;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('未知错误');
@@ -156,6 +159,35 @@ class DataRecoveryManager {
     }
 
     throw lastError || new Error('所有获取项目数据的方法都失败了');
+  }
+
+  /**
+   * 获取任务数据（带降级方案）
+   */
+  private async getTasksWithFallback(): Promise<ScheduledTask[]> {
+    const fallbackMethods = [
+      // 方法1: 从 scheduled-tasks API 获取
+      async () => {
+        const response = await fetch('/api/tasks/scheduled-tasks');
+        if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'API返回失败');
+        return result.tasks || [];
+      },
+    ];
+
+    let lastError: Error | null = null;
+
+    for (let i = 0; i < fallbackMethods.length; i++) {
+      try {
+        const tasks = await fallbackMethods[i]();
+        return tasks;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('未知错误');
+      }
+    }
+
+    throw lastError || new Error('所有获取任务数据的方法都失败了');
   }
 
   /**
@@ -190,7 +222,7 @@ class DataRecoveryManager {
 
         // 获取数据
         const items = await this.getItemsWithFallback();
-        const tasks = await StorageManager.getScheduledTasks();
+        const tasks = await this.getTasksWithFallback();
 
         // 创建导出数据
         const exportData = {
@@ -248,18 +280,22 @@ class DataRecoveryManager {
   private async attemptDataFix(
     validation: DataValidationResult,
   ): Promise<void> {
-    // 修复任务数据
+    // 修复任务数据 - 通过 API 触发任务刷新
     if (validation.errors.some((error) => error.includes('任务'))) {
       try {
-        await StorageManager.forceRefreshScheduledTasks();
-      } catch (error) {}
+        await fetch('/api/tasks/scheduled-tasks', { method: 'GET' });
+      } catch (error) {
+        // 忽略错误
+      }
     }
 
     // 清理损坏的localStorage数据
     if (validation.errors.some((error) => error.includes('localStorage'))) {
       try {
         this.cleanupCorruptedData();
-      } catch (error) {}
+      } catch (error) {
+        // 忽略错误
+      }
     }
   }
 

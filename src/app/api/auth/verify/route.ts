@@ -7,12 +7,16 @@ import {
   ErrorHandler,
 } from '@/lib/utils/error-handler';
 import { authLogger } from '@/lib/utils/logger';
+import { initializeSchema } from '@/lib/database/schema';
 
 /**
  * GET /api/auth/verify - 验证用户认证状态
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
+    // 确保数据库 Schema 已初始化
+    initializeSchema();
+    
     // 获取 token
     const token = request.cookies.get('auth-token')?.value;
 

@@ -62,11 +62,18 @@ export default function LoginPage() {
         const response = await fetch('/api/auth/init')
         const data = await response.json()
 
-        if (!data.initialized) {
-          await fetch('/api/auth/init', { method: 'POST' })
+        // 只有当 API 成功且未初始化时才尝试初始化
+        if (data.success && !data.initialized) {
+          const initResponse = await fetch('/api/auth/init', { method: 'POST' })
+          const initData = await initResponse.json()
+          if (!initData.success) {
+            console.error('系统初始化失败:', initData.error)
+          }
+        } else if (!data.success) {
+          console.error('检查初始化状态失败:', data.error)
         }
       } catch (error) {
-        
+        console.error('初始化请求失败:', error)
       } finally {
         setIsInitializing(false)
       }

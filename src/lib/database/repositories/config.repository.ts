@@ -1,5 +1,6 @@
 /**
  * 配置 Repository
+ * 使用 camelCase 字段名，与数据库 Schema 保持一致
  */
 
 import { getDatabase } from '../connection';
@@ -34,15 +35,16 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
 
     try {
       const serializedValue = typeof value === 'string' ? value : JSON.stringify(value);
-      const updatedAt = new Date().toISOString();
+      const now = new Date().toISOString();
 
       db.prepare(`
-        INSERT INTO config (key, value, updated_at) VALUES (@key, @value, @updated_at)
-        ON CONFLICT(key) DO UPDATE SET value = @value, updated_at = @updated_at
+        INSERT INTO config (key, value, createdAt, updatedAt) VALUES (@key, @value, @createdAt, @updatedAt)
+        ON CONFLICT(key) DO UPDATE SET value = @value, updatedAt = @updatedAt
       `).run({
         key,
         value: serializedValue,
-        updated_at: updatedAt,
+        createdAt: now,
+        updatedAt: now,
       });
 
       return { success: true };
@@ -104,19 +106,14 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
    * 批量设置配置
    */
   setMany(config: Record<string, unknown>): DatabaseResult<number> {
-    const db = getDatabase();
     let count = 0;
 
-    const transaction = db.transaction(() => {
-      for (const [key, value] of Object.entries(config)) {
-        const result = this.set(key, value);
-        if (result.success) {
-          count++;
-        }
+    for (const [key, value] of Object.entries(config)) {
+      const result = this.set(key, value);
+      if (result.success) {
+        count++;
       }
-    });
-
-    transaction();
+    }
 
     return { success: true, data: count };
   }

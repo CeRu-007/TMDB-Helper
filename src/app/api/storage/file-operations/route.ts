@@ -1,85 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { TMDBItem } from '@/lib/data/storage';
+import { ServerStorageManager } from '@/lib/data/server-storage-manager';
+import type { TMDBItem } from '@/types/tmdb-item';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 
-// 获取用户数据文件路径
-function getUserDataFile(userId?: string): string {
-  // 如果没有提供用户ID，使用默认的管理员用户
-  const actualUserId = userId || 'user_admin_system';
-  const DATA_DIR = path.join(process.cwd(), 'data');
-  const USERS_DIR = path.join(DATA_DIR, 'users');
-  
-  // 确保用户数据目录存在
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(USERS_DIR)) {
-    fs.mkdirSync(USERS_DIR, { recursive: true });
-  }
-  
-  const userDir = path.join(USERS_DIR, actualUserId);
-  if (!fs.existsSync(userDir)) {
-    fs.mkdirSync(userDir, { recursive: true });
-  }
-  
-  return path.join(userDir, 'tmdb_items.json');
-}
-
-// 数据文件路径（保留作为备用）
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DATA_FILE = path.join(DATA_DIR, 'tmdb_items.json');
-
 /**
- * 确保数据目录存在
+ * GET /api/storage/file-operations - 从数据库读取项目数据
  */
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
-// GET /api/storage/file-operations - 直接读取数据文件
 export async function GET(request: NextRequest) {
   try {
-    // 从请求头获取用户ID
-    const userId = request.headers.get('x-user-id') || 'user_admin_system';
-    const userDataFile = getUserDataFile(userId);
-
-    // 确保用户数据目录存在
-    const userDataDir = path.dirname(userDataFile);
-    if (!fs.existsSync(userDataDir)) {
-      fs.mkdirSync(userDataDir, { recursive: true });
-    }
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
     
-    if (!fs.existsSync(userDataFile)) {
-      // 检查是否存在旧的数据文件需要迁移
-      ensureDataDir();
-      if (fs.existsSync(DATA_FILE)) {
-        try {
-          fs.copyFileSync(DATA_FILE, userDataFile);
-        } catch (error) {
-          logger.error('迁移数据文件失败', error)
-        }
-      } else {
-        // 如果文件不存在，返回空数组
-        return NextResponse.json({ items: [] });
-      }
-    }
-    
-    const data = fs.readFileSync(userDataFile, 'utf-8');
-    const items = JSON.parse(data);
+    const items = ServerStorageManager.getItems();
     
     return NextResponse.json({ 
       items,
       success: true,
-      message: `成功读取 ${items.length} 个项目`,
-      dataPath: userDataFile
+      message: `成功读取 ${items.length} 个项目`
     });
   } catch (error) {
-    logger.error('读取数据文件失败', error)
+    logger.error('读取数据失败', error);
     return NextResponse.json(
       {
         error: ErrorHandler.toUserMessage(error),
@@ -90,9 +31,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/storage/file-operations - 直接写入数据文件
+/**
+ * POST /api/storage/file-operations - 批量写入项目数据到数据库
+ */
 export async function POST(request: NextRequest) {
   try {
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
     const { items, backup = true } = await request.json();
     
     if (!Array.isArray(items)) {
@@ -102,37 +48,43 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // 从请求头获取用户ID
-    const userId = request.headers.get('x-user-id') || 'user_admin_system';
-    const userDataFile = getUserDataFile(userId);
-
-    // 确保用户数据目录存在
-    const userDataDir = path.dirname(userDataFile);
-    if (!fs.existsSync(userDataDir)) {
-      fs.mkdirSync(userDataDir, { recursive: true });
-    }
+    // 验证项目数据格式
+    const validItems: TMDBItem[] = items.filter(item => {
+      return item && 
+             typeof item.id === 'string' && 
+             typeof item.title === 'string' &&
+             item.id.trim() !== '' &&
+             item.title.trim() !== '';
+    });
     
-    // 如果需要备份且原文件存在
-    if (backup && fs.existsSync(userDataFile)) {
-      const backupFile = path.join(userDataDir, `tmdb_items_backup_${Date.now()}.json`);
-      try {
-        fs.copyFileSync(userDataFile, backupFile);
-      } catch (error) {
-        logger.error('备份数据文件失败', error)
-      }
-    }
+    // 清空现有数据并导入新数据
+    const existingItems = ServerStorageManager.getItems();
     
-    // 写入新数据
-    fs.writeFileSync(userDataFile, JSON.stringify(items, null, 2), 'utf-8');
+    // 如果需要备份，记录备份数量
+    const backupCount = backup ? existingItems.length : 0;
+    
+    // 清空现有数据
+    ServerStorageManager.clearAllItems();
+    
+    // 批量添加新数据
+    let addedCount = 0;
+    for (const item of validItems) {
+      const success = ServerStorageManager.addItem({
+        ...item,
+        createdAt: item.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      if (success) addedCount++;
+    }
     
     return NextResponse.json({ 
       success: true,
-      message: `成功导入 ${items.length} 个项目`,
-      itemCount: items.length,
-      dataPath: userDataFile
+      message: `成功导入 ${addedCount} 个项目`,
+      itemCount: addedCount,
+      backupCount
     });
   } catch (error) {
-    logger.error('写入数据文件失败', error)
+    logger.error('写入数据失败', error);
     return NextResponse.json(
       {
         error: ErrorHandler.toUserMessage(error),
@@ -143,9 +95,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/storage/file-operations - 合并数据（追加模式）
+/**
+ * PUT /api/storage/file-operations - 合并数据（追加/更新模式）
+ */
 export async function PUT(request: NextRequest) {
   try {
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
     const { items, mode = 'replace' } = await request.json();
     
     if (!Array.isArray(items)) {
@@ -155,71 +112,62 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    // 从请求头获取用户ID
-    const userId = request.headers.get('x-user-id') || 'user_admin_system';
-    const userDataFile = getUserDataFile(userId);
-
-    // 确保用户数据目录存在
-    const userDataDir = path.dirname(userDataFile);
-    if (!fs.existsSync(userDataDir)) {
-      fs.mkdirSync(userDataDir, { recursive: true });
-    }
+    // 验证项目数据格式
+    const validItems: TMDBItem[] = items.filter(item => {
+      return item && 
+             typeof item.id === 'string' && 
+             typeof item.title === 'string' &&
+             item.id.trim() !== '' &&
+             item.title.trim() !== '';
+    });
     
-    let existingItems: TMDBItem[] = [];
-    
-    // 读取现有数据
-    if (fs.existsSync(userDataFile)) {
-      try {
-        const existingData = fs.readFileSync(userDataFile, 'utf-8');
-        existingItems = JSON.parse(existingData);
-      } catch (error) {
-        logger.error('读取现有数据失败', error)
-      }
-    }
-    
-    let finalItems: TMDBItem[] = [];
+    const existingItems = ServerStorageManager.getItems();
     let addedCount = 0;
     let updatedCount = 0;
     let skippedCount = 0;
     
-    if (mode === 'merge') {
-      // 合并模式：更新现有项目，添加新项目
-      const existingMap = new Map(existingItems.map(item => [item.id, item]));
-      
-      for (const newItem of items) {
-        if (existingMap.has(newItem.id)) {
-          // 更新现有项目
-          existingMap.set(newItem.id, { ...existingMap.get(newItem.id), ...newItem, updatedAt: new Date().toISOString() });
-          updatedCount++;
+    if (mode === 'merge' || mode === 'append') {
+      // 合并/追加模式：更新现有项目，添加新项目
+      for (const newItem of validItems) {
+        const existingItem = existingItems.find(item => item.id === newItem.id);
+        
+        if (existingItem) {
+          if (mode === 'merge') {
+            // 更新现有项目
+            ServerStorageManager.updateItem({
+              ...existingItem,
+              ...newItem,
+              updatedAt: new Date().toISOString()
+            });
+            updatedCount++;
+          } else {
+            // append 模式下跳过已存在的项目
+            skippedCount++;
+          }
         } else {
           // 添加新项目
-          existingMap.set(newItem.id, newItem);
+          ServerStorageManager.addItem({
+            ...newItem,
+            createdAt: newItem.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
           addedCount++;
-        }
-      }
-      
-      finalItems = Array.from(existingMap.values());
-    } else if (mode === 'append') {
-      // 追加模式：只添加不存在的项目
-      const existingIds = new Set(existingItems.map(item => item.id));
-      
-      finalItems = [...existingItems];
-      for (const newItem of items) {
-        if (!existingIds.has(newItem.id)) {
-          finalItems.push(newItem);
-          addedCount++;
-        } else {
-          skippedCount++;
         }
       }
     } else {
       // 替换模式（默认）
-      finalItems = items;
-      addedCount = items.length;
+      ServerStorageManager.clearAllItems();
+      for (const item of validItems) {
+        ServerStorageManager.addItem({
+          ...item,
+          createdAt: item.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        addedCount++;
+      }
     }
     
-    // 写入数据
-    fs.writeFileSync(userDataFile, JSON.stringify(finalItems, null, 2), 'utf-8');
+    const finalItems = ServerStorageManager.getItems();
     
     return NextResponse.json({ 
       success: true,
@@ -229,11 +177,10 @@ export async function PUT(request: NextRequest) {
         added: addedCount,
         updated: updatedCount,
         skipped: skippedCount
-      },
-      dataPath: userDataFile
+      }
     });
   } catch (error) {
-    logger.error('合并数据失败', error)
+    logger.error('合并数据失败', error);
     return NextResponse.json(
       {
         error: ErrorHandler.toUserMessage(error),

@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthManager } from '@/lib/auth/auth-manager';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
+import { initializeSchema } from '@/lib/database/schema';
 
 /**
  * GET /api/auth/init - 检查认证系统初始化状态
  */
 export async function GET(_request: NextRequest) {
   try {
+    // 确保数据库 Schema 已初始化
+    initializeSchema();
+    
     const hasAdmin = AuthManager.hasAdminUser();
     
     return NextResponse.json({
@@ -30,6 +34,9 @@ export async function GET(_request: NextRequest) {
  */
 export async function POST(_request: NextRequest) {
   try {
+    // 确保数据库 Schema 已初始化
+    initializeSchema();
+    
     // 检查是否已经初始化
     if (AuthManager.hasAdminUser()) {
       return NextResponse.json(

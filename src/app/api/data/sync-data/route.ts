@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-// import { readItems } from '@/lib/server-storage'; // 替换为StorageManager
-import { StorageManager } from '@/lib/data/storage';
-import { readScheduledTasks } from '@/lib/data/server-scheduled-tasks';
-import { TMDBItem } from '@/types/tmdb-item';
-import { ScheduledTask } from '@/lib/data/storage';
+import { ServerStorageManager } from '@/lib/data/server-storage-manager';
+import type { TMDBItem } from '@/types/tmdb-item';
+import type { ScheduledTask } from '@/lib/data/storage/types';
 import { logger } from '@/lib/utils/logger';
 
 // 类型定义
@@ -25,21 +23,14 @@ interface SyncTask {
  */
 export async function GET(request: NextRequest) {
   try {
-    // 读取服务端项目数据
-    let items: TMDBItem[] = [];
-    try {
-      items = await StorageManager.getItemsWithRetry();
-    } catch (error) {
-      items = [];
-    }
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
+    // 从数据库读取项目数据
+    const items: TMDBItem[] = ServerStorageManager.getItems();
 
-    // 读取服务端任务数据
-    let tasks: ScheduledTask[] = [];
-    try {
-      tasks = readScheduledTasks();
-    } catch (error) {
-      tasks = [];
-    }
+    // 从数据库读取任务数据
+    const tasks: ScheduledTask[] = ServerStorageManager.getTasks();
 
     // 计算数据版本（基于最后更新时间）
     const itemVersions = items

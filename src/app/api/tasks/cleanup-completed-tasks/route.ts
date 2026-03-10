@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { StorageManager, ScheduledTask, TMDBItem } from '@/lib/data/storage';
-// import { readItems } from '@/lib/server-storage'; // 替换为StorageManager
-import { readScheduledTasks } from '@/lib/data/server-scheduled-tasks';
+import { ServerStorageManager } from '@/lib/data/server-storage-manager';
+import type { ScheduledTask } from '@/lib/data/storage/types';
+import type { TMDBItem } from '@/lib/database/schema';
 
 // 类型定义
 interface TaskInfo {
@@ -34,27 +34,14 @@ interface CleanupCandidate {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   
   try {
-    // 获取所有项目数据
-    let items: TMDBItem[] = [];
-    try {
-      items = await StorageManager.getItemsWithRetry();
-      
-    } catch (serverError) {
-      
-      items = await StorageManager.getItemsWithRetry();
-      
-    }
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
+    // 从数据库获取所有项目数据
+    const items: TMDBItem[] = ServerStorageManager.getItems();
 
-    // 获取所有定时任务
-    let tasks: ScheduledTask[] = [];
-    try {
-      tasks = readScheduledTasks();
-      
-    } catch (serverError) {
-      
-      tasks = await StorageManager.getScheduledTasks();
-      
-    }
+    // 从数据库获取所有定时任务
+    const tasks: ScheduledTask[] = ServerStorageManager.getTasks();
 
     // 筛选启用了自动删除的任务
     const autoDeleteTasks = tasks.filter(task => 
@@ -90,7 +77,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         if (isCompleted) {
           
           // 删除任务
-          const deleteSuccess = await StorageManager.deleteScheduledTask(task.id);
+          const deleteSuccess = ServerStorageManager.deleteTask(task.id);
           
           if (deleteSuccess) {
             deletedTasks.push(task);
@@ -139,21 +126,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 export async function GET(request: NextRequest): Promise<NextResponse> {
   
   try {
-    // 获取所有项目数据
-    let items: TMDBItem[] = [];
-    try {
-      items = await StorageManager.getItemsWithRetry();
-    } catch (serverError) {
-      items = await StorageManager.getItemsWithRetry();
-    }
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
+    // 从数据库获取所有项目数据
+    const items: TMDBItem[] = ServerStorageManager.getItems();
 
-    // 获取所有定时任务
-    let tasks: ScheduledTask[] = [];
-    try {
-      tasks = readScheduledTasks();
-    } catch (serverError) {
-      tasks = await StorageManager.getScheduledTasks();
-    }
+    // 从数据库获取所有定时任务
+    const tasks: ScheduledTask[] = ServerStorageManager.getTasks();
 
     // 筛选启用了自动删除的任务
     const autoDeleteTasks = tasks.filter(task => 

@@ -1,5 +1,6 @@
 /**
  * 认证 Repository
+ * 使用 camelCase 字段名，与数据库 Schema 保持一致
  */
 
 import { getDatabase } from '../connection';
@@ -12,29 +13,33 @@ export interface AdminUser {
   username: string;
   passwordHash: string;
   createdAt: string;
+  updatedAt: string;
   lastLoginAt?: string;
   sessionExpiryDays: number;
 }
 
 export class AuthRepository extends BaseRepository<AdminUser, AdminUserRow> {
-  protected tableName = 'admin_users';
+  protected tableName = 'adminUsers';
 
   /**
    * 根据用户名查找
    */
   findByUsername(username: string): AdminUser | undefined {
     const db = getDatabase();
-    const row = db.prepare('SELECT * FROM admin_users WHERE username = ?').get(username) as AdminUserRow | undefined;
+    const row = db
+      .prepare('SELECT * FROM adminUsers WHERE username = ? AND deletedAt IS NULL')
+      .get(username) as AdminUserRow | undefined;
 
     if (!row) return undefined;
 
     return {
       id: row.id,
       username: row.username,
-      passwordHash: row.password_hash,
-      createdAt: row.created_at,
-      lastLoginAt: row.last_login_at ?? undefined,
-      sessionExpiryDays: row.session_expiry_days,
+      passwordHash: row.passwordHash,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      lastLoginAt: row.lastLoginAt ?? undefined,
+      sessionExpiryDays: row.sessionExpiryDays,
     };
   }
 
@@ -45,16 +50,19 @@ export class AuthRepository extends BaseRepository<AdminUser, AdminUserRow> {
     const db = getDatabase();
 
     try {
+      const now = new Date().toISOString();
       db.prepare(`
-        INSERT INTO admin_users (id, username, password_hash, created_at, last_login_at, session_expiry_days)
-        VALUES (@id, @username, @password_hash, @created_at, @last_login_at, @session_expiry_days)
+        INSERT INTO adminUsers (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, deletedAt)
+        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @deletedAt)
       `).run({
         id: admin.id,
         username: admin.username,
-        password_hash: admin.passwordHash,
-        created_at: admin.createdAt,
-        last_login_at: admin.lastLoginAt ?? null,
-        session_expiry_days: admin.sessionExpiryDays,
+        passwordHash: admin.passwordHash,
+        createdAt: admin.createdAt || now,
+        updatedAt: admin.updatedAt || now,
+        lastLoginAt: admin.lastLoginAt ?? null,
+        sessionExpiryDays: admin.sessionExpiryDays,
+        deletedAt: null,
       });
 
       return { success: true, data: admin };
@@ -74,7 +82,7 @@ export class AuthRepository extends BaseRepository<AdminUser, AdminUserRow> {
     const db = getDatabase();
 
     try {
-      db.prepare('UPDATE admin_users SET last_login_at = ? WHERE id = ?').run(lastLoginAt, id);
+      db.prepare('UPDATE adminUsers SET lastLoginAt = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(lastLoginAt, lastLoginAt, id);
       return { success: true };
     } catch (error) {
       return {
@@ -91,7 +99,7 @@ export class AuthRepository extends BaseRepository<AdminUser, AdminUserRow> {
     const db = getDatabase();
 
     try {
-      db.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?').run(passwordHash, id);
+      db.prepare('UPDATE adminUsers SET passwordHash = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(passwordHash, new Date().toISOString(), id);
       return { success: true };
     } catch (error) {
       logger.error('[AuthRepository] 更新密码失败:', error);
@@ -106,14 +114,17 @@ export class AuthRepository extends BaseRepository<AdminUser, AdminUserRow> {
    * 检查管理员是否存在
    */
   hasAdmin(): boolean {
-    return this.count() > 0;
+    const db = getDatabase();
+    const count = (db.prepare('SELECT COUNT(*) as count FROM adminUsers WHERE deletedAt IS NULL').get() as { count: number }).count;
+    return count > 0;
   }
 
   /**
    * 获取管理员数量
    */
   getAdminCount(): number {
-    return this.count();
+    const db = getDatabase();
+    return (db.prepare('SELECT COUNT(*) as count FROM adminUsers WHERE deletedAt IS NULL').get() as { count: number }).count;
   }
 
   /**
@@ -121,17 +132,20 @@ export class AuthRepository extends BaseRepository<AdminUser, AdminUserRow> {
    */
   getAdmin(): AdminUser | null {
     const db = getDatabase();
-    const row = db.prepare('SELECT * FROM admin_users LIMIT 1').get() as AdminUserRow | undefined;
+    const row = db
+      .prepare('SELECT * FROM adminUsers WHERE deletedAt IS NULL LIMIT 1')
+      .get() as AdminUserRow | undefined;
 
     if (!row) return null;
 
     return {
       id: row.id,
       username: row.username,
-      passwordHash: row.password_hash,
-      createdAt: row.created_at,
-      lastLoginAt: row.last_login_at ?? undefined,
-      sessionExpiryDays: row.session_expiry_days,
+      passwordHash: row.passwordHash,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      lastLoginAt: row.lastLoginAt ?? undefined,
+      sessionExpiryDays: row.sessionExpiryDays,
     };
   }
 
@@ -142,21 +156,25 @@ export class AuthRepository extends BaseRepository<AdminUser, AdminUserRow> {
     const db = getDatabase();
 
     try {
+      const now = new Date().toISOString();
       db.prepare(`
-        INSERT INTO admin_users (id, username, password_hash, created_at, last_login_at, session_expiry_days)
-        VALUES (@id, @username, @password_hash, @created_at, @last_login_at, @session_expiry_days)
+        INSERT INTO adminUsers (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, deletedAt)
+        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @deletedAt)
         ON CONFLICT(id) DO UPDATE SET
           username = @username,
-          password_hash = @password_hash,
-          last_login_at = @last_login_at,
-          session_expiry_days = @session_expiry_days
+          passwordHash = @passwordHash,
+          lastLoginAt = @lastLoginAt,
+          sessionExpiryDays = @sessionExpiryDays,
+          updatedAt = @updatedAt
       `).run({
         id: admin.id,
         username: admin.username,
-        password_hash: admin.passwordHash,
-        created_at: admin.createdAt,
-        last_login_at: admin.lastLoginAt ?? null,
-        session_expiry_days: admin.sessionExpiryDays,
+        passwordHash: admin.passwordHash,
+        createdAt: admin.createdAt || now,
+        updatedAt: now,
+        lastLoginAt: admin.lastLoginAt ?? null,
+        sessionExpiryDays: admin.sessionExpiryDays,
+        deletedAt: null,
       });
 
       return { success: true, data: admin };

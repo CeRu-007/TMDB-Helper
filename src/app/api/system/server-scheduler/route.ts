@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readScheduledTasks, writeScheduledTasks } from '@/lib/data/server-scheduled-tasks';
-import { StorageManager } from '@/lib/data/storage';
+import { ServerStorageManager } from '@/lib/data/server-storage-manager';
 import { ServerConfigManager } from '@/lib/data/server-config-manager';
-import { ScheduledTask, TMDBItem } from '@/lib/data/storage';
+import type { ScheduledTask } from '@/lib/data/storage/types';
+import type { TMDBItem } from '@/lib/database/schema';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
@@ -97,9 +97,12 @@ class ServerScheduler {
     try {
       this.lastCheck = new Date().toISOString();
       
-      // 读取所有定时任务
-      const tasks = readScheduledTasks();
-      const items = await StorageManager.getItemsWithRetry();
+      // 确保数据库已初始化
+      await ServerStorageManager.init();
+      
+      // 从数据库读取所有定时任务
+      const tasks = ServerStorageManager.getTasks();
+      const items = ServerStorageManager.getItems();
 
       if (tasks.length === 0) {
         
@@ -227,16 +230,8 @@ class ServerScheduler {
     error?: string
   ): Promise<void> {
     try {
-      const tasks = readScheduledTasks();
-      const taskIndex = tasks.findIndex(t => t.id === task.id);
-
-      if (taskIndex === -1) {
-        
-        return;
-      }
-
       const updatedTask = {
-        ...tasks[taskIndex],
+        ...task,
         lastRun: new Date().toISOString(),
         lastRunStatus: success ? 'success' as const : 'failed' as const,
         lastRunError: error || null,
@@ -244,8 +239,7 @@ class ServerScheduler {
         updatedAt: new Date().toISOString()
       };
 
-      tasks[taskIndex] = updatedTask;
-      writeScheduledTasks(tasks);
+      ServerStorageManager.updateTask(updatedTask);
 
     } catch (error) {
       

@@ -1,5 +1,5 @@
-import { TMDBItem } from '@/types/tmdb-item';
-import { ScheduledTask } from '@/lib/data/storage/types';
+import type { TMDBItem } from '@/types/tmdb-item';
+import type { ScheduledTask } from '@/lib/data/storage/types';
 import { logger } from '@/lib/utils/logger';
 import { initializeStorage } from './server-storage-service';
 import { itemsRepository } from '@/lib/database/repositories/items.repository';
@@ -66,12 +66,19 @@ export class ServerStorageManager {
   }
 
   /**
+   * 清空所有项目
+   */
+  static clearAllItems(): void {
+    ensureInitializedSync();
+    itemsRepository.clear();
+  }
+
+  /**
    * 导入数据
    */
   static importData(items: TMDBItem[]): boolean {
     ensureInitializedSync();
     try {
-      // 清除现有数据并导入新数据
       itemsRepository.clear();
       const result = itemsRepository.importItems(items);
       return result.success;

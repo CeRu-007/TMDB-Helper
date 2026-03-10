@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ServerStorageService } from '@/lib/data/server-storage-service';
-import { TMDBItem } from '@/lib/data/storage';
+import { ServerStorageManager } from '@/lib/data/server-storage-manager';
+import type { TMDBItem } from '@/types/tmdb-item';
 
 /**
- * POST /api/system/migrate-storage - 将localStorage数据迁移到文件存储
+ * POST /api/system/migrate-storage - 将localStorage数据迁移到数据库存储
  */
 export async function POST(request: NextRequest) {
   try {
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
     
     const { items } = await request.json();
     
@@ -33,58 +35,46 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // 读取现有的服务器端数据
-    const existingItems = ServerStorageService.readItemsFromFile();
+    // 读取现有的数据库数据
+    const existingItems = ServerStorageManager.getItems();
 
     // 合并数据，避免重复
-    const mergedItems = [...existingItems];
     let addedCount = 0;
     let updatedCount = 0;
     
     for (const newItem of validItems) {
-      const existingIndex = mergedItems.findIndex(item => item.id === newItem.id);
+      const existingItem = existingItems.find(item => item.id === newItem.id);
       
-      if (existingIndex >= 0) {
+      if (existingItem) {
         // 更新现有项目
-        mergedItems[existingIndex] = {
-          ...mergedItems[existingIndex],
+        ServerStorageManager.updateItem({
+          ...existingItem,
           ...newItem,
           updatedAt: new Date().toISOString()
-        };
+        });
         updatedCount++;
-        console.log(`[API] 更新项目: ${newItem.title} (ID: ${newItem.id})`);
       } else {
         // 添加新项目
-        mergedItems.push({
+        ServerStorageManager.addItem({
           ...newItem,
           createdAt: newItem.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString()
         });
         addedCount++;
-        console.log(`[API] 添加项目: ${newItem.title} (ID: ${newItem.id})`);
       }
     }
     
-    // 写入文件
-    const success = ServerStorageService.writeItemsToFile(mergedItems);
-    
-    if (success) {
-      
-      return NextResponse.json({
-        success: true,
-        message: '数据迁移成功',
-        stats: {
-          totalItems: mergedItems.length,
-          addedItems: addedCount,
-          updatedItems: updatedCount,
-          originalItems: existingItems.length
-        }
-      }, { status: 200 });
-    } else {
-      throw new Error('写入文件失败');
-    }
+    return NextResponse.json({
+      success: true,
+      message: '数据迁移成功',
+      stats: {
+        totalItems: ServerStorageManager.getItems().length,
+        addedItems: addedCount,
+        updatedItems: updatedCount,
+        originalItems: existingItems.length
+      }
+    }, { status: 200 });
   } catch (error) {
-    
     return NextResponse.json({
       success: false,
       error: '存储迁移失败',
@@ -98,7 +88,10 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const serverItems = await StorageManager.getItemsWithRetry();
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
+    const serverItems = ServerStorageManager.getItems();
     
     return NextResponse.json({
       success: true,
@@ -113,7 +106,6 @@ export async function GET(request: NextRequest) {
       }
     }, { status: 200 });
   } catch (error) {
-    
     return NextResponse.json({
       success: false,
       error: '获取迁移状态失败',

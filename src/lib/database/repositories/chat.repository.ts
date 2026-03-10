@@ -1,5 +1,6 @@
 /**
  * AI 聊天 Repository
+ * 使用 camelCase 字段名，与数据库 Schema 保持一致
  */
 
 import { getDatabase } from '../connection';
@@ -9,15 +10,15 @@ import type { ChatHistory, Message } from '@/types/ai-chat';
 import { logger } from '@/lib/utils/logger';
 
 export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> {
-  protected tableName = 'chat_histories';
+  protected tableName = 'chatHistories';
 
   /**
-   * 获取所有聊天历史
+   * 获取所有聊天历史，排除软删除
    */
   findAllHistories(): ChatHistory[] {
     const db = getDatabase();
     const histories = db
-      .prepare('SELECT * FROM chat_histories ORDER BY updated_at DESC')
+      .prepare('SELECT * FROM chatHistories WHERE deletedAt IS NULL ORDER BY updatedAt DESC')
       .all() as ChatHistoryRow[];
 
     return histories.map((row) => this.rowToChatHistory(row));
@@ -28,7 +29,9 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
    */
   findHistoryById(id: string): ChatHistory | undefined {
     const db = getDatabase();
-    const row = db.prepare('SELECT * FROM chat_histories WHERE id = ?').get(id) as ChatHistoryRow | undefined;
+    const row = db
+      .prepare('SELECT * FROM chatHistories WHERE id = ? AND deletedAt IS NULL')
+      .get(id) as ChatHistoryRow | undefined;
 
     if (!row) return undefined;
 
@@ -45,8 +48,8 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
       id: row.id,
       title: row.title,
       messages: [],
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
+      createdAt: new Date(row.createdAt),
+      updatedAt: new Date(row.updatedAt),
     };
   }
 
@@ -56,7 +59,7 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
   getMessages(chatId: string): Message[] {
     const db = getDatabase();
     const rows = db
-      .prepare('SELECT * FROM messages WHERE chat_id = ? ORDER BY timestamp')
+      .prepare('SELECT * FROM messages WHERE chatId = ? ORDER BY timestamp')
       .all(chatId) as MessageRow[];
 
     return rows.map((row) => this.rowToMessage(row));
@@ -72,13 +75,13 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
       content: row.content,
       timestamp: new Date(row.timestamp),
       type: row.type as 'text' | 'file' | 'episode-summary' | undefined,
-      fileName: row.file_name ?? undefined,
-      fileContent: row.file_content ?? undefined,
-      isStreaming: row.is_streaming === 1,
+      fileName: row.fileName ?? undefined,
+      fileContent: row.fileContent ?? undefined,
+      isStreaming: row.isStreaming === 1,
       suggestions: row.suggestions ? JSON.parse(row.suggestions) : undefined,
       rating: row.rating as 'like' | 'dislike' | null | undefined,
-      isEdited: row.is_edited === 1,
-      canContinue: row.can_continue === 1,
+      isEdited: row.isEdited === 1,
+      canContinue: row.canContinue === 1,
     };
   }
 
@@ -89,14 +92,16 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
     const db = getDatabase();
 
     try {
+      const now = new Date().toISOString();
       db.prepare(`
-        INSERT INTO chat_histories (id, title, created_at, updated_at)
-        VALUES (@id, @title, @created_at, @updated_at)
+        INSERT INTO chatHistories (id, title, createdAt, updatedAt, deletedAt)
+        VALUES (@id, @title, @createdAt, @updatedAt, @deletedAt)
       `).run({
         id: history.id,
         title: history.title,
-        created_at: history.createdAt.toISOString(),
-        updated_at: history.updatedAt.toISOString(),
+        createdAt: history.createdAt.toISOString(),
+        updatedAt: history.updatedAt.toISOString(),
+        deletedAt: null,
       });
 
       // 插入消息
@@ -124,11 +129,11 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
 
     try {
       db.prepare(`
-        UPDATE chat_histories SET title = @title, updated_at = @updated_at WHERE id = @id
+        UPDATE chatHistories SET title = @title, updatedAt = @updatedAt WHERE id = @id AND deletedAt IS NULL
       `).run({
         id: history.id,
         title: history.title,
-        updated_at: history.updatedAt.toISOString(),
+        updatedAt: history.updatedAt.toISOString(),
       });
 
       return { success: true, data: history };
@@ -148,35 +153,35 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
     const db = getDatabase();
 
     try {
+      const now = new Date().toISOString();
       db.prepare(`
         INSERT INTO messages (
-          id, chat_id, role, content, timestamp, type, file_name, file_content,
-          is_streaming, suggestions, rating, is_edited, can_continue
+          id, chatId, role, content, timestamp, type, fileName, fileContent,
+          isStreaming, suggestions, rating, isEdited, canContinue, createdAt, updatedAt
         ) VALUES (
-          @id, @chat_id, @role, @content, @timestamp, @type, @file_name, @file_content,
-          @is_streaming, @suggestions, @rating, @is_edited, @can_continue
+          @id, @chatId, @role, @content, @timestamp, @type, @fileName, @fileContent,
+          @isStreaming, @suggestions, @rating, @isEdited, @canContinue, @createdAt, @updatedAt
         )
       `).run({
         id: message.id,
-        chat_id: chatId,
+        chatId: chatId,
         role: message.role,
         content: message.content,
         timestamp: message.timestamp.toISOString(),
         type: message.type ?? 'text',
-        file_name: message.fileName ?? null,
-        file_content: message.fileContent ?? null,
-        is_streaming: message.isStreaming ? 1 : 0,
+        fileName: message.fileName ?? null,
+        fileContent: message.fileContent ?? null,
+        isStreaming: message.isStreaming ? 1 : 0,
         suggestions: message.suggestions ? JSON.stringify(message.suggestions) : null,
         rating: message.rating ?? null,
-        is_edited: message.isEdited ? 1 : 0,
-        can_continue: message.canContinue ? 1 : 0,
+        isEdited: message.isEdited ? 1 : 0,
+        canContinue: message.canContinue ? 1 : 0,
+        createdAt: now,
+        updatedAt: now,
       });
 
-      // 更新聊天历史的 updated_at
-      db.prepare('UPDATE chat_histories SET updated_at = ? WHERE id = ?').run(
-        new Date().toISOString(),
-        chatId,
-      );
+      // 更新聊天历史的 updatedAt
+      db.prepare('UPDATE chatHistories SET updatedAt = ? WHERE id = ?').run(now, chatId);
 
       return { success: true, data: message };
     } catch (error) {
@@ -198,20 +203,22 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
       db.prepare(`
         UPDATE messages SET
           content = @content,
-          is_streaming = @is_streaming,
+          isStreaming = @isStreaming,
           suggestions = @suggestions,
           rating = @rating,
-          is_edited = @is_edited,
-          can_continue = @can_continue
+          isEdited = @isEdited,
+          canContinue = @canContinue,
+          updatedAt = @updatedAt
         WHERE id = @id
       `).run({
         id: message.id,
         content: message.content,
-        is_streaming: message.isStreaming ? 1 : 0,
+        isStreaming: message.isStreaming ? 1 : 0,
         suggestions: message.suggestions ? JSON.stringify(message.suggestions) : null,
         rating: message.rating ?? null,
-        is_edited: message.isEdited ? 1 : 0,
-        can_continue: message.canContinue ? 1 : 0,
+        isEdited: message.isEdited ? 1 : 0,
+        canContinue: message.canContinue ? 1 : 0,
+        updatedAt: new Date().toISOString(),
       });
 
       return { success: true, data: message };
@@ -242,16 +249,64 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
   }
 
   /**
-   * 删除聊天历史（级联删除消息）
+   * 软删除聊天历史
+   */
+  softDeleteHistory(id: string): DatabaseResult {
+    const db = getDatabase();
+
+    try {
+      const now = new Date().toISOString();
+      const result = db
+        .prepare('UPDATE chatHistories SET deletedAt = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL')
+        .run(now, now, id);
+
+      return {
+        success: result.changes > 0,
+        error: result.changes === 0 ? '聊天历史不存在或已删除' : undefined,
+      };
+    } catch (error) {
+      logger.error('[ChatRepository] 删除聊天历史失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '删除失败',
+      };
+    }
+  }
+
+  /**
+   * 恢复软删除的聊天历史
+   */
+  restoreHistory(id: string): DatabaseResult {
+    const db = getDatabase();
+
+    try {
+      const result = db
+        .prepare('UPDATE chatHistories SET deletedAt = NULL, updatedAt = ? WHERE id = ?')
+        .run(new Date().toISOString(), id);
+
+      return {
+        success: result.changes > 0,
+        error: result.changes === 0 ? '聊天历史不存在' : undefined,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '恢复失败',
+      };
+    }
+  }
+
+  /**
+   * 物理删除聊天历史（级联删除消息）
    */
   deleteHistory(id: string): DatabaseResult {
     const db = getDatabase();
 
     try {
       // 删除消息
-      db.prepare('DELETE FROM messages WHERE chat_id = ?').run(id);
+      db.prepare('DELETE FROM messages WHERE chatId = ?').run(id);
       // 删除聊天历史
-      db.prepare('DELETE FROM chat_histories WHERE id = ?').run(id);
+      db.prepare('DELETE FROM chatHistories WHERE id = ?').run(id);
 
       return { success: true };
     } catch (error) {
@@ -269,14 +324,15 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
   clearAll(): void {
     const db = getDatabase();
     db.exec('DELETE FROM messages');
-    db.exec('DELETE FROM chat_histories');
+    db.exec('DELETE FROM chatHistories');
   }
 
   /**
    * 获取聊天历史数量
    */
   getHistoryCount(): number {
-    return this.count();
+    const db = getDatabase();
+    return (db.prepare('SELECT COUNT(*) as count FROM chatHistories WHERE deletedAt IS NULL').get() as { count: number }).count;
   }
 
   /**
@@ -285,7 +341,7 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
   getMessageCount(chatId?: string): number {
     const db = getDatabase();
     if (chatId) {
-      return (db.prepare('SELECT COUNT(*) as count FROM messages WHERE chat_id = ?').get(chatId) as { count: number }).count;
+      return (db.prepare('SELECT COUNT(*) as count FROM messages WHERE chatId = ?').get(chatId) as { count: number }).count;
     }
     return (db.prepare('SELECT COUNT(*) as count FROM messages').get() as { count: number }).count;
   }
@@ -303,15 +359,15 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
       if (existing) {
         // 更新现有历史
         db.prepare(`
-          UPDATE chat_histories SET title = @title, updated_at = @updated_at WHERE id = @id
+          UPDATE chatHistories SET title = @title, updatedAt = @updatedAt WHERE id = @id
         `).run({
           id: history.id,
           title: history.title,
-          updated_at: history.updatedAt.toISOString(),
+          updatedAt: history.updatedAt.toISOString(),
         });
 
         // 删除旧消息，插入新消息
-        db.prepare('DELETE FROM messages WHERE chat_id = ?').run(history.id);
+        db.prepare('DELETE FROM messages WHERE chatId = ?').run(history.id);
 
         if (history.messages && history.messages.length > 0) {
           for (const message of history.messages) {
@@ -337,19 +393,14 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
    * 批量保存聊天历史
    */
   saveHistories(histories: ChatHistory[]): DatabaseResult<{ saved: number }> {
-    const db = getDatabase();
     let saved = 0;
 
-    const transaction = db.transaction(() => {
-      for (const history of histories) {
-        const result = this.saveHistory(history);
-        if (result.success) {
-          saved++;
-        }
+    for (const history of histories) {
+      const result = this.saveHistory(history);
+      if (result.success) {
+        saved++;
       }
-    });
-
-    transaction();
+    }
 
     return { success: true, data: { saved } };
   }

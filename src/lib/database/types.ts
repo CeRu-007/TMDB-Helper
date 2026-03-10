@@ -1,98 +1,104 @@
 /**
  * 数据库类型定义
+ * 所有字段使用 camelCase 命名，与数据库 Schema 保持一致
  */
 
 import type { TMDBItem } from '@/types/tmdb-item';
-import type { Episode, Season } from '@/types/media/base';
-import type { ScheduledTask, ExecutionLog } from '@/lib/data/storage/types';
+import type { ScheduledTask } from '@/lib/data/storage/types';
 
-// 数据库行类型
+// 数据库行类型 - camelCase
 export interface ItemRow {
   id: string;
-  tmdb_id: string | null;
-  imdb_id: string | null;
+  tmdbId: string | null;
+  imdbId: string | null;
   title: string;
-  original_title: string | null;
+  originalTitle: string | null;
   overview: string | null;
   year: number | null;
-  release_date: string | null;
+  releaseDate: string | null;
   genres: string | null; // JSON数组
   runtime: number | null;
-  vote_average: number | null;
-  media_type: string;
-  poster_path: string | null;
-  poster_url: string | null;
-  backdrop_path: string | null;
-  backdrop_url: string | null;
-  logo_path: string | null;
-  logo_url: string | null;
-  network_id: number | null;
-  network_name: string | null;
-  network_logo_url: string | null;
+  voteAverage: number | null;
+  mediaType: string;
+  posterPath: string | null;
+  posterUrl: string | null;
+  backdropPath: string | null;
+  backdropUrl: string | null;
+  logoPath: string | null;
+  logoUrl: string | null;
+  networkId: number | null;
+  networkName: string | null;
+  networkLogoUrl: string | null;
   status: string | null;
   completed: number;
-  platform_url: string | null;
-  total_episodes: number | null;
-  manually_set_episodes: number;
+  platformUrl: string | null;
+  totalEpisodes: number | null;
+  manuallySetEpisodes: number;
   weekday: number | null;
-  second_weekday: number | null;
-  air_time: string | null;
+  secondWeekday: number | null;
+  airTime: string | null;
   category: string | null;
-  tmdb_url: string | null;
+  tmdbUrl: string | null;
   notes: string | null;
-  is_daily_update: number;
-  blur_intensity: string | null;
+  isDailyUpdate: number;
+  blurIntensity: string | null;
   rating: number | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface SeasonRow {
   id: number;
-  item_id: string;
-  season_number: number;
+  itemId: string;
+  seasonNumber: number;
   name: string | null;
-  total_episodes: number;
-  current_episode: number | null;
+  totalEpisodes: number;
+  currentEpisode: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface EpisodeRow {
   id: number;
-  item_id: string;
-  season_id: number | null;
-  season_number: number | null;
+  itemId: string;
+  seasonId: number | null;
+  seasonNumber: number | null;
   number: number;
   completed: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ScheduledTaskRow {
   id: string;
-  item_id: string;
-  item_title: string;
-  item_tmdb_id: string | null;
+  itemId: string;
+  itemTitle: string;
+  itemTmdbId: string | null;
   name: string;
   type: string;
-  schedule_type: string;
-  day_of_week: number | null;
-  second_day_of_week: number | null;
+  scheduleType: string;
+  dayOfWeek: number | null;
+  secondDayOfWeek: number | null;
   hour: number;
   minute: number;
-  action_config: string; // JSON
+  actionConfig: string; // JSON
   enabled: number;
-  last_run: string | null;
-  next_run: string | null;
-  last_run_status: string | null;
-  last_run_error: string | null;
-  current_step: string | null;
-  execution_progress: number | null;
-  is_running: number;
-  created_at: string;
-  updated_at: string;
+  lastRun: string | null;
+  nextRun: string | null;
+  lastRunStatus: string | null;
+  lastRunError: string | null;
+  currentStep: string | null;
+  executionProgress: number | null;
+  isRunning: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface ExecutionLogRow {
   id: string;
-  task_id: string;
+  taskId: string;
   timestamp: string;
   step: string | null;
   message: string | null;
@@ -103,39 +109,45 @@ export interface ExecutionLogRow {
 export interface ChatHistoryRow {
   id: string;
   title: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface MessageRow {
   id: string;
-  chat_id: string;
+  chatId: string;
   role: string;
   content: string;
   timestamp: string;
   type: string;
-  file_name: string | null;
-  file_content: string | null;
-  is_streaming: number;
+  fileName: string | null;
+  fileContent: string | null;
+  isStreaming: number;
   suggestions: string | null; // JSON
   rating: string | null;
-  is_edited: number;
-  can_continue: number;
+  isEdited: number;
+  canContinue: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AdminUserRow {
   id: string;
   username: string;
-  password_hash: string;
-  created_at: string;
-  last_login_at: string | null;
-  session_expiry_days: number;
+  passwordHash: string;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt: string | null;
+  sessionExpiryDays: number;
+  deletedAt: string | null;
 }
 
 export interface ConfigRow {
   key: string;
   value: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 转换函数类型
@@ -168,45 +180,47 @@ export interface MigrationStatus {
 }
 
 // 帮助函数：将 TMDBItem 转换为数据库行
-export function tmdbItemToRow(item: TMDBItem): ItemRow {
+export function tmdbItemToRow(item: TMDBItem, timestamps?: { createdAt?: string; updatedAt?: string }): ItemRow {
+  const now = new Date().toISOString();
   return {
     id: item.id,
-    tmdb_id: item.tmdbId ?? null,
-    imdb_id: item.imdbId ?? null,
+    tmdbId: item.tmdbId ?? null,
+    imdbId: item.imdbId ?? null,
     title: item.title,
-    original_title: item.originalTitle ?? null,
+    originalTitle: item.originalTitle ?? null,
     overview: item.overview ?? null,
     year: item.year ?? null,
-    release_date: item.releaseDate ?? null,
+    releaseDate: item.releaseDate ?? null,
     genres: item.genres ? JSON.stringify(item.genres) : null,
     runtime: item.runtime ?? null,
-    vote_average: item.voteAverage ?? null,
-    media_type: item.mediaType ?? 'tv',
-    poster_path: item.posterPath ?? null,
-    poster_url: item.posterUrl ?? null,
-    backdrop_path: item.backdropPath ?? null,
-    backdrop_url: item.backdropUrl ?? null,
-    logo_path: item.logoPath ?? null,
-    logo_url: item.logoUrl ?? null,
-    network_id: item.networkId ?? null,
-    network_name: item.networkName ?? null,
-    network_logo_url: item.networkLogoUrl ?? null,
+    voteAverage: item.voteAverage ?? null,
+    mediaType: item.mediaType ?? 'tv',
+    posterPath: item.posterPath ?? null,
+    posterUrl: item.posterUrl ?? null,
+    backdropPath: item.backdropPath ?? null,
+    backdropUrl: item.backdropUrl ?? null,
+    logoPath: item.logoPath ?? null,
+    logoUrl: item.logoUrl ?? null,
+    networkId: item.networkId ?? null,
+    networkName: item.networkName ?? null,
+    networkLogoUrl: item.networkLogoUrl ?? null,
     status: item.status ?? null,
     completed: item.completed ? 1 : 0,
-    platform_url: item.platformUrl ?? null,
-    total_episodes: item.totalEpisodes ?? null,
-    manually_set_episodes: item.manuallySetEpisodes ? 1 : 0,
+    platformUrl: item.platformUrl ?? null,
+    totalEpisodes: item.totalEpisodes ?? null,
+    manuallySetEpisodes: item.manuallySetEpisodes ? 1 : 0,
     weekday: item.weekday ?? null,
-    second_weekday: item.secondWeekday ?? null,
-    air_time: item.airTime ?? null,
+    secondWeekday: item.secondWeekday ?? null,
+    airTime: item.airTime ?? null,
     category: item.category ?? null,
-    tmdb_url: item.tmdbUrl ?? null,
+    tmdbUrl: item.tmdbUrl ?? null,
     notes: item.notes ?? null,
-    is_daily_update: item.isDailyUpdate ? 1 : 0,
-    blur_intensity: item.blurIntensity ?? null,
+    isDailyUpdate: item.isDailyUpdate ? 1 : 0,
+    blurIntensity: item.blurIntensity ?? null,
     rating: item.rating ?? null,
-    created_at: item.createdAt,
-    updated_at: item.updatedAt,
+    createdAt: timestamps?.createdAt ?? item.createdAt ?? now,
+    updatedAt: timestamps?.updatedAt ?? item.updatedAt ?? now,
+    deletedAt: null,
   };
 }
 
@@ -218,55 +232,55 @@ export function rowToTMDBItem(
 ): TMDBItem {
   const item: TMDBItem = {
     id: row.id,
-    tmdbId: row.tmdb_id ?? undefined,
-    imdbId: row.imdb_id ?? undefined,
+    tmdbId: row.tmdbId ?? undefined,
+    imdbId: row.imdbId ?? undefined,
     title: row.title,
-    originalTitle: row.original_title ?? undefined,
+    originalTitle: row.originalTitle ?? undefined,
     overview: row.overview ?? undefined,
     year: row.year ?? undefined,
-    releaseDate: row.release_date ?? undefined,
+    releaseDate: row.releaseDate ?? undefined,
     genres: row.genres ? JSON.parse(row.genres) : undefined,
     runtime: row.runtime ?? undefined,
-    voteAverage: row.vote_average ?? undefined,
-    mediaType: row.media_type as 'tv',
-    posterPath: row.poster_path ?? undefined,
-    posterUrl: row.poster_url ?? undefined,
-    backdropPath: row.backdrop_path ?? undefined,
-    backdropUrl: row.backdrop_url ?? undefined,
-    logoPath: row.logo_path ?? undefined,
-    logoUrl: row.logo_url ?? undefined,
-    networkId: row.network_id ?? undefined,
-    networkName: row.network_name ?? undefined,
-    networkLogoUrl: row.network_logo_url ?? undefined,
+    voteAverage: row.voteAverage ?? undefined,
+    mediaType: row.mediaType as 'tv',
+    posterPath: row.posterPath ?? undefined,
+    posterUrl: row.posterUrl ?? undefined,
+    backdropPath: row.backdropPath ?? undefined,
+    backdropUrl: row.backdropUrl ?? undefined,
+    logoPath: row.logoPath ?? undefined,
+    logoUrl: row.logoUrl ?? undefined,
+    networkId: row.networkId ?? undefined,
+    networkName: row.networkName ?? undefined,
+    networkLogoUrl: row.networkLogoUrl ?? undefined,
     status: row.status ?? undefined,
     completed: row.completed === 1,
-    platformUrl: row.platform_url ?? undefined,
-    totalEpisodes: row.total_episodes ?? undefined,
-    manuallySetEpisodes: row.manually_set_episodes === 1,
+    platformUrl: row.platformUrl ?? undefined,
+    totalEpisodes: row.totalEpisodes ?? undefined,
+    manuallySetEpisodes: row.manuallySetEpisodes === 1,
     weekday: row.weekday ?? undefined,
-    secondWeekday: row.second_weekday ?? undefined,
-    airTime: row.air_time ?? undefined,
+    secondWeekday: row.secondWeekday ?? undefined,
+    airTime: row.airTime ?? undefined,
     category: row.category ?? undefined,
-    tmdbUrl: row.tmdb_url ?? undefined,
+    tmdbUrl: row.tmdbUrl ?? undefined,
     notes: row.notes ?? undefined,
-    isDailyUpdate: row.is_daily_update === 1,
-    blurIntensity: row.blur_intensity as 'light' | 'medium' | 'heavy' | undefined,
+    isDailyUpdate: row.isDailyUpdate === 1,
+    blurIntensity: row.blurIntensity as 'light' | 'medium' | 'heavy' | undefined,
     rating: row.rating ?? undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 
   // 添加季和分集信息
   if (seasons && seasons.length > 0) {
     item.seasons = seasons.map((s) => ({
-      seasonNumber: s.season_number,
+      seasonNumber: s.seasonNumber,
       name: s.name ?? undefined,
-      totalEpisodes: s.total_episodes,
-      currentEpisode: s.current_episode ?? undefined,
+      totalEpisodes: s.totalEpisodes,
+      currentEpisode: s.currentEpisode ?? undefined,
       episodes: s.episodes?.map((e) => ({
         number: e.number,
         completed: e.completed === 1,
-        seasonNumber: e.season_number ?? undefined,
+        seasonNumber: e.seasonNumber ?? undefined,
       })),
     }));
   }
@@ -276,7 +290,7 @@ export function rowToTMDBItem(
     item.episodes = episodes.map((e) => ({
       number: e.number,
       completed: e.completed === 1,
-      seasonNumber: e.season_number ?? undefined,
+      seasonNumber: e.seasonNumber ?? undefined,
     }));
   }
 
@@ -287,27 +301,28 @@ export function rowToTMDBItem(
 export function scheduledTaskToRow(task: ScheduledTask): ScheduledTaskRow {
   return {
     id: task.id,
-    item_id: task.itemId,
-    item_title: task.itemTitle,
-    item_tmdb_id: task.itemTmdbId ?? null,
+    itemId: task.itemId,
+    itemTitle: task.itemTitle,
+    itemTmdbId: task.itemTmdbId ?? null,
     name: task.name,
     type: task.type,
-    schedule_type: task.schedule.type,
-    day_of_week: task.schedule.dayOfWeek ?? null,
-    second_day_of_week: task.schedule.secondDayOfWeek ?? null,
+    scheduleType: task.schedule.type,
+    dayOfWeek: task.schedule.dayOfWeek ?? null,
+    secondDayOfWeek: task.schedule.secondDayOfWeek ?? null,
     hour: task.schedule.hour,
     minute: task.schedule.minute,
-    action_config: JSON.stringify(task.action),
+    actionConfig: JSON.stringify(task.action),
     enabled: task.enabled ? 1 : 0,
-    last_run: task.lastRun ?? null,
-    next_run: task.nextRun ?? null,
-    last_run_status: task.lastRunStatus ?? null,
-    last_run_error: task.lastRunError ?? null,
-    current_step: task.currentStep ?? null,
-    execution_progress: task.executionProgress ?? null,
-    is_running: task.isRunning ? 1 : 0,
-    created_at: task.createdAt,
-    updated_at: task.updatedAt,
+    lastRun: task.lastRun ?? null,
+    nextRun: task.nextRun ?? null,
+    lastRunStatus: task.lastRunStatus ?? null,
+    lastRunError: task.lastRunError ?? null,
+    currentStep: task.currentStep ?? null,
+    executionProgress: task.executionProgress ?? null,
+    isRunning: task.isRunning ? 1 : 0,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+    deletedAt: null,
   };
 }
 
@@ -315,28 +330,28 @@ export function scheduledTaskToRow(task: ScheduledTask): ScheduledTaskRow {
 export function rowToScheduledTask(row: ScheduledTaskRow): ScheduledTask {
   return {
     id: row.id,
-    itemId: row.item_id,
-    itemTitle: row.item_title,
-    itemTmdbId: row.item_tmdb_id ?? undefined,
+    itemId: row.itemId,
+    itemTitle: row.itemTitle,
+    itemTmdbId: row.itemTmdbId ?? undefined,
     name: row.name,
     type: row.type as 'tmdb-import',
     schedule: {
-      type: row.schedule_type as 'weekly' | 'daily',
-      dayOfWeek: row.day_of_week ?? undefined,
-      secondDayOfWeek: row.second_day_of_week ?? undefined,
+      type: row.scheduleType as 'weekly' | 'daily',
+      dayOfWeek: row.dayOfWeek ?? undefined,
+      secondDayOfWeek: row.secondDayOfWeek ?? undefined,
       hour: row.hour,
       minute: row.minute,
     },
-    action: JSON.parse(row.action_config),
+    action: JSON.parse(row.actionConfig),
     enabled: row.enabled === 1,
-    lastRun: row.last_run ?? undefined,
-    nextRun: row.next_run ?? undefined,
-    lastRunStatus: row.last_run_status as 'success' | 'failed' | 'user_interrupted' | undefined,
-    lastRunError: row.last_run_error,
-    currentStep: row.current_step ?? undefined,
-    executionProgress: row.execution_progress ?? undefined,
-    isRunning: row.is_running === 1,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    lastRun: row.lastRun ?? undefined,
+    nextRun: row.nextRun ?? undefined,
+    lastRunStatus: row.lastRunStatus as 'success' | 'failed' | 'user_interrupted' | undefined,
+    lastRunError: row.lastRunError,
+    currentStep: row.currentStep ?? undefined,
+    executionProgress: row.executionProgress ?? undefined,
+    isRunning: row.isRunning === 1,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 }

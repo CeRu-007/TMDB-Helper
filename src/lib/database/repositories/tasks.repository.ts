@@ -1,32 +1,28 @@
 /**
  * 定时任务 Repository
+ * 使用 camelCase 字段名，与数据库 Schema 保持一致
  */
 
 import { getDatabase } from '../connection';
 import { BaseRepository } from './base.repository';
-import type {
-  ScheduledTaskRow,
-  ExecutionLogRow,
-  DatabaseResult,
-  scheduledTaskToRow,
-  rowToScheduledTask,
-} from '../types';
+import type { ScheduledTaskRow, ExecutionLogRow, DatabaseResult } from '../types';
+import { rowToScheduledTask } from '../types';
 import type { ScheduledTask, ExecutionLog } from '@/lib/data/storage/types';
 import { logger } from '@/lib/utils/logger';
 
 export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTaskRow> {
-  protected tableName = 'scheduled_tasks';
+  protected tableName = 'scheduledTasks';
 
   /**
-   * 获取所有任务
+   * 获取所有任务，排除软删除
    */
   findAllTasks(): ScheduledTask[] {
     const db = getDatabase();
     const tasks = db
-      .prepare('SELECT * FROM scheduled_tasks ORDER BY created_at DESC')
+      .prepare('SELECT * FROM scheduledTasks WHERE deletedAt IS NULL ORDER BY createdAt DESC')
       .all() as ScheduledTaskRow[];
 
-    return tasks.map((row) => this.rowToTask(row));
+    return tasks.map((row) => rowToScheduledTask(row));
   }
 
   /**
@@ -34,42 +30,12 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
    */
   findTaskById(id: string): ScheduledTask | undefined {
     const db = getDatabase();
-    const row = db.prepare('SELECT * FROM scheduled_tasks WHERE id = ?').get(id) as ScheduledTaskRow | undefined;
+    const row = db
+      .prepare('SELECT * FROM scheduledTasks WHERE id = ? AND deletedAt IS NULL')
+      .get(id) as ScheduledTaskRow | undefined;
 
     if (!row) return undefined;
-    return this.rowToTask(row);
-  }
-
-  /**
-   * 将数据库行转换为 ScheduledTask
-   */
-  private rowToTask(row: ScheduledTaskRow): ScheduledTask {
-    return {
-      id: row.id,
-      itemId: row.item_id,
-      itemTitle: row.item_title,
-      itemTmdbId: row.item_tmdb_id ?? undefined,
-      name: row.name,
-      type: row.type as 'tmdb-import',
-      schedule: {
-        type: row.schedule_type as 'weekly' | 'daily',
-        dayOfWeek: row.day_of_week ?? undefined,
-        secondDayOfWeek: row.second_day_of_week ?? undefined,
-        hour: row.hour,
-        minute: row.minute,
-      },
-      action: JSON.parse(row.action_config),
-      enabled: row.enabled === 1,
-      lastRun: row.last_run ?? undefined,
-      nextRun: row.next_run ?? undefined,
-      lastRunStatus: row.last_run_status as 'success' | 'failed' | 'user_interrupted' | undefined,
-      lastRunError: row.last_run_error,
-      currentStep: row.current_step ?? undefined,
-      executionProgress: row.execution_progress ?? undefined,
-      isRunning: row.is_running === 1,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
+    return rowToScheduledTask(row);
   }
 
   /**
@@ -79,43 +45,45 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
     const db = getDatabase();
 
     try {
+      const now = new Date().toISOString();
       const sql = `
-        INSERT INTO scheduled_tasks (
-          id, item_id, item_title, item_tmdb_id, name, type,
-          schedule_type, day_of_week, second_day_of_week, hour, minute,
-          action_config, enabled, last_run, next_run, last_run_status, last_run_error,
-          current_step, execution_progress, is_running, created_at, updated_at
+        INSERT INTO scheduledTasks (
+          id, itemId, itemTitle, itemTmdbId, name, type,
+          scheduleType, dayOfWeek, secondDayOfWeek, hour, minute,
+          actionConfig, enabled, lastRun, nextRun, lastRunStatus, lastRunError,
+          currentStep, executionProgress, isRunning, createdAt, updatedAt, deletedAt
         ) VALUES (
-          @id, @item_id, @item_title, @item_tmdb_id, @name, @type,
-          @schedule_type, @day_of_week, @second_day_of_week, @hour, @minute,
-          @action_config, @enabled, @last_run, @next_run, @last_run_status, @last_run_error,
-          @current_step, @execution_progress, @is_running, @created_at, @updated_at
+          @id, @itemId, @itemTitle, @itemTmdbId, @name, @type,
+          @scheduleType, @dayOfWeek, @secondDayOfWeek, @hour, @minute,
+          @actionConfig, @enabled, @lastRun, @nextRun, @lastRunStatus, @lastRunError,
+          @currentStep, @executionProgress, @isRunning, @createdAt, @updatedAt, @deletedAt
         )
       `;
 
       db.prepare(sql).run({
         id: task.id,
-        item_id: task.itemId,
-        item_title: task.itemTitle,
-        item_tmdb_id: task.itemTmdbId ?? null,
+        itemId: task.itemId,
+        itemTitle: task.itemTitle,
+        itemTmdbId: task.itemTmdbId ?? null,
         name: task.name,
         type: task.type,
-        schedule_type: task.schedule.type,
-        day_of_week: task.schedule.dayOfWeek ?? null,
-        second_day_of_week: task.schedule.secondDayOfWeek ?? null,
+        scheduleType: task.schedule.type,
+        dayOfWeek: task.schedule.dayOfWeek ?? null,
+        secondDayOfWeek: task.schedule.secondDayOfWeek ?? null,
         hour: task.schedule.hour,
         minute: task.schedule.minute,
-        action_config: JSON.stringify(task.action),
+        actionConfig: JSON.stringify(task.action),
         enabled: task.enabled ? 1 : 0,
-        last_run: task.lastRun ?? null,
-        next_run: task.nextRun ?? null,
-        last_run_status: task.lastRunStatus ?? null,
-        last_run_error: task.lastRunError ?? null,
-        current_step: task.currentStep ?? null,
-        execution_progress: task.executionProgress ?? null,
-        is_running: task.isRunning ? 1 : 0,
-        created_at: task.createdAt,
-        updated_at: task.updatedAt,
+        lastRun: task.lastRun ?? null,
+        nextRun: task.nextRun ?? null,
+        lastRunStatus: task.lastRunStatus ?? null,
+        lastRunError: task.lastRunError ?? null,
+        currentStep: task.currentStep ?? null,
+        executionProgress: task.executionProgress ?? null,
+        isRunning: task.isRunning ? 1 : 0,
+        createdAt: task.createdAt || now,
+        updatedAt: task.updatedAt || now,
+        deletedAt: null,
       });
 
       return { success: true, data: task };
@@ -136,52 +104,52 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
 
     try {
       const sql = `
-        UPDATE scheduled_tasks SET
-          item_id = @item_id,
-          item_title = @item_title,
-          item_tmdb_id = @item_tmdb_id,
+        UPDATE scheduledTasks SET
+          itemId = @itemId,
+          itemTitle = @itemTitle,
+          itemTmdbId = @itemTmdbId,
           name = @name,
           type = @type,
-          schedule_type = @schedule_type,
-          day_of_week = @day_of_week,
-          second_day_of_week = @second_day_of_week,
+          scheduleType = @scheduleType,
+          dayOfWeek = @dayOfWeek,
+          secondDayOfWeek = @secondDayOfWeek,
           hour = @hour,
           minute = @minute,
-          action_config = @action_config,
+          actionConfig = @actionConfig,
           enabled = @enabled,
-          last_run = @last_run,
-          next_run = @next_run,
-          last_run_status = @last_run_status,
-          last_run_error = @last_run_error,
-          current_step = @current_step,
-          execution_progress = @execution_progress,
-          is_running = @is_running,
-          updated_at = @updated_at
-        WHERE id = @id
+          lastRun = @lastRun,
+          nextRun = @nextRun,
+          lastRunStatus = @lastRunStatus,
+          lastRunError = @lastRunError,
+          currentStep = @currentStep,
+          executionProgress = @executionProgress,
+          isRunning = @isRunning,
+          updatedAt = @updatedAt
+        WHERE id = @id AND deletedAt IS NULL
       `;
 
       db.prepare(sql).run({
         id: task.id,
-        item_id: task.itemId,
-        item_title: task.itemTitle,
-        item_tmdb_id: task.itemTmdbId ?? null,
+        itemId: task.itemId,
+        itemTitle: task.itemTitle,
+        itemTmdbId: task.itemTmdbId ?? null,
         name: task.name,
         type: task.type,
-        schedule_type: task.schedule.type,
-        day_of_week: task.schedule.dayOfWeek ?? null,
-        second_day_of_week: task.schedule.secondDayOfWeek ?? null,
+        scheduleType: task.schedule.type,
+        dayOfWeek: task.schedule.dayOfWeek ?? null,
+        secondDayOfWeek: task.schedule.secondDayOfWeek ?? null,
         hour: task.schedule.hour,
         minute: task.schedule.minute,
-        action_config: JSON.stringify(task.action),
+        actionConfig: JSON.stringify(task.action),
         enabled: task.enabled ? 1 : 0,
-        last_run: task.lastRun ?? null,
-        next_run: task.nextRun ?? null,
-        last_run_status: task.lastRunStatus ?? null,
-        last_run_error: task.lastRunError ?? null,
-        current_step: task.currentStep ?? null,
-        execution_progress: task.executionProgress ?? null,
-        is_running: task.isRunning ? 1 : 0,
-        updated_at: task.updatedAt,
+        lastRun: task.lastRun ?? null,
+        nextRun: task.nextRun ?? null,
+        lastRunStatus: task.lastRunStatus ?? null,
+        lastRunError: task.lastRunError ?? null,
+        currentStep: task.currentStep ?? null,
+        executionProgress: task.executionProgress ?? null,
+        isRunning: task.isRunning ? 1 : 0,
+        updatedAt: new Date().toISOString(),
       });
 
       return { success: true, data: task };
@@ -190,6 +158,51 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
       return {
         success: false,
         error: error instanceof Error ? error.message : '更新失败',
+      };
+    }
+  }
+
+  /**
+   * 软删除任务
+   */
+  softDelete(id: string): DatabaseResult {
+    const db = getDatabase();
+    try {
+      const now = new Date().toISOString();
+      const result = db
+        .prepare('UPDATE scheduledTasks SET deletedAt = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL')
+        .run(now, now, id);
+
+      return {
+        success: result.changes > 0,
+        error: result.changes === 0 ? '任务不存在或已删除' : undefined,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '删除失败',
+      };
+    }
+  }
+
+  /**
+   * 恢复软删除的任务
+   */
+  restore(id: string): DatabaseResult {
+    const db = getDatabase();
+    try {
+      const result = db
+        .prepare('UPDATE scheduledTasks SET deletedAt = NULL, updatedAt = ? WHERE id = ?')
+        .run(new Date().toISOString(), id);
+
+      return {
+        success: result.changes > 0,
+        error: result.changes === 0 ? '任务不存在' : undefined,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '恢复失败',
       };
     }
   }
@@ -211,10 +224,10 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
   findByItemId(itemId: string): ScheduledTask[] {
     const db = getDatabase();
     const tasks = db
-      .prepare('SELECT * FROM scheduled_tasks WHERE item_id = ?')
+      .prepare('SELECT * FROM scheduledTasks WHERE itemId = ? AND deletedAt IS NULL')
       .all(itemId) as ScheduledTaskRow[];
 
-    return tasks.map((row) => this.rowToTask(row));
+    return tasks.map((row) => rowToScheduledTask(row));
   }
 
   /**
@@ -223,10 +236,10 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
   findEnabledTasks(): ScheduledTask[] {
     const db = getDatabase();
     const tasks = db
-      .prepare('SELECT * FROM scheduled_tasks WHERE enabled = 1')
+      .prepare('SELECT * FROM scheduledTasks WHERE enabled = 1 AND deletedAt IS NULL')
       .all() as ScheduledTaskRow[];
 
-    return tasks.map((row) => this.rowToTask(row));
+    return tasks.map((row) => rowToScheduledTask(row));
   }
 
   /**
@@ -251,38 +264,38 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
       const values: Record<string, unknown> = { id };
 
       if (status.lastRun !== undefined) {
-        updates.push('last_run = @last_run');
-        values.last_run = status.lastRun;
+        updates.push('lastRun = @lastRun');
+        values.lastRun = status.lastRun;
       }
       if (status.nextRun !== undefined) {
-        updates.push('next_run = @next_run');
-        values.next_run = status.nextRun;
+        updates.push('nextRun = @nextRun');
+        values.nextRun = status.nextRun;
       }
       if (status.lastRunStatus !== undefined) {
-        updates.push('last_run_status = @last_run_status');
-        values.last_run_status = status.lastRunStatus;
+        updates.push('lastRunStatus = @lastRunStatus');
+        values.lastRunStatus = status.lastRunStatus;
       }
       if (status.lastRunError !== undefined) {
-        updates.push('last_run_error = @last_run_error');
-        values.last_run_error = status.lastRunError;
+        updates.push('lastRunError = @lastRunError');
+        values.lastRunError = status.lastRunError;
       }
       if (status.currentStep !== undefined) {
-        updates.push('current_step = @current_step');
-        values.current_step = status.currentStep;
+        updates.push('currentStep = @currentStep');
+        values.currentStep = status.currentStep;
       }
       if (status.executionProgress !== undefined) {
-        updates.push('execution_progress = @execution_progress');
-        values.execution_progress = status.executionProgress;
+        updates.push('executionProgress = @executionProgress');
+        values.executionProgress = status.executionProgress;
       }
       if (status.isRunning !== undefined) {
-        updates.push('is_running = @is_running');
-        values.is_running = status.isRunning ? 1 : 0;
+        updates.push('isRunning = @isRunning');
+        values.isRunning = status.isRunning ? 1 : 0;
       }
 
-      updates.push('updated_at = @updated_at');
-      values.updated_at = new Date().toISOString();
+      updates.push('updatedAt = @updatedAt');
+      values.updatedAt = new Date().toISOString();
 
-      const sql = `UPDATE scheduled_tasks SET ${updates.join(', ')} WHERE id = @id`;
+      const sql = `UPDATE scheduledTasks SET ${updates.join(', ')} WHERE id = @id`;
       db.prepare(sql).run(values);
 
       return { success: true };
@@ -302,11 +315,11 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
 
     try {
       db.prepare(`
-        INSERT INTO execution_logs (id, task_id, timestamp, step, message, level, details)
-        VALUES (@id, @task_id, @timestamp, @step, @message, @level, @details)
+        INSERT INTO executionLogs (id, taskId, timestamp, step, message, level, details)
+        VALUES (@id, @taskId, @timestamp, @step, @message, @level, @details)
       `).run({
         id: log.id,
-        task_id: taskId,
+        taskId: taskId,
         timestamp: log.timestamp,
         step: log.step ?? null,
         message: log.message ?? null,
@@ -331,7 +344,7 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
     const db = getDatabase();
     const rows = db
       .prepare(
-        'SELECT * FROM execution_logs WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?',
+        'SELECT * FROM executionLogs WHERE taskId = ? ORDER BY timestamp DESC LIMIT ?',
       )
       .all(taskId, limit) as ExecutionLogRow[];
 
@@ -352,7 +365,7 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
     const db = getDatabase();
 
     try {
-      const result = db.prepare('DELETE FROM execution_logs WHERE task_id = ?').run(taskId);
+      const result = db.prepare('DELETE FROM executionLogs WHERE taskId = ?').run(taskId);
       return { success: true, data: result.changes };
     } catch (error) {
       return {
@@ -366,29 +379,28 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
    * 批量导入任务
    */
   importTasks(tasks: ScheduledTask[]): DatabaseResult<{ imported: number; skipped: number }> {
-    const db = getDatabase();
     let imported = 0;
     let skipped = 0;
 
-    const importTransaction = db.transaction(() => {
-      for (const task of tasks) {
-        try {
-          const existing = this.findTaskById(task.id);
-          if (existing) {
-            skipped++;
-            continue;
-          }
+    for (const task of tasks) {
+      try {
+        const existing = this.findTaskById(task.id);
+        if (existing) {
+          skipped++;
+          continue;
+        }
 
-          this.createTask(task);
+        const result = this.createTask(task);
+        if (result.success) {
           imported++;
-        } catch (error) {
-          logger.error(`[TasksRepository] 导入任务失败: ${task.name}`, error);
+        } else {
           skipped++;
         }
+      } catch (error) {
+        logger.error(`[TasksRepository] 导入任务失败: ${task.name}`, error);
+        skipped++;
       }
-    });
-
-    importTransaction();
+    }
 
     logger.info(`[TasksRepository] 导入完成: ${imported} 个任务，跳过 ${skipped} 个`);
 
@@ -396,10 +408,23 @@ export class TasksRepository extends BaseRepository<ScheduledTask, ScheduledTask
   }
 
   /**
-   * 删除项目关联的任务
+   * 删除项目关联的任务（软删除）
    */
   deleteByItemId(itemId: string): DatabaseResult<number> {
-    return this.deleteBy({ item_id: itemId });
+    const db = getDatabase();
+    try {
+      const now = new Date().toISOString();
+      const result = db
+        .prepare('UPDATE scheduledTasks SET deletedAt = ?, updatedAt = ? WHERE itemId = ? AND deletedAt IS NULL')
+        .run(now, now, itemId);
+
+      return { success: true, data: result.changes };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '删除失败',
+      };
+    }
   }
 }
 

@@ -6,7 +6,7 @@
 export { getDatabase, closeDatabase, isDatabaseInitialized, getDatabasePath, transaction, batchInsert, checkDatabaseHealth } from './connection';
 
 // Schema
-export { initializeSchema, getDatabaseStats, clearAllData } from './schema';
+export { initializeSchema, getDatabaseStats, clearAllData, SCHEMA_VERSION } from './schema';
 
 // 类型
 export type {
@@ -33,6 +33,11 @@ export { TasksRepository, tasksRepository } from './repositories/tasks.repositor
 export { ChatRepository, chatRepository } from './repositories/chat.repository';
 export { AuthRepository, authRepository, type AdminUser } from './repositories/auth.repository';
 export { ConfigRepository, configRepository } from './repositories/config.repository';
+
+// Services (推荐使用)
+export { cacheManager, CacheKeys, CacheManager } from './services/cache.service';
+export { itemsService, ItemsService } from './services/items.service';
+export { tasksService, TasksService } from './services/tasks.service';
 
 // 初始化数据库（应用启动时调用）
 export function initializeDatabase(): void {

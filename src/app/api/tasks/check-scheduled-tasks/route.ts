@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { StorageManager, ScheduledTask } from '@/lib/data/storage';
-// import { readItems } from '@/lib/server-storage'; // 替换为StorageManager
-import { readScheduledTasks } from '@/lib/data/server-scheduled-tasks';
+import { ServerStorageManager } from '@/lib/data/server-storage-manager';
+import type { ScheduledTask } from '@/lib/data/storage/types';
 import { logger } from '@/lib/utils/logger';
 
 /**
@@ -11,26 +10,14 @@ import { logger } from '@/lib/utils/logger';
 export async function GET(request: NextRequest): Promise<NextResponse> {
   
   try {
-    // 从服务器端存储读取项目数据
-    let items;
-    try {
-      items = await StorageManager.getItemsWithRetry();
-      
-    } catch (serverError) {
-      
-      items = [];
-    }
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
+    // 从数据库读取项目数据
+    const items = ServerStorageManager.getItems();
 
-    // 获取所有定时任务，优先从服务端文件读取
-    let tasks: ScheduledTask[] = [];
-    try {
-      tasks = readScheduledTasks();
-      
-    } catch (serverError) {
-      
-      tasks = await StorageManager.getScheduledTasks();
-      
-    }
+    // 从数据库获取所有定时任务
+    const tasks: ScheduledTask[] = ServerStorageManager.getTasks();
 
     const now = new Date();
     const enabledTasks = tasks.filter(task => task.enabled);
@@ -103,21 +90,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   
   try {
+    // 确保数据库已初始化
+    await ServerStorageManager.init();
+    
     const { taskId } = await request.json();
     
     if (!taskId) {
       return NextResponse.json({ error: '缺少任务ID' }, { status: 400 });
     }
 
-    // 获取任务详情，优先从服务端文件读取
-    let tasks: ScheduledTask[] = [];
-    try {
-      tasks = readScheduledTasks();
-    } catch (serverError) {
-      
-      tasks = await StorageManager.getScheduledTasks();
-    }
-
+    // 从数据库获取任务详情
+    const tasks: ScheduledTask[] = ServerStorageManager.getTasks();
     const task = tasks.find(t => t.id === taskId);
     
     if (!task) {
@@ -145,14 +128,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: '任务错过时间过长，无法补偿执行' }, { status: 400 });
     }
 
-    // 从服务器端存储读取项目数据
-    let items;
-    try {
-      items = await StorageManager.getItemsWithRetry();
-    } catch (serverError) {
-      
-      items = [];
-    }
+    // 从数据库读取项目数据
+    const items = ServerStorageManager.getItems();
 
     // 检查关联的项目是否存在
     const relatedItem = items.find(item => item.id === task.itemId);
