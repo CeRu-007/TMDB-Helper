@@ -28,13 +28,6 @@ declare module 'node:sqlite' {
     prepare(sql: string): StatementSync;
 
     /**
-     * 创建事务函数
-     * @param fn 要在事务中执行的函数
-     * @returns 事务函数
-     */
-    transaction<T>(fn: () => T): () => T;
-
-    /**
      * 关闭数据库连接
      */
     close(): void;

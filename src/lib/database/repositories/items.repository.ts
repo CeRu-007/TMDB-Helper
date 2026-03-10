@@ -3,7 +3,7 @@
  * 使用 camelCase 字段名，与数据库 Schema 保持一致
  */
 
-import { getDatabase } from '../connection';
+import { getDatabase, transaction } from '../connection';
 import { BaseRepository } from './base.repository';
 import type { ItemRow, SeasonRow, EpisodeRow, DatabaseResult } from '../types';
 import { rowToTMDBItem, tmdbItemToRow } from '../types';
@@ -106,7 +106,7 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
         VALUES (@id, @itemId, @seasonId, @seasonNumber, @number, @completed, @createdAt, @updatedAt)
       `);
 
-      const insertTransaction = db.transaction(() => {
+      transaction(() => {
         // 插入项目
         insertItem.run(row);
 
@@ -159,8 +159,6 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
           }
         }
       });
-
-      insertTransaction();
 
       return { success: true, data: item };
     } catch (error) {
@@ -222,7 +220,7 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
         WHERE id = @id AND deletedAt IS NULL
       `);
 
-      const updateTransaction = db.transaction(() => {
+      transaction(() => {
         // 更新项目
         updateItem.run(row);
 
@@ -293,8 +291,6 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
           }
         }
       });
-
-      updateTransaction();
 
       return { success: true, data: item };
     } catch (error) {

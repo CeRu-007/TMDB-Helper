@@ -16,7 +16,7 @@
   "homepage": "./",
   "private": true,
   "scripts": {
-    "dev": "node --experimental-sqlite node_modules/next/dist/bin/next dev",
+    "dev": "node --experimental-sqlite node_modules/next/dist/bin/next dev --turbo",
     "build": "next build",
     "start": "cross-env NODE_ENV=production node --experimental-sqlite node_modules/next/dist/bin/next start",
     "lint": "next lint",

@@ -8,13 +8,25 @@ const nextConfig = {
   
   // 开发环境快速启动优化
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    // 优化大型包的导入，减少编译时间
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-icons',
+      '@tanstack/react-table',
+      '@tanstack/react-virtual',
+      'date-fns',
+      'lodash-es',
+    ],
+    // 启用 turbo 模式（开发环境更快）
+    turbo: {
+      resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
+    },
   },
   
   // 启用 App Router 优化
   serverExternalPackages: ['sharp', 'canvas'],
   
-// TypeScript 配置：生产环境严格检查，开发环境宽松以避免编译阻塞
+  // TypeScript 配置：生产环境严格检查，开发环境宽松以避免编译阻塞
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -30,34 +42,22 @@ const nextConfig = {
     ],
   },
   
-  // 添加 webpack 配置来处理 ChunkLoadError
-  webpack: (config, { isServer }) => {
-    // 优化代码块分割
-    config.optimization = {
-      ...config.optimization,
-      splitChunks: {
-        chunks: 'all',
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-          },
-          common: {
-            name: 'common',
-            minChunks: 2,
-            chunks: 'all',
-            enforce: true,
-          },
-        },
-      },
-    }
-    
-    // 解决开发环境中的热重载问题
+  // Webpack 配置：处理客户端/服务端模块差异
+  webpack: (config, { isServer, dev }) => {
+    // 客户端禁用 Node.js 内置模块
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
+      }
+    }
+    
+    // 开发环境优化：减少不必要的编译
+    if (dev) {
+      config.optimization = {
+        ...config.optimization,
+        // 开发环境禁用最小化，加快构建速度
+        minimize: false,
       }
     }
     

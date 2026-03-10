@@ -77,11 +77,19 @@ export function isDatabaseInitialized(): boolean {
 
 /**
  * 执行事务
+ * node:sqlite 使用手动的 BEGIN/COMMIT/ROLLBACK
  */
 export function transaction<T>(fn: () => T): T {
   const database = getDatabase();
-  const tx = database.transaction(fn);
-  return tx();
+  database.exec('BEGIN');
+  try {
+    const result = fn();
+    database.exec('COMMIT');
+    return result;
+  } catch (error) {
+    database.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 /**
@@ -92,7 +100,8 @@ export function batchInsert<T>(
   insertFn: (item: T) => void,
 ): number {
   const database = getDatabase();
-  const insert = database.transaction(() => {
+  database.exec('BEGIN');
+  try {
     let count = 0;
     for (const item of items) {
       try {
@@ -102,9 +111,12 @@ export function batchInsert<T>(
         logger.error('[Database] 批量插入失败:', error);
       }
     }
+    database.exec('COMMIT');
     return count;
-  });
-  return insert() as number;
+  } catch (error) {
+    database.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 /**
