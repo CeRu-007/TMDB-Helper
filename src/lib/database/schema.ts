@@ -53,7 +53,7 @@ function hasOldTables(db: ReturnType<typeof getDatabase>): boolean {
     if (!result) return false;
 
     // 检查列名是否为 snake_case
-    const columns = db.pragma('table_info(items)') as { name: string }[];
+    const columns = db.prepare('PRAGMA table_info(items)').all() as { name: string }[];
     return columns.some(col => col.name === 'tmdb_id');
   } catch {
     return false;
@@ -290,7 +290,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
   logger.info('[Database] 执行 V1 -> V2 迁移...');
 
   // items 表
-  const itemsInfo = db.pragma('table_info(items)') as { name: string }[];
+  const itemsInfo = db.prepare('PRAGMA table_info(items)').all() as { name: string }[];
   if (itemsInfo.some(col => col.name === 'tmdb_id')) {
     logger.info('[Database] 迁移 items 表...');
     db.exec(`
@@ -361,7 +361,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
   }
 
   // seasons 表
-  const seasonsInfo = db.pragma('table_info(seasons)') as { name: string }[];
+  const seasonsInfo = db.prepare('PRAGMA table_info(seasons)').all() as { name: string }[];
   if (seasonsInfo.some(col => col.name === 'item_id')) {
     logger.info('[Database] 迁移 seasons 表...');
     db.exec(`
@@ -388,7 +388,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
   }
 
   // episodes 表
-  const episodesInfo = db.pragma('table_info(episodes)') as { name: string }[];
+  const episodesInfo = db.prepare('PRAGMA table_info(episodes)').all() as { name: string }[];
   if (episodesInfo.some(col => col.name === 'item_id')) {
     logger.info('[Database] 迁移 episodes 表...');
     db.exec(`
@@ -416,7 +416,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
   }
 
   // scheduled_tasks 表
-  const tasksInfo = db.pragma('table_info(scheduled_tasks)') as { name: string }[];
+  const tasksInfo = db.prepare('PRAGMA table_info(scheduled_tasks)').all() as { name: string }[];
   if (tasksInfo.some(col => col.name === 'item_id')) {
     logger.info('[Database] 迁移 scheduledTasks 表...');
     db.exec(`
@@ -467,7 +467,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
   }
 
   // execution_logs 表
-  const logsInfo = db.pragma('table_info(execution_logs)') as { name: string }[];
+  const logsInfo = db.prepare('PRAGMA table_info(execution_logs)').all() as { name: string }[];
   if (logsInfo.some(col => col.name === 'task_id')) {
     logger.info('[Database] 迁移 executionLogs 表...');
     db.exec(`
@@ -493,7 +493,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
   }
 
   // chat_histories 表
-  const chatInfo = db.pragma('table_info(chat_histories)') as { name: string }[];
+  const chatInfo = db.prepare('PRAGMA table_info(chat_histories)').all() as { name: string }[];
   if (chatInfo.some(col => col.name === 'created_at')) {
     logger.info('[Database] 迁移 chatHistories 表...');
     db.exec(`
@@ -516,7 +516,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
   }
 
   // messages 表
-  const messagesInfo = db.pragma('table_info(messages)') as { name: string }[];
+  const messagesInfo = db.prepare('PRAGMA table_info(messages)').all() as { name: string }[];
   if (messagesInfo.some(col => col.name === 'chat_id')) {
     logger.info('[Database] 迁移 messages 表...');
     db.exec(`
@@ -555,7 +555,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
   }
 
   // admin_users 表
-  const adminInfo = db.pragma('table_info(admin_users)') as { name: string }[];
+  const adminInfo = db.prepare('PRAGMA table_info(admin_users)').all() as { name: string }[];
   if (adminInfo.some(col => col.name === 'password_hash')) {
     logger.info('[Database] 迁移 adminUsers 表...');
     db.exec(`
@@ -581,7 +581,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
   }
 
   // config 表
-  const configInfo = db.pragma('table_info(config)') as { name: string }[];
+  const configInfo = db.prepare('PRAGMA table_info(config)').all() as { name: string }[];
   if (configInfo.some(col => col.name === 'updated_at')) {
     logger.info('[Database] 迁移 config 表...');
     db.exec(`
@@ -613,7 +613,7 @@ function migrateV1ToV2(db: ReturnType<typeof getDatabase>): void {
  */
 function getUserVersion(): number {
   const db = getDatabase();
-  const result = db.pragma('user_version')[0] as { user_version: number };
+  const result = db.prepare('PRAGMA user_version').get() as { user_version: number };
   return result.user_version;
 }
 
@@ -622,7 +622,7 @@ function getUserVersion(): number {
  */
 function setUserVersion(version: number): void {
   const db = getDatabase();
-  db.pragma(`user_version = ${version}`);
+  db.exec(`PRAGMA user_version = ${version}`);
 }
 
 /**

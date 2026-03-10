@@ -1,14 +1,19 @@
 /**
  * 数据库连接管理
  * 单例模式，确保整个应用只有一个数据库连接
+ * 使用 Node.js 内置的 SQLite 模块 (node:sqlite)
  */
 
-import Database from 'better-sqlite3';
+import { DatabaseSync, StatementSync } from 'node:sqlite';
 import path from 'path';
 import fs from 'fs';
 import { logger } from '@/lib/utils/logger';
 
-let db: Database.Database | null = null;
+// 类型定义
+export type SQLiteDatabase = DatabaseSync;
+export type SQLiteStatement = StatementSync;
+
+let db: DatabaseSync | null = null;
 
 /**
  * 获取数据库文件路径
@@ -21,7 +26,7 @@ export function getDatabasePath(): string {
 /**
  * 初始化数据库连接
  */
-export function getDatabase(): Database.Database {
+export function getDatabase(): DatabaseSync {
   if (db) {
     return db;
   }
@@ -35,11 +40,11 @@ export function getDatabase(): Database.Database {
   }
 
   // 创建数据库连接
-  db = new Database(dbPath);
+  db = new DatabaseSync(dbPath);
 
   // 启用外键约束
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA foreign_keys = ON');
 
   logger.info(`[Database] 数据库连接已建立: ${dbPath}`);
 
@@ -66,7 +71,7 @@ export function isDatabaseInitialized(): boolean {
     .prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='items'",
     )
-    .get();
+    .get() as { name: string } | undefined;
   return !!result;
 }
 
@@ -75,7 +80,8 @@ export function isDatabaseInitialized(): boolean {
  */
 export function transaction<T>(fn: () => T): T {
   const database = getDatabase();
-  return database.transaction(fn)();
+  const tx = database.transaction(fn);
+  return tx();
 }
 
 /**
@@ -98,7 +104,7 @@ export function batchInsert<T>(
     }
     return count;
   });
-  return insert();
+  return insert() as number;
 }
 
 /**
