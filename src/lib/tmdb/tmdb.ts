@@ -102,10 +102,6 @@ export class TMDBService {
   
   private static readonly LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300"  // 添加标志基础URL
   private static readonly NETWORK_LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300" // 网络Logo基础URL
-  // LocalStorage 缓存已迁移到数据库，以下常量保留供兼容性使用
-  private static readonly CACHE_PREFIX = "tmdb_backdrop_"
-  private static readonly LOGO_CACHE_PREFIX = "tmdb_logo_"
-  private static readonly NETWORK_LOGO_CACHE_PREFIX = "tmdb_network_logo_"
 
   private static async getApiKey(): Promise<string> {
     const apiKey = process.env.TMDB_API_KEY;
