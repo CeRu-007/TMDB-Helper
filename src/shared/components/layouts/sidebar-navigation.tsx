@@ -2,19 +2,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react"
 import {
-  ChevronDown,
-  ChevronRight,
   Film,
   Calendar,
   Image,
-  Activity,
   LayoutGrid,
   Sparkles,
-  Tv,
-  Baby,
-  Popcorn,
-  Ticket,
-  Clapperboard,
   Clock,
   Play,
   Download,
@@ -24,11 +16,12 @@ import {
   Search,
   BookOpen,
   Type,
-  CalendarDays
+  CalendarDays,
+  Clapperboard,
+  Settings
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/shared/components/ui/button"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible"
 
 export interface SidebarNavigationProps {
   onMenuSelect: (menuId: string, submenuId?: string) => void
@@ -41,63 +34,66 @@ interface MenuItem {
   id: string
   label: string
   icon: React.ReactNode
-  submenu?: {
-    id: string
-    label: string
-    icon?: React.ReactNode
-  }[]
+  groupId: string
 }
 
-const menuItems: MenuItem[] = [
+interface MenuGroup {
+  id: string
+  title: string
+  icon: React.ReactNode
+  items: MenuItem[]
+}
+
+// 新的分组菜单结构
+const menuGroups: MenuGroup[] = [
   {
     id: "maintenance",
-    label: "词条维护",
+    title: "词条维护",
     icon: <LayoutGrid className="h-4 w-4" />,
-    submenu: [
-      { id: "list", label: "维护列表", icon: <LayoutGrid className="h-3 w-3" /> },
-      { id: "independent", label: "独立维护", icon: <Wand2 className="h-3 w-3" /> },
+    items: [
+      { id: "list", label: "维护列表", icon: <LayoutGrid className="h-4 w-4" />, groupId: "maintenance" },
+      { id: "independent", label: "独立维护", icon: <Wand2 className="h-4 w-4" />, groupId: "maintenance" },
     ]
   },
   {
     id: "news",
-    label: "影视资讯",
+    title: "影视资讯",
     icon: <Calendar className="h-4 w-4" />,
-    submenu: [
-      { id: "upcoming", label: "即将上线", icon: <Clock className="h-3 w-3" /> },
-      { id: "recent", label: "近期开播", icon: <Play className="h-3 w-3" /> },
-      { id: "streaming-nav", label: "平台导航", icon: <Film className="h-3 w-3" /> },
-      { id: "schedule", label: "时间表", icon: <CalendarDays className="h-3 w-3" /> }
+    items: [
+      { id: "upcoming", label: "即将上线", icon: <Clock className="h-4 w-4" />, groupId: "news" },
+      { id: "recent", label: "近期开播", icon: <Play className="h-4 w-4" />, groupId: "news" },
+      { id: "streaming-nav", label: "平台导航", icon: <Film className="h-4 w-4" />, groupId: "news" },
+      { id: "schedule", label: "时间表", icon: <CalendarDays className="h-4 w-4" />, groupId: "news" },
     ]
   },
   {
-    id: "tmdb-guide",
-    label: "编辑指南",
-    icon: <BookOpen className="h-4 w-4" />
-  },
-  {
-    id: "image-recognition",
-    label: "影视识别",
-    icon: <Search className="h-4 w-4" />
-  },
-  {
-    id: "content-generation",
-    label: "分集简介",
+    id: "content",
+    title: "分集简介",
     icon: <FileText className="h-4 w-4" />,
-    submenu: [
-      { id: "episode-generator", label: "AI生成", icon: <Wand2 className="h-3 w-3" /> },
-      { id: "ai-chat", label: "AI对话", icon: <Sparkles className="h-3 w-3" /> },
-      { id: "hard-subtitle-extract", label: "硬字幕提取", icon: <Type className="h-3 w-3" /> }
+    items: [
+      { id: "episode-generator", label: "AI生成", icon: <Wand2 className="h-4 w-4" />, groupId: "content" },
+      { id: "ai-chat", label: "AI对话", icon: <Sparkles className="h-4 w-4" />, groupId: "content" },
+      { id: "hard-subtitle-extract", label: "硬字幕提取", icon: <Type className="h-4 w-4" />, groupId: "content" },
     ]
   },
   {
-    id: "thumbnails",
-    label: "缩略图",
+    id: "image",
+    title: "图片处理",
     icon: <Image className="h-4 w-4" />,
-    submenu: [
-      { id: "extract", label: "分集图片提取", icon: <Download className="h-3 w-3" /> },
-      { id: "crop", label: "海报背景裁切", icon: <Scissors className="h-3 w-3" /> }
+    items: [
+      { id: "extract", label: "图片提取", icon: <Download className="h-4 w-4" />, groupId: "image" },
+      { id: "crop", label: "海报裁切", icon: <Scissors className="h-4 w-4" />, groupId: "image" },
     ]
-  }
+  },
+  {
+    id: "tools",
+    title: "工具",
+    icon: <Settings className="h-4 w-4" />,
+    items: [
+      { id: "tmdb-guide", label: "编辑指南", icon: <BookOpen className="h-4 w-4" />, groupId: "tools" },
+      { id: "image-recognition", label: "影视识别", icon: <Search className="h-4 w-4" />, groupId: "tools" },
+    ]
+  },
 ]
 
 export function SidebarNavigation({
@@ -106,17 +102,9 @@ export function SidebarNavigation({
   activeSubmenu,
   collapsed = false
 }: SidebarNavigationProps) {
-  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set())
-  const [hoveredMenuItem, setHoveredMenuItem] = useState<string | null>(null)
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null)
   const [submenuHovered, setSubmenuHovered] = useState<boolean>(false)
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  // 初始化时展开包含活动项的菜单
-  useEffect(() => {
-    if (activeMenu) {
-      setExpandedMenus(prev => new Set([...prev, activeMenu]))
-    }
-  }, [activeMenu])
 
   // 清理定时器
   useEffect(() => {
@@ -135,20 +123,19 @@ export function SidebarNavigation({
     }
   }, [])
 
-  // 菜单项悬停逻辑
-  const handleMenuItemMouseEnter = useCallback((itemId: string) => {
+  // 分组悬停逻辑
+  const handleGroupMouseEnter = useCallback((groupId: string) => {
     if (collapsed) {
       clearHideTimeout()
-      setHoveredMenuItem(itemId)
+      setHoveredGroup(groupId)
     }
   }, [collapsed, clearHideTimeout])
 
-  const handleMenuItemMouseLeave = useCallback(() => {
+  const handleGroupMouseLeave = useCallback(() => {
     if (collapsed) {
-      // 延迟隐藏，给用户时间移动到子菜单
       hideTimeoutRef.current = setTimeout(() => {
         if (!submenuHovered) {
-          setHoveredMenuItem(null)
+          setHoveredGroup(null)
         }
       }, 150)
     }
@@ -162,64 +149,37 @@ export function SidebarNavigation({
 
   const handleSubmenuMouseLeave = useCallback(() => {
     setSubmenuHovered(false)
-    setHoveredMenuItem(null)
+    setHoveredGroup(null)
   }, [])
 
-  // 计算子菜单位置，紧贴侧边栏边缘
-  const getSubmenuPosition = useCallback((index: number) => {
-    const buttonHeight = 56 // 按钮高度 (h-12 + margin)
-    const submenuHeight = 250 // 估算的子菜单高度
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800
-    const headerHeight = 64 // header高度
-    const sidebarWidth = 64 // 收起状态下的侧边栏宽度
-
-    // 计算理想位置 - 与按钮垂直对齐
-    let topPosition = headerHeight + (index * buttonHeight) + 8 // 8px微调对齐
-
-    // 检查是否会超出底部边界
-    const availableSpace = viewportHeight - topPosition - 20 // 留20px缓冲
-    if (availableSpace < submenuHeight) {
-      // 如果空间不足，向上调整位置
-      topPosition = Math.max(headerHeight + 8, topPosition - (submenuHeight - availableSpace))
+  // 处理菜单点击
+  const handleMenuClick = (groupId: string, itemId: string) => {
+    onMenuSelect(groupId, itemId)
+    if (collapsed) {
+      setHoveredGroup(null)
     }
+  }
+
+  // 计算子菜单位置
+  const getSubmenuPosition = useCallback((groupIndex: number) => {
+    const buttonHeight = 56
+    const sidebarWidth = 64
+    const headerHeight = 64
+    
+    // 计算分组标题的位置
+    let topPosition = headerHeight
+    for (let i = 0; i < groupIndex; i++) {
+      topPosition += 32 // 分组标题高度
+      topPosition += menuGroups[i].items.length * 40 // 子项高度
+      topPosition += 16 // 分组间距
+    }
+    topPosition += 32 // 当前分组标题高度
 
     return {
       top: `${topPosition}px`,
-      left: `${sidebarWidth}px` // 紧贴侧边栏右边缘
+      left: `${sidebarWidth}px`
     }
   }, [])
-
-  const toggleMenu = (menuId: string) => {
-    setExpandedMenus(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(menuId)) {
-        newSet.delete(menuId)
-      } else {
-        newSet.add(menuId)
-      }
-      return newSet
-    })
-  }
-
-  const handleMenuClick = (menuId: string, submenuId?: string) => {
-    if (submenuId) {
-      onMenuSelect(menuId, submenuId)
-      // 点击子菜单项后，如果是收起状态，自动收起悬停菜单
-      if (collapsed) {
-        setHoveredMenuItem(null)
-      }
-    } else {
-      // 检查是否有子菜单
-      const menuItem = menuItems.find(item => item.id === menuId)
-      if (menuItem?.submenu && menuItem.submenu.length > 0) {
-        // 如果有子菜单，切换展开状态
-        toggleMenu(menuId)
-      } else {
-        // 如果没有子菜单，直接导航到该菜单
-        onMenuSelect(menuId)
-      }
-    }
-  }
 
   return (
     <div
@@ -228,157 +188,112 @@ export function SidebarNavigation({
         collapsed ? "w-16" : "w-64"
       )}
     >
-
       {/* 主侧边栏内容 */}
       <div className={collapsed ? "p-2" : "p-4"}>
-        <nav className="space-y-2">
-          {menuItems.map((item, index) => (
-            <div key={item.id} className="relative">
+        <nav className="space-y-4">
+          {menuGroups.map((group, groupIndex) => (
+            <div key={group.id} className="relative">
               {collapsed ? (
-                // 收起状态：只显示图标，带悬停展开子菜单
+                // 收起状态
                 <div
-                  onMouseEnter={() => handleMenuItemMouseEnter(item.id)}
-                  onMouseLeave={handleMenuItemMouseLeave}
+                  onMouseEnter={() => handleGroupMouseEnter(group.id)}
+                  onMouseLeave={handleGroupMouseLeave}
                   className="relative"
                 >
                   <Button
-                    variant={activeMenu === item.id ? "secondary" : "ghost"}
+                    variant="ghost"
                     size="icon"
-                    className={`w-12 h-12 relative transition-all duration-200 ${activeMenu === item.id
-                      ? "bg-blue-100 dark:bg-blue-900/50 border-r-2 border-r-blue-500"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
-                    onClick={() => {
-                      const menuItem = menuItems.find(m => m.id === item.id)
-                      if (menuItem?.submenu && menuItem.submenu.length > 0) {
-                        handleMenuClick(item.id, item.submenu[0].id)
-                      } else {
-                        handleMenuClick(item.id)
-                      }
-                    }}
+                    className="w-12 h-12 relative transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
-                    {item.icon}
-                    {/* 激活状态指示器 */}
-                    {activeMenu === item.id && (
-                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-l-full"></div>
-                    )}
+                    {group.icon}
                   </Button>
 
-                  {/* 悬停展开的子菜单 - 紧凑现代设计 */}
-                  {hoveredMenuItem === item.id && item.submenu && (
+                  {/* 悬停展开的子菜单 */}
+                  {hoveredGroup === group.id && (
                     <>
-                      {/* 连接指示器 - 从按钮到子菜单的视觉桥梁 */}
                       <div
-                        className="fixed w-1 h-12 bg-blue-500 z-[99] transition-all duration-300 ease-out"
+                        className="fixed w-1 bg-blue-500 z-[99]"
                         style={{
-                          top: `${64 + (index * 56) + 8}px`, // 与按钮对齐
-                          left: '63px', // 侧边栏右边缘
+                          top: `${64 + (groupIndex * 56) + 8}px`,
+                          left: '63px',
+                          height: `${group.items.length * 36}px`
                         }}
                       />
-
                       <div
-                        className="fixed w-36 bg-white dark:bg-gray-800 border-l-4 border-l-blue-500 border-r border-t border-b border-gray-200 dark:border-gray-600 shadow-2xl z-[100] transition-all duration-300 ease-out"
+                        className="fixed w-40 bg-white dark:bg-gray-800 border-l-4 border-l-blue-500 border-r border-t border-b border-gray-200 dark:border-gray-600 shadow-2xl z-[100] rounded-r-lg overflow-hidden"
                         style={{
-                          ...getSubmenuPosition(index),
+                          ...getSubmenuPosition(groupIndex),
                           transform: 'translateX(-1px)',
-                          boxShadow: '4px 0 20px -2px rgba(0, 0, 0, 0.1), 0 8px 25px -5px rgba(0, 0, 0, 0.1)'
                         }}
                         onMouseEnter={handleSubmenuMouseEnter}
                         onMouseLeave={handleSubmenuMouseLeave}
                       >
-                        <div className="py-1">
-                          {/* 移除标题，直接显示菜单项 */}
-                          <div className="space-y-0">
-                            {item.submenu.map((subitem, subIndex) => (
-                              <div
-                                key={subitem.id}
-                                className={`relative cursor-pointer transition-all duration-200 ${activeMenu === item.id && activeSubmenu === subitem.id
+                        <div className="py-2">
+                          <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {group.title}
+                          </div>
+                          {group.items.map((item) => (
+                            <div
+                              key={item.id}
+                              className={cn(
+                                "relative cursor-pointer transition-all duration-200 px-3 py-2",
+                                activeMenu === group.id && activeSubmenu === item.id
                                   ? "bg-blue-500 text-white"
                                   : "hover:bg-blue-50 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300"
-                                  }`}
-                                onClick={() => handleMenuClick(item.id, subitem.id)}
-                              >
-                                {/* 左侧蓝色指示条 */}
-                                {activeMenu === item.id && activeSubmenu === subitem.id && (
-                                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>
-                                )}
-
-                                <div className="flex items-center px-3 py-2.5">
-                                  <div className="flex items-center space-x-2 w-full">
-                                    <div className="flex-shrink-0">
-                                      {subitem.icon && React.cloneElement(subitem.icon as React.ReactElement, {
-                                        className: "h-3.5 w-3.5"
-                                      })}
-                                    </div>
-                                    <span className="text-xs font-medium truncate flex-1">
-                                      {subitem.label}
-                                    </span>
-                                  </div>
-                                </div>
+                              )}
+                              onClick={() => handleMenuClick(group.id, item.id)}
+                            >
+                              <div className="flex items-center space-x-2">
+                                {item.icon && React.cloneElement(item.icon as React.ReactElement, {
+                                  className: "h-4 w-4"
+                                })}
+                                <span className="text-sm font-medium truncate">
+                                  {item.label}
+                                </span>
                               </div>
-                            ))}
-                          </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </>
                   )}
                 </div>
               ) : (
-                // 展开状态：显示完整菜单
-                item.submenu ? (
-                  <Collapsible
-                    open={expandedMenus.has(item.id)}
-                    onOpenChange={() => toggleMenu(item.id)}
-                  >
-                    <CollapsibleTrigger asChild>
+                // 展开状态：分组标题 + 平铺子项
+                <div className="space-y-1">
+                  {/* 分组标题 */}
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center space-x-2">
+                    {group.icon}
+                    <span>{group.title}</span>
+                  </div>
+                  
+                  {/* 子项平铺 */}
+                  <div className="space-y-0.5 pl-2">
+                    {group.items.map((item) => (
                       <Button
-                        variant={activeMenu === item.id ? "secondary" : "ghost"}
-                        className="w-full justify-between"
+                        key={item.id}
+                        variant={
+                          activeMenu === group.id && activeSubmenu === item.id
+                            ? "secondary"
+                            : "ghost"
+                        }
+                        size="sm"
+                        className={cn(
+                          "w-full justify-start h-9",
+                          activeMenu === group.id && activeSubmenu === item.id
+                            ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-r-2 border-r-blue-500"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        )}
+                        onClick={() => handleMenuClick(group.id, item.id)}
                       >
                         <div className="flex items-center space-x-2">
                           {item.icon}
-                          <span>{item.label}</span>
+                          <span className="text-sm">{item.label}</span>
                         </div>
-                        {expandedMenus.has(item.id) ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
                       </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-1 mt-1">
-                      {item.submenu.map((subitem) => (
-                        <Button
-                          key={subitem.id}
-                          variant={
-                            activeMenu === item.id && activeSubmenu === subitem.id
-                              ? "default"
-                              : "ghost"
-                          }
-                          size="sm"
-                          className="w-full justify-start pl-8"
-                          onClick={() => handleMenuClick(item.id, subitem.id)}
-                        >
-                          <div className="flex items-center space-x-2">
-                            {subitem.icon}
-                            <span>{subitem.label}</span>
-                          </div>
-                        </Button>
-                      ))}
-                    </CollapsibleContent>
-                  </Collapsible>
-                ) : (
-                  <Button
-                    variant={activeMenu === item.id ? "default" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => handleMenuClick(item.id)}
-                  >
-                    <div className="flex items-center space-x-2">
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </div>
-                  </Button>
-                )
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           ))}

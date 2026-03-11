@@ -157,8 +157,8 @@ export function ContentRenderers({
     )
   }
 
-  // Content generation - episode generator
-  if (contentKey === 'content-generation-episode-generator') {
+  // Content - episode generator
+  if (contentKey === 'content-episode-generator') {
     return (
       <div className="h-full">
         <SubtitleEpisodeGenerator
@@ -168,8 +168,8 @@ export function ContentRenderers({
     )
   }
 
-  // Content generation - AI chat
-  if (contentKey === 'content-generation-ai-chat') {
+  // Content - AI chat
+  if (contentKey === 'content-ai-chat') {
     return (
       <div className="h-full">
         <AiChat />
@@ -177,8 +177,8 @@ export function ContentRenderers({
     )
   }
 
-  // Content generation - hard subtitle extract
-  if (contentKey === 'content-generation-hard-subtitle-extract') {
+  // Content - hard subtitle extract
+  if (contentKey === 'content-hard-subtitle-extract') {
     return (
       <div className="h-full">
         <HardSubtitleExtractor />
@@ -186,8 +186,8 @@ export function ContentRenderers({
     )
   }
 
-  // Image recognition
-  if (contentKey === 'image-recognition' || contentKey === 'image-recognition-recognize') {
+  // Tools - image recognition
+  if (contentKey === 'tools-image-recognition' || contentKey === 'tools-image-recognition-recognize') {
     return (
       <div className="h-full">
         <ImageRecognition />
@@ -253,13 +253,13 @@ export function ContentRenderers({
     )
   }
 
-  // Thumbnails - extract
-  if (contentKey === 'thumbnails-extract') {
+  // Image - extract
+  if (contentKey === 'image-extract') {
     return <VideoThumbnailExtractor onOpenGlobalSettings={onOpenGlobalSettings} />
   }
 
-  // Thumbnails - crop
-  if (contentKey === 'thumbnails-crop') {
+  // Image - crop
+  if (contentKey === 'image-crop') {
     return (
       <div className="h-full w-full overflow-hidden">
         <ImageCropper />
@@ -267,8 +267,8 @@ export function ContentRenderers({
     )
   }
 
-  // TMDB Guide
-  if (contentKey === 'tmdb-guide') {
+  // Tools - tmdb guide
+  if (contentKey === 'tools-tmdb-guide') {
     return <TMDBGuide activeSection="general" />
   }
 

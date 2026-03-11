@@ -198,12 +198,12 @@ export function SidebarLayout({
   const handleBackToList = () => {
     onSelectedItemChange(null)
     const previousKey = activeSubmenu ? `${activeMenu}-${activeSubmenu}` : activeMenu
-    setContentKey(previousKey || 'maintenance-all')
+    setContentKey(previousKey || 'maintenance-list')
   }
 
   // 动态控制body的overflow属性，防止缩略图页面出现额外滚动条
   useEffect(() => {
-    const isThumbnailPage = ['thumbnails-extract', 'thumbnails-crop', 'item-detail'].includes(contentKey)
+    const isThumbnailPage = ['image-extract', 'image-crop', 'item-detail'].includes(contentKey)
 
     document.body.style.overflow = isThumbnailPage ? 'hidden' : ''
 
@@ -217,9 +217,9 @@ export function SidebarLayout({
   // 监听从硬字幕提取页面跳转到AI生成页面的事件
   useEffect(() => {
     const handleNavigateToEpisodeGenerator = () => {
-      setActiveMenu('content-generation')
+      setActiveMenu('content')
       setActiveSubmenu('episode-generator')
-      setContentKey('content-generation-episode-generator')
+      setContentKey('content-episode-generator')
     }
 
     window.addEventListener('navigate-to-episode-generator', handleNavigateToEpisodeGenerator)
@@ -235,7 +235,7 @@ export function SidebarLayout({
       setContentKey('item-detail')
     } else if (contentKey === 'item-detail') {
       const previousKey = activeSubmenu ? `${activeMenu}-${activeSubmenu}` : activeMenu
-      setContentKey(previousKey || 'maintenance-all')
+      setContentKey(previousKey || 'maintenance-list')
     }
   }, [selectedItem, activeMenu, activeSubmenu, contentKey])
 

@@ -169,7 +169,7 @@ export function SidebarLayout({
 
   // 动态控制 body 的 overflow 属性
   useEffect(() => {
-    const isThumbnailPage = ['thumbnails-extract', 'thumbnails-crop', 'item-detail'].includes(contentKey)
+    const isThumbnailPage = ['image-extract', 'image-crop', 'item-detail'].includes(contentKey)
     document.body.style.overflow = isThumbnailPage ? 'hidden' : ''
     return () => {
       document.body.style.overflow = ''
@@ -181,9 +181,9 @@ export function SidebarLayout({
   // 监听从硬字幕提取页面跳转到 AI 生成页面的事件
   useEffect(() => {
     const handleNavigateToEpisodeGenerator = () => {
-      setActiveMenu('content-generation')
+      setActiveMenu('content')
       setActiveSubmenu('episode-generator')
-      setContentKey('content-generation-episode-generator')
+      setContentKey('content-episode-generator')
     }
 
     window.addEventListener('navigate-to-episode-generator', handleNavigateToEpisodeGenerator)
