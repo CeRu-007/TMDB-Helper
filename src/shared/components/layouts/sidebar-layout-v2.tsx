@@ -88,6 +88,17 @@ export function SidebarLayout({
   const setSelectedRegion = useMediaNewsStore((s) => s.setSelectedRegion)
   const setMediaNewsType = useMediaNewsStore((s) => s.setMediaNewsType)
 
+  // 处理区域选择 - 设置区域并加载数据
+  const handleRegionSelect = useCallback((region: string) => {
+    setSelectedRegion(region)
+    // 根据当前媒体类型加载对应数据
+    if (mediaNewsType === 'upcoming') {
+      fetchUpcomingItems(false, 0, region)
+    } else {
+      fetchRecentItems(false, 0, region)
+    }
+  }, [setSelectedRegion, mediaNewsType, fetchUpcomingItems, fetchRecentItems])
+
   // 本地 UI 状态
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -259,7 +270,7 @@ export function SidebarLayout({
             existingItems={items}
             fetchUpcomingItems={fetchUpcomingItems}
             fetchRecentItems={fetchRecentItems}
-            setSelectedRegion={setSelectedRegion}
+            setSelectedRegion={handleRegionSelect}
 
             // Maintenance props
             activeMenu={activeMenu}

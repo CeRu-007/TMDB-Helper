@@ -1,6 +1,7 @@
 "use client"
 
-import { Calendar, PlayCircle } from "lucide-react"
+import { useState, useRef, useEffect, useCallback } from "react"
+import { Calendar, PlayCircle, ChevronDown, Check } from "lucide-react"
 import { REGIONS, REGION_GROUPS } from "@/lib/constants/regions"
 
 interface RegionNavigationProps {
@@ -22,6 +23,9 @@ export function RegionNavigation({
   recentItemsByRegion,
   items
 }: RegionNavigationProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
   // Get items for the current media type
   const getItemsByRegion = (regionId: string) => {
     return mediaNewsType === 'upcoming'
@@ -39,6 +43,53 @@ export function RegionNavigation({
     )
   }
 
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [isOpen])
+
+  // ESC 键关闭下拉菜单
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
+  // 处理区域选择
+  const handleRegionSelect = useCallback((regionId: string) => {
+    setSelectedRegion(regionId)
+    setIsOpen(false)
+  }, [setSelectedRegion])
+
+  // 切换下拉菜单
+  const toggleDropdown = useCallback(() => {
+    setIsOpen(prev => !prev)
+  }, [])
+
   // Get button classes for media type toggle
   const getMediaTypeButtonClasses = (type: 'upcoming' | 'recent') => {
     const isActive = mediaNewsType === type
@@ -48,6 +99,9 @@ export function RegionNavigation({
       ? `${baseClasses} bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 shadow-sm`
       : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50`
   }
+
+  const selectedRegionData = REGIONS.find(r => r.id === selectedRegion)
+
   return (
     <div className="mb-4 border-b border-blue-100/70 dark:border-blue-900/30 pb-3">
       <div className="max-w-7xl mx-auto px-6">
@@ -55,25 +109,42 @@ export function RegionNavigation({
           {/* 当前选中区域显示和切换按钮集成 */}
           <div className="flex items-center">
             <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mr-2">区域:</span>
-            <div className="relative group">
-              <button className="flex items-center bg-white/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-md border border-blue-100 dark:border-blue-800/30 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-all text-sm">
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 shadow-inner mr-2">
-                  <span className="text-base">{REGIONS.find(r => r.id === selectedRegion)?.icon}</span>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={toggleDropdown}
+                className={`flex items-center bg-white/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-md border shadow-sm transition-all text-sm select-none ${
+                  isOpen
+                    ? 'border-blue-300 dark:border-blue-600 bg-blue-50/50 dark:bg-blue-900/20'
+                    : 'border-blue-100 dark:border-blue-800/30 hover:bg-white dark:hover:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700'
+                }`}
+                aria-expanded={isOpen}
+                aria-haspopup="listbox"
+              >
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full shadow-inner mr-2 transition-colors ${
+                  isOpen
+                    ? 'bg-blue-100 dark:bg-blue-800/50'
+                    : 'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30'
+                }`}>
+                  <span className="text-base">{selectedRegionData?.icon}</span>
                 </div>
                 <span className="font-medium text-sm text-blue-700 dark:text-blue-300 mr-1.5">
-                  {REGIONS.find(r => r.id === selectedRegion)?.name}
+                  {selectedRegionData?.name}
                 </span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${
+                  isOpen ? 'rotate-180 text-blue-500' : ''
+                }`} />
               </button>
 
               {/* 下拉菜单 */}
-              <div className="absolute left-0 mt-1 w-52 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg rounded-lg border border-blue-100/70 dark:border-blue-800/30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 transform group-hover:translate-y-0 translate-y-1 z-50 overflow-hidden">
-                <div className="p-2">
+              <div className={`absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-blue-100 dark:border-blue-800/50 z-50 overflow-hidden transition-all duration-200 origin-top-left ${
+                isOpen
+                  ? 'opacity-100 scale-100 translate-y-0 visible'
+                  : 'opacity-0 scale-95 -translate-y-1 invisible pointer-events-none'
+              }`}>
+                <div className="p-2 max-h-[320px] overflow-y-auto scrollbar-thin">
                   {REGION_GROUPS.map(group => (
                     <div key={group.name} className="mb-2 last:mb-0">
-                      <div className="flex items-center px-2 py-0.5">
+                      <div className="flex items-center px-2 py-1">
                         <div className="h-px w-2 bg-blue-200 dark:bg-blue-800/70 mr-1.5"></div>
                         <span className="text-[10px] font-medium text-blue-600/80 dark:text-blue-400/80 uppercase tracking-wider">
                           {group.name}
@@ -92,28 +163,33 @@ export function RegionNavigation({
                           return (
                             <button
                               key={regionId}
-                              onClick={() => setSelectedRegion(regionId)}
-                              className={`flex items-center justify-between w-full px-2.5 py-1.5 text-xs rounded-md transition-all duration-150 ${
+                              onClick={() => handleRegionSelect(regionId)}
+                              className={`flex items-center justify-between w-full px-2.5 py-2 text-xs rounded-md transition-all duration-150 group/region ${
                                 isActive
-                                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 shadow-sm"
+                                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/40 dark:to-indigo-900/40 text-blue-700 dark:text-blue-300 shadow-sm"
                                   : "hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300"
                               }`}
+                              role="option"
+                              aria-selected={isActive}
                             >
                               <div className="flex items-center">
-                                <div className={`w-5 h-5 flex items-center justify-center rounded-full ${
+                                <div className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${
                                   isActive
                                     ? "bg-white dark:bg-gray-800 shadow-inner"
-                                    : "bg-gray-100 dark:bg-gray-700/50"
+                                    : "bg-gray-100 dark:bg-gray-700/50 group-hover/region:bg-white dark:group-hover/region:bg-gray-700"
                                 }`}>
                                   <span className="text-sm">{region.icon}</span>
                                 </div>
-                                <span className="ml-2 text-xs">{region.name}</span>
+                                <span className="ml-2 text-xs font-medium">{region.name}</span>
+                                {isActive && (
+                                  <Check className="ml-2 h-3 w-3 text-blue-500" />
+                                )}
                               </div>
                               {validItems.length > 0 && (
-                                <span className={`px-1.5 py-0.5 text-xs rounded-full flex items-center justify-center min-w-[1.25rem] ${
+                                <span className={`px-1.5 py-0.5 text-xs rounded-full font-medium min-w-[1.25rem] text-center ${
                                   isActive
-                                    ? "bg-blue-200/80 dark:bg-blue-700/50 text-blue-800 dark:text-blue-200"
-                                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
+                                    ? "bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-300"
+                                    : "bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400"
                                 }`}>
                                   {validItems.length}
                                 </span>
