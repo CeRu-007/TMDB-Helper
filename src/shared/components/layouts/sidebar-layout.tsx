@@ -137,8 +137,8 @@ export function SidebarLayout({
     return false
   })
   const [activeMenu, setActiveMenu] = useState<string>('maintenance')
-  const [activeSubmenu, setActiveSubmenu] = useState<string>('all')
-  const [contentKey, setContentKey] = useState<string>('maintenance-all')
+  const [activeSubmenu, setActiveSubmenu] = useState<string>('list')
+  const [contentKey, setContentKey] = useState<string>('maintenance-list')
 
   // 加载侧边栏折叠状态
   useEffect(() => {
@@ -212,12 +212,7 @@ export function SidebarLayout({
     }
   }, [contentKey])
 
-  // 当菜单选择改变时，更新分类
-  useEffect(() => {
-    if (activeMenu === 'maintenance' && activeSubmenu) {
-      setSelectedCategory(activeSubmenu)
-    }
-  }, [activeMenu, activeSubmenu, setSelectedCategory])
+  // 分类筛选现在由页面内的下拉菜单独立控制，不再与侧边栏子菜单同步
 
   // 监听从硬字幕提取页面跳转到AI生成页面的事件
   useEffect(() => {

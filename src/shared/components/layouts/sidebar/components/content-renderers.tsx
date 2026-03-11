@@ -122,8 +122,8 @@ export function ContentRenderers({
     )
   }
 
-  // Render maintenance content
-  if (contentKey.startsWith('maintenance-') && contentKey !== 'maintenance-independent') {
+  // Render maintenance content (包括 maintenance-list 和原有的分类子菜单)
+  if ((contentKey === 'maintenance-list' || (contentKey.startsWith('maintenance-') && contentKey !== 'maintenance-independent'))) {
     return (
       <div className="max-w-7xl mx-auto px-8 py-4 h-full overflow-y-auto">
         <div

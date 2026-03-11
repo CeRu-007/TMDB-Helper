@@ -13,6 +13,7 @@ interface WeekdayNavigationProps {
   filteredItems: TMDBItem[]
   categories: Array<{ id: string; name: string }>
   selectedCategory: string
+  onCategoryChange?: (category: string) => void
   activeTab?: string
   onActiveTabChange?: (tab: string) => void
   currentDay?: number
@@ -24,6 +25,7 @@ export function WeekdayNavigation({
   filteredItems,
   categories,
   selectedCategory,
+  onCategoryChange,
   activeTab,
   onActiveTabChange,
   currentDay = 0
@@ -91,31 +93,53 @@ export function WeekdayNavigation({
             })}
           </div>
 
-          {/* 右侧：状态选择器 */}
-          {activeTab && onActiveTabChange && (
-            <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">状态:</span>
-              <Select value={activeTab} onValueChange={onActiveTabChange}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="z-[60]">
-                  <SelectItem value="ongoing">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4" />
-                      <span>连载中</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="completed">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>已完结</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          {/* 右侧：分类选择器 + 状态选择器 */}
+          <div className="flex items-center space-x-4 ml-4 flex-shrink-0">
+            {/* 分类选择器 */}
+            {onCategoryChange && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">分类:</span>
+                <Select value={selectedCategory || 'all'} onValueChange={onCategoryChange}>
+                  <SelectTrigger className="w-28">
+                    <SelectValue placeholder="全部" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[60]">
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* 状态选择器 */}
+            {activeTab && onActiveTabChange && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">状态:</span>
+                <Select value={activeTab} onValueChange={onActiveTabChange}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[60]">
+                    <SelectItem value="ongoing">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-4 w-4" />
+                        <span>连载中</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="completed">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>已完结</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
 
           {/* 如果没有状态选择器，显示当前筛选信息 */}
           {(!activeTab || !onActiveTabChange) && (

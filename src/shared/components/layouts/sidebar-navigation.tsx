@@ -54,12 +54,7 @@ const menuItems: MenuItem[] = [
     label: "词条维护",
     icon: <LayoutGrid className="h-4 w-4" />,
     submenu: [
-      { id: "all", label: "全部", icon: <LayoutGrid className="h-3 w-3" /> },
-      { id: "anime", label: "动漫", icon: <Sparkles className="h-3 w-3" /> },
-      { id: "tv", label: "电视剧", icon: <Tv className="h-3 w-3" /> },
-      { id: "kids", label: "少儿", icon: <Baby className="h-3 w-3" /> },
-      { id: "variety", label: "综艺", icon: <Popcorn className="h-3 w-3" /> },
-      { id: "short", label: "短剧", icon: <Ticket className="h-3 w-3" /> },
+      { id: "list", label: "维护列表", icon: <LayoutGrid className="h-3 w-3" /> },
       { id: "independent", label: "独立维护", icon: <Wand2 className="h-3 w-3" /> },
     ]
   },

@@ -251,6 +251,7 @@ export default function HomePage() {
               filteredItems={filteredOngoingItems}
               categories={categories}
               selectedCategory={homeState.selectedCategory}
+              onCategoryChange={homeState.setSelectedCategory}
               activeTab={homeState.activeTab}
               onActiveTabChange={homeState.setActiveTab}
               currentDay={currentDay}
@@ -287,6 +288,7 @@ export default function HomePage() {
               filteredItems={filteredCompletedItems}
               categories={categories}
               selectedCategory={homeState.selectedCategory}
+              onCategoryChange={homeState.setSelectedCategory}
               activeTab={homeState.activeTab}
               onActiveTabChange={homeState.setActiveTab}
               currentDay={currentDay}
