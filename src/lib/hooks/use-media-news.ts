@@ -5,6 +5,7 @@ import { logger } from "@/lib/utils/logger"
 import { handleError, retryOperation } from "@/lib/utils/error-handler"
 import { perf } from "@/lib/utils/performance-manager"
 import { REGIONS } from "@/lib/constants/regions"
+import { useMediaNewsStore } from "@/stores/media-news-store"
 
 export interface MediaNewsItem {
   id: string
@@ -48,6 +49,17 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
   const [recentLastUpdated, setRecentLastUpdated] = useState<string | null>(null)
   const [isMissingApiKey, setIsMissingApiKey] = useState(false)
 
+  // 获取 Zustand store 的 setter 函数
+  const storeSetUpcomingItems = useMediaNewsStore((s) => s.setUpcomingItems)
+  const storeSetRecentItems = useMediaNewsStore((s) => s.setRecentItems)
+  const storeSetLoadingUpcoming = useMediaNewsStore((s) => s.setLoadingUpcoming)
+  const storeSetLoadingRecent = useMediaNewsStore((s) => s.setLoadingRecent)
+  const storeSetUpcomingError = useMediaNewsStore((s) => s.setUpcomingError)
+  const storeSetRecentError = useMediaNewsStore((s) => s.setRecentError)
+  const storeSetUpcomingLastUpdated = useMediaNewsStore((s) => s.setUpcomingLastUpdated)
+  const storeSetRecentLastUpdated = useMediaNewsStore((s) => s.setRecentLastUpdated)
+  const storeSetIsMissingApiKey = useMediaNewsStore((s) => s.setIsMissingApiKey)
+
   // Cache keys for better maintainability
   const cacheKeys = useMemo(() => ({
     getItemsKey: (type: "upcoming" | "recent", regionId: string) => `${type}Items_${regionId}`,
@@ -86,6 +98,10 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
 
       if (Object.keys(upcomingCache).length > 0) {
         setUpcomingItemsByRegion(upcomingCache)
+        // 同步更新 store 中的所有区域数据
+        Object.entries(upcomingCache).forEach(([region, items]) => {
+          storeSetUpcomingItems(items, region)
+        })
         if (upcomingCache[selectedRegion]) {
           setUpcomingItems(upcomingCache[selectedRegion])
         }
@@ -93,6 +109,10 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
 
       if (Object.keys(recentCache).length > 0) {
         setRecentItemsByRegion(recentCache)
+        // 同步更新 store 中的所有区域数据
+        Object.entries(recentCache).forEach(([region, items]) => {
+          storeSetRecentItems(items, region)
+        })
         if (recentCache[selectedRegion]) {
           setRecentItems(recentCache[selectedRegion])
         }
@@ -101,12 +121,18 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
       // 加载更新时间
       const cachedUpcomingLastUpdated = localStorage.getItem(cacheKeys.getTimestampKey("upcoming"))
       const cachedRecentLastUpdated = localStorage.getItem(cacheKeys.getTimestampKey("recent"))
-      if (cachedUpcomingLastUpdated) setUpcomingLastUpdated(cachedUpcomingLastUpdated)
-      if (cachedRecentLastUpdated) setRecentLastUpdated(cachedRecentLastUpdated)
+      if (cachedUpcomingLastUpdated) {
+        setUpcomingLastUpdated(cachedUpcomingLastUpdated)
+        storeSetUpcomingLastUpdated(cachedUpcomingLastUpdated)
+      }
+      if (cachedRecentLastUpdated) {
+        setRecentLastUpdated(cachedRecentLastUpdated)
+        storeSetRecentLastUpdated(cachedRecentLastUpdated)
+      }
     } catch (error) {
       logger.error("[useMediaNews] 加载缓存数据失败", error)
     }
-  }, [selectedRegion, loadCacheForType])
+  }, [selectedRegion, loadCacheForType, storeSetUpcomingItems, storeSetRecentItems, storeSetUpcomingLastUpdated, storeSetRecentLastUpdated])
 
   // 通用的数据获取函数
   const fetchItems = useCallback(
@@ -125,9 +151,22 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
       const setItemsByRegion = type === "upcoming" ? setUpcomingItemsByRegion : setRecentItemsByRegion
       const setItems = type === "upcoming" ? setUpcomingItems : setRecentItems
 
-      if (!silent) setLoading(true)
+      // Store setter 函数
+      const storeSetLoading = type === "upcoming" ? storeSetLoadingUpcoming : storeSetLoadingRecent
+      const storeSetError = type === "upcoming" ? storeSetUpcomingError : storeSetRecentError
+      const storeSetLastUpdated = type === "upcoming" ? storeSetUpcomingLastUpdated : storeSetRecentLastUpdated
+      const storeSetItems = type === "upcoming" ? storeSetUpcomingItems : storeSetRecentItems
+
+      if (!silent) {
+        setLoading(true)
+        storeSetLoading(true)
+      }
       setError(null)
-      if (type === "upcoming") setIsMissingApiKey(false)
+      storeSetError(null)
+      if (type === "upcoming") {
+        setIsMissingApiKey(false)
+        storeSetIsMissingApiKey(false)
+      }
 
       try {
         const response = await retryOperation(
@@ -148,10 +187,12 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
           const errorText = await response.text()
           if (response.status === 400 && errorText.includes("API密钥未配置")) {
             setIsMissingApiKey(true)
+            storeSetIsMissingApiKey(true)
             throw new Error("TMDB API密钥未配置")
           }
           if (response.status === 401) {
             setIsMissingApiKey(true)
+            storeSetIsMissingApiKey(true)
             throw new Error("用户身份验证失败，请刷新页面重试")
           }
           throw new Error(`获取${type === "upcoming" ? "即将上线" : "近期开播"}内容失败 (${response.status})`)
@@ -172,6 +213,10 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
           const timestamp = new Date().toLocaleString("zh-CN")
           setLastUpdated(timestamp)
 
+          // 同时更新 Zustand store
+          storeSetItems(data.results, region)
+          storeSetLastUpdated(timestamp)
+
           // 缓存数据
           try {
             localStorage.setItem(cacheKeys.getItemsKey(type, region), JSON.stringify(data.results))
@@ -188,20 +233,39 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
         // 对于TMDB API连接错误，不设置错误状态，避免在界面上显示错误
         if (!appError.message.includes("TMDB API连接失败") && !appError.message.includes("网络连接异常")) {
           setError(appError.userMessage)
+          storeSetError(appError.userMessage)
         }
 
         if (appError.type === "API" && appError.code === "401") {
           setIsMissingApiKey(true)
+          storeSetIsMissingApiKey(true)
         }
 
         // 静默记录日志，不显示用户错误
         logger.debug(`[useMediaNews] 获取${type === "upcoming" ? "即将上线" : "近期开播"}内容失败`, appError)
       } finally {
-        if (!silent) setLoading(false)
+        if (!silent) {
+          setLoading(false)
+          storeSetLoading(false)
+        }
         perf.endTiming(timingLabel)
       }
     },
-    [selectedRegion]
+    [
+      selectedRegion,
+      upcomingItemsByRegion,
+      recentItemsByRegion,
+      cacheKeys,
+      storeSetLoadingUpcoming,
+      storeSetLoadingRecent,
+      storeSetUpcomingError,
+      storeSetRecentError,
+      storeSetUpcomingLastUpdated,
+      storeSetRecentLastUpdated,
+      storeSetUpcomingItems,
+      storeSetRecentItems,
+      storeSetIsMissingApiKey
+    ]
   )
 
   // 获取即将上线内容
