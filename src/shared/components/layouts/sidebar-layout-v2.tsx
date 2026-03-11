@@ -274,7 +274,7 @@ export function SidebarLayout({
             // 注意：ContentRenderers 内部直接使用了 SidebarRegionNavigation，这里传入的是备用方案
             RegionNavigation={SidebarRegionNavigation as React.ComponentType}
             ApiKeySetupGuide={TMDBGuide as React.ComponentType}
-            VideoThumbnailExtractor={HardSubtitleExtractor as React.ComponentType}
+            VideoThumbnailExtractor={VideoThumbnailExtractor as React.ComponentType}
             ImageCropper={ImageCropper as React.ComponentType}
           />
         </MainContentArea>
@@ -286,5 +286,6 @@ export function SidebarLayout({
 // 内部导入组件
 import { SidebarRegionNavigation } from "./sidebar/components/sidebar-region-navigation"
 import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
+import VideoThumbnailExtractor from "@/features/image-processing/components/video-thumbnail-extractor"
 import { HardSubtitleExtractor } from "@/features/image-processing/components/hard-subtitle-extractor"
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"
