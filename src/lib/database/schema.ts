@@ -28,6 +28,7 @@ export function initializeSchema(): void {
     logger.info('[Database] 初始化数据库 Schema...');
     createTables(db);
     createIndexes(db);
+    initializeDefaultConfig(db);
     setUserVersion(SCHEMA_VERSION);
     logger.info('[Database] Schema 初始化完成');
   } else {
@@ -343,4 +344,154 @@ export function clearAllData(): void {
   db.exec('DELETE FROM config');
 
   logger.info('[Database] 所有数据已清空');
+}
+
+/**
+ * 初始化默认配置
+ * 在全新安装时插入设置页面所需的默认配置
+ */
+function initializeDefaultConfig(db: ReturnType<typeof getDatabase>): void {
+  const now = new Date().toISOString();
+
+  // 设置页面所需的默认配置
+  const defaultConfigs = [
+    // TMDB-Import 工具路径配置
+    {
+      key: 'server_config',
+      value: JSON.stringify({
+        version: '1.0.0',
+        lastUpdated: Date.now(),
+        // TMDB-Import 工具路径（空字符串表示未配置）
+        tmdbImportPath: '',
+        // 硅基流动 API 配置
+        siliconFlowApiKey: '',
+        siliconFlowThumbnailModel: 'Qwen/Qwen2.5-VL-32B-Instruct',
+        siliconFlowApiSettings: '',
+        // 魔搭社区 API 配置
+        modelScopeApiKey: '',
+        modelScopeEpisodeModel: 'Qwen/Qwen3-32B',
+        modelScopeApiSettings: '',
+        // 视频缩略图设置
+        videoThumbnailSettings: JSON.stringify({
+          startTime: 300,
+          threadCount: 4,
+          outputFormat: 'jpg',
+          thumbnailCount: 5,
+          frameInterval: 30,
+          keepOriginalResolution: true,
+          enableAIFilter: false,
+          siliconFlowApiKey: '',
+          siliconFlowModel: 'Qwen/Qwen2.5-VL-32B-Instruct',
+        }),
+        // 分集生成器 API 提供商
+        episodeGeneratorApiProvider: 'modelscope',
+        // 分集生成器配置
+        episode_generator_config: JSON.stringify({
+          summaryLength: [180, 205],
+          selectedStyles: ['ai_free'],
+          selectedTitleStyle: 'location_skill',
+          temperature: 0.7,
+          includeOriginalTitle: true,
+          speechRecognitionModel: 'FunAudioLLM/SenseVoiceSmall',
+          enableVideoAnalysis: false,
+        }),
+        // 同步状态
+        sync_status: JSON.stringify({
+          lastSyncTime: new Date().toISOString(),
+          clientVersion: 0,
+          serverVersion: Date.now(),
+          conflictCount: 0,
+          syncInProgress: false,
+        }),
+        // 布局偏好
+        layout_preferences: JSON.stringify({
+          layoutType: 'sidebar',
+          sidebarCollapsed: false,
+          lastUpdated: new Date().toISOString(),
+        }),
+        // 外观设置
+        appearanceSettings: JSON.stringify({
+          theme: 'system',
+          primaryColor: 'blue',
+          compactMode: false,
+          fontSize: 'medium',
+          showAnimations: true,
+          showTooltips: true,
+          detailBackdropBlurEnabled: true,
+          detailBackdropBlurIntensity: 'medium',
+        }),
+        // 通用设置（空，使用代码中的默认值）
+        generalSettings: '',
+        // 任务调度器配置
+        taskSchedulerConfig: undefined,
+      }),
+    },
+    // 通用设置（单独存储，兼容 ClientConfigManager）
+    {
+      key: 'general_settings',
+      value: JSON.stringify({
+        autoSave: true,
+        dataBackup: true,
+        cacheCleanup: false,
+        requestTimeout: 30,
+        concurrentRequests: 5,
+        useProxy: false,
+        proxyUrl: '',
+      }),
+    },
+    // 外观设置（单独存储，兼容 ClientConfigManager）
+    {
+      key: 'appearance_settings',
+      value: JSON.stringify({
+        theme: 'system',
+        primaryColor: 'blue',
+        compactMode: false,
+        fontSize: 'medium',
+        showAnimations: true,
+        showTooltips: true,
+        detailBackdropBlurEnabled: true,
+        detailBackdropBlurIntensity: 'medium',
+      }),
+    },
+    // 视频缩略图设置（单独存储，兼容 ClientConfigManager）
+    {
+      key: 'video_thumbnail_settings',
+      value: JSON.stringify({
+        startTime: 0,
+        threadCount: 2,
+        outputFormat: 'jpg',
+        thumbnailCount: 9,
+        frameInterval: 30,
+        keepOriginalResolution: true,
+        enableAIFilter: false,
+        siliconFlowApiKey: '',
+        siliconFlowModel: 'Qwen/Qwen2.5-VL-32B-Instruct',
+      }),
+    },
+    // TMDB-Import 工具路径（单独存储，兼容 ClientConfigManager）
+    {
+      key: 'tmdb_import_path',
+      value: '',
+    },
+  ];
+
+  // 插入默认配置
+  const stmt = db.prepare(
+    'INSERT INTO config (key, value, createdAt, updatedAt) VALUES (@key, @value, @createdAt, @updatedAt) ON CONFLICT(key) DO NOTHING'
+  );
+
+  for (const config of defaultConfigs) {
+    try {
+      stmt.run({
+        key: config.key,
+        value: config.value,
+        createdAt: now,
+        updatedAt: now,
+      });
+    } catch (error) {
+      logger.warn(`[Database] 初始化配置失败: ${config.key}`, error);
+    }
+  }
+
+  logger.info(`[Database] 默认配置初始化完成，共 ${defaultConfigs.length} 项`);
 }
