@@ -1,13 +1,12 @@
 "use client"
 
-import { useState, memo, useEffect } from "react"
+import { useState, memo, useCallback } from "react"
 import { Badge } from "@/shared/components/ui/badge"
 import { ExternalLink, MousePointer2, Zap } from "lucide-react"
 import type { TMDBItem } from "@/lib/data/storage"
 import { Button } from "@/shared/components/ui/button"
+import { CachedImage } from "@/shared/components/ui/cached-image"
 import { CLICK_RESET_DELAY, WEEKDAY_NAMES, TMDB_IMAGE_BASE_URL, TMDB_POSTER_SIZE } from "@/lib/constants/constants"
-
-const imageLoadCache = new Map<string, boolean>()
 
 interface MediaCardProps {
   item: TMDBItem
@@ -22,12 +21,6 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
   const [isClicked, setIsClicked] = useState(false)
 
   const posterUrl = item.posterUrl || `${TMDB_IMAGE_BASE_URL}/${TMDB_POSTER_SIZE}/placeholder.jpg`
-
-  useEffect(() => {
-    if (imageLoadCache.has(posterUrl)) {
-      setImageLoaded(true)
-    }
-  }, [posterUrl])
 
   const isDailyUpdate = Boolean(
     item.isDailyUpdate ||
@@ -112,9 +105,9 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
     }
   };
 
-  const handleImageError = (): void => {
+  const handleImageError = useCallback((): void => {
     setImageError(true);
-  };
+  }, []);
 
   const handleCardClick = (): void => {
     setIsClicked(true);
@@ -171,19 +164,17 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
         )}
 
         {/* 海报图片 */}
-        <img
+        <CachedImage
           src={
             !imageError
-              ? item.posterUrl
+              ? posterUrl
               : `${TMDB_IMAGE_BASE_URL}/${TMDB_POSTER_SIZE}/placeholder.jpg`
           }
           alt={item.title}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+          className="w-full h-full object-cover transition-opacity duration-300"
           onError={handleImageError}
-          onLoad={() => {
-            setImageLoaded(true)
-            imageLoadCache.set(posterUrl, true)
-          }}
+          onLoad={() => setImageLoaded(true)}
+          showSkeleton={true}
         />
 
         {/* 悬停遮罩层 */}

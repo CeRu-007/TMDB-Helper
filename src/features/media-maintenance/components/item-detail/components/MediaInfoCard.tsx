@@ -25,59 +25,58 @@ export function MediaInfoCard({
           播出平台
         </h3>
       </div>
-      <div className="flex items-center justify-start mb-1">
+      <div className="flex items-center justify-start mb-1 h-12">
         {/* 平台Logo区域 - 优先使用TMDB网络logo */}
-        <div className="flex items-center justify-start w-full">
-          {item.networkLogoUrl ? (
-            <div
-              className="w-full h-12 flex items-center justify-start cursor-pointer"
-              onClick={() => item.platformUrl && window.open(item.platformUrl, '_blank')}
-              title={item.networkName || '播出网络'}
-            >
-              <CachedImage
-                src={item.networkLogoUrl}
-                alt={item.networkName || '播出网络'}
-                className="max-w-full max-h-full object-contain hover:scale-110 transition-all duration-300"
-                loading="eager"
-                decoding="async"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const container = e.currentTarget.parentElement;
-                  if (container) {
-                    const networkIcon = document.createElement('div');
-                    networkIcon.innerHTML = `<div class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" class="text-foreground/70"><path d="M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0z"></path><path d="M3.6 8.25h16.8M3.6 15.75h16.8M12 3.6v16.8"></path></svg></div>`;
-                    container.appendChild(networkIcon);
-                  }
-                }}
-              />
-            </div>
-          ) : item.platformUrl ? (
-            (() => {
-              const platformInfo = getPlatformInfo(item.platformUrl);
-              return (
-                <div
-                  className="w-full h-12 flex items-center justify-start cursor-pointer"
-                  onClick={() => platformInfo && window.open(platformInfo.url, '_blank')}
-                  title={platformInfo?.name || '播出平台'}
-                >
-                  {platformInfo ? (
-                    <PlatformLogo
-                      platform={platformInfo.name}
-                      size={32}
-                      className="hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <ExternalLink className="h-9 w-9 text-foreground/70" />
-                  )}
-                </div>
-              );
-            })()
-          ) : (
-            <div className="w-full h-12 flex items-center justify-start">
-              <FrameIcon className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-          )}
-        </div>
+        {item.networkLogoUrl ? (
+          <div
+            className="h-full flex items-center justify-start cursor-pointer"
+            onClick={() => item.platformUrl && window.open(item.platformUrl, '_blank')}
+            title={item.networkName || '播出网络'}
+          >
+            <CachedImage
+              src={item.networkLogoUrl}
+              alt={item.networkName || '播出网络'}
+              className="max-h-full w-auto object-contain hover:scale-110 transition-all duration-300"
+              style={{ width: 'auto', height: '100%' }}
+              loading="eager"
+              decoding="async"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const container = e.currentTarget.parentElement;
+                if (container) {
+                  const networkIcon = document.createElement('div');
+                  networkIcon.innerHTML = `<div class="flex items-center justify-center h-full"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" class="text-foreground/70"><path d="M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0z"></path><path d="M3.6 8.25h16.8M3.6 15.75h16.8M12 3.6v16.8"></path></svg></div>`;
+                  container.appendChild(networkIcon);
+                }
+              }}
+            />
+          </div>
+        ) : item.platformUrl ? (
+          (() => {
+            const platformInfo = getPlatformInfo(item.platformUrl);
+            return (
+              <div
+                className="h-full flex items-center justify-start cursor-pointer"
+                onClick={() => platformInfo && window.open(platformInfo.url, '_blank')}
+                title={platformInfo?.name || '播出平台'}
+              >
+                {platformInfo ? (
+                  <PlatformLogo
+                    platform={platformInfo.name}
+                    size={32}
+                    className="hover:scale-110 transition-transform duration-300"
+                  />
+                ) : (
+                  <ExternalLink className="h-9 w-9 text-foreground/70" />
+                )}
+              </div>
+            );
+          })()
+        ) : (
+          <div className="h-full flex items-center justify-start">
+            <FrameIcon className="h-8 w-8 text-muted-foreground/50" />
+          </div>
+        )}
       </div>
 
       {/* TMDB简介区域 */}

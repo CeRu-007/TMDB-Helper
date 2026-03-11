@@ -151,6 +151,11 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   async function saveItemDirectly(updatedItem: TMDBItem): Promise<boolean> {
     try {
+      if (!updatedItem.id) {
+        logger.error('[saveItemDirectly] 保存失败: 项目缺少 ID');
+        return false;
+      }
+
       const response = await fetch('/api/storage/item', {
         method: 'PUT',
         headers: {
@@ -481,8 +486,9 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         throw new Error(apiResponse.error || "未能从TMDB获取到有效数据")
       }
 
-      const updatedItem = {
+      const updatedItem: TMDBItem = {
         ...localItem,
+        id: localItem.id,
         posterUrl: tmdbData.posterUrl,
         posterPath: tmdbData.posterPath,
         backdropUrl: tmdbData.backdropUrl,

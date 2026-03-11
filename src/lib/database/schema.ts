@@ -7,7 +7,7 @@ import { getDatabase } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * 初始化数据库 Schema
@@ -31,9 +31,12 @@ export function initializeSchema(): void {
     setUserVersion(SCHEMA_VERSION);
     logger.info('[Database] Schema 初始化完成');
   } else {
-    // 版本不匹配，直接更新版本号（迁移已完成）
+    // 版本升级：创建新表（IF NOT EXISTS 确保不会重复创建）
+    logger.info(`[Database] 升级数据库 Schema: ${currentVersion} -> ${SCHEMA_VERSION}`);
+    createTables(db); // 使用 IF NOT EXISTS，安全地创建新表
+    createIndexes(db); // 使用 IF NOT EXISTS，安全地创建新索引
     setUserVersion(SCHEMA_VERSION);
-    logger.info(`[Database] Schema 版本已更新: ${currentVersion} -> ${SCHEMA_VERSION}`);
+    logger.info('[Database] Schema 升级完成');
   }
 }
 
@@ -217,6 +220,25 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
     )
   `);
 
+  // 图片缓存表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS image_cache (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tmdbId TEXT NOT NULL,
+      itemId TEXT,
+      imageType TEXT NOT NULL,
+      imagePath TEXT,
+      imageUrl TEXT,
+      sizeType TEXT DEFAULT 'original',
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      lastVerifiedAt TEXT,
+      isPermanent INTEGER DEFAULT 1,
+      sourceType TEXT DEFAULT 'tmdb',
+      UNIQUE(tmdbId, imageType, sizeType)
+    )
+  `);
+
   // Schema 版本表
   db.exec(`
     CREATE TABLE IF NOT EXISTS schemaVersion (
@@ -244,6 +266,9 @@ function createIndexes(db: ReturnType<typeof getDatabase>): void {
     'CREATE INDEX IF NOT EXISTS idx_executionLogs_taskId ON executionLogs(taskId)',
     'CREATE INDEX IF NOT EXISTS idx_chatHistories_deletedAt ON chatHistories(deletedAt)',
     'CREATE INDEX IF NOT EXISTS idx_adminUsers_deletedAt ON adminUsers(deletedAt)',
+    'CREATE INDEX IF NOT EXISTS idx_image_cache_tmdbId ON image_cache(tmdbId)',
+    'CREATE INDEX IF NOT EXISTS idx_image_cache_itemId ON image_cache(itemId)',
+    'CREATE INDEX IF NOT EXISTS idx_image_cache_type ON image_cache(imageType)',
   ];
 
   for (const sql of indexes) {

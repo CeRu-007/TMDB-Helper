@@ -177,6 +177,11 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
     const db = getDatabase();
 
     try {
+      if (!item.id) {
+        logger.error('[ItemsRepository] 更新失败: 项目缺少 ID');
+        return { success: false, error: '项目缺少 ID' };
+      }
+
       const now = new Date().toISOString();
       const row: ItemRow = tmdbItemToRow(item, { updatedAt: now });
 
@@ -220,9 +225,54 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
         WHERE id = @id AND deletedAt IS NULL
       `);
 
+      // 只提取 SQL 需要的字段，排除 createdAt 和 deletedAt
+      const updateData = {
+        id: row.id,
+        tmdbId: row.tmdbId,
+        imdbId: row.imdbId,
+        title: row.title,
+        originalTitle: row.originalTitle,
+        overview: row.overview,
+        year: row.year,
+        releaseDate: row.releaseDate,
+        genres: row.genres,
+        runtime: row.runtime,
+        voteAverage: row.voteAverage,
+        mediaType: row.mediaType,
+        posterPath: row.posterPath,
+        posterUrl: row.posterUrl,
+        backdropPath: row.backdropPath,
+        backdropUrl: row.backdropUrl,
+        logoPath: row.logoPath,
+        logoUrl: row.logoUrl,
+        networkId: row.networkId,
+        networkName: row.networkName,
+        networkLogoUrl: row.networkLogoUrl,
+        status: row.status,
+        completed: row.completed,
+        platformUrl: row.platformUrl,
+        totalEpisodes: row.totalEpisodes,
+        manuallySetEpisodes: row.manuallySetEpisodes,
+        weekday: row.weekday,
+        secondWeekday: row.secondWeekday,
+        airTime: row.airTime,
+        category: row.category,
+        tmdbUrl: row.tmdbUrl,
+        notes: row.notes,
+        isDailyUpdate: row.isDailyUpdate,
+        blurIntensity: row.blurIntensity,
+        rating: row.rating,
+        updatedAt: row.updatedAt,
+      };
+
       transaction(() => {
         // 更新项目
-        updateItem.run(row);
+        const updateResult = updateItem.run(updateData);
+
+        // 检查是否实际更新了行
+        if (updateResult.changes === 0) {
+          logger.warn('[ItemsRepository] 没有行被更新，项目可能不存在或已被删除:', { itemId: item.id });
+        }
 
         // 删除旧的季和分集
         db.prepare('DELETE FROM episodes WHERE itemId = ?').run(item.id);

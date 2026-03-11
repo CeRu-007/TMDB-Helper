@@ -150,6 +150,37 @@ export interface ConfigRow {
   updatedAt: string;
 }
 
+export interface ImageCacheRow {
+  id: number;
+  tmdbId: string;
+  itemId: string | null;
+  imageType: 'poster' | 'backdrop' | 'logo' | 'network_logo';
+  imagePath: string | null;
+  imageUrl: string | null;
+  sizeType: string;
+  createdAt: string;
+  updatedAt: string;
+  lastVerifiedAt: string | null;
+  isPermanent: number;
+  sourceType: string;
+}
+
+// 图片缓存数据类型（用于业务逻辑）
+export interface ImageCacheData {
+  id?: number;
+  tmdbId: string;
+  itemId?: string;
+  imageType: 'poster' | 'backdrop' | 'logo' | 'network_logo';
+  imagePath?: string;
+  imageUrl?: string;
+  sizeType?: 'w500' | 'w780' | 'w1280' | 'original';
+  createdAt?: string;
+  updatedAt?: string;
+  lastVerifiedAt?: string;
+  isPermanent?: boolean;
+  sourceType?: 'tmdb' | 'user_upload';
+}
+
 // 转换函数类型
 export type ItemWithRelations = ItemRow & {
   seasons?: (SeasonRow & { episodes?: EpisodeRow[] })[];

@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest) {
   try {
     // 确保数据库已初始化
     await ServerStorageManager.init();
-    
+
     const data = await request.json();
     const item = data.item as TMDBItem;
 
@@ -76,12 +76,10 @@ export async function PUT(request: NextRequest) {
 
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
-    logger.info(`[API] 更新项目 - 用户ID: ${userId}, 项目ID: ${item.id}`);
 
     const success = ServerStorageManager.updateItem(item);
 
     if (success) {
-      logger.info(`[API] 项目更新成功: ${item.title} (${item.id})`);
       return NextResponse.json({ success: true, item, userId }, { status: 200 });
     } else {
       return NextResponse.json({
