@@ -166,14 +166,7 @@ export function SidebarNavigation({
     const sidebarWidth = 64
     const headerHeight = 64
     
-    // 计算分组标题的位置
-    let topPosition = headerHeight
-    for (let i = 0; i < groupIndex; i++) {
-      topPosition += 32 // 分组标题高度
-      topPosition += menuGroups[i].items.length * 40 // 子项高度
-      topPosition += 16 // 分组间距
-    }
-    topPosition += 32 // 当前分组标题高度
+    const topPosition = headerHeight + (groupIndex * buttonHeight) + 8
 
     return {
       top: `${topPosition}px`,
