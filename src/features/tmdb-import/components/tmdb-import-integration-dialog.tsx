@@ -592,7 +592,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         }
 
          // 默认显示表格视图
-        setEditorMode("enhanced") // 默认使用增强编辑器
+        setEditorMode("table") // 默认使用表格编辑器
         appendTerminalOutput("💡 现在可以在CSV文件管理中查看和编辑文件", "info")
       } else {
         appendTerminalOutput("CSV文件读取失败", "error")
