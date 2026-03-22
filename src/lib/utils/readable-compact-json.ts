@@ -133,25 +133,9 @@ export function stringifySimpleReadableCompact(data: unknown): string {
 }
 
 /**
- * 针对定时任务的可读紧凑格式
- */
-export function stringifyScheduledTasksReadableCompact(tasks: unknown[]): string {
-  if (!Array.isArray(tasks) || tasks.length === 0) {
-    return JSON.stringify(tasks);
-  }
-
-  const formattedTasks = tasks.map(task => {
-    return JSON.stringify(task, null, 0);
-  });
-
-  return '[\n  ' + formattedTasks.join(',\n  ') + '\n]';
-}
-
-/**
  * 自动选择最佳格式化方式
  */
-export function stringifyAuto(data: unknown, dataType?: 'tmdb' | 'tasks' | 'config'): string {
-  // 统一使用简单可读紧凑格式，既节省空间又便于阅读
+export function stringifyAuto(data: unknown, dataType?: 'tmdb' | 'config'): string {
   return stringifySimpleReadableCompact(data);
 }
 
@@ -161,9 +145,8 @@ export function stringifyAuto(data: unknown, dataType?: 'tmdb' | 'tasks' | 'conf
 export function optimizeToReadableCompact(jsonString: string, dataType?: string): string {
   try {
     const data = JSON.parse(jsonString);
-    return stringifyAuto(data, dataType as 'tmdb' | 'tasks' | 'config' | undefined);
-  } catch (error) {
-    
+    return stringifyAuto(data, dataType as 'tmdb' | 'config' | undefined);
+  } catch {
     return jsonString;
   }
 }

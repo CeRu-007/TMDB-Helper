@@ -30,7 +30,6 @@ export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showMetadataDialog, setShowMetadataDialog] = useState(false)
   const [showFixBugDialog, setShowFixBugDialog] = useState(false)
-  const [scheduledTaskDialogOpen, setScheduledTaskDialogOpen] = useState(false)
 
   // 操作状态
   const [isRefreshingTMDBData, setIsRefreshingTMDBData] = useState(false)
@@ -98,8 +97,6 @@ export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) 
     setShowMetadataDialog,
     showFixBugDialog,
     setShowFixBugDialog,
-    scheduledTaskDialogOpen,
-    setScheduledTaskDialogOpen,
 
     // 操作状态
     isRefreshingTMDBData,

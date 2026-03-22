@@ -16,7 +16,6 @@ const STRING_KEYS = [
   'general_settings',
   'appearance_settings',
   'video_thumbnail_settings',
-  'task_scheduler_config',
   'episode_generator_api_provider',
   'tmdb_helper_user_salt',
   'last_login_password_enc'

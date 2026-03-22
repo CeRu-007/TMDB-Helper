@@ -23,13 +23,6 @@ interface VideoThumbnailSettings {
   maxThumbnails?: number;
 }
 
-interface TaskSchedulerConfig {
-  enabled?: boolean;
-  maxConcurrentTasks?: number;
-  retryAttempts?: number;
-  retryDelay?: number;
-}
-
 interface SyncStatus {
   lastSync?: number;
   inProgress?: boolean;
@@ -71,7 +64,6 @@ export interface ServerConfig {
   generalSettings?: GeneralSettings;
   appearanceSettings?: AppearanceSettings;
   videoThumbnailSettings?: VideoThumbnailSettings;
-  taskSchedulerConfig?: TaskSchedulerConfig;
   episodeGeneratorApiProvider?: string;
   sync_status?: SyncStatus;
   layout_preferences?: LayoutPreferences;
@@ -155,7 +147,6 @@ export class ServerConfigManager {
         enableVideoAnalysis: false,
       }),
       generalSettings: '',
-      taskSchedulerConfig: undefined,
     };
   }
 

@@ -8,7 +8,6 @@ import path from 'path';
 import { getDatabase, isDatabaseInitialized, getDatabasePath } from '../connection';
 import { initializeSchema, getDatabaseStats } from '../schema';
 import { itemsRepository } from '../repositories/items.repository';
-import { tasksRepository } from '../repositories/tasks.repository';
 import { chatRepository } from '../repositories/chat.repository';
 import { authRepository } from '../repositories/auth.repository';
 import { configRepository } from '../repositories/config.repository';
@@ -21,7 +20,7 @@ const OLD_DATA_PATHS = {
     'users/user_admin_system/tmdb_items.json',
     'tmdb_items.json', // 旧版兼容
   ],
-  tasks: ['users/user_admin_system/scheduled_tasks.json'],
+  tasks: [], // 任务迁移已移除
   chat: ['ai-chat/chat-histories.json'],
   auth: ['auth/admin.json'],
   config: ['server-config.json', 'model-service.json'],
@@ -69,7 +68,6 @@ function hasOldDataFiles(): boolean {
 export async function migrateFromJson(): Promise<MigrationStatus> {
   const dataDir = path.join(process.cwd(), 'data');
   let itemCount = 0;
-  let taskCount = 0;
 
   try {
     // 初始化 Schema
@@ -79,12 +77,6 @@ export async function migrateFromJson(): Promise<MigrationStatus> {
     const itemsResult = await migrateItems(dataDir);
     if (itemsResult.success) {
       itemCount = itemsResult.data?.imported ?? 0;
-    }
-
-    // 迁移任务数据
-    const tasksResult = await migrateTasks(dataDir);
-    if (tasksResult.success) {
-      taskCount = tasksResult.data?.imported ?? 0;
     }
 
     // 迁移聊天历史
@@ -99,19 +91,17 @@ export async function migrateFromJson(): Promise<MigrationStatus> {
     // 重命名旧文件为备份
     backupOldFiles(dataDir);
 
-    logger.info(`[Migration] 迁移完成: ${itemCount} 个项目, ${taskCount} 个任务`);
+    logger.info(`[Migration] 迁移完成: ${itemCount} 个项目`);
 
     return {
       migrated: true,
       itemCount,
-      taskCount,
     };
   } catch (error) {
     logger.error('[Migration] 迁移失败:', error);
     return {
       migrated: false,
       itemCount: 0,
-      taskCount: 0,
       error: error instanceof Error ? error.message : '迁移失败',
     };
   }
@@ -161,47 +151,6 @@ async function migrateItems(dataDir: string): Promise<DatabaseResult<{ imported:
 /**
  * 迁移任务数据
  */
-async function migrateTasks(dataDir: string): Promise<DatabaseResult<{ imported: number; skipped: number }>> {
-  for (const filePath of OLD_DATA_PATHS.tasks) {
-    const fullPath = path.join(dataDir, filePath);
-
-    if (fs.existsSync(fullPath)) {
-      try {
-        const content = fs.readFileSync(fullPath, 'utf-8');
-        const tasks = JSON.parse(content);
-
-        if (Array.isArray(tasks) && tasks.length > 0) {
-          logger.info(`[Migration] 发现 ${tasks.length} 个任务待迁移: ${filePath}`);
-
-          // 验证和清理数据
-          const validTasks = tasks.filter((task) => {
-            return task && task.id && task.itemId && task.name;
-          });
-
-          // 补充缺失字段
-          for (const task of validTasks) {
-            if (!task.type) {
-              task.type = 'tmdb-import';
-            }
-            if (!task.createdAt) {
-              task.createdAt = new Date().toISOString();
-            }
-            if (!task.updatedAt) {
-              task.updatedAt = new Date().toISOString();
-            }
-          }
-
-          return tasksRepository.importTasks(validTasks);
-        }
-      } catch (error) {
-        logger.error(`[Migration] 读取任务数据失败: ${filePath}`, error);
-      }
-    }
-  }
-
-  return { success: true, data: { imported: 0, skipped: 0 } };
-}
-
 /**
  * 迁移聊天历史
  */
@@ -338,7 +287,6 @@ export async function checkAndMigrate(): Promise<MigrationStatus> {
     return {
       migrated: false,
       itemCount: getDatabaseStats().items,
-      taskCount: getDatabaseStats().tasks,
     };
   }
 

@@ -4,7 +4,6 @@
  */
 
 import type { TMDBItem } from '@/types/tmdb-item';
-import type { ScheduledTask } from '@/lib/data/storage/types';
 
 // 数据库行类型 - camelCase
 export interface ItemRow {
@@ -68,42 +67,6 @@ export interface EpisodeRow {
   completed: number;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface ScheduledTaskRow {
-  id: string;
-  itemId: string;
-  itemTitle: string;
-  itemTmdbId: string | null;
-  name: string;
-  type: string;
-  scheduleType: string;
-  dayOfWeek: number | null;
-  secondDayOfWeek: number | null;
-  hour: number;
-  minute: number;
-  actionConfig: string; // JSON
-  enabled: number;
-  lastRun: string | null;
-  nextRun: string | null;
-  lastRunStatus: string | null;
-  lastRunError: string | null;
-  currentStep: string | null;
-  executionProgress: number | null;
-  isRunning: number;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-}
-
-export interface ExecutionLogRow {
-  id: string;
-  taskId: string;
-  timestamp: string;
-  step: string | null;
-  message: string | null;
-  level: string;
-  details: string | null; // JSON
 }
 
 export interface ChatHistoryRow {
@@ -197,7 +160,6 @@ export interface DatabaseResult<T = void> {
 // 导出数据格式（与现有格式兼容）
 export interface ExportData {
   items: TMDBItem[];
-  tasks: ScheduledTask[];
   version: string;
   exportDate: string;
 }
@@ -206,7 +168,6 @@ export interface ExportData {
 export interface MigrationStatus {
   migrated: boolean;
   itemCount: number;
-  taskCount: number;
   error?: string;
 }
 
@@ -326,63 +287,4 @@ export function rowToTMDBItem(
   }
 
   return item;
-}
-
-// 帮助函数：将 ScheduledTask 转换为数据库行
-export function scheduledTaskToRow(task: ScheduledTask): ScheduledTaskRow {
-  return {
-    id: task.id,
-    itemId: task.itemId,
-    itemTitle: task.itemTitle,
-    itemTmdbId: task.itemTmdbId ?? null,
-    name: task.name,
-    type: task.type,
-    scheduleType: task.schedule.type,
-    dayOfWeek: task.schedule.dayOfWeek ?? null,
-    secondDayOfWeek: task.schedule.secondDayOfWeek ?? null,
-    hour: task.schedule.hour,
-    minute: task.schedule.minute,
-    actionConfig: JSON.stringify(task.action),
-    enabled: task.enabled ? 1 : 0,
-    lastRun: task.lastRun ?? null,
-    nextRun: task.nextRun ?? null,
-    lastRunStatus: task.lastRunStatus ?? null,
-    lastRunError: task.lastRunError ?? null,
-    currentStep: task.currentStep ?? null,
-    executionProgress: task.executionProgress ?? null,
-    isRunning: task.isRunning ? 1 : 0,
-    createdAt: task.createdAt,
-    updatedAt: task.updatedAt,
-    deletedAt: null,
-  };
-}
-
-// 帮助函数：将数据库行转换为 ScheduledTask
-export function rowToScheduledTask(row: ScheduledTaskRow): ScheduledTask {
-  return {
-    id: row.id,
-    itemId: row.itemId,
-    itemTitle: row.itemTitle,
-    itemTmdbId: row.itemTmdbId ?? undefined,
-    name: row.name,
-    type: row.type as 'tmdb-import',
-    schedule: {
-      type: row.scheduleType as 'weekly' | 'daily',
-      dayOfWeek: row.dayOfWeek ?? undefined,
-      secondDayOfWeek: row.secondDayOfWeek ?? undefined,
-      hour: row.hour,
-      minute: row.minute,
-    },
-    action: JSON.parse(row.actionConfig),
-    enabled: row.enabled === 1,
-    lastRun: row.lastRun ?? undefined,
-    nextRun: row.nextRun ?? undefined,
-    lastRunStatus: row.lastRunStatus as 'success' | 'failed' | 'user_interrupted' | undefined,
-    lastRunError: row.lastRunError,
-    currentStep: row.currentStep ?? undefined,
-    executionProgress: row.executionProgress ?? undefined,
-    isRunning: row.isRunning === 1,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  };
 }

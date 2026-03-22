@@ -1,35 +1,26 @@
 "use client"
 
-import React, { useState } from 'react'
+import React from 'react'
 import AddItemDialog from '@/features/media-maintenance/components/add-item-dialog'
 import SettingsDialog from '@/features/system/components/settings-dialog/SettingsDialog'
 import ItemDetailDialog from '@/features/media-maintenance/components/item-detail-dialog'
-import ScheduledTaskDialog from '@/features/scheduled-tasks/components/scheduled-task-dialog'
-import GlobalScheduledTasksDialog from '@/features/scheduled-tasks/components/global-scheduled-tasks-dialog/global-scheduled-tasks-dialog'
-import { TaskExecutionLogsDialog } from '@/features/scheduled-tasks/components/task-execution-logs-dialog'
 import ImportDataDialog from '@/features/data-management/components/import-data-dialog'
 import ExportDataDialog from '@/features/data-management/components/export-data-dialog'
 import { UseHomeStateReturn } from '@/stores/hooks'
 import { useData } from '@/shared/components/client-data-provider'
-import { TMDBItem } from '@/lib/data/storage'
-import { toast } from '@/shared/components/ui/use-toast'
 
 interface HomeDialogsProps {
   homeState: UseHomeStateReturn
 }
 
 export function HomeDialogs({ homeState }: HomeDialogsProps) {
-  const { 
-    addItem: handleAddItem, 
-    updateItem: handleUpdateItem, 
+  const {
+    addItem: handleAddItem,
+    updateItem: handleUpdateItem,
     deleteItem: handleDeleteItem,
     exportData,
     importData: importDataFromJson
   } = useData()
-
-  // 定时任务对话框状态
-  const [showScheduledTaskDialog, setShowScheduledTaskDialog] = useState(false)
-  const [scheduledTaskItem, setScheduledTaskItem] = useState<TMDBItem | null>(null)
 
   return (
     <>
@@ -57,44 +48,8 @@ export function HomeDialogs({ homeState }: HomeDialogsProps) {
           }}
           onUpdate={handleUpdateItem}
           onDelete={(id) => handleDeleteItem(id)}
-          onOpenScheduledTask={(item) => {
-            setScheduledTaskItem(item);
-            setShowScheduledTaskDialog(true);
-          }}
         />
       )}
-
-      {/* 单项定时任务对话框 */}
-      {scheduledTaskItem && (
-        <ScheduledTaskDialog
-          item={scheduledTaskItem}
-          open={showScheduledTaskDialog}
-          onOpenChange={(open) => {
-            setShowScheduledTaskDialog(open);
-            if (!open) setScheduledTaskItem(null);
-          }}
-          onUpdate={handleUpdateItem}
-          onTaskSaved={(task) => {
-            
-            toast({
-              title: "定时任务已保存",
-              description: `任务 "${task.name}" 已成功保存`,
-            });
-          }}
-        />
-      )}
-
-      {/* 定时任务对话框 */}
-      <GlobalScheduledTasksDialog
-        open={homeState.showTasksDialog}
-        onOpenChange={homeState.setShowTasksDialog}
-      />
-
-      {/* 执行日志对话框 */}
-      <TaskExecutionLogsDialog
-        open={homeState.showExecutionLogs}
-        onOpenChange={homeState.setShowExecutionLogs}
-      />
 
       {/* 导入数据对话框 */}
       <ImportDataDialog

@@ -3,14 +3,13 @@
  * 处理数据导出过程中的错误恢复和数据验证
  */
 
-import type { TMDBItem, ScheduledTask } from '@/lib/data/storage/types';
+import type { TMDBItem } from '@/lib/data/storage/types';
 
 export interface DataValidationResult {
   isValid: boolean;
   errors: string[];
   warnings: string[];
   itemCount: number;
-  taskCount: number;
   corruptedData?: unknown;
 }
 
@@ -28,7 +27,6 @@ export interface ExportResult {
   error?: string;
   stats?: {
     itemCount: number;
-    taskCount: number;
     dataSource: string;
     exportTime: string;
   };
@@ -37,7 +35,7 @@ export interface ExportResult {
 class DataRecoveryManager {
   private static instance: DataRecoveryManager;
   private readonly BACKUP_PREFIX = 'tmdb_helper_backup_';
-  private readonly MAX_BACKUP_AGE = 7 * 24 * 60 * 60 * 1000; // 7天
+  private readonly MAX_BACKUP_AGE = 7 * 24 * 60 * 60 * 1000;
 
   private constructor() {}
 
@@ -57,18 +55,15 @@ class DataRecoveryManager {
       errors: [],
       warnings: [],
       itemCount: 0,
-      taskCount: 0,
     };
 
     try {
-      // 验证项目数据
       const items = await this.getItemsWithFallback();
       result.itemCount = items.length;
 
       if (items.length === 0) {
         result.warnings.push('没有找到项目数据');
       } else {
-        // 验证项目数据结构
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
           if (!item.id) {
@@ -80,30 +75,6 @@ class DataRecoveryManager {
             result.isValid = false;
           }
         }
-      }
-
-      // 验证任务数据
-      try {
-        const tasks = await this.getTasksWithFallback();
-        result.taskCount = tasks.length;
-
-        // 验证任务数据结构
-        for (let i = 0; i < tasks.length; i++) {
-          const task = tasks[i];
-          if (!task.id) {
-            result.errors.push(`任务 ${i} 缺少ID`);
-            result.isValid = false;
-          }
-          if (!task.itemId) {
-            result.errors.push(`任务 ${i} 缺少关联项目ID`);
-            result.isValid = false;
-          }
-        }
-      } catch (taskError) {
-        result.errors.push(
-          `读取任务数据失败: ${taskError instanceof Error ? taskError.message : '未知错误'}`,
-        );
-        result.isValid = false;
       }
     } catch (error) {
       result.errors.push(
@@ -120,7 +91,6 @@ class DataRecoveryManager {
    */
   private async getItemsWithFallback(): Promise<TMDBItem[]> {
     const fallbackMethods = [
-      // 方法1: 从 storage/items API 获取
       async () => {
         const response = await fetch('/api/storage/items');
         if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
@@ -129,7 +99,6 @@ class DataRecoveryManager {
         return result.items || [];
       },
 
-      // 方法2: 从 storage/data API 获取
       async () => {
         const response = await fetch('/api/storage/data');
         if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
@@ -137,7 +106,6 @@ class DataRecoveryManager {
         return result.items || [];
       },
 
-      // 方法3: 从 file-operations API 获取（兼容旧接口）
       async () => {
         const response = await fetch('/api/storage/file-operations');
         if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
@@ -162,35 +130,6 @@ class DataRecoveryManager {
   }
 
   /**
-   * 获取任务数据（带降级方案）
-   */
-  private async getTasksWithFallback(): Promise<ScheduledTask[]> {
-    const fallbackMethods = [
-      // 方法1: 从 scheduled-tasks API 获取
-      async () => {
-        const response = await fetch('/api/tasks/scheduled-tasks');
-        if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
-        const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'API返回失败');
-        return result.tasks || [];
-      },
-    ];
-
-    let lastError: Error | null = null;
-
-    for (let i = 0; i < fallbackMethods.length; i++) {
-      try {
-        const tasks = await fallbackMethods[i]();
-        return tasks;
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error('未知错误');
-      }
-    }
-
-    throw lastError || new Error('所有获取任务数据的方法都失败了');
-  }
-
-  /**
    * 安全导出数据
    */
   public async safeExportData(
@@ -208,7 +147,6 @@ class DataRecoveryManager {
       try {
         attempt++;
 
-        // 验证数据
         if (options.validateData) {
           const validation = await this.validateData();
           if (!validation.isValid) {
@@ -220,24 +158,18 @@ class DataRecoveryManager {
           }
         }
 
-        // 获取数据
         const items = await this.getItemsWithFallback();
-        const tasks = await this.getTasksWithFallback();
 
-        // 创建导出数据
         const exportData = {
           items,
-          tasks,
           version: '1.0.0',
           exportDate: new Date().toISOString(),
           dataSource: 'DataRecoveryManager',
           stats: {
             itemCount: items.length,
-            taskCount: tasks.length,
           },
         };
 
-        // 创建备份
         if (options.includeBackup) {
           await this.createBackup(exportData);
         }
@@ -251,7 +183,6 @@ class DataRecoveryManager {
           filename,
           stats: {
             itemCount: items.length,
-            taskCount: tasks.length,
             dataSource: 'DataRecoveryManager',
             exportTime: new Date().toISOString(),
           },
@@ -260,9 +191,7 @@ class DataRecoveryManager {
         lastError = error instanceof Error ? error : new Error('未知错误');
 
         if (attempt < options.maxRetries) {
-          // 等待后重试
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
@@ -277,23 +206,11 @@ class DataRecoveryManager {
   /**
    * 尝试修复数据问题
    */
-  private async attemptDataFix(
-    validation: DataValidationResult,
-  ): Promise<void> {
-    // 修复任务数据 - 通过 API 触发任务刷新
-    if (validation.errors.some((error) => error.includes('任务'))) {
-      try {
-        await fetch('/api/tasks/scheduled-tasks', { method: 'GET' });
-      } catch (error) {
-        // 忽略错误
-      }
-    }
-
-    // 清理损坏的localStorage数据
+  private async attemptDataFix(validation: DataValidationResult): Promise<void> {
     if (validation.errors.some((error) => error.includes('localStorage'))) {
       try {
         this.cleanupCorruptedData();
-      } catch (error) {
+      } catch {
         // 忽略错误
       }
     }
@@ -317,7 +234,9 @@ class DataRecoveryManager {
     corruptedKeys.forEach((key) => {
       try {
         localStorage.removeItem(key);
-      } catch (error) {}
+      } catch {
+        // 忽略错误
+      }
     });
   }
 
@@ -331,10 +250,10 @@ class DataRecoveryManager {
       const backupKey = `${this.BACKUP_PREFIX}${Date.now()}`;
       const backupData = JSON.stringify(data);
       localStorage.setItem(backupKey, backupData);
-
-      // 清理旧备份
       this.cleanupOldBackups();
-    } catch (error) {}
+    } catch {
+      // 忽略错误
+    }
   }
 
   /**
@@ -346,7 +265,6 @@ class DataRecoveryManager {
     const keys = Object.keys(localStorage);
     const backupKeys = keys.filter((key) => key.startsWith(this.BACKUP_PREFIX));
 
-    // 按时间排序，保留最新的5个备份
     const sortedBackups = backupKeys
       .map((key) => ({
         key,
@@ -354,11 +272,12 @@ class DataRecoveryManager {
       }))
       .sort((a, b) => b.timestamp - a.timestamp);
 
-    // 删除超过5个的旧备份
     sortedBackups.slice(5).forEach((backup) => {
       try {
         localStorage.removeItem(backup.key);
-      } catch (error) {}
+      } catch {
+        // 忽略错误
+      }
     });
   }
 }

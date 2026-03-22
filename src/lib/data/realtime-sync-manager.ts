@@ -2,7 +2,7 @@
  * Realtime sync manager for client-server data synchronization
  */
 
-import { TMDBItem, ScheduledTask } from './storage'
+import { TMDBItem } from './storage'
 import { ConnectionManager } from './connection-manager'
 import { EventDebouncer, DataChangeEvent, SyncEventListener } from './event-debouncer'
 

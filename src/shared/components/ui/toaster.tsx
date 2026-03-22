@@ -9,7 +9,7 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/shared/components/ui/toast"
-import { AlarmClock, CheckCircle2, Info, AlertTriangle, XCircle } from "lucide-react"
+import { CheckCircle2, Info, AlertTriangle, XCircle } from "lucide-react"
 
 export function Toaster() {
   const { toasts } = useToast()

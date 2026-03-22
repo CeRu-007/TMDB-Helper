@@ -23,7 +23,6 @@ export class ConfigMigration {
     'general_settings',
     'appearance_settings',
     'video_thumbnail_settings',
-    'task_scheduler_config',
     'episode_generator_api_provider'
   ]
 

@@ -8,7 +8,6 @@ export * from './validators'
 export * from './api-client'
 
 // Configuration management
-export * from './config-manager'
 export * from './client-config-manager'
 export * from './config-migration'
 export * from './config-adapter'

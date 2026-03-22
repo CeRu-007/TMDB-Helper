@@ -20,7 +20,6 @@ const KEY_MAPPING: Record<string, keyof ServerConfig> = {
   'siliconflow_api_settings': 'siliconFlowApiSettings',
   'modelscope_api_settings': 'modelScopeApiSettings',
   'episode_generator_api_provider': 'episodeGeneratorApiProvider',
-  'task_scheduler_config': 'taskSchedulerConfig',
   'last_login_username': 'last_login_username',
   'last_login_remember_me': 'last_login_remember_me'
 }

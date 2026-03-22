@@ -1,17 +1,16 @@
 /**
  * 统一存储服务
- * 
+ *
  * 自动检测运行环境，提供一致的 API：
  * - 服务端：直接操作文件系统
  * - 客户端：通过 API 调用
- * 
+ *
  * 建议用法：
  * - API 路由中使用：直接调用服务端方法
  * - 客户端组件中使用：通过 API 调用
  */
 
 import type { TMDBItem } from '@/types/tmdb-item'
-import type { ScheduledTask } from '@/lib/data/storage/types'
 
 // 环境检测
 const isServer = typeof window === 'undefined'
@@ -45,71 +44,30 @@ export class UnifiedStorageService {
       const service = await getServerService()
       return service.readItemsFromFile()
     }
-    
+
     // 客户端通过 API 获取
     const response = await fetch('/api/storage/items')
     if (!response.ok) {
       throw new Error('Failed to fetch items')
     }
-    const data = await response.json()
-    return data.items || []
+    return response.json()
   }
 
   /**
-   * 添加项目
+   * 保存项目
    */
-  static async addItem(item: TMDBItem): Promise<boolean> {
+  static async saveItems(items: TMDBItem[]): Promise<boolean> {
     if (isServer) {
       const service = await getServerService()
-      return service.addItemToFile(item)
+      return service.writeItemsToFile(items)
     }
-    
-    const response = await fetch('/api/storage/item', {
+
+    const response = await fetch('/api/storage/items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item),
+      body: JSON.stringify({ items }),
     })
     return response.ok
-  }
-
-  /**
-   * 更新项目
-   */
-  static async updateItem(item: TMDBItem): Promise<boolean> {
-    if (isServer) {
-      const service = await getServerService()
-      return service.updateItemToFile(item)
-    }
-    
-    const response = await fetch('/api/storage/item', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item),
-    })
-    return response.ok
-  }
-
-  /**
-   * 删除项目
-   */
-  static async deleteItem(id: string): Promise<boolean> {
-    if (isServer) {
-      const service = await getServerService()
-      return service.deleteItemFromFile(id)
-    }
-    
-    const response = await fetch(`/api/storage/item?id=${id}`, {
-      method: 'DELETE',
-    })
-    return response.ok
-  }
-
-  /**
-   * 根据 ID 查找项目
-   */
-  static async findItemById(id: string): Promise<TMDBItem | undefined> {
-    const items = await this.getItems()
-    return items.find(item => item.id === id)
   }
 
   // ==================== 批量操作 ====================
@@ -117,16 +75,16 @@ export class UnifiedStorageService {
   /**
    * 导入数据
    */
-  static async importData(items: TMDBItem[], tasks?: ScheduledTask[]): Promise<boolean> {
+  static async importData(items: TMDBItem[]): Promise<boolean> {
     if (isServer) {
       const service = await getServerService()
       return service.writeItemsToFile(items)
     }
-    
+
     const response = await fetch('/api/storage/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items, tasks }),
+      body: JSON.stringify({ items }),
     })
     return response.ok
   }
@@ -134,14 +92,13 @@ export class UnifiedStorageService {
   /**
    * 导出数据
    */
-  static async exportData(): Promise<{ items: TMDBItem[]; tasks?: ScheduledTask[] }> {
+  static async exportData(): Promise<{ items: TMDBItem[] }> {
     if (isServer) {
       const service = await getServerService()
       const items = service.readItemsFromFile()
-      // TODO: 添加任务导出
       return { items }
     }
-    
+
     const response = await fetch('/api/storage/data')
     if (!response.ok) {
       throw new Error('Failed to export data')
@@ -166,7 +123,19 @@ export class UnifiedStorageService {
     const items = await this.getItems()
     return items.length
   }
-}
 
-// 导出环境检测工具
-export { isServer, isClient }
+  /**
+   * 清除所有数据
+   */
+  static async clearAllData(): Promise<boolean> {
+    if (isServer) {
+      const service = await getServerService()
+      return service.clearAllData()
+    }
+
+    const response = await fetch('/api/storage/data', {
+      method: 'DELETE',
+    })
+    return response.ok
+  }
+}

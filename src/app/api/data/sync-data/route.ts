@@ -1,61 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ServerStorageManager } from '@/lib/data/server-storage-manager';
 import type { TMDBItem } from '@/types/tmdb-item';
-import type { ScheduledTask } from '@/lib/data/storage/types';
 import { logger } from '@/lib/utils/logger';
 
-// 类型定义
 interface SyncItem {
   id: string;
   title: string;
   [key: string]: unknown;
 }
 
-interface SyncTask {
-  id: string;
-  name: string;
-  itemId: string;
-  [key: string]: unknown;
-}
-
-/**
- * GET /api/sync-data - 获取服务端数据用于同步
- */
 export async function GET(request: NextRequest) {
   try {
-    // 确保数据库已初始化
     await ServerStorageManager.init();
-    
-    // 从数据库读取项目数据
+
     const items: TMDBItem[] = ServerStorageManager.getItems();
 
-    // 从数据库读取任务数据
-    const tasks: ScheduledTask[] = ServerStorageManager.getTasks();
-
-    // 计算数据版本（基于最后更新时间）
     const itemVersions = items
       .map((item) => new Date(item.updatedAt).getTime())
       .filter((t) => !isNaN(t));
-    const taskVersions = tasks
-      .map((task) => new Date(task.updatedAt).getTime())
-      .filter((t) => !isNaN(t));
 
-    const latestItemTime =
-      itemVersions.length > 0 ? Math.max(...itemVersions) : 0;
-    const latestTaskTime =
-      taskVersions.length > 0 ? Math.max(...taskVersions) : 0;
-    const version = Math.max(latestItemTime, latestTaskTime);
+    const latestItemTime = itemVersions.length > 0 ? Math.max(...itemVersions) : 0;
+    const version = latestItemTime;
 
     return NextResponse.json({
       success: true,
       items,
-      tasks,
       version,
       timestamp: new Date().toISOString(),
       stats: {
         itemCount: items.length,
-        taskCount: tasks.length,
-        enabledTasks: tasks.filter((t) => t.enabled).length,
       },
     });
   } catch (error) {
@@ -70,14 +43,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * POST /api/sync-data - 接收客户端数据并进行服务端同步
- */
 export async function POST(request: NextRequest) {
   try {
-    const { items, tasks, clientVersion } = await request.json();
+    const { items, clientVersion } = await request.json();
 
-    if (!Array.isArray(items) || !Array.isArray(tasks)) {
+    if (!Array.isArray(items)) {
       return NextResponse.json(
         {
           success: false,
@@ -87,24 +57,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 这里可以实现服务端数据的更新逻辑
-    // 由于当前系统主要使用文件存储，这里暂时只做数据验证和统计
-
-    // 验证数据完整性
     const validItems = items.filter(
       (item: SyncItem) => item && typeof item === 'object' && item.id && item.title,
     );
 
-    const validTasks = tasks.filter(
-      (task: SyncTask) =>
-        task && typeof task === 'object' && task.id && task.name && task.itemId,
-    );
-
     const invalidItemCount = items.length - validItems.length;
-    const invalidTaskCount = tasks.length - validTasks.length;
 
-    if (invalidItemCount > 0 || invalidTaskCount > 0) {
-      logger.warn(`[API] 发现无效数据: ${invalidItemCount}个无效项目, ${invalidTaskCount}个无效任务`);
+    if (invalidItemCount > 0) {
+      logger.warn(`[API] 发现无效数据: ${invalidItemCount}个无效项目`);
     }
 
     return NextResponse.json({
@@ -112,9 +72,7 @@ export async function POST(request: NextRequest) {
       message: '数据同步完成',
       processed: {
         validItems: validItems.length,
-        validTasks: validTasks.length,
         invalidItems: invalidItemCount,
-        invalidTasks: invalidTaskCount,
       },
       serverVersion: Date.now(),
       timestamp: new Date().toISOString(),

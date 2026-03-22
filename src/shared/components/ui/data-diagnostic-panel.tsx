@@ -9,7 +9,6 @@ import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Separator } from '@/shared/components/ui/separator'
 import { useToast } from '@/lib/hooks/use-toast'
 import { dataRecoveryManager, DataValidationResult } from '@/lib/data/data-recovery-manager'
-import { StorageManager } from '@/lib/data/storage'
 
 interface DataDiagnosticPanelProps {
   className?: string
@@ -102,7 +101,6 @@ export function DataDiagnosticPanel({ className = "" }: DataDiagnosticPanelProps
   // 修复数据问题
   const fixDataIssues = async () => {
     try {
-      await StorageManager.forceRefreshScheduledTasks()
       toast({
         title: "数据修复完成",
         description: "已尝试修复检测到的数据问题",

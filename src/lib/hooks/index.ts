@@ -9,7 +9,6 @@ export { useScenarioModels } from './useScenarioModels'
 // 本地特有的 hooks
 export { useMediaNews } from './use-media-news'
 export { useSubtitleTask } from './use-subtitle-task'
-export { useScheduledTasks } from './use-scheduled-tasks'
 export { useTableHistory } from './use-table-history'
 export { useStateManager } from './use-state-manager'
 export { useWeekdayFilter } from './use-weekday-filter'

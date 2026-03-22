@@ -17,7 +17,6 @@ import {
   X,
   Trash2,
   Loader2,
-  AlarmClock,
   Zap,
   Info,
   Terminal,
@@ -58,7 +57,6 @@ import {
 import { useItemImagesPreloader } from "@/lib/hooks/useItemImagesPreloader"
 
 // 导入对话框组件
-import ScheduledTaskDialog from "@/features/scheduled-tasks/components/scheduled-task-dialog"
 import FixTMDBImportBugDialog from "@/features/tmdb-import/components/fix-tmdb-import-bug-dialog"
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
@@ -71,11 +69,10 @@ interface ItemDetailDialogProps {
   onOpenChange: (open: boolean) => void
   onUpdate: (item: TMDBItem) => void
   onDelete: (id: string) => void
-  onOpenScheduledTask?: (item: TMDBItem) => void
   displayMode?: "dialog" | "inline"
 }
 
-const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, onOpenScheduledTask, displayMode = "dialog" }: ItemDetailDialogProps) {
+const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, displayMode = "dialog" }: ItemDetailDialogProps) {
   const contentRef = useRef<HTMLDivElement>(null)
   const [pythonCmd, setPythonCmd] = useState<string>(process.platform === 'win32' ? 'python' : 'python3')
 
@@ -111,8 +108,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     setShowDeleteDialog,
     showFixBugDialog,
     setShowFixBugDialog,
-    scheduledTaskDialogOpen,
-    setScheduledTaskDialogOpen,
     isRefreshingTMDBData,
     setIsRefreshingTMDBData,
     refreshError,
@@ -1190,20 +1185,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
               <div className="col-span-3 flex flex-col min-h-0 overflow-hidden">
                 {/* 操作按钮 */}
                 <div className="flex flex-wrap gap-2 mb-3 items-center">
-                  <Button
-                    variant="outline"
-                    className="flex items-center transition-all duration-300 hover:scale-105"
-                    onClick={() => {
-                      if (onOpenScheduledTask) {
-                        onOpenScheduledTask(localItem);
-                      } else {
-                        setScheduledTaskDialogOpen(true);
-                      }
-                    }}
-                  >
-                    <AlarmClock className="h-4 w-4 mr-2" />
-                    定时任务
-                  </Button>
                 </div>
 
                 {/* 标签页切换 */}
@@ -1304,12 +1285,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       </Dialog>
 
       {/* 定时任务对话框 */}
-      <ScheduledTaskDialog
-        item={localItem}
-        open={scheduledTaskDialogOpen}
-        onOpenChange={setScheduledTaskDialogOpen}
-        onUpdate={onUpdate}
-      />
     </>
   )
 })

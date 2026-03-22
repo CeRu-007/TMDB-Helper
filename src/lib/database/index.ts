@@ -13,23 +13,19 @@ export type {
   ItemRow,
   SeasonRow,
   EpisodeRow,
-  ScheduledTaskRow,
-  ExecutionLogRow,
   ChatHistoryRow,
   MessageRow,
   AdminUserRow,
-  ConfigRow,
   ItemWithRelations,
   DatabaseResult,
   ExportData,
   MigrationStatus,
 } from './types';
-export { tmdbItemToRow, rowToTMDBItem, scheduledTaskToRow, rowToScheduledTask } from './types';
+export { tmdbItemToRow, rowToTMDBItem } from './types';
 
 // Repositories
 export { BaseRepository } from './repositories/base.repository';
 export { ItemsRepository, itemsRepository } from './repositories/items.repository';
-export { TasksRepository, tasksRepository } from './repositories/tasks.repository';
 export { ChatRepository, chatRepository } from './repositories/chat.repository';
 export { AuthRepository, authRepository, type AdminUser } from './repositories/auth.repository';
 export { ConfigRepository, configRepository } from './repositories/config.repository';
@@ -37,7 +33,6 @@ export { ConfigRepository, configRepository } from './repositories/config.reposi
 // Services (推荐使用)
 export { cacheManager, CacheKeys, CacheManager } from './services/cache.service';
 export { itemsService, ItemsService } from './services/items.service';
-export { tasksService, TasksService } from './services/tasks.service';
 
 // 初始化数据库（应用启动时调用）
 export function initializeDatabase(): void {

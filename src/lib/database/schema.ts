@@ -120,50 +120,6 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
     )
   `);
 
-  // 定时任务表
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS scheduledTasks (
-      id TEXT PRIMARY KEY,
-      itemId TEXT NOT NULL,
-      itemTitle TEXT NOT NULL,
-      itemTmdbId TEXT,
-      name TEXT NOT NULL,
-      type TEXT DEFAULT 'tmdb-import',
-      scheduleType TEXT NOT NULL,
-      dayOfWeek INTEGER,
-      secondDayOfWeek INTEGER,
-      hour INTEGER NOT NULL,
-      minute INTEGER NOT NULL,
-      actionConfig TEXT NOT NULL,
-      enabled INTEGER DEFAULT 1,
-      lastRun TEXT,
-      nextRun TEXT,
-      lastRunStatus TEXT,
-      lastRunError TEXT,
-      currentStep TEXT,
-      executionProgress INTEGER,
-      isRunning INTEGER DEFAULT 0,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL,
-      deletedAt TEXT,
-      FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE SET NULL
-    )
-  `);
-
-  // 执行日志表
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS executionLogs (
-      id TEXT PRIMARY KEY,
-      taskId TEXT NOT NULL,
-      timestamp TEXT NOT NULL,
-      step TEXT,
-      message TEXT,
-      level TEXT DEFAULT 'info',
-      details TEXT,
-      FOREIGN KEY (taskId) REFERENCES scheduledTasks(id) ON DELETE CASCADE
-    )
-  `);
-
   // AI聊天历史表
   db.exec(`
     CREATE TABLE IF NOT EXISTS chatHistories (
@@ -260,11 +216,7 @@ function createIndexes(db: ReturnType<typeof getDatabase>): void {
     'CREATE INDEX IF NOT EXISTS idx_items_deletedAt ON items(deletedAt)',
     'CREATE INDEX IF NOT EXISTS idx_episodes_itemId ON episodes(itemId)',
     'CREATE INDEX IF NOT EXISTS idx_seasons_itemId ON seasons(itemId)',
-    'CREATE INDEX IF NOT EXISTS idx_scheduledTasks_itemId ON scheduledTasks(itemId)',
-    'CREATE INDEX IF NOT EXISTS idx_scheduledTasks_enabled ON scheduledTasks(enabled)',
-    'CREATE INDEX IF NOT EXISTS idx_scheduledTasks_deletedAt ON scheduledTasks(deletedAt)',
     'CREATE INDEX IF NOT EXISTS idx_messages_chatId ON messages(chatId)',
-    'CREATE INDEX IF NOT EXISTS idx_executionLogs_taskId ON executionLogs(taskId)',
     'CREATE INDEX IF NOT EXISTS idx_chatHistories_deletedAt ON chatHistories(deletedAt)',
     'CREATE INDEX IF NOT EXISTS idx_adminUsers_deletedAt ON adminUsers(deletedAt)',
     'CREATE INDEX IF NOT EXISTS idx_image_cache_tmdbId ON image_cache(tmdbId)',
@@ -313,18 +265,16 @@ function safeCount(db: ReturnType<typeof getDatabase>, tableName: string, whereC
  */
 export function getDatabaseStats(): {
   items: number;
-  tasks: number;
   chatHistories: number;
   messages: number;
 } {
   const db = getDatabase();
 
   const items = safeCount(db, 'items', 'deletedAt IS NULL');
-  const tasks = safeCount(db, 'scheduledTasks', 'deletedAt IS NULL');
   const chatHistories = safeCount(db, 'chatHistories', 'deletedAt IS NULL');
   const messages = safeCount(db, 'messages');
 
-  return { items, tasks, chatHistories, messages };
+  return { items, chatHistories, messages };
 }
 
 /**
@@ -333,10 +283,8 @@ export function getDatabaseStats(): {
 export function clearAllData(): void {
   const db = getDatabase();
 
-  db.exec('DELETE FROM executionLogs');
   db.exec('DELETE FROM messages');
   db.exec('DELETE FROM chatHistories');
-  db.exec('DELETE FROM scheduledTasks');
   db.exec('DELETE FROM episodes');
   db.exec('DELETE FROM seasons');
   db.exec('DELETE FROM items');
@@ -422,8 +370,6 @@ function initializeDefaultConfig(db: ReturnType<typeof getDatabase>): void {
         }),
         // 通用设置（空，使用代码中的默认值）
         generalSettings: '',
-        // 任务调度器配置
-        taskSchedulerConfig: undefined,
       }),
     },
     // 通用设置（单独存储，兼容 ClientConfigManager）

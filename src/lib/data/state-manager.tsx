@@ -4,14 +4,13 @@
  */
 
 import React, { createContext, useContext, useReducer, useEffect } from "react"
-import { TMDBItem, ScheduledTask } from "./storage"
+import { TMDBItem } from "./storage"
 import { log } from "@/lib/utils/logger"
 
 // 状态接口
 export interface AppState {
   // 数据状态
   items: TMDBItem[]
-  scheduledTasks: ScheduledTask[]
 
   // UI状态
   loading: boolean
@@ -49,10 +48,6 @@ export type AppAction =
   | { type: "ADD_ITEM"; payload: TMDBItem }
   | { type: "UPDATE_ITEM"; payload: TMDBItem }
   | { type: "DELETE_ITEM"; payload: string }
-  | { type: "SET_SCHEDULED_TASKS"; payload: ScheduledTask[] }
-  | { type: "ADD_SCHEDULED_TASK"; payload: ScheduledTask }
-  | { type: "UPDATE_SCHEDULED_TASK"; payload: ScheduledTask }
-  | { type: "DELETE_SCHEDULED_TASK"; payload: string }
   | { type: "SET_PREFERENCES"; payload: Partial<AppState["preferences"]> }
   | { type: "SET_FILTERS"; payload: Partial<AppState["filters"]> }
   | { type: "SET_SELECTED_ITEMS"; payload: string[] }
@@ -64,7 +59,6 @@ export type AppAction =
 // 初始状态
 const initialState: AppState = {
   items: [],
-  scheduledTasks: [],
   loading: false,
   error: null,
   initialized: false,
@@ -113,24 +107,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         items: state.items.filter((item) => item.id !== action.payload),
         selectedItems: state.selectedItems.filter((id) => id !== action.payload),
         selectedItem: state.selectedItem?.id === action.payload ? null : state.selectedItem,
-      }
-
-    // 任务管理
-    case "SET_SCHEDULED_TASKS":
-      return { ...state, scheduledTasks: action.payload }
-    case "ADD_SCHEDULED_TASK":
-      return { ...state, scheduledTasks: [...state.scheduledTasks, action.payload] }
-    case "UPDATE_SCHEDULED_TASK":
-      return {
-        ...state,
-        scheduledTasks: state.scheduledTasks.map((task) =>
-          task.id === action.payload.id ? action.payload : task,
-        ),
-      }
-    case "DELETE_SCHEDULED_TASK":
-      return {
-        ...state,
-        scheduledTasks: state.scheduledTasks.filter((task) => task.id !== action.payload),
       }
 
     // 偏好和过滤
@@ -199,130 +175,32 @@ export function AppStateProvider({ children }: { children: React.ReactNode }): J
   useEffect(() => {
     try {
       localStorage.setItem("app_preferences", JSON.stringify(state.preferences))
-      log.debug("StateManager", "用户偏好已保存", state.preferences)
     } catch (error) {
       log.warn("StateManager", "保存用户偏好失败", error)
     }
   }, [state.preferences])
 
-  return <AppStateContext.Provider value={{ state, dispatch }}>{children}</AppStateContext.Provider>
+  return (
+    <AppStateContext.Provider value={{ state, dispatch }}>
+      {children}
+    </AppStateContext.Provider>
+  )
 }
 
-// Hook
-export function useAppState() {
+// Hook to use the state
+export function useAppState(): AppState {
   const context = useContext(AppStateContext)
   if (!context) {
-    throw new Error("useAppState must be used within AppStateProvider")
+    throw new Error('useAppState must be used within AppStateProvider')
   }
-  return context
+  return context.state
 }
 
-// 选择器Hook
-export function useAppSelector<T>(selector: (state: AppState) => T): T {
-  const { state } = useAppState()
-  return selector(state)
-}
-
-// 动作Hook
-export function useAppActions() {
-  const { dispatch } = useAppState()
-
-  return {
-    // 数据操作
-    setItems: (items: TMDBItem[]) => dispatch({ type: "SET_ITEMS", payload: items }),
-    addItem: (item: TMDBItem) => dispatch({ type: "ADD_ITEM", payload: item }),
-    updateItem: (item: TMDBItem) => dispatch({ type: "UPDATE_ITEM", payload: item }),
-    deleteItem: (id: string) => dispatch({ type: "DELETE_ITEM", payload: id }),
-
-    // 任务操作
-    setScheduledTasks: (tasks: ScheduledTask[]) => dispatch({ type: "SET_SCHEDULED_TASKS", payload: tasks }),
-    addScheduledTask: (task: ScheduledTask) => dispatch({ type: "ADD_SCHEDULED_TASK", payload: task }),
-    updateScheduledTask: (task: ScheduledTask) => dispatch({ type: "UPDATE_SCHEDULED_TASK", payload: task }),
-    deleteScheduledTask: (id: string) => dispatch({ type: "DELETE_SCHEDULED_TASK", payload: id }),
-
-    // UI状态
-    setLoading: (loading: boolean) => dispatch({ type: "SET_LOADING", payload: loading }),
-    setError: (error: string | null) => dispatch({ type: "SET_ERROR", payload: error }),
-    setInitialized: (initialized: boolean) => dispatch({ type: "SET_INITIALIZED", payload: initialized }),
-
-    // 偏好设置
-    setPreferences: (preferences: Partial<AppState["preferences"]>) =>
-      dispatch({ type: "SET_PREFERENCES", payload: preferences }),
-
-    // 过滤器
-    setFilters: (filters: Partial<AppState["filters"]>) => dispatch({ type: "SET_FILTERS", payload: filters }),
-
-    // 选择操作
-    setSelectedItems: (items: string[]) => dispatch({ type: "SET_SELECTED_ITEMS", payload: items }),
-    setSelectedItem: (item: TMDBItem | null) => dispatch({ type: "SET_SELECTED_ITEM", payload: item }),
-    toggleItemSelection: (id: string) => dispatch({ type: "TOGGLE_ITEM_SELECTION", payload: id }),
-    clearSelection: () => dispatch({ type: "CLEAR_SELECTION" }),
-
-    // 重置
-    resetState: () => dispatch({ type: "RESET_STATE" }),
+// Hook to use dispatch
+export function useAppDispatch(): React.Dispatch<AppAction> {
+  const context = useContext(AppStateContext)
+  if (!context) {
+    throw new Error('useAppDispatch must be used within AppStateProvider')
   }
-}
-
-// 计算属性Hook
-export function useComputedState() {
-  const state = useAppState().state
-
-  return {
-    // 过滤后的项目
-    filteredItems: React.useMemo(() => {
-      let filtered = state.items
-
-      // 按分类过滤
-      if (state.filters.category !== "all") {
-        filtered = filtered.filter((item) => item.category === state.filters.category)
-      }
-
-      // 按状态过滤
-      if (state.filters.status !== "all") {
-        filtered = filtered.filter((item) => item.status === state.filters.status)
-      }
-
-      // 按搜索查询过滤
-      if (state.filters.searchQuery) {
-        const query = state.filters.searchQuery.toLowerCase()
-        filtered = filtered.filter(
-          (item) =>
-            item.title.toLowerCase().includes(query) ||
-            item.originalTitle?.toLowerCase().includes(query) ||
-            item.notes?.toLowerCase().includes(query),
-        )
-      }
-
-      return filtered
-    }, [state.items, state.filters]),
-
-    // 统计信息
-    statistics: React.useMemo(() => {
-      const total = state.items.length
-      const ongoing = state.items.filter((item) => item.status === "ongoing").length
-      const completed = state.items.filter((item) => item.status === "completed").length
-      const byCategory = state.items.reduce(
-        (acc, item) => {
-          const category = item.category || "unknown"
-          acc[category] = (acc[category] || 0) + 1
-          return acc
-        },
-        {} as Record<string, number>,
-      )
-
-      return {
-        total,
-        ongoing,
-        completed,
-        completionRate: total > 0 ? (completed / total) * 100 : 0,
-        byCategory,
-      }
-    }, [state.items]),
-
-    // 运行中的任务
-    runningTasks: React.useMemo(
-      () => state.scheduledTasks.filter((task) => task.isRunning),
-      [state.scheduledTasks],
-    ),
-  }
+  return context.dispatch
 }

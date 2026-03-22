@@ -1,17 +1,13 @@
 import React from "react"
 import { Button } from "@/shared/components/ui/button"
 import { UserAvatar } from "@/shared/components/user-identity-provider"
-import { Settings, Plus, Sun, Moon, BarChart2, AlarmClock, PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
-import { Task } from "@/types/tasks"
 
 interface AppHeaderProps {
   sidebarCollapsed: boolean
   onSidebarToggle: () => void
-  runningTasks: Task[]
-  onShowExecutionLogs: () => void
-  onShowTasksDialog: () => void
   onShowSettingsDialog: (section?: string) => void
   onShowImportDialog: () => void
   onShowExportDialog: () => void
@@ -21,9 +17,6 @@ interface AppHeaderProps {
 export function AppHeader({
   sidebarCollapsed,
   onSidebarToggle,
-  runningTasks,
-  onShowExecutionLogs,
-  onShowTasksDialog,
   onShowSettingsDialog,
   onShowImportDialog,
   onShowExportDialog,
@@ -68,22 +61,6 @@ export function AppHeader({
           <div className="h-full max-w-7xl w-full mx-auto px-8 pr-9 flex items-center justify-end pointer-events-auto">
             {/* Desktop action buttons */}
             <div className="flex items-center space-x-2">
-              {runningTasks.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onShowExecutionLogs}
-                  className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 flex items-center space-x-2"
-                >
-                  <BarChart2 className="h-4 w-4" />
-                  <span>执行日志 ({runningTasks.length})</span>
-                </Button>
-              )}
-              <Button variant="outline" size="sm" onClick={onShowTasksDialog} className="flex items-center space-x-2">
-                <AlarmClock className="h-4 w-4" />
-                <span>定时任务</span>
-              </Button>
-
               <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center space-x-2">
                 <Settings className="h-4 w-4" />
                 <span>设置</span>

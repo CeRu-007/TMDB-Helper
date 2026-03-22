@@ -46,9 +46,6 @@ import MediaCard from "@/features/media-maintenance/components/media-card"
 
 import AddItemDialog from "@/features/media-maintenance/components/add-item-dialog"
 import SettingsDialog from "@/features/system/components/settings-dialog/SettingsDialog"
-import GlobalScheduledTasksDialog from "@/features/scheduled-tasks/components/global-scheduled-tasks-dialog/global-scheduled-tasks-dialog"
-import { TaskExecutionLogsDialog } from "@/features/scheduled-tasks/components/task-execution-logs-dialog"
-import ScheduledTaskDialog from "@/features/scheduled-tasks/components/scheduled-task-dialog"
 import ImportDataDialog from "@/features/data-management/components/import-data-dialog"
 import ExportDataDialog from "@/features/data-management/components/export-data-dialog"
 import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
@@ -413,10 +410,6 @@ export default function HomePage() {
       <SidebarLayout
         onUpdateItem={handleUpdateItem}
         onDeleteItem={handleDeleteItem}
-        onOpenScheduledTask={(item) => {
-          homeState.setScheduledTaskItem(item);
-          homeState.setShowScheduledTaskDialog(true);
-        }}
         fetchUpcomingItems={(silent?: boolean, _retryCount?: number, region?: string) => {
           if (region) {
             mediaNews.fetchUpcomingItems(region, silent || false)
@@ -454,31 +447,8 @@ export default function HomePage() {
         }}
         initialSection={homeState.settingsInitialSection || ""}
       />
-      <GlobalScheduledTasksDialog open={homeState.showTasksDialog} onOpenChange={homeState.setShowTasksDialog} />
-      <TaskExecutionLogsDialog
-        open={homeState.showExecutionLogs}
-        onOpenChange={homeState.setShowExecutionLogs}
-        runningTasks={homeState.runningTasks}
-      />
       <ImportDataDialog open={homeState.showImportDialog} onOpenChange={homeState.setShowImportDialog} />
       <ExportDataDialog open={homeState.showExportDialog} onOpenChange={homeState.setShowExportDialog} />
-      {homeState.scheduledTaskItem && (
-        <ScheduledTaskDialog
-          item={homeState.scheduledTaskItem}
-          open={homeState.showScheduledTaskDialog}
-          onOpenChange={(open) => {
-            homeState.setShowScheduledTaskDialog(open);
-            if (!open) homeState.setScheduledTaskItem(null);
-          }}
-          onUpdate={handleUpdateItem}
-          onTaskSaved={(task) => {
-            toast({
-              title: "定时任务已保存",
-              description: `任务 "${task.name}" 已成功保存`,
-            });
-          }}
-        />
-      )}
     </>
   )
 }

@@ -29,7 +29,6 @@ interface ContentRenderersProps {
   selectedItem: TMDBItem | null
   onUpdateItem: (item: TMDBItem) => void
   onDeleteItem: (id: string) => void
-  onOpenScheduledTask?: ((item: TMDBItem) => void) | undefined
   onBackToList: () => void
   onOpenGlobalSettings: (section: string) => void
   onShowAddDialog: () => void
@@ -69,7 +68,6 @@ export function ContentRenderers({
   selectedItem,
   onUpdateItem,
   onDeleteItem,
-  onOpenScheduledTask,
   onBackToList,
   onOpenGlobalSettings,
   onShowAddDialog,
@@ -115,7 +113,6 @@ export function ContentRenderers({
           }}
           onUpdate={onUpdateItem}
           onDelete={onDeleteItem}
-          onOpenScheduledTask={onOpenScheduledTask}
           displayMode="inline"
         />
       </div>

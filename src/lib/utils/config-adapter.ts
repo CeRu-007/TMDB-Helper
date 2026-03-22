@@ -84,8 +84,7 @@ export class ConfigAdapter {
         'siliconflow_api_settings',
         'general_settings',
         'appearance_settings',
-        'video_thumbnail_settings',
-        'task_scheduler_config'
+        'video_thumbnail_settings'
       ];
 
       keysToMigrate.forEach(key => {

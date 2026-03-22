@@ -13,13 +13,11 @@ import {
 import {
   useUIStore,
   useMediaStore,
-  useTaskStore,
   useMediaNewsStore,
 } from "@/stores"
 
 // 类型导入
 import type { TMDBItem } from "@/types/tmdb-item"
-import type { Task } from "@/types/tasks"
 
 /**
  * SidebarLayout - 简化版
@@ -38,7 +36,6 @@ export interface SidebarLayoutProps {
   // 保留必要的回调函数（操作类）
   onUpdateItem: (item: TMDBItem) => void
   onDeleteItem: (id: string) => void
-  onOpenScheduledTask?: (item: TMDBItem) => void
   // 影视资讯获取函数（需要 API 调用）
   fetchUpcomingItems: (silent?: boolean, retryCount?: number, region?: string) => void
   fetchRecentItems: (silent?: boolean, retryCount?: number, region?: string) => void
@@ -48,7 +45,6 @@ export function SidebarLayout({
   children,
   onUpdateItem,
   onDeleteItem,
-  onOpenScheduledTask,
   fetchUpcomingItems,
   fetchRecentItems,
 }: SidebarLayoutProps) {
@@ -58,17 +54,11 @@ export function SidebarLayout({
   const setSelectedCategory = useUIStore((s) => s.setSelectedCategory)
   const openAddDialog = useUIStore((s) => s.openAddDialog)
   const openSettingsDialog = useUIStore((s) => s.openSettingsDialog)
-  const openTasksDialog = useUIStore((s) => s.openTasksDialog)
-  const openExecutionLogs = useUIStore((s) => s.openExecutionLogs)
   const openImportDialog = useUIStore((s) => s.openImportDialog)
   const openExportDialog = useUIStore((s) => s.openExportDialog)
 
   // 从 Media Store 获取状态
   const items = useMediaStore((s) => s.items)
-
-  // 从 Task Store 获取状态
-  // 注意：这里需要类型转换，因为 ScheduledTask 和 Task 类型不完全匹配
-  const runningTasks = useTaskStore((s) => s.runningTasks) as unknown as Task[]
 
   // 从 MediaNews Store 获取状态
   // 注意：这里需要类型转换，因为 MediaItem 和 TMDBItem 类型不完全匹配
@@ -205,8 +195,6 @@ export function SidebarLayout({
   // 向后兼容的回调包装
   const handleShowAddDialog = useCallback(() => openAddDialog(), [openAddDialog])
   const handleShowSettingsDialog = useCallback((section?: string) => openSettingsDialog(section), [openSettingsDialog])
-  const handleShowTasksDialog = useCallback(() => openTasksDialog(), [openTasksDialog])
-  const handleShowExecutionLogs = useCallback(() => openExecutionLogs(), [openExecutionLogs])
   const handleShowImportDialog = useCallback(() => openImportDialog(), [openImportDialog])
   const handleShowExportDialog = useCallback(() => openExportDialog(), [openExportDialog])
 
@@ -216,9 +204,6 @@ export function SidebarLayout({
       <AppHeader
         sidebarCollapsed={sidebarCollapsed}
         onSidebarToggle={handleSidebarToggle}
-        runningTasks={runningTasks}
-        onShowExecutionLogs={handleShowExecutionLogs}
-        onShowTasksDialog={handleShowTasksDialog}
         onShowSettingsDialog={handleShowSettingsDialog}
         onShowImportDialog={handleShowImportDialog}
         onShowExportDialog={handleShowExportDialog}
@@ -242,7 +227,6 @@ export function SidebarLayout({
             selectedItem={selectedItem}
             onUpdateItem={onUpdateItem}
             onDeleteItem={onDeleteItem}
-            onOpenScheduledTask={onOpenScheduledTask}
             onBackToList={handleBackToList}
             onOpenGlobalSettings={handleShowSettingsDialog}
             onShowAddDialog={handleShowAddDialog}
