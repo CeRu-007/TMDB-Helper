@@ -15,9 +15,9 @@ import {
 // 导入 hooks - 使用 Zustand 版本
 import { useHomeState } from '@/stores/hooks'
 import { useCategoryFilter } from '@/features/media-maintenance/lib/hooks/use-category-filter'
-import { useWeekdayFilter } from '@/features/media-maintenance/lib/hooks/use-weekday-filter'
-import { useCurrentDay } from '@/features/media-maintenance/lib/hooks/use-current-day'
-import { useMediaNews } from '@/features/media-maintenance/lib/hooks/use-media-news'
+import { useWeekdayFilter } from '@/lib/hooks/use-weekday-filter'
+import { useCurrentDay } from '@/lib/hooks/use-current-day'
+import { useMediaNews } from '@/lib/hooks/use-media-news'
 import { useData } from "@/shared/components/client-data-provider"
 import { useToast } from "@/lib/hooks/use-toast"
 

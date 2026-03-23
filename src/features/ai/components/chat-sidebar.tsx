@@ -4,7 +4,7 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { MessageSquare, PanelLeft, Trash2, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ChatHistory } from "@/types/ai-chat"
-import { formatChatDate, truncateText } from "@/features/ai/lib/utils/ai-chat-helpers"
+import { formatChatDate, truncateText } from "@/lib/utils/ai-chat-helpers"
 
 interface ChatSidebarProps {
   chatHistories: ChatHistory[]

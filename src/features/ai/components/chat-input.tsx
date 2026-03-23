@@ -14,7 +14,7 @@ import {
   Upload
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { SUPPORTED_SUBTITLE_FORMATS } from "@/features/ai/lib/utils/ai-chat-constants"
+import { SUPPORTED_SUBTITLE_FORMATS } from "@/lib/utils/ai-chat-constants"
 
 // Scenario models type
 interface ScenarioModelsConfig {

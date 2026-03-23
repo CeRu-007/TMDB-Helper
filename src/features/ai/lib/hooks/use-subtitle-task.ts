@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { Message } from '@/types/ai-chat'
-import { SUBTITLE_TASKS } from '@/features/ai/lib/utils/ai-chat-constants'
+import { SUBTITLE_TASKS } from '@/lib/utils/ai-chat-constants'
 import { toast } from 'sonner'
 import { logger } from '@/lib/utils/logger'
 
