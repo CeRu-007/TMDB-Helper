@@ -51,8 +51,7 @@ import {
 
 // 导入自定义 Hooks
 import {
-  useItemDetailState,
-  useTMDBIntegration
+  useItemDetailState
 } from "../hooks"
 import { useItemImagesPreloader } from "@/lib/hooks/useItemImagesPreloader"
 
@@ -74,7 +73,6 @@ interface ItemDetailDialogProps {
 
 const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, displayMode = "dialog" }: ItemDetailDialogProps) {
   const contentRef = useRef<HTMLDivElement>(null)
-  const [pythonCmd, setPythonCmd] = useState<string>(process.platform === 'win32' ? 'python' : 'python3')
 
   const CATEGORIES = [
     { id: "anime", name: "动漫", icon: <Sparkles className="h-4 w-4 mr-2" strokeWidth={2} /> },
@@ -95,7 +93,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     copyFeedback,
     detailTab,
     setDetailTab,
-    scrollPosition,
     showEpisodeChangeDialog,
     setShowEpisodeChangeDialog,
     episodeChangeData,
@@ -126,16 +123,8 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   const [selectedSeason, setSelectedSeason] = useState<number | undefined>(undefined)
   const [customSeasonNumber, setCustomSeasonNumber] = useState(1)
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
 
   useItemImagesPreloader(item)
-
-  const { commands: tmdbCommands } = useTMDBIntegration({
-    item: localItem,
-    customSeasonNumber,
-    selectedLanguage,
-    pythonCmd
-  })
 
   const currentSeason = localItem.seasons?.find(s => s.seasonNumber === selectedSeason) || null
 
@@ -190,13 +179,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   useEffect(() => {
     const initializeSettings = async () => {
-      try {
-        const pythonCommand = await ClientConfigManager.getItem('python_command')
-        if (pythonCommand?.trim()) {
-          setPythonCmd(pythonCommand)
-        }
-      } catch {}
-
       try {
         const savedSettings = await ClientConfigManager.getItem("appearance_settings")
         const parsed = savedSettings ? JSON.parse(savedSettings) : null
@@ -524,10 +506,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     }
   }
 
-  function handleLanguageChange(languageCode: string): void {
-    setSelectedLanguage(languageCode)
-  }
-
   const progress = localItem.seasons?.length
     ? {
         completed: localItem.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0),
@@ -833,7 +811,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   "absolute inset-0 z-0",
                   displayMode === 'inline' ? "w-screen h-screen" : "w-full h-full"
                 )}
-                objectPosition={`center ${20 + scrollPosition * 0.05}%`}
+                objectPosition="center 20%"
                 blur={appearanceSettings?.detailBackdropBlurEnabled ?? true}
                 blurIntensity={appearanceSettings?.detailBackdropBlurIntensity || 'medium'}
                 overlayClassName={overlayClass}
@@ -1210,7 +1188,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       isRefreshingTMDBData={isRefreshingTMDBData}
                       refreshError={refreshError}
                       customSeasonNumber={customSeasonNumber}
-                      selectedLanguage={selectedLanguage}
                       CATEGORIES={CATEGORIES}
                       WEEKDAYS={WEEKDAYS}
                       onSeasonClick={handleSeasonClick}
@@ -1228,7 +1205,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   {/* 集成工具标签内容 */}
                   <TMDBIntegrationTab
                     item={localItem}
-                    commands={tmdbCommands}
                     onUpdate={(updatedItem) => {
                       setLocalItem(updatedItem)
                       onUpdate(updatedItem)

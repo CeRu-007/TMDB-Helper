@@ -1,39 +1,19 @@
-/* 修复全选按钮导致最后一行无法显示的问题 */
+/* 词条详情页面表格样式修复 */
 
-/* 确保表格容器有正确的高度计算 */
+/* 确保tmdb-table容器正确填充高度 */
 .tmdb-table {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-/* 确保ScrollArea正确处理高度 */
-.tmdb-table [data-radix-scroll-area-root] {
-  height: 100%;
-  flex: 1;
   min-height: 0;
 }
 
-.tmdb-table [data-radix-scroll-area-viewport] {
-  height: 100% !important;
-  max-height: 100% !important;
-}
-
-/* 确保表格内容区域有足够的底部间距 */
-.tmdb-table table {
-  margin-bottom: 20px;
-}
-
-/* 优化表格行的渲染 */
-.tmdb-table tbody tr:last-child {
-  margin-bottom: 10px;
-}
-
-/* 确保新表格组件的正确高度 */
+/* 确保新表格组件容器正确填充高度 */
 .new-tmdb-table {
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .new-tmdb-table .csv-table-wrapper {
@@ -43,42 +23,17 @@
 }
 
 /* 修复独立维护页面的表格容器 */
-.independent-maintenance .new-tmdb-table {
-  height: 100%;
-}
-
+.independent-maintenance .new-tmdb-table,
 .independent-maintenance .csv-table-wrapper {
   height: 100%;
 }
 
-/* 确保表格在全选状态下正确显示 */
-.tmdb-table.selecting-all [data-radix-scroll-area-viewport] {
-  padding-bottom: 20px;
-}
-
-/* 优化滚动性能 */
-.tmdb-table [data-radix-scroll-area-viewport] {
-  will-change: scroll-position;
-  contain: strict;
-  scroll-behavior: auto !important;
-}
-
-/* 强制 ScrollArea 使用原生滚动 */
-.tmdb-table [data-radix-scroll-area-viewport] > div {
-  scroll-behavior: auto !important;
-}
-
-/* 确保表格行在选中状态下正确显示 */
+/* 确保表格行有正确的最小高度 */
 .tmdb-table tbody tr {
   min-height: 40px;
 }
 
-/* 修复可能的高度塌陷问题 */
-.csv-table-wrapper > div {
-  min-height: 100%;
-}
-
-/* 优化表格单元格编辑体验 */
+/* 表格单元格样式优化 */
 .tmdb-table td input[type="text"] {
   font-family: inherit;
   font-size: inherit;
@@ -121,16 +76,11 @@
   border-radius: 0;
 }
 
-[data-radix-scroll-area-viewport] > div {
-  padding-bottom: 4px;
-}
-
-/* 优化表格滚动性能 */
+/* 表格性能优化 */
 .tmdb-table table {
   will-change: transform;
 }
 
-/* 优化单元格渲染 */
 .tmdb-table td {
   contain: layout style paint;
 }

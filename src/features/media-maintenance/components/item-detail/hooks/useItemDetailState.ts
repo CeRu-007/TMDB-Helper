@@ -10,15 +10,12 @@ interface UseItemDetailStateProps {
 }
 
 export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) {
-  // 核心状态
   const [editing, setEditing] = useState(false)
   const [editData, setEditData] = useState(item)
   const [localItem, setLocalItem] = useState<TMDBItem>(item)
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
   const [detailTab, setDetailTab] = useState("details")
-  const [scrollPosition, setScrollPosition] = useState(0)
 
-  // 对话框状态
   const [showEpisodeChangeDialog, setShowEpisodeChangeDialog] = useState(false)
   const [episodeChangeData, setEpisodeChangeData] = useState<{
     oldCount: number
@@ -28,15 +25,12 @@ export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) 
   const [showDeleteSeasonDialog, setShowDeleteSeasonDialog] = useState(false)
   const [seasonToDelete, setSeasonToDelete] = useState<number | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [showMetadataDialog, setShowMetadataDialog] = useState(false)
   const [showFixBugDialog, setShowFixBugDialog] = useState(false)
 
-  // 操作状态
   const [isRefreshingTMDBData, setIsRefreshingTMDBData] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
-  // 外观设置
   const [appearanceSettings, setAppearanceSettings] = useState<{
     detailBackdropBlurEnabled?: boolean
     detailBackdropBlurIntensity?: 'light' | 'medium' | 'heavy'
@@ -68,7 +62,6 @@ export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) 
   }
 
   return {
-    // 状态
     editing,
     setEditing,
     editData,
@@ -79,10 +72,7 @@ export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) 
     setCopyFeedback,
     detailTab,
     setDetailTab,
-    scrollPosition,
-    setScrollPosition,
 
-    // 对话框状态
     showEpisodeChangeDialog,
     setShowEpisodeChangeDialog,
     episodeChangeData,
@@ -93,12 +83,9 @@ export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) 
     setSeasonToDelete,
     showDeleteDialog,
     setShowDeleteDialog,
-    showMetadataDialog,
-    setShowMetadataDialog,
     showFixBugDialog,
     setShowFixBugDialog,
 
-    // 操作状态
     isRefreshingTMDBData,
     setIsRefreshingTMDBData,
     refreshError,
@@ -106,11 +93,9 @@ export function useItemDetailState({ item, onUpdate }: UseItemDetailStateProps) 
     isSaving,
     setIsSaving,
 
-    // 外观设置
     appearanceSettings,
     setAppearanceSettings,
 
-    // 工具方法
     updateLocalItem,
     showFeedback,
   }
