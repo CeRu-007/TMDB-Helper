@@ -19,6 +19,10 @@ import {
 // 类型导入
 import type { TMDBItem } from "@/types/tmdb-item"
 
+// 工具导入
+import { ItemManager } from "@/lib/data/storage/item-manager"
+import { toast } from "@/lib/hooks/use-toast"
+
 /**
  * SidebarLayout - 简化版
  * 
@@ -51,7 +55,6 @@ export function SidebarLayout({
   // 从 UI Store 获取状态
   const selectedItem = useUIStore((s) => s.selectedItem)
   const setSelectedItem = useUIStore((s) => s.setSelectedItem)
-  const setSelectedCategory = useUIStore((s) => s.setSelectedCategory)
   const openAddDialog = useUIStore((s) => s.openAddDialog)
   const openSettingsDialog = useUIStore((s) => s.openSettingsDialog)
   const openImportDialog = useUIStore((s) => s.openImportDialog)
@@ -61,9 +64,9 @@ export function SidebarLayout({
   const items = useMediaStore((s) => s.items)
 
   // 从 MediaNews Store 获取状态
-  // 注意：这里需要类型转换，因为 MediaItem 和 TMDBItem 类型不完全匹配
-  const upcomingItems = useMediaNewsStore((s) => s.upcomingItems) as unknown as TMDBItem[]
-  const recentItems = useMediaNewsStore((s) => s.recentItems) as unknown as TMDBItem[]
+  // 注意：这里需要类型转换，MediaNewsItem 是即将上线/近期开播页面使用的类型
+  const upcomingItems = useMediaNewsStore((s) => s.upcomingItems) as unknown as { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]
+  const recentItems = useMediaNewsStore((s) => s.recentItems) as unknown as { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]
   const loadingUpcoming = useMediaNewsStore((s) => s.loadingUpcoming)
   const loadingRecent = useMediaNewsStore((s) => s.loadingRecent)
   const upcomingError = useMediaNewsStore((s) => s.upcomingError)
@@ -73,8 +76,8 @@ export function SidebarLayout({
   const selectedRegion = useMediaNewsStore((s) => s.selectedRegion)
   const mediaNewsType = useMediaNewsStore((s) => s.mediaNewsType)
   const isMissingApiKey = useMediaNewsStore((s) => s.isMissingApiKey)
-  const upcomingItemsByRegion = useMediaNewsStore((s) => s.upcomingItemsByRegion) as unknown as Record<string, TMDBItem[]>
-  const recentItemsByRegion = useMediaNewsStore((s) => s.recentItemsByRegion) as unknown as Record<string, TMDBItem[]>
+  const upcomingItemsByRegion = useMediaNewsStore((s) => s.upcomingItemsByRegion) as unknown as Record<string, { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]>
+  const recentItemsByRegion = useMediaNewsStore((s) => s.recentItemsByRegion) as unknown as Record<string, { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]>
   const setSelectedRegion = useMediaNewsStore((s) => s.setSelectedRegion)
   const setMediaNewsType = useMediaNewsStore((s) => s.setMediaNewsType)
 
@@ -198,6 +201,20 @@ export function SidebarLayout({
   const handleShowImportDialog = useCallback(() => openImportDialog(), [openImportDialog])
   const handleShowExportDialog = useCallback(() => openExportDialog(), [openExportDialog])
 
+  // 处理快速添加词条（从即将上线/近期开播页面）
+  // 打开添加对话框并预填数据
+  const handleQuickAddItem = useCallback((item: { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }) => {
+    openAddDialog({
+      id: item.id,
+      title: item.title,
+      mediaType: item.mediaType,
+      posterPath: item.posterPath,
+      releaseDate: item.releaseDate,
+      overview: item.overview,
+      voteAverage: item.voteAverage
+    })
+  }, [openAddDialog])
+
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
@@ -229,7 +246,7 @@ export function SidebarLayout({
             onDeleteItem={onDeleteItem}
             onBackToList={handleBackToList}
             onOpenGlobalSettings={handleShowSettingsDialog}
-            onShowAddDialog={handleShowAddDialog}
+            onQuickAddItem={handleQuickAddItem}
             children={children}
 
             // Media news props（从 store 获取）
@@ -251,12 +268,7 @@ export function SidebarLayout({
             fetchRecentItems={fetchRecentItems}
             setSelectedRegion={handleRegionSelect}
 
-            // Maintenance props
-            activeMenu={activeMenu}
-
             // Components - 内部导入
-            // 注意：ContentRenderers 内部直接使用了 SidebarRegionNavigation，这里传入的是备用方案
-            RegionNavigation={SidebarRegionNavigation as React.ComponentType}
             ApiKeySetupGuide={TMDBGuide as React.ComponentType}
             VideoThumbnailExtractor={VideoThumbnailExtractor as React.ComponentType}
             ImageCropper={ImageCropper as React.ComponentType}
@@ -268,8 +280,6 @@ export function SidebarLayout({
 }
 
 // 内部导入组件
-import { SidebarRegionNavigation } from "./sidebar/components/sidebar-region-navigation"
 import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
 import VideoThumbnailExtractor from "@/features/image-processing/components/video-thumbnail-extractor"
-import { HardSubtitleExtractor } from "@/features/image-processing/components/hard-subtitle-extractor"
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"

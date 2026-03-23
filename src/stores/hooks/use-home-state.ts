@@ -12,9 +12,20 @@ import { useUIStore } from '@/stores'
 import type { TMDBItem } from '@/types/tmdb-item'
 
 // 向后兼容的类型定义
+export interface PrefilledData {
+  id: number
+  title: string
+  mediaType: 'movie' | 'tv'
+  posterPath?: string | null
+  releaseDate: string
+  overview?: string
+  voteAverage?: number
+}
+
 export interface UseHomeStateReturn {
   // 对话框状态
   showAddDialog: boolean
+  addDialogPrefilledData: PrefilledData | null
   showSettingsDialog: boolean
   settingsInitialSection: string | undefined
   showImportDialog: boolean
@@ -29,7 +40,7 @@ export interface UseHomeStateReturn {
   selectedCategory: string
 
   // 设置函数
-  setShowAddDialog: (show: boolean) => void
+  setShowAddDialog: (show: boolean, prefilledData?: PrefilledData | null) => void
   setShowSettingsDialog: (show: boolean) => void
   setSettingsInitialSection: (section: string | undefined) => void
   setShowImportDialog: (show: boolean) => void
@@ -47,6 +58,7 @@ export interface UseHomeStateReturn {
 export function useHomeState(): UseHomeStateReturn {
   // 从 UI Store 获取状态和操作
   const showAddDialog = useUIStore((s) => s.showAddDialog)
+  const addDialogPrefilledData = useUIStore((s) => s.addDialogPrefilledData)
   const showSettingsDialog = useUIStore((s) => s.showSettingsDialog)
   const settingsInitialSection = useUIStore((s) => s.settingsInitialSection)
   const showImportDialog = useUIStore((s) => s.showImportDialog)
@@ -72,7 +84,7 @@ export function useHomeState(): UseHomeStateReturn {
 
   // 向后兼容的设置函数
   const setShowAddDialog = useCallback(
-    (show: boolean) => (show ? openAddDialog() : closeAddDialog()),
+    (show: boolean, prefilledData?: PrefilledData | null) => (show ? openAddDialog(prefilledData || null) : closeAddDialog()),
     [openAddDialog, closeAddDialog]
   )
 
@@ -103,6 +115,7 @@ export function useHomeState(): UseHomeStateReturn {
   return {
     // 对话框状态
     showAddDialog,
+    addDialogPrefilledData,
     showSettingsDialog,
     settingsInitialSection,
     showImportDialog,

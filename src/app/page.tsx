@@ -434,8 +434,9 @@ export default function HomePage() {
       {/* Dialogs */}
       <AddItemDialog
         open={homeState.showAddDialog}
-        onOpenChange={homeState.setShowAddDialog}
+        onOpenChange={(open) => homeState.setShowAddDialog(open)}
         onAdd={handleAddItem}
+        prefilledData={homeState.addDialogPrefilledData}
       />
       <SettingsDialog
         open={homeState.showSettingsDialog}

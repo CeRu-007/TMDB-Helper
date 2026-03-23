@@ -3,7 +3,6 @@ import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { logger } from "@/lib/utils/logger"
 import { TMDBItem } from "@/types/tmdb-item"
-import { Task } from "@/types/tasks"
 import {
   Calendar,
   PlayCircle,
@@ -23,6 +22,17 @@ import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
 import StreamingPlatformNav from "@/features/streaming-nav/components/streaming-platform-nav"
 import { SidebarRegionNavigation } from "./sidebar-region-navigation"
 import { ScheduleView } from "@/features/schedule/components/schedule-view"
+import { toast } from "@/lib/hooks/use-toast"
+
+interface MediaNewsItem {
+  id: number
+  title: string
+  mediaType: 'movie' | 'tv'
+  posterPath?: string | null
+  releaseDate: string
+  overview?: string
+  voteAverage?: number
+}
 
 interface ContentRenderersProps {
   contentKey: string
@@ -30,13 +40,13 @@ interface ContentRenderersProps {
   onUpdateItem: (item: TMDBItem) => void
   onDeleteItem: (id: string) => void
   onBackToList: () => void
-  onOpenGlobalSettings: (section: string) => void
-  onShowAddDialog: () => void
+  onOpenGlobalSettings: (section?: string) => void
+  onQuickAddItem: (item: MediaNewsItem) => void
   children: React.ReactNode
 
   // Media news props
-  upcomingItems: TMDBItem[]
-  recentItems: TMDBItem[]
+  upcomingItems: MediaNewsItem[]
+  recentItems: MediaNewsItem[]
   loadingUpcoming: boolean
   loadingRecent: boolean
   upcomingError: string | null | undefined
@@ -46,18 +56,14 @@ interface ContentRenderersProps {
   selectedRegion: string
   mediaNewsType: 'upcoming' | 'recent'
   isMissingApiKey: boolean
-  upcomingItemsByRegion: Record<string, TMDBItem[]>
-  recentItemsByRegion: Record<string, TMDBItem[]>
+  upcomingItemsByRegion: Record<string, MediaNewsItem[]>
+  recentItemsByRegion: Record<string, MediaNewsItem[]>
   existingItems: TMDBItem[]
   fetchUpcomingItems: (silent?: boolean, retryCount?: number, region?: string) => void
   fetchRecentItems: (silent?: boolean, retryCount?: number, region?: string) => void
   setSelectedRegion: (region: string) => void
 
-  // Maintenance props
-  activeMenu: string
-
   // Components
-  RegionNavigation: React.ComponentType
   ApiKeySetupGuide: React.ComponentType
   VideoThumbnailExtractor: React.ComponentType
   ImageCropper: React.ComponentType
@@ -70,7 +76,7 @@ export function ContentRenderers({
   onDeleteItem,
   onBackToList,
   onOpenGlobalSettings,
-  onShowAddDialog,
+  onQuickAddItem,
   children,
 
   // Media news
@@ -92,11 +98,7 @@ export function ContentRenderers({
   fetchRecentItems,
   setSelectedRegion,
 
-  // Maintenance
-  activeMenu,
-
   // Components
-  RegionNavigation,
   ApiKeySetupGuide,
   VideoThumbnailExtractor,
   ImageCropper
@@ -131,7 +133,7 @@ export function ContentRenderers({
               const itemData = mediaCard.getAttribute('data-item')
               if (itemData) {
                 try {
-                  const item = JSON.parse(itemData)
+                  JSON.parse(itemData)
                 } catch (error) {
                   logger.error('Failed to parse item data:', error)
                 }
@@ -206,7 +208,7 @@ export function ContentRenderers({
       existingItems,
       fetchUpcomingItems,
       setSelectedRegion,
-      onShowAddDialog,
+      onQuickAddItem,
       ApiKeySetupGuide
     })
   }
@@ -236,7 +238,7 @@ export function ContentRenderers({
       existingItems,
       fetchRecentItems,
       setSelectedRegion,
-      onShowAddDialog,
+      onQuickAddItem,
       ApiKeySetupGuide
     })
   }
@@ -252,7 +254,8 @@ export function ContentRenderers({
 
   // Image - extract
   if (contentKey === 'image-extract') {
-    return <VideoThumbnailExtractor onOpenGlobalSettings={onOpenGlobalSettings} />
+    const VideoThumbnailExtractorComponent = VideoThumbnailExtractor as React.ComponentType<{ onOpenGlobalSettings?: (section?: string) => void }>
+    return <VideoThumbnailExtractorComponent onOpenGlobalSettings={onOpenGlobalSettings} />
   }
 
   // Image - crop
@@ -297,21 +300,21 @@ function renderUpcomingContent({
   existingItems,
   fetchUpcomingItems,
   setSelectedRegion,
-  onShowAddDialog,
+  onQuickAddItem,
   ApiKeySetupGuide
 }: {
-  upcomingItems: TMDBItem[]
+  upcomingItems: MediaNewsItem[]
   loadingUpcoming: boolean
-  upcomingError: string | null
-  upcomingLastUpdated: string | null
+  upcomingError: string | null | undefined
+  upcomingLastUpdated: string | null | undefined
   selectedRegion: string
   mediaNewsType: 'upcoming' | 'recent'
   isMissingApiKey: boolean
-  upcomingItemsByRegion: Record<string, TMDBItem[]>
+  upcomingItemsByRegion: Record<string, MediaNewsItem[]>
   existingItems: TMDBItem[]
   fetchUpcomingItems: (silent?: boolean, retryCount?: number, region?: string) => void
   setSelectedRegion: (region: string) => void
-  onShowAddDialog: () => void
+  onQuickAddItem: (item: MediaNewsItem) => void
   ApiKeySetupGuide: React.ComponentType
 }) {
   return (
@@ -350,8 +353,8 @@ function renderUpcomingContent({
       <SidebarRegionNavigation
         selectedRegion={selectedRegion}
         mediaNewsType={mediaNewsType}
-        upcomingItemsByRegion={upcomingItemsByRegion}
-        recentItemsByRegion={{}}
+        upcomingItemsByRegion={upcomingItemsByRegion as any}
+        recentItemsByRegion={{} as any}
         existingItems={existingItems}
         onRefresh={() => fetchUpcomingItems(false, 0, selectedRegion)}
         onRegionSelect={setSelectedRegion}
@@ -413,7 +416,7 @@ function renderUpcomingContent({
                 <MediaNewsCard
                   key={`${item.mediaType}-${item.id}`}
                   item={item}
-                  onAdd={() => onShowAddDialog()}
+                  onQuickAdd={onQuickAddItem}
                 />
               ))}
           </div>
@@ -436,21 +439,21 @@ function renderRecentContent({
   existingItems,
   fetchRecentItems,
   setSelectedRegion,
-  onShowAddDialog,
+  onQuickAddItem,
   ApiKeySetupGuide
 }: {
-  recentItems: TMDBItem[]
+  recentItems: MediaNewsItem[]
   loadingRecent: boolean
-  recentError: string | null
-  recentLastUpdated: string | null
+  recentError: string | null | undefined
+  recentLastUpdated: string | null | undefined
   selectedRegion: string
   mediaNewsType: 'upcoming' | 'recent'
   isMissingApiKey: boolean
-  recentItemsByRegion: Record<string, TMDBItem[]>
+  recentItemsByRegion: Record<string, MediaNewsItem[]>
   existingItems: TMDBItem[]
   fetchRecentItems: (silent?: boolean, retryCount?: number, region?: string) => void
   setSelectedRegion: (region: string) => void
-  onShowAddDialog: () => void
+  onQuickAddItem: (item: MediaNewsItem) => void
   ApiKeySetupGuide: React.ComponentType
 }) {
   return (
@@ -489,8 +492,8 @@ function renderRecentContent({
       <SidebarRegionNavigation
         selectedRegion={selectedRegion}
         mediaNewsType={mediaNewsType}
-        upcomingItemsByRegion={{}}
-        recentItemsByRegion={recentItemsByRegion}
+        upcomingItemsByRegion={{} as any}
+        recentItemsByRegion={recentItemsByRegion as any}
         existingItems={existingItems}
         onRefresh={() => fetchRecentItems(false, 0, selectedRegion)}
         onRegionSelect={setSelectedRegion}
@@ -552,7 +555,7 @@ function renderRecentContent({
                 <MediaNewsCard
                   key={`${item.mediaType}-${item.id}`}
                   item={item}
-                  onAdd={() => onShowAddDialog()}
+                  onQuickAdd={onQuickAddItem}
                 />
               ))}
           </div>
@@ -563,7 +566,7 @@ function renderRecentContent({
 }
 
 // Media news card component
-function MediaNewsCard({ item, onAdd }: { item: TMDBItem; onAdd: () => void }) {
+function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: (item: MediaNewsItem) => void }) {
   const isUpcoming = new Date(item.releaseDate) > new Date()
   const badgeColor = isUpcoming ? "bg-blue-500" : "bg-green-500"
 
@@ -578,19 +581,7 @@ function MediaNewsCard({ item, onAdd }: { item: TMDBItem; onAdd: () => void }) {
   function handleAddClick(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-
-    const detailData = {
-      id: item.id,
-      title: item.title,
-      media_type: item.mediaType,
-      poster_path: item.posterPath,
-      release_date: item.releaseDate,
-      overview: item.overview || "",
-      vote_average: item.voteAverage || 0
-    }
-
-    localStorage.setItem('tmdb_prefilled_data', JSON.stringify(detailData))
-    onAdd()
+    onQuickAdd(item)
   }
 
   return (

@@ -67,9 +67,18 @@ interface AddItemDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAdd: (item: TMDBItem) => void
+  prefilledData?: {
+    id: number
+    title: string
+    mediaType: 'movie' | 'tv'
+    posterPath?: string | null
+    releaseDate: string
+    overview?: string
+    voteAverage?: number
+  } | null
 }
 
-export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDialogProps) {
+export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData }: AddItemDialogProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<TMDBSearchResult[]>([])
   const [selectedResult, setSelectedResult] = useState<TMDBSearchResult | null>(null)
@@ -171,6 +180,36 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
       resetForm();
     }
   }, [open]);
+
+  // 处理预填数据 - 当对话框打开且有预填数据时，模拟搜索→选择结果的完整流程
+  useEffect(() => {
+    if (open && prefilledData) {
+      const { id, title, mediaType, posterPath, releaseDate, overview, voteAverage } = prefilledData;
+
+      // 构建 TMDBSearchResult 格式的数据
+      const fakeResult: TMDBSearchResult = {
+        id,
+        title,
+        name: title,
+        media_type: mediaType,
+        poster_path: posterPath || undefined,
+        backdrop_path: undefined,
+        first_air_date: releaseDate,
+        release_date: releaseDate,
+        overview,
+        vote_average: voteAverage
+      };
+
+      // 模拟搜索流程：设置搜索query和结果列表
+      setSearchQuery(title);
+      setSearchResults([fakeResult]);
+
+      // 延迟一点选择结果，让用户能看到搜索结果
+      setTimeout(() => {
+        handleSelectResult(fakeResult);
+      }, 100);
+    }
+  }, [open, prefilledData]);
 
   // 搜索TMDB
   const searchTMDB = async (query: string) => {

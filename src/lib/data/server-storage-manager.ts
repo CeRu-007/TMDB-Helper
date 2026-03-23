@@ -59,7 +59,7 @@ export class ServerStorageManager {
    */
   static deleteItem(id: string): boolean {
     ensureInitializedSync();
-    const result = itemsRepository.delete(id);
+    const result = itemsRepository.softDelete(id);
     return result.success;
   }
 

@@ -14,6 +14,15 @@ interface DialogState {
   settingsInitialSection: string | undefined
   showImportDialog: boolean
   showExportDialog: boolean
+  addDialogPrefilledData: {
+    id: number
+    title: string
+    mediaType: 'movie' | 'tv'
+    posterPath?: string | null
+    releaseDate: string
+    overview?: string
+    voteAverage?: number
+  } | null
 }
 
 // 过滤状态类型
@@ -32,7 +41,7 @@ interface SelectionState {
 // UI 状态接口
 interface UIState extends DialogState, FilterState, SelectionState {
   // 对话框操作
-  openAddDialog: () => void
+  openAddDialog: (prefilledData?: DialogState['addDialogPrefilledData']) => void
   closeAddDialog: () => void
   openSettingsDialog: (section?: string) => void
   closeSettingsDialog: () => void
@@ -64,6 +73,7 @@ const initialDialogState: DialogState = {
   settingsInitialSection: undefined,
   showImportDialog: false,
   showExportDialog: false,
+  addDialogPrefilledData: null,
 }
 
 const initialFilterState: FilterState = {
@@ -91,8 +101,11 @@ export const useUIStore = create<UIState>()(
         ...initialState,
 
         // 对话框操作
-        openAddDialog: () => set({ showAddDialog: true }, false, 'openAddDialog'),
-        closeAddDialog: () => set({ showAddDialog: false }, false, 'closeAddDialog'),
+        openAddDialog: (prefilledData) => set({ 
+          showAddDialog: true, 
+          addDialogPrefilledData: prefilledData || null 
+        }, false, 'openAddDialog'),
+        closeAddDialog: () => set({ showAddDialog: false, addDialogPrefilledData: null }, false, 'closeAddDialog'),
         openSettingsDialog: (section?: string) => set({ showSettingsDialog: true, settingsInitialSection: section }, false, 'openSettingsDialog'),
         closeSettingsDialog: () => set({ showSettingsDialog: false, settingsInitialSection: undefined }, false, 'closeSettingsDialog'),
         openImportDialog: () => set({ showImportDialog: true }, false, 'openImportDialog'),
@@ -140,6 +153,7 @@ export const useUIStore = create<UIState>()(
 // 选择器 hooks
 export const useDialogState = () => useUIStore((state) => ({
   showAddDialog: state.showAddDialog,
+  addDialogPrefilledData: state.addDialogPrefilledData,
   showSettingsDialog: state.showSettingsDialog,
   settingsInitialSection: state.settingsInitialSection,
   showImportDialog: state.showImportDialog,

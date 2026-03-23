@@ -116,17 +116,13 @@ export async function DELETE(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
     logger.info(`[API] 删除项目 - 用户ID: ${userId}, 项目ID: ${id}`);
 
-    // 同时删除关联的定时任务
-    const deletedTasksCount = ServerStorageManager.deleteTasksByItemId(id);
-    
     const success = ServerStorageManager.deleteItem(id);
 
     if (success) {
-      logger.info(`[API] 项目删除成功: ${id}，同时删除 ${deletedTasksCount} 个关联任务`);
+      logger.info(`[API] 项目删除成功: ${id}`);
       return NextResponse.json({ 
         success: true, 
-        userId,
-        deletedTasksCount 
+        userId
       }, { status: 200 });
     } else {
       return NextResponse.json({
