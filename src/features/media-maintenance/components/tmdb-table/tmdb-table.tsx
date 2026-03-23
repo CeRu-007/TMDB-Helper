@@ -1549,7 +1549,7 @@ const TMDBTableComponent = ({
         )}
 
         <ScrollArea className="h-full w-full scroll-area-viewport">
-          <div className="relative w-full" style={{ paddingBottom: '4px' }}>
+          <div className="relative w-full" style={{ paddingBottom: '80px' }}>
             <Table className="w-full" style={{ tableLayout: 'fixed', minWidth: '100%' }}>
                         <TableHeader>
           <TableRow>
