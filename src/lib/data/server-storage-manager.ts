@@ -50,7 +50,7 @@ export class ServerStorageManager {
    */
   static updateItem(item: TMDBItem): boolean {
     ensureInitializedSync();
-    const result = itemsRepository.update(item.id, item);
+    const result = itemsRepository.update(item);
     return result.success;
   }
 
