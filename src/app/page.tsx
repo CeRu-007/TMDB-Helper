@@ -49,7 +49,7 @@ import SettingsDialog from "@/features/system/components/settings-dialog/Setting
 import ImportDataDialog from "@/features/data-management/components/import-data-dialog"
 import ExportDataDialog from "@/features/data-management/components/export-data-dialog"
 import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
-import VideoThumbnailExtractor from "@/features/image-processing/components/video-thumbnail-extractor"
+import VideoScreenshot from "@/features/image-processing/components/video-screenshot"
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"
 import { ErrorState } from "@/features/media-maintenance/components/error-state"
 
@@ -384,12 +384,12 @@ export default function HomePage() {
           <TabsContent value="thumbnail">
             <Tabs defaultValue="extract" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="extract">分集图片提取</TabsTrigger>
-                <TabsTrigger value="crop">海报背景裁切</TabsTrigger>
+                <TabsTrigger value="extract">视频截图</TabsTrigger>
+                <TabsTrigger value="crop">图片裁切</TabsTrigger>
               </TabsList>
 
               <TabsContent value="extract" className="mt-4">
-                <VideoThumbnailExtractor onOpenGlobalSettings={(section) => {
+                <VideoScreenshot onOpenGlobalSettings={(section) => {
                   homeState.setSettingsInitialSection(section)
                   homeState.setShowSettingsDialog(true)
                 }} />

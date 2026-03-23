@@ -102,11 +102,11 @@ const DEFAULT_SETTINGS: ExtractionSettings = {
 
 const DEFAULT_ITEMS_PER_PAGE = 9
 
-interface VideoThumbnailExtractorProps {
+interface VideoScreenshotProps {
   onOpenGlobalSettings?: (section?: string) => void
 }
 
-export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoThumbnailExtractorProps = {}) {
+export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreenshotProps = {}) {
   const thumbnailModels = useScenarioModels('thumbnail_filter')
   const { toast } = useToast()
 
@@ -644,14 +644,14 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     if (!settings.enableAIFilter) return null
 
     if (!thumbnailModels.primaryModelId || thumbnailModels.availableModels.length === 0) {
-      throw new Error("已启用 AI 筛选，但缩略图筛选场景未配置模型。请在设置 > 模型服务 > 使用场景中配置缩略图筛选模型，或关闭 AI 筛选功能。")
+      throw new Error("已启用 AI 筛选，但截图筛选场景未配置模型。请在设置 > 模型服务 > 使用场景中配置截图筛选模型，或关闭 AI 筛选功能。")
     }
 
     const scenarioResponse = await fetch('/api/model-service/scenario?scenario=thumbnail_filter')
     const scenarioResult = await scenarioResponse.json()
 
     if (!scenarioResult.success || !scenarioResult.scenario) {
-      throw new Error("获取缩略图筛选场景配置失败")
+      throw new Error("获取截图筛选场景配置失败")
     }
 
     return scenarioResult
@@ -717,7 +717,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     const provider = scenarioData.providers.find((p: any) => p.id === primaryModel!.providerId)
 
     if (!provider || !primaryModel) {
-      throw new Error("模型配置异常，请重新配置缩略图筛选场景")
+      throw new Error("模型配置异常，请重新配置截图筛选场景")
     }
 
     const aiResult = await analyzeFrameWithAI(
@@ -817,7 +817,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
     toast({
       title: "已设为主图",
-      description: "此缩略图将作为下载全部时的主要图片",
+      description: "此截图将作为下载全部时的主要图片",
       variant: "default",
     })
   }
@@ -828,7 +828,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
     if (completedVideos.length === 0) {
       toast({
-        title: "没有可下载的缩略图",
+        title: "没有可下载的截图",
         description: "请先处理视频",
         variant: "destructive",
       })
@@ -843,7 +843,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
     toast({
       title: "正在准备下载",
-      description: "正在打包所有缩略图...",
+      description: "正在打包所有截图...",
       variant: "default",
     })
 
@@ -902,13 +902,13 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
 
       toast({
         title: "下载完成",
-        description: "所有缩略图已打包下载",
+        description: "所有截图已打包下载",
         variant: "default",
       })
     } catch (error) {
       toast({
         title: "下载失败",
-        description: "打包缩略图时出错",
+        description: "打包截图时出错",
         variant: "destructive",
       })
     }
@@ -1032,7 +1032,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
     <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>缩略图预览</DialogTitle>
+          <DialogTitle>截图预览</DialogTitle>
         </DialogHeader>
 
         {previewData && (
@@ -1090,7 +1090,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
               <li>设置提取参数（可选）</li>
               <li>等待模型加载完成（指示灯变绿）</li>
               <li>系统会自动开始处理视频</li>
-              <li>处理完成后可以查看、下载缩略图</li>
+              <li>处理完成后可以查看、下载截图</li>
             </ol>
           </div>
 
@@ -1099,8 +1099,8 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
             <ul className="list-disc list-inside space-y-1 text-sm">
               <li>支持批量处理多个视频</li>
               <li>可调整字幕检测和人物检测灵敏度</li>
-              <li>支持一键下载所有缩略图</li>
-              <li>可对缩略图按质量或时间排序</li>
+              <li>支持一键下载所有截图</li>
+              <li>可对截图按质量或时间排序</li>
             </ul>
           </div>
 
@@ -1209,7 +1209,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
                   {video.status === "completed" && video.thumbnails.length > 0 && (
                     <DropdownMenuItem onClick={() => downloadThumbnail(video.id, video.thumbnails[video.selectedThumbnail].id)}>
                       <Download className="mr-2 h-4 w-4" />
-                      <span>下载缩略图</span>
+                      <span>下载截图</span>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => removeVideo(video.id)}>
@@ -1234,7 +1234,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
             </div>
           )}
 
-          {/* 缩略图展示 - 主图优先，更大的尺寸 */}
+          {/* 截图展示 - 主图优先，更大的尺寸 */}
           {video.status === "completed" && video.thumbnails.length > 0 ? (
             <div className="space-y-3">
               {/* 混合式布局：主图区域 + 候选帧区域（3x3） */}
@@ -1243,7 +1243,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
                 <div className="flex justify-between items-center border-b pb-1 mb-1">
                   <h4 className="text-sm font-medium flex items-center">
                     <Star className="h-4 w-4 mr-1 text-yellow-500" />
-                    视频缩略图
+                    截图
                   </h4>
                   <span className="text-xs text-muted-foreground">
                     点击候选帧可设为主图
@@ -1319,7 +1319,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
                       >
                         <img
                           src={thumbnail.url}
-                          alt={`缩略图 ${idx + 1}`}
+                          alt={`截图 ${idx + 1}`}
                           className="w-full h-full object-cover"
                         />
 
@@ -1416,7 +1416,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
       </div>
       <h3 className="text-lg font-medium mb-2">没有视频</h3>
       <p className="text-sm text-muted-foreground mb-4 max-w-md">
-        上传视频文件以提取缩略图，支持 MP4、WebM、AVI、MOV 等常见视频格式
+        上传视频文件以截取视频截图，支持 MP4、WebM、AVI、MOV 等常见视频格式
       </p>
       <div className="flex flex-row gap-2">
         <Button
@@ -1438,7 +1438,7 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
           onClick={() => onOpenGlobalSettings?.('video-thumbnail')}
         >
           <Settings className="mr-2 h-4 w-4" />
-          缩略图设置
+          截图设置
         </Button>
       </div>
     </div>
@@ -1455,10 +1455,10 @@ export default function VideoThumbnailExtractor({ onOpenGlobalSettings }: VideoT
               <div>
                 <h1 className="text-2xl font-bold tracking-tight flex items-center">
                   <Film className="mr-2 h-6 w-6 text-primary" />
-                  视频缩略图提取器
+                  视频截图
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  从视频中提取高质量缩略图，避免字幕，优先选择有人物的画面
+                  从视频中截取高质量图片作为分集缩略图
                 </p>
               </div>
             </div>

@@ -65,7 +65,7 @@ interface ContentRenderersProps {
 
   // Components
   ApiKeySetupGuide: React.ComponentType
-  VideoThumbnailExtractor: React.ComponentType
+  VideoScreenshot: React.ComponentType
   ImageCropper: React.ComponentType
 }
 
@@ -100,7 +100,7 @@ export function ContentRenderers({
 
   // Components
   ApiKeySetupGuide,
-  VideoThumbnailExtractor,
+  VideoScreenshot,
   ImageCropper
 }: ContentRenderersProps) {
   // Render item detail page
@@ -254,8 +254,8 @@ export function ContentRenderers({
 
   // Image - extract
   if (contentKey === 'image-extract') {
-    const VideoThumbnailExtractorComponent = VideoThumbnailExtractor as React.ComponentType<{ onOpenGlobalSettings?: (section?: string) => void }>
-    return <VideoThumbnailExtractorComponent onOpenGlobalSettings={onOpenGlobalSettings} />
+    const VideoScreenshotComponent = VideoScreenshot as React.ComponentType<{ onOpenGlobalSettings?: (section?: string) => void }>
+    return <VideoScreenshotComponent onOpenGlobalSettings={onOpenGlobalSettings} />
   }
 
   // Image - crop

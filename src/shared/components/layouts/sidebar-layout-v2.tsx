@@ -270,7 +270,7 @@ export function SidebarLayout({
 
             // Components - 内部导入
             ApiKeySetupGuide={TMDBGuide as React.ComponentType}
-            VideoThumbnailExtractor={VideoThumbnailExtractor as React.ComponentType}
+            VideoScreenshot={VideoScreenshot as React.ComponentType}
             ImageCropper={ImageCropper as React.ComponentType}
           />
         </MainContentArea>
@@ -281,5 +281,5 @@ export function SidebarLayout({
 
 // 内部导入组件
 import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
-import VideoThumbnailExtractor from "@/features/image-processing/components/video-thumbnail-extractor"
+import VideoScreenshot from "@/features/image-processing/components/video-screenshot"
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"

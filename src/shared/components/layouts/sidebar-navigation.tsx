@@ -81,8 +81,8 @@ const menuGroups: MenuGroup[] = [
     title: "图片处理",
     icon: <Image className="h-4 w-4" />,
     items: [
-      { id: "extract", label: "图片提取", icon: <Download className="h-4 w-4" />, groupId: "image" },
-      { id: "crop", label: "海报裁切", icon: <Scissors className="h-4 w-4" />, groupId: "image" },
+      { id: "extract", label: "视频截图", icon: <Download className="h-4 w-4" />, groupId: "image" },
+      { id: "crop", label: "图片裁切", icon: <Scissors className="h-4 w-4" />, groupId: "image" },
     ]
   },
   {
