@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     if (isElectronEnvironment()) {
       return createAuthState(DEFAULT_ADMIN_USER, true, false)
     }
-    return createAuthState(null, false, false)
+    return createAuthState(null, false, true)
   })
 
   const isElectron = isElectronEnvironment()
@@ -77,7 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   ): Promise<boolean> => {
     const success = await login(username, password, rememberMe)
     if (success && !isElectron) {
-      // Re-check auth state after successful login
       window.location.reload()
     }
     return success

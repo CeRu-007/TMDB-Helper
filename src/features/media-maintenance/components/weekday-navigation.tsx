@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { TMDBItem } from '@/lib/data/storage'
@@ -19,6 +19,20 @@ interface WeekdayNavigationProps {
   currentDay?: number
 }
 
+function getDayButtonClasses(isSelected: boolean, isToday: boolean): string {
+  const baseClasses = "flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+
+  if (isSelected) {
+    return `${baseClasses} bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 ${
+      isToday ? "!border-2 !border-yellow-400 relative z-10" : "border border-blue-300 dark:border-blue-600"
+    }`
+  }
+
+  return `${baseClasses} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 ${
+    isToday ? "!border-2 !border-yellow-400 relative z-10" : ""
+  }`
+}
+
 export function WeekdayNavigation({
   selectedDayFilter,
   onDayFilterChange,
@@ -30,27 +44,21 @@ export function WeekdayNavigation({
   onActiveTabChange,
   currentDay = 0
 }: WeekdayNavigationProps) {
-  // 获取指定日期的词条数量
+  const [mounted, setMounted] = useState(false)
+  const [localCurrentDay, setLocalCurrentDay] = useState(currentDay)
+
+  useEffect(() => {
+    setMounted(true)
+    const jsDay = new Date().getDay()
+    const adjustedDay = jsDay === 0 ? 6 : jsDay - 1
+    setLocalCurrentDay(adjustedDay)
+  }, [])
+
   const getItemsByDay = (items: TMDBItem[], day: number) => {
     return items.filter((item) =>
       item.weekday === day ||
       (typeof item.secondWeekday === 'number' && item.secondWeekday === day)
     )
-  }
-
-  // Get button classes based on state
-  const getDayButtonClasses = (isSelected: boolean, isToday: boolean) => {
-    const baseClasses = "flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-
-    if (isSelected) {
-      return `${baseClasses} bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 ${
-        isToday ? "!border-2 !border-yellow-400 relative z-10" : "border border-blue-300 dark:border-blue-600"
-      }`
-    }
-
-    return `${baseClasses} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 ${
-      isToday ? "!border-2 !border-yellow-400 relative z-10" : ""
-    }`
   }
 
   return (
@@ -67,10 +75,9 @@ export function WeekdayNavigation({
             </button>
 
             {WEEKDAYS.map((day, index) => {
-              // 将我们的索引（0=周一，6=周日）转换回JS的日期（0=周日，1=周一）
               const jsWeekday = index === 6 ? 0 : index + 1
               const dayItems = getItemsByDay(filteredItems, jsWeekday)
-              const isToday = index === currentDay
+              const isToday = mounted && index === localCurrentDay
               const isSelected = selectedDayFilter === jsWeekday
 
               return (
@@ -78,10 +85,11 @@ export function WeekdayNavigation({
                   key={day}
                   onClick={() => onDayFilterChange(jsWeekday)}
                   className={getDayButtonClasses(isSelected, isToday)}
+                  suppressHydrationWarning
                 >
                   <div className="flex items-center space-x-1">
                     <span>{day}</span>
-                    {isToday && <Calendar className="h-3 w-3 text-yellow-600" />}
+                    {isToday && <Calendar className="h-3 w-3 text-yellow-600" suppressHydrationWarning />}
                     {dayItems.length > 0 && (
                       <span className="bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
                         {dayItems.length}

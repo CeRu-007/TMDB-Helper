@@ -1,25 +1,16 @@
 "use client"
 
-import { ReactNode } from "react"
+import { ReactNode, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { ThemeProvider } from "next-themes"
 import { DataProvider } from "@/shared/components/client-data-provider"
 import { UserIdentityProvider } from "@/shared/components/user-identity-provider"
-import { AuthProvider, AuthGuard } from "@/shared/components/auth-provider"
+import { AuthProvider, AuthGuard, useAuth } from "@/shared/components/auth-provider"
 import { Toaster } from "@/shared/components/ui/toaster"
 import { ModelServiceProvider } from "@/lib/contexts/ModelServiceContext"
 import { useAppInitialization } from "@/shared/hooks/use-app-initialization"
-
-// Combined provider component for better readability
-const AppProviders = ({ children }: { children: ReactNode }) => (
-  <UserIdentityProvider>
-    <DataProvider>
-      <ModelServiceProvider>
-        {children}
-      </ModelServiceProvider>
-    </DataProvider>
-  </UserIdentityProvider>
-)
+import { ClientConfigManager } from "@/lib/utils/client-config-manager"
+import { loadRemember } from "@/lib/auth/secure-remember"
 
 const AppWithToaster = ({ children }: { children: ReactNode }) => (
   <>
@@ -27,6 +18,26 @@ const AppWithToaster = ({ children }: { children: ReactNode }) => (
     <Toaster />
   </>
 )
+
+function AuthContent({ children, isLoginPage }: { children: ReactNode; isLoginPage: boolean }) {
+  const { isAuthenticated, isLoading } = useAuth()
+
+  useEffect(() => {
+    if (!isLoginPage && !isLoading && !isAuthenticated) {
+      window.location.href = '/login'
+    }
+  }, [isLoginPage, isLoading, isAuthenticated])
+
+  return (
+    <UserIdentityProvider>
+      <DataProvider>
+        <ModelServiceProvider>
+          <AppWithToaster>{children}</AppWithToaster>
+        </ModelServiceProvider>
+      </DataProvider>
+    </UserIdentityProvider>
+  )
+}
 
 export default function MidLayout({
   children,
@@ -38,24 +49,29 @@ export default function MidLayout({
 
   useAppInitialization()
 
+  useEffect(() => {
+    if (isLoginPage) {
+      const prefetchLoginData = async () => {
+        try {
+          const r = await loadRemember()
+          if (r.username) {
+            await ClientConfigManager.setItem('last_login_username', r.username)
+          }
+          if (r.remember) {
+            await ClientConfigManager.setItem('last_login_remember_me', '1')
+          }
+        } catch {}
+      }
+      prefetchLoginData()
+    }
+  }, [isLoginPage])
+
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <AuthProvider>
-        {isLoginPage ? (
-          // Login page: no auth protection or identity provider needed
-          <AppWithToaster>
-            {children}
-          </AppWithToaster>
-        ) : (
-          // Main app: requires authentication
-          <AuthGuard>
-            <AppProviders>
-              <AppWithToaster>
-                {children}
-              </AppWithToaster>
-            </AppProviders>
-          </AuthGuard>
-        )}
+        <AuthContent isLoginPage={isLoginPage}>
+          {children}
+        </AuthContent>
       </AuthProvider>
     </ThemeProvider>
   )
