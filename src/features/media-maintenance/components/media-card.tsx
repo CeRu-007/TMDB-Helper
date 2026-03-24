@@ -8,7 +8,7 @@ import { Button } from "@/shared/components/ui/button"
 import { CachedImage } from "@/shared/components/ui/cached-image"
 import { CLICK_RESET_DELAY, WEEKDAY_NAMES, TMDB_IMAGE_BASE_URL, TMDB_POSTER_SIZE } from "@/lib/constants/constants"
 import { getTimeFromCron } from "@/lib/utils/cron-utils"
-import { ScheduleDrawer } from "./schedule-drawer"
+import { CardDrawer } from "./card-drawer"
 
 interface MediaCardProps {
   item: TMDBItem
@@ -144,7 +144,7 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
 
   return (
     <div
-      className="cursor-pointer group"
+      className="cursor-pointer group relative"
       data-media-card="true"
       data-item={JSON.stringify(item)}
     >
@@ -290,8 +290,8 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
         <p className="text-xs text-gray-500 dark:text-gray-400">{getUpdateText()}</p>
       </div>
 
-      {/* 定时任务抽屉 */}
-      <ScheduleDrawer
+      {/* 定时任务侧边抽屉 */}
+      <CardDrawer
         item={item as any}
         open={scheduleDrawerOpen}
         onOpenChange={setScheduleDrawerOpen}
