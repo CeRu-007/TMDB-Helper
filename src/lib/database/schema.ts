@@ -7,7 +7,7 @@ import { getDatabase } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 7;
 
 /**
  * 初始化数据库 Schema
@@ -36,6 +36,15 @@ export function initializeSchema(): void {
     logger.info(`[Database] 升级数据库 Schema: ${currentVersion} -> ${SCHEMA_VERSION}`);
     createTables(db); // 使用 IF NOT EXISTS，安全地创建新表
     createIndexes(db); // 使用 IF NOT EXISTS，安全地创建新索引
+
+    // 版本迁移
+    if (currentVersion < 6) {
+      migrateToV6(db);
+    }
+    if (currentVersion < 7) {
+      migrateToV7(db);
+    }
+
     setUserVersion(SCHEMA_VERSION);
     logger.info('[Database] Schema 升级完成');
   }
@@ -204,6 +213,38 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       description TEXT
     )
   `);
+
+  // 定时任务表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS schedule_tasks (
+      id TEXT PRIMARY KEY,
+      itemId TEXT NOT NULL,
+      cron TEXT NOT NULL,
+      enabled INTEGER DEFAULT 1,
+      headless INTEGER DEFAULT 1,
+      incremental INTEGER DEFAULT 1,
+      autoImport INTEGER DEFAULT 0,
+      fieldCleanup TEXT DEFAULT '{}',
+      lastRunAt TEXT,
+      nextRunAt TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    )
+  `);
+
+  // 定时任务日志表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS schedule_logs (
+      id TEXT PRIMARY KEY,
+      taskId TEXT NOT NULL,
+      status TEXT NOT NULL,
+      startAt TEXT NOT NULL,
+      endAt TEXT,
+      message TEXT NOT NULL,
+      details TEXT,
+      FOREIGN KEY (taskId) REFERENCES schedule_tasks(id) ON DELETE CASCADE
+    )
+  `);
 }
 
 /**
@@ -222,6 +263,9 @@ function createIndexes(db: ReturnType<typeof getDatabase>): void {
     'CREATE INDEX IF NOT EXISTS idx_image_cache_tmdbId ON image_cache(tmdbId)',
     'CREATE INDEX IF NOT EXISTS idx_image_cache_itemId ON image_cache(itemId)',
     'CREATE INDEX IF NOT EXISTS idx_image_cache_type ON image_cache(imageType)',
+    'CREATE INDEX IF NOT EXISTS idx_schedule_tasks_itemId ON schedule_tasks(itemId)',
+    'CREATE INDEX IF NOT EXISTS idx_schedule_tasks_enabled ON schedule_tasks(enabled)',
+    'CREATE INDEX IF NOT EXISTS idx_schedule_logs_taskId ON schedule_logs(taskId)',
   ];
 
   for (const sql of indexes) {
@@ -251,12 +295,44 @@ function setUserVersion(version: number): void {
  */
 function safeCount(db: ReturnType<typeof getDatabase>, tableName: string, whereClause: string = ''): number {
   try {
-    const sql = whereClause 
+    const sql = whereClause
       ? `SELECT COUNT(*) as count FROM ${tableName} WHERE ${whereClause}`
       : `SELECT COUNT(*) as count FROM ${tableName}`;
     return (db.prepare(sql).get() as { count: number }).count;
   } catch {
     return 0;
+  }
+}
+
+/**
+ * 迁移到 V6: 为 schedule_tasks 表添加 incremental 字段
+ */
+function migrateToV6(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V6 迁移: 为 schedule_tasks 添加 incremental 字段');
+
+  try {
+    db.exec(`
+      ALTER TABLE schedule_tasks ADD COLUMN incremental INTEGER DEFAULT 1
+    `);
+    logger.info('[Database] V6 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V6 迁移失败:', error);
+  }
+}
+
+/**
+ * 迁移到 V7: 为 schedule_tasks 表添加 headless 字段
+ */
+function migrateToV7(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V7 迁移: 为 schedule_tasks 添加 headless 字段');
+
+  try {
+    db.exec(`
+      ALTER TABLE schedule_tasks ADD COLUMN headless INTEGER DEFAULT 1
+    `);
+    logger.info('[Database] V7 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V7 迁移失败:', error);
   }
 }
 

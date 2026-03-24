@@ -22,6 +22,7 @@ import {
   Terminal,
   ArrowRightCircle,
   RefreshCw,
+  Clock,
 } from "lucide-react"
 import type { TMDBItem, Episode, Season } from "@/types/tmdb-item"
 import { cn } from "@/lib/utils"
@@ -46,7 +47,8 @@ import {
   TMDBIntegrationTab,
   EpisodeChangeDialog,
   DeleteSeasonDialog,
-  DeleteItemDialog
+  DeleteItemDialog,
+  ScheduleTab,
 } from "./index"
 
 // 导入自定义 Hooks
@@ -1167,7 +1169,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
                 {/* 标签页切换 */}
                 <Tabs value={detailTab} onValueChange={setDetailTab} className="flex-1 flex flex-col min-h-0">
-                  <TabsList className="grid w-full grid-cols-2 mb-3">
+                  <TabsList className="grid w-full grid-cols-3 mb-3">
                     <TabsTrigger value="details" className="flex items-center transition-all duration-300">
                       <Info className="h-4 w-4 mr-2" />
                       详情
@@ -1175,6 +1177,10 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     <TabsTrigger value="integration" className="flex items-center transition-all duration-300">
                       <Terminal className="h-4 w-4 mr-2" />
                       集成工具
+                    </TabsTrigger>
+                    <TabsTrigger value="schedule" className="flex items-center transition-all duration-300">
+                      <Clock className="h-4 w-4 mr-2" />
+                      定时任务
                     </TabsTrigger>
                   </TabsList>
 
@@ -1210,6 +1216,11 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       onUpdate(updatedItem)
                     }}
                   />
+
+                  {/* 定时任务标签内容 */}
+                  <TabsContent value="schedule" className="flex-1 min-h-0 mt-0">
+                    <ScheduleTab item={localItem} />
+                  </TabsContent>
                 </Tabs>
               </div>
             </div>

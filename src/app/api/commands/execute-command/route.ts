@@ -26,18 +26,19 @@ export async function POST(request: NextRequest) {
         cwd: workingDirectory,
         shell: true,
         stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, PYTHONIOENCODING: "utf-8" },
       })
 
       let output = ""
       let errorOutput = ""
 
-      childProcess.stdout?.on("data", (data) => {
-        const text = data.toString()
+      childProcess.stdout?.on("data", (data: Buffer) => {
+        const text = data.toString("utf-8")
         output += text
       })
 
-      childProcess.stderr?.on("data", (data) => {
-        const text = data.toString()
+      childProcess.stderr?.on("data", (data: Buffer) => {
+        const text = data.toString("utf-8")
         errorOutput += text
       })
 

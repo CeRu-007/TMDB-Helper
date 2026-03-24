@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, memo, useCallback } from "react"
+import { useState, memo, useCallback, useEffect } from "react"
 import { Badge } from "@/shared/components/ui/badge"
-import { ExternalLink, MousePointer2, Zap } from "lucide-react"
+import { ExternalLink, MousePointer2, Zap, Clock, Settings } from "lucide-react"
 import type { TMDBItem } from "@/lib/data/storage"
 import { Button } from "@/shared/components/ui/button"
 import { CachedImage } from "@/shared/components/ui/cached-image"
 import { CLICK_RESET_DELAY, WEEKDAY_NAMES, TMDB_IMAGE_BASE_URL, TMDB_POSTER_SIZE } from "@/lib/constants/constants"
+import { getTimeFromCron } from "@/lib/utils/cron-utils"
+import { ScheduleDrawer } from "./schedule-drawer"
 
 interface MediaCardProps {
   item: TMDBItem
@@ -15,10 +17,35 @@ interface MediaCardProps {
   showAirTime?: boolean
 }
 
+interface ScheduleTaskInfo {
+  enabled: boolean;
+  cron: string;
+}
+
 function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: MediaCardProps) {
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [isClicked, setIsClicked] = useState(false)
+  const [scheduleTask, setScheduleTask] = useState<ScheduleTaskInfo | null>(null)
+  const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false)
+
+  useEffect(() => {
+    async function loadScheduleTask() {
+      try {
+        const response = await fetch(`/api/schedule/tasks?itemId=${itemId}`)
+        const data = await response.json()
+        if (data.success && data.data) {
+          setScheduleTask({
+            enabled: data.data.enabled,
+            cron: data.data.cron,
+          })
+        }
+      } catch {
+        // ignore error
+      }
+    }
+    loadScheduleTask()
+  }, [itemId])
 
   const posterUrl = item.posterUrl || `${TMDB_IMAGE_BASE_URL}/${TMDB_POSTER_SIZE}/placeholder.jpg`
 
@@ -130,10 +157,17 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
           ) : (
             <>
               {isDailyUpdate ? (
-                <Badge className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap">
-                  <Zap className="h-3 w-3 mr-1 animate-pulse" />
-                  每日 {getTimeOnly()}
-                </Badge>
+                scheduleTask?.enabled ? (
+                  <Badge className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap">
+                    <Clock className="h-3 w-3 mr-1" />
+                    ⚙ {getTimeFromCron(scheduleTask.cron)}
+                  </Badge>
+                ) : (
+                  <Badge className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap">
+                    <Zap className="h-3 w-3 mr-1 animate-pulse" />
+                    每日 {getTimeOnly()}
+                  </Badge>
+                )
               ) : (
                 <Badge
                   className={`text-white text-xs px-2 py-1 rounded-full whitespace-nowrap ${
@@ -143,6 +177,12 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
                   }`}
                 >
                   {getAirTimeDisplay()}
+                </Badge>
+              )}
+              {scheduleTask?.enabled && !isDailyUpdate && (
+                <Badge className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap">
+                  <Clock className="h-3 w-3 mr-1" />
+                  ⚙ {getTimeFromCron(scheduleTask.cron)}
                 </Badge>
               )}
             </>
@@ -224,6 +264,21 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
                 播出平台
               </Button>
             )}
+
+            {/* 定时任务按钮 */}
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation()
+                setScheduleDrawerOpen(true)
+              }}
+              className="bg-purple-500/90 hover:bg-purple-600 text-white text-xs px-2 py-1 h-6 backdrop-blur-sm border-0 shadow-md"
+              title="定时任务"
+            >
+              <Settings className="h-3 w-3 mr-1" />
+              定时
+            </Button>
           </div>
         </div>
       </div>
@@ -235,6 +290,13 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
         </h3>
         <p className="text-xs text-gray-500 dark:text-gray-400">{getUpdateText()}</p>
       </div>
+
+      {/* 定时任务抽屉 */}
+      <ScheduleDrawer
+        item={item as any}
+        open={scheduleDrawerOpen}
+        onOpenChange={setScheduleDrawerOpen}
+      />
     </div>
   )
 }
