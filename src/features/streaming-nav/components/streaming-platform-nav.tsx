@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ExternalLink, Search, GripVertical, ArrowUpDown, Heart, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/shared/components/ui/input';
@@ -152,8 +152,11 @@ function SortablePlatformCard({
   );
 }
 
-// 从本地存储加载字符串数组
+// 从本地存储加载字符串数组（仅客户端）
 function loadStringArrayFromStorage(key: string): string[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
   const saved = localStorage.getItem(key);
   if (!saved) {
     return [];
@@ -166,8 +169,11 @@ function loadStringArrayFromStorage(key: string): string[] {
   }
 }
 
-// 从本地存储加载平台顺序
+// 从本地存储加载平台顺序（仅客户端）
 function loadPlatformOrder(): Platform[] {
+  if (typeof window === 'undefined') {
+    return getFilteredPlatforms('全部');
+  }
   const savedOrder = localStorage.getItem('platformOrder');
   if (!savedOrder) {
     return getFilteredPlatforms('全部');
@@ -185,10 +191,18 @@ function loadPlatformOrder(): Platform[] {
 function StreamingPlatformNav(): JSX.Element {
   const [selectedCategory, setSelectedCategory] = useState<ExtendedCategoryType>('全部');
   const [searchQuery, setSearchQuery] = useState('');
-  const [favorites, setFavorites] = useState<string[]>(() => loadStringArrayFromStorage('platformFavorites'));
-  const [recentlyUsed, setRecentlyUsed] = useState<string[]>(() => loadStringArrayFromStorage('platformRecentlyUsed'));
-  const [platforms, setPlatforms] = useState<Platform[]>(loadPlatformOrder);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [recentlyUsed, setRecentlyUsed] = useState<string[]>([]);
+  const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [isDragMode, setIsDragMode] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setFavorites(loadStringArrayFromStorage('platformFavorites'));
+    setRecentlyUsed(loadStringArrayFromStorage('platformRecentlyUsed'));
+    setPlatforms(loadPlatformOrder());
+    setIsHydrated(true);
+  }, []);
 
   // 拖拽传感器配置
   const sensors = useSensors(
