@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
     }
 
     const item = itemsRepository.findByIdWithRelations(itemId)
-    logger.info(`[Schedule Execute] 找到词条: ${item ? item.title : 'null'}`)
     if (!item) {
       return NextResponse.json({ error: '词条不存在' }, { status: 404 })
     }
@@ -62,8 +61,6 @@ export async function POST(request: NextRequest) {
     const logId = logResult.data.id
 
     try {
-      logger.info(`[Schedule Execute] 开始手动执行任务: ${task.id}, 词条: ${item.title}`)
-
       let result: ExecuteResult
       try {
         result = await executeScheduleTask(item, task, logs)
@@ -183,12 +180,19 @@ async function executeScheduleTask(
     logger.info(`[Schedule Execute] CSV已保存`)
     addLog('info', 'CSV已保存')
 
+    logger.info(`[Schedule Execute] 检查自动导入: autoImport=${task.autoImport}, tmdbId=${item.tmdbId}`)
     if (task.autoImport && item.tmdbId) {
-      logger.info(`[Schedule Execute] 执行TMDB导入: ${item.tmdbId}`)
-      addLog('info', `执行TMDB导入: ${item.tmdbId}`)
+      const tmdbSeason = task.tmdbSeason || 1
+      const tmdbLanguage = task.tmdbLanguage || 'zh-CN'
+      const tmdbAutoResponse = task.tmdbAutoResponse || 'w'
+      logger.info(`[Schedule Execute] 执行TMDB导入: tmdbId=${item.tmdbId}, season=${tmdbSeason}, language=${tmdbLanguage}, autoResponse=${tmdbAutoResponse}`)
+      addLog('info', `执行TMDB导入: 第${tmdbSeason}季, 语言=${tmdbLanguage}`)
 
-      const tmdbCommand = `python -m tmdb-import ${headlessFlag} "https://www.themoviedb.org/tv/${item.tmdbId}"`
-      const tmdbResult = await executeExternalCommand(tmdbCommand, tmdbImportPath, addLog)
+      const tmdbUrl = `https://www.themoviedb.org/tv/${item.tmdbId}/season/${tmdbSeason}?language=${tmdbLanguage}`
+      const tmdbCommand = `python -m tmdb-import ${headlessFlag} "${tmdbUrl}"`
+      logger.info(`[Schedule Execute] TMDB命令: ${tmdbCommand}`)
+
+      const tmdbResult = await executeInteractiveCommand(tmdbCommand, tmdbImportPath, addLog, tmdbAutoResponse)
 
       if (!tmdbResult.success) {
         logger.warn(`[Schedule Execute] TMDB导入失败: ${tmdbResult.error}`)
@@ -258,6 +262,107 @@ async function executeExternalCommand(
       error: error instanceof Error ? error.message : 'API调用失败',
     }
   }
+}
+
+async function executeInteractiveCommand(
+  command: string,
+  workingDirectory: string,
+  addLog: (type: 'stdout' | 'stderr' | 'info', message: string) => void,
+  autoResponse: string = 'w'
+): Promise<{ success: boolean; output: string; error: string }> {
+  return new Promise(async (resolve) => {
+    try {
+      logger.info(`[Schedule Execute] 调用execute-command-interactive API, workingDirectory=${workingDirectory}`)
+
+      let processId: number | null = null
+      let fullOutput = ''
+      let errorMessage = ''
+      let autoResponseSent = false
+
+      const response = await fetch('http://localhost:3000/api/commands/execute-command-interactive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command, workingDirectory }),
+      })
+
+      if (!response.ok || !response.body) {
+        errorMessage = `HTTP错误: ${response.status}`
+        addLog('stderr', errorMessage)
+        resolve({ success: false, output: '', error: errorMessage })
+        return
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let buffer = ''
+
+      const sendAutoResponse = async (pid: number, input: string) => {
+        try {
+          await fetch('http://localhost:3000/api/commands/send-input', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ processId: pid, input, sendDirectly: true }),
+          })
+          logger.info(`[Schedule Execute] 自动发送响应: "${input}"`)
+        } catch (err) {
+          logger.error(`[Schedule Execute] 自动响应失败: ${err}`)
+        }
+      }
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.substring(6))
+
+              if (data.type === 'start' && data.processId) {
+                processId = data.processId
+                logger.info(`[Schedule Execute] 交互进程启动: PID=${processId}`)
+                addLog('info', `进程已启动 (PID: ${processId})`)
+              } else if (data.type === 'stdout') {
+                fullOutput += data.message
+                addLog('stdout', data.message)
+
+                if (!autoResponseSent && data.message.includes("enter 'w'")) {
+                  autoResponseSent = true
+                  if (processId) {
+                    setTimeout(() => sendAutoResponse(processId, autoResponse), 500)
+                  }
+                }
+              } else if (data.type === 'stderr') {
+                fullOutput += data.message
+                errorMessage += data.message
+                addLog('stderr', data.message)
+              } else if (data.type === 'close') {
+                logger.info(`[Schedule Execute] 进程关闭: status=${data.status}, exitCode=${data.exitCode}`)
+                addLog('info', data.message)
+              }
+            } catch (err) {
+              logger.warn(`[Schedule Execute] 解析SSE数据失败: ${err}`)
+            }
+          }
+        }
+      }
+
+      const success = !errorMessage.includes('Error') && !errorMessage.includes('error')
+      resolve({ success, output: fullOutput, error: errorMessage })
+    } catch (error) {
+      logger.error(`[Schedule Execute] executeInteractiveCommand异常:`, error)
+      addLog('stderr', `交互执行失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      resolve({
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : '未知错误',
+      })
+    }
+  })
 }
 
 async function getServerConfigValue(key: string): Promise<string | null> {

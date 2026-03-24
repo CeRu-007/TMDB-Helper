@@ -7,7 +7,7 @@ import { getDatabase } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 9;
 
 /**
  * 初始化数据库 Schema
@@ -43,6 +43,12 @@ export function initializeSchema(): void {
     }
     if (currentVersion < 7) {
       migrateToV7(db);
+    }
+    if (currentVersion < 8) {
+      migrateToV8(db);
+    }
+    if (currentVersion < 9) {
+      migrateToV9(db);
     }
 
     setUserVersion(SCHEMA_VERSION);
@@ -224,6 +230,9 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       headless INTEGER DEFAULT 1,
       incremental INTEGER DEFAULT 1,
       autoImport INTEGER DEFAULT 0,
+      tmdbSeason INTEGER DEFAULT 1,
+      tmdbLanguage TEXT DEFAULT 'zh-CN',
+      tmdbAutoResponse TEXT DEFAULT 'w',
       fieldCleanup TEXT DEFAULT '{}',
       lastRunAt TEXT,
       nextRunAt TEXT,
@@ -333,6 +342,41 @@ function migrateToV7(db: ReturnType<typeof getDatabase>): void {
     logger.info('[Database] V7 迁移完成');
   } catch (error) {
     logger.error('[Database] V7 迁移失败:', error);
+  }
+}
+
+/**
+ * 迁移到 V8: 为 schedule_tasks 表添加 tmdbSeason 和 tmdbLanguage 字段
+ */
+function migrateToV8(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V8 迁移: 为 schedule_tasks 添加 tmdbSeason 和 tmdbLanguage 字段');
+
+  try {
+    db.exec(`
+      ALTER TABLE schedule_tasks ADD COLUMN tmdbSeason INTEGER DEFAULT 1
+    `);
+    db.exec(`
+      ALTER TABLE schedule_tasks ADD COLUMN tmdbLanguage TEXT DEFAULT 'zh-CN'
+    `);
+    logger.info('[Database] V8 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V8 迁移失败:', error);
+  }
+}
+
+/**
+ * 迁移到 V9: 为 schedule_tasks 表添加 tmdbAutoResponse 字段
+ */
+function migrateToV9(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V9 迁移: 为 schedule_tasks 添加 tmdbAutoResponse 字段');
+
+  try {
+    db.exec(`
+      ALTER TABLE schedule_tasks ADD COLUMN tmdbAutoResponse TEXT DEFAULT 'w'
+    `);
+    logger.info('[Database] V9 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V9 迁移失败:', error);
   }
 }
 

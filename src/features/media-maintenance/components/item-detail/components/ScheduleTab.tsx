@@ -12,6 +12,8 @@ import { Label } from "@/shared/components/ui/label"
 import { Badge } from "@/shared/components/ui/badge"
 import { Checkbox } from "@/shared/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { LanguageSelector } from "@/shared/components/ui/language-selector"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 
 interface ScheduleTabProps {
   item: TMDBItem
@@ -38,6 +40,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
   const [headless, setHeadless] = useState(true)
   const [incremental, setIncremental] = useState(true)
   const [autoImport, setAutoImport] = useState(false)
+  const [tmdbSeason, setTmdbSeason] = useState(1)
+  const [tmdbLanguage, setTmdbLanguage] = useState("zh-CN")
+  const [tmdbAutoResponse, setTmdbAutoResponse] = useState("w")
   const [fieldCleanup, setFieldCleanup] = useState<FieldCleanup>({
     name: false,
     air_date: false,
@@ -71,6 +76,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         setHeadless(data.data.headless)
         setIncremental(data.data.incremental)
         setAutoImport(data.data.autoImport)
+        setTmdbSeason(data.data.tmdbSeason || 1)
+        setTmdbLanguage(data.data.tmdbLanguage || 'zh-CN')
+        setTmdbAutoResponse(data.data.tmdbAutoResponse || 'w')
         setFieldCleanup(data.data.fieldCleanup)
 
         const logsResponse = await fetch(`/api/schedule/logs?taskId=${data.data.id}&limit=10`)
@@ -150,8 +158,8 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
     try {
       const method = task ? "PUT" : "POST"
       const body = task
-        ? { id: task.id, cron: cronInput, enabled, headless, incremental, autoImport, fieldCleanup }
-        : { itemId: item.id, cron: cronInput, enabled, headless, incremental, autoImport, fieldCleanup }
+        ? { id: task.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup }
+        : { itemId: item.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup }
 
       const response = await fetch("/api/schedule/tasks", {
         method,
@@ -163,6 +171,8 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
       if (data.success && data.data) {
         setTask(data.data)
         addLog("success", "配置已保存")
+      } else {
+        addLog("error", `保存失败: ${data.error}`)
       }
     } catch (error) {
       console.error("[ScheduleTab] 保存失败:", error)
@@ -335,6 +345,46 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                     <Switch id="autoImport" checked={autoImport} onCheckedChange={setAutoImport} />
                   </div>
 
+                  {autoImport && (
+                    <div className="space-y-2 pl-4 border-l-2 border-muted">
+                      <div className="flex flex-row items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs">第</span>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="20"
+                            value={tmdbSeason}
+                            onChange={(e) => setTmdbSeason(parseInt(e.target.value) || 1)}
+                            className="w-12 h-7 text-xs"
+                          />
+                          <span className="text-xs">季</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Label className="text-xs">语言</Label>
+                          <LanguageSelector
+                            value={tmdbLanguage}
+                            onChange={setTmdbLanguage}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Label className="text-xs">Overview</Label>
+                          <Select value={tmdbAutoResponse} onValueChange={setTmdbAutoResponse}>
+                            <SelectTrigger className="w-20 h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="w">等待</SelectItem>
+                              <SelectItem value="y">覆盖</SelectItem>
+                              <SelectItem value="n">跳过</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Label htmlFor="incremental">增量更新</Label>
@@ -342,7 +392,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                     <Switch id="incremental" checked={incremental} onCheckedChange={setIncremental} />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {incremental ? "仅处理新集数，保留已有数据" : "全量更新，处理所有集数"}
+                    {incremental ? "清理已维护集数，仅处理新集数" : "全量更新，处理所有集数"}
                   </p>
 
                   <div className="space-y-2">

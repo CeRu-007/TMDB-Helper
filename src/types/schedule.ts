@@ -18,6 +18,9 @@ export interface ScheduleTask {
   headless: boolean;
   incremental: boolean;
   autoImport: boolean;
+  tmdbSeason: number;
+  tmdbLanguage: string;
+  tmdbAutoResponse: string;
   fieldCleanup: FieldCleanup;
   lastRunAt: string | null;
   nextRunAt: string | null;
@@ -33,6 +36,9 @@ export interface ScheduleTaskRow {
   headless: number;
   incremental: number;
   autoImport: number;
+  tmdbSeason: number;
+  tmdbLanguage: string;
+  tmdbAutoResponse: string;
   fieldCleanup: string;
   lastRunAt: string | null;
   nextRunAt: string | null;
@@ -69,6 +75,9 @@ export function scheduleTaskRowToScheduleTask(row: ScheduleTaskRow): ScheduleTas
     headless: row.headless === 1,
     incremental: row.incremental === 1,
     autoImport: row.autoImport === 1,
+    tmdbSeason: row.tmdbSeason || 1,
+    tmdbLanguage: row.tmdbLanguage || 'zh-CN',
+    tmdbAutoResponse: row.tmdbAutoResponse || 'w',
     fieldCleanup: JSON.parse(row.fieldCleanup || '{}'),
     lastRunAt: row.lastRunAt,
     nextRunAt: row.nextRunAt,
@@ -86,6 +95,9 @@ export function scheduleTaskToRow(task: ScheduleTask): ScheduleTaskRow {
     headless: task.headless ? 1 : 0,
     incremental: task.incremental ? 1 : 0,
     autoImport: task.autoImport ? 1 : 0,
+    tmdbSeason: task.tmdbSeason || 1,
+    tmdbLanguage: task.tmdbLanguage || 'zh-CN',
+    tmdbAutoResponse: task.tmdbAutoResponse || 'w',
     fieldCleanup: JSON.stringify(task.fieldCleanup),
     lastRunAt: task.lastRunAt,
     nextRunAt: task.nextRunAt,
@@ -113,6 +125,9 @@ export interface CreateScheduleTaskInput {
   headless?: boolean;
   incremental?: boolean;
   autoImport?: boolean;
+  tmdbSeason?: number;
+  tmdbLanguage?: string;
+  tmdbAutoResponse?: string;
   fieldCleanup?: FieldCleanup;
 }
 
@@ -123,5 +138,8 @@ export interface UpdateScheduleTaskInput {
   headless?: boolean;
   incremental?: boolean;
   autoImport?: boolean;
+  tmdbSeason?: number;
+  tmdbLanguage?: string;
+  tmdbAutoResponse?: string;
   fieldCleanup?: FieldCleanup;
 }

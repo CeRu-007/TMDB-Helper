@@ -58,6 +58,9 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       headless: input.headless ?? true,
       incremental: input.incremental ?? true,
       autoImport: input.autoImport ?? false,
+      tmdbSeason: input.tmdbSeason ?? 1,
+      tmdbLanguage: input.tmdbLanguage ?? 'zh-CN',
+      tmdbAutoResponse: input.tmdbAutoResponse ?? 'w',
       fieldCleanup: input.fieldCleanup ?? defaultFieldCleanup,
       lastRunAt: null,
       nextRunAt: null,
@@ -70,10 +73,10 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
     try {
       db.prepare(`
         INSERT INTO schedule_tasks (
-          id, itemId, cron, enabled, headless, incremental, autoImport, fieldCleanup,
+          id, itemId, cron, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup,
           lastRunAt, nextRunAt, createdAt, updatedAt
         ) VALUES (
-          @id, @itemId, @cron, @enabled, @headless, @incremental, @autoImport, @fieldCleanup,
+          @id, @itemId, @cron, @enabled, @headless, @incremental, @autoImport, @tmdbSeason, @tmdbLanguage, @tmdbAutoResponse, @fieldCleanup,
           @lastRunAt, @nextRunAt, @createdAt, @updatedAt
         )
       `).run(row);
@@ -92,10 +95,12 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
     const db = getDatabase();
     const now = new Date().toISOString();
 
-    const existing = this.findById(input.id);
-    if (!existing) {
+    const existingRow = this.findById(input.id);
+    if (!existingRow) {
       return { success: false, error: '任务不存在' };
     }
+
+    const existing = scheduleTaskRowToScheduleTask(existingRow);
 
     const updated: ScheduleTask = {
       ...existing,
@@ -104,6 +109,9 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       headless: input.headless ?? existing.headless,
       incremental: input.incremental ?? existing.incremental,
       autoImport: input.autoImport ?? existing.autoImport,
+      tmdbSeason: input.tmdbSeason ?? existing.tmdbSeason,
+      tmdbLanguage: input.tmdbLanguage ?? existing.tmdbLanguage,
+      tmdbAutoResponse: input.tmdbAutoResponse ?? existing.tmdbAutoResponse,
       fieldCleanup: input.fieldCleanup ?? existing.fieldCleanup,
       updatedAt: now,
     };
@@ -118,10 +126,25 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
           headless = @headless,
           incremental = @incremental,
           autoImport = @autoImport,
+          tmdbSeason = @tmdbSeason,
+          tmdbLanguage = @tmdbLanguage,
+          tmdbAutoResponse = @tmdbAutoResponse,
           fieldCleanup = @fieldCleanup,
           updatedAt = @updatedAt
         WHERE id = @id
-      `).run(row);
+      `).run({
+        id: row.id,
+        cron: row.cron,
+        enabled: row.enabled,
+        headless: row.headless,
+        incremental: row.incremental,
+        autoImport: row.autoImport,
+        tmdbSeason: row.tmdbSeason,
+        tmdbLanguage: row.tmdbLanguage,
+        tmdbAutoResponse: row.tmdbAutoResponse,
+        fieldCleanup: row.fieldCleanup,
+        updatedAt: row.updatedAt,
+      });
 
       return { success: true, data: updated };
     } catch (error) {
