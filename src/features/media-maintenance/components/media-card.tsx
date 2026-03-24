@@ -157,32 +157,29 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
           ) : (
             <>
               {isDailyUpdate ? (
-                scheduleTask?.enabled ? (
-                  <Badge className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap">
-                    <Clock className="h-3 w-3 mr-1" />
-                    ⚙ {getTimeFromCron(scheduleTask.cron)}
-                  </Badge>
-                ) : (
-                  <Badge className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap">
-                    <Zap className="h-3 w-3 mr-1 animate-pulse" />
-                    每日 {getTimeOnly()}
-                  </Badge>
-                )
-              ) : (
-                <Badge
-                  className={`text-white text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                    (item.weekday === new Date().getDay() || (hasSecondWeekday && item.secondWeekday === new Date().getDay()))
-                      ? "bg-red-500 animate-pulse"
-                      : "bg-green-500"
-                  }`}
-                >
-                  {getAirTimeDisplay()}
+                <Badge className={`text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap ${scheduleTask?.enabled ? "bg-purple-500" : "bg-blue-500"}`}>
+                  {scheduleTask?.enabled ? (
+                    <>
+                      <Clock className="h-3 w-3 mr-1" />
+                      每日 {getTimeOnly()} <span className="mx-1">·</span> {getTimeFromCron(scheduleTask.cron)}
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-3 w-3 mr-1 animate-pulse" />
+                      每日 {getTimeOnly()}
+                    </>
+                  )}
                 </Badge>
-              )}
-              {scheduleTask?.enabled && !isDailyUpdate && (
-                <Badge className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap">
-                  <Clock className="h-3 w-3 mr-1" />
-                  ⚙ {getTimeFromCron(scheduleTask.cron)}
+              ) : (
+                <Badge className={`text-white text-xs px-2 py-1 rounded-full flex items-center whitespace-nowrap ${scheduleTask?.enabled ? "bg-purple-500" : (item.weekday === new Date().getDay() || (hasSecondWeekday && item.secondWeekday === new Date().getDay())) ? "bg-red-500 animate-pulse" : "bg-green-500"}`}>
+                  {scheduleTask?.enabled ? (
+                    <>
+                      <Clock className="h-3 w-3 mr-1" />
+                      {getAirTimeDisplay()} <span className="mx-1">·</span> {getTimeFromCron(scheduleTask.cron)}
+                    </>
+                  ) : (
+                    getAirTimeDisplay()
+                  )}
                 </Badge>
               )}
             </>
@@ -265,20 +262,22 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
               </Button>
             )}
 
-            {/* 定时任务按钮 */}
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={(e) => {
-                e.stopPropagation()
-                setScheduleDrawerOpen(true)
-              }}
-              className="bg-purple-500/90 hover:bg-purple-600 text-white text-xs px-2 py-1 h-6 backdrop-blur-sm border-0 shadow-md"
-              title="定时任务"
-            >
-              <Settings className="h-3 w-3 mr-1" />
-              定时
-            </Button>
+            {/* 定时任务按钮 - 仅当启用时显示 */}
+            {scheduleTask?.enabled && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setScheduleDrawerOpen(true)
+                }}
+                className="bg-purple-500/90 hover:bg-purple-600 text-white text-xs px-2 py-1 h-6 backdrop-blur-sm border-0 shadow-md"
+                title="定时任务"
+              >
+                <Settings className="h-3 w-3 mr-1" />
+                定时
+              </Button>
+            )}
           </div>
         </div>
       </div>
