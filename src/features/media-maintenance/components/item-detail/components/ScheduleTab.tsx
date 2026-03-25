@@ -227,6 +227,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
     secondWeekday: item.secondWeekday,
     airTime: item.airTime,
     isDailyUpdate: item.isDailyUpdate,
+    currentTime: new Date(),
   })
 
   const getLogColor = (type: LogEntry["type"]) => {
@@ -299,7 +300,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                           onClick={() => handleRecommendationClick(rec.cron)}
                           className="text-xs h-7"
                         >
-                          {rec.label}
+                          {rec.labelKey ? t(rec.labelKey) : rec.label}
                         </Button>
                       ))}
                     </div>

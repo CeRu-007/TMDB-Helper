@@ -15,6 +15,8 @@ export interface CronRecommendation {
   cron: string;
   label: string;
   description: string;
+  labelKey?: string;
+  descriptionKey?: string;
 }
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -192,11 +194,11 @@ export function getNextRunTime(cronExpression: string): string {
     }
   }
 
-  const monthStr = MONTHS[next.getMonth()];
-  const dayStr = next.getDate().toString().padStart(2, '0');
+  const month = (next.getMonth() + 1).toString().padStart(2, '0');
+  const day = next.getDate().toString().padStart(2, '0');
   const timeStr = `${next.getHours().toString().padStart(2, '0')}:${next.getMinutes().toString().padStart(2, '0')}`;
 
-  return `${monthStr} ${dayStr}日 ${timeStr}`;
+  return `${month}/${day} ${timeStr}`;
 }
 
 export function validateCronExpression(cronExpression: string): boolean {
@@ -241,83 +243,44 @@ export function getRecommendations(item: {
   secondWeekday?: number;
   airTime?: string;
   isDailyUpdate?: boolean;
+  currentTime?: Date;
 }): CronRecommendation[] {
   const recommendations: CronRecommendation[] = [];
+  const now = item.currentTime ? new Date(item.currentTime) : new Date();
+  const currentMinute = now.getMinutes();
+  const currentHour = now.getHours();
+  const nextMinute = currentMinute + 1;
 
-  if (item.isDailyUpdate) {
-    if (item.airTime) {
-      const [hour, minute] = item.airTime.split(':').map(Number);
-      if (!isNaN(hour) && !isNaN(minute)) {
-        recommendations.push({
-          cron: `${minute} ${hour} * * *`,
-          label: '每日播出时间',
-          description: `每日 ${item.airTime}`,
-        });
-      }
-    }
-
-    if (recommendations.length === 0) {
-      recommendations.push({
-        cron: '0 2 * * *',
-        label: '每日凌晨',
-        description: '每天凌晨 2:00',
-      });
-    }
-
+  if (nextMinute < 60) {
     recommendations.push({
-      cron: '0 0 * * *',
-      label: '每日午夜',
-      description: '每天 00:00',
+      cron: `${nextMinute} ${currentHour} * * *`,
+      label: `${currentHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`,
+      labelKey: 'inOneMinute',
+      description: `${currentHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`,
+      descriptionKey: 'inOneMinuteAt',
     });
   } else {
-    if (typeof item.weekday === 'number') {
-      const weekdayLabel = WEEKDAYS[item.weekday];
-
-      if (item.airTime) {
-        const [hour, minute] = item.airTime.split(':').map(Number);
-        if (!isNaN(hour) && !isNaN(minute)) {
-          recommendations.push({
-            cron: `${minute} ${hour} * * ${item.weekday}`,
-            label: `每周${weekdayLabel}`,
-            description: `每周${weekdayLabel} ${item.airTime}`,
-          });
-        }
-      } else {
-        recommendations.push({
-          cron: `0 22 * * ${item.weekday}`,
-          label: `每周${weekdayLabel}晚`,
-          description: `每周${weekdayLabel} 22:00`,
-        });
-      }
-
-      if (typeof item.secondWeekday === 'number') {
-        const secondWeekdayLabel = WEEKDAYS[item.secondWeekday];
-        recommendations.push({
-          cron: `0 22 * * ${item.weekday},${item.secondWeekday}`,
-          label: `每周${weekdayLabel}、${secondWeekdayLabel}`,
-          description: `每周${weekdayLabel}、${secondWeekdayLabel} 22:00`,
-        });
-      }
-    }
+    recommendations.push({
+      cron: `0 ${currentHour + 1} * * *`,
+      label: `${(currentHour + 1).toString().padStart(2, '0')}:00`,
+      labelKey: 'inOneMinute',
+      description: `${(currentHour + 1).toString().padStart(2, '0')}:00`,
+      descriptionKey: 'inOneMinuteAt',
+    });
   }
 
-  recommendations.push(
-    {
-      cron: '0 */6 * * *',
-      label: '每6小时',
-      description: '每 6 小时执行一次',
-    },
-    {
-      cron: '0 */12 * * *',
-      label: '每12小时',
-      description: '每 12 小时执行一次',
-    },
-    {
-      cron: '0 2 * * *',
-      label: '每天凌晨',
-      description: '每天凌晨 2:00',
+  if (item.isDailyUpdate && item.airTime) {
+    const [hour, minute] = item.airTime.split(':').map(Number);
+    if (!isNaN(hour) && !isNaN(minute)) {
+      recommendations.push({
+        cron: `${minute} ${hour} * * *`,
+        label: '每日播出时间',
+        labelKey: 'dailyAirTime',
+        description: `每日 ${item.airTime}`,
+        descriptionKey: 'dailyAirTimeDesc',
+      });
     }
-  );
+  }
 
   return recommendations;
 }
