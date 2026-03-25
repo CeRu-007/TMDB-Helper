@@ -11,12 +11,15 @@ import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
 import MediaCard from '@/features/media-maintenance/components/media-card'
 import { UseHomeStateReturn } from '@/stores/hooks'
+import { useTranslation } from 'react-i18next'
+
 interface ProgressSectionProps {
   homeState: UseHomeStateReturn
   categories: Array<{ id: string; name: string; icon: React.ReactNode }>
 }
 
 export function ProgressSection({ homeState, categories }: ProgressSectionProps): JSX.Element {
+  const { t } = useTranslation('media')
   const { items, loading } = useData()
 
   function handleCardClick(itemId: string): void {
@@ -97,7 +100,7 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
             <div className="flex items-center space-x-2">
               <PlayCircle className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">进行中</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('inProgress')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {ongoingItems.length}
                 </p>
@@ -111,7 +114,7 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">已完成</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('completed')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {completedItems.length}
                 </p>
@@ -125,7 +128,7 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
             <div className="flex items-center space-x-2">
               <Star className="h-5 w-5 text-yellow-600" />
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">总计</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('total')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {totalItems}
                 </p>
@@ -138,7 +141,7 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
           <CardContent className="p-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400">完成率</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('completionRate')}</p>
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {completionRate.toFixed(1)}%
                 </p>

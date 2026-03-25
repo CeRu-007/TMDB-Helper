@@ -9,12 +9,14 @@ import { Slider } from "@/shared/components/ui/slider"
 import { Play, Pause, Plus, Trash2, Download, Settings, Type, X } from "lucide-react"
 import { useHardSubtitle } from "./useHardSubtitle"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "react-i18next"
 
 interface HardSubtitleExtractorProps {
   onOpenGlobalSettings?: (section: string) => void
 }
 
 export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtractorProps) {
+  const { t } = useTranslation("image-processing")
   const {
     // 状态
     videoFile,
@@ -68,10 +70,10 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
           </div>
           <div>
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-              硬字幕提取
+              {t("hardSubtitle.title")}
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              通过VAD检测和OCR识别从视频中提取硬字幕
+              {t("hardSubtitle.subtitle")}
             </p>
           </div>
         </div>
@@ -83,7 +85,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                 {Math.floor(progress)}% {statusMessage}
               </span>
               <Button variant="outline" size="sm" onClick={cancelExtraction}>
-                取消
+                {t("hardSubtitle.cancel")}
               </Button>
             </>
           ) : (
@@ -94,7 +96,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                 onClick={clearResults}
                 disabled={!videoFile && !videoUrl}
               >
-                清空
+                {t("hardSubtitle.clear")}
               </Button>
               <Button
                 size="sm"
@@ -102,7 +104,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                 disabled={!videoFile && !videoUrl || subtitleRegions.length === 0}
               >
                 <Play className="h-4 w-4 mr-1" />
-                开始提取
+                {t("hardSubtitle.startExtracting")}
               </Button>
             </>
           )}

@@ -4,6 +4,7 @@ import { UserAvatar } from "@/shared/components/user-identity-provider"
 import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
+import { useTranslation } from "react-i18next"
 
 interface AppHeaderProps {
   sidebarCollapsed: boolean
@@ -23,6 +24,7 @@ export function AppHeader({
   onShowAddDialog
 }: AppHeaderProps) {
   const { theme, setTheme } = useTheme()
+  const { t } = useTranslation("settings")
 
   return (
     <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm border-b dark:border-gray-700 sticky top-0 z-40">
@@ -63,7 +65,7 @@ export function AppHeader({
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center space-x-2">
                 <Settings className="h-4 w-4" />
-                <span>设置</span>
+                <span>{t("settings.settings")}</span>
               </Button>
               <Button
                 variant="outline"
@@ -89,7 +91,7 @@ export function AppHeader({
                 size="default"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                <span>添加词条</span>
+                <span>{t("addItem", { ns: "nav.maintenance" })}</span>
               </Button>
             </div>
           </div>

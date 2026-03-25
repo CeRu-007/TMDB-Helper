@@ -6,6 +6,7 @@ import { MessageContent } from "./molecules/message-content"
 import { MessageActions } from "./molecules/message-actions"
 import { MessageEditor } from "./molecules/message-editor"
 import { SuggestionList } from "./molecules/suggestion-list"
+import { useTranslation } from "react-i18next"
 
 // User info type
 interface UserInfo {
@@ -54,6 +55,7 @@ export function ChatMessageItem({
   currentChatId,
   selectedModel
 }: ChatMessageItemProps) {
+  const { t } = useTranslation('ai-chat')
   const isUser = message.role === 'user'
 
   if (isUser) {
@@ -95,7 +97,7 @@ export function ChatMessageItem({
         <div className="flex-shrink-0">
           <UserAvatarImage
             src={userInfo?.avatarUrl}
-            displayName={userInfo?.displayName || "用户"}
+            displayName={userInfo?.displayName || t('user')}
             className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
           />
         </div>
@@ -109,7 +111,7 @@ export function ChatMessageItem({
         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-sm">
           <Bot className="w-4 h-4 text-white" />
         </div>
-        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">AI助手</div>
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiAssistant')}</div>
         <div className="text-xs text-gray-400 dark:text-gray-500">{message.timestamp.toLocaleTimeString()}</div>
       </div>
       

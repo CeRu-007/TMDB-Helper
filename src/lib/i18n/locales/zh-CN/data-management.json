@@ -1,0 +1,69 @@
+{
+  "export": {
+    "title": "导出数据",
+    "dataStats": "数据统计",
+    "itemCount": "项目数量",
+    "exportFormat": "导出格式",
+    "jsonFormat": "JSON 格式",
+    "jsonFormatDesc": "完整的数据备份，包含所有字段和结构",
+    "csvFormat": "CSV 格式",
+    "csvFormatDesc": "表格格式，便于在Excel等软件中查看",
+    "cancel": "取消",
+    "exporting": "导出中...",
+    "export": "导出",
+    "noDataToExport": "没有可导出的数据",
+    "exportSuccess": "导出成功",
+    "exportedItems": "已导出 {{count}} 个项目",
+    "exportFailed": "导出失败",
+    "checkDataIntegrity": "请检查数据完整性后重试",
+    "unknownError": "未知错误",
+    "columns": {
+      "title": "标题",
+      "originalTitle": "原标题",
+      "type": "类型",
+      "posterUrl": "海报URL",
+      "airWeekday": "播出星期",
+      "airTime": "播出时间",
+      "totalEpisodes": "总集数",
+      "completed": "已完成",
+      "status": "状态",
+      "platformUrl": "平台URL",
+      "notes": "备注",
+      "category": "分类",
+      "createdAt": "创建时间"
+    },
+    "statusValues": {
+      "ongoing": "进行中",
+      "completed": "已完成"
+    }
+  },
+  "import": {
+    "title": "导入数据",
+    "selectBackupFile": "选择备份文件",
+    "selectFile": "选择文件",
+    "supportJsonFormat": "支持 JSON 格式的备份文件",
+    "fileInfo": "文件信息",
+    "fileName": "文件名",
+    "fileSize": "文件大小",
+    "validationPassed": "数据格式验证通过",
+    "taskCount": "任务数量",
+    "version": "版本",
+    "exportTime": "导出时间",
+    "skipInvalidData": "部分数据格式不正确将被跳过",
+    "duplicateData": "注意：导入的数据与当前数据完全一致（{{count}} 个项目）。您可以选择继续导入以确保数据一致性。",
+    "fileReadFailed": "文件读取失败",
+    "importFailed": "导入失败",
+    "steps": {
+      "parsing": "正在解析文件...",
+      "preparing": "准备导入 {{count}} 个项目...",
+      "backingUp": "正在备份原数据...",
+      "writing": "正在写入数据文件...",
+      "complete": "导入完成！",
+      "failed": "导入失败"
+    },
+    "uploading": "正在上传: {{fileName}}",
+    "cancel": "取消",
+    "continue": "继续",
+    "import": "导入"
+  }
+}

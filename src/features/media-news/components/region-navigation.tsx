@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { Calendar, PlayCircle, ChevronDown, Check } from "lucide-react"
 import { REGIONS, REGION_GROUPS } from "@/lib/constants/regions"
 
@@ -23,6 +24,7 @@ export function RegionNavigation({
   recentItemsByRegion,
   items
 }: RegionNavigationProps) {
+  const { t } = useTranslation("nav.news")
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -108,7 +110,7 @@ export function RegionNavigation({
         <div className="flex items-center justify-between">
           {/* 当前选中区域显示和切换按钮集成 */}
           <div className="flex items-center">
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mr-2">区域:</span>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mr-2">{t("regionLabel")}:</span>
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={toggleDropdown}
@@ -213,7 +215,7 @@ export function RegionNavigation({
             >
               <div className="flex items-center space-x-1.5">
                 <Calendar className="h-3.5 w-3.5" />
-                <span>即将上线</span>
+                <span>{t("upcoming")}</span>
               </div>
             </button>
             <button
@@ -222,7 +224,7 @@ export function RegionNavigation({
             >
               <div className="flex items-center space-x-1.5">
                 <PlayCircle className="h-3.5 w-3.5" />
-                <span>近期开播</span>
+                <span>{t("recent")}</span>
               </div>
             </button>
           </div>

@@ -1,7 +1,7 @@
 /**
- * 设置对话框主组件
+ * Settings Dialog Main Component
  *
- * 使用复合模式组织各个设置面板
+ * Uses composite pattern to organize each settings panel
  */
 
 "use client"
@@ -27,6 +27,7 @@ import AppearanceSettingsPanel from "./AppearanceSettingsPanel"
 import SecuritySettingsPanel from "./SecuritySettingsPanel"
 import HelpSettingsPanel from "./HelpSettingsPanel"
 import { CheckCircle2, AlertCircle } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import type {
   SettingsDialogProps,
   TMDBConfig,
@@ -69,6 +70,7 @@ function findBuiltinProvider(
 }
 
 export default function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
+  const { t } = useTranslation("settings")
   const { toast } = useToast()
   const { changePassword } = useAuth()
   const { updateScenario } = useModelService()
@@ -603,9 +605,9 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         "general": () => saveGeneralSettings(),
         "appearance": () => saveAppearanceSettings(),
         "video-thumbnail": () => saveVideoThumbnailSettings(),
-        "model-service": () => toast({ title: "成功", description: "模型服务设置已保存" }),
+        "model-service": () => toast({ title: t("common.success"), description: t("common.modelServiceSaved") }),
         "tools": () => saveTmdbConfig(),
-        "security": () => toast({ title: "成功", description: "安全设置已保存" })
+        "security": () => toast({ title: t("common.success"), description: t("common.securitySaved") })
       }
 
       const saveAction = saveActions[activeSection as keyof typeof saveActions]
@@ -616,7 +618,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       }
 
       setSaveStatus("success")
-      setValidationMessage("设置已成功保存")
+      setValidationMessage(t("settings.settingsSaved"))
 
       // 2秒后重置状态
       setTimeout(() => {
@@ -724,16 +726,16 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       } else {
         logger.warn('TMDB配置API返回失败:', data.error)
         toast({
-          title: "警告",
-          description: data.error || "TMDB配置数据无效",
+          title: t("common.warning"),
+          description: data.error || t("settings.tmdbConfigWarning"),
           variant: "destructive"
         })
       }
     } catch (error) {
       logger.error('加载TMDB配置失败，可能是服务不可用:', error)
       toast({
-        title: "错误",
-        description: "加载TMDB配置失败，请检查TMDB-Import路径是否正确",
+        title: t("common.error"),
+        description: t("settings.tmdbConfigLoadFailed"),
         variant: "destructive"
       })
     } finally {
@@ -766,8 +768,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
       if (data.success) {
         toast({
-          title: "成功",
-          description: "TMDB配置保存成功",
+          title: t("common.success"),
+          description: t("settings.tmdbConfigSaveSuccess"),
         })
       } else {
         throw new Error(data.error || '保存失败')
@@ -775,8 +777,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     } catch (error) {
       logger.error('保存TMDB配置失败，可能是服务不可用:', error)
       toast({
-        title: "错误",
-        description: `保存TMDB配置失败: ${error instanceof Error ? error.message : '服务不可用'}`,
+        title: t("common.error"),
+        description: t("settings.tmdbConfigSaveFailed", { error: error instanceof Error ? error.message : '服务不可用' }),
         variant: "destructive",
       })
     } finally {
@@ -796,14 +798,14 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       }
 
       toast({
-        title: "成功",
-        description: "通用设置已保存",
+        title: t("common.success"),
+        description: t("settings.generalSaved"),
       })
     } catch (error) {
       logger.error('保存通用设置失败:', error)
       toast({
-        title: "错误",
-        description: "保存通用设置失败",
+        title: t("common.error"),
+        description: t("settings.generalSaveFailed"),
         variant: "destructive",
       })
     }
@@ -823,15 +825,15 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       applyThemeSettings(appearanceSettings)
 
       toast({
-        title: "成功",
-        description: "外观设置已保存",
+        title: t("common.success"),
+        description: t("settings.appearanceSaved"),
       })
     } catch (error) {
       logger.error('保存外观设置失败:', error)
       toast({
         variant: "destructive",
-        title: "保存失败",
-        description: "保存外观设置时发生错误"
+        title: t("common.error"),
+        description: t("settings.appearanceSaveFailed")
       })
     }
   }, [appearanceSettings, toast])
@@ -848,14 +850,14 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       }
 
       toast({
-        title: "成功",
-        description: "视频缩略图设置已保存",
+        title: t("common.success"),
+        description: t("settings.videoThumbnailSaveSuccess"),
       })
     } catch (error) {
       logger.error('保存视频缩略图设置失败:', error)
       toast({
-        title: "错误",
-        description: "保存视频缩略图设置失败",
+        title: t("common.error"),
+        description: t("settings.videoThumbnailSaveFailed"),
         variant: "destructive",
       })
     }
@@ -865,8 +867,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const handlePasswordChange = useCallback(async () => {
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
       toast({
-        title: "错误",
-        description: "请填写所有密码字段",
+        title: t("common.error"),
+        description: t("settings.fillAllPasswordFields"),
         variant: "destructive",
       })
       return
@@ -874,8 +876,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
-        title: "错误",
-        description: "新密码和确认密码不匹配",
+        title: t("common.error"),
+        description: t("settings.passwordMismatch"),
         variant: "destructive",
       })
       return
@@ -883,8 +885,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
     if (passwordForm.newPassword.length < 6) {
       toast({
-        title: "错误",
-        description: "新密码长度至少为6位",
+        title: t("common.error"),
+        description: t("settings.passwordTooShort"),
         variant: "destructive",
       })
       return
@@ -894,8 +896,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     try {
       await changePassword(passwordForm.currentPassword, passwordForm.newPassword)
       toast({
-        title: "成功",
-        description: "密码修改成功",
+        title: t("common.success"),
+        description: t("settings.passwordChangeSuccess"),
       })
       setPasswordForm({
         currentPassword: "",
@@ -904,8 +906,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       })
     } catch (error) {
       toast({
-        title: "错误",
-        description: error instanceof Error ? error.message : "密码修改失败",
+        title: t("common.error"),
+        description: error instanceof Error ? error.message : t("settings.passwordChangeFailed"),
         variant: "destructive",
       })
     } finally {
@@ -1070,10 +1072,10 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       <DialogContent className="max-w-6xl max-h-[90vh] p-0">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex items-center">
-            设置
+            {t("settings.settings")}
           </DialogTitle>
           <DialogDescription>
-            配置应用程序的全局设置和API密钥
+            {t("settings.settingsDesc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -1094,7 +1096,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             <div className="border-t p-4 bg-gray-50/50 dark:bg-gray-900/50">
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={handleCancel} disabled={saveStatus === "saving"}>
-                  取消
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   onClick={handleSave}
@@ -1104,7 +1106,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                   {saveStatus === "saving" && (
                     <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                   )}
-                  {saveStatus === "success" ? "已保存" : saveStatus === "saving" ? "保存中..." : "保存"}
+                  {saveStatus === "success" ? t("common.saved") : saveStatus === "saving" ? t("common.saving") : t("common.save")}
                 </Button>
               </div>
             </div>

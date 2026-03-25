@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import {
   Film,
   Calendar,
@@ -32,69 +33,19 @@ export interface SidebarNavigationProps {
 
 interface MenuItem {
   id: string
-  label: string
+  labelKey: string
+  ns: string
   icon: React.ReactNode
   groupId: string
 }
 
 interface MenuGroup {
   id: string
-  title: string
+  titleKey: string
+  ns: string
   icon: React.ReactNode
   items: MenuItem[]
 }
-
-// 新的分组菜单结构
-const menuGroups: MenuGroup[] = [
-  {
-    id: "maintenance",
-    title: "词条维护",
-    icon: <LayoutGrid className="h-4 w-4" />,
-    items: [
-      { id: "list", label: "维护列表", icon: <LayoutGrid className="h-4 w-4" />, groupId: "maintenance" },
-      { id: "independent", label: "独立维护", icon: <Wand2 className="h-4 w-4" />, groupId: "maintenance" },
-    ]
-  },
-  {
-    id: "news",
-    title: "影视资讯",
-    icon: <Calendar className="h-4 w-4" />,
-    items: [
-      { id: "upcoming", label: "即将上线", icon: <Clock className="h-4 w-4" />, groupId: "news" },
-      { id: "recent", label: "近期开播", icon: <Play className="h-4 w-4" />, groupId: "news" },
-      { id: "streaming-nav", label: "平台导航", icon: <Film className="h-4 w-4" />, groupId: "news" },
-      { id: "schedule", label: "时间表", icon: <CalendarDays className="h-4 w-4" />, groupId: "news" },
-    ]
-  },
-  {
-    id: "content",
-    title: "分集简介",
-    icon: <FileText className="h-4 w-4" />,
-    items: [
-      { id: "episode-generator", label: "AI生成", icon: <Wand2 className="h-4 w-4" />, groupId: "content" },
-      { id: "ai-chat", label: "AI对话", icon: <Sparkles className="h-4 w-4" />, groupId: "content" },
-      { id: "hard-subtitle-extract", label: "硬字幕提取", icon: <Type className="h-4 w-4" />, groupId: "content" },
-    ]
-  },
-  {
-    id: "image",
-    title: "图片处理",
-    icon: <Image className="h-4 w-4" />,
-    items: [
-      { id: "extract", label: "视频截图", icon: <Download className="h-4 w-4" />, groupId: "image" },
-      { id: "crop", label: "图片裁切", icon: <Scissors className="h-4 w-4" />, groupId: "image" },
-    ]
-  },
-  {
-    id: "tools",
-    title: "工具",
-    icon: <Settings className="h-4 w-4" />,
-    items: [
-      { id: "tmdb-guide", label: "编辑指南", icon: <BookOpen className="h-4 w-4" />, groupId: "tools" },
-      { id: "image-recognition", label: "影视识别", icon: <Search className="h-4 w-4" />, groupId: "tools" },
-    ]
-  },
-]
 
 export function SidebarNavigation({
   onMenuSelect,
@@ -102,11 +53,67 @@ export function SidebarNavigation({
   activeSubmenu,
   collapsed = false
 }: SidebarNavigationProps) {
+  const { t } = useTranslation()
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null)
   const [submenuHovered, setSubmenuHovered] = useState<boolean>(false)
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 清理定时器
+  const menuGroups: MenuGroup[] = [
+    {
+      id: "maintenance",
+      titleKey: "title",
+      ns: "nav.maintenance",
+      icon: <LayoutGrid className="h-4 w-4" />,
+      items: [
+        { id: "list", labelKey: "list", ns: "nav.maintenance", icon: <LayoutGrid className="h-4 w-4" />, groupId: "maintenance" },
+        { id: "independent", labelKey: "independent", ns: "nav.maintenance", icon: <Wand2 className="h-4 w-4" />, groupId: "maintenance" },
+      ]
+    },
+    {
+      id: "news",
+      titleKey: "title",
+      ns: "nav.news",
+      icon: <Calendar className="h-4 w-4" />,
+      items: [
+        { id: "upcoming", labelKey: "upcoming", ns: "nav.news", icon: <Clock className="h-4 w-4" />, groupId: "news" },
+        { id: "recent", labelKey: "recent", ns: "nav.news", icon: <Play className="h-4 w-4" />, groupId: "news" },
+        { id: "streaming-nav", labelKey: "streamingNav", ns: "nav.news", icon: <Film className="h-4 w-4" />, groupId: "news" },
+        { id: "schedule", labelKey: "schedule", ns: "nav.news", icon: <CalendarDays className="h-4 w-4" />, groupId: "news" },
+      ]
+    },
+    {
+      id: "content",
+      titleKey: "title",
+      ns: "nav.content",
+      icon: <FileText className="h-4 w-4" />,
+      items: [
+        { id: "episode-generator", labelKey: "episodeGenerator", ns: "nav.content", icon: <Wand2 className="h-4 w-4" />, groupId: "content" },
+        { id: "ai-chat", labelKey: "aiChat", ns: "nav.content", icon: <Sparkles className="h-4 w-4" />, groupId: "content" },
+        { id: "hard-subtitle-extract", labelKey: "hardSubtitleExtract", ns: "nav.content", icon: <Type className="h-4 w-4" />, groupId: "content" },
+      ]
+    },
+    {
+      id: "image",
+      titleKey: "title",
+      ns: "nav.image",
+      icon: <Image className="h-4 w-4" />,
+      items: [
+        { id: "extract", labelKey: "extract", ns: "nav.image", icon: <Download className="h-4 w-4" />, groupId: "image" },
+        { id: "crop", labelKey: "crop", ns: "nav.image", icon: <Scissors className="h-4 w-4" />, groupId: "image" },
+      ]
+    },
+    {
+      id: "tools",
+      titleKey: "title",
+      ns: "nav.tools",
+      icon: <Settings className="h-4 w-4" />,
+      items: [
+        { id: "tmdb-guide", labelKey: "tmdbGuide", ns: "nav.tools", icon: <BookOpen className="h-4 w-4" />, groupId: "tools" },
+        { id: "image-recognition", labelKey: "imageRecognition", ns: "nav.tools", icon: <Search className="h-4 w-4" />, groupId: "tools" },
+      ]
+    },
+  ]
+
   useEffect(() => {
     return () => {
       if (hideTimeoutRef.current) {
@@ -115,7 +122,6 @@ export function SidebarNavigation({
     }
   }, [])
 
-  // 清除隐藏定时器
   const clearHideTimeout = useCallback(() => {
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current)
@@ -123,7 +129,6 @@ export function SidebarNavigation({
     }
   }, [])
 
-  // 分组悬停逻辑
   const handleGroupMouseEnter = useCallback((groupId: string) => {
     if (collapsed) {
       clearHideTimeout()
@@ -141,7 +146,6 @@ export function SidebarNavigation({
     }
   }, [collapsed, submenuHovered])
 
-  // 子菜单悬停逻辑
   const handleSubmenuMouseEnter = useCallback(() => {
     clearHideTimeout()
     setSubmenuHovered(true)
@@ -152,7 +156,6 @@ export function SidebarNavigation({
     setHoveredGroup(null)
   }, [])
 
-  // 处理菜单点击
   const handleMenuClick = (groupId: string, itemId: string) => {
     onMenuSelect(groupId, itemId)
     if (collapsed) {
@@ -160,12 +163,11 @@ export function SidebarNavigation({
     }
   }
 
-  // 计算子菜单位置
   const getSubmenuPosition = useCallback((groupIndex: number) => {
     const buttonHeight = 56
     const sidebarWidth = 64
     const headerHeight = 64
-    
+
     const topPosition = headerHeight + (groupIndex * buttonHeight) + 8
 
     return {
@@ -181,13 +183,11 @@ export function SidebarNavigation({
         collapsed ? "w-16" : "w-64"
       )}
     >
-      {/* 主侧边栏内容 */}
       <div className={collapsed ? "p-2" : "p-4"}>
         <nav className="space-y-4">
           {menuGroups.map((group, groupIndex) => (
             <div key={group.id} className="relative">
               {collapsed ? (
-                // 收起状态
                 <div
                   onMouseEnter={() => handleGroupMouseEnter(group.id)}
                   onMouseLeave={handleGroupMouseLeave}
@@ -201,7 +201,6 @@ export function SidebarNavigation({
                     {group.icon}
                   </Button>
 
-                  {/* 悬停展开的子菜单 */}
                   {hoveredGroup === group.id && (
                     <>
                       <div
@@ -223,7 +222,7 @@ export function SidebarNavigation({
                       >
                         <div className="py-2">
                           <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            {group.title}
+                            {t(group.titleKey, { ns: group.ns })}
                           </div>
                           {group.items.map((item) => (
                             <div
@@ -241,7 +240,7 @@ export function SidebarNavigation({
                                   className: "h-4 w-4"
                                 })}
                                 <span className="text-sm font-medium truncate">
-                                  {item.label}
+                                  {t(item.labelKey, { ns: item.ns })}
                                 </span>
                               </div>
                             </div>
@@ -252,15 +251,12 @@ export function SidebarNavigation({
                   )}
                 </div>
               ) : (
-                // 展开状态：分组标题 + 平铺子项
                 <div className="space-y-1">
-                  {/* 分组标题 */}
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center space-x-2">
                     {group.icon}
-                    <span>{group.title}</span>
+                    <span>{t(group.titleKey, { ns: group.ns })}</span>
                   </div>
-                  
-                  {/* 子项平铺 */}
+
                   <div className="space-y-0.5 pl-2">
                     {group.items.map((item) => (
                       <Button
@@ -281,7 +277,7 @@ export function SidebarNavigation({
                       >
                         <div className="flex items-center space-x-2">
                           {item.icon}
-                          <span className="text-sm">{item.label}</span>
+                          <span className="text-sm">{t(item.labelKey, { ns: item.ns })}</span>
                         </div>
                       </Button>
                     ))}

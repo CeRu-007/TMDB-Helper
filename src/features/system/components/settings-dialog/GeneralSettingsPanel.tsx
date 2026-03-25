@@ -2,6 +2,7 @@
  * 通用设置面板
  */
 
+import { useTranslation } from "react-i18next"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -21,12 +22,14 @@ export default function GeneralSettingsPanel({
   setGeneralSettings,
   saveGeneralSettings
 }: GeneralSettingsPanelProps) {
+  const { t } = useTranslation("settings")
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">通用设置</h3>
+        <h3 className="text-lg font-semibold mb-2">{t("generalSettings")}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          配置应用程序的通用选项和行为设置
+          {t("generalSettingsDesc")}
         </p>
       </div>
 
@@ -34,39 +37,39 @@ export default function GeneralSettingsPanel({
         <CardHeader>
           <CardTitle className="text-base flex items-center">
             <Database className="h-4 w-4 mr-2" />
-            数据管理
+            {t("dataManagement")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">自动保存</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">自动保存编辑的数据</p>
+              <Label className="text-sm font-medium">{t("autoSave")}</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("autoSaveDesc")}</p>
             </div>
             <Switch
-              checked={generalSettings.autoSave}
+              checked={generalSettings.autoSave ?? true}
               onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, autoSave: checked })}
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">数据备份</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">定期备份重要数据</p>
+              <Label className="text-sm font-medium">{t("dataBackup")}</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("dataBackupDesc")}</p>
             </div>
             <Switch
-              checked={generalSettings.dataBackup}
+              checked={generalSettings.dataBackup ?? true}
               onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, dataBackup: checked })}
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">缓存清理</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">自动清理过期缓存</p>
+              <Label className="text-sm font-medium">{t("cacheCleanup")}</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("cacheCleanupDesc")}</p>
             </div>
             <Switch
-              checked={generalSettings.cacheCleanup}
+              checked={generalSettings.cacheCleanup ?? true}
               onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, cacheCleanup: checked })}
             />
           </div>
@@ -77,12 +80,12 @@ export default function GeneralSettingsPanel({
         <CardHeader>
           <CardTitle className="text-base flex items-center">
             <Globe className="h-4 w-4 mr-2" />
-            网络设置
+            {t("network")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="text-sm font-medium">请求超时时间 (秒)</Label>
+            <Label className="text-sm font-medium">{t("requestTimeout")}</Label>
             <Input
               type="number"
               value={generalSettings.requestTimeout}
@@ -94,7 +97,7 @@ export default function GeneralSettingsPanel({
           </div>
 
           <div>
-            <Label className="text-sm font-medium">并发请求数</Label>
+            <Label className="text-sm font-medium">{t("concurrentRequests")}</Label>
             <Input
               type="number"
               value={generalSettings.concurrentRequests}
@@ -107,8 +110,8 @@ export default function GeneralSettingsPanel({
 
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">使用代理</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">通过代理服务器访问网络</p>
+              <Label className="text-sm font-medium">{t("useProxy")}</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("useProxyDesc")}</p>
             </div>
             <Switch
               checked={generalSettings.useProxy}
@@ -118,11 +121,11 @@ export default function GeneralSettingsPanel({
 
           {generalSettings.useProxy && (
             <div>
-              <Label className="text-sm font-medium">代理地址</Label>
+              <Label className="text-sm font-medium">{t("proxyAddress")}</Label>
               <Input
                 value={generalSettings.proxyUrl}
                 onChange={(e) => setGeneralSettings({ ...generalSettings, proxyUrl: e.target.value })}
-                placeholder="http://proxy.example.com:8080"
+                placeholder={t("generalSettings.proxyAddressPlaceholder")}
                 className="mt-1"
               />
             </div>
@@ -134,7 +137,7 @@ export default function GeneralSettingsPanel({
       <div className="flex justify-end">
         <Button onClick={saveGeneralSettings}>
           <Settings className="h-4 w-4 mr-2" />
-          保存通用设置
+          {t("saveGeneralSettings")}
         </Button>
       </div>
     </div>

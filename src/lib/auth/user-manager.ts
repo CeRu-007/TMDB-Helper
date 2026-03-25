@@ -146,7 +146,7 @@ export class UserManager {
     // 创建新的用户信息
     const newUserInfo: UserInfo = {
       userId,
-      displayName: `用户${userId.substring(5, 11)}`,
+      displayName: userId.substring(5, 11),
       createdAt: new Date().toISOString(),
       lastActiveAt: new Date().toISOString(),
       fingerprint,

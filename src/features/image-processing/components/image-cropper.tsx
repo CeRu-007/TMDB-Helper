@@ -21,6 +21,7 @@ import {
   RefreshCw
 } from "lucide-react"
 import { logger } from '@/lib/utils/logger'
+import { useTranslation } from "react-i18next"
 
 // 图片信息接口
 interface ImageInfo {
@@ -63,6 +64,7 @@ interface CropperSettings {
 
 export function ImageCropper() {
   const { toast } = useToast()
+  const { t } = useTranslation("image-processing")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [images, setImages] = useState<ImageInfo[]>([])
   const [selectedImage, setSelectedImage] = useState<ImageInfo | null>(null)
@@ -482,8 +484,8 @@ export function ImageCropper() {
     
     if (imageFiles.length === 0) {
       toast({
-        title: "没有图片文件",
-        description: "请上传图片文件 (JPG, PNG, WebP 等)",
+        title: t("imageCropper.noImageFile"),
+        description: t("imageCropper.uploadImageFile"),
         variant: "destructive",
       })
       return
@@ -655,8 +657,8 @@ export function ImageCropper() {
     })
     
     toast({
-      title: "图片上传成功",
-      description: `已上传 ${imageFiles.length} 张图片`,
+      title: t("imageCropper.imageUploadSuccess"),
+      description: t("imageCropper.uploadedImagesCount", { count: imageFiles.length }),
     })
   }
 
@@ -673,7 +675,7 @@ export function ImageCropper() {
       const ctx = canvas.getContext('2d')
       
       if (!ctx) {
-        throw new Error('无法创建Canvas上下文')
+        throw new Error(t("imageCropper.canvasContextError"))
       }
       
       // 使用提供的设置或自动计算的设置，直接传入目标比例
@@ -745,8 +747,8 @@ export function ImageCropper() {
       }))
       
       toast({
-        title: "处理失败",
-        description: error?.message || `图片 ${image.name} 处理过程中出现错误`,
+        title: t("imageCropper.processError"),
+        description: t("imageCropper.processErrorDesc", { errorMessage: error?.message || '' }),
         variant: "destructive",
       })
     }
@@ -764,7 +766,7 @@ export function ImageCropper() {
       const ctx = canvas.getContext('2d')
       
       if (!ctx) {
-        throw new Error('无法创建Canvas上下文')
+        throw new Error(t("imageCropper.canvasContextError"))
       }
       
       // 使用裁切区域或自动计算的设置
@@ -833,16 +835,16 @@ export function ImageCropper() {
       ))
       
       toast({
-        title: "处理完成",
-        description: `图片 ${image.name} 已成功处理`,
+        title: t("imageCropper.completed"),
+        description: t("imageCropper.downloadSuccess", { filename: image.name }),
       })
       
     } catch (error) {
       logger.error('Failed to process image:', error)
       setCroppedPreview('') // 确保清除失败的处理结果
       toast({
-        title: "处理失败",
-        description: error?.message || "图片处理过程中出现错误",
+        title: t("imageCropper.processError"),
+        description: t("imageCropper.processErrorDesc", { errorMessage: error instanceof Error ? error.message : '' }),
         variant: "destructive",
       })
     } finally {
@@ -869,8 +871,8 @@ export function ImageCropper() {
     
     if (!downloadUrl) {
       toast({
-        title: "无法下载",
-        description: "没有处理后的图片可下载",
+        title: t("imageCropper.downloadError"),
+        description: t("imageCropper.noProcessedImage"),
         variant: "destructive",
       })
       return
@@ -879,7 +881,7 @@ export function ImageCropper() {
     try {
       // 检查浏览器是否支持下载
       if (typeof document === 'undefined') {
-        throw new Error('当前环境不支持文件下载')
+        throw new Error(t("imageCropper.downloadNotSupported"))
       }
       
       const link = document.createElement('a')
@@ -943,14 +945,14 @@ export function ImageCropper() {
       }, 100)
       
       toast({
-        title: "下载完成",
-        description: `图片 ${filename} 已下载`,
+        title: t("imageCropper.downloadComplete"),
+        description: t("imageCropper.downloadComplete", { filename: filename }),
       })
     } catch (error) {
       logger.error('Download failed:', error)
       toast({
-        title: "下载失败",
-        description: error instanceof Error ? error.message : "图片下载过程中出现错误",
+        title: t("imageCropper.downloadFailed"),
+        description: t("imageCropper.downloadFailDesc", { errorMessage: error instanceof Error ? error.message : '' }),
         variant: "destructive",
       })
     }
@@ -970,8 +972,8 @@ export function ImageCropper() {
     })
     setSelectedPosterRatio('2:3')
     toast({
-      title: "已重置",
-      description: "工作区已清空",
+      title: t("imageCropper.workspaceCleared"),
+      description: t("imageCropper.workspaceCleared"),
     })
   }
 
@@ -991,7 +993,7 @@ export function ImageCropper() {
       <header className="bg-white shadow-sm h-12 flex items-center px-3 sm:px-4 z-10 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Scissors className="text-primary text-xl" />
-          <h1 className="text-lg font-semibold text-dark">图像自动裁切工具</h1>
+          <h1 className="text-lg font-semibold text-dark">{t("imageCropper.title")}</h1>
         </div>
         <div className="ml-auto flex items-center gap-3">
           <Button
@@ -999,7 +1001,7 @@ export function ImageCropper() {
             size="sm"
             onClick={() => setShowHelpDialog(true)}
           >
-            帮助
+            {t("common.help", { defaultValue: "帮助" })}
           </Button>
         </div>
       </header>
@@ -1012,12 +1014,12 @@ export function ImageCropper() {
           <div className="p-3 overflow-y-auto flex-1">
             <h2 className="text-lg font-semibold mb-4 flex items-center">
               <Settings className="h-5 w-5 mr-2 text-primary" />
-              参数配置
+              {t("imageCropper.settings", { defaultValue: "参数配置" })}
             </h2>
 
             {/* 模式切换 */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium mb-3">裁切模式</h3>
+              <h3 className="text-sm font-medium mb-3">{t("imageCropper.cropMode", { defaultValue: "裁切模式" })}</h3>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   className={`p-3 rounded-lg border-2 transition-all duration-200 ease-in-out ${cropMode === 'poster'
@@ -1028,7 +1030,7 @@ export function ImageCropper() {
                 >
                   <div className="flex flex-col items-center">
                     <div className="w-8 h-12 border-2 border-current mb-2" style={{ aspectRatio: '2/3' }}></div>
-                    <span className="text-xs font-medium">海报</span>
+                    <span className="text-xs font-medium">{t("imageCropper.poster", { defaultValue: "海报" })}</span>
                     <span className="text-xs text-muted-foreground">2:3</span>
                   </div>
                 </button>
@@ -1041,7 +1043,7 @@ export function ImageCropper() {
                 >
                   <div className="flex flex-col items-center">
                     <div className="w-12 h-8 border-2 border-current mb-2" style={{ aspectRatio: '16/9' }}></div>
-                    <span className="text-xs font-medium">背景</span>
+                    <span className="text-xs font-medium">{t("imageCropper.backdrop", { defaultValue: "背景" })}</span>
                     <span className="text-xs text-muted-foreground">16:9</span>
                   </div>
                 </button>
@@ -1050,12 +1052,12 @@ export function ImageCropper() {
 
             {/* 基本设置 */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium mb-3">基本设置</h3>
-              
+              <h3 className="text-sm font-medium mb-3">{t("imageCropper.basicSettings", { defaultValue: "基本设置" })}</h3>
+
               {/* 自动处理开关 */}
               <div className="mb-4 p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium">自动按规定比例裁切</label>
+                  <label className="text-sm font-medium">{t("imageCropper.autoCrop", { defaultValue: "自动按规定比例裁切" })}</label>
                   <Switch
                     checked={globalSettings.autoProcess}
                     onCheckedChange={(checked) => {
@@ -1065,14 +1067,14 @@ export function ImageCropper() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  上传图片时自动按当前选择的比例（{cropMode === 'poster' ? (posterRatio === '2:3' ? '2:3' : '3:4') : '16:9'}）进行裁切和尺寸调整
+                  {t("imageCropper.autoCropDescription", { ratio: cropMode === 'poster' ? (posterRatio === '2:3' ? '2:3' : '3:4') : '16:9' })}
                 </p>
               </div>
 
               {/* 海报比例选择 */}
               {cropMode === 'poster' && (
                 <div className="mb-4 p-3 border border-gray-200 rounded-lg">
-                  <h4 className="text-sm font-medium mb-3">海报比例选择</h4>
+                  <h4 className="text-sm font-medium mb-3">{t("imageCropper.posterRatioSelect", { defaultValue: "海报比例选择" })}</h4>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       className={`p-3 rounded-lg border-2 transition-all duration-200 ease-in-out ${selectedPosterRatio === '2:3' ? 'border-primary bg-primary/5 text-primary shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
@@ -1094,7 +1096,7 @@ export function ImageCropper() {
                       <div className="flex flex-col items-center">
                         <div className="w-8 h-12 border-2 border-current mb-2" style={{ aspectRatio: '2/3' }}></div>
                         <span className="text-xs font-medium">2:3</span>
-                        <span className="text-xs text-muted-foreground">标准海报</span>
+                        <span className="text-xs text-muted-foreground">{t("imageCropper.standardPoster", { defaultValue: "标准海报" })}</span>
                       </div>
                     </button>
                     <button
@@ -1118,7 +1120,7 @@ export function ImageCropper() {
                       <div className="flex flex-col items-center">
                         <div className="w-9 h-12 border-2 border-current mb-2" style={{ aspectRatio: '3/4' }}></div>
                         <span className="text-xs font-medium">3:4</span>
-                        <span className="text-xs text-muted-foreground">竖版海报</span>
+                        <span className="text-xs text-muted-foreground">{t("imageCropper.verticalPoster", { defaultValue: "竖版海报" })}</span>
                       </div>
                     </button>
                   </div>
@@ -1128,13 +1130,13 @@ export function ImageCropper() {
               {/* 非标准比例图片裁切策略 */}
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium">非标准比例图片裁切策略</label>
+                  <label className="text-sm font-medium">{t("imageCropper.nonStandardStrategy", { defaultValue: "非标准比例图片裁切策略" })}</label>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">
-                    非当前比例图片的裁切策略，影响海报两种比例
+                    {t("imageCropper.nonStandardStrategyDesc", { defaultValue: "非当前比例图片的裁切策略，影响海报两种比例" })}
                   </p>
                 <div>
-                  <Select 
+                  <Select
                     value={cropStrategy}
                     onValueChange={(value) => setCropStrategy(value as 'center' | 'top-left' | 'bottom-right')}
                   >
@@ -1142,9 +1144,9 @@ export function ImageCropper() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="center">居中裁切</SelectItem>
-                      <SelectItem value="top-left">左上角裁切</SelectItem>
-                      <SelectItem value="bottom-right">右下角裁切</SelectItem>
+                      <SelectItem value="center">{t("imageCropper.centerCrop", { defaultValue: "居中裁切" })}</SelectItem>
+                      <SelectItem value="top-left">{t("imageCropper.topLeftCrop", { defaultValue: "左上角裁切" })}</SelectItem>
+                      <SelectItem value="bottom-right">{t("imageCropper.bottomRightCrop", { defaultValue: "右下角裁切" })}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1153,27 +1155,27 @@ export function ImageCropper() {
 
             {/* 输出设置 */}
             <div className="mb-6 mt-4">
-              <h3 className="text-sm font-medium mb-3">输出设置</h3>
-              
+              <h3 className="text-sm font-medium mb-3">{t("imageCropper.outputSettings", { defaultValue: "输出设置" })}</h3>
+
               {/* 输出格式 */}
               <div className="mb-4 p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium">输出格式</label>
+                  <label className="text-sm font-medium">{t("imageCropper.outputFormat", { defaultValue: "输出格式" })}</label>
                   <Badge variant="secondary" className="text-xs">
-                    TMDB要求
+                    {t("imageCropper.tmdbRequired", { defaultValue: "TMDB要求" })}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
                   <span className="text-sm font-medium">JPG</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  TMDB只支持JPG格式的图片，无论是海报还是背景幕布
+                  {t("imageCropper.tmdbFormatOnlyJpg", { defaultValue: "TMDB只支持JPG格式的图片，无论是海报还是背景幕布" })}
                 </p>
               </div>
 
               {/* 输出质量 */}
               <div className="mb-4 p-3 border border-gray-200 rounded-lg">
-                <label className="text-sm font-medium block mb-2">输出质量: {globalSettings.defaultQuality}%</label>
+                <label className="text-sm font-medium block mb-2">{t("imageCropper.outputQuality", { defaultValue: "输出质量" })}: {globalSettings.defaultQuality}%</label>
                 <input
                   type="range"
                   min="1"
@@ -1188,14 +1190,14 @@ export function ImageCropper() {
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>1% (最小)</span>
-                  <span>100% (最高)</span>
+                  <span>{t("imageCropper.minQuality", { defaultValue: "1% (最小)" })}</span>
+                  <span>{t("imageCropper.maxQuality", { defaultValue: "100% (最高)" })}</span>
                 </div>
               </div>
 
               {/* 命名规则 */}
               <div className="p-3 border border-gray-200 rounded-lg">
-                <label className="text-sm font-medium block mb-2">命名规则</label>
+                <label className="text-sm font-medium block mb-2">{t("imageCropper.namingRule", { defaultValue: "命名规则" })}</label>
                 <Select
                   value={globalSettings.batchNaming}
                   onValueChange={(value: string) => {
@@ -1207,14 +1209,14 @@ export function ImageCropper() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="original">保持原名</SelectItem>
-                    <SelectItem value="suffix">添加后缀 _cropped</SelectItem>
-                    <SelectItem value="timestamp">添加时间戳</SelectItem>
-                    <SelectItem value="sequence">序号命名 (001, 002...)</SelectItem>
+                    <SelectItem value="original">{t("imageCropper.keepOriginal", { defaultValue: "保持原名" })}</SelectItem>
+                    <SelectItem value="suffix">{t("imageCropper.addSuffix", { defaultValue: "添加后缀 _cropped" })}</SelectItem>
+                    <SelectItem value="timestamp">{t("imageCropper.addTimestamp", { defaultValue: "添加时间戳" })}</SelectItem>
+                    <SelectItem value="sequence">{t("imageCropper.sequenceNaming", { defaultValue: "序号命名 (001, 002...)" })}</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-2">
-                  批量处理时按照此规则重命名输出文件
+                  {t("imageCropper.batchNamingHint", { defaultValue: "批量处理时按照此规则重命名输出文件" })}
                 </p>
               </div>
             </div>
@@ -1229,14 +1231,14 @@ export function ImageCropper() {
                 try {
                   localStorage.setItem('posterBackdropCropperSettings', JSON.stringify(globalSettings))
                   toast({
-                    title: "设置已保存",
-                    description: "您的配置已成功保存",
+                    title: t("imageCropper.settingsSaved"),
+                    description: t("imageCropper.settingsSavedDesc"),
                   })
                 } catch (error) {
                   console.error('Failed to save settings:', error)
                   toast({
-                    title: "保存失败",
-                    description: "设置保存失败，请重试",
+                    title: t("imageCropper.settingsSaveFailed"),
+                    description: t("imageCropper.settingsSaveFailedDesc"),
                     variant: "destructive",
                   })
                 }
@@ -1244,7 +1246,7 @@ export function ImageCropper() {
               className="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
             >
               <Settings className="h-4 w-4" />
-              保存配置
+              {t("imageCropper.saveSettings")}
             </button>
           </div>
         </aside>
@@ -1254,9 +1256,9 @@ export function ImageCropper() {
           {/* 工具栏 */}
           <div className="bg-white border-b px-3 sm:px-4 py-2 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-4">
-              <h2 className="text-lg font-medium">工作区</h2>
+              <h2 className="text-lg font-medium">{t("imageCropper.workspace", { defaultValue: "工作区" })}</h2>
               <Badge variant="secondary" className="text-xs">
-                {cropMode === 'poster' ? '海报模式' : '背景模式'}
+                {cropMode === 'poster' ? t("imageCropper.posterModeTitle", { defaultValue: "海报模式" }) : t("imageCropper.backdropModeTitle", { defaultValue: "背景模式" })}
               </Badge>
             </div>
             <div className="flex items-center gap-2">
@@ -1266,9 +1268,9 @@ export function ImageCropper() {
                 onClick={resetAll}
               >
                 <RefreshCw className="h-4 w-4 mr-1" />
-                重置
+                {t("imageCropper.reset", { defaultValue: "重置" })}
               </Button>
-              
+
             </div>
           </div>
 
@@ -1287,7 +1289,7 @@ export function ImageCropper() {
               }`}>
                 <h3 className="text-base font-semibold mb-2 sm:mb-3 flex items-center flex-shrink-0">
                   <Upload className="h-5 w-5 mr-2 text-primary" />
-                  图片上传
+                  {t("imageCropper.uploadImage")}
                 </h3>
                 
                 <div 
@@ -1322,24 +1324,24 @@ export function ImageCropper() {
                   />
                   <div className="flex flex-col items-center justify-center h-full">
                     <FileImage className="h-8 w-8 sm:h-10 sm:w-10 text-gray-300 mb-2 sm:mb-3" />
-                    <h3 className="text-sm sm:text-base font-medium mb-1 sm:mb-2">拖拽图片到此处或点击上传</h3>
+                    <h3 className="text-sm sm:text-base font-medium mb-1 sm:mb-2">{t("imageCropper.dragDropHint", { defaultValue: "拖拽图片到此处或点击上传" })}</h3>
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
-                      支持 JPG、PNG、WebP 格式
+                      {t("imageCropper.supportedFormats", { defaultValue: "支持 JPG、PNG、WebP 格式" })}
                     </p>
                     <p className="text-xs text-muted-foreground mb-2 sm:mb-3">
-                      {cropMode === 'poster' 
-                        ? selectedPosterRatio === '2:3' 
-                          ? `建议分辨率：500×750 到 2000×3000，比例 ${selectedPosterRatio}`
-                          : `建议分辨率：500×666 到 2000×2666，比例 ${selectedPosterRatio}`
-                        : '建议分辨率：1280×720 到 3840×2160，比例 16:9'
+                      {cropMode === 'poster'
+                        ? selectedPosterRatio === '2:3'
+                          ? `${t("imageCropper.suggestedResolution", { defaultValue: "建议分辨率" })}：500×750 ~ 2000×3000，${t("imageCropper.ratio", { defaultValue: "比例" })} ${selectedPosterRatio}`
+                          : `${t("imageCropper.suggestedResolution", { defaultValue: "建议分辨率" })}：500×666 ~ 2000×2666，${t("imageCropper.ratio", { defaultValue: "比例" })} ${selectedPosterRatio}`
+                        : `${t("imageCropper.suggestedResolution", { defaultValue: "建议分辨率" })}：1280×720 ~ 3840×2160，${t("imageCropper.ratio", { defaultValue: "比例" })} 16:9`
                       }
                     </p>
-                    <label 
+                    <label
                       className="cursor-pointer bg-primary text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-primary/90 transition-colors inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
-                      选择文件
+                      {t("imageCropper.selectFiles", { defaultValue: "选择文件" })}
                     </label>
                   </div>
                 </div>
@@ -1369,7 +1371,7 @@ export function ImageCropper() {
                         ? posterRatio
                         : cropMode === 'backdrop' && isAspectRatio16x9(selectedImage.width, selectedImage.height)
                         ? '16:9'
-                        : '不匹配'
+                        : t("imageCropper.mismatch")
                       }
                     </span>
                     </div>
@@ -1387,8 +1389,7 @@ export function ImageCropper() {
               }`}>
                 <h3 className="text-base font-semibold mb-2 sm:mb-3 flex items-center flex-shrink-0">
                   <Scissors className="h-5 w-5 mr-2 text-primary" />
-                  {/* 根据自动处理设置显示标题 */}
-                  {globalSettings.autoProcess && croppedPreview ? '处理结果' : '可视化裁切'}
+                  {globalSettings.autoProcess && croppedPreview ? t("imageCropper.processingResult") : t("imageCropper.visualCropPreview")}
                 </h3>
                 
                 {selectedImage ? (
@@ -1399,15 +1400,15 @@ export function ImageCropper() {
                         {/* 海报模式：显示两种比例的对比结果 */}
                         {cropMode === 'poster' ? (
                           <div className={`flex-1 flex flex-col space-y-3`}>
-                            <h3 className="text-sm font-medium text-center">海报比例对比</h3>
-                            
+                            <h3 className="text-sm font-medium text-center">{t("imageCropper.posterComparison", { defaultValue: "海报比例对比" })}</h3>
+
                             {/* 两种比例的并排对比 */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
                               {/* 2:3比例结果 */}
                               <div className="flex flex-col space-y-2 bg-gray-50 rounded-lg p-3 border border-gray-200">
                                 <div className="flex items-center justify-between">
                                   <h4 className={`text-sm font-medium ${selectedPosterRatio === '2:3' ? 'text-primary' : ''}`}>
-                                    2:3 标准海报
+                                    2:3 {t("imageCropper.standardPoster", { defaultValue: "标准海报" })}
                                   </h4>
                                   <button
                                     className={`px-2 py-1 rounded text-xs ${selectedPosterRatio === '2:3' ? 'bg-primary text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
@@ -1416,45 +1417,45 @@ export function ImageCropper() {
                                       setCroppedPreview(posterRatioResults['2:3'].processedUrl || '');
                                     }}
                                   >
-                                    {selectedPosterRatio === '2:3' ? '已选择' : '选择'}
+                                    {selectedPosterRatio === '2:3' ? t("imageCropper.selected", { defaultValue: "已选择" }) : t("imageCropper.select", { defaultValue: "选择" })}
                                   </button>
                                 </div>
-                                
+
                                 {/* 2:3预览图 */}
                                 <div className="flex-1 flex items-center justify-center bg-white rounded-lg p-3 overflow-hidden border border-gray-200">
                                   {posterRatioResults['2:3'].isProcessing ? (
                                     <div className="text-center">
                                       <Loader2 className="h-6 w-6 animate-spin text-blue-500 mx-auto" />
-                                      <p className="text-xs text-blue-600 mt-1">处理中...</p>
+                                      <p className="text-xs text-blue-600 mt-1">{t("imageCropper.processing", { defaultValue: "处理中..." })}</p>
                                     </div>
                                   ) : posterRatioResults['2:3'].processedUrl ? (
-                                    <img 
-                                      src={posterRatioResults['2:3'].processedUrl} 
-                                      alt="2:3处理后的图片" 
+                                    <img
+                                      src={posterRatioResults['2:3'].processedUrl}
+                                      alt={t("imageCropper.2to3Processing")}
                                       className="max-w-full max-h-full object-contain border border-gray-200 rounded bg-white shadow-sm"
                                     />
                                   ) : (
                                     <div className="text-center text-gray-400">
                                       <FileImage className="h-8 w-8 mx-auto" />
-                                      <p className="text-xs mt-1">等待处理</p>
+                                      <p className="text-xs mt-1">{t("imageCropper.waiting", { defaultValue: "等待处理" })}</p>
                                     </div>
                                   )}
                                 </div>
-                                
+
                                 {/* 2:3输出信息 */}
                                 {posterRatioResults['2:3'].cropSettings && (
                                   <div className="bg-green-50 border border-green-200 rounded-lg p-2">
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                       <div>
-                                        <span className="text-muted-foreground">格式：</span>
+                                        <span className="text-muted-foreground">{t("imageCropper.format", { defaultValue: "格式" })}：</span>
                                         <span className="font-medium">{posterRatioResults['2:3'].cropSettings?.format.toUpperCase()}</span>
                                       </div>
                                       <div>
-                                        <span className="text-muted-foreground">质量：</span>
+                                        <span className="text-muted-foreground">{t("imageCropper.qualityLabel", { defaultValue: "质量" })}：</span>
                                         <span className="font-medium">{posterRatioResults['2:3'].cropSettings?.quality}%</span>
                                       </div>
                                       <div className="col-span-2">
-                                        <span className="text-muted-foreground">尺寸：</span>
+                                        <span className="text-muted-foreground">{t("imageCropper.dimensions", { defaultValue: "尺寸" })}：</span>
                                         <span className="font-medium">
                                           {posterRatioResults['2:3'].cropSettings?.outputWidth}×{posterRatioResults['2:3'].cropSettings?.outputHeight}
                                         </span>
@@ -1468,7 +1469,7 @@ export function ImageCropper() {
                               <div className="flex flex-col space-y-2 bg-gray-50 rounded-lg p-3 border border-gray-200">
                                 <div className="flex items-center justify-between">
                                   <h4 className={`text-sm font-medium ${selectedPosterRatio === '3:4' ? 'text-primary' : ''}`}>
-                                    3:4 竖版海报
+                                    3:4 {t("imageCropper.3to4Vertical")}
                                   </h4>
                                   <button
                                     className={`px-2 py-1 rounded text-xs ${selectedPosterRatio === '3:4' ? 'bg-primary text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
@@ -1477,7 +1478,7 @@ export function ImageCropper() {
                                       setCroppedPreview(posterRatioResults['3:4'].processedUrl || '');
                                     }}
                                   >
-                                    {selectedPosterRatio === '3:4' ? '已选择' : '选择'}
+                                    {selectedPosterRatio === '3:4' ? t("imageCropper.selected", { defaultValue: "已选择" }) : t("imageCropper.select", { defaultValue: "选择" })}
                                   </button>
                                 </div>
                                 
@@ -1486,36 +1487,36 @@ export function ImageCropper() {
                                   {posterRatioResults['3:4'].isProcessing ? (
                                     <div className="text-center">
                                       <Loader2 className="h-6 w-6 animate-spin text-blue-500 mx-auto" />
-                                      <p className="text-xs text-blue-600 mt-1">处理中...</p>
+                                      <p className="text-xs text-blue-600 mt-1">{t("imageCropper.processing", { defaultValue: "处理中..." })}</p>
                                     </div>
                                   ) : posterRatioResults['3:4'].processedUrl ? (
-                                    <img 
-                                      src={posterRatioResults['3:4'].processedUrl} 
-                                      alt="3:4处理后的图片" 
+                                    <img
+                                      src={posterRatioResults['3:4'].processedUrl}
+                                      alt={t("imageCropper.3to4Processing")}
                                       className="max-w-full max-h-full object-contain border border-gray-200 rounded bg-white shadow-sm"
                                     />
                                   ) : (
                                     <div className="text-center text-gray-400">
                                       <FileImage className="h-8 w-8 mx-auto" />
-                                      <p className="text-xs mt-1">等待处理</p>
+                                      <p className="text-xs mt-1">{t("imageCropper.waiting", { defaultValue: "等待处理" })}</p>
                                     </div>
                                   )}
                                 </div>
-                                
+
                                 {/* 3:4输出信息 */}
                                 {posterRatioResults['3:4'].cropSettings && (
                                   <div className="bg-green-50 border border-green-200 rounded-lg p-2">
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                       <div>
-                                        <span className="text-muted-foreground">格式：</span>
+                                        <span className="text-muted-foreground">{t("imageCropper.format", { defaultValue: "格式" })}：</span>
                                         <span className="font-medium">{posterRatioResults['3:4'].cropSettings?.format.toUpperCase()}</span>
                                       </div>
                                       <div>
-                                        <span className="text-muted-foreground">质量：</span>
+                                        <span className="text-muted-foreground">{t("imageCropper.qualityLabel", { defaultValue: "质量" })}：</span>
                                         <span className="font-medium">{posterRatioResults['3:4'].cropSettings?.quality}%</span>
                                       </div>
                                       <div className="col-span-2">
-                                        <span className="text-muted-foreground">尺寸：</span>
+                                        <span className="text-muted-foreground">{t("imageCropper.dimensions", { defaultValue: "尺寸" })}：</span>
                                         <span className="font-medium">
                                           {posterRatioResults['3:4'].cropSettings?.outputWidth}×{posterRatioResults['3:4'].cropSettings?.outputHeight}
                                         </span>
@@ -1525,11 +1526,11 @@ export function ImageCropper() {
                                 )}
                               </div>
                             </div>
-                            
+
                             {/* 输出信息和操作按钮 */}
                             {selectedPosterRatio && posterRatioResults[selectedPosterRatio].processedUrl && (
                               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                <h4 className="text-sm font-medium mb-2 text-green-800">处理完成 - 已选择 {selectedPosterRatio}</h4>
+                                <h4 className="text-sm font-medium mb-2 text-green-800">{t("imageCropper.completed", { defaultValue: "处理完成" })} - {t("imageCropper.selected", { defaultValue: "已选择" })} {selectedPosterRatio}</h4>
                                 
                                 {/* 操作按钮 */}
                                 <div className="flex gap-2">
@@ -1539,7 +1540,7 @@ export function ImageCropper() {
                                     className="flex-1"
                                   >
                                     <Download className="h-4 w-4 mr-1" />
-                                    下载选中的图片
+                                    {t("imageCropper.downloadSelected")}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -1551,12 +1552,12 @@ export function ImageCropper() {
                                         '3:4': { isProcessing: false }
                                       });
                                       toast({
-                                        title: "已清除",
-                                        description: "处理结果已清除",
+                                        title: t("imageCropper.clearedResult"),
+                                        description: t("imageCropper.clearedResultDesc"),
                                       })
                                     }}
                                   >
-                                    清除
+                                    {t("imageCropper.clear")}
                                   </Button>
                                 </div>
                               </div>
@@ -1570,40 +1571,40 @@ export function ImageCropper() {
                               {croppedPreview ? (
                                 <img 
                                   src={croppedPreview} 
-                                  alt="处理后的图片" 
+                                  alt={t("imageCropper.processedImage")}
                                   className="max-w-full max-h-full object-contain border border-gray-200 rounded bg-white shadow-sm"
                                 />
                               ) : (
                                 <div className="text-center">
                                   <Scissors className="h-8 w-8 sm:h-10 sm:w-10 text-gray-300 mx-auto" />
                                   <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-                                    自动处理已启用，上传图片后将自动处理
+                                    {t("imageCropper.autoProcessHint", { defaultValue: "自动处理已启用，上传图片后将自动处理" })}
                                   </p>
                                 </div>
                               )}
                             </div>
-                            
+
                             {/* 输出信息 */}
                             {croppedPreview && (
                               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                <h4 className="text-sm font-medium mb-2 text-green-800">处理完成</h4>
+                                <h4 className="text-sm font-medium mb-2 text-green-800">{t("imageCropper.completed", { defaultValue: "处理完成" })}</h4>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                   <div>
-                                    <span className="text-muted-foreground">格式：</span>
+                                    <span className="text-muted-foreground">{t("imageCropper.format", { defaultValue: "格式" })}：</span>
                                     <span className="font-medium">{cropSettings.format.toUpperCase()}</span>
                                   </div>
                                   <div>
-                                    <span className="text-muted-foreground">质量：</span>
+                                    <span className="text-muted-foreground">{t("imageCropper.qualityLabel", { defaultValue: "质量" })}：</span>
                                     <span className="font-medium">{cropSettings.quality}%</span>
                                   </div>
                                   <div className="col-span-2">
-                                    <span className="text-muted-foreground">尺寸：</span>
+                                    <span className="text-muted-foreground">{t("imageCropper.dimensions", { defaultValue: "尺寸" })}：</span>
                                     <span className="font-medium">
                                       {cropSettings.outputWidth}×{cropSettings.outputHeight}
                                     </span>
                                   </div>
                                 </div>
-                                
+
                                 {/* 操作按钮 */}
                                 <div className="flex gap-2 mt-3">
                                   <Button
@@ -1612,7 +1613,7 @@ export function ImageCropper() {
                                     className="flex-1"
                                   >
                                     <Download className="h-4 w-4 mr-1" />
-                                    下载图片
+                                    {t("imageCropper.downloadImage", { defaultValue: "下载图片" })}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -1620,12 +1621,12 @@ export function ImageCropper() {
                                     onClick={() => {
                                       setCroppedPreview('')
                                       toast({
-                                        title: "已清除",
-                                        description: "处理结果已清除",
+                                        title: t("imageCropper.cleared", { defaultValue: "已清除" }),
+                                        description: t("imageCropper.clearedDesc", { defaultValue: "处理结果已清除" }),
                                       })
                                     }}
                                   >
-                                    清除
+                                    {t("imageCropper.clear", { defaultValue: "清除" })}
                                   </Button>
                                 </div>
                               </div>
@@ -1774,12 +1775,12 @@ export function ImageCropper() {
                               {isProcessing ? (
                                 <>
                                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                  处理中...
+                                  {t("imageCropper.processing")}
                                 </>
                               ) : (
                                 <>
                                   <Scissors className="h-4 w-4 mr-1" />
-                                  确认裁切
+                                  {t("imageCropper.autoCropConfirm")}
                                 </>
                               )}
                             </Button>
@@ -1803,7 +1804,7 @@ export function ImageCropper() {
                               }}
                             >
                               <RotateCcw className="h-4 w-4 mr-1" />
-                              自动裁切
+                              {t("imageCropper.autoCropButton")}
                             </Button>
                           </div>
 
@@ -1813,7 +1814,7 @@ export function ImageCropper() {
                               <div className="flex items-center gap-2 sm:gap-3">
                                 <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-blue-500" />
                                 <div className="flex-1">
-                                  <p className="text-xs sm:text-sm font-medium text-blue-800">正在处理图片...</p>
+                                  <p className="text-xs sm:text-sm font-medium text-blue-800">{t("imageCropper.processingImage", { defaultValue: "正在处理图片..." })}</p>
                                   <Progress value={processingProgress} className="h-1.5 sm:h-2 mt-1 sm:mt-2" />
                                 </div>
                                 <span className="text-xs sm:text-sm text-blue-600 font-medium">
@@ -1826,16 +1827,16 @@ export function ImageCropper() {
                           {/* 处理结果 */}
                           {croppedPreview && (
                             <div className="p-2 sm:p-3 bg-green-50 rounded-lg">
-                              <h4 className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-green-800">处理完成</h4>
+                              <h4 className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-green-800">{t("imageCropper.completed", { defaultValue: "处理完成" })}</h4>
                               <div className="space-y-2 sm:space-y-3">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                                   {/* 输出预览 */}
                                   <div className="border border-gray-200 rounded p-1 sm:p-2">
-                                    <p className="text-xs text-muted-foreground mb-1">输出预览</p>
+                                    <p className="text-xs text-muted-foreground mb-1">{t("imageCropper.outputPreview", { defaultValue: "输出预览" })}</p>
                                     <div className="h-16 sm:h-20 bg-gray-100 rounded flex items-center justify-center">
-                                      <img 
-                                        src={croppedPreview} 
-                                        alt="输出预览" 
+                                      <img
+                                        src={croppedPreview}
+                                        alt="输出预览"
                                         className="max-w-full max-h-full object-contain"
                                       />
                                     </div>
@@ -1843,15 +1844,15 @@ export function ImageCropper() {
                                   {/* 输出信息 */}
                                   <div className="space-y-0.5 sm:space-y-1">
                                     <p className="text-xs">
-                                      <span className="text-muted-foreground">格式：</span>
+                                      <span className="text-muted-foreground">{t("imageCropper.format", { defaultValue: "格式" })}：</span>
                                       <span className="font-medium">{cropSettings.format.toUpperCase()}</span>
                                     </p>
                                     <p className="text-xs">
-                                      <span className="text-muted-foreground">质量：</span>
+                                      <span className="text-muted-foreground">{t("imageCropper.qualityLabel", { defaultValue: "质量" })}：</span>
                                       <span className="font-medium">{cropSettings.quality}%</span>
                                     </p>
                                     <p className="text-xs">
-                                      <span className="text-muted-foreground">尺寸：</span>
+                                      <span className="text-muted-foreground">{t("imageCropper.dimensions", { defaultValue: "尺寸" })}：</span>
                                       <span className="font-medium">
                                         {cropSettings.outputWidth}×{cropSettings.outputHeight}
                                       </span>
@@ -1884,7 +1885,7 @@ export function ImageCropper() {
                     <div className="text-center">
                       <Scissors className="h-8 w-8 sm:h-10 sm:w-10 text-gray-300 mx-auto mb-2 sm:mb-3" />
                       <p className="text-xs sm:text-sm text-muted-foreground">
-                        请先上传图片进行{globalSettings.autoProcess || globalSettings.autoProcessNon16x9 ? '处理' : '裁切'}
+                        {t("imageCropper.uploadImageFirst", { action: globalSettings.autoProcess || globalSettings.autoProcessNon16x9 ? t("imageCropper.processing") : t("imageCropper.cropMode") })}
                       </p>
                     </div>
                   </div>
@@ -1901,93 +1902,93 @@ export function ImageCropper() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Info className="h-5 w-5" />
-              使用说明
+              {t("imageCropper.usageInstructions")}
             </DialogTitle>
             <DialogDescription>
-              海报背景裁切工具使用指南
+              {t("imageCropper.usageGuide")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div>
-              <h4 className="font-medium mb-2">海报模式</h4>
+              <h4 className="font-medium mb-2">{t("imageCropper.helpPosterMode", { defaultValue: "海报模式" })}</h4>
               <p className="text-sm text-muted-foreground">
-                支持两种比例：
+                {t("imageCropper.helpSupportsTwoRatios", { defaultValue: "支持两种比例：" })}
               </p>
               <ul className="text-sm text-muted-foreground list-disc list-inside ml-2 mt-1 space-y-1">
-                <li>2:3 标准海报 - 符合TMDB海报规范，分辨率范围500×750到2000×3000</li>
-                <li>3:4 竖版海报 - 适用于竖版展示，分辨率范围500×666到2000×2666</li>
+                <li>{t("imageCropper.help2to3Standard", { defaultValue: "2:3 标准海报 - 符合TMDB海报规范，分辨率范围500×750到2000×3000" })}</li>
+                <li>{t("imageCropper.help3to4Vertical", { defaultValue: "3:4 竖版海报 - 适用于竖版展示，分辨率范围500×666到2000×2666" })}</li>
               </ul>
               <p className="text-sm text-muted-foreground mt-2">
-                输出格式为JPG（TMDB要求）
+                {t("imageCropper.helpOutputFormat", { defaultValue: "输出格式为JPG（TMDB要求）" })}
               </p>
             </div>
-            
+
             <div>
-              <h4 className="font-medium mb-2">背景幕布模式（16:9）</h4>
+              <h4 className="font-medium mb-2">{t("imageCropper.helpBackdropMode", { defaultValue: "背景幕布模式（16:9）" })}</h4>
               <p className="text-sm text-muted-foreground">
-                适用于分集封面，分辨率范围1280×720到3840×2160
+                {t("imageCropper.helpBackdropDesc", { defaultValue: "适用于分集封面，分辨率范围1280×720到3840×2160" })}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                输出格式为JPG（TMDB要求）
+                {t("imageCropper.helpOutputFormat", { defaultValue: "输出格式为JPG（TMDB要求）" })}
               </p>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">自动处理</h4>
+              <h4 className="font-medium mb-2">{t("imageCropper.helpAutoProcess", { defaultValue: "自动处理" })}</h4>
               <p className="text-sm text-muted-foreground">
-                只要开启自动处理功能，上传任何图片都会自动按当前选择的模式进行裁切和尺寸调整
+                {t("imageCropper.helpAutoProcessDesc", { defaultValue: "只要开启自动处理功能，上传任何图片都会自动按当前选择的模式进行裁切和尺寸调整" })}
               </p>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">海报比例对比功能</h4>
+              <h4 className="font-medium mb-2">{t("imageCropper.helpPosterComparison", { defaultValue: "海报比例对比功能" })}</h4>
               <p className="text-sm text-muted-foreground">
-                在海报模式下，系统会自动生成2:3和3:4两种比例的裁切结果，您可以：
+                {t("imageCropper.helpPosterComparisonDesc", { defaultValue: "在海报模式下，系统会自动生成2:3和3:4两种比例的裁切结果，您可以：" })}
               </p>
               <ul className="text-sm text-muted-foreground list-disc list-inside ml-2 mt-1 space-y-1">
-                <li>直观比较两种比例的裁切效果</li>
-                <li>点击"选择"按钮切换要下载的比例</li>
-                <li>已选择的比例会显示为"已选择"状态</li>
+                <li>{t("imageCropper.helpCompareVisually", { defaultValue: "直观比较两种比例的裁切效果" })}</li>
+                <li>{t("imageCropper.helpClickToSelect", { defaultValue: "点击'选择'按钮切换要下载的比例" })}</li>
+                <li>{t("imageCropper.helpSelectedState", { defaultValue: "已选择的比例会显示为'已选择'状态" })}</li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">分辨率限制</h4>
+              <h4 className="font-medium mb-2">{t("imageCropper.helpResolutionLimit", { defaultValue: "分辨率限制" })}</h4>
               <p className="text-sm text-muted-foreground">
-                系统会根据不同模式自动调整输出分辨率到规定范围内：
+                {t("imageCropper.helpResolutionLimitDesc", { defaultValue: "系统会根据不同模式自动调整输出分辨率到规定范围内：" })}
               </p>
               <ul className="text-sm text-muted-foreground list-disc list-inside ml-2 mt-1 space-y-1">
-                <li>高于最大分辨率：等比缩小到最大分辨率</li>
-                <li>低于最小分辨率：等比放大到最小分辨率</li>
-                <li>符合分辨率范围：保持原分辨率</li>
+                <li>{t("imageCropper.helpAboveMax", { defaultValue: "高于最大分辨率：等比缩小到最大分辨率" })}</li>
+                <li>{t("imageCropper.helpBelowMin", { defaultValue: "低于最小分辨率：等比放大到最小分辨率" })}</li>
+                <li>{t("imageCropper.helpWithinRange", { defaultValue: "符合分辨率范围：保持原分辨率" })}</li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">格式要求</h4>
+              <h4 className="font-medium mb-2">{t("imageCropper.helpFormatRequirement", { defaultValue: "格式要求" })}</h4>
               <p className="text-sm text-muted-foreground">
-                所有模式均强制输出JPG格式（TMDB要求）
+                {t("imageCropper.helpFormatRequirementDesc", { defaultValue: "所有模式均强制输出JPG格式（TMDB要求）" })}
               </p>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2">操作说明</h4>
+              <h4 className="font-medium mb-2">{t("imageCropper.helpOperationGuide", { defaultValue: "操作说明" })}</h4>
               <ul className="text-sm text-muted-foreground list-disc list-inside ml-2 space-y-1">
-                <li>拖拽图片到上传区域或点击"选择文件"按钮上传图片</li>
-                <li>系统会自动处理图片，生成预览结果</li>
-                <li>在海报模式下，查看并比较两种比例的效果</li>
-                <li>点击"选择"按钮选择要下载的比例</li>
-                <li>点击"下载选中的图片"按钮保存处理后的图片</li>
-                <li>点击"清除"按钮清除当前处理结果</li>
-                <li>点击"重置"按钮清空工作区</li>
+                <li>{t("imageCropper.helpStep1", { defaultValue: "拖拽图片到上传区域或点击'选择文件'按钮上传图片" })}</li>
+                <li>{t("imageCropper.helpStep2", { defaultValue: "系统会自动处理图片，生成预览结果" })}</li>
+                <li>{t("imageCropper.helpStep3", { defaultValue: "在海报模式下，查看并比较两种比例的效果" })}</li>
+                <li>{t("imageCropper.helpStep4", { defaultValue: "点击'选择'按钮选择要下载的比例" })}</li>
+                <li>{t("imageCropper.helpStep5", { defaultValue: "点击'下载选中的图片'按钮保存处理后的图片" })}</li>
+                <li>{t("imageCropper.helpStep6", { defaultValue: "点击'清除'按钮清除当前处理结果" })}</li>
+                <li>{t("imageCropper.helpStep7", { defaultValue: "点击'重置'按钮清空工作区" })}</li>
               </ul>
             </div>
           </div>
 
           <div className="flex justify-end pt-4 border-t">
             <Button onClick={() => setShowHelpDialog(false)}>
-              我知道了
+              {t("imageCropper.gotIt", { defaultValue: "我知道了" })}
             </Button>
           </div>
         </DialogContent>

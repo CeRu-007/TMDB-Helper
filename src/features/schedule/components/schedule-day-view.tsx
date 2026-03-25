@@ -31,6 +31,7 @@ export function ScheduleDayView({
   followingIds,
   onToggleFollowing
 }: ScheduleDayViewProps) {
+  const { t } = useTranslation('schedule')
   const sortedEpisodes = [...dayData.episodes].sort((a, b) =>
     a.pubTime.localeCompare(b.pubTime)
   )
@@ -55,12 +56,12 @@ export function ScheduleDayView({
               </Button>
 
               <h3 className="text-xl font-semibold">
-                {dayData.date || WEEKDAYS[dayData.dayOfWeek - 1]}
+                {dayData.date || t(`weekdaysList.${WEEKDAY_KEYS[dayData.dayOfWeek - 1]}`)}
               </h3>
               {dayData.isToday && (
-                <Badge className="bg-blue-500">今天</Badge>
+                <Badge className="bg-blue-500">{t('today')}</Badge>
               )}
-              <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">0 部剧集</Badge>
+              <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">{t('episodeCount', { count: dayData.episodes.length })}</Badge>
 
               <Button
                 variant="ghost"
@@ -77,14 +78,14 @@ export function ScheduleDayView({
               {selectedCategory === 'domestic' ? (
                 <>
                   <Calendar className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                  <p className="text-base">暂无影剧数据</p>
-                  <p className="text-sm mt-1 opacity-70">功能开发中，敬请期待~</p>
+                  <p className="text-base">{t('noData')}</p>
+                  <p className="text-sm mt-1 opacity-70">{t('inDevelopment')}</p>
                 </>
               ) : (
                 <>
                   <Calendar className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                  <p>本日暂无更新</p>
-                  <p className="text-sm mt-1 opacity-70">切换到其他日期看看吧~</p>
+                  <p>{t('noUpdateToday')}</p>
+                  <p className="text-sm mt-1 opacity-70">{t('checkOtherDate')}</p>
                 </>
               )}
             </div>
@@ -113,9 +114,9 @@ export function ScheduleDayView({
               {dayData.date || WEEKDAYS[dayData.dayOfWeek - 1]}
             </h3>
             {dayData.isToday && (
-              <Badge className="bg-blue-500">今天</Badge>
+              <Badge className="bg-blue-500">{t("today", { ns: "schedule" })}</Badge>
             )}
-            <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">{dayData.episodes.length} 部剧集</Badge>
+            <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">{t("episodeCount", { count: dayData.episodes.length, ns: "schedule" })}</Badge>
 
             <Button
               variant="ghost"
@@ -242,7 +243,7 @@ function ScheduleTimelineItem({
             "text-[10px]",
             isFollowing ? "text-rose-500" : "text-gray-400"
           )}>
-            {isFollowing ? '已追' : '追番'}
+            {isFollowing ? t('categories.following') : t('follow')}
           </span>
         </div>
       </div>

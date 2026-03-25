@@ -1,5 +1,5 @@
 /**
- * 帮助与支持面板
+ * Help & Support Panel
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
@@ -9,6 +9,7 @@ import { Info, HelpCircle, ExternalLink } from "lucide-react"
 import type { AppInfo, HelpTabState } from "./types"
 import { VersionUpdatePanel } from "../VersionUpdatePanel"
 import { useUpdateCheck } from "@/lib/hooks/use-update-check"
+import { useTranslation } from "react-i18next"
 
 interface HelpSettingsPanelProps {
   helpTab: HelpTabState['activeTab']
@@ -21,14 +22,15 @@ export default function HelpSettingsPanel({
   setHelpTab,
   appInfo
 }: HelpSettingsPanelProps) {
+  const { t } = useTranslation("settings")
   const { hasUpdate } = useUpdateCheck()
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">帮助与支持</h3>
+        <h3 className="text-lg font-semibold mb-2">{t("helpPanel.title")}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          获取帮助文档和应用信息
+          {t("menu.helpDesc")}
         </p>
       </div>
 
@@ -41,7 +43,7 @@ export default function HelpSettingsPanel({
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
               }`}
           >
-            关于应用
+            {t("helpPanel.aboutApp")}
           </button>
           <button
             onClick={() => setHelpTab("updates")}
@@ -50,7 +52,7 @@ export default function HelpSettingsPanel({
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
               }`}
           >
-            版本更新
+            {t("helpPanel.versionUpdate")}
             {hasUpdate && (
               <Badge className="h-2 w-2 rounded-full bg-red-500 p-0" />
             )}
@@ -101,7 +103,7 @@ export default function HelpSettingsPanel({
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <HelpCircle className="h-4 w-4 mr-2" />
-                快速链接
+                {t("helpPanel.quickLinks")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -112,8 +114,8 @@ export default function HelpSettingsPanel({
               >
                 <ExternalLink className="h-4 w-4 mr-3 flex-shrink-0" />
                 <div className="text-left">
-                  <div className="font-medium text-sm">GitHub 仓库</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">查看源代码和提交 Issue</div>
+                  <div className="font-medium text-sm">{t("helpPanel.githubRepo")}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.viewSourceAndIssue")}</div>
                 </div>
               </Button>
               <Button
@@ -123,8 +125,8 @@ export default function HelpSettingsPanel({
               >
                 <ExternalLink className="h-4 w-4 mr-3 flex-shrink-0" />
                 <div className="text-left">
-                  <div className="font-medium text-sm">更新日志</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">查看版本历史和更新内容</div>
+                  <div className="font-medium text-sm">{t("helpPanel.changelog")}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.viewVersionHistory")}</div>
                 </div>
               </Button>
               <Button
@@ -134,8 +136,8 @@ export default function HelpSettingsPanel({
               >
                 <ExternalLink className="h-4 w-4 mr-3 flex-shrink-0" />
                 <div className="text-left">
-                  <div className="font-medium text-sm">问题反馈</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">报告 Bug 或提出功能建议</div>
+                  <div className="font-medium text-sm">{t("helpPanel.issueFeedback")}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.reportBugOrSuggest")}</div>
                 </div>
               </Button>
               <Button
@@ -145,8 +147,8 @@ export default function HelpSettingsPanel({
               >
                 <ExternalLink className="h-4 w-4 mr-3 flex-shrink-0" />
                 <div className="text-left">
-                  <div className="font-medium text-sm">Docker Hub</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">获取 Docker 镜像</div>
+                  <div className="font-medium text-sm">{t("helpPanel.dockerHub")}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.getDockerImage")}</div>
                 </div>
               </Button>
             </CardContent>
@@ -157,31 +159,31 @@ export default function HelpSettingsPanel({
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <Info className="h-4 w-4 mr-2" />
-                应用信息
+                {t("helpPanel.appInfo")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">版本号</div>
+                <div className="flex justify-between items-center">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.version")}</div>
                   <div className="text-sm font-medium">{appInfo.version}</div>
                 </div>
-                <div className="space-y-1">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">构建时间</div>
-                  <div className="text-sm font-medium">{appInfo.buildDate || '开发版本'}</div>
+                <div className="flex justify-between items-center">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.buildTime")}</div>
+                  <div className="text-sm font-medium">{appInfo.buildDate || t("helpPanel.devVersion")}</div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.appType")}</div>
+                  <div className="text-sm font-medium">{t("helpPanel.webElectron")}</div>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">应用类型</div>
-                  <div className="text-sm font-medium">Web / Electron</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">许可证</div>
-                  <div className="text-sm font-medium">MIT License</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.license")}</div>
+                  <div className="text-sm font-medium">{t("helpPanel.mitLicense")}</div>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">技术栈</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("helpPanel.techStack")}</div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary" className="text-xs">Next.js 15</Badge>
                   <Badge variant="secondary" className="text-xs">React 18</Badge>
@@ -193,11 +195,11 @@ export default function HelpSettingsPanel({
               </div>
 
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">核心依赖</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("helpPanel.coreDeps")}</div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className="text-xs">TMDB API</Badge>
                   <Badge variant="outline" className="text-xs">TMDB-Import</Badge>
-                  <Badge variant="outline" className="text-xs">AI 模型服务</Badge>
+                  <Badge variant="outline" className="text-xs">{t("helpPanel.aiModelService")}</Badge>
                 </div>
               </div>
             </CardContent>
@@ -208,23 +210,23 @@ export default function HelpSettingsPanel({
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <HelpCircle className="h-4 w-4 mr-2" />
-                应用简介
+                {t("helpPanel.appIntro")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
-                TMDB-Helper 是一个功能强大的 TMDB (The Movie Database) 维护助手，旨在帮助用户高效地管理和维护 TMDB 上的电视节目类词条。
+                {t("helpPanel.appDescription")}
               </p>
               <div className="space-y-2">
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">主要功能：</div>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                  <li>• 🎬 智能导入和状态追踪影视词条</li>
-                  <li>• 📺 查看即将上线和近期开播的影视资讯</li>
-                  <li>• 🖼️ 海报背景裁切和视频缩略图提取</li>
-                  <li>• 🤖 AI 分集简介生成器（多风格）</li>
-                  <li>• 🔊 硬字幕提取和音频转写</li>
-                  <li>• 🔧 TMDB-Import 集成和 CSV 编辑器</li>
-                  <li>• 🚀 支持 Web、Electron 和 Docker 部署</li>
+                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t("helpPanel.mainFeatures")}</div>
+                <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside">
+                  <li>• 🎬 {t("helpPanel.feature1")}</li>
+                  <li>• 📺 {t("helpPanel.feature2")}</li>
+                  <li>• 🖼️ {t("helpPanel.feature3")}</li>
+                  <li>• 🤖 {t("helpPanel.feature4")}</li>
+                  <li>• 🔊 {t("helpPanel.feature5")}</li>
+                  <li>• 🔧 {t("helpPanel.feature6")}</li>
+                  <li>• 🚀 {t("helpPanel.feature7")}</li>
                 </ul>
               </div>
             </CardContent>
@@ -235,13 +237,13 @@ export default function HelpSettingsPanel({
             <CardContent className="py-6">
               <div className="text-center space-y-2">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  © 2024 TMDB Helper. 保留所有权利。
+                  © 2024 TMDB Helper. {t("helpPanel.copyright")}
                 </p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
-                  基于 TMDB API 构建 • 遵循 MIT 许可证
+                  {t("helpPanel.basedOnTmdb")} • {t("helpPanel.mitLicense")}
                 </p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
-                  特别感谢 <a href="https://github.com/fzlins/TMDB-Import" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300">fzlins/TMDB-Import</a> 项目的支持
+                  {t("helpPanel.specialThanks")} <a href="https://github.com/fzlins/TMDB-Import" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300">fzlins/TMDB-Import</a>
                 </p>
               </div>
             </CardContent>

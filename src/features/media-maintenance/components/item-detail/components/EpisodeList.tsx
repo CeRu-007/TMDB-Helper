@@ -6,6 +6,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { PlayCircle, Tv, PlusCircle, Clock, Zap, Calendar, ChevronUp, ChevronDown } from "lucide-react"
 import type { Season, Episode, TMDBItem } from "@/lib/data/storage"
+import { useTranslation } from "react-i18next"
 
 interface EpisodeListProps {
   mediaType: "tv"
@@ -32,6 +33,7 @@ export function EpisodeList({
   onAddSeason,
   onCustomSeasonNumberChange
 }: EpisodeListProps) {
+  const { t } = useTranslation('media')
   const [inputValue, setInputValue] = useState<string>("")
   const episodeInputRef = useRef<HTMLInputElement>(null)
 
@@ -71,13 +73,13 @@ export function EpisodeList({
   // 计算预计完成日期和平均速度
   let estimatedCompletionDate: Date | null = null
   let averageSpeed = "0"
-  let speedUnit = "集/周"
+  let speedUnit = t('episodeList.speedUnit.episodesPerWeek')
   let isConservativeEstimate = false
 
   if (remainingEpisodes > 0) {
     // 每日更新词条
     if (item.isDailyUpdate) {
-      speedUnit = "集/天"
+      speedUnit = t('episodeList.speedUnit.episodesPerDay')
 
       if (isDataReliable) {
         // 数据可靠：计算实际每日平均，排除开播当天的一次性多集标记
@@ -107,7 +109,7 @@ export function EpisodeList({
     }
     // 周双更词条（有第二播出日）
     else if (typeof item.secondWeekday === 'number' && typeof item.weekday === 'number') {
-      speedUnit = "每周2集"
+      speedUnit = t('episodeList.speedUnit.twoEpisodesPerWeek')
 
       if (isDataReliable) {
         // 数据可靠：对比实际速度和播出节奏，取更保守的
@@ -150,7 +152,7 @@ export function EpisodeList({
     }
     // 周单更词条（只有主播出日）
     else if (typeof item.weekday === 'number') {
-      speedUnit = "每周1集"
+      speedUnit = t('episodeList.speedUnit.oneEpisodePerWeek')
 
       if (isDataReliable) {
         // 数据可靠：对比实际速度和播出节奏
@@ -200,10 +202,10 @@ export function EpisodeList({
   } else {
     // 已完成，显示历史速度
     if (item.isDailyUpdate) {
-      speedUnit = "集/天"
+      speedUnit = t('episodeList.speedUnit.episodesPerDay')
       averageSpeed = daysSinceCreation > 0 ? (currentEpisode / daysSinceCreation).toFixed(1) : currentEpisode.toFixed(1)
     } else if (typeof item.weekday === 'number') {
-      speedUnit = typeof item.secondWeekday === 'number' ? "每周2集" : "每周1集"
+      speedUnit = typeof item.secondWeekday === 'number' ? t('episodeList.speedUnit.twoEpisodesPerWeek') : t('episodeList.speedUnit.oneEpisodePerWeek')
       averageSpeed = weeksSinceCreation > 0 ? (currentEpisode / weeksSinceCreation).toFixed(1) : currentEpisode.toFixed(1)
     } else {
       averageSpeed = weeksSinceCreation > 0 ? (currentEpisode / weeksSinceCreation).toFixed(1) : "0"
@@ -285,13 +287,13 @@ export function EpisodeList({
         <CardTitle className="text-base flex items-center justify-between">
           <div className="flex items-center">
             <PlayCircle className="h-4 w-4 mr-2" />
-            维护进度
-            {!selectedSeason && <span className="text-xs text-muted-foreground ml-2">(请先选择或添加季)</span>}
+            {t('episodeList.maintenanceProgress')}
+            {!selectedSeason && <span className="text-xs text-muted-foreground ml-2">{t('episodeList.selectOrAddSeason')}</span>}
           </div>
           {/* 编辑模式下显示总集数编辑 */}
           {editing && currentSeason && (
             <div className="flex items-center space-x-2">
-              <span className="text-xs text-muted-foreground">总集数:</span>
+              <span className="text-xs text-muted-foreground">{t('episodeList.totalEpisodes')}:</span>
               <Input
                 type="number"
                 min="1"
@@ -309,7 +311,7 @@ export function EpisodeList({
             {/* 简洁的输入框 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">维护至:</span>
+                <span className="text-sm text-muted-foreground">{t('episodeList.maintenanceTo')}:</span>
                 <div className="relative flex items-center">
                   <Input
                     type="number"
@@ -328,7 +330,7 @@ export function EpisodeList({
                       onClick={handleIncrement}
                       disabled={currentEpisode >= currentSeason.totalEpisodes}
                       className="h-[18px] w-6 flex items-center justify-center hover:bg-muted/50 rounded-t transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                      aria-label="增加集数"
+                      aria-label={t('episodeList.increaseEpisodes')}
                     >
                       <ChevronUp className="h-3 w-3" />
                     </button>
@@ -337,14 +339,14 @@ export function EpisodeList({
                       onClick={handleDecrement}
                       disabled={currentEpisode <= 0}
                       className="h-[18px] w-6 flex items-center justify-center hover:bg-muted/50 rounded-b transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                      aria-label="减少集数"
+                      aria-label={t('episodeList.decreaseEpisodes')}
                     >
                       <ChevronDown className="h-3 w-3" />
                     </button>
                   </div>
                 </div>
               </div>
-              <span className="text-xs text-muted-foreground">/ {currentSeason.totalEpisodes} 集</span>
+              <span className="text-xs text-muted-foreground">/ {currentSeason.totalEpisodes} {t('episodeList.episodes')}</span>
             </div>
 
             {/* 简单的进度条 */}
@@ -361,9 +363,9 @@ export function EpisodeList({
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-muted-foreground">上次更新</div>
+                  <div className="text-muted-foreground">{t('episodeList.lastUpdate')}</div>
                   <div className="font-medium truncate">
-                    {daysSinceUpdate === 0 ? '今天' : daysSinceUpdate === 1 ? '昨天' : `${daysSinceUpdate}天前`}
+                    {daysSinceUpdate === 0 ? t('episodeList.today') : daysSinceUpdate === 1 ? t('episodeList.yesterday') : t('episodeList.daysAgo', { count: daysSinceUpdate })}
                   </div>
                 </div>
               </div>
@@ -372,7 +374,7 @@ export function EpisodeList({
               <div className="flex items-center gap-1.5">
                 <Zap className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-muted-foreground">平均速度</div>
+                  <div className="text-muted-foreground">{t('episodeList.averageSpeed')}</div>
                   <div className="font-medium">
                     {item.isDailyUpdate || !item.weekday ? `${averageSpeed} ${speedUnit}` : speedUnit}
                   </div>
@@ -384,7 +386,7 @@ export function EpisodeList({
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <div className="min-w-0">
                   <div className="text-muted-foreground">
-                    {isConservativeEstimate ? '预计完成(保守)' : '预计完成'}
+                    {isConservativeEstimate ? t('episodeList.estimatedCompletionConservative') : t('episodeList.estimatedCompletion')}
                   </div>
                   <div className="font-medium truncate">
                     {estimatedCompletionDate ? formatDate(estimatedCompletionDate) : '-'}
@@ -396,9 +398,9 @@ export function EpisodeList({
             {/* 进度详情 */}
             <div className="flex items-center justify-between text-sm text-foreground/80">
               <div className="flex items-center space-x-3">
-                <span>已维护: <span className="font-semibold text-green-600">{currentEpisode}</span></span>
+                <span>{t('episodeList.maintained')}: <span className="font-semibold text-green-600">{currentEpisode}</span></span>
                 <span className="text-foreground/30">|</span>
-                <span>待维护: <span className="font-semibold text-orange-600">{totalEpisodes - currentEpisode}</span></span>
+                <span>{t('episodeList.pending')}: <span className="font-semibold text-orange-600">{totalEpisodes - currentEpisode}</span></span>
               </div>
               <span className="text-foreground/70">{progressPercentage}%</span>
             </div>
@@ -406,7 +408,7 @@ export function EpisodeList({
             {/* 完成状态提示 */}
             {currentEpisode === currentSeason.totalEpisodes && currentEpisode > 0 && (
               <div className="flex items-center justify-center p-2 text-sm text-green-600 bg-green-500/10 rounded-lg">
-                ✅ 全季已维护完成
+                ✅ {t('episodeList.seasonComplete')}
               </div>
             )}
           </div>
@@ -414,13 +416,13 @@ export function EpisodeList({
           /* 未选择季时的提示 */
           <div className="text-center py-8 text-muted-foreground">
             <Tv className="h-10 w-10 mx-auto mb-3 opacity-40" />
-            <p className="text-base font-medium mb-1">请选择或添加季</p>
-            <p className="text-sm max-w-md mx-auto">使用上方"选择季"面板选择一个季，或在编辑模式下添加新的季</p>
+            <p className="text-base font-medium mb-1">{t('episodeList.selectOrAddSeasonPrompt')}</p>
+            <p className="text-sm max-w-md mx-auto">{t('episodeList.selectOrAddSeasonHint')}</p>
             {editing && (
               <div className="flex flex-col items-center space-y-3 mt-4">
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center">
-                    <span className="text-xs text-muted-foreground mr-1">季数:</span>
+                    <span className="text-xs text-muted-foreground mr-1">{t('episodeList.seasonNumber')}:</span>
                     <Input
                       type="number"
                       min="1"
@@ -430,7 +432,7 @@ export function EpisodeList({
                     />
                   </div>
                   <div className="flex items-center">
-                    <span className="text-xs text-muted-foreground mr-1">集数:</span>
+                    <span className="text-xs text-muted-foreground mr-1">{t('episodeList.episodeCount')}:</span>
                     <Input
                       type="number"
                       min="1"
@@ -449,7 +451,7 @@ export function EpisodeList({
                   }}
                 >
                   <PlusCircle className="h-4 w-4 mr-1" />
-                  添加季
+                  {t('episodeList.addSeason')}
                 </Button>
               </div>
             )}

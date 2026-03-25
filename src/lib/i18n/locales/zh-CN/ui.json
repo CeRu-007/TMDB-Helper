@@ -1,0 +1,39 @@
+{
+  "ui": {
+    "table": {
+      "noData": "暂无数据",
+      "sort": "排序",
+      "ascending": "升序",
+      "descending": "降序"
+    },
+    "terminal": {
+      "execute": "执行",
+      "clear": "清空",
+      "copy": "复制"
+    },
+    "timePicker": {
+      "confirm": "确认",
+      "cancel": "取消",
+      "selectTime": "选择时间"
+    },
+    "dialog": {
+      "confirm": "确认",
+      "cancel": "取消",
+      "close": "关闭"
+    },
+    "loading": {
+      "loading": "加载中..."
+    },
+    "error": {
+      "error": "错误",
+      "retry": "重试",
+      "somethingWrong": "出了点问题"
+    },
+    "language": {
+      "auto": "自动",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁体中文（台湾）",
+      "zh-HK": "繁体中文（香港）"
+    }
+  }
+}

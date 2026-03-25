@@ -8,6 +8,7 @@ import {
   Move,
   RotateCcw
 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface CropArea {
   x: number
@@ -37,6 +38,7 @@ export function VisualCropEditor({
   onCropChange,
   onReset
 }: VisualCropEditorProps) {
+  const { t } = useTranslation("image-processing")
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -298,12 +300,12 @@ export function VisualCropEditor({
         <div>
           <h4 className="font-medium text-sm">{imageName}</h4>
           <p className="text-xs text-muted-foreground">
-            原始尺寸: {imageWidth} × {imageHeight}
+            {t("visualCropEditor.originalDimensions")}: {imageWidth} × {imageHeight}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs">
-            裁切区域: {cropArea.width} × {cropArea.height}
+            {t("visualCropEditor.cropAreaDimensions")}: {cropArea.width} × {cropArea.height}
           </Badge>
           <Button
             variant="outline"
@@ -312,7 +314,7 @@ export function VisualCropEditor({
             className="h-7 px-2 text-xs"
           >
             <RotateCcw className="h-3 w-3 mr-1" />
-            重置
+            {t("visualCropEditor.resetPosition")}
           </Button>
         </div>
       </div>
@@ -403,19 +405,19 @@ export function VisualCropEditor({
       {/* 裁切信息 */}
       <div className="grid grid-cols-4 gap-2 text-xs flex-shrink-0">
         <div>
-          <Label className="text-xs text-muted-foreground">X</Label>
+          <Label className="text-xs text-muted-foreground">{t("visualCropEditor.x")}</Label>
           <p className="font-mono">{cropArea.x}</p>
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">Y</Label>
+          <Label className="text-xs text-muted-foreground">{t("visualCropEditor.y")}</Label>
           <p className="font-mono">{cropArea.y}</p>
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">宽</Label>
+          <Label className="text-xs text-muted-foreground">{t("imageCropper.width")}</Label>
           <p className="font-mono">{cropArea.width}</p>
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">高</Label>
+          <Label className="text-xs text-muted-foreground">{t("imageCropper.height")}</Label>
           <p className="font-mono">{cropArea.height}</p>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { CachedImage } from "@/shared/components/ui/cached-image"
 import { getPlatformInfo } from "@/lib/utils"
 import { PlatformLogo } from "@/shared/components/ui/platform-icon"
 import type { TMDBItem } from "@/lib/data/storage"
+import { useTranslation } from "react-i18next"
 
 interface MediaInfoCardProps {
   item: TMDBItem
@@ -16,13 +17,15 @@ interface MediaInfoCardProps {
 export function MediaInfoCard({
   item
 }: MediaInfoCardProps) {
+  const { t } = useTranslation('media')
+
   return (
     <>
       {/* 播出平台区域 - 优先使用TMDB网络logo */}
       <div className="pb-0.5 mb-0.5">
         <h3 className="text-sm font-medium flex items-center">
           <Link2 className="h-3.5 w-3.5 mr-1.5" />
-          播出平台
+          {t('mediaInfo.broadcastPlatform')}
         </h3>
       </div>
       <div className="flex items-center justify-start mb-1 h-12">
@@ -31,11 +34,11 @@ export function MediaInfoCard({
           <div
             className="h-full flex items-center justify-start cursor-pointer"
             onClick={() => item.platformUrl && window.open(item.platformUrl, '_blank')}
-            title={item.networkName || '播出网络'}
+            title={item.networkName || t('mediaInfo.broadcastNetwork')}
           >
             <CachedImage
               src={item.networkLogoUrl}
-              alt={item.networkName || '播出网络'}
+              alt={item.networkName || t('mediaInfo.broadcastNetwork')}
               className="max-h-full w-auto object-contain hover:scale-110 transition-all duration-300"
               style={{ width: 'auto', height: '100%' }}
               loading="eager"
@@ -58,7 +61,7 @@ export function MediaInfoCard({
               <div
                 className="h-full flex items-center justify-start cursor-pointer"
                 onClick={() => platformInfo && window.open(platformInfo.url, '_blank')}
-                title={platformInfo?.name || '播出平台'}
+                title={platformInfo?.name || t('mediaInfo.broadcastPlatform')}
               >
                 {platformInfo ? (
                   <PlatformLogo
@@ -83,7 +86,7 @@ export function MediaInfoCard({
       <div className="pb-0.5 mb-1 mt-3">
         <h3 className="text-sm font-medium flex items-center">
           <Info className="h-3.5 w-3.5 mr-1.5" />
-          简介
+          {t('mediaInfo.synopsis')}
         </h3>
       </div>
       <div className="bg-background/20 rounded-lg overflow-hidden h-[110px] mb-2 shadow-sm transition-all duration-300 hover:shadow-md">
@@ -92,7 +95,7 @@ export function MediaInfoCard({
             {item.overview ? (
               <p className="text-sm break-words">{item.overview}</p>
             ) : (
-              <span className="text-muted-foreground text-xs italic">暂无简介信息</span>
+              <span className="text-muted-foreground text-xs italic">-</span>
             )}
           </div>
         </ScrollArea>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import {
   Clock,
   CheckCircle2,
@@ -54,23 +55,24 @@ import { ImageCropper } from "@/features/image-processing/components/image-cropp
 import { ErrorState } from "@/features/media-maintenance/components/error-state"
 
 
-const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: number, categories: Category[], isCompleted: boolean = false) => {
+const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: number, t: (key: string, options?: Record<string, unknown>) => string, isCompleted: boolean = false) => {
   if (selectedCategory !== "all") {
-    const categoryName = categories.find(c => c.id === selectedCategory)?.name
-    const suffix = isCompleted ? "暂无已完结词条" : "暂无词条"
-    return `${categoryName}分类${suffix}`
+    const categoryName = t(`categoryNames.${selectedCategory}`, { ns: "media" })
+    const suffix = isCompleted ? t("noCompletedItemsSuffix", { ns: "media" }) : t("noItemsSuffix", { ns: "media" })
+    return `${categoryName}${t("category", { ns: "common" })}${suffix}`
   }
 
   if (selectedDayFilter === "recent") {
-    return isCompleted ? "暂无最近完成的词条" : "暂无最近更新的词条"
+    return isCompleted ? t("noRecentCompletedItems", { ns: "media" }) : t("noRecentUpdatedItems", { ns: "media" })
   }
 
-  const weekdayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-  const weekdayName = weekdayNames[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]
-  return isCompleted ? `${weekdayName}暂无已完结词条` : `${weekdayName}暂无词条`
+  const weekdaysKey = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+  const weekdayIndex = selectedDayFilter === 0 ? 6 : selectedDayFilter - 1
+  const weekdayName = t(`weekdays.${weekdaysKey[weekdayIndex]}`, { ns: "common" })
+  return isCompleted ? `${weekdayName}${t("noCompletedItemsSuffix", { ns: "media" })}` : `${weekdayName}${t("noItemsSuffix", { ns: "media" })}`
 }
 
-const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaNewsData, items: MediaItem[], selectedRegion: string) => {
+const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaNewsData, items: MediaItem[], selectedRegion: string, t: (key: string, options?: Record<string, unknown>) => string) => {
   const isUpcoming = mediaNewsType === 'upcoming'
   const newsData = isUpcoming ? mediaNews.upcomingItems : mediaNews.recentItems
   const loading = isUpcoming ? mediaNews.loadingUpcoming : mediaNews.loadingRecent
@@ -84,7 +86,7 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
       <div className="flex justify-center items-center h-48">
         <div className="flex flex-col items-center">
           <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">加载中，请稍候...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading", { ns: "common" })}</p>
         </div>
       </div>
     )
@@ -92,8 +94,8 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
 
   if (error) {
     const errorMessage = mediaNews.isMissingApiKey
-      ? '请按照上方指南配置TMDB API密钥'
-      : '无法连接到TMDB服务，请检查网络连接或稍后重试'
+      ? t("tmdbApiKeyMissing", { ns: "media" })
+      : t("tmdbConnectionFailed", { ns: "media" })
 
     return (
       <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
@@ -107,7 +109,7 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
             className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
-            重试
+            {t("retry", { ns: "common" })}
           </Button>
         </div>
       </div>
@@ -116,8 +118,8 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
 
   if (newsData.length === 0) {
     const noDataMessage = isUpcoming
-      ? { title: '暂无即将上线的内容', desc: '未找到未来30天内上线的影视动态' }
-      : { title: '暂无近期开播的内容', desc: '未找到过去30天内刚刚开播的影视动态' }
+      ? { title: t("noUpcomingTitle", { ns: "media" }), desc: t("noUpcomingDesc", { ns: "media" }) }
+      : { title: t("noRecentTitle", { ns: "media" }), desc: t("noRecentDesc", { ns: "media" }) }
 
     return (
       <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
@@ -180,6 +182,7 @@ const MediaCardList = function MediaCardList({ items, onItemClick, showAirTime }
 }
 
 export default function HomePage() {
+  const { t } = useTranslation("nav/image")
   const { toast } = useToast()
   const homeState = useHomeState()
   const { filterItemsByCategory } = useCategoryFilter()
@@ -265,12 +268,12 @@ export default function HomePage() {
                   <div className="p-8 max-w-md mx-auto">
                     <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
                     <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, categories, false)}
+                      {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, false)}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">添加新词条开始维护吧</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("startMaintenanceHint", { ns: "media" })}</p>
                     <Button onClick={() => homeState.setShowAddDialog(true)} className="bg-blue-600 hover:bg-blue-700">
                       <Plus className="h-4 w-4 mr-2" />
-                      添加新词条
+                      {t("addNewItem", { ns: "media" })}
                     </Button>
                   </div>
                 </div>
@@ -301,9 +304,9 @@ export default function HomePage() {
                 <div className="text-center py-16">
                   <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
                   <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, categories, true)}
+                    {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, true)}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">完成维护的词条会自动出现在这里</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("completedItemsHint", { ns: "media" })}</p>
                 </div>
               )}
             </div>
@@ -325,7 +328,7 @@ export default function HomePage() {
                 <div>
                   <div className="flex items-center">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-                      {mediaNewsType === 'upcoming' ? '即将上线' : '近期开播'}
+                      {mediaNewsType === 'upcoming' ? t("upcoming", { ns: "nav.news" }) : t("recent", { ns: "nav.news" })}
                     </h2>
                     {mediaNewsType === 'upcoming' && mediaNews.upcomingItems.length > 0 && (
                       <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
@@ -366,7 +369,7 @@ export default function HomePage() {
             />
 
             <div className="overflow-y-auto">
-              {renderMediaNews(mediaNewsType, mediaNews, items, selectedRegion)}
+              {renderMediaNews(mediaNewsType, mediaNews, items, selectedRegion, t)}
             </div>
           </TabsContent>
 
@@ -384,8 +387,8 @@ export default function HomePage() {
           <TabsContent value="thumbnail">
             <Tabs defaultValue="extract" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="extract">视频截图</TabsTrigger>
-                <TabsTrigger value="crop">图片裁切</TabsTrigger>
+                <TabsTrigger value="extract">{t("extract")}</TabsTrigger>
+                <TabsTrigger value="crop">{t("crop")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="extract" className="mt-4">

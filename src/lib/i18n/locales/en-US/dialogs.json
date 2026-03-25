@@ -1,0 +1,17 @@
+{
+  "selectCategory": "Select Category",
+  "selectAirDay": "Select Air Day",
+  "selectWeekday": "Select Weekday",
+  "confirm": "Confirm",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "save": "Save",
+  "close": "Close",
+  "edit": "Edit",
+  "add": "Add",
+  "confirmDelete": "Are you sure you want to delete?",
+  "operationSuccess": "Operation successful",
+  "operationFailed": "Operation failed",
+  "loading": "Loading...",
+  "noData": "No data"
+}

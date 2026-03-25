@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog"
 import { AlertTriangle } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface EpisodeChangeData {
   oldCount: number
@@ -33,26 +34,28 @@ export function EpisodeChangeDialog({
   onCancel,
   onConfirm
 }: EpisodeChangeDialogProps) {
+  const { t } = useTranslation('media')
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>确认修改集数</AlertDialogTitle>
+          <AlertDialogTitle>{t('dialogs.confirmChangeEpisodeCount')}</AlertDialogTitle>
           <AlertDialogDescription>
             {episodeChangeData?.action === "increase"
-              ? `确定要将集数从 ${episodeChangeData?.oldCount} 增加到 ${episodeChangeData?.newCount} 吗？`
-              : `确定要将集数从 ${episodeChangeData?.oldCount} 减少到 ${episodeChangeData?.newCount} 吗？`}
+              ? t('dialogs.confirmIncreaseEpisode', { old: episodeChangeData?.oldCount, new: episodeChangeData?.newCount })
+              : t('dialogs.confirmDecreaseEpisode', { old: episodeChangeData?.oldCount, new: episodeChangeData?.newCount })}
             {episodeChangeData?.action === "decrease" && (
               <div className="mt-2 text-red-500">
                 <AlertTriangle className="h-4 w-4 inline mr-1" />
-                警告：这将删除多余的集数及其完成状态！
+                {t('dialogs.warningDeleteEpisodes')}
               </div>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>取消</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>确认</AlertDialogAction>
+          <AlertDialogCancel onClick={onCancel}>{t('dialogs.cancel')}</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>{t('dialogs.confirm')}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

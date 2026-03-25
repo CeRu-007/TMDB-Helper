@@ -17,6 +17,7 @@ import {
   Settings,
   Info
 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface VersionInfo {
   local?: {
@@ -55,6 +56,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
   const [currentStep, setCurrentStep] = useState('')
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const { toast } = useToast()
+  const { t } = useTranslation("settings")
 
   // 使用 useRef 存储 onPathUpdate 的最新值，避免 useEffect 重复执行
   const onPathUpdateRef = useRef(onPathUpdate)
@@ -86,8 +88,8 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
       
       if (showLoading) {
         toast({
-          title: "检查版本失败",
-          description: error instanceof Error ? error.message : "未知错误",
+          title: t("tmdbImportUpdater.checkVersionFailed"),
+          description: error instanceof Error ? error.message : t("tmdbImportUpdater.unknownError"),
           variant: "destructive",
         })
       }
@@ -114,8 +116,8 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
       
       if (showLoading) {
         toast({
-          title: "获取安装状态失败",
-          description: error instanceof Error ? error.message : "未知错误",
+          title: t("tmdbImportUpdater.getInstallStatusFailed"),
+          description: error instanceof Error ? error.message : t("tmdbImportUpdater.unknownError"),
           variant: "destructive",
         })
       }
@@ -129,7 +131,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
 
     try {
       // 步骤1: 下载
-      setCurrentStep('正在下载最新版本...')
+      setCurrentStep(t("tmdbImportUpdater.downloading"))
       setProgress(25)
 
       const downloadResponse = await fetch('/api/external/tmdb-import-updater', {
@@ -146,7 +148,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
       setProgress(50)
 
       // 步骤2: 安装
-      setCurrentStep('正在解压和安装...')
+      setCurrentStep(t("tmdbImportUpdater.installing"))
       setProgress(75)
 
       const installResponse = await fetch('/api/external/tmdb-import-updater', {
@@ -161,24 +163,24 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
       }
 
       setProgress(100)
-      setCurrentStep('安装完成')
+      setCurrentStep(t("tmdbImportUpdater.installComplete"))
 
       // 自动设置路径到解压后的目录
       const installPath = installResult.data?.installPath
       const credentialsPreserved = installResult.data?.credentialsPreserved
 
-      let description = "TMDB-Import 已安装到最新版本"
+      let description = t("tmdbImportUpdater.installedSuccess")
       if (installPath && onPathUpdateRef.current) {
         onPathUpdateRef.current(installPath)
-        description = "TMDB-Import 已安装并自动配置路径"
+        description = t("tmdbImportUpdater.installedAndConfigured")
       }
 
       if (credentialsPreserved) {
-        description += "，TMDB 用户凭据已保留"
+        description += t("tmdbImportUpdater.credentialsPreserved")
       }
 
       toast({
-        title: "安装成功",
+        title: t("tmdbImportUpdater.installSuccess"),
         description: description,
       })
 
@@ -188,8 +190,8 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
     } catch (error) {
       
       toast({
-        title: "安装失败",
-        description: error instanceof Error ? error.message : "未知错误",
+        title: t("tmdbImportUpdater.installFailed"),
+        description: error instanceof Error ? error.message : t("tmdbImportUpdater.unknownError"),
         variant: "destructive",
       })
     } finally {
@@ -248,9 +250,9 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
           <div className="flex items-center space-x-2">
             <GitBranch className="h-5 w-5 text-blue-600" />
             <div>
-              <CardTitle className="text-lg">TMDB-Import 工具管理</CardTitle>
+              <CardTitle className="text-lg">{t("tmdbImportUpdater.title")}</CardTitle>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                自动管理 TMDB-Import 工具的下载、安装和更新
+                {t("tmdbImportUpdater.description")}
               </p>
             </div>
           </div>
@@ -272,7 +274,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            刷新
+            {t("tmdbImportUpdater.refresh")}
           </Button>
         </div>
       </CardHeader>
@@ -284,7 +286,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
             <div className="flex items-center justify-center py-8">
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">正在加载工具信息...</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.loading")}</span>
               </div>
             </div>
           </div>
@@ -297,25 +299,25 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Settings className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium">安装状态</span>
+                <span className="text-sm font-medium">{t("tmdbImportUpdater.installStatus")}</span>
               </div>
               <div className="space-y-2 pl-6">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600 dark:text-gray-400">工具状态:</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.toolStatus")}:</span>
                   <Badge variant={installStatus.installed ? "default" : "secondary"} className="text-xs">
-                    {installStatus.installed ? "已安装" : "未安装"}
+                    {installStatus.installed ? t("tmdbImportUpdater.installed") : t("tmdbImportUpdater.notInstalled")}
                   </Badge>
                 </div>
                 {installStatus.installed && (
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">主模块:</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.mainModule")}:</span>
                       <Badge variant={installStatus.hasMainModule ? "default" : "destructive"} className="text-xs">
-                        {installStatus.hasMainModule ? "正常" : "缺失"}
+                        {installStatus.hasMainModule ? t("tmdbImportUpdater.normal") : t("tmdbImportUpdater.missing")}
                       </Badge>
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                      文件数: {installStatus.fileCount}
+                      {t("tmdbImportUpdater.fileCount")} {installStatus.fileCount}
                     </div>
                   </>
                 )}
@@ -357,23 +359,23 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Info className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium">版本信息</span>
+                  <span className="text-sm font-medium">{t("tmdbImportUpdater.versionInfo")}</span>
                 </div>
                 {versionInfo.needsUpdate ? (
                   <Badge variant="destructive" className="text-xs">
                     <AlertCircle className="h-3 w-3 mr-1" />
-                    需要更新
+                    {t("tmdbImportUpdater.needsUpdate")}
                   </Badge>
                 ) : (
                   <Badge variant="default" className="text-xs">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
-                    最新版本
+                    {t("tmdbImportUpdater.upToDate")}
                   </Badge>
                 )}
               </div>
               <div className="space-y-2 pl-6">
                 <div className="text-xs">
-                  <div className="text-gray-600 dark:text-gray-400">最新版本:</div>
+                  <div className="text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.latestVersion")}:</div>
                   <div className="flex items-center space-x-1 mt-1">
                     <Calendar className="h-3 w-3 text-gray-400" />
                     <span className="text-gray-800 dark:text-gray-200">
@@ -386,7 +388,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                 </div>
                 {versionInfo.local?.exists && versionInfo.local.commitDate && (
                   <div className="text-xs">
-                    <div className="text-gray-600 dark:text-gray-400">本地版本:</div>
+                    <div className="text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.localVersion")}:</div>
                     <div className="flex items-center space-x-1 mt-1">
                       <Calendar className="h-3 w-3 text-gray-400" />
                       <span className="text-gray-800 dark:text-gray-200">
@@ -433,12 +435,12 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                     {versionInfo.needsUpdate ? (
                       <span className="flex items-center">
                         <AlertCircle className="h-4 w-4 mr-1 text-orange-500" />
-                        发现新版本可用，建议更新
+                        {t("tmdbImportUpdater.updateAvailable")}
                       </span>
                     ) : (
                       <span className="flex items-center">
                         <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
-                        当前已是最新版本
+                        {t("tmdbImportUpdater.currentIsLatest")}
                       </span>
                     )}
                   </div>
@@ -451,7 +453,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                         className="px-4"
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        {installStatus?.installed ? '更新版本' : '下载安装'}
+                        {installStatus?.installed ? t("tmdbImportUpdater.updateVersion") : t("tmdbImportUpdater.downloadInstall")}
                       </Button>
                     ) : (
                       <Button
@@ -462,7 +464,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                         className="px-4"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
-                        重新安装
+                        {t("tmdbImportUpdater.reinstall")}
                       </Button>
                     )}
                   </div>
@@ -474,8 +476,8 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                     <div className="flex items-start space-x-2">
                       <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                       <div className="text-xs text-blue-800 dark:text-blue-200">
-                        <p className="font-medium">安装说明</p>
-                        <p className="mt-1">重新安装时会使用最新版本的默认配置，但会自动保留您的 TMDB 用户名和密码。</p>
+                        <p className="font-medium">{t("tmdbImportUpdater.installInstructions")}</p>
+                        <p className="mt-1">{t("tmdbImportUpdater.reinstallNote")}</p>
                       </div>
                     </div>
                   </div>

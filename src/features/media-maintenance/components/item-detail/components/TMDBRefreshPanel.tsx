@@ -4,6 +4,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Settings, RefreshCw, Loader2 } from "lucide-react"
 import type { TMDBItem } from "@/lib/data/storage"
+import { useTranslation } from "react-i18next"
 
 interface TMDBRefreshPanelProps {
   item: TMDBItem
@@ -16,12 +17,14 @@ export function TMDBRefreshPanel({
   isRefreshingTMDBData,
   onRefresh
 }: TMDBRefreshPanelProps) {
+  const { t } = useTranslation('media')
+
   return (
     <Card variant="frosted">
       <CardHeader>
         <CardTitle className="text-base flex items-center">
           <Settings className="h-4 w-4 mr-2" />
-          TMDB数据
+          {t('tmdbPanel.data')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -31,7 +34,7 @@ export function TMDBRefreshPanel({
             size="sm"
             onClick={onRefresh}
             disabled={isRefreshingTMDBData || !item.tmdbId}
-            title="刷新TMDB数据、背景图、标志、网络logo和简介"
+            title={t('tmdbPanel.refreshData')}
             className="w-full"
           >
             {isRefreshingTMDBData ? (
@@ -39,7 +42,7 @@ export function TMDBRefreshPanel({
             ) : (
               <RefreshCw className="h-4 w-4 mr-2" />
             )}
-            刷新TMDB数据、标志、网络logo和简介
+            {t('tmdbPanel.refreshDataDesc')}
           </Button>
         </div>
       </CardContent>

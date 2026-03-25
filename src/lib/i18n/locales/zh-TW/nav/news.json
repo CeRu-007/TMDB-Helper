@@ -1,0 +1,46 @@
+{
+  "title": "影視資訊",
+  "upcoming": "即將上線",
+  "recent": "近期開播",
+  "regionLabel": "區域",
+  "unknownRegion": "未知區域",
+  "regionGroup": {
+    "asia": "亞洲",
+    "western": "歐美"
+  },
+  "streamingNav": "平台導航",
+  "schedule": "時間表",
+  "mediaNewsSection": {
+    "loading": "載入中...",
+    "refresh": "刷新",
+    "configureApi": "配置API",
+    "noContentUpcoming": "暫無即將上線的內容",
+    "noContentRecent": "暫無近期開播的內容",
+    "loadMore": "查看更多 ({{count}} 個)",
+    "lastUpdated": "更新時間",
+    "movie": "電影",
+    "tv": "電視劇",
+    "releaseDate": "上映日期",
+    "configureApiKey": "配置API密鑰",
+    "error": "錯誤",
+    "noResults": "未找到匹配結果",
+    "tryDifferentImage": "嘗試使用不同的圖片或調整搜索設置",
+    "addToMaintenanceList": "添加到維護列表",
+    "viewOnTmdb": "在TMDB查看詳情",
+    "todayUpoming": "今天上線",
+    "tomorrowUpoming": "明天上線",
+    "daysLaterUpoming": "天後上線",
+    "todayAired": "今天開播",
+    "yesterdayAired": "昨天開播",
+    "daysAgoAired": "天前開播"
+  },
+  "regions": {
+    "CN": "中國大陸",
+    "HK": "香港",
+    "TW": "台灣",
+    "JP": "日本",
+    "KR": "韓國",
+    "US": "美國",
+    "GB": "英國"
+  }
+}

@@ -16,6 +16,7 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Alert, AlertDescription } from "@/shared/components/ui/alert"
 import { Info, Search, Zap, Wand2, MousePointer, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "react-i18next"
 
 export interface BatchEditDialogProps {
   open: boolean
@@ -113,6 +114,7 @@ export default function BatchEditDialog({
   currentRowIndex = -1,
   columnName = "内容"
 }: BatchEditDialogProps) {
+  const { t } = useTranslation('media')
   const [editValue, setEditValue] = useState(value)
   const [viewMode, setViewMode] = useState<ViewMode>('edit')
   const [selectedPattern, setSelectedPattern] = useState<DuplicatePattern | null>(null)
@@ -307,9 +309,9 @@ export default function BatchEditDialog({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden p-0">
         {/* 头部 */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="text-lg">编辑{columnName}</DialogTitle>
+          <DialogTitle className="text-lg">{t('batchEdit.editTitle', { name: columnName })}</DialogTitle>
           <DialogDescription className="text-sm">
-            {isBatchMode ? `批量修改${columnName}内容` : `编辑当前词条的${columnName}内容`}
+            {isBatchMode ? t('batchEdit.batchDescription', { name: columnName }) : t('batchEdit.editDescription', { name: columnName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -327,7 +329,7 @@ export default function BatchEditDialog({
                 )}
               >
                 <Zap className="h-4 w-4" />
-                普通编辑
+                {t('batchEdit.normalEdit')}
               </button>
               <button
                 onClick={() => setViewMode('batch-auto')}
@@ -339,7 +341,7 @@ export default function BatchEditDialog({
                 )}
               >
                 <Wand2 className="h-4 w-4" />
-                自动批量
+                {t('batchEdit.autoBatch')}
               </button>
               <button
                 onClick={() => setViewMode('batch-manual')}
@@ -351,7 +353,7 @@ export default function BatchEditDialog({
                 )}
               >
                 <MousePointer className="h-4 w-4" />
-                手动批量
+                {t('batchEdit.manualBatch')}
               </button>
             </div>
           </div>
@@ -363,18 +365,18 @@ export default function BatchEditDialog({
           {viewMode === 'edit' && (
             <div className="space-y-3">
               <Label htmlFor="contentTextarea" className="text-sm font-medium">
-                {columnName}内容
+                {t('batchEdit.contentLabel', { name: columnName })}
               </Label>
               <Textarea
                 id="contentTextarea"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                placeholder={`请输入${columnName}内容...`}
+                placeholder={t('batchEdit.contentPlaceholder', { name: columnName })}
                 className="min-h-[250px] resize-none text-sm"
                 rows={12}
               />
               <div className="text-xs text-muted-foreground text-right">
-                {editValue.length} 个字符
+                {t('batchEdit.characterCount', { count: editValue.length })}
               </div>
             </div>
           )}
@@ -387,12 +389,12 @@ export default function BatchEditDialog({
                   <Alert className="bg-blue-50/50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
                     <Info className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
-                      检测到 {duplicatePatterns.length} 个重复模式，选择一个进行批量替换
+                      {t('batchEdit.detectedPatterns', { count: duplicatePatterns.length })}
                     </AlertDescription>
                   </Alert>
 
                   <div className="space-y-3">
-                    <Label className="text-sm font-medium">选择重复模式</Label>
+                    <Label className="text-sm font-medium">{t('batchEdit.selectPattern')}</Label>
                     <ScrollArea className="h-[180px] border rounded-lg">
                       <div className="p-2 space-y-1">
                         {duplicatePatterns.map((pattern, index) => (
@@ -417,7 +419,7 @@ export default function BatchEditDialog({
                                 ? 'bg-primary-foreground/20'
                                 : 'bg-background'
                             )}>
-                              {pattern.count} 条
+                              {pattern.count}
                             </span>
                           </button>
                         ))}
@@ -428,7 +430,7 @@ export default function BatchEditDialog({
                   {selectedPattern && (
                     <div className="space-y-3 pt-2 border-t">
                       <div className="flex items-center gap-2 text-sm">
-                        <span className="text-muted-foreground">将选中的内容替换为：</span>
+                        <span className="text-muted-foreground">{t('batchEdit.replaceWith')}</span>
                         <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-2 py-0.5 rounded text-xs">
                           {selectedPattern.pattern.length > 30
                             ? selectedPattern.pattern.slice(0, 30) + '...'
@@ -438,7 +440,7 @@ export default function BatchEditDialog({
                       <Textarea
                         value={replaceWith}
                         onChange={(e) => setReplaceWith(e.target.value)}
-                        placeholder="输入替换内容（留空表示删除）"
+                        placeholder={t('batchEdit.replacePlaceholder')}
                         className="resize-none text-sm"
                         rows={2}
                       />
@@ -448,8 +450,8 @@ export default function BatchEditDialog({
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Search className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">未检测到重复模式</p>
-                  <p className="text-xs mt-1">所有内容都是唯一的</p>
+                  <p className="text-sm">{t('batchEdit.noPatterns')}</p>
+                  <p className="text-xs mt-1">{t('batchEdit.uniqueContent')}</p>
                 </div>
               )}
             </div>
@@ -461,12 +463,12 @@ export default function BatchEditDialog({
               <Alert className="bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
                 <MousePointer className="h-4 w-4 text-amber-600" />
                 <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">
-                  在下方文本中划选要删除或替换的内容
+                  {t('batchEdit.selectTextHint')}
                 </AlertDescription>
               </Alert>
 
               <div className="space-y-3">
-                <Label className="text-sm font-medium">选择要处理的文本</Label>
+                <Label className="text-sm font-medium">{t('batchEdit.selectText')}</Label>
                 <div
                   contentEditable
                   suppressContentEditableWarning
@@ -488,7 +490,7 @@ export default function BatchEditDialog({
                 </div>
                 {manualSelection && (
                   <p className="text-xs text-muted-foreground">
-                    已选择: "{manualSelection.text.length > 30 ? manualSelection.text.slice(0, 30) + '...' : manualSelection.text}"
+                    {t('batchEdit.selected')}: "{manualSelection.text.length > 30 ? manualSelection.text.slice(0, 30) + '...' : manualSelection.text}"
                   </p>
                 )}
               </div>
@@ -497,7 +499,7 @@ export default function BatchEditDialog({
                 <div className="space-y-3 pt-2 border-t">
                   {/* 匹配模式切换 */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">匹配模式</Label>
+                    <Label className="text-sm font-medium">{t('batchEdit.matchMode')}</Label>
                     <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
                       <button
                         onClick={() => setManualMatchMode('text')}
@@ -508,7 +510,7 @@ export default function BatchEditDialog({
                             : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                         )}
                       >
-                        匹配相同文本
+                        {t('batchEdit.matchSameText')}
                       </button>
                       <button
                         onClick={() => setManualMatchMode('position')}
@@ -519,13 +521,13 @@ export default function BatchEditDialog({
                             : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                         )}
                       >
-                        匹配相同位置
+                        {t('batchEdit.matchSamePosition')}
                       </button>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground">将选中的内容替换为：</span>
+                    <span className="text-muted-foreground">{t('batchEdit.replaceWith')}</span>
                     <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-2 py-0.5 rounded text-xs">
                       {manualSelection.text.length > 30
                         ? manualSelection.text.slice(0, 30) + '...'
@@ -535,7 +537,7 @@ export default function BatchEditDialog({
                   <Textarea
                     value={replaceWith}
                     onChange={(e) => setReplaceWith(e.target.value)}
-                    placeholder="输入替换内容（留空表示删除）"
+                    placeholder={t('batchEdit.replacePlaceholder')}
                     className="resize-none text-sm"
                     rows={2}
                   />
@@ -550,7 +552,7 @@ export default function BatchEditDialog({
               <div className="flex items-center gap-2 mb-3">
                 <Eye className="h-4 w-4 text-muted-foreground" />
                 <Label className="text-sm font-medium">
-                  预览 ({currentAffectedCount} 行将受影响)
+                  {t('batchEdit.preview')} ({t('batchEdit.affectedRows', { count: currentAffectedCount })})
                 </Label>
               </div>
               <ScrollArea className="h-[200px] border rounded-lg bg-muted/20">
@@ -580,7 +582,7 @@ export default function BatchEditDialog({
                   ))}
                   {currentAffectedCount > 10 && (
                     <div className="text-xs text-muted-foreground text-center py-2">
-                      还有 {currentAffectedCount - 10} 行...
+                      {t('batchEdit.moreRows', { count: currentAffectedCount - 10 })}
                     </div>
                   )}
                 </div>
@@ -588,7 +590,7 @@ export default function BatchEditDialog({
               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <span className="w-3 h-3 bg-red-100 dark:bg-red-900/40 rounded"></span>
-                  <span>将被删除/替换</span>
+                  <span>{t('batchEdit.willBeDeleted')}</span>
                 </div>
               </div>
             </div>
@@ -598,13 +600,13 @@ export default function BatchEditDialog({
         {/* 底部操作栏 */}
         <DialogFooter className="px-6 py-4 border-t gap-2">
           <Button variant="outline" onClick={handleCancel}>
-            取消
+            {t('batchEdit.cancel')}
           </Button>
           <Button
             onClick={handleSave}
             disabled={isBatchMode && currentAffectedCount === 0}
           >
-            {isBatchMode ? `批量修改 (${currentAffectedCount})` : '保存'}
+            {isBatchMode ? t('batchEdit.batchModify', { count: currentAffectedCount }) : t('batchEdit.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

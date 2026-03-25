@@ -20,6 +20,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Download, FileText, Database, Info } from 'lucide-react';
 import { useData } from '@/shared/components/client-data-provider';
 import { useToast } from '@/lib/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 interface ExportDataDialogProps {
   open: boolean;
@@ -34,8 +35,11 @@ export default function ExportDataDialog({
   open,
   onOpenChange,
 }: ExportDataDialogProps) {
+  const { t } = useTranslation('data-management')
   const [options, setOptions] = useState<ExportOptions>({
     format: 'json',
+    includeTmdbData: true,
+    includeWatchHistory: true,
   });
   const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState<{
@@ -170,7 +174,7 @@ export default function ExportDataDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
-            导出数据
+            {t('export.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -180,12 +184,12 @@ export default function ExportDataDialog({
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Database className="h-4 w-4" />
-                  数据统计
+                  {t('export.dataStats')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">项目数量：</span>
+                  <span className="text-sm">{t('export.itemCount')}：</span>
                   <Badge variant="outline">{stats.itemCount}</Badge>
                 </div>
               </CardContent>
@@ -196,7 +200,7 @@ export default function ExportDataDialog({
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                导出格式
+                {t('export.exportFormat')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -213,9 +217,9 @@ export default function ExportDataDialog({
                   <RadioGroupItem value="json" id="json" />
                   <Label htmlFor="json" className="flex-1">
                     <div>
-                      <div className="font-medium">JSON 格式</div>
+                      <div className="font-medium">{t('export.jsonFormat')}</div>
                       <div className="text-sm text-muted-foreground">
-                        完整的数据备份，包含所有字段和结构
+                        {t('export.jsonFormatDesc')}
                       </div>
                     </div>
                   </Label>
@@ -224,9 +228,9 @@ export default function ExportDataDialog({
                   <RadioGroupItem value="csv" id="csv" />
                   <Label htmlFor="csv" className="flex-1">
                     <div>
-                      <div className="font-medium">CSV 格式</div>
+                      <div className="font-medium">{t('export.csvFormat')}</div>
                       <div className="text-sm text-muted-foreground">
-                        表格格式，便于在Excel等软件中查看
+                        {t('export.csvFormatDesc')}
                       </div>
                     </div>
                   </Label>
@@ -237,10 +241,10 @@ export default function ExportDataDialog({
 
           <div className="flex justify-end space-x-4">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              {t('export.cancel')}
             </Button>
             <Button onClick={handleExport} disabled={exporting}>
-              {exporting ? '导出中...' : '导出'}
+              {exporting ? t('export.exporting') : t('export.export')}
             </Button>
           </div>
         </div>

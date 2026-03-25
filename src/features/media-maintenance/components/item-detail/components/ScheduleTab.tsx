@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Clock, Play, Loader2, Info, Terminal, Activity } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import type { TMDBItem } from "@/types/tmdb-item"
 import type { ScheduleTask, ScheduleLog, FieldCleanup } from "@/types/schedule"
 import { getCronDescription, getNextRunTime, validateCronExpression, getRecommendations } from "@/lib/utils/cron-utils"
@@ -26,6 +27,7 @@ interface LogEntry {
 }
 
 export function ScheduleTab({ item }: ScheduleTabProps) {
+  const { t } = useTranslation("schedule")
   const [task, setTask] = useState<ScheduleTask | null>(null)
   const [logs, setLogs] = useState<ScheduleLog[]>([])
   const [terminalLogs, setTerminalLogs] = useState<LogEntry[]>([])
@@ -92,7 +94,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         setNextRunTime(getNextRunTime("0 2 * * *"))
       }
     } catch (error) {
-      console.error("[ScheduleTab] 加载任务失败:", error)
+      console.error("[ScheduleTab] Failed to load task:", error)
     } finally {
       setLoading(false)
     }
@@ -146,7 +148,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
       setCronDescription(getCronDescription(value))
       setNextRunTime(getNextRunTime(value))
     } else {
-      setCronDescription("无效的 Cron 表达式")
+      setCronDescription(t("invalidCron"))
       setNextRunTime("")
     }
   }
@@ -170,13 +172,13 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
       const data = await response.json()
       if (data.success && data.data) {
         setTask(data.data)
-        addLog("success", "配置已保存")
+        addLog("success", t("configSaved"))
       } else {
-        addLog("error", `保存失败: ${data.error}`)
+        addLog("error", `${t("saveFailed")}: ${data.error}`)
       }
     } catch (error) {
-      console.error("[ScheduleTab] 保存失败:", error)
-      addLog("error", "保存失败")
+      console.error("[ScheduleTab] Failed to save:", error)
+      addLog("error", t("saveFailed"))
     } finally {
       setSaving(false)
     }
@@ -185,7 +187,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
   const handleExecute = async () => {
     setExecuting(true)
     setTerminalLogs([])
-    addLog("info", "开始执行定时任务...")
+    addLog("info", t("startExecution"))
 
     try {
       const response = await fetch("/api/schedule/execute", {
@@ -204,13 +206,13 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
           })
         }
       } else {
-        addLog("error", result.error || "执行失败")
+        addLog("error", result.error || t("executionFailed"))
       }
 
       await loadTask()
     } catch (error) {
-      console.error("[ScheduleTab] 执行失败:", error)
-      addLog("error", "执行失败")
+      console.error("[ScheduleTab] Execution failed:", error)
+      addLog("error", t("executionFailed"))
     } finally {
       setExecuting(false)
     }
@@ -259,7 +261,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4" />
-                  <Label>启用定时任务</Label>
+                  <Label>{t("enableSchedule")}</Label>
                 </div>
                 <Switch checked={enabled} onCheckedChange={setEnabled} />
               </div>
@@ -267,7 +269,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
               {enabled && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="cron">执行时间 (Cron)</Label>
+                    <Label htmlFor="cron">{t("executionTime")}</Label>
                     <Input
                       id="cron"
                       value={cronInput}
@@ -276,7 +278,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                       className={!isValidCron ? "border-red-500" : ""}
                     />
                     {!isValidCron && (
-                      <p className="text-xs text-red-500">无效的 Cron 表达式</p>
+                      <p className="text-xs text-red-500">{t("invalidCron")}</p>
                     )}
                     {isValidCron && cronDescription && (
                       <p className="text-xs text-muted-foreground flex items-center">
@@ -287,7 +289,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>智能推荐</Label>
+                    <Label>{t("smartRecommend")}</Label>
                     <div className="flex flex-wrap gap-2">
                       {recommendations.map((rec, index) => (
                         <Button
@@ -305,12 +307,12 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
 
                   {nextRunTime && (
                     <div className="flex items-center space-x-2">
-                      <Badge variant="secondary">下次执行: {nextRunTime}</Badge>
+                      <Badge variant="secondary">{t("nextRun")}: {nextRunTime}</Badge>
                     </div>
                   )}
 
                   <div className="space-y-2">
-                    <Label>运行模式</Label>
+                    <Label>{t("runMode")}</Label>
                     <div className="flex gap-2">
                       <Button
                         type="button"
@@ -320,7 +322,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                         className={`flex-1 h-7 text-xs ${!headless ? "bg-green-600 hover:bg-green-700" : ""}`}
                       >
                         <Terminal className="h-3 w-3 mr-1" />
-                        前台
+                        {t("foreground")}
                       </Button>
                       <Button
                         type="button"
@@ -330,17 +332,17 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                         className={`flex-1 h-7 text-xs ${headless ? "bg-blue-600 hover:bg-blue-700" : ""}`}
                       >
                         <Activity className="h-3 w-3 mr-1" />
-                        后台
+                        {t("background")}
                       </Button>
                     </div>
                     <p className="text-[10px] text-muted-foreground">
-                      {headless ? "浏览器后台运行，性能更好" : "浏览器窗口可见，适合调试"}
+                      {headless ? t("backgroundTip") : t("foregroundTip")}
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Label htmlFor="autoImport">自动导入 TMDB</Label>
+                      <Label htmlFor="autoImport">{t("autoImportTmdb")}</Label>
                     </div>
                     <Switch id="autoImport" checked={autoImport} onCheckedChange={setAutoImport} />
                   </div>
@@ -349,7 +351,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                     <div className="space-y-2 pl-4 border-l-2 border-muted">
                       <div className="flex flex-row items-center gap-4">
                         <div className="flex items-center space-x-2">
-                          <span className="text-xs">第</span>
+                          <span className="text-xs">{t("season")}</span>
                           <Input
                             type="number"
                             min="1"
@@ -358,10 +360,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                             onChange={(e) => setTmdbSeason(parseInt(e.target.value) || 1)}
                             className="w-12 h-7 text-xs"
                           />
-                          <span className="text-xs">季</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Label className="text-xs">语言</Label>
+                          <Label className="text-xs">{t("language")}</Label>
                           <LanguageSelector
                             value={tmdbLanguage}
                             onChange={setTmdbLanguage}
@@ -369,15 +370,15 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                           />
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Label className="text-xs">Overview</Label>
+                          <Label className="text-xs">{t("overview")}</Label>
                           <Select value={tmdbAutoResponse} onValueChange={setTmdbAutoResponse}>
                             <SelectTrigger className="w-20 h-7 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="w">等待</SelectItem>
-                              <SelectItem value="y">覆盖</SelectItem>
-                              <SelectItem value="n">跳过</SelectItem>
+                              <SelectItem value="w">{t("wait")}</SelectItem>
+                              <SelectItem value="y">{t("overwrite")}</SelectItem>
+                              <SelectItem value="n">{t("skip")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -387,16 +388,16 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Label htmlFor="incremental">增量更新</Label>
+                      <Label htmlFor="incremental">{t("incrementalUpdate")}</Label>
                     </div>
                     <Switch id="incremental" checked={incremental} onCheckedChange={setIncremental} />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {incremental ? "清理已维护集数，仅处理新集数" : "全量更新，处理所有集数"}
+                    {incremental ? t("incrementalTip") : t("fullUpdateTip")}
                   </p>
 
                   <div className="space-y-2">
-                    <Label>字段清理</Label>
+                    <Label>{t("fieldCleanup")}</Label>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -458,7 +459,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         <div className="flex gap-2 px-1 py-2 flex-shrink-0">
           <Button onClick={handleSave} disabled={saving || !isValidCron} className="flex-1 h-8 text-xs">
             {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-            保存配置
+            {t("saveConfig")}
           </Button>
           {task && (
             <Button
@@ -472,7 +473,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
               ) : (
                 <Play className="h-3 w-3 mr-1" />
               )}
-              立即执行
+              {t("executeNow")}
             </Button>
           )}
         </div>
@@ -483,7 +484,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
           <CardHeader className="py-2 flex-shrink-0">
             <CardTitle className="text-sm flex items-center">
               <Activity className="h-4 w-4 mr-2" />
-              执行日志
+              {t("executionLogs")}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 p-0 px-3 pb-3">
@@ -503,8 +504,8 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                 </div>
               ) : (
                 <div className="p-3 text-gray-400">
-                  <p>等待执行任务...</p>
-                  <p className="mt-2">点击&quot;立即执行&quot;开始运行定时任务</p>
+                  <p>{t("waitingForExecution")}</p>
+                  <p className="mt-2">{t("clickToExecute")}</p>
                 </div>
               )}
             </div>

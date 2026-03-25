@@ -1,5 +1,5 @@
 /**
- * 外观设置面板
+ * Appearance Settings Panel
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
@@ -9,6 +9,7 @@ import { Switch } from "@/shared/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Palette, Sun, Moon, Monitor } from "lucide-react"
 import type { AppearanceSettings } from "./types"
+import { useTranslation } from "react-i18next"
 
 interface AppearanceSettingsPanelProps {
   appearanceSettings: AppearanceSettings
@@ -21,20 +22,21 @@ export default function AppearanceSettingsPanel({
   setAppearanceSettings,
   saveAppearanceSettings
 }: AppearanceSettingsPanelProps) {
+  const { t } = useTranslation("settings")
   const colorOptions = [
-    { value: 'blue', label: '蓝色', color: 'bg-blue-500' },
-    { value: 'green', label: '绿色', color: 'bg-green-500' },
-    { value: 'purple', label: '紫色', color: 'bg-purple-500' },
-    { value: 'orange', label: '橙色', color: 'bg-orange-500' },
-    { value: 'red', label: '红色', color: 'bg-red-500' },
+    { value: 'blue', label: t("appearancePanel.blue"), color: 'bg-blue-500' },
+    { value: 'green', label: t("appearancePanel.green"), color: 'bg-green-500' },
+    { value: 'purple', label: t("appearancePanel.purple"), color: 'bg-purple-500' },
+    { value: 'orange', label: t("appearancePanel.orange"), color: 'bg-orange-500' },
+    { value: 'red', label: t("appearancePanel.red"), color: 'bg-red-500' },
   ]
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">外观设置</h3>
+        <h3 className="text-lg font-semibold mb-2">{t("appearanceSettings")}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          自定义应用程序的主题和界面样式
+          {t("appearanceSettingsDesc")}
         </p>
       </div>
 
@@ -42,12 +44,12 @@ export default function AppearanceSettingsPanel({
         <CardHeader>
           <CardTitle className="text-base flex items-center">
             <Palette className="h-4 w-4 mr-2" />
-            主题设置
+            {t("appearancePanel.themeSettings")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <Label className="text-sm font-medium">主题模式</Label>
+            <Label className="text-sm font-medium">{t("appearancePanel.themeMode")}</Label>
             <div className="grid grid-cols-3 gap-3 mt-2">
               <button
                 onClick={() => setAppearanceSettings({ ...appearanceSettings, theme: 'light' })}
@@ -58,7 +60,7 @@ export default function AppearanceSettingsPanel({
                 }`}
               >
                 <Sun className="h-6 w-6" />
-                <span className="text-sm font-medium">浅色</span>
+                <span className="text-sm font-medium">{t("themeLight")}</span>
               </button>
 
               <button
@@ -70,7 +72,7 @@ export default function AppearanceSettingsPanel({
                 }`}
               >
                 <Moon className="h-6 w-6" />
-                <span className="text-sm font-medium">深色</span>
+                <span className="text-sm font-medium">{t("themeDark")}</span>
               </button>
 
               <button
@@ -82,13 +84,13 @@ export default function AppearanceSettingsPanel({
                 }`}
               >
                 <Monitor className="h-6 w-6" />
-                <span className="text-sm font-medium">跟随系统</span>
+                <span className="text-sm font-medium">{t("themeSystem")}</span>
               </button>
             </div>
           </div>
 
           <div>
-            <Label className="text-sm font-medium">主色调</Label>
+            <Label className="text-sm font-medium">{t("primaryColor")}</Label>
             <div className="grid grid-cols-5 gap-3 mt-2">
               {colorOptions.map((option) => (
                 <button
@@ -111,11 +113,11 @@ export default function AppearanceSettingsPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">界面样式</CardTitle>
+          <CardTitle className="text-base">{t("appearancePanel.interfaceStyle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="text-sm font-medium">字体大小</Label>
+            <Label className="text-sm font-medium">{t("appearancePanel.fontSize")}</Label>
             <Select
               value={appearanceSettings.fontSize}
               onValueChange={(value) => setAppearanceSettings({ ...appearanceSettings, fontSize: value as 'small' | 'medium' | 'large' })}
@@ -124,17 +126,17 @@ export default function AppearanceSettingsPanel({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="small">小</SelectItem>
-                <SelectItem value="medium">中</SelectItem>
-                <SelectItem value="large">大</SelectItem>
+                <SelectItem value="small">{t("appearancePanel.fontSizeSmall")}</SelectItem>
+                <SelectItem value="medium">{t("appearancePanel.fontSizeMedium")}</SelectItem>
+                <SelectItem value="large">{t("appearancePanel.fontSizeLarge")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">紧凑模式</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">减少间距，显示更多内容</p>
+              <Label className="text-sm font-medium">{t("appearancePanel.compactMode")}</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("appearancePanel.compactModeDesc")}</p>
             </div>
             <Switch
               checked={appearanceSettings.compactMode}
@@ -144,8 +146,8 @@ export default function AppearanceSettingsPanel({
 
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">显示动画</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">启用界面过渡动画</p>
+              <Label className="text-sm font-medium">{t("appearancePanel.showAnimations")}</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("appearancePanel.showAnimationsDesc")}</p>
             </div>
             <Switch
               checked={appearanceSettings.showAnimations}
@@ -155,8 +157,8 @@ export default function AppearanceSettingsPanel({
 
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">显示提示</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">显示工具提示和帮助信息</p>
+              <Label className="text-sm font-medium">{t("appearancePanel.showTooltips")}</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("appearancePanel.showTooltipsDesc")}</p>
             </div>
             <Switch
               checked={appearanceSettings.showTooltips}
@@ -168,13 +170,13 @@ export default function AppearanceSettingsPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">词条详情背景</CardTitle>
+          <CardTitle className="text-base">{t("appearancePanel.detailBackdrop")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">启用毛玻璃效果</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">在词条详情页面使用毛玻璃背景</p>
+              <Label className="text-sm font-medium">{t("appearancePanel.enableBlur")}</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("appearancePanel.enableBlurDesc")}</p>
             </div>
             <Switch
               checked={appearanceSettings.detailBackdropBlurEnabled}
@@ -184,7 +186,7 @@ export default function AppearanceSettingsPanel({
 
           {appearanceSettings.detailBackdropBlurEnabled && (
             <div>
-              <Label className="text-sm font-medium">模糊强度</Label>
+              <Label className="text-sm font-medium">{t("appearancePanel.blurIntensity")}</Label>
               <Select
                 value={appearanceSettings.detailBackdropBlurIntensity}
                 onValueChange={(value) => setAppearanceSettings({ ...appearanceSettings, detailBackdropBlurIntensity: value as 'light' | 'medium' | 'heavy' })}
@@ -193,9 +195,9 @@ export default function AppearanceSettingsPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="light">轻微</SelectItem>
-                  <SelectItem value="medium">中等</SelectItem>
-                  <SelectItem value="heavy">强烈</SelectItem>
+                  <SelectItem value="light">{t("appearancePanel.blurLight")}</SelectItem>
+                  <SelectItem value="medium">{t("appearancePanel.blurMedium")}</SelectItem>
+                  <SelectItem value="heavy">{t("appearancePanel.blurHeavy")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -206,7 +208,7 @@ export default function AppearanceSettingsPanel({
       <div className="flex justify-end">
         <Button onClick={saveAppearanceSettings}>
           <Palette className="h-4 w-4 mr-2" />
-          保存外观设置
+          {t("appearancePanel.saveAppearance")}
         </Button>
       </div>
     </div>

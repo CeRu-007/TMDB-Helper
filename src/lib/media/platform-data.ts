@@ -1086,12 +1086,12 @@ function sortCategories(a: string, b: string): number {
 const uniqueRegions = [...new Set(platforms.map((p) => p.region))];
 
 // 分类选项（按地区）
-export const categories = ['全部', ...uniqueRegions.sort(sortCategories)] as const;
+export const categories = ['all', ...uniqueRegions.sort(sortCategories)] as const;
 export type CategoryType = (typeof categories)[number];
 
 // 获取筛选后的平台数据
 export function getFilteredPlatforms(category: CategoryType): Platform[] {
-  if (category === '全部') {
+  if (category === 'all') {
     return platforms;
   }
   return platforms.filter((platform) => platform.region === category);

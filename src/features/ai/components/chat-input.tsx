@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SUPPORTED_SUBTITLE_FORMATS } from "@/lib/utils/ai-chat-constants"
+import { useTranslation } from "react-i18next"
 
 // Scenario models type
 interface ScenarioModelsConfig {
@@ -81,11 +82,13 @@ export function ChatInput({
   fileInputRef,
   textareaRef
 }: ChatInputProps) {
+  const { t } = useTranslation('ai-chat')
+
   return (
     <div className="bg-white dark:bg-gray-950 p-6 overflow-hidden">
       <div className="max-w-4xl mx-auto">
         <div className="relative">
-          <div 
+          <div
             className={`bg-white dark:bg-gray-900 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm min-h-[120px] transition-all duration-200 ${
               isDragOver ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[1.02]' : ''
             }`}
@@ -102,7 +105,7 @@ export function ChatInput({
                       {isUploading ? (
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            正在上传: {uploadedFileName}
+                            {t('uploading')}: {uploadedFileName}
                           </span>
                           <div className="w-24 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div 
@@ -138,9 +141,9 @@ export function ChatInput({
                           }
                         }}
                       >
-                        生成分集简介 <ChevronRight className="w-4 h-4 inline ml-1" />
+                        {t('generateSynopsis')} <ChevronRight className="w-4 h-4 inline ml-1" />
                       </button>
-                      
+
                       <button
                         className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium"
                         onClick={() => {
@@ -149,7 +152,7 @@ export function ChatInput({
                           }
                         }}
                       >
-                        分析剧情 <ChevronRight className="w-4 h-4 inline ml-1" />
+                        {t('analyzePlot')} <ChevronRight className="w-4 h-4 inline ml-1" />
                       </button>
                     </div>
                   )}
@@ -160,7 +163,7 @@ export function ChatInput({
                 ref={textareaRef}
                 value={inputValue}
                 onChange={(e) => onInputChange(e.target.value)}
-                placeholder={isDragOver ? "松开以上传字幕文件..." : "输入消息或上传字幕文件..."}
+                placeholder={isDragOver ? t('dragSubtitleFile') : t('uploadPrompt')}
                 className="w-full border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-400 text-base py-2"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -170,16 +173,16 @@ export function ChatInput({
                 }}
                 disabled={isLoading}
               />
-              
+
               {isDragOver && (
                 <div className="absolute inset-0 flex items-center justify-center bg-blue-500/10 dark:bg-blue-500/20 rounded-2xl pointer-events-none">
                   <div className="text-center">
                     <Upload className="w-12 h-12 text-blue-500 mx-auto mb-2" />
                     <p className="text-blue-600 dark:text-blue-400 font-medium">
-                      拖放字幕文件到此处
+                      {t('dragSubtitleFile')}
                     </p>
                     <p className="text-blue-500 dark:text-blue-400 text-sm mt-1">
-                      支持 {SUPPORTED_SUBTITLE_FORMATS.join(', ')} 格式
+                      {t('supportedFormats', { formats: SUPPORTED_SUBTITLE_FORMATS.join(', ') })}
                     </p>
                   </div>
                 </div>
@@ -233,7 +236,7 @@ export function ChatInput({
                                 <div className="text-xs text-gray-500 mt-0.5">{model.description || model.modelId}</div>
                               </div>
                               {model.id === scenarioModels.primaryModelId && (
-                                <Badge variant="secondary" className="text-xs">主模型</Badge>
+                                <Badge variant="secondary" className="text-xs">{t("mainModel")}</Badge>
                               )}
                             </div>
                           </SelectItem>

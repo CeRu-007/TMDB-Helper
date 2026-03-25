@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { useTranslation } from "react-i18next"
 
 interface SettingsMenuProps {
   activeSection: string
@@ -21,57 +22,59 @@ interface SettingsMenuProps {
 
 interface MenuItem {
   id: string
-  label: string
+  labelKey: string
+  descKey: string
   icon: React.ComponentType<{ className?: string }>
-  description: string
 }
 
 const menuItems: MenuItem[] = [
   {
     id: "model-service",
-    label: "模型服务",
+    labelKey: "menu.modelService",
+    descKey: "menu.modelServiceDesc",
     icon: Database,
-    description: "模型提供商和配置管理"
   },
   {
     id: "tools",
-    label: "工具配置",
+    labelKey: "menu.tools",
+    descKey: "menu.toolsDesc",
     icon: Terminal,
-    description: "TMDB-Import工具设置"
   },
   {
     id: "video-thumbnail",
-    label: "缩略图设置",
+    labelKey: "menu.videoThumbnail",
+    descKey: "menu.videoThumbnailDesc",
     icon: Film,
-    description: "视频缩略图提取设置"
   },
   {
     id: "general",
-    label: "通用设置",
+    labelKey: "menu.general",
+    descKey: "menu.generalDesc",
     icon: Settings,
-    description: "应用程序通用配置"
   },
   {
     id: "appearance",
-    label: "外观设置",
+    labelKey: "menu.appearance",
+    descKey: "menu.appearanceDesc",
     icon: Palette,
-    description: "主题和界面设置"
   },
   {
     id: "security",
-    label: "账户安全",
+    labelKey: "menu.security",
+    descKey: "menu.securityDesc",
     icon: Shield,
-    description: "密码修改和安全设置"
   },
   {
     id: "help",
-    label: "帮助与支持",
+    labelKey: "menu.help",
+    descKey: "menu.helpDesc",
     icon: HelpCircle,
-    description: "帮助文档和应用信息"
   }
 ]
 
 export function SettingsMenu({ activeSection, onSectionChange }: SettingsMenuProps) {
+  const { t } = useTranslation('settings')
+
   return (
     <div className="w-64 border-r bg-gray-50/50 dark:bg-gray-900/50">
       <ScrollArea className="h-full">
@@ -94,9 +97,9 @@ export function SettingsMenu({ activeSection, onSectionChange }: SettingsMenuPro
               >
                 <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{item.label}</div>
+                  <div className="text-sm font-medium">{t(item.labelKey)}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {item.description}
+                    {t(item.descKey)}
                   </div>
                 </div>
               </button>

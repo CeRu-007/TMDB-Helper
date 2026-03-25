@@ -11,6 +11,7 @@ import { ModelServiceProvider } from "@/lib/contexts/ModelServiceContext"
 import { useAppInitialization } from "@/shared/hooks/use-app-initialization"
 import { ClientConfigManager } from "@/lib/utils/client-config-manager"
 import { loadRemember } from "@/lib/auth/secure-remember"
+import "@/lib/i18n"
 
 const AppWithToaster = ({ children }: { children: ReactNode }) => (
   <>

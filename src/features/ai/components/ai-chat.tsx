@@ -8,6 +8,7 @@ import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
 import { useModelService } from "@/lib/contexts/ModelServiceContext"
 import { Message } from "@/types/ai-chat"
 import { logger } from "@/lib/utils/logger"
+import { useTranslation } from "react-i18next"
 
 import { useAiChatHistory } from "@/features/ai/lib/hooks/use-ai-chat-history"
 import { useAiStreamResponse } from "@/features/ai/lib/hooks/use-ai-stream-response"
@@ -23,6 +24,7 @@ import { ChatEmptyState } from "./chat-empty-state"
 import { ChatInput } from "./chat-input"
 
 export function AiChat() {
+  const { t } = useTranslation('ai-chat')
   const { userInfo } = useUser()
   const scenarioModels = useScenarioModels('ai_chat')
   const { getScenarioModels } = useModelService()
@@ -108,7 +110,11 @@ export function AiChat() {
   }, [scenarioModels, getScenarioModels])
 
   const fetchSuggestions = useCallback(async (lastMessage: string) => {
-    const defaultSuggestions = ['深入探讨剧情细节', '了解世界观设定', '探索相关作品']
+    const defaultSuggestions = [
+      t('suggestions.explorePlotDetails'),
+      t('suggestions.understandWorldSetting'),
+      t('suggestions.exploreRelatedWorks')
+    ]
 
     try {
       logger.info('开始获取建议 (ai-chat)', { lastMessageLength: lastMessage?.length, messagesCount: messages.length })
@@ -232,7 +238,7 @@ export function AiChat() {
     if ((!inputValue.trim() && !uploadedFileContent) || isLoading) return
     
     const content = uploadedFileContent && uploadedFileName
-      ? (inputValue.trim() || `已上传字幕文件：${uploadedFileName}`)
+      ? (inputValue.trim() || `${t('subtitleUploaded')}: ${uploadedFileName}`)
       : inputValue.trim()
     
     await sendAIRequest(content, uploadedFileContent, uploadedFileName)

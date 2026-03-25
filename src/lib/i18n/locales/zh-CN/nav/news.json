@@ -1,0 +1,46 @@
+{
+  "title": "影视资讯",
+  "upcoming": "即将上线",
+  "recent": "近期开播",
+  "regionLabel": "区域",
+  "unknownRegion": "未知区域",
+  "regionGroup": {
+    "asia": "亚洲",
+    "western": "欧美"
+  },
+  "streamingNav": "平台导航",
+  "schedule": "时间表",
+  "mediaNewsSection": {
+    "loading": "加载中...",
+    "refresh": "刷新",
+    "configureApi": "配置API",
+    "noContentUpcoming": "暂无即将上线的内容",
+    "noContentRecent": "暂无近期开播的内容",
+    "loadMore": "查看更多 ({{count}} 个)",
+    "lastUpdated": "更新时间",
+    "movie": "电影",
+    "tv": "电视剧",
+    "releaseDate": "上映日期",
+    "configureApiKey": "配置API密钥",
+    "error": "错误",
+    "noResults": "未找到匹配结果",
+    "tryDifferentImage": "尝试使用不同的图片或调整搜索设置",
+    "addToMaintenanceList": "添加到维护列表",
+    "viewOnTmdb": "在TMDB查看详情",
+    "todayUpoming": "今天上线",
+    "tomorrowUpoming": "明天上线",
+    "daysLaterUpoming": "天后上线",
+    "todayAired": "今天开播",
+    "yesterdayAired": "昨天开播",
+    "daysAgoAired": "天前开播"
+  },
+  "regions": {
+    "CN": "中国大陆",
+    "HK": "香港",
+    "TW": "台湾",
+    "JP": "日本",
+    "KR": "韩国",
+    "US": "美国",
+    "GB": "英国"
+  }
+}

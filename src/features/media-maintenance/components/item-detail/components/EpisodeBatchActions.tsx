@@ -13,6 +13,7 @@ import {
   Plus
 } from "lucide-react"
 import type { Season } from "@/lib/data/storage"
+import { useTranslation } from "react-i18next"
 
 interface EpisodeBatchActionsProps {
   currentSeason: Season | undefined
@@ -35,9 +36,9 @@ export function EpisodeBatchActions({
   onAddSeason,
   onCustomSeasonNumberChange
 }: EpisodeBatchActionsProps) {
+  const { t } = useTranslation('media')
   const episodeInputRef = useRef<HTMLInputElement>(null)
 
-  // 只在编辑模式且有选中季时显示
   if (!editing || selectedSeason === undefined) {
     return null
   }
@@ -47,10 +48,10 @@ export function EpisodeBatchActions({
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center">
           <Settings className="h-4 w-4 mr-2" />
-          季操作
+          {t('episodeBatchActions.seasonOperations')}
           {currentSeason && (
             <Badge variant="outline" className="ml-2">
-              进度: {currentSeason.currentEpisode || 0}/{currentSeason.totalEpisodes}
+              {t('episodeBatchActions.progress')}: {currentSeason.currentEpisode || 0}/{currentSeason.totalEpisodes}
             </Badge>
           )}
         </CardTitle>
@@ -61,32 +62,31 @@ export function EpisodeBatchActions({
             variant="outline"
             size="sm"
             onClick={onResetSeason}
-            title="重置当前季的所有剧集进度"
+            title={t('episodeBatchActions.reset')}
           >
             <RotateCcw className="h-4 w-4 mr-2" />
-            重置
+            {t('episodeBatchActions.reset')}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => onDeleteSeason()}
-            title="删除当前季"
+            title={t('episodeBatchActions.deleteSeason')}
             className="text-destructive hover:text-destructive"
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            删除季
+            {t('episodeBatchActions.deleteSeason')}
           </Button>
         </div>
 
-        {/* 添加新季区域 */}
         <div className="w-full mt-3 border-t pt-3 border-border/30">
           <div className="text-sm mb-2 flex items-center">
             <PlusCircle className="h-4 w-4 mr-1.5" />
-            添加新季
+            {t('episodeBatchActions.addNewSeason')}
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center space-x-2">
-              <div className="text-xs text-muted-foreground">季数:</div>
+              <div className="text-xs text-muted-foreground">{t('episodeBatchActions.seasonNumber')}:</div>
               <Input
                 type="number"
                 min="1"
@@ -96,7 +96,7 @@ export function EpisodeBatchActions({
               />
             </div>
             <div className="flex items-center space-x-2">
-              <div className="text-xs text-muted-foreground">集数:</div>
+              <div className="text-xs text-muted-foreground">{t('episodeBatchActions.episodeCount')}:</div>
               <Input
                 type="number"
                 min="1"
@@ -115,7 +115,7 @@ export function EpisodeBatchActions({
               className="h-7"
             >
               <Plus className="h-4 w-4 mr-1" />
-              添加
+              {t('episodeBatchActions.add')}
             </Button>
           </div>
         </div>

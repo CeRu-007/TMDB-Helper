@@ -1,5 +1,5 @@
 /**
- * 账户安全设置面板
+ * Security Settings Panel
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
@@ -8,6 +8,7 @@ import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Shield, Eye, EyeOff } from "lucide-react"
 import type { PasswordForm } from "./types"
+import { useTranslation } from "react-i18next"
 
 interface SecuritySettingsPanelProps {
   passwordForm: PasswordForm
@@ -34,12 +35,13 @@ export default function SecuritySettingsPanel({
   passwordChangeLoading,
   handlePasswordChange
 }: SecuritySettingsPanelProps) {
+  const { t } = useTranslation("settings")
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">账户安全</h3>
+        <h3 className="text-lg font-semibold mb-2">{t("menu.security")}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          修改管理员账户密码，确保账户安全
+          {t("securityPanel.securityDesc")}
         </p>
       </div>
 
@@ -47,20 +49,20 @@ export default function SecuritySettingsPanel({
         <CardHeader>
           <CardTitle className="flex items-center">
             <Shield className="h-5 w-5 mr-2" />
-            密码修改
+            {t("securityPanel.passwordChange")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 当前密码 */}
           <div>
-            <Label htmlFor="currentPassword">当前密码</Label>
+            <Label htmlFor="currentPassword">{t("securityPanel.currentPassword")}</Label>
             <div className="relative mt-1">
               <Input
                 id="currentPassword"
                 type={showCurrentPassword ? "text" : "password"}
                 value={passwordForm.currentPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                placeholder="请输入当前密码"
+                placeholder={t("securityPanel.enterCurrentPassword")}
                 className="pr-10"
                 disabled={passwordChangeLoading}
               />
@@ -83,14 +85,14 @@ export default function SecuritySettingsPanel({
 
           {/* 新密码 */}
           <div>
-            <Label htmlFor="newPassword">新密码</Label>
+            <Label htmlFor="newPassword">{t("securityPanel.newPassword")}</Label>
             <div className="relative mt-1">
               <Input
                 id="newPassword"
                 type={showNewPassword ? "text" : "password"}
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                placeholder="请输入新密码（至少6位）"
+                placeholder={t("securityPanel.enterNewPassword")}
                 className="pr-10"
                 disabled={passwordChangeLoading}
               />
@@ -113,14 +115,14 @@ export default function SecuritySettingsPanel({
 
           {/* 确认新密码 */}
           <div>
-            <Label htmlFor="confirmPassword">确认新密码</Label>
+            <Label htmlFor="confirmPassword">{t("securityPanel.confirmNewPassword")}</Label>
             <div className="relative mt-1">
               <Input
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 value={passwordForm.confirmPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                placeholder="请再次输入新密码"
+                placeholder={t("securityPanel.enterConfirmPassword")}
                 className="pr-10"
                 disabled={passwordChangeLoading}
               />
@@ -143,11 +145,11 @@ export default function SecuritySettingsPanel({
 
           {/* 密码要求提示 */}
           <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-            <p>密码要求：</p>
+            <p>{t("securityPanel.passwordRequirements")}</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>至少6个字符</li>
-              <li>建议包含字母和数字</li>
-              <li>避免使用过于简单的密码</li>
+              <li>{t("securityPanel.passwordReq1")}</li>
+              <li>{t("securityPanel.passwordReq2")}</li>
+              <li>{t("securityPanel.passwordReq3")}</li>
             </ul>
           </div>
 
@@ -161,12 +163,12 @@ export default function SecuritySettingsPanel({
               {passwordChangeLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  修改中...
+                  {t("securityPanel.changing")}
                 </>
               ) : (
                 <>
                   <Shield className="h-4 w-4 mr-2" />
-                  修改密码
+                  {t("securityPanel.changePassword")}
                 </>
               )}
             </Button>

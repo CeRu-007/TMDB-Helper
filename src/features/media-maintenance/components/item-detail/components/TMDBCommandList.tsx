@@ -5,6 +5,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { Terminal, Link, Copy } from "lucide-react"
 import { toast } from "@/shared/components/ui/use-toast"
+import { useTranslation } from "react-i18next"
 
 interface TMDBCommand {
   type: "platform" | "tmdb"
@@ -21,11 +22,13 @@ interface TMDBCommandListProps {
 export function TMDBCommandList({
   commands
 }: TMDBCommandListProps) {
+  const { t } = useTranslation('media')
+
   const handleCopyCommand = (command: string, title: string) => {
     navigator.clipboard.writeText(command)
     toast({
-      title: "命令已复制",
-      description: `${title} 命令已复制到剪贴板`,
+      title: t('tmdbPanel.commandCopied'),
+      description: t('tmdbPanel.commandCopiedDesc', { title }),
     })
   }
 
@@ -38,7 +41,7 @@ export function TMDBCommandList({
       <CardHeader>
         <CardTitle className="text-base flex items-center">
           <Terminal className="h-4 w-4 mr-2" />
-          TMDB命令
+          {t('tmdbPanel.commands')}
         </CardTitle>
       </CardHeader>
       <CardContent>

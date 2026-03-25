@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/shared/components/ui/button"
 import { RefreshCw, ChevronDown, Check } from "lucide-react"
 import { TMDBItem } from "@/types/tmdb-item"
@@ -15,27 +16,6 @@ interface SidebarRegionNavigationProps {
   refreshText?: string
 }
 
-const REGIONS = [
-  { id: "CN", name: "中国大陆", icon: "🇨🇳" },
-  { id: "HK", name: "香港", icon: "🇭🇰" },
-  { id: "TW", name: "台湾", icon: "🇹🇼" },
-  { id: "JP", name: "日本", icon: "🇯🇵" },
-  { id: "KR", name: "韩国", icon: "🇰🇷" },
-  { id: "US", name: "美国", icon: "🇺🇸" },
-  { id: "GB", name: "英国", icon: "🇬🇧" },
-]
-
-const REGION_GROUPS = [
-  {
-    name: "亚洲",
-    regions: ["CN", "HK", "TW", "JP", "KR"]
-  },
-  {
-    name: "欧美",
-    regions: ["US", "GB"]
-  }
-]
-
 export function SidebarRegionNavigation({
   selectedRegion,
   mediaNewsType,
@@ -45,10 +25,30 @@ export function SidebarRegionNavigation({
   onRefresh,
   onRegionSelect,
   isLoading,
-  refreshText = "刷新"
+  refreshText
 }: SidebarRegionNavigationProps) {
+  const { t } = useTranslation("nav.news")
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const REGION_GROUPS = [
+    {
+      nameKey: "regionGroup.asia",
+      regions: ["CN", "HK", "TW", "JP", "KR"]
+    },
+    {
+      nameKey: "regionGroup.western",
+      regions: ["US", "GB"]
+    }
+  ]
+
+  const getDefaultRefreshText = () => t("refresh", { ns: "common" })
+
+  // Get regions from constant
+  const getRegions = () => {
+    const { REGIONS } = require("@/lib/constants/regions")
+    return REGIONS
+  }
 
   // 点击外部关闭下拉菜单
   useEffect(() => {
@@ -97,7 +97,7 @@ export function SidebarRegionNavigation({
     setIsOpen(prev => !prev)
   }, [])
 
-  const selectedRegionData = REGIONS.find(r => r.id === selectedRegion)
+  const selectedRegionData = getRegions().find((r: { id: string }) => r.id === selectedRegion)
 
   return (
     <div className="mb-4 border-b border-blue-100/70 dark:border-blue-900/30 pb-3">
@@ -105,7 +105,7 @@ export function SidebarRegionNavigation({
         <div className="flex items-center justify-between">
           {/* Current region selector */}
           <div className="flex items-center">
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mr-2">区域:</span>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mr-2">{t("regionLabel")}:</span>
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={toggleDropdown}
@@ -127,7 +127,7 @@ export function SidebarRegionNavigation({
                   </span>
                 </div>
                 <span className="font-medium text-gray-700 dark:text-gray-300">
-                  {selectedRegionData?.name || '未知区域'}
+                  {selectedRegionData ? t(`regions.${selectedRegion}`) : t("unknownRegion")}
                 </span>
                 <ChevronDown className={`ml-2 h-3 w-3 text-gray-400 transition-transform duration-200 ${
                   isOpen ? 'rotate-180 text-blue-500' : ''
@@ -142,17 +142,18 @@ export function SidebarRegionNavigation({
               }`}>
                 <div className="p-2 max-h-[320px] overflow-y-auto scrollbar-thin">
                   {REGION_GROUPS.map(group => (
-                    <div key={group.name} className="mb-2 last:mb-0">
+                    <div key={group.nameKey} className="mb-2 last:mb-0">
                       <div className="flex items-center px-2 py-1">
                         <div className="h-px w-2 bg-blue-200 dark:bg-blue-800/70 mr-1.5"></div>
                         <span className="text-[10px] font-medium text-blue-600/80 dark:text-blue-400/80 uppercase tracking-wider">
-                          {group.name}
+                          {t(group.nameKey)}
                         </span>
                         <div className="h-px flex-grow bg-blue-200 dark:bg-blue-800/70 ml-1.5"></div>
                       </div>
                       <div className="mt-1 space-y-0.5">
                         {group.regions.map(regionId => {
-                          const region = REGIONS.find(r => r.id === regionId)
+                          const regions = getRegions()
+                          const region = regions.find((r: { id: string }) => r.id === regionId)
                           if (!region) return null
 
                           const isActive = selectedRegion === regionId
@@ -186,7 +187,7 @@ export function SidebarRegionNavigation({
                                 }`}>
                                   <span className="text-sm">{region.icon}</span>
                                 </div>
-                                <span className="ml-2 text-xs font-medium">{region.name}</span>
+                                <span className="ml-2 text-xs font-medium">{t(`regions.${regionId}`)}</span>
                                 {isActive && (
                                   <Check className="ml-2 h-3 w-3 text-blue-500" />
                                 )}
@@ -219,7 +220,7 @@ export function SidebarRegionNavigation({
             className="h-8 px-3 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950 text-sm"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
-            {refreshText}
+            {refreshText || getDefaultRefreshText()}
           </Button>
         </div>
       </div>

@@ -28,6 +28,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Progress } from "@/shared/components/ui/progress"
 import { Badge } from "@/shared/components/ui/badge"
 import { useToast } from "@/shared/components/ui/use-toast"
+import { useTranslation } from "react-i18next"
 import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"
 import { DELAY_500MS, DELAY_2000MS } from '@/lib/constants/constants'
@@ -107,6 +108,7 @@ interface VideoScreenshotProps {
 }
 
 export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreenshotProps = {}) {
+  const { t } = useTranslation('image-processing')
   const thumbnailModels = useScenarioModels('thumbnail_filter')
   const { toast } = useToast()
 
@@ -161,10 +163,10 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
         }
       } catch (error) {
         setModelStatus({ subtitle: "error", person: "error" })
-        setProcessorError("初始化图像处理器失败，请刷新页面重试")
+        setProcessorError(t("videoScreenshot.processorError") + ", " + t("videoScreenshot.refreshPage"))
         toast({
-          title: "模型加载失败",
-          description: "无法初始化图像处理器，请刷新页面重试",
+          title: t('videoScreenshot.modelLoadFailed'),
+          description: t('videoScreenshot.refreshPage'),
           variant: "destructive",
         })
       }
@@ -199,12 +201,12 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
   useEffect(() => {
     if (processorError) {
       toast({
-        title: "处理器错误",
+        title: t("videoScreenshot.processorError"),
         description: processorError,
         variant: "destructive",
       })
     }
-  }, [processorError, toast])
+  }, [processorError, toast, t])
 
   // 当模型状态变化时显示提示
   useEffect(() => {
@@ -213,14 +215,14 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
     if (isReady) {
       toast({
-        title: "模型加载完成",
-        description: "可以开始处理视频",
+        title: t('videoScreenshot.modelLoadSuccess'),
+        description: t('videoScreenshot.modelLoadSuccessDesc'),
         variant: "default",
       })
     } else if (isError) {
       toast({
-        title: "模型加载失败",
-        description: "请刷新页面重试",
+        title: t('videoScreenshot.modelLoadFailed'),
+        description: t('videoScreenshot.refreshPage'),
         variant: "destructive",
       })
     }
@@ -276,8 +278,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
     if (videoFiles.length === 0) {
       toast({
-        title: "没有视频文件",
-        description: "请上传视频文件 (MP4, WebM, AVI 等)",
+        title: t('videoScreenshot.noVideoFile'),
+        description: t('videoScreenshot.uploadVideoFile'),
         variant: "destructive",
       })
       return
@@ -315,7 +317,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
   // 格式化时长
   const formatDuration = (seconds: number): string => {
-    if (!isFinite(seconds) || seconds <= 0) return "未知"
+    if (!isFinite(seconds) || seconds <= 0) return t("videoScreenshot.unknown")
 
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
@@ -333,8 +335,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
     if (!processorInitialized) {
       toast({
-        title: "模型尚未准备好",
-        description: "请等待模型加载完成后再试",
+        title: t('videoScreenshot.waitForModelLoad'),
         variant: "destructive",
       })
       return
@@ -346,11 +347,11 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       const pendingVideos = videos.filter(v => v.status === "pending")
 
       if (pendingVideos.length === 0) {
-        toast({
-          title: "没有待处理的视频",
-          description: "请上传视频后再试",
-          variant: "default",
-        })
+          toast({
+            title: t("videoScreenshot.noVideoToProcess"),
+            description: t("videoScreenshot.uploadVideoFirst"),
+            variant: "default",
+          })
         setIsProcessing(false)
         return
       }
@@ -360,8 +361,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       setIsProcessing(false)
       setProcessingQueue([])
       toast({
-        title: "处理失败",
-        description: "批量处理视频时出错",
+        title: t("videoScreenshot.processingFailed"),
+        description: t("videoScreenshot.batchProcessError"),
         variant: "destructive",
       })
     }
@@ -529,8 +530,9 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       await loadVideoMetadata(video)
 
       const duration = video.duration || 0
-      const resolution = video.videoWidth && video.videoHeight ?
-        `${video.videoWidth}x${video.videoHeight}` : "未知"
+      const resolution = video.videoWidth && video.videoHeight
+          ? `${video.videoWidth}x${video.videoHeight}`
+          : t("videoScreenshot.unknown")
 
       setVideos(prev =>
         prev.map(v => v.id === videoData.id ?
@@ -539,7 +541,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       )
 
       if (!imageProcessorRef.current || !processorInitialized) {
-        throw new Error("图像处理器未初始化")
+        throw new Error(t("videoScreenshot.modelNotReady"))
       }
 
       const validStartTime = Math.min(
@@ -568,7 +570,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       )
 
       if (frames.length === 0) {
-        throw new Error("无法从视频中提取帧")
+        throw new Error(t("videoScreenshot.noFrames"))
       }
 
       const scenarioData = await validateAIConfig()
@@ -787,8 +789,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     link.click()
 
     toast({
-      title: "下载已开始",
-      description: `正在下载 ${link.download}`,
+      title: t("videoScreenshot.downloadStarted"),
+      description: `Downloading ${link.download}`,
       variant: "default",
     })
   }
@@ -816,8 +818,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     )
 
     toast({
-      title: "已设为主图",
-      description: "此截图将作为下载全部时的主要图片",
+      title: t("videoScreenshot.mainImage"),
+      description: t("videoScreenshot.clickToSetMain"),
       variant: "default",
     })
   }
@@ -828,8 +830,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
     if (completedVideos.length === 0) {
       toast({
-        title: "没有可下载的截图",
-        description: "请先处理视频",
+        title: t("videoScreenshot.noFrames"),
+        description: t("videoScreenshot.uploadVideoFirst"),
         variant: "destructive",
       })
       return
@@ -842,8 +844,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     }
 
     toast({
-      title: "正在准备下载",
-      description: "正在打包所有截图...",
+      title: t("videoScreenshot.preparingDownload"),
+      description: t("videoScreenshot.packagingScreenshots"),
       variant: "default",
     })
 
@@ -852,7 +854,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       const imgFolder = zip.folder("thumbnails")
 
       if (!imgFolder) {
-        throw new Error("创建ZIP文件夹失败")
+        throw new Error(t("videoScreenshot.createZipFolderFailed") || "Failed to create ZIP folder")
       }
 
       for (const video of completedVideos) {
@@ -891,7 +893,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
         const progress = Math.round(metadata.percent)
         if (progress % 10 === 0) {
           toast({
-            title: "打包进度",
+            title: t("videoScreenshot.packagingProgress"),
             description: `${progress}%`,
             variant: "default",
           })
@@ -901,14 +903,14 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       FileSaver.saveAs(content, `thumbnails_${new Date().toISOString().slice(0, 10)}.zip`)
 
       toast({
-        title: "下载完成",
-        description: "所有截图已打包下载",
+        title: t("videoScreenshot.downloadComplete"),
+        description: t("videoScreenshot.downloadCompleteDesc"),
         variant: "default",
       })
     } catch (error) {
       toast({
-        title: "下载失败",
-        description: "打包截图时出错",
+        title: t("videoScreenshot.downloadFailed"),
+        description: t("videoScreenshot.packagingError"),
         variant: "destructive",
       })
     }
@@ -925,8 +927,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     })
 
     toast({
-      title: "已移除视频",
-      description: "视频已从列表中移除",
+      title: t("videoScreenshot.videoRemoved"),
+      description: t("videoScreenshot.videoRemovedDesc"),
       variant: "default",
     })
   }
@@ -943,8 +945,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     setProcessingQueue([])
 
     toast({
-      title: "已清空列表",
-      description: "所有视频已从列表中移除",
+      title: t("videoScreenshot.listCleared"),
+      description: t("videoScreenshot.listClearedDesc"),
       variant: "default",
     })
   }
@@ -995,11 +997,11 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
   const copyThumbnailURL = (url: string) => {
     navigator.clipboard.writeText(url)
       .then(() => {
-        setCopyFeedback("已复制!")
+        setCopyFeedback(t("videoScreenshot.copied"))
         setTimeout(() => setCopyFeedback(null), DELAY_2000MS)
       })
       .catch(() => {
-        setCopyFeedback("复制失败")
+        setCopyFeedback(t("videoScreenshot.copyFailed"))
         setTimeout(() => setCopyFeedback(null), DELAY_2000MS)
       })
   }
@@ -1032,7 +1034,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>截图预览</DialogTitle>
+          <DialogTitle>{t("videoScreenshot.previewDialog.title")}</DialogTitle>
         </DialogHeader>
 
         {previewData && (
@@ -1040,14 +1042,14 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
             <div className="relative w-full aspect-video bg-neutral-950/50 rounded-lg overflow-hidden">
               <img
                 src={previewData.url}
-                alt="预览"
+                alt={t("videoScreenshot.previewDialog.title")}
                 className="w-full h-full object-contain"
               />
             </div>
 
             <div className="flex flex-wrap justify-between gap-4">
               <div className="text-sm text-muted-foreground">
-                <span className="font-medium">文件名: </span>
+                <span className="font-medium">{t("videoScreenshot.previewDialog.fileName")}: </span>
                 {previewData.filename}
               </div>
 
@@ -1056,7 +1058,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                   className="text-xs h-8"
                   onClick={() => copyThumbnailURL(previewData.url)}
                 >
-                  {copyFeedback ? copyFeedback : "复制链接"}
+                  {copyFeedback ? copyFeedback : t("videoScreenshot.previewDialog.copyLink")}
                 </Button>
 
                 <Button
@@ -1064,7 +1066,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                   onClick={() => downloadThumbnail(previewData.videoId, previewData.thumbnailId)}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  下载
+                  {t("videoScreenshot.previewDialog.download")}
                 </Button>
               </div>
             </div>
@@ -1079,35 +1081,35 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     <Dialog open={showHelpDialog} onOpenChange={setShowHelpDialog}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>使用帮助</DialogTitle>
+          <DialogTitle>{t("videoScreenshot.helpDialog.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <h3 className="text-base font-semibold mb-2">如何使用</h3>
+            <h3 className="text-base font-semibold mb-2">{t("videoScreenshot.helpDialog.howToUse")}</h3>
             <ol className="list-decimal list-inside space-y-1 text-sm">
-              <li>上传视频文件（支持 MP4、WebM、AVI 等格式）</li>
-              <li>设置提取参数（可选）</li>
-              <li>等待模型加载完成（指示灯变绿）</li>
-              <li>系统会自动开始处理视频</li>
-              <li>处理完成后可以查看、下载截图</li>
+              <li>{t("videoScreenshot.helpDialog.step1")}</li>
+              <li>{t("videoScreenshot.helpDialog.step2")}</li>
+              <li>{t("videoScreenshot.helpDialog.step3")}</li>
+              <li>{t("videoScreenshot.helpDialog.step4")}</li>
+              <li>{t("videoScreenshot.helpDialog.step5")}</li>
             </ol>
           </div>
 
           <div>
-            <h3 className="text-base font-semibold mb-2">高级功能</h3>
+            <h3 className="text-base font-semibold mb-2">{t("videoScreenshot.helpDialog.advancedFeatures")}</h3>
             <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>支持批量处理多个视频</li>
-              <li>可调整字幕检测和人物检测灵敏度</li>
-              <li>支持一键下载所有截图</li>
-              <li>可对截图按质量或时间排序</li>
+              <li>{t("videoScreenshot.helpDialog.feature1")}</li>
+              <li>{t("videoScreenshot.helpDialog.feature2")}</li>
+              <li>{t("videoScreenshot.helpDialog.feature3")}</li>
+              <li>{t("videoScreenshot.helpDialog.feature4")}</li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-base font-semibold mb-2">注意事项</h3>
+            <h3 className="text-base font-semibold mb-2">{t("videoScreenshot.helpDialog.注意事项")}</h3>
             <p className="text-sm">
-              本工具完全在浏览器中运行，不会上传您的视频文件到任何服务器。处理大型视频文件可能需要较长时间，请耐心等待。
+              {t("videoScreenshot.helpDialog.note")}
             </p>
           </div>
         </div>
@@ -1157,32 +1159,32 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
             <div className="flex items-center space-x-1">
               {video.status === "pending" && (
                 <Badge className="bg-yellow-50 text-yellow-600 hover:bg-yellow-50 border border-yellow-200">
-                  等待处理
+                  {t("videoScreenshot.videoCard.pending")}
                 </Badge>
               )}
               {video.status === "processing" && (
                 <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200">
-                  处理中
+                  {t("videoScreenshot.videoCard.processing")}
                 </Badge>
               )}
               {video.status === "completed" && (
                 <Badge className="bg-green-50 text-green-600 hover:bg-green-50 border border-green-200">
-                  已完成
+                  {t("videoScreenshot.videoCard.completed")}
                 </Badge>
               )}
               {video.status === "error" && (
                 <Badge className="bg-red-50 text-red-600 hover:bg-red-50 border border-red-200">
-                  处理失败
+                  {t("videoScreenshot.videoCard.error")}
                 </Badge>
               )}
               {video.status === "cancelled" && (
                 <Badge className="bg-gray-50 text-gray-600 hover:bg-gray-50 border border-gray-200">
-                  已取消
+                  {t("videoScreenshot.videoCard.cancelled")}
                 </Badge>
               )}
               {video.status === "no-frames" && (
                 <Badge className="bg-orange-50 text-orange-600 hover:bg-orange-50 border border-orange-200">
-                  未找到合适帧
+                  {t("videoScreenshot.videoCard.noFrames")}
                 </Badge>
               )}
 
@@ -1190,31 +1192,31 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 <DropdownMenuTrigger asChild>
                   <Button className="h-7 w-7 p-0">
                     <ArrowUpDown className="h-4 w-4" />
-                    <span className="sr-only">操作菜单</span>
+                    <span className="sr-only">{t("videoScreenshot.videoCard.operationMenu")}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {video.status === "pending" && (
                     <DropdownMenuItem onClick={() => cancelProcessVideo(video.id)}>
                       <X className="mr-2 h-4 w-4" />
-                      <span>取消</span>
+                      <span>{t("videoScreenshot.videoCard.cancel")}</span>
                     </DropdownMenuItem>
                   )}
                   {(video.status === "error" || video.status === "no-frames" || video.status === "cancelled") && (
                     <DropdownMenuItem onClick={() => retryProcessVideo(video.id)}>
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      <span>重试</span>
+                      <span>{t("videoScreenshot.videoCard.retry")}</span>
                     </DropdownMenuItem>
                   )}
                   {video.status === "completed" && video.thumbnails.length > 0 && (
                     <DropdownMenuItem onClick={() => downloadThumbnail(video.id, video.thumbnails[video.selectedThumbnail].id)}>
                       <Download className="mr-2 h-4 w-4" />
-                      <span>下载截图</span>
+                      <span>{t("videoScreenshot.videoCard.downloadScreenshot")}</span>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => removeVideo(video.id)}>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    <span>移除</span>
+                    <span>{t("videoScreenshot.videoCard.remove")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1227,7 +1229,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
           {video.status === "processing" && (
             <div className="mb-3 space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">处理进度</span>
+                <span className="text-muted-foreground">{t("videoScreenshot.videoCard.processingProgress")}</span>
                 <span className="text-muted-foreground font-medium">{video.extractionProgress}%</span>
               </div>
               <Progress value={video.extractionProgress} className="h-2" />
@@ -1243,10 +1245,10 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 <div className="flex justify-between items-center border-b pb-1 mb-1">
                   <h4 className="text-sm font-medium flex items-center">
                     <Star className="h-4 w-4 mr-1 text-yellow-500" />
-                    截图
+                    {t("videoScreenshot.videoCard.screenshots")}
                   </h4>
                   <span className="text-xs text-muted-foreground">
-                    点击候选帧可设为主图
+                    {t("videoScreenshot.videoCard.clickToSetMain")}
                   </span>
                 </div>
 
@@ -1257,12 +1259,12 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                     <div className="mb-2">
                       <div className="text-xs font-medium mb-1 text-muted-foreground flex items-center">
                         <Star className="h-3.5 w-3.5 mr-1 text-yellow-500" />
-                        主图（时间：{formatDuration(mainThumbnail!.timestamp)}）
+                        {t("videoScreenshot.videoCard.mainImage")}（{t("videoScreenshot.videoCard.time")}：{formatDuration(mainThumbnail!.timestamp)}）
                       </div>
                       <div className="relative aspect-video rounded-md overflow-hidden border-2 border-yellow-400 shadow-md hover:shadow-lg transition-shadow">
                         <img
                           src={mainThumbnail!.url}
-                          alt="主图"
+                          alt={t("videoScreenshot.videoCard.mainImage")}
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 flex justify-between items-center text-xs text-white">
@@ -1294,7 +1296,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                         </div>
                         <div className="absolute top-2 left-2">
                           <span className="bg-yellow-500 text-white text-[10px] px-2 py-0.5 rounded-sm font-medium">
-                            主图
+                            {t("videoScreenshot.videoCard.mainImage")}
                           </span>
                         </div>
                       </div>
@@ -1305,7 +1307,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                   {candidateThumbnails.length > 0 && (
                     <div className="text-xs font-medium mb-1 text-muted-foreground flex items-center">
                       <Layers className="h-3.5 w-3.5 mr-1 text-blue-500" />
-                      候选帧（点击设为主图）
+                      {t("videoScreenshot.videoCard.candidateFrames")}
                     </div>
                   )}
 
@@ -1319,7 +1321,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                       >
                         <img
                           src={thumbnail.url}
-                          alt={`截图 ${idx + 1}`}
+                          alt={`${t("videoScreenshot.videoCard.screenshots")} ${idx + 1}`}
                           className="w-full h-full object-cover"
                         />
 
@@ -1345,9 +1347,9 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-red-50/50 rounded-lg border border-red-100">
               <AlertTriangle className="h-7 w-7 text-red-500" />
               <div className="space-y-1">
-                <p className="text-sm font-medium">处理失败</p>
+                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.error")}</p>
                 <p className="text-xs text-muted-foreground">
-                  视频处理过程中发生错误，请重试
+                  {t("videoScreenshot.videoCard.videoProcessingError")}
                 </p>
               </div>
               <Button
@@ -1355,16 +1357,16 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 onClick={() => retryProcessVideo(video.id)}
               >
                 <RefreshCw className="mr-2 h-3 w-3" />
-                重试
+                {t("videoScreenshot.videoCard.retry")}
               </Button>
             </div>
           ) : video.status === "no-frames" ? (
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-orange-50/50 rounded-lg border border-orange-100">
               <AlertTriangle className="h-7 w-7 text-orange-500" />
               <div className="space-y-1">
-                <p className="text-sm font-medium">未找到合适帧</p>
+                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.noFrames")}</p>
                 <p className="text-xs text-muted-foreground">
-                  未能找到符合条件的视频帧，请调整设置后重试
+                  {t("videoScreenshot.videoCard.noSuitableFrames")}
                 </p>
               </div>
               <Button
@@ -1372,16 +1374,16 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 onClick={() => retryProcessVideo(video.id)}
               >
                 <RefreshCw className="mr-2 h-3 w-3" />
-                重试
+                {t("videoScreenshot.videoCard.retry")}
               </Button>
             </div>
           ) : video.status === "cancelled" ? (
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-gray-50/50 rounded-lg border border-gray-100">
               <X className="h-7 w-7 text-gray-500" />
               <div className="space-y-1">
-                <p className="text-sm font-medium">已取消</p>
+                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.cancelled")}</p>
                 <p className="text-xs text-muted-foreground">
-                  视频处理已取消
+                  {t("videoScreenshot.status.processing")}
                 </p>
               </div>
               <Button
@@ -1389,16 +1391,16 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 onClick={() => retryProcessVideo(video.id)}
               >
                 <RefreshCw className="mr-2 h-3 w-3" />
-                重试
+                {t("videoScreenshot.videoCard.retry")}
               </Button>
             </div>
           ) : (
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-blue-50/30 rounded-lg border border-blue-100/50">
               <Loader2 className="h-7 w-7 text-blue-500 animate-spin" />
               <div className="space-y-1">
-                <p className="text-sm font-medium">等待处理</p>
+                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.pending")}</p>
                 <p className="text-xs text-muted-foreground">
-                  视频已加入处理队列，请等待
+                  {t("videoScreenshot.processing")}
                 </p>
               </div>
             </div>
@@ -1414,9 +1416,9 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       <div className="rounded-full bg-primary/10 p-4 mb-4">
         <FileVideo className="h-8 w-8 text-primary" />
       </div>
-      <h3 className="text-lg font-medium mb-2">没有视频</h3>
+      <h3 className="text-lg font-medium mb-2">{t("videoScreenshot.noVideo")}</h3>
       <p className="text-sm text-muted-foreground mb-4 max-w-md">
-        上传视频文件以截取视频截图，支持 MP4、WebM、AVI、MOV 等常见视频格式
+        {t("videoScreenshot.uploadHint")}
       </p>
       <div className="flex flex-row gap-2">
         <Button
@@ -1424,21 +1426,21 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="mr-2 h-4 w-4" />
-          上传视频
+          {t("videoScreenshot.uploadVideo")}
         </Button>
         <Button
           className="flex items-center"
           onClick={() => setShowHelpDialog(true)}
         >
           <HelpCircle className="mr-2 h-4 w-4" />
-          使用帮助
+          {t("videoScreenshot.usageHelp")}
         </Button>
         <Button
           className="flex items-center"
           onClick={() => onOpenGlobalSettings?.('video-thumbnail')}
         >
           <Settings className="mr-2 h-4 w-4" />
-          截图设置
+          {t("videoScreenshot.screenshotSettings")}
         </Button>
       </div>
     </div>
@@ -1455,10 +1457,10 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
               <div>
                 <h1 className="text-2xl font-bold tracking-tight flex items-center">
                   <Film className="mr-2 h-6 w-6 text-primary" />
-                  视频截图
+                  {t("videoScreenshot.title")}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  从视频中截取高质量图片作为分集缩略图
+                  {t("videoScreenshot.subtitle")}
                 </p>
               </div>
             </div>
@@ -1478,16 +1480,16 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
               <div className="flex flex-row justify-between items-center bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium">
-                    {videos.length} 个视频
+                    {t("videoScreenshot.videosCount", { count: videos.length })}
                   </span>
                   {videos.filter(v => v.status === "completed").length > 0 && (
                     <Badge className="bg-green-50 text-green-600 hover:bg-green-50 border border-green-200">
-                      {videos.filter(v => v.status === "completed").length} 已完成
+                      {videos.filter(v => v.status === "completed").length} {t("videoScreenshot.completed")}
                     </Badge>
                   )}
                   {videos.filter(v => v.status === "pending" || v.status === "processing").length > 0 && (
                     <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200">
-                      {videos.filter(v => v.status === "pending" || v.status === "processing").length} 处理中
+                      {videos.filter(v => v.status === "pending" || v.status === "processing").length} {t("videoScreenshot.processing")}
                     </Badge>
                   )}
                 </div>
@@ -1499,7 +1501,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                     disabled={isProcessing || videos.filter(v => v.status === "pending").length === 0}
                   >
                     <Play className="mr-2 h-4 w-4" />
-                    批量处理
+                    {t("videoScreenshot.batchProcess")}
                   </Button>
 
                   <Button
@@ -1508,7 +1510,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                     disabled={videos.filter(v => v.status === "completed" && v.thumbnails.length > 0).length === 0}
                   >
                     <Download className="mr-2 h-4 w-4" />
-                    下载全部
+                    {t("videoScreenshot.downloadAll")}
                   </Button>
 
                   <Button
@@ -1516,7 +1518,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                     onClick={removeAllVideos}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    清空列表
+                    {t("videoScreenshot.clearList")}
                   </Button>
                 </div>
               </div>

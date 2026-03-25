@@ -1,0 +1,39 @@
+{
+  "ui": {
+    "table": {
+      "noData": "No data",
+      "sort": "Sort",
+      "ascending": "Ascending",
+      "descending": "Descending"
+    },
+    "terminal": {
+      "execute": "Execute",
+      "clear": "Clear",
+      "copy": "Copy"
+    },
+    "timePicker": {
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "selectTime": "Select Time"
+    },
+    "dialog": {
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "close": "Close"
+    },
+    "loading": {
+      "loading": "Loading..."
+    },
+    "error": {
+      "error": "Error",
+      "retry": "Retry",
+      "somethingWrong": "Something went wrong"
+    },
+    "language": {
+      "auto": "Auto",
+      "zh-CN": "Simplified Chinese",
+      "zh-TW": "Traditional Chinese (Taiwan)",
+      "zh-HK": "Traditional Chinese (Hong Kong)"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "required": "缺少必要參數",
+  "serverError": "伺服器內部錯誤",
+  "dataUpdateFailed": "資料更新儲存失敗"
+}

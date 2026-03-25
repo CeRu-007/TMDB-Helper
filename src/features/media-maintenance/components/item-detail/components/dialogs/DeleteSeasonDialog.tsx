@@ -11,6 +11,7 @@ import {
   AlertDialogNoOverlay,
   AlertDialogNoOverlayContent,
 } from "@/shared/components/ui/alert-dialog"
+import { useTranslation } from "react-i18next"
 
 interface DeleteSeasonDialogProps {
   open: boolean
@@ -27,6 +28,8 @@ export function DeleteSeasonDialog({
   onCancel,
   onConfirm
 }: DeleteSeasonDialogProps) {
+  const { t } = useTranslation('media')
+
   const handleCancel = () => {
     onCancel()
   }
@@ -39,14 +42,16 @@ export function DeleteSeasonDialog({
     <AlertDialogNoOverlay open={open} onOpenChange={onOpenChange}>
       <AlertDialogNoOverlayContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>确认删除季</AlertDialogTitle>
+          <AlertDialogTitle>{t('dialogs.confirmDelete')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {seasonToDelete !== null ? `确定要删除第 ${seasonToDelete} 季吗？此操作不可撤销。` : '确定要删除选中的季吗？此操作不可撤销。'}
+            {seasonToDelete !== null
+              ? t('dialogs.confirmDeleteSeason', { season: seasonToDelete })
+              : t('dialogs.confirmDeleteSeasonGeneric')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>取消</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>确认</AlertDialogAction>
+          <AlertDialogCancel onClick={onCancel}>{t('dialogs.cancel')}</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>{t('dialogs.confirm')}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogNoOverlayContent>
     </AlertDialogNoOverlay>

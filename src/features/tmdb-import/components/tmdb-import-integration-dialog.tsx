@@ -46,6 +46,7 @@ import {
 } from "lucide-react"
 import path from "path"
 import { logger } from '@/lib/utils/logger'
+import { useTranslation } from "react-i18next"
 
 // 导入新版表格组件
 import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
@@ -71,6 +72,7 @@ interface TMDBImportIntegrationDialogProps {
 
 
 export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, onItemUpdate, inTab = false }: TMDBImportIntegrationDialogProps) {
+  const { t } = useTranslation('media')
   const [selectedSeason, setSelectedSeason] = useState<number>(1)
   const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
   // 从服务端配置读取上次选择的季数
@@ -203,10 +205,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         appendTerminalOutput(`> ${terminalInput}`, "info")
         setTerminalInput("")
       } else {
-        appendTerminalOutput("发送输入失败", "error")
+        appendTerminalOutput(t('tmdbIntegration.sendInputFailed'), "error")
       }
     } catch (error) {
-      appendTerminalOutput("发送输入时出错", "error")
+      appendTerminalOutput(t('tmdbIntegration.sendInputError'), "error")
     }
   }
 
@@ -251,19 +253,19 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 发送快捷命令
   const sendQuickCommand = async (command: string) => {
     if (!currentProcessId) {
-      appendTerminalOutput("⚠️ 无法发送命令：进程ID未知", "warning");
+      appendTerminalOutput(`⚠️ ${t('tmdbIntegration.cannotSendNoProcess')}`, "warning");
       return false;
     }
 
     // 先验证进程是否存在
     const processExists = await checkProcessExists(currentProcessId);
     if (!processExists) {
-      appendTerminalOutput(`⚠️ 无法发送命令：进程 ${currentProcessId} 已不存在或已终止`, "warning");
+      appendTerminalOutput(`⚠️ ${t('tmdbIntegration.processNotExist', { processId: currentProcessId })}`, "warning");
       return false;
     }
 
     try {
-      appendTerminalOutput(`> 发送命令: ${command === "\n" ? "[回车]" : command}`, "info");
+      appendTerminalOutput(`> ${t('tmdbIntegration.sendingCommand')}: ${command === "\n" ? t('tmdbIntegration.enterKey') : command}`, "info");
 
       // 添加重试逻辑
       let retryCount = 0;
@@ -288,7 +290,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
           if (response.ok) {
             success = true;
-            appendTerminalOutput(`✓ 命令已发送`, "success");
+            appendTerminalOutput(`✓ ${t('tmdbIntegration.commandSent')}`, "success");
           } else {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || `HTTP错误: ${response.status}`);
@@ -296,7 +298,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         } catch (error) {
           retryCount++;
           if (retryCount < maxRetries) {
-            appendTerminalOutput(`⚠️ 发送失败，正在重试 (${retryCount}/${maxRetries})...`, "warning");
+            appendTerminalOutput(`⚠️ ${t('tmdbIntegration.sendingFailedRetry', { retryCount, maxRetries })}`, "warning");
             // 等待一段时间再重试
             await new Promise(resolve => setTimeout(resolve, 1000));
           } else {
@@ -306,10 +308,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       }
       return success;
     } catch (error) {
-      appendTerminalOutput(`❌ 发送命令失败: ${error instanceof Error ? error.message : "未知错误"}`, "error");
+      appendTerminalOutput(`❌ ${t('tmdbIntegration.commandSendFailed')}: ${error instanceof Error ? error.message : t('tmdbIntegration.unknownError')}`, "error");
 
       // 显示帮助信息
-      appendTerminalOutput("💡 提示: 如果命令无法发送，请尝试重启应用或检查终端进程状态", "info");
+      appendTerminalOutput(t('tmdbIntegration.tipRetry'), "info");
       return false;
     }
   };
@@ -342,7 +344,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       const decoder = new TextDecoder('utf-8')
 
       if (!reader) {
-        throw new Error("无法获取响应流")
+        throw new Error(t('tmdbIntegration.cannotGetResponseStream'))
       }
 
       let buffer = ""
@@ -368,7 +370,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               if (data.type === "start" && data.processId) {
                 setCurrentProcessId(data.processId)
                 processIdReceived = true
-                appendTerminalOutput(`✅ 进程已启动 (PID: ${data.processId})`, "success")
+                appendTerminalOutput(`${t('tmdbIntegration.processStarted', { processId: data.processId })}`, "success")
               }
 
               appendTerminalOutput(data.message, data.type)
@@ -385,7 +387,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               if (data.message && typeof data.message === 'string' &&
                   (data.message.includes("SessionNotCreatedException") ||
                    data.message.includes("user data directory is already in use"))) {
-                appendTerminalOutput(`检测到Edge浏览器会话创建失败，可能需要关闭现有Edge进程`, "warning")
+                appendTerminalOutput(t('tmdbIntegration.edgeBrowserSessionFailed'), "warning")
                 hasError = true
               }
 
@@ -408,7 +410,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       // 如果没有收到进程ID，显示警告
       if (!processIdReceived) {
-        appendTerminalOutput("⚠️ 警告: 未收到进程ID，交互功能可能不可用", "warning")
+        appendTerminalOutput(t('tmdbIntegration.noProcessIdReceived'), "warning")
       }
 
       // 记录收集到的输出信息
@@ -423,11 +425,11 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         // AbortError通常是由于用户主动终止进程，不显示为错误
-        appendTerminalOutput("命令执行已终止", "info")
-        return { success: false, error: "用户取消", errorText: "用户取消", stdoutText: "" }
+        appendTerminalOutput(t('tmdbIntegration.commandTerminated'), "info")
+        return { success: false, error: t('tmdbIntegration.userCancelled'), errorText: t('tmdbIntegration.userCancelled'), stdoutText: "" }
       }
-      const errorMessage = error instanceof Error ? error.message : "未知错误"
-      appendTerminalOutput(`执行错误: ${errorMessage}`, "error")
+      const errorMessage = error instanceof Error ? error.message : t('tmdbIntegration.unknownError')
+      appendTerminalOutput(`${t('tmdbIntegration.executeError')}: ${errorMessage}`, "error")
       return {
         success: false,
         error: errorMessage,
@@ -445,7 +447,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   // 终止正在运行的进程
   const terminateProcess = async () => {
     if (!currentProcessId) {
-      appendTerminalOutput("⚠️ 没有正在运行的进程", "warning");
+      appendTerminalOutput(`⚠️ ${t('tmdbIntegration.noRunningProcess')}`, "warning");
       return;
     }
 
@@ -459,14 +461,14 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       const data = await response.json();
 
       if (data.success) {
-        appendTerminalOutput(`✓ 进程 ${currentProcessId} 已终止`, "success");
+        appendTerminalOutput(t('tmdbIntegration.processTerminated', { processId: currentProcessId }), "success");
         setIsExecutingCommand(false);
         setCurrentProcessId(null);
       } else {
         appendTerminalOutput(`✗ ${data.error}`, "error");
       }
     } catch (error) {
-      appendTerminalOutput(`✗ 终止进程时出错: ${error instanceof Error ? error.message : "未知错误"}`, "error");
+      appendTerminalOutput(`✗ ${t('tmdbIntegration.terminateProcessError')}: ${error instanceof Error ? error.message : t('tmdbIntegration.unknownError')}`, "error");
     }
   }
 
@@ -500,16 +502,15 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       const content = serializeCsvData(csvData)
       setCsvContent(content)
 
-      appendTerminalOutput("CSV文件读取成功", "success")
+      appendTerminalOutput(t('tmdbIntegration.csvFileReadSuccess'), "success")
       return true
     } catch (axiosError: unknown) {
       if (axiosError && typeof axiosError === 'object' && 'response' in axiosError && axiosError.response && typeof axiosError.response === 'object' && 'status' in axiosError.response && axiosError.response.status === 404) {
-        const errorMessage = '未找到CSV文件。请先运行平台元数据抓取命令生成CSV文件。'
-        appendTerminalOutput(errorMessage, "error")
-        appendTerminalOutput("提示：切换到\"处理\"标签页，使用上方的TMDB导入命令抓取元数据。", "info")
-        appendTerminalOutput("1. 首先运行播出平台命令获取基本信息", "info")
-        appendTerminalOutput("2. 然后运行TMDB命令获取详细元数据", "info")
-        appendTerminalOutput("3. 命令执行成功后会自动生成import.csv文件", "info")
+        appendTerminalOutput(t('tmdbIntegration.csvFileNotFound'), "error")
+        appendTerminalOutput(t('tmdbIntegration.tipSwitchToProcess'), "info")
+        appendTerminalOutput(t('tmdbIntegration.step1RunPlatform'), "info")
+        appendTerminalOutput(t('tmdbIntegration.step2RunTmdb'), "info")
+        appendTerminalOutput(t('tmdbIntegration.step3Success'), "info")
       } else {
         const errorMessage = axiosError instanceof Error ? axiosError.message : '未知错误'
         appendTerminalOutput(`读取CSV文件失败: ${errorMessage}`, "error")
@@ -532,8 +533,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     if (operationLock) {
       
       toast({
-        title: "操作被阻止",
-        description: `当前已有操作 ${operationLock} 在进行中，请等待完成`,
+        title: t('tmdbIntegration.operationBlocked'),
+        description: t('tmdbIntegration.operationInProgress', { operation: operationLock }),
         variant: "destructive",
       });
       return;
@@ -571,35 +572,35 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       if (!result.success) {
         // 如果是用户主动终止，不显示为错误
-        if (result.error === "用户取消") {
-          appendTerminalOutput(`播出平台数据抓取已终止`, "info");
+        if (result.error === t('tmdbIntegration.userCancelled')) {
+          appendTerminalOutput(t('tmdbIntegration.platformCrawlTerminated'), "info");
           return
         }
-        appendTerminalOutput(`播出平台数据抓取失败，错误信息: ${result.errorText || "未知错误"}`, "error");
+        appendTerminalOutput(t('tmdbIntegration.platformCrawlFailed', { error: result.errorText || t('tmdbIntegration.unknownError') }), "error");
         return
       }
 
-      appendTerminalOutput("播出平台数据抓取完成", "success")
+      appendTerminalOutput(t('tmdbIntegration.platformCrawlSuccess'), "success")
 
       // Step 2: CSV file check
       const csvRead = await readCSVFile(savedTmdbImportPath)
       if (csvRead) {
         try {
-          appendTerminalOutput("CSV文件读取完成", "success")
+          appendTerminalOutput(t('tmdbIntegration.csvFileReadComplete'), "success")
         } catch (error) {
 
-          appendTerminalOutput("CSV文件读取完成", "success")
+          appendTerminalOutput(t('tmdbIntegration.csvFileReadComplete'), "success")
         }
 
          // 默认显示表格视图
         setEditorMode("table") // 默认使用表格编辑器
-        appendTerminalOutput("💡 现在可以在CSV文件管理中查看和编辑文件", "info")
+        appendTerminalOutput(t('tmdbIntegration.nowCanEdit'), "info")
       } else {
-        appendTerminalOutput("CSV文件读取失败", "error")
+        appendTerminalOutput(t('tmdbIntegration.csvFileReadFailed'), "error")
       }
     } catch (error) {
 
-      appendTerminalOutput(`处理出错: ${error instanceof Error ? error.message : "未知错误"}`, "error")
+      appendTerminalOutput(t('tmdbIntegration.processingError'), "error")
     } finally {
       // 释放操作锁
       setOperationLock(null);
@@ -786,7 +787,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const copyToClipboard = async (text: string, type: string) => {
     try {
       await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${type}已复制`)
+      setCopyFeedback(t('tmdbIntegration.copied'))
       setTimeout(() => setCopyFeedback(null), 2000)
     } catch (error) {
       
@@ -806,8 +807,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     if (operationLock) {
       
       toast({
-        title: "操作被阻止",
-        description: `当前已有操作 ${operationLock} 在进行中，请等待完成`,
+        title: t('tmdbIntegration.operationBlocked'),
+        description: t('tmdbIntegration.operationInProgress', { operation: operationLock }),
         variant: "destructive",
       });
       return;
@@ -818,15 +819,15 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     try {
       // 更新UI状态
-      appendTerminalOutput("准备执行TMDB导入命令...", "info");
+      appendTerminalOutput(t('tmdbIntegration.preparingTmdb'), "info");
 
       // 获取TMDB-Import工具路径（兼容服务端配置回填）
       const tmdbImportPath = await getTmdbImportPath();
       if (!tmdbImportPath) {
-        appendTerminalOutput("未找到TMDB-Import工具路径，请先配置", "error");
+        appendTerminalOutput(t('tmdbIntegration.tmdbImportToolNotFound'), "error");
         toast({
-          title: "配置缺失",
-          description: "未找到TMDB-Import工具路径，请在设置中配置",
+          title: t('tmdbIntegration.configMissing'),
+          description: t('tmdbIntegration.configureInSettings'),
           variant: "destructive",
         });
         return;
@@ -835,14 +836,14 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       // 生成TMDB导入命令
       const tmdbCommand = generateTMDBCommand(selectedSeason);
       if (!tmdbCommand) {
-        appendTerminalOutput("生成TMDB命令失败，请检查剧集ID和季数", "error");
+        appendTerminalOutput(t('tmdbIntegration.generateTmdbCommandFailed'), "error");
         return;
       }
 
       // 解析命令，提取TMDB URL参数
       const cmdParts = tmdbCommand.split(' ');
       if (cmdParts.length < 3) {
-        appendTerminalOutput("命令格式错误", "error");
+        appendTerminalOutput(t('tmdbIntegration.commandFormatError'), "error");
         return;
       }
 
@@ -854,42 +855,41 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       const fullCommand = `cd "${tmdbImportPath}" && python -m tmdb-import ${headlessFlag} ${tmdbUrl}`;
 
       // 在页面日志中显示将要执行的命令
-      appendTerminalOutput(`将在页面终端执行命令: ${fullCommand}`, "info");
+      appendTerminalOutput(t('tmdbIntegration.willExecuteCommand', { command: fullCommand }), "info");
 
       // 直接在页面内部执行命令，使用流式输出
       const result = await executeCommandWithStream(fullCommand, process.cwd());
 
       // 根据执行结果更新状态
       if (result.success) {
-        appendTerminalOutput("TMDB导入命令执行成功", "success");
+        appendTerminalOutput(t('tmdbIntegration.tmdbImportSuccess'), "success");
         toast({
-          title: "命令已执行",
-          description: "TMDB导入命令已成功执行",
+          title: t('tmdbIntegration.commandExecuted'),
+          description: t('tmdbIntegration.tmdbImportSuccessDesc'),
         });
       } else {
-        // 如果是用户主动终止，不显示为错误
-        if (result.error === "用户取消") {
-          appendTerminalOutput("TMDB导入命令已终止", "info");
+        if (result.error === t('tmdbIntegration.userCancelled')) {
+          appendTerminalOutput(t('tmdbIntegration.tmdbImportTerminated'), "info");
           toast({
-            title: "命令已终止",
-            description: "TMDB导入命令已被终止",
+            title: t('tmdbIntegration.commandTerminated'),
+            description: t('tmdbIntegration.commandTerminatedDesc'),
           });
         } else {
-          const errorMsg = result.errorText || "未知错误";
-          appendTerminalOutput(`TMDB导入命令执行失败: ${errorMsg}`, "error");
+          const errorMsg = result.errorText || t('tmdbIntegration.unknownError');
+          appendTerminalOutput(t('tmdbIntegration.tmdbImportFailed') + `: ${errorMsg}`, "error");
           toast({
-            title: "执行失败",
-            description: "TMDB导入命令执行失败，请查看终端输出了解详细信息",
+            title: t('tmdbIntegration.executeFailed'),
+            description: t('tmdbIntegration.tmdbImportFailedDesc'),
             variant: "destructive",
           });
         }
       }
     } catch (error: unknown) {
 
-      appendTerminalOutput(`执行出错: ${error.message || '未知错误'}`, "error");
+      appendTerminalOutput(`${t('tmdbIntegration.executeError')}: ${error instanceof Error ? error.message : t('tmdbIntegration.unknownError')}`, "error");
       toast({
-        title: "执行出错",
-        description: error.message || "未知错误",
+        title: t('tmdbIntegration.executeError'),
+        description: error instanceof Error ? error.message : t('tmdbIntegration.unknownError'),
         variant: "destructive",
       });
     } finally {
@@ -915,12 +915,12 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       // 如果检测到并修复了乱码，显示提示
       if (fixedCsvText !== rawCsvText) {
         toast({
-          title: "编码已修复",
-          description: "已自动修复CSV文本中的中文乱码",
+          title: t('tmdbIntegration.encodingFixed'),
+          description: t('tmdbIntegration.encodingAutoFixed'),
         })
       }
 
-      appendTerminalOutput("已切换到文本模式，使用Ctrl+S快速保存更改", "info");
+      appendTerminalOutput(t('tmdbIntegration.switchedToTextMode'), "info");
     }
     // 如果从文本模式切换到表格模式，需要尝试解析文本为csvData
     else if (mode !== "text" && editorMode === "text" && csvContent.trim()) {
@@ -928,20 +928,20 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         // 解析CSV文本为数据
         const newData = parseCsvContent(csvContent)
         setCsvData(newData)
-        appendTerminalOutput("已将文本内容解析为表格数据", "success");
+        appendTerminalOutput(t('tmdbIntegration.textParsedToTable'), "success");
       } catch (error) {
         // 如果解析失败，显示错误提示但仍然切换模式
         toast({
-          title: "CSV格式错误",
-          description: "文本内容解析失败，可能包含无效的CSV格式，请检查并修复",
+          title: t('tmdbIntegration.csvFormatError'),
+          description: t('tmdbIntegration.textParseFailed'),
           variant: "destructive",
         })
-        appendTerminalOutput("文本解析失败，可能包含无效的CSV格式，请检查并修复", "error");
+        appendTerminalOutput(t('tmdbIntegration.textParseFailedError'), "error");
         // 尝试恢复为上一次可用的CSV数据
         if (csvData) {
           const recoveredText = serializeCsvData(csvData);
           setCsvContent(recoveredText);
-          appendTerminalOutput("已恢复为上一次有效的数据", "info");
+          appendTerminalOutput(t('tmdbIntegration.recoveredLastValid'), "info");
         }
         return; // 解析失败时不切换模式
       }
@@ -972,13 +972,13 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     if (fixedCsvContent !== csvContent) {
       setCsvContent(fixedCsvContent)
       toast({
-        title: "编码已修复",
-        description: "已修复CSV文本中的中文乱码",
+        title: t('tmdbIntegration.encodingFixed'),
+        description: t('tmdbIntegration.encodingFixedManual'),
       })
     } else {
       toast({
-        title: "无需修复",
-        description: "未检测到中文乱码或无法修复",
+        title: t('tmdbIntegration.noEncodingIssue'),
+        description: t('tmdbIntegration.noEncodingIssue'),
       })
     }
   }
@@ -993,14 +993,14 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       setCsvContent(formattedCsvText)
 
       toast({
-        title: "格式化成功",
-        description: "CSV内容已格式化",
+        title: t('tmdbIntegration.formatSuccess'),
+        description: t('tmdbIntegration.csvFormatted'),
         variant: "default"
       })
     } catch {
       toast({
-        title: "格式化失败",
-        description: "CSV内容格式不正确，无法格式化",
+        title: t('tmdbIntegration.formatFailed'),
+        description: t('tmdbIntegration.csvFormatIncorrect'),
         variant: "destructive"
       })
     }
@@ -1518,11 +1518,11 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             <TabsList>
               <TabsTrigger value="process" className="flex items-center">
                 <Terminal className="h-4 w-4 mr-2" />
-                处理
+                {t('tmdbIntegration.processTab')}
               </TabsTrigger>
               <TabsTrigger value="edit" className="flex items-center">
                 <FileText className="h-4 w-4 mr-2" />
-                编辑
+                {t('tmdbIntegration.editTab')}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1540,7 +1540,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center">
                   <Terminal className="h-4 w-4 mr-2" />
-                  TMDB导入命令
+                  {t('tmdbIntegration.tmdbImportCommand')}
                   </CardTitle>
                 </CardHeader>
               <CardContent>
@@ -1549,15 +1549,15 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0 mr-2 w-0">
                       <div className="font-mono text-xs truncate"
-                           title={generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}>
-                        {generatePlatformCommand() || `python -m tmdb-import "${platformUrl || '请输入播出平台URL'}"`}
+                           title={generatePlatformCommand() || `python -m tmdb-import "${platformUrl || t('tmdbIntegration.pleaseInputPlatformUrl')}"`}>
+                        {generatePlatformCommand() || `python -m tmdb-import "${platformUrl || t('tmdbIntegration.pleaseInputPlatformUrl')}"`}
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-6"
-                      onClick={() => copyToClipboard(generatePlatformCommand(), "播出平台命令")}
+                      onClick={() => copyToClipboard(generatePlatformCommand(), t('tmdbIntegration.platformCommandCopied'))}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -1573,7 +1573,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       variant="ghost"
                       size="sm"
                       className="h-6"
-                      onClick={() => copyToClipboard(generateTMDBCommand(selectedSeason), "TMDB命令")}
+                      onClick={() => copyToClipboard(generateTMDBCommand(selectedSeason), t('tmdbIntegration.tmdbCommandCopied'))}
                     >
                       <Copy className="h-3 w-3" />
                                 </Button>
@@ -1585,7 +1585,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   {/* 左侧：URL和季数配置 */}
                   <div className="space-y-2">
                   <div>
-                      <Label htmlFor="platform-url-tab" className="text-xs mb-1 block">播出平台URL</Label>
+                      <Label htmlFor="platform-url-tab" className="text-xs mb-1 block">{t('tmdbIntegration.platformUrl')}</Label>
                       <Input
                         id="platform-url-tab"
                         value={platformUrl}
@@ -1596,7 +1596,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     </div>
                     <div className="flex items-center gap-3">
                       <div>
-                        <Label className="text-xs">TMDB季</Label>
+                        <Label className="text-xs">{t('tmdbIntegration.tmdbSeason')}</Label>
                     <div className="flex items-center space-x-2 mt-1">
                           <span className="text-xs">第</span>
                                 <Input
@@ -1611,7 +1611,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     </div>
                   </div>
                   <div>
-                        <Label className="text-xs">语言</Label>
+                        <Label className="text-xs">{t('tmdbIntegration.language')}</Label>
                     <div className="flex items-center mt-1">
                           <LanguageSelector
                             value={selectedLanguage}
@@ -1626,7 +1626,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   {/* 中间：运行模式选择 */}
                   <div className="space-y-2">
                     <div>
-                      <Label className="text-xs mb-1 block">运行模式</Label>
+                      <Label className="text-xs mb-1 block">{t('tmdbIntegration.runMode')}</Label>
                       <div className="flex gap-2">
                         <Button
                           type="button"
@@ -1636,7 +1636,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                           className={`flex-1 h-7 text-xs ${!headlessMode ? "bg-green-600 hover:bg-green-700" : ""}`}
                         >
                           <Terminal className="h-3 w-3 mr-1" />
-                          前台
+                          {t('tmdbIntegration.foreground')}
                         </Button>
                         <Button
                           type="button"
@@ -1646,12 +1646,12 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                           className={`flex-1 h-7 text-xs ${headlessMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
                         >
                           <ActivityIcon className="h-3 w-3 mr-1" />
-                          后台
+                          {t('tmdbIntegration.background')}
                         </Button>
                       </div>
                     </div>
                     <p className="text-[10px] text-muted-foreground">
-                      {headlessMode ? "浏览器后台运行，性能更好" : "浏览器窗口可见，适合调试"}
+                      {headlessMode ? t('tmdbIntegration.backgroundTip') : t('tmdbIntegration.foregroundTip')}
                     </p>
                   </div>
 
@@ -1669,7 +1669,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                         ) : (
                           <Zap className="h-4 w-4 mr-1" />
                         )}
-                        播出平台抓取
+                        {t('tmdbIntegration.platformCrawl')}
                       </Button>
                       <Button
                         onClick={(e) => executeTMDBExtraction(e)}
@@ -1681,7 +1681,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                         ) : (
                         <Download className="h-4 w-4 mr-1" />
                         )}
-                        执行TMDB导入
+                        {t('tmdbIntegration.executeTmdbImport')}
                       </Button>
                     </div>
                   </div>
@@ -1695,7 +1695,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                 <CardTitle className="text-sm flex items-center justify-between">
                   <div className="flex items-center">
                     <ActivityIcon className="h-4 w-4 mr-2" />
-                    终端输出
+                    {t('tmdbIntegration.terminalOutput')}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -1706,7 +1706,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       className="h-7 text-xs"
                     >
                       <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                      刷新数据
+                      {t('tmdbIntegration.refreshData')}
                     </Button>
                     <Button
                       variant="outline"
@@ -1714,10 +1714,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       onClick={terminateProcess}
                       disabled={!isExecutingCommand}
                       className="h-7 text-xs"
-                      title="终止正在运行的命令"
+                      title={t('tmdbIntegration.terminateTip')}
                     >
                       <Square className="h-3.5 w-3.5 mr-1" />
-                      终止
+                      {t('tmdbIntegration.terminate')}
                     </Button>
                   </div>
                 </CardTitle>
@@ -1731,15 +1731,15 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     <div dangerouslySetInnerHTML={{ __html: terminalOutput }} />
                   ) : (
                     <div className="text-muted">
-                      <p>等待开始处理...</p>
-                      <p className="mt-2">您可以:</p>
+                      <p>{t('tmdbIntegration.waitingForProcess')}</p>
+                      <p className="mt-2">{t('tmdbIntegration.youCanDo')}</p>
                       <ul className="list-disc pl-5 mt-1 space-y-1">
-                        <li>点击"播出平台抓取"开始处理</li>
-                        <li>点击"执行TMDB导入"更新已有CSV数据</li>
-                        <li>如果内容不显示，点击"刷新视图"按钮</li>
-                        <li>如果需要加载已有CSV，点击"刷新数据"按钮</li>
+                        <li>{t('tmdbIntegration.clickToStart')}</li>
+                        <li>{t('tmdbIntegration.clickToExecute')}</li>
+                        <li>{t('tmdbIntegration.ifNotDisplay')}</li>
+                        <li>{t('tmdbIntegration.ifLoadCsv')}</li>
                       </ul>
-                      <p className="mt-2">注意: 首次使用需要先配置TMDB-Import工具路径</p>
+                      <p className="mt-2">{t('tmdbIntegration.firstTimeTip')}</p>
                     </div>
                   )}
                                 </div>
@@ -1751,7 +1751,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       <div className="text-xs flex items-center">
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                         <span className="text-blue-600 dark:text-blue-400">
-                          正在执行命令...
+                          {t('tmdbIntegration.executingCommand')}
                         </span>
                       </div>
                       <div className="flex items-center space-x-1">
@@ -1763,7 +1763,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                           className="bg-green-600 hover:bg-green-700 h-7 text-xs"
                         >
                           <CheckCircle2 className="h-3 w-3 mr-1" />
-                          确认
+                          {t('tmdbIntegration.confirm')}
                         </Button>
                         <Button
                           variant="default"
@@ -1773,7 +1773,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                           className="bg-yellow-600 hover:bg-yellow-700 h-7 text-xs"
                         >
                           <CircleDashed className="h-3 w-3 mr-1" />
-                          等待
+                          {t('tmdbIntegration.wait')}
                         </Button>
                         <Button
                           variant="default"
@@ -1783,7 +1783,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                           className="bg-red-600 hover:bg-red-700 h-7 text-xs"
                         >
                           <XCircle className="h-3 w-3 mr-1" />
-                          取消
+                          {t('tmdbIntegration.cancel')}
                         </Button>
                               </div>
                     </div>
@@ -1793,7 +1793,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       <Input
                         value={terminalInput}
                         onChange={(e) => setTerminalInput(e.target.value)}
-                        placeholder="输入命令..."
+                        placeholder={t('tmdbIntegration.inputCommand')}
                         className="text-xs h-7"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && terminalInput) {
@@ -1837,7 +1837,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       className="h-7 px-2 text-xs"
                     >
                       <TableIcon className="h-3.5 w-3.5 mr-1" />
-                      表格模式
+                      {t('tmdbIntegration.tableMode')}
                     </Button>
                     <Button
                       variant={editorMode === "text" ? "default" : "ghost"}
@@ -1846,7 +1846,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       className="h-7 px-2 text-xs"
                     >
                       <FileText className="h-3.5 w-3.5 mr-1" />
-                      文本模式
+                      {t('tmdbIntegration.textMode')}
                     </Button>
                 </div>
 
@@ -1862,7 +1862,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   ) : (
                     <Save className="h-3.5 w-3.5 mr-1" />
                   )}
-                  保存
+                  {t('tmdbIntegration.save')}
                 </Button>
               </div>
             </div>
@@ -1887,7 +1887,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     onChange={(e) => setCsvContent(e.target.value)}
                     onKeyDown={handleKeyDown}
                     className="flex-1 font-mono text-xs resize-none focus:outline-none bg-background/40 backdrop-blur-md csv-text-editor"
-                    placeholder="CSV内容..."
+                    placeholder={t('tmdbIntegration.csvContent')}
                     style={{ lineHeight: 1.6 }}
                   ></textarea>
                 </div>
@@ -2045,38 +2045,38 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     const savedTmdbImportPath = await getTmdbImportPath();
     if (savedTmdbImportPath) {
       try {
-        appendTerminalOutput("正在加载本地CSV文件...", "info");
+        appendTerminalOutput(t('tmdbIntegration.loadingLocalCsv'), "info");
         const result = await readCSVFile(savedTmdbImportPath);
         if (result) {
-          appendTerminalOutput("本地CSV文件加载成功", "success");
+          appendTerminalOutput(t('tmdbIntegration.localCsvLoaded'), "success");
           toast({
-            title: "加载成功",
-            description: "本地CSV文件已成功加载",
+            title: t('tmdbIntegration.loadSuccess'),
+            description: t('tmdbIntegration.localCsvLoaded'),
           });
                   } else {
-          appendTerminalOutput("加载本地CSV文件失败", "error");
+          appendTerminalOutput(t('tmdbIntegration.loadLocalCsvFailed'), "error");
           toast({
-            title: "加载失败",
-            description: "未能加载本地CSV文件",
+            title: t('tmdbIntegration.loadFailed'),
+            description: t('tmdbIntegration.loadLocalCsvFailed'),
             variant: "destructive",
           });
         }
       } catch (error: unknown) {
         
-        appendTerminalOutput(`加载CSV文件时出错: ${error.message || "未知错误"}`, "error");
+        appendTerminalOutput(`${t('tmdbIntegration.loadCsvError')}: ${error instanceof Error ? error.message : t('tmdbIntegration.unknownError')}`, "error");
         toast({
-          title: "加载错误",
-          description: error.message || "未知错误",
+          title: t('tmdbIntegration.loadError'),
+          description: error instanceof Error ? error.message : t('tmdbIntegration.unknownError'),
           variant: "destructive",
         });
       }
     } else {
       toast({
-        title: "路径未配置",
-        description: "请先在设置中配置TMDB-Import工具路径",
+        title: t('tmdbIntegration.pathNotConfigured'),
+        description: t('tmdbIntegration.configureToolPath'),
         variant: "destructive",
       });
-      appendTerminalOutput("未找到TMDB-Import工具路径，请先配置", "error");
+      appendTerminalOutput(t('tmdbIntegration.tmdbImportToolNotFound'), "error");
     }
   }, [appendTerminalOutput, readCSVFile]);
 
@@ -2140,10 +2140,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             <DialogHeader className="p-6 pb-2 flex flex-row items-center justify-between bg-background/30 backdrop-blur-md border-b">
               <DialogTitle className="flex items-center space-x-2">
                 <Terminal className="h-5 w-5" />
-                <span>TMDB-Import 本地集成</span>
+                <span>{t('tmdbIntegration.localIntegration')}</span>
                 <Badge variant="outline">{item.title}</Badge>
                 <Badge variant={activeTab === "process" ? "default" : "outline"} className="ml-2 text-xs">
-                  {activeTab === "process" ? "处理模式" : "编辑模式"}
+                  {activeTab === "process" ? t('tmdbIntegration.processMode') : t('tmdbIntegration.editMode')}
                 </Badge>
               </DialogTitle>
               <div className="flex items-center gap-2">
@@ -2152,14 +2152,14 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   size="sm"
                   className="h-8"
                   onClick={() => setIsFullscreen(!isFullscreen)}
-                  title={isFullscreen ? '退出全屏' : '全屏'}
+                  title={isFullscreen ? t('tmdbIntegration.exitFullscreen') : t('tmdbIntegration.fullscreen')}
                 >
                   {isFullscreen ? (
                     <Minimize2 className="h-4 w-4" />
                   ) : (
                     <Maximize2 className="h-4 w-4" />
                   )}
-                  <span className="sr-only">{isFullscreen ? '退出全屏' : '全屏'}</span>
+                  <span className="sr-only">{isFullscreen ? t('tmdbIntegration.exitFullscreen') : t('tmdbIntegration.fullscreen')}</span>
                 </Button>
               </div>
             </DialogHeader>

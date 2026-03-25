@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -46,14 +47,27 @@ interface MediaNewsSectionProps {
 }
 
 const REGIONS = [
-  { id: "CN", name: "中国大陆", icon: "🇨🇳" },
-  { id: "HK", name: "香港", icon: "🇭🇰" },
-  { id: "TW", name: "台湾", icon: "🇹🇼" },
-  { id: "JP", name: "日本", icon: "🇯🇵" },
-  { id: "KR", name: "韩国", icon: "🇰🇷" },
-  { id: "US", name: "美国", icon: "🇺🇸" },
-  { id: "GB", name: "英国", icon: "🇬🇧" },
+  { id: "CN", name: "", icon: "🇨🇳" },
+  { id: "HK", name: "", icon: "🇭🇰" },
+  { id: "TW", name: "", icon: "🇹🇼" },
+  { id: "JP", name: "", icon: "🇯🇵" },
+  { id: "KR", name: "", icon: "🇰🇷" },
+  { id: "US", name: "", icon: "🇺🇸" },
+  { id: "GB", name: "", icon: "🇬🇧" },
 ]
+
+const getRegionName = (id: string, t: any) => {
+  const names: Record<string, string> = {
+    CN: t("regions.CN"),
+    HK: t("regions.HK"),
+    TW: t("regions.TW"),
+    JP: t("regions.JP"),
+    KR: t("regions.KR"),
+    US: t("regions.US"),
+    GB: t("regions.GB"),
+  }
+  return names[id] || id
+}
 
 export function MediaNewsSection({
   type,
@@ -68,6 +82,8 @@ export function MediaNewsSection({
   onRefresh,
   onShowSettings
 }: MediaNewsSectionProps) {
+  const { t } = useTranslation("nav.news")
+  
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString)
@@ -85,7 +101,7 @@ export function MediaNewsSection({
   }
 
   const getMediaTypeName = (mediaType: string) => {
-    return mediaType === 'movie' ? '电影' : '电视剧'
+    return mediaType === 'movie' ? t("mediaNewsSection.movie") : t("mediaNewsSection.tv")
   }
 
   return (
@@ -115,7 +131,7 @@ export function MediaNewsSection({
                 <SelectItem key={region.id} value={region.id}>
                   <div className="flex items-center space-x-2">
                     <span>{region.icon}</span>
-                    <span className="text-sm">{region.name}</span>
+                    <span className="text-sm">{getRegionName(region.id, t)}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -135,7 +151,7 @@ export function MediaNewsSection({
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            <span>刷新</span>
+            <span>{t("mediaNewsSection.refresh")}</span>
           </Button>
         </div>
       </div>
@@ -155,7 +171,7 @@ export function MediaNewsSection({
                   className="ml-4 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 border-red-300 dark:border-red-700"
                 >
                   <Key className="h-3 w-3 mr-1" />
-                  配置API
+                  {t("mediaNewsSection.configureApi")}
                 </Button>
               )}
             </div>
@@ -167,7 +183,7 @@ export function MediaNewsSection({
       {loading && !error && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          <span className="text-gray-600 dark:text-gray-400">加载中...</span>
+          <span className="text-gray-600 dark:text-gray-400">{t("mediaNewsSection.loading")}</span>
         </div>
       )}
 
@@ -224,7 +240,7 @@ export function MediaNewsSection({
                     )}
                   </div>
 
-                  {/* 上映日期 */}
+                  
                   <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{formatDate(item.releaseDate)}</span>
                     <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -243,7 +259,7 @@ export function MediaNewsSection({
             {type === 'upcoming' ? <Calendar className="h-8 w-8 mx-auto" /> : <Film className="h-8 w-8 mx-auto" />}
           </div>
           <p className="text-gray-500 dark:text-gray-400">
-            暂无{type === 'upcoming' ? '即将上线' : '近期开播'}的内容
+            {type === 'upcoming' ? t("mediaNewsSection.noContentUpcoming") : t("mediaNewsSection.noContentRecent")}
           </p>
         </div>
       )}
@@ -252,7 +268,7 @@ export function MediaNewsSection({
       {!loading && !error && items.length > 12 && (
         <div className="text-center pt-4">
           <Button variant="outline" size="sm">
-            查看更多 ({items.length - 12} 个)
+            {t("mediaNewsSection.loadMore", { count: items.length - 12 })}
           </Button>
         </div>
       )}

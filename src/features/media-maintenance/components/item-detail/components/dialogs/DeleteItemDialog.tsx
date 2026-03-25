@@ -12,6 +12,7 @@ import {
   AlertDialogNoOverlayContent,
 } from "@/shared/components/ui/alert-dialog"
 import type { TMDBItem } from "@/lib/data/storage"
+import { useTranslation } from "react-i18next"
 
 interface DeleteItemDialogProps {
   open: boolean
@@ -28,22 +29,24 @@ export function DeleteItemDialog({
   onCancel,
   onConfirm
 }: DeleteItemDialogProps) {
+  const { t } = useTranslation('media')
+
   return (
     <AlertDialogNoOverlay open={open} onOpenChange={onOpenChange}>
       <AlertDialogNoOverlayContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>确认删除</AlertDialogTitle>
+          <AlertDialogTitle>{t('dialogs.confirmDelete')}</AlertDialogTitle>
           <AlertDialogDescription>
-            确定要删除 "{item.title}" 吗？此操作不可撤销。
+            {t('dialogs.confirmDeleteItem', { title: item.title })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>取消</AlertDialogCancel>
+          <AlertDialogCancel onClick={onCancel}>{t('dialogs.cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className="bg-red-500 hover:bg-red-600"
           >
-            删除
+            {t('dialogs.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogNoOverlayContent>

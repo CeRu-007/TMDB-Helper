@@ -1,5 +1,5 @@
 /**
- * 模型服务设置面板
+ * Model Service Settings Panel
  */
 
 "use client"
@@ -17,7 +17,7 @@ import { Checkbox } from "@/shared/components/ui/checkbox"
 import { Slider } from "@/shared/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Database, Plus, Trash2, Edit, Eye, EyeOff, ExternalLink, CheckCircle2, AlertCircle, RefreshCw, ChevronUp, ChevronDown, Film } from "lucide-react"
-import type { 
+import type {
   ModelServiceTabState,
   ApiSettings,
   ModelProvider,
@@ -27,6 +27,7 @@ import type {
   ModelForm,
   ScenarioSettings
 } from "./types"
+import { useTranslation } from "react-i18next"
 
 interface ModelServiceSettingsPanelProps {
   modelServiceTab: ModelServiceTabState['activeTab']
@@ -113,6 +114,7 @@ export default function ModelServiceSettingsPanel({
   showZhipuApiKey,
   setShowZhipuApiKey,
 }: ModelServiceSettingsPanelProps) {
+  const { t } = useTranslation("settings")
 
   const handleAddProvider = () => {
     setEditingProvider(null)
@@ -133,7 +135,7 @@ export default function ModelServiceSettingsPanel({
   }
 
   const handleDeleteProvider = async (providerId: string) => {
-    if (!confirm("确定要删除此提供商吗?")) return
+    if (!confirm(t("modelServicePanel.confirmDeleteProvider"))) return
 
     try {
       await fetch('/api/model-service', {
@@ -223,7 +225,7 @@ export default function ModelServiceSettingsPanel({
       setConnectionTestResult(result)
     } catch (error) {
       logger.error('获取模型列表失败:', error)
-      setConnectionTestResult({ success: false, message: "连接测试失败" })
+      setConnectionTestResult({ success: false, message: t("common.connectionFailed") })
     } finally {
       setTestingConnection(false)
     }
@@ -343,7 +345,7 @@ export default function ModelServiceSettingsPanel({
         setConfiguredModels(configuredModels.filter(m => m.id !== modelId))
         window.dispatchEvent(new CustomEvent('model-service-config-updated'))
       } else {
-        alert(result.error || '删除模型失败')
+        alert(result.error || t("modelServicePanel.deleteModelFailed"))
       }
     } catch (error) {
       logger.error('删除模型失败:', error)
@@ -405,47 +407,47 @@ export default function ModelServiceSettingsPanel({
   }
 
   const allProviders = [
-    { id: "siliconflow-builtin", name: "硅基流动", type: "builtin" },
-    { id: "modelscope-builtin", name: "魔搭社区", type: "builtin" },
-    { id: "zhipu-builtin", name: "智谱AI", type: "builtin" },
+    { id: "siliconflow-builtin", name: t("modelServicePanel.siliconFlow"), type: "builtin" },
+    { id: "modelscope-builtin", name: t("modelServicePanel.modelScope"), type: "builtin" },
+    { id: "zhipu-builtin", name: t("modelServicePanel.zhipuAI"), type: "builtin" },
     ...customProviders.filter(p => p && p.id && p.name && !["siliconflow-builtin", "modelscope-builtin", "zhipu-builtin"].includes(p.id))
   ]
 
   const scenarios = [
     {
       type: 'thumbnail_filter',
-      label: '视频缩略图智能筛选',
-      description: '用于"视频缩略图提取"页面的AI智能筛选功能，自动识别包含人物且无字幕的优质帧',
+      label: t("modelServicePanel.scenarioThumbnailFilter"),
+      description: t("modelServicePanel.scenarioThumbnailFilterDesc"),
       requiredCapabilities: ['vision']
     },
     {
       type: 'image_analysis',
-      label: '影视图像识别分析',
-      description: '用于"影视识别"页面的图像分析功能，识别影视作品海报、剧照并进行内容分析',
+      label: t("modelServicePanel.scenarioImageAnalysis"),
+      description: t("modelServicePanel.scenarioImageAnalysisDesc"),
       requiredCapabilities: ['vision']
     },
     {
       type: 'speech_to_text',
-      label: '视频语音识别转文字',
-      description: '用于"分集简介-AI生成"页面的音频转写功能，将视频中的语音转换为文字用于生成简介',
+      label: t("modelServicePanel.scenarioSpeechToText"),
+      description: t("modelServicePanel.scenarioSpeechToTextDesc"),
       requiredCapabilities: ['audio']
     },
     {
       type: 'episode_generation',
-      label: '分集简介AI生成',
-      description: '用于"分集简介-AI生成"页面，基于视频内容或字幕生成精彩的分集简介',
+      label: t("modelServicePanel.scenarioEpisodeGeneration"),
+      description: t("modelServicePanel.scenarioEpisodeGenerationDesc"),
       requiredCapabilities: ['chat']
     },
     {
       type: 'ai_chat',
-      label: 'AI智能对话助手',
-      description: '用于"分集简介-AI对话"页面，提供智能对话、问答和内容创作服务',
+      label: t("modelServicePanel.scenarioAiChat"),
+      description: t("modelServicePanel.scenarioAiChatDesc"),
       requiredCapabilities: ['chat']
     },
     {
       type: 'subtitle_ocr',
-      label: '硬字幕OCR识别',
-      description: '用于"硬字幕提取"页面，通过多模态视觉模型识别视频帧中的硬字幕文本',
+      label: t("modelServicePanel.scenarioSubtitleOcr"),
+      description: t("modelServicePanel.scenarioSubtitleOcrDesc"),
       requiredCapabilities: ['vision']
     }
   ]
@@ -555,9 +557,9 @@ export default function ModelServiceSettingsPanel({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">模型服务</h3>
+        <h3 className="text-lg font-semibold mb-2">{t("modelServicePanel.title")}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          管理AI模型提供商、模型配置和使用场景
+          {t("modelServicePanel.description")}
         </p>
       </div>
 
@@ -570,7 +572,7 @@ export default function ModelServiceSettingsPanel({
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
               }`}
           >
-            模型提供商
+            {t("modelServicePanel.tabProviders")}
           </button>
           <button
             onClick={() => setModelServiceTab("models")}
@@ -579,7 +581,7 @@ export default function ModelServiceSettingsPanel({
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
               }`}
           >
-            模型配置
+            {t("modelServicePanel.tabModels")}
           </button>
           <button
             onClick={() => setModelServiceTab("scenarios")}
@@ -588,7 +590,7 @@ export default function ModelServiceSettingsPanel({
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
               }`}
           >
-            使用场景
+            {t("modelServicePanel.tabScenarios")}
           </button>
         </nav>
       </div>
@@ -598,23 +600,23 @@ export default function ModelServiceSettingsPanel({
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>内置提供商</CardTitle>
+                <CardTitle>{t("modelServicePanel.builtInProviders")}</CardTitle>
                 <Button onClick={handleAddProvider} size="sm" variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
-                  添加自定义提供商
+                  {t("modelServicePanel.addCustomProvider")}
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="p-4 border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">硅基流动</h4>
-                  <Badge>内置</Badge>
+                  <h4 className="font-medium">{t("modelServicePanel.siliconFlow")}</h4>
+                  <Badge>{t("modelServicePanel.builtIn")}</Badge>
                 </div>
-                <p className="text-sm text-gray-500 mb-4">提供视觉和对话模型服务</p>
+                <p className="text-sm text-gray-500 mb-4">{t("modelServicePanel.siliconFlowDesc")}</p>
                 <div className="space-y-3">
                   <div>
-                    <Label>API密钥</Label>
+                    <Label>{t("modelServicePanel.apiKey")}</Label>
                     <div className="flex gap-2">
                       <Input
                         type={showSiliconFlowApiKey ? "text" : "password"}
@@ -632,14 +634,14 @@ export default function ModelServiceSettingsPanel({
                           });
                           handleSaveBuiltinProvider("siliconflow-builtin", newApiKey);
                         }}
-                        placeholder="输入硅基流动API密钥"
+                        placeholder={t("modelServicePanel.inputSiliconFlowKey")}
                         className="flex-1"
                       />
                       <a
                         href="https://cloud.siliconflow.cn/akManage"
                         target="_blank"
                         rel="noopener noreferrer"
-                        title="跳转到硅基流动API密钥页面"
+                        title={t("modelServicePanel.jumpToSiliconFlow")}
                       >
                         <Button variant="outline" size="icon" asChild>
                           <span><ExternalLink className="h-4 w-4" /></span>
@@ -655,7 +657,7 @@ export default function ModelServiceSettingsPanel({
                     </div>
                   </div>
                   <div>
-                    <Label>API地址</Label>
+                    <Label>{t("modelServicePanel.apiAddress")}</Label>
                     <Input
                       value="https://api.siliconflow.cn/v1"
                       disabled
@@ -667,13 +669,13 @@ export default function ModelServiceSettingsPanel({
 
               <div className="p-4 border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">魔搭社区</h4>
-                  <Badge>内置</Badge>
+                  <h4 className="font-medium">{t("modelServicePanel.modelScope")}</h4>
+                  <Badge>{t("modelServicePanel.builtIn")}</Badge>
                 </div>
-                <p className="text-sm text-gray-500 mb-4">提供对话和文本生成模型</p>
+                <p className="text-sm text-gray-500 mb-4">{t("modelServicePanel.modelScopeDesc")}</p>
                 <div className="space-y-3">
                   <div>
-                    <Label>API密钥</Label>
+                    <Label>{t("modelServicePanel.apiKey")}</Label>
                     <div className="flex gap-2">
                       <Input
                         type={showModelScopeApiKey ? "text" : "password"}
@@ -691,14 +693,14 @@ export default function ModelServiceSettingsPanel({
                           });
                           handleSaveBuiltinProvider("modelscope-builtin", newApiKey);
                         }}
-                        placeholder="输入魔搭社区API密钥"
+                        placeholder={t("modelServicePanel.inputModelScopeKey")}
                         className="flex-1"
                       />
                       <a
                         href="https://www.modelscope.cn/my/myaccesstoken"
                         target="_blank"
                         rel="noopener noreferrer"
-                        title="跳转到魔搭社区API密钥页面"
+                        title={t("modelServicePanel.jumpToModelScope")}
                       >
                         <Button variant="outline" size="icon" asChild>
                           <span><ExternalLink className="h-4 w-4" /></span>
@@ -714,7 +716,7 @@ export default function ModelServiceSettingsPanel({
                     </div>
                   </div>
                   <div>
-                    <Label>API地址</Label>
+                    <Label>{t("modelServicePanel.apiAddress")}</Label>
                     <Input
                       value="https://api-inference.modelscope.cn/v1"
                       disabled
@@ -726,13 +728,13 @@ export default function ModelServiceSettingsPanel({
 
               <div className="p-4 border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">智谱AI</h4>
-                  <Badge>内置</Badge>
+                  <h4 className="font-medium">{t("modelServicePanel.zhipuAI")}</h4>
+                  <Badge>{t("modelServicePanel.builtIn")}</Badge>
                 </div>
-                <p className="text-sm text-gray-500 mb-4">提供免费GLM-4.7-Flash 模型</p>
+                <p className="text-sm text-gray-500 mb-4">{t("modelServicePanel.zhipuAIDesc")}</p>
                 <div className="space-y-3">
                   <div>
-                    <Label>API密钥</Label>
+                    <Label>{t("modelServicePanel.apiKey")}</Label>
                     <div className="flex gap-2">
                       <Input
                         type={showZhipuApiKey ? "text" : "password"}
@@ -750,14 +752,14 @@ export default function ModelServiceSettingsPanel({
                           });
                           handleSaveBuiltinProvider("zhipu-builtin", newApiKey);
                         }}
-                        placeholder="内置免费模型已预配置，但需输入智谱AI API密钥"
+                        placeholder={t("modelServicePanel.inputZhipuKey")}
                         className="flex-1"
                       />
                       <a
                         href="https://open.bigmodel.cn/usercenter/apikeys"
                         target="_blank"
                         rel="noopener noreferrer"
-                        title="跳转到智谱AI API密钥页面"
+                        title={t("modelServicePanel.jumpToZhipu")}
                       >
                         <Button variant="outline" size="icon" asChild>
                           <span><ExternalLink className="h-4 w-4" /></span>
@@ -773,7 +775,7 @@ export default function ModelServiceSettingsPanel({
                     </div>
                   </div>
                   <div>
-                    <Label>API地址</Label>
+                    <Label>{t("modelServicePanel.apiAddress")}</Label>
                     <Input
                       value="https://open.bigmodel.cn/api/paas/v4"
                       disabled
@@ -788,7 +790,7 @@ export default function ModelServiceSettingsPanel({
           {customProviders.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">已添加的自定义提供商</CardTitle>
+                <CardTitle className="text-lg">{t("modelServicePanel.customProviders")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -797,7 +799,7 @@ export default function ModelServiceSettingsPanel({
                     .map(provider => (
                     <div key={provider.id} className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">{provider.name || '未知提供商'}</h4>
+                        <h4 className="font-medium">{provider.name || t("modelServicePanel.unknownProvider")}</h4>
                         <div className="flex gap-2">
                           <Button
                             variant="ghost"
@@ -815,7 +817,7 @@ export default function ModelServiceSettingsPanel({
                           </Button>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-500">{provider.apiBaseUrl || '未知地址'}</p>
+                      <p className="text-sm text-gray-500">{provider.apiBaseUrl || t("modelServicePanel.unknownAddress")}</p>
                     </div>
                   ))}
                 </div>
@@ -826,23 +828,23 @@ export default function ModelServiceSettingsPanel({
           <Dialog open={showProviderDialog} onOpenChange={setShowProviderDialog}>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>{editingProvider ? "编辑提供商" : "添加自定义提供商"}</DialogTitle>
+                <DialogTitle>{editingProvider ? t("modelServicePanel.editProvider") : t("modelServicePanel.addCustomProvider")}</DialogTitle>
                 <DialogDescription>
-                  配置兼容OpenAI API的模型提供商
+                  {t("modelServicePanel.providerConfigDesc")}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div>
-                  <Label htmlFor="provider-name">提供商名称 *</Label>
+                  <Label htmlFor="provider-name">{t("modelServicePanel.providerName")} *</Label>
                   <Input
                     id="provider-name"
                     value={providerForm.name}
                     onChange={(e) => setProviderForm({...providerForm, name: e.target.value})}
-                    placeholder="例如: OpenAI"
+                    placeholder={t("modelServicePanel.inputProviderName")}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="provider-url">API地址 *</Label>
+                  <Label htmlFor="provider-url">{t("modelServicePanel.providerUrl")} *</Label>
                   <Input
                     id="provider-url"
                     value={providerForm.apiBaseUrl}
@@ -851,7 +853,7 @@ export default function ModelServiceSettingsPanel({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="provider-key">API密钥 *</Label>
+                  <Label htmlFor="provider-key">{t("modelServicePanel.providerKey")} *</Label>
                   <Input
                     id="provider-key"
                     type="password"
@@ -871,7 +873,7 @@ export default function ModelServiceSettingsPanel({
                       )}
                       <div>
                         <p className={`text-sm font-medium ${connectionTestResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
-                          {connectionTestResult.success ? "连接成功" : "连接失败"}
+                          {connectionTestResult.success ? t("common.connectionSuccess") : t("common.connectionFailed")}
                         </p>
                         <p className={`text-sm ${connectionTestResult.success ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
                           {connectionTestResult.message}
@@ -888,10 +890,10 @@ export default function ModelServiceSettingsPanel({
                     disabled={testingConnection || !providerForm.apiKey || !providerForm.apiBaseUrl}
                     className="flex-1"
                   >
-                    {testingConnection ? "测试中..." : "测试连接"}
+                    {testingConnection ? t("common.testing") : t("common.testConnection")}
                   </Button>
                   <Button onClick={handleSaveProvider} className="flex-1">
-                    {editingProvider ? "更新" : "添加"}
+                    {editingProvider ? t("common.update") : t("common.add")}
                   </Button>
                 </div>
               </div>
@@ -908,7 +910,7 @@ export default function ModelServiceSettingsPanel({
               setAvailableModels([])
             }}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="选择提供商" />
+                <SelectValue placeholder={t("common.selectProvider")} />
               </SelectTrigger>
               <SelectContent>
                 {allProviders.map(p => (
@@ -923,25 +925,25 @@ export default function ModelServiceSettingsPanel({
               disabled={!selectedProviderId || loadingModels}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loadingModels ? 'animate-spin' : ''}`} />
-              {loadingModels ? "获取中..." : "获取模型列表"}
+              {loadingModels ? t("modelServicePanel.fetching") : t("modelServicePanel.fetchModels")}
             </Button>
 
             <Button onClick={handleAddModel} disabled={!selectedProviderId}>
               <Plus className="h-4 w-4 mr-2" />
-              添加模型
+              {t("modelServicePanel.addModel")}
             </Button>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>已配置模型</CardTitle>
-              <p className="text-sm text-gray-500">管理可用的AI模型</p>
+              <CardTitle>{t("modelServicePanel.configuredModels")}</CardTitle>
+              <p className="text-sm text-gray-500">{t("modelServicePanel.modelManagement")}</p>
             </CardHeader>
             <CardContent>
               {configuredModels.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Film className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>暂无配置的模型</p>
+                  <p>{t("modelServicePanel.noConfiguredModels")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -986,9 +988,9 @@ export default function ModelServiceSettingsPanel({
           <Dialog open={showAvailableModelsDialog} onOpenChange={setShowAvailableModelsDialog}>
             <DialogContent className="max-w-2xl max-h-[80vh]">
               <DialogHeader>
-                <DialogTitle>可用模型列表</DialogTitle>
+                <DialogTitle>{t("modelServicePanel.availableModels")}</DialogTitle>
                 <DialogDescription>
-                  从 {allProviders.find(p => p.id === selectedProviderId)?.name} 获取的模型
+                  {t("modelServicePanel.modelsFrom", { provider: allProviders.find(p => p.id === selectedProviderId)?.name })}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -1007,12 +1009,12 @@ export default function ModelServiceSettingsPanel({
                         <div className="flex-1">
                           <p className="font-medium text-sm">{model.id}</p>
                           {model.object && (
-                            <p className="text-xs text-gray-500">类型: {model.object}</p>
+                            <p className="text-xs text-gray-500">{t("modelServicePanel.modelType")}: {model.object}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
                           {isAlreadyConfigured ? (
-                            <Badge variant="secondary" className="text-xs">已添加</Badge>
+                            <Badge variant="secondary" className="text-xs">{t("modelServicePanel.modelAdded")}</Badge>
                           ) : (
                             <Button
                               size="sm"
@@ -1028,7 +1030,7 @@ export default function ModelServiceSettingsPanel({
                               }}
                             >
                               <Plus className="h-3 w-3 mr-1" />
-                              添加
+                              {t("common.add")}
                             </Button>
                           )}
                         </div>
@@ -1039,7 +1041,7 @@ export default function ModelServiceSettingsPanel({
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAvailableModelsDialog(false)}>
-                  关闭
+                  {t("common.close")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -1048,30 +1050,30 @@ export default function ModelServiceSettingsPanel({
           <Dialog open={showModelDialog} onOpenChange={setShowModelDialog}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>添加模型</DialogTitle>
+                <DialogTitle>{t("modelServicePanel.addModel")}</DialogTitle>
                 <DialogDescription>
-                  从提供商添加新的AI模型
+                  {t("modelServicePanel.addModelFromProvider")}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div>
-                  <Label>模型ID *</Label>
+                  <Label>{t("modelServicePanel.modelId")} *</Label>
                   <Input
                     value={modelForm.modelId}
                     onChange={(e) => setModelForm({...modelForm, modelId: e.target.value})}
-                    placeholder="例如: gpt-4"
+                    placeholder={t("modelServicePanel.inputModelId")}
                   />
                 </div>
                 <div>
-                  <Label>显示名称</Label>
+                  <Label>{t("modelServicePanel.displayName")}</Label>
                   <Input
                     value={modelForm.displayName}
                     onChange={(e) => setModelForm({...modelForm, displayName: e.target.value})}
-                    placeholder="例如: GPT-4"
+                    placeholder={t("modelServicePanel.inputDisplayName")}
                   />
                 </div>
                 <div>
-                  <Label>能力</Label>
+                  <Label>{t("modelServicePanel.capabilities")}</Label>
                   <div className="flex gap-2 mt-2">
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -1085,7 +1087,7 @@ export default function ModelServiceSettingsPanel({
                           }
                         }}
                       />
-                      <Label htmlFor="cap-chat">对话</Label>
+                      <Label htmlFor="cap-chat">{t("modelServicePanel.capChat")}</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -1099,7 +1101,7 @@ export default function ModelServiceSettingsPanel({
                           }
                         }}
                       />
-                      <Label htmlFor="cap-vision">视觉</Label>
+                      <Label htmlFor="cap-vision">{t("modelServicePanel.capVision")}</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -1113,13 +1115,13 @@ export default function ModelServiceSettingsPanel({
                           }
                         }}
                       />
-                      <Label htmlFor="cap-audio">音频</Label>
+                      <Label htmlFor="cap-audio">{t("modelServicePanel.capAudio")}</Label>
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowModelDialog(false)}>取消</Button>
-                  <Button onClick={handleSaveModel}>添加模型</Button>
+                  <Button variant="outline" onClick={() => setShowModelDialog(false)}>{t("modelServicePanel.cancel")}</Button>
+                  <Button onClick={handleSaveModel}>{t("modelServicePanel.addModel")}</Button>
                 </DialogFooter>
               </div>
             </DialogContent>
@@ -1131,8 +1133,8 @@ export default function ModelServiceSettingsPanel({
         <div className="space-y-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>功能场景配置</CardTitle>
-              <p className="text-sm text-gray-500">为每个功能选择使用的AI模型并配置参数</p>
+              <CardTitle>{t("modelServicePanel.scenarioConfig")}</CardTitle>
+              <p className="text-sm text-gray-500">{t("modelServicePanel.scenarioConfigDesc")}</p>
             </CardHeader>
             <CardContent className="space-y-4">
               {scenarios.map(scenario => {
@@ -1159,7 +1161,7 @@ export default function ModelServiceSettingsPanel({
                         </div>
                         {selectedModelIds.length > 0 && (
                           <p className="text-xs text-gray-400 mt-1">
-                            已选择 {selectedModelIds.length} 个模型
+                            {t("modelServicePanel.selectedModels", { count: selectedModelIds.length })}
                           </p>
                         )}
                       </div>
@@ -1177,10 +1179,10 @@ export default function ModelServiceSettingsPanel({
                     {isExpanded && (
                       <div className="border-t p-4 bg-gray-50 dark:bg-gray-900/50 space-y-6">
                         <div>
-                          <h5 className="font-medium text-sm mb-3">选择模型</h5>
+                          <h5 className="font-medium text-sm mb-3">{t("modelServicePanel.selectModel")}</h5>
                           {compatibleModels.length === 0 ? (
                             <div className="p-4 text-sm text-gray-500 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                              暂无兼容模型
+                              {t("modelServicePanel.noCompatibleModels")}
                             </div>
                           ) : (
                             <div className="space-y-3 max-h-60 overflow-y-auto">
@@ -1219,7 +1221,7 @@ export default function ModelServiceSettingsPanel({
                                             handlePrimaryModelChange(scenario.type, model.id)
                                           }}
                                         >
-                                          {isPrimary ? "主模型" : "设为主模型"}
+                                          {isPrimary ? t("modelServicePanel.primaryModel") : t("modelServicePanel.setAsPrimary")}
                                         </Button>
                                       </div>
                                     )}
@@ -1232,10 +1234,10 @@ export default function ModelServiceSettingsPanel({
 
                         {selectedModelIds.length > 0 && (
                           <div>
-                            <h5 className="font-medium text-sm mb-3">模型参数</h5>
+                            <h5 className="font-medium text-sm mb-3">{t("modelServicePanel.modelParams")}</h5>
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <Label htmlFor={`${scenario.type}-temp`}>Temperature</Label>
+                                <Label htmlFor={`${scenario.type}-temp`}>{t("modelServicePanel.temperature")}</Label>
                                 <div className="flex items-center gap-2">
                                   <Slider
                                     id={`${scenario.type}-temp`}
@@ -1254,7 +1256,7 @@ export default function ModelServiceSettingsPanel({
                                 </div>
                               </div>
                               <div>
-                                <Label htmlFor={`${scenario.type}-tokens`}>Max Tokens</Label>
+                                <Label htmlFor={`${scenario.type}-tokens`}>{t("modelServicePanel.maxTokens")}</Label>
                                 <Input
                                   id={`${scenario.type}-tokens`}
                                   type="number"

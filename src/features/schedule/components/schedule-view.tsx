@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
-import { 
-  Loader2, 
+import {
+  Loader2,
   Calendar,
   RefreshCw,
   ChevronLeft,
@@ -17,6 +17,7 @@ import { ScheduleWeekView } from './schedule-week-view'
 import { ScheduleDayView } from './schedule-day-view'
 import { ScheduleDetailPanel } from './schedule-detail-panel'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 interface ScheduleViewProps {
   className?: string
@@ -25,14 +26,13 @@ interface ScheduleViewProps {
 type CategoryType = 'all' | 'anime' | 'domestic' | 'following'
 type ViewMode = 'week' | 'day'
 
-const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] as const
-
-const CATEGORIES = [
-  { id: 'all' as CategoryType, label: '全部', color: 'bg-gray-500' },
-  { id: 'anime' as CategoryType, label: '动漫', color: 'bg-blue-500' },
-  { id: 'domestic' as CategoryType, label: '影剧', color: 'bg-amber-500' },
-  { id: 'following' as CategoryType, label: '已追', color: 'bg-rose-500' },
-] as const
+const WEEKDAYS_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+const CATEGORY_KEYS = {
+  all: 'all',
+  anime: 'anime',
+  domestic: 'domestic',
+  following: 'following'
+} as const
 
 interface TodayInfo {
   today: number
@@ -43,16 +43,17 @@ interface TodayInfo {
 function getTodayInfo(): TodayInfo {
   const now = new Date()
   const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1
-  
+
   return {
     today: dayOfWeek,
-    monthYear: `${now.getFullYear()}年${now.getMonth() + 1}月`,
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
     todayDate: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   }
 }
 
 function buildWeekData(scheduleData: ScheduleDay[], todayIndex: number): ScheduleDay[] {
-  return WEEKDAYS.map((_, index) => {
+  return Array(7).fill(0).map((_, index) => {
     const dayOfWeek = index + 1
     const matchingDays = scheduleData.filter(day => day.dayOfWeek === dayOfWeek)
 
@@ -111,6 +112,7 @@ function filterEpisodesByCategory(
 }
 
 export function ScheduleView({ className }: ScheduleViewProps) {
+  const { t } = useTranslation('schedule')
   const [loading, setLoading] = useState(false)
   const [scheduleData, setScheduleData] = useState<ScheduleDay[]>([])
   const [selectedDay, setSelectedDay] = useState<number>(0)
@@ -119,6 +121,15 @@ export function ScheduleView({ className }: ScheduleViewProps) {
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
   const [selectedEpisode, setSelectedEpisode] = useState<ScheduleEpisode | null>(null)
   const [hoveredDay, setHoveredDay] = useState<number | null>(null)
+
+  const WEEKDAYS = useMemo(() => WEEKDAYS_KEYS.map(key => t(`weekdaysList.${key}`)), [t])
+
+  const CATEGORIES = useMemo(() => [
+    { id: 'all' as CategoryType, label: t('categories.all'), color: 'bg-gray-500' },
+    { id: 'anime' as CategoryType, label: t('categories.anime'), color: 'bg-blue-500' },
+    { id: 'domestic' as CategoryType, label: t('categories.domestic'), color: 'bg-amber-500' },
+    { id: 'following' as CategoryType, label: t('categories.following'), color: 'bg-rose-500' },
+  ], [t])
 
   const dateInfo = useMemo(() => getTodayInfo(), [])
 
@@ -184,14 +195,14 @@ export function ScheduleView({ className }: ScheduleViewProps) {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Calendar className="h-4.5 w-4.5 text-gray-400" />
-              <span className="text-base font-medium text-gray-900 dark:text-gray-100">本周番剧</span>
+              <span className="text-base font-medium text-gray-900 dark:text-gray-100">{t('thisWeekAnime')}</span>
             </div>
             <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
             <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white dark:hover:bg-gray-600">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="px-2 text-sm text-gray-900 dark:text-gray-100 min-w-[80px] text-center font-medium">{dateInfo.monthYear}</span>
+              <span className="px-2 text-sm text-gray-900 dark:text-gray-100 min-w-[80px] text-center font-medium">{t('monthYear', { year: dateInfo.year, month: dateInfo.month })}</span>
               <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white dark:hover:bg-gray-600">
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -229,7 +240,7 @@ export function ScheduleView({ className }: ScheduleViewProps) {
                     : "text-gray-600 dark:text-gray-400"
                 )}
               >
-                周视图
+                {t('weekView')}
               </button>
               <button
                 onClick={() => setViewMode('day')}
@@ -240,13 +251,13 @@ export function ScheduleView({ className }: ScheduleViewProps) {
                     : "text-gray-600 dark:text-gray-400"
                 )}
               >
-                日视图
+                {t('dayView')}
               </button>
             </div>
 
             <Button variant="outline" size="sm" onClick={fetchSchedule} disabled={loading} className="border-gray-200 dark:border-gray-700 text-sm font-medium">
               <RefreshCw className={cn("h-4 w-4 mr-1.5", loading && "animate-spin")} />
-              刷新
+              {t('refresh')}
             </Button>
           </div>
         </div>
@@ -254,7 +265,7 @@ export function ScheduleView({ className }: ScheduleViewProps) {
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-gray-800">
             <Loader2 className="h-10 w-10 animate-spin text-blue-500 mb-4" />
-            <span className="text-sm text-gray-500">加载中...</span>
+            <span className="text-sm text-gray-500">{t('loading')}</span>
           </div>
         ) : viewMode === 'week' ? (
           <ScheduleWeekView

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import {
   Tabs,
   TabsContent,
@@ -35,7 +36,6 @@ import {
   Activity as ActivityIcon
 } from "lucide-react"
 
-// 导入现有的集成工具组件
 import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
 import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
 import { saveCSV } from "@/lib/data/csv-save-helper"
@@ -47,17 +47,18 @@ interface IndependentMaintenanceProps {
 
 // 支持的平台列表
 const SUPPORTED_PLATFORMS = [
-  { id: "youku", name: "优酷", domain: "youku.com" },
-  { id: "iqiyi", name: "爱奇艺", domain: "iqiyi.com" },
-  { id: "qq", name: "腾讯视频", domain: "v.qq.com" },
-  { id: "bilibili", name: "哔哩哔哩", domain: "bilibili.com" },
-  { id: "mgtv", name: "芒果TV", domain: "mgtv.com" },
+  { id: "youku", name: "Youku", domain: "youku.com" },
+  { id: "iqiyi", name: "iQIYI", domain: "iqiyi.com" },
+  { id: "qq", name: "Tencent Video", domain: "v.qq.com" },
+  { id: "bilibili", name: "Bilibili", domain: "bilibili.com" },
+  { id: "mgtv", name: "Mango TV", domain: "mgtv.com" },
   { id: "netflix", name: "Netflix", domain: "netflix.com" },
   { id: "primevideo", name: "Prime Video", domain: "amazon.com" },
   { id: "disneyplus", name: "Disney+", domain: "disneyplus.com" }
 ]
 
 export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMaintenanceProps) {
+  const { t } = useTranslation("nav.maintenance")
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<"process" | "edit">("process")
   const [platformUrl, setPlatformUrl] = useState("")
@@ -67,8 +68,8 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
   const [isProcessing, setIsProcessing] = useState(false)
   const [terminalOutput, setTerminalOutput] = useState<string[]>([
-    "$ 独立维护模式已启动",
-    "$ 等待操作指令..."
+    "$ Independent Maintenance Mode Started",
+    "$ Waiting for commands..."
   ])
   const [csvData, setCsvData] = useState<CSVData | null>(null)
   const [editorMode, setEditorMode] = useState<"table" | "text">("table")
@@ -124,8 +125,8 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   // 清空终端输出
   const clearTerminal = useCallback(() => {
     setTerminalOutput([
-      "$ 独立维护模式已启动",
-      "$ 等待操作指令..."
+      "$ Independent Maintenance Mode Started",
+      "$ Waiting for commands..."
     ])
   }, [])
 
@@ -146,7 +147,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
     if (value) {
       const detected = detectPlatform(value)
       if (detected) {
-        appendTerminalOutput(`检测到平台: ${SUPPORTED_PLATFORMS.find(p => p.id === detected)?.name}`, "info")
+        appendTerminalOutput(`${t("independentPage.detectedPlatform")}: ${SUPPORTED_PLATFORMS.find(p => p.id === detected)?.name}`, "info")
       }
     }
   }, [detectPlatform, appendTerminalOutput])
@@ -156,7 +157,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
     const season = typeof newSeasonValue === "string" ? parseInt(newSeasonValue, 10) : newSeasonValue
     if (!Number.isNaN(season) && season > 0) {
       setSelectedSeason(season)
-      appendTerminalOutput(`季数已更新为第${season}季`, "info")
+      appendTerminalOutput(`${t("independentPage.tmdbSeason")} ${t("independentPage.processing")}...`, "info")
     }
   }, [appendTerminalOutput])
 
@@ -498,7 +499,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   </div>
                   <span className="text-gray-300 text-xs">
-                    {activeTab === "process" ? "终端输出" : "CSV编辑器"}
+                    {activeTab === "process" ? t("independentPage.terminal") : t("independentPage.csvEditor")}
                   </span>
                 </div>
 
@@ -510,7 +511,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       onClick={() => setEditorMode(editorMode === "table" ? "text" : "table")}
                       className="text-gray-300 hover:text-white text-xs"
                     >
-                      {editorMode === "table" ? "文本模式" : "表格模式"}
+                      {editorMode === "table" ? t("independentPage.textMode") : t("independentPage.tableMode")}
                     </Button>
                   </div>
                 )}
@@ -569,8 +570,8 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
                       <div className="text-center">
                         <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>暂无CSV数据</p>
-                        <p className="text-sm mt-1">请先执行平台抓取或加载文件</p>
+                        <p>{t("independentPage.noCsvData")}</p>
+                        <p className="text-sm mt-1">{t("independentPage.loadCsvHint")}</p>
                       </div>
                     </div>
                   )}
@@ -585,10 +586,10 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         {/* 操作面板头部 */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            独立维护
+            {t("independentPage.title")}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            维护已完结但未跟踪的连载影视
+            {t("independentPage.subtitle")}
           </p>
         </div>
 
@@ -598,11 +599,11 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
             <TabsList className="grid w-full grid-cols-2 h-10">
               <TabsTrigger value="process" className="flex items-center space-x-2 text-sm">
                 <Terminal className="h-4 w-4" />
-                <span>处理</span>
+                <span>{t("independentPage.tabs.process")}</span>
               </TabsTrigger>
               <TabsTrigger value="edit" className="flex items-center space-x-2 text-sm">
                 <FileText className="h-4 w-4" />
-                <span>编辑</span>
+                <span>{t("independentPage.tabs.edit")}</span>
               </TabsTrigger>
             </TabsList>
 
@@ -620,7 +621,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                         const cmd = generatePlatformCommand()
                         if (cmd) {
                           navigator.clipboard.writeText(cmd)
-                          toast({ title: "已复制", description: "播出平台命令已复制到剪贴板" })
+                          toast({ title: t("independentPage.copied"), description: t("independentPage.platformCommandCopied") })
                         }
                       }}
                     >
@@ -637,7 +638,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                         const cmd = generateTmdbCommand()
                         if (cmd) {
                           navigator.clipboard.writeText(cmd)
-                          toast({ title: "已复制", description: "TMDB命令已复制到剪贴板" })
+                          toast({ title: t("independentPage.copied"), description: t("independentPage.tmdbCommandCopied") })
                         }
                       }}
                     >
@@ -652,7 +653,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                 {/* 运行模式选择 */}
                 <div>
                   <Label className="text-xs font-medium mb-1 block">
-                    运行模式
+                    {t("independentPage.runMode")}
                   </Label>
                   <div className="flex gap-2">
                     <Button
@@ -663,7 +664,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       className={`flex-1 h-8 text-xs ${!headlessMode ? "bg-green-600 hover:bg-green-700" : ""}`}
                     >
                       <Terminal className="h-3.5 w-3.5 mr-1" />
-                      前台模式
+                      {t("independentPage.foregroundMode")}
                     </Button>
                     <Button
                       type="button"
@@ -673,17 +674,17 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       className={`flex-1 h-8 text-xs ${headlessMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
                     >
                       <ActivityIcon className="h-3.5 w-3.5 mr-1" />
-                      后台模式
+                      {t("independentPage.backgroundMode")}
                     </Button>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    {headlessMode ? "浏览器后台运行，性能更好" : "浏览器窗口可见，适合调试"}
+                    {headlessMode ? t("independentPage.backgroundModeDesc") : t("independentPage.foregroundModeDesc")}
                   </p>
                 </div>
 
                 <div>
                   <Label htmlFor="platform-url" className="text-xs font-medium">
-                    播出平台URL
+                    {t("independentPage.platformUrl")}
                   </Label>
                   <Input
                     id="platform-url"
@@ -700,7 +701,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="tmdb-id" className="text-xs font-medium">
-                      TMDB ID
+                      {t("independentPage.tmdbId")}
                     </Label>
                     <Input
                       id="tmdb-id"
@@ -715,10 +716,10 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                   </div>
                   <div>
                     <Label htmlFor="season-select" className="text-xs font-medium">
-                      TMDB季数
+                      {t("independentPage.tmdbSeason")}
                     </Label>
                     <div className="flex items-center space-x-1 mt-1">
-                      <span className="text-xs">第</span>
+                      <span className="text-xs">/</span>
                       <Input
                         id="season-select"
                         type="number"
@@ -728,12 +729,12 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                         onChange={(e) => handleSeasonChange(e.target.value)}
                         className="w-12 h-8 text-xs"
                       />
-                      <span className="text-xs">季</span>
+                      <span className="text-xs">Season</span>
                     </div>
                   </div>
                   <div>
                     <Label className="text-xs font-medium">
-                      语言
+                      {t("independentPage.language")}
                     </Label>
                     <div className="flex items-center mt-1">
                       <LanguageSelector
@@ -765,7 +766,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     ) : (
                       <Zap className="h-4 w-4 mr-1" />
                     )}
-                    播出平台抓取
+                    {t("independentPage.platformExtraction")}
                   </Button>
 
                   <Button
@@ -778,7 +779,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     ) : (
                       <Download className="h-4 w-4 mr-1" />
                     )}
-                    执行TMDB导入
+                    {t("independentPage.tmdbImport")}
                   </Button>
                 </div>
 
@@ -789,7 +790,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                   className="w-full h-8 text-xs"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
-                  加载CSV文件
+                  {t("independentPage.loadCsv")}
                 </Button>
               </div>
 
@@ -800,10 +801,10 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     <div className="text-xs flex items-center">
                       <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       <span className="text-blue-600 dark:text-blue-400">
-                        正在执行命令...
+                        {t("independentPage.executingCommand")}
                         {currentProcessId && (
                           <span className="text-green-600 dark:text-green-400 ml-1">
-                            (PID: {currentProcessId})
+                            {t("independentPage.processId", { pid: currentProcessId })}
                           </span>
                         )}
                       </span>
@@ -815,7 +816,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       className="h-6 text-xs flex-shrink-0"
                     >
                       <Square className="h-3 w-3 mr-1" />
-                      停止
+                      {t("independentPage.stop")}
                     </Button>
                   </div>
                   <div className="grid grid-cols-3 gap-1">
@@ -825,7 +826,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       className="bg-green-600 hover:bg-green-700 h-7 text-xs"
                     >
                       <CheckCircle2 className="h-3 w-3 mr-1" />
-                      确认(Y)
+                      {t("independentPage.confirm")}
                     </Button>
                     <Button
                       onClick={() => sendQuickCommand("n")}
@@ -833,7 +834,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       className="bg-red-600 hover:bg-red-700 h-7 text-xs"
                     >
                       <XCircle className="h-3 w-3 mr-1" />
-                      取消(N)
+                      {t("independentPage.cancel")}
                     </Button>
                     <Button
                       onClick={() => sendQuickCommand("w")}
@@ -841,7 +842,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       className="bg-yellow-600 hover:bg-yellow-700 h-7 text-xs"
                     >
                       <Clock className="h-3 w-3 mr-1" />
-                      等待(W)
+                      {t("independentPage.wait")}
                     </Button>
                   </div>
                 </div>
@@ -857,20 +858,20 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     className="flex-1 h-7 text-xs"
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
-                    清空
+                    {t("independentPage.clearTerminal")}
                   </Button>
                   <Button
                     onClick={() => {
                       const content = terminalOutput.join('\n')
                       navigator.clipboard.writeText(content)
-                      toast({ title: "已复制", description: "终端输出已复制到剪贴板" })
+                      toast({ title: t("independentPage.copied"), description: t("independentPage.terminalOutputCopied") })
                     }}
                     variant="outline"
                     size="sm"
                     className="flex-1 h-7 text-xs"
                   >
                     <Copy className="h-3 w-3 mr-1" />
-                    复制
+                    {t("independentPage.copy")}
                   </Button>
                 </div>
               </div>
@@ -885,7 +886,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                   className="w-full h-auto text-xs"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  加载CSV文件
+                  {t("independentPage.loadCsv")}
                 </Button>
 
                 <Button
@@ -894,7 +895,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                   className="w-full h-auto text-xs hover:bg-primary/90 active:bg-primary/80 transition-colors"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  保存CSV文件
+                  {t("independentPage.saveCsv")}
                 </Button>
               </div>
 
@@ -902,8 +903,8 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
               {csvData && (
                 <div className="pt-3 lg:pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                    <p>行数: {csvData.length}</p>
-                    <p>模式: {editorMode === "table" ? "表格编辑" : "文本编辑"}</p>
+                    <p>{t("independentPage.rowCount")}: {csvData.length}</p>
+                    <p>{t("independentPage.editorMode")}: {editorMode === "table" ? t("independentPage.tableEdit") : t("independentPage.textEdit")}</p>
                   </div>
                 </div>
               )}
@@ -914,8 +915,8 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         {/* 底部状态信息 */}
         <div className="mt-auto p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            <p>状态: {isProcessing ? "处理中..." : "就绪"}</p>
-            <p>模式: 独立维护</p>
+            <p>{t("independentPage.status")}: {isProcessing ? t("independentPage.processing") : t("independentPage.ready")}</p>
+            <p>{t("independentPage.mode")}: {t("independentPage.independentMode")}</p>
           </div>
         </div>
       </div>

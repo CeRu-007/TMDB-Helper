@@ -29,6 +29,10 @@ import {
 
 import { useToast } from "@/lib/hooks/use-toast"
 import { UserAvatarImage } from "@/shared/components/ui/smart-avatar"
+import { Globe, ChevronRight } from "lucide-react"
+import { changeLanguage } from "@/lib/i18n"
+import { SUPPORTED_LANGUAGES, getLanguageByCode } from "@/lib/i18n/config"
+import { useTranslation } from "react-i18next"
 
 /**
  * 用户身份提供者组件
@@ -362,6 +366,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
   onShowExportDialog?: () => void;
 }>(
   ({ onClose, triggerElement, onShowImportDialog, onShowExportDialog }, ref) => {
+    const { t } = useTranslation()
     const { toast } = useToast()
     const { userInfo, updateDisplayName, resetUser } = useUser()
     const { items } = useData()
@@ -371,6 +376,14 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
     const [showDataStats, setShowDataStats] = useState(false)
     const [showImportDialog, setShowImportDialog] = useState(false)
     const [showExportDialog, setShowExportDialog] = useState(false)
+    const [showLanguageSelect, setShowLanguageSelect] = useState(false)
+    const [currentLanguage, setCurrentLanguage] = useState(() => {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("tmdb_language")
+        return stored || "auto"
+      }
+      return "auto"
+    })
     const [isSidebarLayout, setIsSidebarLayout] = useState(false)
     const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null)
     const [mounted, setMounted] = useState(false)
@@ -378,6 +391,14 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
     // 确保组件已挂载（用于Portal）
     useEffect(() => {
       setMounted(true)
+    }, [])
+
+    // 初始化语言设置（仅更新状态，不需要改变i18n语言，因为i18n初始化时已自动解析）
+    useEffect(() => {
+      const stored = localStorage.getItem("tmdb_language")
+      if (stored) {
+        setCurrentLanguage(stored)
+      }
     }, [])
 
     // 检测是否为侧边栏布局并计算菜单位置
@@ -438,8 +459,22 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
       setTheme(theme === 'dark' ? 'light' : 'dark')
     }
 
+    const handleLanguageChange = async (langCode: string) => {
+      await changeLanguage(langCode)
+      setCurrentLanguage(langCode)
+      setShowLanguageSelect(false)
+    }
+
+    const getDisplayLanguage = () => {
+      if (currentLanguage === "auto") {
+        return "自动"
+      }
+      const lang = getLanguageByCode(currentLanguage)
+      return lang?.nativeName || currentLanguage
+    }
+
     const handleReset = () => {
-      if (confirm('确定要重置用户数据吗？这将清除所有本地数据并创建新的用户ID。此操作无法撤销！')) {
+      if (confirm(t('resetConfirm', { ns: 'user' }))) {
         resetUser()
         onClose()
       }
@@ -506,7 +541,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <User className="w-4 h-4 mr-3" />
-            个人资料
+            {t("profile", { ns: "user" })}
             <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${showProfileEdit ? 'rotate-180' : ''}`} />
           </button>
 
@@ -524,7 +559,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <BarChart3 className="w-4 h-4 mr-3" />
-            数据统计
+            {t("dataStats", { ns: "user" })}
             <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${showDataStats ? 'rotate-180' : ''}`} />
           </button>
 
@@ -543,7 +578,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <Download className="w-4 h-4 mr-3" />
-            导出数据
+            {t("exportData", { ns: "user" })}
           </button>
 
           {/* 导入数据 */}
@@ -552,7 +587,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <Upload className="w-4 h-4 mr-3" />
-            导入数据
+            {t("importData", { ns: "user" })}
           </button>
 
           {/* 主题切换 */}
@@ -561,8 +596,41 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <Palette className="w-4 h-4 mr-3" />
-            切换主题 ({theme === 'dark' ? '深色' : '浅色'})
+            {t("switchTheme", { ns: "user" })} ({theme === 'dark' ? t("switchThemeDark", { ns: "user" }) : t("switchThemeLight", { ns: "user" })})
           </button>
+
+          {/* 语言切换 */}
+          <button
+            onClick={() => setShowLanguageSelect(!showLanguageSelect)}
+            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Globe className="w-4 h-4 mr-3" />
+            {t("language", { ns: "settings" })}: {getDisplayLanguage()}
+            <ChevronRight className={`w-4 h-4 ml-auto transition-transform ${showLanguageSelect ? 'rotate-90' : ''}`} />
+          </button>
+
+          {showLanguageSelect && (
+            <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-500 mx-4 mb-2 rounded">
+              <div className="space-y-1">
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => handleLanguageChange(lang.code)}
+                    className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded transition-colors ${
+                      currentLanguage === lang.code
+                        ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    <span>{lang.nativeName}</span>
+                    {currentLanguage === lang.code && (
+                      <span className="text-blue-500">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
 
@@ -576,7 +644,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             <LogOut className="w-4 h-4 mr-3" />
-            登出
+            {t("logout", { ns: "user" })}
           </button>
 
           {/* 重置数据 */}
@@ -585,7 +653,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             <Database className="w-4 h-4 mr-3" />
-            重置数据
+            {t("resetData", { ns: "user" })}
           </button>
         </div>
       </div>
@@ -626,6 +694,7 @@ function ProfileEditSection({
   updateDisplayName: (name: string) => Promise<boolean>
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   const { updateAvatarUrl } = useUser()
   const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
@@ -651,8 +720,8 @@ function ProfileEditSection({
     // 验证URL格式
     if (newAvatarUrl.trim() && !isValidUrl(newAvatarUrl.trim())) {
       toast({
-        title: "无效的URL",
-        description: "请输入有效的图片网络地址",
+        title: t("invalidUrl", { ns: "user" }),
+        description: t("enterValidImageUrl", { ns: "user" }),
         variant: "destructive",
       })
       return
@@ -662,13 +731,13 @@ function ProfileEditSection({
     if (success) {
       setIsEditingAvatar(false)
       toast({
-        title: "头像更新成功",
-        description: "您的头像已更新",
+        title: t("avatarUpdated", { ns: "user" }),
+        description: t("avatarUpdateSuccess", { ns: "user" }),
       })
     } else {
       toast({
-        title: "头像更新失败",
-        description: "请稍后重试",
+        title: t("avatarUpdateFailed", { ns: "user" }),
+        description: t("pleaseTryAgain", { ns: "user" }),
         variant: "destructive",
       })
     }
@@ -696,7 +765,7 @@ function ProfileEditSection({
               fallbackClassName="text-sm font-medium shadow-sm ring-2 ring-white dark:ring-gray-800"
               onError={() => {
                 if (isEditingAvatar) {
-                  setAvatarSaveError('头像URL无效或无法加载')
+                  setAvatarSaveError(t('invalidUrl', { ns: 'user' }))
                 }
               }}
               onLoad={() => {
@@ -722,7 +791,7 @@ function ProfileEditSection({
                     value={newAvatarUrl}
                     onChange={(e) => setNewAvatarUrl(e.target.value)}
                     className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                    placeholder="输入头像图片网络地址 (http://... 或 https://...)"
+                    placeholder={t('inputAvatarUrl', { ns: 'user' })}
                     onKeyPress={(e) => e.key === 'Enter' && handleAvatarSave()}
                   />
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -742,7 +811,7 @@ function ProfileEditSection({
                         key={index}
                         onClick={() => setNewAvatarUrl(presetUrl)}
                         className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600 hover:border-blue-500 transition-colors overflow-hidden"
-                        title="点击使用此头像"
+                        title={t('clickToUseAvatar', { ns: 'user' })}
                       >
                         <img
                           src={presetUrl}
@@ -780,15 +849,15 @@ function ProfileEditSection({
                           setIsEditingAvatar(false)
                           setNewAvatarUrl('')
                           toast({
-                            title: "头像已移除",
-                            description: "已恢复默认头像",
+                            title: t("avatarRemoved", { ns: 'user' }),
+                            description: t("avatarRestored", { ns: 'user' }),
                           })
                         }
                       }}
                       className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-                      title="移除头像"
+                      title={t('removeAvatar', { ns: 'user' })}
                     >
-                      移除
+                      {t('removeAvatar', { ns: 'user' })}
                     </button>
                   )}
                 </div>
@@ -808,9 +877,9 @@ function ProfileEditSection({
             ) : (
               <div className="flex items-center justify-between">
                 <div className="text-xs">
-                  <div className="text-gray-600 dark:text-gray-400">头像</div>
+                  <div className="text-gray-600 dark:text-gray-400">{t('avatar', { ns: 'user' })}</div>
                   <div className="text-gray-500 dark:text-gray-500">
-                    {userInfo.avatarUrl ? '自定义头像' : '默认头像'}
+                    {userInfo.avatarUrl ? t('customAvatar', { ns: 'user' }) : t('defaultAvatar', { ns: 'user' })}
                   </div>
                 </div>
                 <button
@@ -823,7 +892,7 @@ function ProfileEditSection({
                   className="text-xs text-blue-500 hover:text-blue-600 flex items-center space-x-1"
                 >
                   <Edit3 className="w-3 h-3" />
-                  <span>设置</span>
+                  <span>{t('settings', { ns: 'user' })}</span>
                 </button>
               </div>
             )}
@@ -834,13 +903,13 @@ function ProfileEditSection({
         <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
           {isEditing ? (
             <div className="space-y-2">
-              <label className="text-xs text-gray-600 dark:text-gray-400">显示名称</label>
+              <label className="text-xs text-gray-600 dark:text-gray-400">{t('displayName', { ns: 'user' })}</label>
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                placeholder="输入显示名称"
+                placeholder={t('enterDisplayName', { ns: 'user' })}
                 onKeyPress={(e) => e.key === 'Enter' && handleSave()}
                 autoFocus
               />
@@ -849,7 +918,7 @@ function ProfileEditSection({
                   onClick={handleSave}
                   className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
-                  保存
+                  {t('save', { ns: 'user' })}
                 </button>
                 <button
                   onClick={() => {
@@ -858,23 +927,23 @@ function ProfileEditSection({
                   }}
                   className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
                 >
-                  取消
+                  {t('cancel', { ns: 'user' })}
                 </button>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-between">
               <div className="text-xs">
-                <div className="text-gray-600 dark:text-gray-400">显示名称</div>
+                <div className="text-gray-600 dark:text-gray-400">{t('displayName', { ns: 'user' })}</div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">{userInfo.displayName}</div>
-                <div className="text-gray-500 dark:text-gray-400">创建于 {formatUserDateTime(userInfo.createdAt)}</div>
+                <div className="text-gray-500 dark:text-gray-400">{t('createdAt', { ns: 'user' })} {formatUserDateTime(userInfo.createdAt)}</div>
               </div>
               <button
                 onClick={() => setIsEditing(true)}
                 className="text-xs text-blue-500 hover:text-blue-600 flex items-center space-x-1"
               >
                 <Edit3 className="w-3 h-3" />
-                <span>编辑</span>
+                <span>{t('edit', { ns: 'user' })}</span>
               </button>
             </div>
           )}
@@ -894,6 +963,7 @@ function DataStatsSection({
   userInfo: UserInfo
   items: unknown[]
 }) {
+  const { t } = useTranslation()
   const daysSinceCreation = Math.floor(
     (new Date().getTime() - new Date(userInfo.createdAt).getTime()) / (1000 * 60 * 60 * 24)
   )
@@ -906,10 +976,10 @@ function DataStatsSection({
   }
 
   const formatUsageTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes}分钟`
+    if (minutes < 60) return `${minutes}${t("minutes", { ns: "user" })}`
     const hours = Math.floor(minutes / 60)
     const remainingMinutes = minutes % 60
-    return `${hours}小时${remainingMinutes > 0 ? remainingMinutes + '分钟' : ''}`
+    return `${hours}${t("hours", { ns: "user" })}${remainingMinutes > 0 ? remainingMinutes + t("minutes", { ns: "user" }) : ''}`
   }
 
   return (
@@ -919,37 +989,37 @@ function DataStatsSection({
           <Database className="w-3 h-3 text-blue-500" />
           <div>
             <div className="font-medium text-gray-900 dark:text-gray-100">{items.length}</div>
-            <div className="text-gray-500 dark:text-gray-400">项目数量</div>
+            <div className="text-gray-500 dark:text-gray-400">{t("itemCount", { ns: "user" })}</div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <Calendar className="w-3 h-3 text-green-500" />
           <div>
             <div className="font-medium text-gray-900 dark:text-gray-100">{daysSinceCreation}</div>
-            <div className="text-gray-500 dark:text-gray-400">使用天数</div>
+            <div className="text-gray-500 dark:text-gray-400">{t("usageDays", { ns: "user" })}</div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <User className="w-3 h-3 text-purple-500" />
           <div>
             <div className="font-medium text-gray-900 dark:text-gray-100">{stats.loginCount}</div>
-            <div className="text-gray-500 dark:text-gray-400">登录次数</div>
+            <div className="text-gray-500 dark:text-gray-400">{t("loginCount", { ns: "user" })}</div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <BarChart3 className="w-3 h-3 text-orange-500" />
           <div>
             <div className="font-medium text-gray-900 dark:text-gray-100">{formatUsageTime(stats.totalUsageTime)}</div>
-            <div className="text-gray-500 dark:text-gray-400">使用时长</div>
+            <div className="text-gray-500 dark:text-gray-400">{t("usageTime", { ns: "user" })}</div>
           </div>
         </div>
       </div>
       <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-        <div>最后活跃: {formatUserDateTime(userInfo.lastActiveAt)}</div>
+        <div>{t("lastActive", { ns: "user" })}: {formatUserDateTime(userInfo.lastActiveAt)}</div>
         {stats.featuresUsed.length > 0 && (
           <div className="mt-1">
-            已使用功能: {stats.featuresUsed.slice(0, 3).join(', ')}
-            {stats.featuresUsed.length > 3 && ` 等${stats.featuresUsed.length}项`}
+            {t("featuresUsed", { ns: "user" })}: {stats.featuresUsed.slice(0, 3).join(', ')}
+            {stats.featuresUsed.length > 3 && ` ${t("andMore", { count: stats.featuresUsed.length, ns: "user" })}`}
           </div>
         )}
       </div>
@@ -1081,24 +1151,24 @@ function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           {/* 账户信息 */}
           <div className="space-y-4 mb-6">
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">账户信息</h4>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">{t("accountInfo", { ns: "common" })}</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">创建时间:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t("createdAt", { ns: "common" })}:</span>
                   <span className="text-gray-900 dark:text-gray-100">
                     {formatUserDateTime(userInfo.createdAt)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">最后活跃:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t("lastActive", { ns: "common" })}:</span>
                   <span className="text-gray-900 dark:text-gray-100">
                     {formatUserDateTime(userInfo.lastActiveAt)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">数据项目数:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t("dataItemCount", { ns: "common" })}:</span>
                   <span className="text-gray-900 dark:text-gray-100">
-                    {items?.length || 0} 个
+                    {items?.length || 0} {t("items", { ns: "common" })}
                   </span>
                 </div>
               </div>
@@ -1111,7 +1181,7 @@ function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               onClick={() => onOpenChange(false)}
               className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
             >
-              关闭
+              {t("close", { ns: "common" })}
             </button>
 
             <button
@@ -1122,18 +1192,18 @@ function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               {isResetting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>重置中...</span>
+                  <span>{t("resetting", { ns: "common" })}</span>
                 </>
               ) : (
-                <span>重置用户数据</span>
+                <span>{t("resetUserData", { ns: "common" })}</span>
               )}
             </button>
-            
+
             <button
               onClick={() => onOpenChange(false)}
               className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
             >
-              关闭
+              {t("close", { ns: "common" })}
             </button>
           </div>
         </div>

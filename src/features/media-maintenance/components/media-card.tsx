@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, memo, useCallback, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { Badge } from "@/shared/components/ui/badge"
 import { ExternalLink, MousePointer2, Zap, Clock, Settings } from "lucide-react"
 import type { TMDBItem } from "@/lib/data/storage"
 import { Button } from "@/shared/components/ui/button"
 import { CachedImage } from "@/shared/components/ui/cached-image"
-import { CLICK_RESET_DELAY, WEEKDAY_NAMES, TMDB_IMAGE_BASE_URL, TMDB_POSTER_SIZE } from "@/lib/constants/constants"
+import { CLICK_RESET_DELAY, TMDB_IMAGE_BASE_URL, TMDB_POSTER_SIZE } from "@/lib/constants/constants"
 import { getTimeFromCron } from "@/lib/utils/cron-utils"
 import { CardDrawer } from "./card-drawer"
 
@@ -23,11 +24,22 @@ interface ScheduleTaskInfo {
 }
 
 function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: MediaCardProps) {
+  const { t } = useTranslation('media')
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [isClicked, setIsClicked] = useState(false)
   const [scheduleTask, setScheduleTask] = useState<ScheduleTaskInfo | null>(null)
   const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false)
+
+  const WEEKDAYS = [
+    t('weekdays.monday'),
+    t('weekdays.tuesday'),
+    t('weekdays.wednesday'),
+    t('weekdays.thursday'),
+    t('weekdays.friday'),
+    t('weekdays.saturday'),
+    t('weekdays.sunday'),
+  ]
 
   useEffect(() => {
     async function loadScheduleTask() {
@@ -54,7 +66,6 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
     (item.isDailyUpdate === undefined && (item.category === "tv" || item.category === "short"))
   )
 
-  // 获取进度
   const getProgress = (): number => {
     if (!item.seasons?.length) return 0;
 
@@ -70,40 +81,35 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
     return totalEpisodes > 0 ? (totalCompleted / totalEpisodes) * 100 : 0;
   };
 
-  // 计算已维护集数 - 使用 seasons 的 currentEpisode
   const completedEpisodes = item.seasons?.reduce(
     (sum, season) => sum + (season.currentEpisode || 0),
     0
   ) ?? 0;
 
-  // 获取仅时间部分
   const getTimeOnly = (): string => item.airTime ?? "19:00";
 
-  // 检查是否有第二播出日
   const hasSecondWeekday = typeof item.secondWeekday === 'number' && item.secondWeekday >= 0;
 
-  // 获取播出时间显示文本
   const getAirTimeDisplay = (): string => {
     const airTime = getTimeOnly();
     const weekdays: string[] = [];
 
     if (item.weekday !== undefined && item.weekday !== null) {
       const adjustedWeekday1 = item.weekday === 0 ? 6 : item.weekday - 1;
-      weekdays.push(WEEKDAY_NAMES[adjustedWeekday1]);
+      weekdays.push(WEEKDAYS[adjustedWeekday1]);
     }
 
     if (hasSecondWeekday) {
       const adjustedWeekday2 = item.secondWeekday === 0 ? 6 : item.secondWeekday - 1;
-      weekdays.push(WEEKDAY_NAMES[adjustedWeekday2]);
+      weekdays.push(WEEKDAYS[adjustedWeekday2]);
     }
 
     return `${weekdays.join('')} ${airTime}`;
   };
 
-  // 获取更新信息文本
   const getUpdateText = (): string => {
     if (item.status === "completed") {
-      return item.totalEpisodes ? `全${item.totalEpisodes}集` : "已完结";
+      return item.totalEpisodes ? t("totalEpisodes", { count: item.totalEpisodes, ns: "media" }) : t("completed", { ns: "media" });
     }
 
     if (item.seasons?.length) {
@@ -113,13 +119,12 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
         null as typeof item.seasons[0] | null
       );
 
-      return `维护至第${latestSeason?.currentEpisode ?? 0}集`;
+      return t("maintainedToEpisode", { count: latestSeason?.currentEpisode ?? 0, ns: "media" });
     }
 
-    return `维护至第${completedEpisodes}集`;
+    return t("maintainedToEpisode", { count: completedEpisodes, ns: "media" });
   };
 
-  // 获取完结日期
   const getCompletionDate = (): string | null => {
     try {
       return new Date(item.updatedAt).toLocaleDateString('zh-CN', {
@@ -152,7 +157,7 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
         <div className="mb-2 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide">
           {item.status === "completed" ? (
             <Badge className="bg-gray-600 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap">
-              {getCompletionDate() ? `${getCompletionDate()} 完结` : "已完结"}
+              {getCompletionDate() ? `${getCompletionDate()} ${t("completedShort", { ns: "media" })}` : t("completed", { ns: "media" })}
             </Badge>
           ) : (
             <>
@@ -161,12 +166,12 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
                   {scheduleTask?.enabled ? (
                     <>
                       <Clock className="h-3 w-3 mr-1" />
-                      每日 {getTimeOnly()} <span className="mx-1">·</span> {getTimeFromCron(scheduleTask.cron)}
+                      {t("daily", { ns: "media" })} {getTimeOnly()} <span className="mx-1">·</span> {getTimeFromCron(scheduleTask.cron)}
                     </>
                   ) : (
                     <>
                       <Zap className="h-3 w-3 mr-1 animate-pulse" />
-                      每日 {getTimeOnly()}
+                      {t("daily", { ns: "media" })} {getTimeOnly()}
                     </>
                   )}
                 </Badge>
@@ -187,7 +192,6 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
         </div>
       )}
 
-      {/* 海报容器 */}
       <div
         className={`relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-150 ${
           isClicked
@@ -200,7 +204,6 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
           <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
         )}
 
-        {/* 海报图片 */}
         <CachedImage
           src={
             !imageError
@@ -214,21 +217,17 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
           showSkeleton={true}
         />
 
-        {/* 悬停遮罩层 */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-          {/* 点击提示 */}
           <div className="absolute bottom-3 left-3 right-3">
             <div className="bg-white/95 backdrop-blur-sm rounded-md px-3 py-2 border border-white/20 transform translate-y-1 group-hover:translate-y-0 transition-transform duration-200">
               <div className="flex items-center justify-center space-x-2">
                 <MousePointer2 className="h-3 w-3 text-blue-600" />
-                <p className="text-xs font-medium text-gray-900">点击查看详情</p>
+                <p className="text-xs font-medium text-gray-900">{t("clickToViewDetails", { ns: "media" })}</p>
               </div>
             </div>
           </div>
 
-          {/* 快捷操作按钮 */}
           <div className="absolute top-2 right-2 flex flex-col space-y-1 transform translate-x-1 group-hover:translate-x-0 transition-transform duration-200">
-            {/* TMDB跳转按钮 */}
             {item.tmdbUrl && (
               <Button
                 size="sm"
@@ -238,14 +237,13 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
                   window.open(item.tmdbUrl, "_blank")
                 }}
                 className="bg-blue-500/90 hover:bg-blue-600 text-white text-xs px-2 py-1 h-6 backdrop-blur-sm border-0 shadow-md"
-                title="访问TMDB页面"
+                title={t("visitTmdbPage", { ns: "media" })}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
-                TMDB
+                {t("tmdb", { ns: "media" })}
               </Button>
             )}
 
-            {/* 播出平台跳转按钮 */}
             {item.platformUrl && (
               <Button
                 size="sm"
@@ -255,14 +253,13 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
                   window.open(item.platformUrl, "_blank")
                 }}
                 className="bg-green-500/90 hover:bg-green-600 text-white text-xs px-2 py-1 h-6 backdrop-blur-sm border-0 shadow-md"
-                title="访问播出平台"
+                title={t("visitStreamingPlatform", { ns: "media" })}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
-                播出平台
+                {t("streamingPlatform", { ns: "media" })}
               </Button>
             )}
 
-            {/* 定时任务按钮 - 仅当启用时显示 */}
             {scheduleTask?.enabled && (
               <Button
                 size="sm"
@@ -272,17 +269,16 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
                   setScheduleDrawerOpen(true)
                 }}
                 className="bg-purple-500/90 hover:bg-purple-600 text-white text-xs px-2 py-1 h-6 backdrop-blur-sm border-0 shadow-md"
-                title="定时任务"
+                title={t("scheduleTask", { ns: "media" })}
               >
                 <Settings className="h-3 w-3 mr-1" />
-                定时
+                {t("scheduled", { ns: "media" })}
               </Button>
             )}
           </div>
         </div>
       </div>
 
-      {/* 标题和更新信息 */}
       <div className="mt-2 space-y-1 relative z-0">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
           {item.title}
@@ -290,7 +286,6 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
         <p className="text-xs text-gray-500 dark:text-gray-400">{getUpdateText()}</p>
       </div>
 
-      {/* 定时任务侧边抽屉 */}
       <CardDrawer
         item={item as any}
         open={scheduleDrawerOpen}

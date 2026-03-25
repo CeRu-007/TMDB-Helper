@@ -1,4 +1,5 @@
 import React from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { logger } from "@/lib/utils/logger"
@@ -103,6 +104,8 @@ export function ContentRenderers({
   VideoScreenshot,
   ImageCropper
 }: ContentRenderersProps) {
+  const { t } = useTranslation("nav.news")
+
   // Render item detail page
   if (selectedItem && contentKey === 'item-detail') {
     return (
@@ -359,7 +362,6 @@ function renderUpcomingContent({
         onRefresh={() => fetchUpcomingItems(false, 0, selectedRegion)}
         onRegionSelect={setSelectedRegion}
         isLoading={loadingUpcoming}
-        refreshText="刷新"
       />
 
       {/* Media news content */}
@@ -498,7 +500,6 @@ function renderRecentContent({
         onRefresh={() => fetchRecentItems(false, 0, selectedRegion)}
         onRegionSelect={setSelectedRegion}
         isLoading={loadingRecent}
-        refreshText="刷新"
       />
 
       {/* Media news content */}
@@ -567,6 +568,8 @@ function renderRecentContent({
 
 // Media news card component
 function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: (item: MediaNewsItem) => void }) {
+  const { t } = useTranslation("nav.news")
+
   const isUpcoming = new Date(item.releaseDate) > new Date()
   const badgeColor = isUpcoming ? "bg-blue-500" : "bg-green-500"
 
@@ -575,8 +578,8 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
   const daysDiff = Math.abs(Math.ceil((releaseDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
 
   const timeText = isUpcoming
-    ? daysDiff <= 0 ? "今天上线" : daysDiff === 1 ? "明天上线" : `${daysDiff}天后上线`
-    : daysDiff <= 0 ? "今天开播" : daysDiff === 1 ? "昨天开播" : `${daysDiff}天前开播`
+    ? daysDiff <= 0 ? t("todayUpoming") : daysDiff === 1 ? t("tomorrowUpoming") : `${daysDiff}${t("daysLaterUpoming")}`
+    : daysDiff <= 0 ? t("todayAired") : daysDiff === 1 ? t("yesterdayAired") : `${daysDiff}${t("daysAgoAired")}`
 
   function handleAddClick(e: React.MouseEvent) {
     e.preventDefault()
@@ -606,7 +609,7 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
             <div className="flex items-center gap-3 transform transition-transform duration-300 group-hover:scale-105">
               <button
                 className="flex items-center justify-center h-11 w-11 rounded-full bg-blue-500/90 hover:bg-blue-600 text-white transition-all shadow-lg hover:shadow-blue-500/50 group-hover:rotate-3"
-                title="添加到维护列表"
+                title={t("addToMaintenanceList", { ns: "nav.news" })}
                 onClick={handleAddClick}
               >
                 <Plus className="h-5 w-5" />
@@ -617,7 +620,7 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center h-11 w-11 rounded-full bg-gray-800/80 hover:bg-gray-900 text-white transition-all shadow-lg hover:shadow-gray-800/50 group-hover:-rotate-3"
-                title="在TMDB查看详情"
+                title={t("viewOnTmdb", { ns: "nav.news" })}
                 onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink className="h-5 w-5" />
@@ -627,7 +630,7 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
             {/* Time text */}
             <div className="absolute bottom-4 left-0 right-0 text-center">
               <span className="text-xs font-medium text-white/95 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
-                {item.mediaType === 'movie' ? '电影' : '剧集'}
+                {item.mediaType === 'movie' ? t("mediaNewsSection.movie", { ns: "nav.news" }) : t("mediaNewsSection.tv", { ns: "nav.news" })}
                 <span className="mx-1">·</span>
                 {timeText}
               </span>
@@ -640,7 +643,7 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
             {item.title}
           </h3>
           <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-            <span className="flex items-center">{item.mediaType === 'movie' ? '电影' : '剧集'}</span>
+            <span className="flex items-center">{item.mediaType === 'movie' ? t("mediaNewsSection.movie", { ns: "nav.news" }) : t("mediaNewsSection.tv", { ns: "nav.news" })}</span>
             <span className="mx-1">·</span>
             <span className="flex items-center">{timeText}</span>
           </div>

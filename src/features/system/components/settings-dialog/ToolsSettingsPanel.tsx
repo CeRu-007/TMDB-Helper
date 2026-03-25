@@ -1,5 +1,5 @@
 /**
- * 工具设置面板
+ * Tools Settings Panel
  */
 
 "use client"
@@ -20,6 +20,7 @@ import TMDBImportUpdater from "@/features/tmdb-import/components/tmdb-import-upd
 import DependencyInstaller from "@/features/system/components/dependency-installer"
 import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import type { TMDBConfig, ToolsTabState } from "./types"
+import { useTranslation } from "react-i18next"
 
 interface ToolsSettingsPanelProps {
   toolsTab: ToolsTabState['activeTab']
@@ -52,6 +53,7 @@ export default function ToolsSettingsPanel({
   saveTmdbConfig,
   isDockerEnv
 }: ToolsSettingsPanelProps) {
+  const { t } = useTranslation("settings")
   // 提取保存TMDB导入路径的逻辑
   const saveTmdbImportPath = useCallback(async (path: string) => {
     try {
@@ -73,18 +75,18 @@ export default function ToolsSettingsPanel({
 
   // 处理路径选择按钮点击
   const handlePathSelect = useCallback(async () => {
-    const path = prompt("请输入TMDB-Import工具路径:", tmdbImportPath)
+    const path = prompt(t("tools.enterToolPath"), tmdbImportPath)
     if (path) {
       setTmdbImportPath(path)
       await saveTmdbImportPath(path)
     }
-  }, [tmdbImportPath, setTmdbImportPath, saveTmdbImportPath])
+  }, [tmdbImportPath, setTmdbImportPath, saveTmdbImportPath, t])
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">工具配置</h3>
+        <h3 className="text-lg font-semibold mb-2">{t("tools.title")}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          管理TMDB-Import工具的安装、配置和依赖环境
+          {t("tools.description")}
         </p>
       </div>
 
@@ -98,7 +100,7 @@ export default function ToolsSettingsPanel({
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
-            工具管理
+            {t("tools.toolManagement")}
           </button>
           <button
             onClick={() => setToolsTab("config")}
@@ -108,7 +110,7 @@ export default function ToolsSettingsPanel({
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
-            config.ini 配置
+            {t("tools.configIni")}
           </button>
           <button
             onClick={() => setToolsTab("dependencies")}
@@ -118,7 +120,7 @@ export default function ToolsSettingsPanel({
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
-            依赖安装
+            {t("tools.dependencyInstall")}
           </button>
         </nav>
       </div>
@@ -136,12 +138,12 @@ export default function ToolsSettingsPanel({
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <FolderOpen className="h-4 w-4 mr-2" />
-                手动路径配置
+                {t("tools.manualPath")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                如果需要使用自定义路径或现有安装，可以手动指定工具路径
+                {t("tools.manualPathDesc")}
               </p>
 
               <div className="space-y-3">
@@ -151,7 +153,7 @@ export default function ToolsSettingsPanel({
                                       value={tmdbImportPath}
                                       onChange={(e) => setTmdbImportPath(e.target.value)}
                                       onBlur={handlePathBlur}
-                                      placeholder="例如: D:\TMDB-Import-master 或自定义路径"
+                                      placeholder={t("tools.placeholder")}
                                       className="flex-1"
                                     />
                                     <Button
@@ -165,8 +167,8 @@ export default function ToolsSettingsPanel({
                 {tmdbImportPath && (
                   <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">当前配置:</span>
-                      <Badge variant="default" className="text-xs">已配置</Badge>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("tools.currentConfig")}</span>
+                      <Badge variant="default" className="text-xs">{t("tools.configured")}</Badge>
                     </div>
                     <code className="text-xs text-gray-600 dark:text-gray-400 break-all">
                       {tmdbImportPath}
@@ -182,12 +184,12 @@ export default function ToolsSettingsPanel({
               <div className="flex items-start space-x-3">
                 <Info className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                 <div className="space-y-2">
-                  <p className="text-sm text-green-800 dark:text-green-200 font-medium">TMDB-Import工具说明</p>
+                  <p className="text-sm text-green-800 dark:text-green-200 font-medium">{t("tools.toolDescription")}</p>
                   <ul className="text-sm text-green-700 dark:text-green-300 space-y-1 list-decimal list-inside">
-                    <li>请输入本地TMDB-Import工具的完整路径</li>
-                    <li>确保路径中包含可执行的Python模块</li>
-                    <li>配置后可在词条详情中使用本地集成功能</li>
-                    <li>支持播出平台抓取和自动上传至TMDB</li>
+                    <li>{t("tools.toolDesc1")}</li>
+                    <li>{t("tools.toolDesc2")}</li>
+                    <li>{t("tools.toolDesc3")}</li>
+                    <li>{t("tools.toolDesc4")}</li>
                   </ul>
                 </div>
               </div>
@@ -203,13 +205,13 @@ export default function ToolsSettingsPanel({
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <CardTitle className="text-base">config.ini 配置</CardTitle>
+                  <CardTitle className="text-base">{t("tools.configIniTitle")}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <Label className="text-sm font-medium">编码</Label>
+                    <Label className="text-sm font-medium">{t("tools.encoding")}</Label>
                     <Select
                       value={tmdbConfig.encoding}
                       onValueChange={(value) => setTmdbConfig(prev => ({ ...prev, encoding: value }))}
@@ -233,10 +235,10 @@ export default function ToolsSettingsPanel({
                     />
                     <div className="flex-1">
                       <Label htmlFor="save_user_profile" className="text-sm font-medium">
-                        保存用户配置文件
+                        {t("tools.saveUserProfile")}
                       </Label>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        开启则保存浏览器登录状态等用户数据，只能启动一个Chrome进程。关闭则不保存用户数据，以支持多任务进程并发
+                        {t("tools.saveUserProfileDesc")}
                       </p>
                     </div>
                   </div>
@@ -245,27 +247,27 @@ export default function ToolsSettingsPanel({
                 <Separator />
 
                 <div className="space-y-4">
-                  <Label className="text-sm font-medium">TMDB 账户信息</Label>
+                  <Label className="text-sm font-medium">{t("tools.tmdbAccount")}</Label>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm text-gray-600 dark:text-gray-400">用户名</Label>
+                      <Label className="text-sm text-gray-600 dark:text-gray-400">{t("tools.username")}</Label>
                       <Input
                         value={tmdbConfig.tmdb_username}
                         onChange={(e) => setTmdbConfig(prev => ({ ...prev, tmdb_username: e.target.value }))}
-                        placeholder="TMDB用户名"
+                        placeholder={t("tools.tmdbUsername")}
                         className="mt-1"
                       />
                     </div>
 
                     <div>
-                      <Label className="text-sm text-gray-600 dark:text-gray-400">密码</Label>
+                      <Label className="text-sm text-gray-600 dark:text-gray-400">{t("tools.password")}</Label>
                       <div className="relative mt-1">
                         <Input
                           type={showTmdbPassword ? "text" : "password"}
                           value={tmdbConfig.tmdb_password}
                           onChange={(e) => setTmdbConfig(prev => ({ ...prev, tmdb_password: e.target.value }))}
-                          placeholder="TMDB密码"
+                          placeholder={t("tools.tmdbPasswordPlaceholder")}
                           className="pr-10"
                         />
                         <Button
@@ -288,7 +290,7 @@ export default function ToolsSettingsPanel({
 
                 <div className="space-y-4">
                   <div className="pb-2 border-b border-gray-200 dark:border-gray-700">
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">图片上传设置</Label>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("tools.imageUploadSettings")}</Label>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -299,10 +301,10 @@ export default function ToolsSettingsPanel({
                     />
                     <div className="flex-1">
                       <Label htmlFor="backdrop_forced_upload" className="text-sm font-medium">
-                        强制上传背景图
+                        {t("tools.forceUploadBackdrop")}
                       </Label>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        即使 TMDB 已有背景图也强制上传
+                        {t("tools.forceUploadBackdropDesc")}
                       </p>
                     </div>
                   </div>
@@ -315,16 +317,16 @@ export default function ToolsSettingsPanel({
                     />
                     <div className="flex-1">
                       <Label htmlFor="backdrop_vote_after_upload" className="text-sm font-medium">
-                        上传后自动点赞
+                        {t("tools.autoVoteAfterUpload")}
                       </Label>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        上传完背景图后自动点赞，增加图片权重
+                        {t("tools.autoVoteAfterUploadDesc")}
                       </p>
                     </div>
                   </div>
 
                   <div className="pb-2 pt-4 border-b border-gray-200 dark:border-gray-700">
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">CSV 导入设置</Label>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("tools.csvImportSettings")}</Label>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -335,10 +337,10 @@ export default function ToolsSettingsPanel({
                     />
                     <div className="flex-1">
                       <Label htmlFor="rename_csv_on_import" className="text-sm font-medium">
-                        导入时重命名 CSV
+                        {t("tools.renameCsv")}
                       </Label>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        重命名 CSV 文件以支持同时处理多个导入任务
+                        {t("tools.renameCsvDesc")}
                       </p>
                     </div>
                   </div>
@@ -351,20 +353,19 @@ export default function ToolsSettingsPanel({
                     />
                     <div className="flex-1">
                       <Label htmlFor="delete_csv_after_import" className="text-sm font-medium">
-                        导入后删除 CSV
+                        {t("tools.deleteCsv")}
                       </Label>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        导入完成后自动删除 CSV 文件，避免重复导入
+                        {t("tools.deleteCsvDesc")}
                       </p>
                     </div>
                   </div>
 
                   <div className="pb-2 pt-4 border-b border-gray-200 dark:border-gray-700">
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">其他设置</Label>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("tools.otherSettings")}</Label>
                   </div>
-
-                  <div>
-                    <Label className="text-sm font-medium">过滤词 (用逗号分隔)</Label>
+                  <div className="pt-4">
+                    <Label className="text-sm font-medium">{t("tools.filterWords")}</Label>
                     <Textarea
                       value={tmdbConfig.filter_words}
                       onChange={(e) => setTmdbConfig(prev => ({ ...prev, filter_words: e.target.value }))}
@@ -380,16 +381,16 @@ export default function ToolsSettingsPanel({
                 <div className="flex flex-col items-center space-y-4">
                   <AlertCircle className="h-12 w-12 text-amber-500" />
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">未配置工具路径</h4>
+                    <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t("tools.toolPathNotConfigured")}</h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                      请先在"工具管理"标签页中配置TMDB-Import工具路径，然后再进行config.ini配置。
+                      {t("tools.configIniHint")}
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     onClick={() => setToolsTab('management')}
                   >
-                    前往工具管理
+                    {t("tools.goToToolManagement")}
                   </Button>
                 </div>
               </CardContent>

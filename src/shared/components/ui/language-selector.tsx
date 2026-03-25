@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { Globe } from "lucide-react"
-import { Button } from "@/shared/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -17,9 +16,9 @@ export interface Language {
 }
 
 export const LANGUAGES: Language[] = [
-  // 亚洲语言
+  // 简体中文
   { name: "简体中文", code: "zh-CN" },
-  { name: "繁體中文", code: "zh-TW" },
+  { name: "繁体中文（台湾）", code: "zh-TW" },
   { name: "日本語", code: "ja-JP" },
   { name: "한국어", code: "ko-KR" },
   { name: "ภาษาไทย", code: "th-TH" },
@@ -30,11 +29,11 @@ export const LANGUAGES: Language[] = [
   { name: "हिन्दी", code: "hi-IN" },
   { name: "தமிழ்", code: "ta-IN" },
   { name: "తెలుగు", code: "te-IN" },
-  
-  // 欧洲语言
+
+  // 西方语言
   { name: "English", code: "en-US" },
   { name: "Español", code: "es-ES" },
-  { name: "Español Latinoamérica", code: "es-419" },
+  { name: "Español Latinoamerica", code: "es-419" },
   { name: "Français", code: "fr-FR" },
   { name: "Deutsch", code: "de-DE" },
   { name: "Italiano", code: "it-IT" },
@@ -51,7 +50,7 @@ export const LANGUAGES: Language[] = [
   { name: "Română", code: "ro-RO" },
   { name: "Türkçe", code: "tr-TR" },
   { name: "Ελληνικά", code: "el-GR" },
-  
+
   // 其他语言
   { name: "Русский", code: "ru-RU" },
   { name: "العربية", code: "ar-SA" },
@@ -73,7 +72,6 @@ export function LanguageSelector({
 }: LanguageSelectorProps) {
   const currentLanguage = LANGUAGES.find(lang => lang.code === value) || LANGUAGES[0]
 
-  // 从 localStorage 读取保存的语言
   React.useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
@@ -81,17 +79,14 @@ export function LanguageSelector({
         onChange(saved)
       }
     } catch (e) {
-      // localStorage 访问失败时忽略
     }
   }, [onChange])
 
   const handleLanguageChange = (languageCode: string) => {
     onChange(languageCode)
-    // 保存到 localStorage
     try {
       localStorage.setItem(STORAGE_KEY, languageCode)
     } catch (e) {
-      // localStorage 访问失败时忽略
     }
   }
 

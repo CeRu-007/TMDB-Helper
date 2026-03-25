@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
@@ -72,6 +73,7 @@ const PYTHON_PACKAGES = [
 
 export default function DependencyInstaller() {
   const { toast } = useToast()
+  const { t } = useTranslation("settings")
   const [status, setStatus] = useState<DependencyStatus | null>(null)
   const [loading, setLoading] = useState(false)
   const [installing, setInstalling] = useState(false)
@@ -89,15 +91,15 @@ export default function DependencyInstaller() {
         setStatus(data.data)
       } else {
         toast({
-          title: "检查失败",
+          title: t("dependencyInstaller.checkFailed"),
           description: data.error,
           variant: "destructive"
         })
       }
     } catch (error) {
       toast({
-        title: "检查失败",
-        description: "无法检查依赖状态",
+        title: t("dependencyInstaller.checkFailed"),
+        description: t("dependencyInstaller.networkError"),
         variant: "destructive"
       })
     } finally {
@@ -109,8 +111,8 @@ export default function DependencyInstaller() {
   const installPythonPackages = async () => {
     if (!status?.python.available) {
       toast({
-        title: "Python未安装",
-        description: "请先安装Python环境",
+        title: t("dependencyInstaller.pythonNotInstall"),
+        description: t("dependencyInstaller.pleaseInstallPython"),
         variant: "destructive"
       })
       return
@@ -126,8 +128,8 @@ export default function DependencyInstaller() {
 
       if (packagesToInstall.length === 0) {
         toast({
-          title: "无需安装",
-          description: "所有Python包都已安装",
+          title: t("dependencyInstaller.noNeedInstall"),
+          description: t("dependencyInstaller.allPackagesInstalled"),
         })
         setInstalling(false)
         return
@@ -149,22 +151,22 @@ export default function DependencyInstaller() {
       if (data.success) {
         setInstallProgress(data.data.results)
         toast({
-          title: "安装完成",
-          description: `成功安装 ${data.data.summary.success} 个包`,
+          title: t("dependencyInstaller.installComplete"),
+          description: t("dependencyInstaller.successInstallCount", { count: data.data.summary.success }),
         })
         // 重新检查状态
         await checkDependencies()
       } else {
         toast({
-          title: "安装失败",
+          title: t("dependencyInstaller.installFailed"),
           description: data.error,
           variant: "destructive"
         })
       }
     } catch (error) {
       toast({
-        title: "安装失败",
-        description: "网络错误或服务器异常",
+        title: t("dependencyInstaller.installFailed"),
+        description: t("dependencyInstaller.networkError"),
         variant: "destructive"
       })
     } finally {
@@ -176,8 +178,8 @@ export default function DependencyInstaller() {
   const installPlaywrightBrowsers = async () => {
     if (!status?.python.available || !status.packages.playwright) {
       toast({
-        title: "前置条件不满足",
-        description: "请先安装Python和Playwright包",
+        title: t("dependencyInstaller.prerequisiteNotMet"),
+        description: t("dependencyInstaller.pleaseInstallPlaywrightFirst"),
         variant: "destructive"
       })
       return
@@ -203,20 +205,20 @@ export default function DependencyInstaller() {
       if (data.success) {
         setInstallProgress(data.data.results)
         toast({
-          title: "浏览器安装完成",
-          description: "Chromium浏览器安装成功",
+          title: t("dependencyInstaller.browserInstallComplete"),
+          description: t("dependencyInstaller.chromiumInstalled"),
         })
       } else {
         toast({
-          title: "浏览器安装失败",
+          title: t("dependencyInstaller.browserInstallFailed"),
           description: data.error,
           variant: "destructive"
         })
       }
     } catch (error) {
       toast({
-        title: "浏览器安装失败",
-        description: "网络错误或服务器异常",
+        title: t("dependencyInstaller.browserInstallFailed"),
+        description: t("dependencyInstaller.networkError"),
         variant: "destructive"
       })
     } finally {
@@ -243,7 +245,7 @@ export default function DependencyInstaller() {
   const getStatusBadge = (isInstalled: boolean) => {
     return (
       <Badge variant={isInstalled ? "default" : "destructive"}>
-        {isInstalled ? "已安装" : "未安装"}
+        {isInstalled ? t("tmdbImportUpdater.installed") : t("tmdbImportUpdater.notInstalled")}
       </Badge>
     )
   }
@@ -253,10 +255,10 @@ export default function DependencyInstaller() {
       <div>
         <h3 className="text-lg font-semibold mb-2 flex items-center">
           <Package className="h-5 w-5 mr-2" />
-          依赖安装
+          {t("dependencyInstaller.title")}
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          一键安装TMDB-Import工具所需的第三方库和浏览器环境
+          {t("dependencyInstaller.description")}
         </p>
       </div>
 
@@ -265,14 +267,14 @@ export default function DependencyInstaller() {
         <CardHeader>
           <CardTitle className="text-base flex items-center">
             <Terminal className="h-4 w-4 mr-2" />
-            Python环境
+            {t("dependencyInstaller.pythonEnvironment")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center space-x-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">检查Python环境...</span>
+              <span className="text-sm">{t("dependencyInstaller.checkingPython")}</span>
             </div>
           ) : status ? (
             <div className="flex items-center justify-between">
@@ -280,7 +282,7 @@ export default function DependencyInstaller() {
                 {getStatusIcon(status.python.available)}
                 <div>
                   <div className="font-medium">
-                    {status.python.available ? "Python已安装" : "Python未安装"}
+                    {status.python.available ? t("dependencyInstaller.pythonInstalled") : t("dependencyInstaller.pythonNotInstalled")}
                   </div>
                   {status.python.version && (
                     <div className="text-sm text-gray-500">
@@ -296,11 +298,11 @@ export default function DependencyInstaller() {
                 disabled={loading}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                刷新
+                {t("dependencyInstaller.refresh")}
               </Button>
             </div>
           ) : (
-            <div className="text-sm text-gray-500">加载中...</div>
+            <div className="text-sm text-gray-500">{t("dependencyInstaller.loading")}</div>
           )}
         </CardContent>
       </Card>
@@ -311,7 +313,7 @@ export default function DependencyInstaller() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center">
               <Package className="h-4 w-4 mr-2" />
-              Python依赖包
+              {t("dependencyInstaller.pythonDeps")}
             </CardTitle>
             <Button
               onClick={installPythonPackages}
@@ -321,12 +323,12 @@ export default function DependencyInstaller() {
               {installing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  安装中...
+                  {t("dependencyInstaller.installing")}
                 </>
               ) : (
                 <>
                   <Download className="h-4 w-4 mr-2" />
-                  一键安装
+                  {t("dependencyInstaller.installAll")}
                 </>
               )}
             </Button>
@@ -338,8 +340,8 @@ export default function DependencyInstaller() {
               <div className="flex items-center space-x-3">
                 {getStatusIcon(status?.packages[pkg.name] || false, loading)}
                 <div>
-                  <div className="font-medium">{pkg.displayName}</div>
-                  <div className="text-sm text-gray-500">{pkg.description}</div>
+                  <div className="font-medium">{t(`dependencyInstaller.${pkg.name}`)}</div>
+                  <div className="text-sm text-gray-500">{t(`dependencyInstaller.${pkg.name}Note`)}</div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -353,12 +355,12 @@ export default function DependencyInstaller() {
             <div className="flex items-start space-x-3">
               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">Python依赖说明</p>
+                <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">{t("dependencyInstaller.pythonDepsNote")}</p>
                 <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1 list-disc list-inside">
-                  <li>Playwright: 用于浏览器自动化，支持现代化的网页抓取</li>
-                  <li>Python-dateutil: 提供强大的日期时间解析和处理功能</li>
-                  <li>Pillow: Python图像处理库，用于图片操作和格式转换</li>
-                  <li>BorderCrop: 专用的图像边框检测和裁剪工具</li>
+                  <li>Playwright: {t("dependencyInstaller.playwrightNote")}</li>
+                  <li>Python-dateutil: {t("dependencyInstaller.pythonDateutilNote")}</li>
+                  <li>Pillow: {t("dependencyInstaller.pillowNote")}</li>
+                  <li>BorderCrop: {t("dependencyInstaller.bordercropNote")}</li>
                 </ul>
               </div>
             </div>
@@ -372,7 +374,7 @@ export default function DependencyInstaller() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center">
               <Globe className="h-4 w-4 mr-2" />
-              Playwright浏览器环境
+              {t("dependencyInstaller.playwrightBrowser")}
             </CardTitle>
             <Button
               onClick={installPlaywrightBrowsers}
@@ -382,12 +384,12 @@ export default function DependencyInstaller() {
               {installing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  安装中...
+                  {t("dependencyInstaller.installing")}
                 </>
               ) : (
                 <>
                   <Download className="h-4 w-4 mr-2" />
-                  安装浏览器
+                  {t("dependencyInstaller.installAll")}
                 </>
               )}
             </Button>
@@ -398,9 +400,9 @@ export default function DependencyInstaller() {
             <div className="flex items-center space-x-3">
               <Globe className="h-5 w-5 text-blue-500" />
               <div>
-                <div className="font-medium">Chromium浏览器</div>
+                <div className="font-medium">{t("dependencyInstaller.chromiumBrowser")}</div>
                 <div className="text-sm text-gray-500">
-                  Playwright专用的Chromium浏览器环境
+                  {t("dependencyInstaller.chromiumBrowserDesc")}
                 </div>
               </div>
             </div>
@@ -411,12 +413,12 @@ export default function DependencyInstaller() {
             <div className="flex items-start space-x-3">
               <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">浏览器环境说明</p>
+                <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">{t("dependencyInstaller.browserNote")}</p>
                 <ul className="text-sm text-amber-700 dark:text-amber-300 mt-2 space-y-1 list-disc list-inside">
-                  <li>需要先安装Playwright Python包</li>
-                  <li>将下载并安装Chromium浏览器（约100MB）</li>
-                  <li>浏览器将安装到Playwright的专用目录</li>
-                  <li>安装完成后即可使用TMDB-Import的浏览器功能</li>
+                  <li>{t("dependencyInstaller.needInstallPlaywrightFirst")}</li>
+                  <li>{t("dependencyInstaller.willDownloadChromium")}</li>
+                  <li>{t("dependencyInstaller.browserWillInstallToPlaywrightDir")}</li>
+                  <li>{t("dependencyInstaller.canUseBrowserAfterInstall")}</li>
                 </ul>
               </div>
             </div>
@@ -427,9 +429,9 @@ export default function DependencyInstaller() {
               <div className="flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-red-800 dark:text-red-200 font-medium">前置条件</p>
+                  <p className="text-sm text-red-800 dark:text-red-200 font-medium">{t("dependencyInstaller.prerequisite")}</p>
                   <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                    请先安装上方的Playwright包，然后再安装浏览器环境。
+                    {t("dependencyInstaller.pleaseInstallPlaywrightFirst2")}
                   </p>
                 </div>
               </div>
@@ -442,7 +444,7 @@ export default function DependencyInstaller() {
       {installProgress.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">安装进度</CardTitle>
+            <CardTitle className="text-base">{t("dependencyInstaller.installProgress")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-48">
@@ -472,10 +474,10 @@ export default function DependencyInstaller() {
                         }
                       >
                         {progress.status === 'running'
-                          ? '进行中'
+                          ? t("dependencyInstaller.running")
                           : progress.status === 'success'
-                          ? '完成'
-                          : '失败'}
+                          ? t("dependencyInstaller.success")
+                          : t("dependencyInstaller.failed")}
                       </Badge>
                     </div>
                     {progress.progress !== undefined && progress.status === 'running' && (

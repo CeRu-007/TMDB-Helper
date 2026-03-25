@@ -6,6 +6,7 @@ import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
 import MediaCard from '@/features/media-maintenance/components/media-card'
 import { UseHomeStateReturn } from '@/stores/hooks'
+import { useTranslation } from 'react-i18next'
 
 interface WeeklyScheduleSectionProps {
   homeState: UseHomeStateReturn
@@ -29,6 +30,7 @@ const categoryFilters = {
 } as const;
 
 export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleSectionProps): JSX.Element {
+  const { t } = useTranslation('media')
   const { items, loading } = useData()
 
   function handleCardClick(itemId: string): void {
@@ -187,9 +189,9 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
             </svg>
           </div>
           <p className="text-gray-500 dark:text-gray-400">
-            {homeState.selectedDayFilter === "recent" 
-              ? "暂无最近更新的词条" 
-              : "该日期暂无播出内容"
+            {homeState.selectedDayFilter === "recent"
+              ? t('noRecentUpdates')
+              : t('noContentForDate')
             }
           </p>
         </div>

@@ -5,6 +5,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Download, Trash2, Edit3, Save, X, Type, Sparkles } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface SubtitleEntry {
   id: string
@@ -41,6 +42,7 @@ export function SubtitlePanel({
   onDelete,
   videoFileName
 }: SubtitlePanelProps) {
+  const { t } = useTranslation("image-processing")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
 
@@ -48,7 +50,7 @@ export function SubtitlePanel({
   const formatTotalTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60)
     const secs = seconds % 60
-    return `${minutes}分${secs}秒`
+    return t("hardSubtitle.timeFormat", { minutes, seconds: secs, defaultValue: `${minutes}分${secs}秒` })
   }
 
   const handleEditStart = (subtitle: SubtitleEntry) => {
@@ -97,10 +99,10 @@ export function SubtitlePanel({
       <div className="h-full flex flex-col items-center justify-center p-4 text-center">
         <Type className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" />
         <p className="text-gray-500 dark:text-gray-400 mb-2">
-          暂无字幕数据
+          {t("hardSubtitle.noSubtitlesYet")}
         </p>
         <p className="text-gray-400 dark:text-gray-500 text-sm">
-          开始提取后将在此显示识别的字幕
+          {t("hardSubtitle.startExtractingHint")}
         </p>
       </div>
     )
@@ -112,11 +114,11 @@ export function SubtitlePanel({
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col space-y-0.5">
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            {subtitles.length} 条字幕
+            {subtitles.length} {t("hardSubtitle.subtitleCount_label")}
           </span>
           {totalTime !== undefined && totalTime > 0 && (
             <span className="text-xs text-gray-400">
-              耗时 {formatTotalTime(totalTime)}
+              {t("hardSubtitle.timeCost")} {formatTotalTime(totalTime)}
             </span>
           )}
         </div>
@@ -126,11 +128,11 @@ export function SubtitlePanel({
           </Button>
           <Button variant="secondary" size="sm" onClick={handleGoToAIGenerator} className="h-8 px-3">
             <Sparkles className="h-4 w-4 mr-1.5" />
-            <span className="text-xs">生成分集简介</span>
+            <span className="text-xs">{t("hardSubtitle.generateEpisodes")}</span>
           </Button>
           <Button size="sm" onClick={onExport} className="h-8 px-3">
             <Download className="h-4 w-4 mr-1.5" />
-            <span className="text-xs">导出SRT</span>
+            <span className="text-xs">{t("hardSubtitle.exportSrt")}</span>
           </Button>
         </div>
       </div>
@@ -170,7 +172,7 @@ export function SubtitlePanel({
                         <button
                           className="p-1 hover:bg-red-100 dark:hover:bg-red-900/50 rounded transition-colors"
                           onClick={() => onDelete(subtitle.id)}
-                          title="删除字幕"
+                          title={t("hardSubtitle.deleteSubtitle")}
                         >
                           <Trash2 className="h-3 w-3 text-gray-400 hover:text-red-600 dark:hover:text-red-400" />
                         </button>
@@ -200,14 +202,14 @@ export function SubtitlePanel({
                       onClick={handleEditCancel}
                     >
                       <X className="h-3 w-3 mr-1" />
-                      取消
+                      {t("hardSubtitle.cancel")}
                     </Button>
                     <Button
                       size="sm"
                       onClick={() => handleEditSave(subtitle.id)}
                     >
                       <Save className="h-3 w-3 mr-1" />
-                      保存
+                      {t("hardSubtitle.save")}
                     </Button>
                   </div>
                 </div>
@@ -225,7 +227,7 @@ export function SubtitlePanel({
       <div className="border-t border-gray-200 dark:border-gray-700">
         <details className="group">
           <summary className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-            预览SRT格式
+            {t("hardSubtitle.previewSrt")}
           </summary>
           <div className="p-3 bg-gray-100 dark:bg-gray-900 max-h-32 overflow-auto">
             <pre className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-mono">

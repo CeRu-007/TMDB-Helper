@@ -1,10 +1,10 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/shared/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { TMDBItem } from '@/lib/data/storage'
-import { WEEKDAYS } from "@/lib/constants/weekdays"
 import { Calendar, Clock, CheckCircle2 } from 'lucide-react'
 
 interface WeekdayNavigationProps {
@@ -44,8 +44,19 @@ export function WeekdayNavigation({
   onActiveTabChange,
   currentDay = 0
 }: WeekdayNavigationProps) {
+  const { t } = useTranslation('media')
   const [mounted, setMounted] = useState(false)
   const [localCurrentDay, setLocalCurrentDay] = useState(currentDay)
+
+  const WEEKDAYS = [
+    t('weekdays.monday'),
+    t('weekdays.tuesday'),
+    t('weekdays.wednesday'),
+    t('weekdays.thursday'),
+    t('weekdays.friday'),
+    t('weekdays.saturday'),
+    t('weekdays.sunday'),
+  ]
 
   useEffect(() => {
     setMounted(true)
@@ -65,13 +76,12 @@ export function WeekdayNavigation({
     <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10">
       <div className="mx-auto px-6">
         <div className="flex justify-between items-center py-3">
-          {/* 左侧：日期导航按钮 */}
           <div className="flex space-x-1 overflow-x-auto">
             <button
               onClick={() => onDayFilterChange("recent")}
               className={getDayButtonClasses(selectedDayFilter === "recent", false)}
             >
-              最近更新
+              {t("recentlyUpdated", { ns: "common" })}
             </button>
 
             {WEEKDAYS.map((day, index) => {
@@ -101,20 +111,18 @@ export function WeekdayNavigation({
             })}
           </div>
 
-          {/* 右侧：分类选择器 + 状态选择器 */}
           <div className="flex items-center space-x-4 ml-4 flex-shrink-0">
-            {/* 分类选择器 */}
             {onCategoryChange && (
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">分类:</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("category", { ns: "common" })}:</span>
                 <Select value={selectedCategory || 'all'} onValueChange={onCategoryChange}>
                   <SelectTrigger className="w-28">
-                    <SelectValue placeholder="全部" />
+                    <SelectValue placeholder={t("all", { ns: "common" })} />
                   </SelectTrigger>
                   <SelectContent className="z-[60]">
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
-                        {category.name}
+                        {category.id === 'all' ? t("all", { ns: "common" }) : t(`categoryNames.${category.id}`, { ns: "media" })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -122,10 +130,9 @@ export function WeekdayNavigation({
               </div>
             )}
 
-            {/* 状态选择器 */}
             {activeTab && onActiveTabChange && (
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">状态:</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("status", { ns: "common" })}:</span>
                 <Select value={activeTab} onValueChange={onActiveTabChange}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -134,13 +141,13 @@ export function WeekdayNavigation({
                     <SelectItem value="ongoing">
                       <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4" />
-                        <span>连载中</span>
+                        <span>{t("ongoing", { ns: "common" })}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="completed">
                       <div className="flex items-center space-x-2">
                         <CheckCircle2 className="h-4 w-4" />
-                        <span>已完结</span>
+                        <span>{t("completed", { ns: "common" })}</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -149,24 +156,23 @@ export function WeekdayNavigation({
             )}
           </div>
 
-          {/* 如果没有状态选择器，显示当前筛选信息 */}
           {(!activeTab || !onActiveTabChange) && (
             <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
               <span>
                 {selectedCategory === "all"
-                  ? "全部分类"
-                  : categories.find(c => c.id === selectedCategory)?.name || "未知分类"
+                  ? t("all", { ns: "common" })
+                  : t(`categoryNames.${selectedCategory}`, { ns: "media" })
                 }
               </span>
               <span>•</span>
               <span>
                 {selectedDayFilter === "recent"
-                  ? "最近更新"
-                  : `${WEEKDAYS[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]}播出`
+                  ? t("recentlyUpdated", { ns: "common" })
+                  : `${WEEKDAYS[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]}${t("aired", { ns: "common" })}`
                 }
               </span>
               <span>•</span>
-              <span>{filteredItems.length} 个词条</span>
+              <span>{t("itemsCount", { count: filteredItems.length, ns: "common" })}</span>
             </div>
           )}
         </div>

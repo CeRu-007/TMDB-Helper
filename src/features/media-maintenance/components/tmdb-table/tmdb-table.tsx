@@ -9,6 +9,7 @@ import TableContextMenu from "../../../../shared/components/ui/table-context-men
 import BatchInsertRowDialog from "../batch-insert-row-dialog"
 import BatchEditDialog from "../batch-edit-dialog"
 import { DELAY_1500MS } from "@/lib/constants/constants"
+import { useTranslation } from "react-i18next"
 import {
   Plus,
   ChevronDown,
@@ -110,6 +111,7 @@ const TMDBTableComponent = ({
   showColumnOperations = true,
   showRowOperations = true
 }: TMDBTableProps) => {
+  const { t } = useTranslation('ui')
   // 列宽状态
   const [_columnWidths, _setColumnWidths] = useState<number[]>([])
   // 选中单元格状态
@@ -1477,7 +1479,7 @@ const TMDBTableComponent = ({
   if (!localData || !localData.headers || !localData.rows) {
     return (
       <div className={cn("tmdb-table-empty", className)}>
-        <p className="text-center p-4">无数据</p>
+        <p className="text-center p-4">{t("table.noData")}</p>
       </div>
     )
   }

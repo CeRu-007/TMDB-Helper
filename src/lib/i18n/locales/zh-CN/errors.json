@@ -1,0 +1,5 @@
+{
+  "required": "缺少必要参数",
+  "serverError": "服务器内部错误",
+  "dataUpdateFailed": "数据更新后保存失败"
+}

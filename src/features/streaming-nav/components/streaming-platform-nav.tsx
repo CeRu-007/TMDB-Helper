@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ExternalLink, Search, GripVertical, ArrowUpDown, Heart, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/shared/components/ui/input';
@@ -30,16 +31,18 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// 扩展分类类型
-type ExtendedCategoryType = CategoryType | '我的收藏' | '最近使用';
+const CATEGORY_ALL = 'all';
+const CATEGORY_MY_FAVORITES = 'myFavorites';
+const CATEGORY_RECENTLY_USED = 'recentlyUsed';
+type ExtendedCategoryType = CategoryType | typeof CATEGORY_MY_FAVORITES | typeof CATEGORY_RECENTLY_USED;
 
-// 可排序的平台卡片组件
 interface SortablePlatformCardProps {
   platform: Platform;
   onPlatformClick: (platform: Platform) => void;
   isDragMode: boolean;
   isFavorite: boolean;
   onToggleFavorite: (platformId: string) => void;
+  t: (key: string, options?: any) => string;
 }
 
 function SortablePlatformCard({
@@ -48,6 +51,7 @@ function SortablePlatformCard({
   isDragMode,
   isFavorite,
   onToggleFavorite,
+  t,
 }: SortablePlatformCardProps): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: platform.id });
@@ -72,14 +76,12 @@ function SortablePlatformCard({
       {...(isDragMode ? { ...attributes, ...listeners } : {})}
       onClick={isDragMode ? undefined : () => onPlatformClick(platform)}
     >
-      {/* 拖拽模式指示器 */}
       {isDragMode && (
         <div className="absolute top-2 left-2 z-10">
           <GripVertical className="w-4 h-4 text-blue-500 dark:text-blue-400" />
         </div>
       )}
 
-      {/* 收藏按钮 */}
       {!isDragMode && (
         <button
           onClick={(e) => {
@@ -92,24 +94,20 @@ function SortablePlatformCard({
               ? 'bg-red-50 dark:bg-red-900/30 text-red-500'
               : 'bg-gray-100 dark:bg-slate-700 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-slate-600'
           )}
-          title={isFavorite ? '取消收藏' : '添加收藏'}
+          title={isFavorite ? t("removeFromFavorites") : t("addToFavorites")}
         >
           <Heart className={cn('w-3.5 h-3.5', isFavorite && 'fill-current')} />
         </button>
       )}
 
-      {/* 外链图标 */}
       {!isDragMode && (
         <div className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
         </div>
       )}
 
-      {/* 卡片内容 */}
       <div className="p-4">
-        {/* Logo和标题区域 */}
         <div className="flex items-center gap-3">
-          {/* Logo */}
           <div className={cn('flex-shrink-0 transition-transform duration-300', !isDragMode && 'group-hover:scale-105')}>
             {platform.logoUrl ? (
               <PlatformLogo name={platform.name} logoUrl={platform.logoUrl} size="sm" />
@@ -120,7 +118,6 @@ function SortablePlatformCard({
             )}
           </div>
 
-          {/* 标题和描述 */}
           <div className="flex-1 min-w-0">
             <h3
               className={cn(
@@ -139,12 +136,10 @@ function SortablePlatformCard({
         </div>
       </div>
 
-      {/* 悬停时的底部装饰条 */}
       {!isDragMode && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
       )}
 
-      {/* 悬停时的背景光效 */}
       {!isDragMode && (
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl" />
       )}
@@ -152,7 +147,6 @@ function SortablePlatformCard({
   );
 }
 
-// 从本地存储加载字符串数组（仅客户端）
 function loadStringArrayFromStorage(key: string): string[] {
   if (typeof window === 'undefined') {
     return [];
@@ -169,27 +163,27 @@ function loadStringArrayFromStorage(key: string): string[] {
   }
 }
 
-// 从本地存储加载平台顺序（仅客户端）
 function loadPlatformOrder(): Platform[] {
   if (typeof window === 'undefined') {
-    return getFilteredPlatforms('全部');
+    return getFilteredPlatforms('all');
   }
   const savedOrder = localStorage.getItem('platformOrder');
   if (!savedOrder) {
-    return getFilteredPlatforms('全部');
+    return getFilteredPlatforms('all');
   }
 
   try {
     const order = JSON.parse(savedOrder);
-    const allPlatforms = getFilteredPlatforms('全部');
+    const allPlatforms = getFilteredPlatforms('all');
     return allPlatforms.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   } catch {
-    return getFilteredPlatforms('全部');
+    return getFilteredPlatforms('all');
   }
 }
 
 function StreamingPlatformNav(): JSX.Element {
-  const [selectedCategory, setSelectedCategory] = useState<ExtendedCategoryType>('全部');
+  const { t } = useTranslation('nav.platforms')
+  const [selectedCategory, setSelectedCategory] = useState<ExtendedCategoryType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recentlyUsed, setRecentlyUsed] = useState<string[]>([]);
@@ -204,7 +198,10 @@ function StreamingPlatformNav(): JSX.Element {
     setIsHydrated(true);
   }, []);
 
-  // 拖拽传感器配置
+  const tMyFavorites = 'myFavorites';
+  const tRecentlyUsed = 'recentlyUsed';
+  const tAll = 'all';
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -216,7 +213,6 @@ function StreamingPlatformNav(): JSX.Element {
     })
   );
 
-  // 切换收藏状态
   function toggleFavorite(platformId: string): void {
     setFavorites((prev) => {
       const newFavorites = prev.includes(platformId) ? prev.filter((id) => id !== platformId) : [...prev, platformId];
@@ -225,7 +221,6 @@ function StreamingPlatformNav(): JSX.Element {
     });
   }
 
-  // 添加到最近使用
   function addToRecentlyUsed(platformId: string): void {
     setRecentlyUsed((prev) => {
       const newRecent = [platformId, ...prev.filter((id) => id !== platformId)].slice(0, 10);
@@ -234,18 +229,17 @@ function StreamingPlatformNav(): JSX.Element {
     });
   }
 
-  // 筛选逻辑 - 支持分类、搜索、收藏和最近使用
   const filteredPlatforms = useMemo(() => {
     let result = platforms;
 
-    if (selectedCategory === '我的收藏') {
+    if (selectedCategory === tMyFavorites) {
       result = result.filter((platform) => favorites.includes(platform.id));
-    } else if (selectedCategory === '最近使用') {
+    } else if (selectedCategory === tRecentlyUsed) {
       const recentPlatforms = recentlyUsed
         .map((id) => platforms.find((p) => p.id === id))
         .filter((p): p is Platform => p !== undefined);
       return recentPlatforms;
-    } else if (selectedCategory !== '全部') {
+    } else if (selectedCategory !== tAll) {
       result = result.filter((platform) => platform.region === selectedCategory);
     }
 
@@ -258,14 +252,12 @@ function StreamingPlatformNav(): JSX.Element {
     }
 
     return result;
-  }, [selectedCategory, platforms, searchQuery, favorites, recentlyUsed]);
+  }, [selectedCategory, platforms, searchQuery, favorites, recentlyUsed, tMyFavorites, tRecentlyUsed, tAll]);
 
-  // 处理分类切换
   function handleCategoryChange(category: ExtendedCategoryType): void {
     setSelectedCategory(category);
   }
 
-  // 处理拖拽结束
   function handleDragEnd(event: DragEndEvent): void {
     const { active, over } = event;
 
@@ -278,7 +270,6 @@ function StreamingPlatformNav(): JSX.Element {
       const newIndex = items.findIndex((item) => item.id === over.id);
       const newItems = arrayMove(items, oldIndex, newIndex);
 
-      // 保存新的排序到本地存储
       const newOrder = newItems.map((item) => item.id);
       localStorage.setItem('platformOrder', JSON.stringify(newOrder));
 
@@ -286,7 +277,6 @@ function StreamingPlatformNav(): JSX.Element {
     });
   }
 
-  // 处理平台卡片点击
   function handlePlatformClick(platform: Platform): void {
     addToRecentlyUsed(platform.id);
     window.open(platform.url, '_blank', 'noopener,noreferrer');
@@ -294,27 +284,23 @@ function StreamingPlatformNav(): JSX.Element {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      {/* 背景装饰 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl" />
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
       </div>
 
-      {/* 网格背景 */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#8881_1px,transparent_1px),linear-gradient(to_bottom,#8881_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* 顶部区域 */}
         <div className="max-w-4xl mx-auto mb-8">
-          {/* 搜索框 */}
           <div className="relative mb-6">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
               <Search className="w-5 h-5" />
             </div>
             <Input
               type="text"
-              placeholder="搜索平台..."
+              placeholder={t("searchPlatforms")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-14 pl-12 pr-4 text-base bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-gray-200 dark:border-slate-700 rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-slate-900/50 focus-visible:ring-2 focus-visible:ring-blue-500/50"
@@ -329,7 +315,6 @@ function StreamingPlatformNav(): JSX.Element {
             )}
           </div>
 
-          {/* 分类标签栏 */}
           <div className="flex items-center justify-center gap-2 flex-wrap">
             {categories.map((category) => (
               <button
@@ -344,39 +329,35 @@ function StreamingPlatformNav(): JSX.Element {
                   isDragMode && 'opacity-50 cursor-not-allowed'
                 )}
               >
-                {category}
+                {category === 'all' ? t('all') : t(category, { ns: 'nav.platforms' })}
               </button>
             ))}
           </div>
         </div>
 
-        {/* 操作栏 */}
         <div className="max-w-7xl mx-auto mb-4 flex items-center justify-between">
-          {/* 左侧：返回按钮 + 当前分类标题 + 结果数 */}
           <div className="flex items-center gap-3">
-            {/* 返回按钮 */}
-            {(selectedCategory === '我的收藏' || selectedCategory === '最近使用') && (
+            {(selectedCategory === tMyFavorites || selectedCategory === tRecentlyUsed) && (
               <button
-                onClick={() => handleCategoryChange('全部')}
+                onClick={() => handleCategoryChange(tAll)}
                 className="flex items-center gap-1 px-2 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                返回
+                {t("back")}
               </button>
             )}
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {searchQuery
-                  ? `"${searchQuery}" 的搜索结果`
-                  : selectedCategory === '全部'
-                    ? '全部平台'
-                    : selectedCategory}
+                  ? t("searchResultsFor", { query: searchQuery })
+                  : selectedCategory === tAll
+                    ? t("allPlatforms")
+                    : selectedCategory === 'all' ? t('all') : t(selectedCategory, { ns: 'nav.platforms' })}
               </h2>
               <span className="text-sm text-gray-500 dark:text-gray-400">({filteredPlatforms.length})</span>
             </div>
           </div>
 
-          {/* 右侧：排序控制 */}
           <button
             onClick={() => setIsDragMode(!isDragMode)}
             className={cn(
@@ -387,17 +368,15 @@ function StreamingPlatformNav(): JSX.Element {
             )}
           >
             <ArrowUpDown className="w-4 h-4" />
-            {isDragMode ? '完成排序' : '排序'}
+            {isDragMode ? t("completeSort") : t("sort")}
           </button>
         </div>
 
-        {/* 个人快捷区域 */}
-        {selectedCategory !== '我的收藏' && selectedCategory !== '最近使用' && !searchQuery && (
+        {selectedCategory !== tMyFavorites && selectedCategory !== tRecentlyUsed && !searchQuery && (
           <div className="max-w-7xl mx-auto mb-6">
             <div className="inline-flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1">
-              {/* 我的收藏 */}
               <button
-                onClick={() => handleCategoryChange('我的收藏')}
+                onClick={() => handleCategoryChange(tMyFavorites)}
                 className={cn(
                   'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
                   favorites.length > 0
@@ -406,15 +385,14 @@ function StreamingPlatformNav(): JSX.Element {
                 )}
               >
                 <Heart className={cn('w-3.5 h-3.5', favorites.length > 0 && 'fill-current')} />
-                <span>我的收藏</span>
+                <span>{t("myFavorites")}</span>
                 {favorites.length > 0 && (
                   <span className="ml-0.5 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{favorites.length}</span>
                 )}
               </button>
 
-              {/* 最近使用 */}
               <button
-                onClick={() => recentlyUsed.length > 0 && handleCategoryChange('最近使用')}
+                onClick={() => recentlyUsed.length > 0 && handleCategoryChange(tRecentlyUsed)}
                 className={cn(
                   'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
                   recentlyUsed.length > 0
@@ -425,7 +403,7 @@ function StreamingPlatformNav(): JSX.Element {
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>最近使用</span>
+                <span>{t("recentlyUsed")}</span>
                 {recentlyUsed.length > 0 && (
                   <span className="ml-0.5 text-xs bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">
                     {recentlyUsed.length}
@@ -436,15 +414,13 @@ function StreamingPlatformNav(): JSX.Element {
           </div>
         )}
 
-        {/* 拖拽模式提示 */}
         {isDragMode && (
           <div className="max-w-7xl mx-auto mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
             <GripVertical className="w-4 h-4" />
-            拖拽卡片可调整顺序，点击"完成排序"保存
+            {t("dragCardsToReorder")}
           </div>
         )}
 
-        {/* 平台网格 */}
         <div className="max-w-7xl mx-auto">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={filteredPlatforms.map((p) => p.id)} strategy={rectSortingStrategy}>
@@ -457,6 +433,7 @@ function StreamingPlatformNav(): JSX.Element {
                     isDragMode={isDragMode}
                     isFavorite={favorites.includes(platform.id)}
                     onToggleFavorite={toggleFavorite}
+                    t={t}
                   />
                 ))}
               </div>
@@ -464,18 +441,17 @@ function StreamingPlatformNav(): JSX.Element {
           </DndContext>
         </div>
 
-        {/* 空状态 */}
         {filteredPlatforms.length === 0 && (
           <div className="max-w-7xl mx-auto text-center py-16">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">未找到匹配的平台</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">{t("noMatchingPlatforms")}</p>
             <button
               onClick={() => {
                 setSearchQuery('');
-                setSelectedCategory('全部');
+                setSelectedCategory('all');
               }}
               className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
             >
-              清除筛选条件
+              {t("clearFilters")}
             </button>
           </div>
         )}

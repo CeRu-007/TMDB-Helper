@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, memo } from "react"
 import { logger } from '@/lib/utils/logger'
+import { useTranslation } from "react-i18next"
 import { DELAY_1S, DELAY_2S } from "@/lib/constants/constants"
 import { realtimeSyncManager } from "@/lib/data/realtime-sync-manager"
 import {
@@ -60,7 +61,8 @@ import { useItemImagesPreloader } from "@/lib/hooks/useItemImagesPreloader"
 // 导入对话框组件
 import FixTMDBImportBugDialog from "@/features/tmdb-import/components/fix-tmdb-import-bug-dialog"
 
-const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+const WEEKDAYS_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const
+type WeekdayKey = typeof WEEKDAYS_KEYS[number]
 
 type CategoryType = "anime" | "tv" | "kids" | "variety" | "short";
 
@@ -74,15 +76,19 @@ interface ItemDetailDialogProps {
 }
 
 const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, displayMode = "dialog" }: ItemDetailDialogProps) {
+  const { t } = useTranslation("media")
+  const { t: tSchedule } = useTranslation("schedule")
   const contentRef = useRef<HTMLDivElement>(null)
 
   const CATEGORIES = [
-    { id: "anime", name: "动漫", icon: <Sparkles className="h-4 w-4 mr-2" strokeWidth={2} /> },
-    { id: "tv", name: "电视剧", icon: <Tv className="h-4 w-4 mr-2" strokeWidth={2} /> },
-    { id: "kids", name: "少儿", icon: <Baby className="h-4 w-4 mr-2" strokeWidth={2} /> },
-    { id: "variety", name: "综艺", icon: <Popcorn className="h-4 w-4 mr-2" strokeWidth={2} /> },
-    { id: "short", name: "短剧", icon: <Ticket className="h-4 w-4 mr-2" strokeWidth={2} /> },
+    { id: "anime", name: t("categoryAnime"), icon: <Sparkles className="h-4 w-4 mr-2" strokeWidth={2} /> },
+    { id: "tv", name: t("categoryTv"), icon: <Tv className="h-4 w-4 mr-2" strokeWidth={2} /> },
+    { id: "kids", name: t("categoryKids"), icon: <Baby className="h-4 w-4 mr-2" strokeWidth={2} /> },
+    { id: "variety", name: t("categoryVariety"), icon: <Popcorn className="h-4 w-4 mr-2" strokeWidth={2} /> },
+    { id: "short", name: t("categoryShort"), icon: <Ticket className="h-4 w-4 mr-2" strokeWidth={2} /> },
   ]
+
+  const WEEKDAYS = WEEKDAYS_KEYS.map(key => t(`weekdays.${key}` as const))
 
   // 核心状态管理
   const {
@@ -218,7 +224,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
   function handleSeasonClick(seasonNumber: number): void {
     setSelectedSeason(seasonNumber)
     setCustomSeasonNumber(seasonNumber)
-    showFeedback(`已切换到第${seasonNumber}季`, 1000)
+    showFeedback(t("switchedToSeason", { season: seasonNumber }), 1000)
   }
 
   function handleDeleteSeason(): void {
@@ -243,7 +249,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     const success = await saveItemDirectly(updatedItem)
     if (success) {
       updateLocalItem(updatedItem, false)
-      showFeedback(`第${seasonToDelete}季已删除`, DELAY_2S)
+      showFeedback(t("seasonDeleted", { season: seasonToDelete }), DELAY_2S)
       setShowDeleteSeasonDialog(false)
       setSeasonToDelete(null)
 
@@ -255,7 +261,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         setSelectedSeason(undefined)
       }
     } else {
-      showFeedback('删除季数失败，请重试')
+      showFeedback(t("deleteSeasonFailed"))
     }
   }
 
@@ -284,9 +290,9 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     const success = await saveItemDirectly(updatedItem)
     if (success) {
       updateLocalItem(updatedItem, false)
-      showFeedback(`第${selectedSeason}季已重置`, DELAY_2S)
+      showFeedback(t("seasonReset", { season: selectedSeason }), DELAY_2S)
     } else {
-      showFeedback('重置季数失败，请重试')
+      showFeedback(t("resetSeasonFailed"))
     }
   }
 
@@ -353,11 +359,11 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     const success = await saveItemDirectly(updatedItem)
     if (success) {
       updateLocalItem(updatedItem, false)
-      showFeedback(`第${selectedSeason}季集数已更新为${newCount}集`, DELAY_2S)
+      showFeedback(t("episodeCountUpdated", { season: selectedSeason, count: newCount }), DELAY_2S)
       setShowEpisodeChangeDialog(false)
       setEpisodeChangeData(null)
     } else {
-      showFeedback('更新集数失败，请重试')
+      showFeedback(t("updateEpisodeCountFailed"))
     }
   }
 
@@ -371,7 +377,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
     const seasonExists = localItem.seasons?.some(s => s.seasonNumber === seasonNumber)
     if (seasonExists) {
-      showFeedback(`第${seasonNumber}季已存在`)
+      showFeedback(t("seasonAlreadyExists", { season: seasonNumber }))
       return
     }
 
@@ -418,9 +424,9 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
       setSelectedSeason(seasonNumber)
       setCustomSeasonNumber(seasonNumber)
-      showFeedback(`已添加第${seasonNumber}季，共${episodeCount}集`, DELAY_2S)
+      showFeedback(t("seasonAdded", { season: seasonNumber, count: episodeCount }), DELAY_2S)
     } else {
-      showFeedback('添加季数失败，请重试')
+      showFeedback(t("addSeasonFailed"))
     }
   }
 
@@ -436,13 +442,13 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     if (success) {
       updateLocalItem(updatedItem, false)
     } else {
-      showFeedback('更新状态失败，请重试')
+      showFeedback(t("updateStatusFailed"))
     }
   }
 
   async function refreshSeasonFromTMDB(): Promise<void> {
     if (!editData.tmdbId) {
-      showFeedback("没有TMDB ID，无法刷新数据")
+      showFeedback(t("noTmdbIdForRefresh"))
       return
     }
 
@@ -462,7 +468,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       const tmdbData = apiResponse.success ? apiResponse.data : null
 
       if (!tmdbData) {
-        throw new Error(apiResponse.error || "未能从TMDB获取到有效数据")
+        throw new Error(apiResponse.error || t("errors.tmdbFetchFailed"))
       }
 
       const updatedItem: TMDBItem = {
@@ -493,16 +499,16 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
       const success = await saveItemDirectly(updatedItem)
       if (!success) {
-        throw new Error("数据更新后保存失败")
+        throw new Error(t("dataSaveFailed"))
       }
 
-      const baseText = "TMDB数据、标志和简介已成功刷新"
-      const extraText = editData.mediaType === "tv" ? "、网络logo" : ""
-      const backdropText = tmdbData.hasNewBackdrop ? "、背景图" : ""
+      const baseText = t("tmdbDataRefreshed")
+      const extraText = editData.mediaType === "tv" ? t("networkLogo") : ""
+      const backdropText = tmdbData.hasNewBackdrop ? t("backdropImage") : ""
       showFeedback(`${baseText}${extraText}${backdropText}`)
 
     } catch (error) {
-      setRefreshError(error instanceof Error ? error.message : "刷新TMDB数据失败，请稍后再试")
+      setRefreshError(error instanceof Error ? error.message : t("refreshTmdbDataFailed"))
     } finally {
       setIsRefreshingTMDBData(false)
     }
@@ -735,7 +741,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     if (success) {
       updateLocalItem(updatedItem, false)
     } else {
-      showFeedback('更新进度失败，请重试')
+      showFeedback(t("updateProgressFailed"))
     }
   }
 
@@ -752,15 +758,15 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     try {
       const success = await saveItemDirectly(updatedItem)
       if (!success) {
-        throw new Error('保存失败')
+        throw new Error(t("saveFailed"))
       }
 
       setLocalItem(updatedItem)
       onUpdate(updatedItem)
       setEditing(false)
-      showFeedback('保存成功')
+      showFeedback(t("saveSuccess"))
     } catch {
-      showFeedback('保存失败，请重试')
+      showFeedback(t("saveFailed"))
     } finally {
       setIsSaving(false)
     }
@@ -768,7 +774,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   const getAirTime = (weekday?: number): string => {
     if (weekday === undefined) return ""
-    const days = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+    const days = WEEKDAYS.map((_, i) => t(`weekdays.${["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][i]}`))
     return days[weekday] || ""
   }
 
@@ -855,7 +861,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   )}
                   {!editing && (
                     <Badge variant={localItem.status === "ongoing" ? "outline" : "default"} className="ml-2">
-                      {localItem.status === "ongoing" ? "连载中" : "已完结"}
+                      {localItem.status === "ongoing" ? t("ongoing") : t("completed")}
                     </Badge>
                   )}
                 </DialogTitle>
@@ -863,7 +869,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   {isDailyUpdate ? (
                     <Badge className="bg-blue-500 text-white">
                       <Zap className="h-3 w-3 mr-1 animate-pulse" />
-                      每日更新 {localItem.airTime || ""}
+                      {t("dailyUpdate")} {localItem.airTime || ""}
                     </Badge>
                   ) : (
                     <Badge variant="secondary">
@@ -879,7 +885,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   )}
                   {localItem.mediaType === "tv" && (
                     <Badge variant="outline">
-                      {progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0}% 已完成
+                      {progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0}% {t("completed")}
                     </Badge>
                   )}
                 </div>
@@ -890,7 +896,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   variant="outline"
                   size="icon"
                   className="h-8 w-8 transition-transform hover:scale-110"
-                  title="刷新TMDB数据"
+                  title={t("refreshTmdbData")}
                   onClick={refreshSeasonFromTMDB}
                   disabled={isRefreshingTMDBData}
                 >
@@ -905,7 +911,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 transition-transform hover:scale-110"
-                    title="在TMDB中查看"
+                    title={t("viewOnTmdb")}
                     onClick={() => window.open(localItem.tmdbUrl, "_blank")}
                   >
                     <ExternalLink className="h-4 w-4" />
@@ -916,7 +922,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 transition-transform hover:scale-110"
-                    title="编辑"
+                    title={t("edit")}
                     onClick={() => setEditing(true)}
                   >
                     <Edit className="h-4 w-4" />
@@ -926,7 +932,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 transition-transform hover:scale-110"
-                    title="保存"
+                    title={t("save")}
                     onClick={handleSaveEdit}
                     disabled={isSaving}
                   >
@@ -942,7 +948,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 text-destructive hover:text-destructive transition-transform hover:scale-110"
-                    title="删除"
+                    title={t("delete")}
                     onClick={() => setShowDeleteDialog(true)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -952,7 +958,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   variant="outline"
                   size="icon"
                   className="h-8 w-8 transition-transform hover:scale-110"
-                  title={displayMode === 'inline' ? "返回" : "关闭"}
+                  title={displayMode === 'inline' ? t("back") : t("close")}
                   onClick={() => onOpenChange(false)}
                 >
                   {displayMode === 'inline' ? <ArrowRightCircle className="h-4 w-4 rotate-180" /> : <X className="h-4 w-4" />}
@@ -979,7 +985,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       ) : (
                         <div className="text-center p-4">
                           <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                          <p className="text-sm text-muted-foreground">海报</p>
+                          <p className="text-sm text-muted-foreground">{t("poster")}</p>
                         </div>
                       )}
                     </div>
@@ -993,12 +999,12 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                           <div className="pb-0.5 mb-0.5 flex items-center justify-between border-b border-border/20">
                             <h3 className="text-sm font-medium flex items-center">
                               <Edit className="h-3.5 w-3.5 mr-1" />
-                              词条编辑
+                              {t("editItem")}
                             </h3>
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-title" className="text-xs text-muted-foreground">标题</Label>
+                            <Label htmlFor="edit-title" className="text-xs text-muted-foreground">{t("title")}</Label>
                             <Input
                               id="edit-title"
                               value={editData.title}
@@ -1011,7 +1017,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
                           <div className="grid grid-cols-2 gap-1.5">
                             <div className="space-y-0.5">
-                              <Label htmlFor="edit-category" className="text-xs text-muted-foreground">分类</Label>
+                              <Label htmlFor="edit-category" className="text-xs text-muted-foreground">{t("category")}</Label>
                               <Select
                                 value={editData.category || "none"}
                                 onValueChange={function handleCategoryChange(value) {
@@ -1019,10 +1025,10 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                                 }}
                               >
                                 <SelectTrigger className="h-8">
-                                  <SelectValue placeholder="选择分类" />
+                                  <SelectValue placeholder={t("selectCategory")} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="none">未分类</SelectItem>
+                                  <SelectItem value="none">{t("uncategorized")}</SelectItem>
                                   {CATEGORIES.map(cat => (
                                     <SelectItem key={cat.id} value={cat.id}>
                                       <div className="flex items-center">
@@ -1036,7 +1042,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                             </div>
 
                             <div className="space-y-0.5">
-                              <Label htmlFor="edit-status" className="text-xs text-muted-foreground">状态</Label>
+                              <Label htmlFor="edit-status" className="text-xs text-muted-foreground">{t("status")}</Label>
                               <Select
                                 value={editData.status}
                                 onValueChange={function handleStatusChange(value) {
@@ -1047,28 +1053,28 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="ongoing">连载中</SelectItem>
-                                  <SelectItem value="completed">已完结</SelectItem>
+                                  <SelectItem value="ongoing">{t("ongoing")}</SelectItem>
+                                  <SelectItem value="completed">{t("completed")}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-airtime" className="text-xs text-muted-foreground">播出时间</Label>
+                            <Label htmlFor="edit-airtime" className="text-xs text-muted-foreground">{t("airTime")}</Label>
                             <Input
                               id="edit-airtime"
                               value={editData.airTime || ""}
                               onChange={function handleAirTimeChange(e) {
                               setEditData({...editData, airTime: e.target.value})
                             }}
-                              placeholder="例如：周一 22:00"
+                              placeholder={t("airTimePlaceholder")}
                               className="h-8"
                             />
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-weekday" className="text-xs text-muted-foreground">播出日</Label>
+                            <Label htmlFor="edit-weekday" className="text-xs text-muted-foreground">{t("airDate")}</Label>
                             <Select
                               value={editData.weekday?.toString() || "none"}
                               onValueChange={function handleWeekdayChange(value) {
@@ -1076,10 +1082,10 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                               }}
                             >
                               <SelectTrigger className="h-8">
-                                <SelectValue placeholder="选择播出日" />
+                                <SelectValue placeholder={t("selectAirDate")} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">无</SelectItem>
+                                <SelectItem value="none">{t("none")}</SelectItem>
                                 {WEEKDAYS.map((day, index) => (
                                   <SelectItem key={index} value={index.toString()}>{day}</SelectItem>
                                 ))}
@@ -1089,7 +1095,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
                           <div className="space-y-0.5">
                             <div className="flex items-center justify-between">
-                              <Label className="text-xs text-muted-foreground">每日更新</Label>
+                              <Label className="text-xs text-muted-foreground">{t("dailyUpdate")}</Label>
                               <input
                                 type="checkbox"
                                 checked={editData.isDailyUpdate || false}
@@ -1102,7 +1108,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-second-weekday" className="text-xs text-muted-foreground">第二播出日</Label>
+                            <Label htmlFor="edit-second-weekday" className="text-xs text-muted-foreground">{t("secondAirDate")}</Label>
                             <Select
                               value={editData.secondWeekday?.toString() || "none"}
                               onValueChange={function handleSecondWeekdayChange(value) {
@@ -1110,10 +1116,10 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                               }}
                             >
                               <SelectTrigger className="h-8">
-                                <SelectValue placeholder="选择星期" />
+                                <SelectValue placeholder={t("selectWeekday")} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">无</SelectItem>
+                                <SelectItem value="none">{t("none")}</SelectItem>
                                 {WEEKDAYS.map((day, index) => (
                                   <SelectItem key={index} value={index.toString()}>{day}</SelectItem>
                                 ))}
@@ -1122,7 +1128,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-platform-url" className="text-xs text-muted-foreground">播出平台URL</Label>
+                            <Label htmlFor="edit-platform-url" className="text-xs text-muted-foreground">{t("platformUrl")}</Label>
                             <Input
                               id="edit-platform-url"
                               value={editData.platformUrl || ""}
@@ -1135,7 +1141,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-backdrop-url" className="text-xs text-muted-foreground">背景图URL</Label>
+                            <Label htmlFor="edit-backdrop-url" className="text-xs text-muted-foreground">{t("backdropUrl")}</Label>
                             <Input
                               id="edit-backdrop-url"
                               value={editData.backdropUrl || ""}
@@ -1172,15 +1178,15 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   <TabsList className="grid w-full grid-cols-3 mb-3">
                     <TabsTrigger value="details" className="flex items-center transition-all duration-300">
                       <Info className="h-4 w-4 mr-2" />
-                      详情
+                      {t("details")}
                     </TabsTrigger>
                     <TabsTrigger value="integration" className="flex items-center transition-all duration-300">
                       <Terminal className="h-4 w-4 mr-2" />
-                      集成工具
+                      {t("integrationTools")}
                     </TabsTrigger>
                     <TabsTrigger value="schedule" className="flex items-center transition-all duration-300">
                       <Clock className="h-4 w-4 mr-2" />
-                      定时任务
+                      {tSchedule("scheduleManagement")}
                     </TabsTrigger>
                   </TabsList>
 

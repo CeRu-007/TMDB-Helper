@@ -1,0 +1,39 @@
+{
+  "ui": {
+    "table": {
+      "noData": "暫無資料",
+      "sort": "排序",
+      "ascending": "升序",
+      "descending": "降序"
+    },
+    "terminal": {
+      "execute": "執行",
+      "clear": "清空",
+      "copy": "複製"
+    },
+    "timePicker": {
+      "confirm": "確認",
+      "cancel": "取消",
+      "selectTime": "選擇時間"
+    },
+    "dialog": {
+      "confirm": "確認",
+      "cancel": "取消",
+      "close": "關閉"
+    },
+    "loading": {
+      "loading": "載入中..."
+    },
+    "error": {
+      "error": "錯誤",
+      "retry": "重試",
+      "somethingWrong": "發生了點問題"
+    },
+    "language": {
+      "auto": "自動",
+      "zh-CN": "簡體中文",
+      "zh-TW": "繁體中文（台灣）",
+      "zh-HK": "繁體中文（香港）"
+    }
+  }
+}

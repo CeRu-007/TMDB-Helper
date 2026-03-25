@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { logger } from '@/lib/utils/logger'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
@@ -42,6 +43,7 @@ interface AnalysisResult {
 }
 
 export function ImageRecognition() {
+  const { t } = useTranslation("image-processing")
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [advancedSearchMode, setAdvancedSearchMode] = useState(false)
@@ -67,8 +69,8 @@ export function ImageRecognition() {
 
     if (!file.type.startsWith('image/')) {
       toast({
-        title: "文件类型错误",
-        description: "请上传图片文件（JPG、PNG、WebP等）",
+        title: t("imageRecognition.fileTypeError"),
+        description: t("imageRecognition.fileTypeErrorDesc"),
         variant: "destructive"
       })
       return
@@ -76,8 +78,8 @@ export function ImageRecognition() {
 
     if (file.size > FILE_SIZE_10MB) {
       toast({
-        title: "文件过大",
-        description: "图片文件大小不能超过10MB",
+        title: t("imageRecognition.fileTooLarge"),
+        description: t("imageRecognition.fileTooLargeDesc"),
         variant: "destructive"
       })
       return
@@ -94,8 +96,8 @@ export function ImageRecognition() {
   const startAnalysis = useCallback(async () => {
     if (!uploadedImage) {
       toast({
-        title: "请先上传图片",
-        description: "需要上传图片才能开始分析",
+        title: t("imageRecognition.uploadImageFirst"),
+        description: t("imageRecognition.uploadImageFirst2"),
         variant: "destructive"
       })
       return
@@ -109,8 +111,8 @@ export function ImageRecognition() {
     if (timeSinceLastAnalysis < minInterval) {
       const remainingTime = Math.ceil((minInterval - timeSinceLastAnalysis) / 1000)
       toast({
-        title: "请求过于频繁",
-        description: `为避免API限制，请等待 ${remainingTime} 秒后再试`,
+        title: t("imageRecognition.requestTooFrequent"),
+        description: t("imageRecognition.waitSeconds", { seconds: remainingTime }),
         variant: "destructive"
       })
       return
@@ -119,8 +121,8 @@ export function ImageRecognition() {
     // 如果正在分析中，阻止重复请求
     if (isAnalyzing) {
       toast({
-        title: "分析进行中",
-        description: "请等待当前分析完成",
+        title: t("imageRecognition.analysisInProgress"),
+        description: t("imageRecognition.waitForCurrentAnalysis"),
         variant: "destructive"
       })
       return
@@ -155,7 +157,7 @@ export function ImageRecognition() {
         })
 
         if (!similarSearchResponse.ok) {
-          throw new Error('相似图片搜索失败')
+          throw new Error(t('imageRecognition.similarSearchFailed'))
         }
 
         const similarSearchData = await similarSearchResponse.json()
@@ -163,8 +165,8 @@ export function ImageRecognition() {
         setProgress(prev => ({ ...prev, similarSearch: 100 }))
 
         toast({
-          title: "相似图片搜索完成",
-          description: `找到 ${similarSearchData.results?.length || 0} 张相似图片`
+          title: t("imageRecognition.similarSearchComplete"),
+          description: t("imageRecognition.foundSimilarImages", { count: similarSearchData.results?.length || 0 })
         })
 
         // 添加请求间隔，避免API调用过于频繁
@@ -188,19 +190,19 @@ export function ImageRecognition() {
       })
 
       if (analysisResponse.status === 429) {
-        throw new Error('API请求过于频繁，请稍后再试。建议等待几分钟后重新尝试。')
+        throw new Error(t('imageRecognition.apiRateLimit'))
       }
 
       if (!analysisResponse.ok) {
         const errorData = await analysisResponse.json().catch(() => ({}))
-        throw new Error(errorData.error || `分析请求失败 (状态码: ${analysisResponse.status})`)
+        throw new Error(errorData.error || t('imageRecognition.analysisRequestFailed'))
       }
 
       const analysisData = await analysisResponse.json()
       
       // 检查分析是否成功
       if (!analysisData.success || !analysisData.data) {
-        throw new Error(analysisData.error || '图像分析失败，无法获取分析结果')
+        throw new Error(analysisData.error || t('imageRecognition.imageAnalysisFailed'))
       }
       
       setProgress(prev => ({ ...prev, featureExtraction: 100 }))
@@ -222,12 +224,12 @@ export function ImageRecognition() {
       })
 
       if (searchResponse.status === 429) {
-          throw new Error('搜索请求过于频繁，请稍后再试。建议等待几分钟后重新尝试。')
+          throw new Error(t('imageRecognition.apiRateLimit'))
         }
 
         if (!searchResponse.ok) {
           const errorData = await searchResponse.json().catch(() => ({}))
-          throw new Error(errorData.error || `搜索请求失败 (状态码: ${searchResponse.status})`)
+          throw new Error(errorData.error || t('imageRecognition.searchRequestFailed'))
         }
 
       const searchData = await searchResponse.json()
@@ -240,7 +242,7 @@ export function ImageRecognition() {
 
       // 检查搜索是否成功
       if (!searchData.success || !searchData.data) {
-        throw new Error(searchData.error || '搜索失败，无法获取匹配结果')
+        throw new Error(searchData.error || t('imageRecognition.searchFailed'))
       }
 
       setAnalysisResult({
@@ -251,27 +253,27 @@ export function ImageRecognition() {
       })
 
       toast({
-        title: "分析完成",
-        description: `找到 ${(searchData.data.movies || []).length} 个匹配结果`
+        title: t("imageRecognition.analysisComplete"),
+        description: t("imageRecognition.foundResults", { count: (searchData.data.movies || []).length })
       })
 
     } catch (error) {
       logger.error('分析过程出错:', error)
       
-      let errorMessage = '分析过程中出现错误'
+      let errorMessage = t('imageRecognition.analysisFailed')
       if (error instanceof Error) {
         errorMessage = error.message
       }
       
       toast({
-        title: "分析失败",
+        title: t("imageRecognition.analysisFailed"),
         description: errorMessage,
         variant: "destructive"
       })
     } finally {
       setIsAnalyzing(false)
     }
-  }, [uploadedImage, advancedSearchMode, similarImages, lastAnalysisTime, isAnalyzing])
+  }, [uploadedImage, advancedSearchMode, similarImages, lastAnalysisTime, isAnalyzing, t])
 
   const handleMovieClick = useCallback((movie: MovieResult) => {
     if (movie.source === 'tmdb') {
@@ -316,7 +318,7 @@ export function ImageRecognition() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Upload className="h-5 w-5" />
-                <span>上传</span>
+                <span>{t("imageRecognition.upload")}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -340,10 +342,10 @@ export function ImageRecognition() {
                     </div>
                     <div className="space-y-1 text-center">
                       <p className="text-sm font-medium text-green-700 dark:text-green-300">
-                        图片已上传
+                        {t("imageRecognition.imageUploaded")}
                       </p>
                       <p className="text-xs text-gray-600 dark:text-gray-400">
-                        点击重新选择图片
+                        {t("imageRecognition.clickToReselect")}
                       </p>
                     </div>
                   </div>
@@ -356,10 +358,10 @@ export function ImageRecognition() {
                     </div>
                     <div className="space-y-2">
                       <p className="text-xl font-medium text-gray-700 dark:text-gray-300">
-                        点击上传图片
+                        {t("imageRecognition.uploadImage")}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        支持海报、剧照、影视截图等类型
+                        {t("imageRecognition.uploadHint")}
                       </p>
                     </div>
                   </div>
@@ -382,12 +384,12 @@ export function ImageRecognition() {
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    分析中...
+                    {t("imageRecognition.analyzing")}
                   </>
                 ) : (
                   <>
                     <Search className="h-5 w-5 mr-2" />
-                    开始识别
+                    {t("imageRecognition.startRecognition")}
                   </>
                 )}
               </Button>
@@ -397,10 +399,10 @@ export function ImageRecognition() {
                   <Settings className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   <div>
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      高级搜索模式
+                      {t("imageRecognition.advancedSearchMode")}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      先搜索相似图片，提高识别准确度
+                      {t("imageRecognition.advancedSearchModeDesc")}
                     </p>
                   </div>
                 </div>
@@ -418,12 +420,12 @@ export function ImageRecognition() {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <ImageIcon className="h-5 w-5" />
-                  <span>图像特征提取</span>
+                  <span>{t("imageRecognition.imageFeatureExtraction")}</span>
                 </div>
                 {isAnalyzing && (
                   <div className="flex items-center space-x-2">
                     <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                    <span className="text-sm text-blue-600 dark:text-blue-400">分析中...</span>
+                    <span className="text-sm text-blue-600 dark:text-blue-400">{t("imageRecognition.analyzing")}</span>
                   </div>
                 )}
               </CardTitle>
@@ -435,57 +437,57 @@ export function ImageRecognition() {
                   {advancedSearchMode && progress.similarSearch !== undefined && (
                     <div className="space-y-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-purple-700 dark:text-purple-300">相似图片搜索</span>
+                        <span className="text-sm font-medium text-purple-700 dark:text-purple-300">{t("imageRecognition.similarImageSearch")}</span>
                         <span className="text-sm text-purple-600 dark:text-purple-400 font-mono">{progress.similarSearch}%</span>
                       </div>
                       <Progress value={progress.similarSearch} className="h-2 bg-purple-100 dark:bg-purple-900" />
                       <div className="text-xs text-purple-600 dark:text-purple-400">
-                        搜索相似图片...
+                        {t("imageRecognition.searchingSimilarImages")}
                       </div>
                     </div>
                   )}
                   
                   <div className="space-y-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">特征提取</span>
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{t("imageRecognition.featureExtraction")}</span>
                       <span className="text-sm text-blue-600 dark:text-blue-400 font-mono">{progress.featureExtraction}%</span>
                     </div>
                     <Progress value={progress.featureExtraction} className="h-2 bg-blue-100 dark:bg-blue-900" />
                     <div className="text-xs text-blue-600 dark:text-blue-400">
-                      分析图像特征和内容...
+                      {t("imageRecognition.analyzingImageFeatures")}
                     </div>
                   </div>
                   
                   <div className="space-y-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-green-700 dark:text-green-300">数据库匹配</span>
+                      <span className="text-sm font-medium text-green-700 dark:text-green-300">{t("imageRecognition.databaseMatching")}</span>
                       <span className="text-sm text-green-600 dark:text-green-400 font-mono">{progress.databaseMatching}%</span>
                     </div>
                     <Progress value={progress.databaseMatching} className="h-2 bg-green-100 dark:bg-green-900" />
                     <div className="text-xs text-green-600 dark:text-green-400">
-                      匹配本地数据库...
+                      {t("imageRecognition.matchingLocalDatabase")}
                     </div>
                   </div>
                   
                   <div className="space-y-3 p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-orange-700 dark:text-orange-300">TMDB搜索</span>
+                      <span className="text-sm font-medium text-orange-700 dark:text-orange-300">{t("imageRecognition.tmdbSearch")}</span>
                       <span className="text-sm text-orange-600 dark:text-orange-400 font-mono">{progress.tmdbSearch}%</span>
                     </div>
                     <Progress value={progress.tmdbSearch} className="h-2 bg-orange-100 dark:bg-orange-900" />
                     <div className="text-xs text-orange-600 dark:text-orange-400">
-                      搜索TMDB数据库...
+                      {t("imageRecognition.searchingTMDB")}
                     </div>
                   </div>
                   
                   <div className="space-y-3 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">IMDB搜索</span>
+                      <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">{t("imageRecognition.imdbSearch")}</span>
                       <span className="text-sm text-yellow-600 dark:text-yellow-400 font-mono">{progress.imdbSearch}%</span>
                     </div>
                     <Progress value={progress.imdbSearch} className="h-2 bg-yellow-100 dark:bg-yellow-900" />
                     <div className="text-xs text-yellow-600 dark:text-yellow-400">
-                      搜索IMDB数据库...
+                      {t("imageRecognition.searchingIMDB")}
                     </div>
                   </div>
                 </div>
@@ -496,7 +498,7 @@ export function ImageRecognition() {
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center space-x-2">
                         <ImageIcon className="h-4 w-4" />
-                        <span>相似图片</span>
+                        <span>{t("imageRecognition.similarImages")}</span>
                         <Badge variant="secondary" className="text-xs">
                           {similarImages.length}
                         </Badge>
@@ -509,7 +511,7 @@ export function ImageRecognition() {
                           // 查看全部相似图片的逻辑
                         }}
                       >
-                        查看全部
+                        {t("imageRecognition.viewAll")}
                       </Button>
                     </div>
                     
@@ -519,7 +521,7 @@ export function ImageRecognition() {
                           <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-sm group-hover:shadow-md transition-shadow">
                             <img
                               src={image.url}
-                              alt={`相似图片 ${index + 1}`}
+                              alt={`Similar image ${index + 1}`}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
@@ -540,7 +542,7 @@ export function ImageRecognition() {
                           onClick={() => setShowAllSimilarImages(true)}
                           className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                         >
-                          加载更多 ({similarImages.length - 8} 张)
+                          {t("imageRecognition.loadMore", { count: similarImages.length - 8 })}
                         </Button>
                       </div>
                     )}
@@ -558,7 +560,7 @@ export function ImageRecognition() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center space-x-2">
                   <Search className="h-5 w-5" />
-                  <span>识别结果</span>
+                  <span>{t("imageRecognition.recognitionResults")}</span>
                 </CardTitle>
                 
                 <div className="flex items-center space-x-2">
@@ -577,8 +579,8 @@ export function ImageRecognition() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="match">匹配</SelectItem>
-                      <SelectItem value="rating">评分</SelectItem>
+                      <SelectItem value="match">{t("imageRecognition.match")}</SelectItem>
+                      <SelectItem value="rating">{t("imageRecognition.rating")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -605,8 +607,8 @@ export function ImageRecognition() {
                 <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400 p-6">
                   <div className="text-center space-y-3">
                     <AlertCircle className="h-12 w-12 mx-auto opacity-50" />
-                    <p className="text-base font-medium">暂无分析结果</p>
-                    <p className="text-sm">请先上传图片并开始识别</p>
+                    <p className="text-base font-medium">{t("imageRecognition.noAnalysisResult")}</p>
+                    <p className="text-sm">{t("imageRecognition.uploadImageFirst")}</p>
                   </div>
                 </div>
               ) : (
@@ -616,7 +618,7 @@ export function ImageRecognition() {
                     <div className="flex items-center space-x-2 mb-3">
                       <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                       <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                        AI分析结果
+                        {t("imageRecognition.aiAnalysisResult")}
                       </h4>
                       <div className="ml-auto text-xs text-gray-500 dark:text-gray-400">
                         {Math.round(analysisResult.confidence * 100)}%
@@ -631,7 +633,7 @@ export function ImageRecognition() {
                       </div>
                       
                       <div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">关键词</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">{t("imageRecognition.keywords")}</p>
                         <div className="flex flex-wrap gap-1">
                           {analysisResult.keywords.slice(0, 6).map((keyword, index) => (
                             <Badge 
@@ -658,13 +660,15 @@ export function ImageRecognition() {
                   {/* 匹配结果 */}
                   <div className="p-4 flex-1">
                     {currentMovies.length === 0 ? (
-                      <div className="flex items-center justify-center text-gray-500 dark:text-gray-400 py-8">
-                        <div className="text-center space-y-3">
-                          <Search className="h-8 w-8 mx-auto opacity-50" />
-                          <p className="text-sm font-medium">未找到匹配结果</p>
-                          <p className="text-xs">尝试使用不同的图片或调整搜索设置</p>
+                      <div className="text-center py-4">
+                          <Search className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {t("imageRecognition.noMatchResults")}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {t("imageRecognition.tryDifferentImage")}
+                          </p>
                         </div>
-                      </div>
                     ) : (
                       <div className="space-y-3">
                         {currentMovies.map((movie, index) => (

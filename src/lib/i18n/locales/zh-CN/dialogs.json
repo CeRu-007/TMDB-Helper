@@ -1,0 +1,17 @@
+{
+  "selectCategory": "选择分类",
+  "selectAirDay": "选择播出日",
+  "selectWeekday": "选择星期",
+  "confirm": "确认",
+  "cancel": "取消",
+  "delete": "删除",
+  "save": "保存",
+  "close": "关闭",
+  "edit": "编辑",
+  "add": "添加",
+  "confirmDelete": "确定删除？",
+  "operationSuccess": "操作成功",
+  "operationFailed": "操作失败",
+  "loading": "加载中...",
+  "noData": "暂无数据"
+}

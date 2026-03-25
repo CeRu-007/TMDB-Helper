@@ -33,18 +33,13 @@ import { cn } from "@/lib/utils"
 import { Checkbox } from "@/shared/components/ui/checkbox"
 import { useToast } from "@/lib/hooks/use-toast"
 import { ClientConfigManager } from "@/lib/utils/client-config-manager"
+import { useTranslation } from "react-i18next"
 
-const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六"]
+const WEEKDAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
+const WEEKDAYS_KEYS_FOR_SELECT = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
 
 // 定义分类列表
-const CATEGORIES = [
-  { id: "anime" as const, name: "动漫", icon: <Sparkles className="h-4 w-4" strokeWidth={2} /> },
-  { id: "tv" as const, name: "电视剧", icon: <Tv className="h-4 w-4" strokeWidth={2} /> },
-  { id: "kids" as const, name: "少儿", icon: <Baby className="h-4 w-4" strokeWidth={2} /> },
-  { id: "variety" as const, name: "综艺", icon: <Popcorn className="h-4 w-4" strokeWidth={2} /> },
-  { id: "short" as const, name: "短剧", icon: <Ticket className="h-4 w-4" strokeWidth={2} /> },
-
-]
+const CATEGORY_IDS = ['anime', 'tv', 'kids', 'variety', 'short'] as const
 
 type CategoryType = "anime" | "tv" | "kids" | "variety" | "short";
 
@@ -79,6 +74,7 @@ interface AddItemDialogProps {
 }
 
 export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData }: AddItemDialogProps) {
+  const { t } = useTranslation('media')
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<TMDBSearchResult[]>([])
   const [selectedResult, setSelectedResult] = useState<TMDBSearchResult | null>(null)
@@ -91,6 +87,17 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
   const [showBackdropPreview, setShowBackdropPreview] = useState(false)
   const [showPreviewCard, setShowPreviewCard] = useState(false)
   const { toast } = useToast()
+
+  const CATEGORIES = [
+    { id: "anime" as const, name: t('categoryNames.anime'), icon: <Sparkles className="h-4 w-4" strokeWidth={2} /> },
+    { id: "tv" as const, name: t('categoryNames.tv'), icon: <Tv className="h-4 w-4" strokeWidth={2} /> },
+    { id: "kids" as const, name: t('categoryNames.kids'), icon: <Baby className="h-4 w-4" strokeWidth={2} /> },
+    { id: "variety" as const, name: t('categoryNames.variety'), icon: <Popcorn className="h-4 w-4" strokeWidth={2} /> },
+    { id: "short" as const, name: t('categoryNames.short'), icon: <Ticket className="h-4 w-4" strokeWidth={2} /> },
+  ]
+
+  const WEEKDAYS = WEEKDAY_KEYS.map(key => t(`weekdaysList.${key}`, { ns: "common" }))
+
   const [formData, setFormData] = useState({
     weekday: 1,
     secondWeekday: -1, // -1 表示未设置
@@ -342,8 +349,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
 
     if (!selectedResult) {
       toast({
-        title: "请选择词条",
-        description: "请先从搜索结果中选择一个词条",
+        title: t("independentPage.addItem.errors.selectItem", { ns: "nav.maintenance" }),
+        description: t("independentPage.addItem.errors.selectItemHint", { ns: "nav.maintenance" }),
         variant: "destructive"
       })
       return
@@ -352,8 +359,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
     // 表单验证
     if (!formData.category) {
       toast({
-        title: "请选择分类",
-        description: "请为词条选择一个分类",
+        title: t("independentPage.addItem.errors.selectCategory", { ns: "nav.maintenance" }),
+        description: t("independentPage.addItem.errors.selectCategoryHint", { ns: "nav.maintenance" }),
         variant: "destructive"
       })
       return
@@ -361,8 +368,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
 
     if (formData.totalEpisodes < 1) {
       toast({
-        title: "集数无效",
-        description: "总集数必须大于0",
+        title: t("independentPage.addItem.errors.invalidEpisodes", { ns: "nav.maintenance" }),
+        description: t("independentPage.addItem.errors.invalidEpisodesHint", { ns: "nav.maintenance" }),
         variant: "destructive"
       })
       return
@@ -377,7 +384,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
       const tmdbData = result.success ? result.data : null
       
       if (!tmdbData) {
-        throw new Error("无法获取词条详细信息")
+        throw new Error(t("independentPage.addItem.errors.getDetailFailed", { ns: "nav.maintenance" }))
       }
       
       // 如果缺少关键图片信息，尝试强制刷新获取
@@ -503,8 +510,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
       if (duplicateItem) {
         // 显示重复提示
         toast({
-          title: "⚠️ 词条已存在",
-          description: `"${newItem.title}" 已经在您的列表中了，无法重复添加。请选择其他词条或检查现有列表。`,
+          title: t("independentPage.addItem.errors.alreadyExists", { ns: "nav.maintenance" }),
+          description: t("independentPage.addItem.errors.alreadyExistsDesc", { ns: "nav.maintenance", title: newItem.title }),
           variant: "destructive",
           duration: 6000
         });
@@ -517,8 +524,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
 
       // 显示成功提示
       toast({
-        title: "✅ 添加成功",
-        description: `"${newItem.title}" 已成功添加到您的列表中`,
+        title: t("independentPage.addItem.errors.addSuccess", { ns: "nav.maintenance" }),
+        description: t("independentPage.addItem.errors.addSuccessDesc", { ns: "nav.maintenance", title: newItem.title }),
         variant: "default",
         duration: 3000
       });
@@ -529,8 +536,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
       logger.error('[添加词条] 添加失败:', error);
 
       toast({
-        title: "添加失败",
-        description: error instanceof Error ? error.message : "未知错误",
+        title: t("independentPage.addItem.errors.addFailed", { ns: "nav.maintenance" }),
+        description: error instanceof Error ? error.message : t("independentPage.addItem.errors.networkError", { ns: "nav.maintenance" }),
         variant: "destructive"
       })
     } finally {
@@ -540,7 +547,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
 
   // 格式化日期
   const formatDate = (dateString?: string) => {
-    if (!dateString) return "未知"
+    if (!dateString) return t("unknown", { ns: "common" })
     return new Date(dateString).getFullYear().toString()
   }
 
@@ -565,10 +572,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
         <DialogHeader className="text-center pb-3 border-b">
           <DialogTitle className="text-lg font-bold flex items-center justify-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            添加新词条
+            {t("independentPage.addItem.title", { ns: "nav.maintenance" })}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            搜索并添加电视剧到维护列表
+            {t("independentPage.addItem.searchHint", { ns: "nav.maintenance" })}
           </DialogDescription>
         </DialogHeader>
 
@@ -582,7 +589,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
-                    placeholder="搜索电视剧..."
+                    placeholder={t("independentPage.addItem.searchPlaceholder", { ns: "nav.maintenance" })}
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="pr-10 h-9 text-sm"
@@ -600,7 +607,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                   size="sm"
                 >
                   <Search className="h-3 w-3 mr-1" />
-                  搜索
+                  {t("independentPage.addItem.search", { ns: "nav.maintenance" })}
                 </Button>
               </div>
             </div>
@@ -609,7 +616,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
             {searchResults.length > 0 && (
               <div className="bg-background border rounded-lg overflow-hidden">
                 <div className="bg-muted/30 px-3 py-1.5 border-b">
-                  <h3 className="text-xs font-medium text-muted-foreground">搜索结果 ({searchResults.length})</h3>
+                  <h3 className="text-xs font-medium text-muted-foreground">{t("independentPage.addItem.searchResults", { ns: "nav.maintenance" })} ({searchResults.length})</h3>
                 </div>
                 <ScrollArea className="h-[240px]">
                   <div className="p-2 space-y-1">
@@ -639,11 +646,11 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-xs truncate">{getDisplayTitle(result)}</div>
                             <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 flex-wrap">
-                              <span>剧集</span>
+                              <span>{t("tvSeries", { ns: "common" })}</span>
                               {result.adult && (
                                 <>
                                   <span>•</span>
-                                  <Badge variant="destructive" className="text-xs px-1.5 py-0 h-auto">成人</Badge>
+                                  <Badge variant="destructive" className="text-xs px-1.5 py-0 h-auto">{t("adult", { ns: "common" })}</Badge>
                                 </>
                               )}
                               <span>•</span>
@@ -669,7 +676,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                               rel="noopener noreferrer"
                               className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-accent text-muted-foreground hover:text-blue-600 transition-colors"
                               onClick={(e) => e.stopPropagation()}
-                              title="在 TMDB 查看详情"
+                              title={t("independentPage.addItem.viewOnTmdb", { ns: "nav.maintenance" })}
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                             </a>
@@ -692,8 +699,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
             {searchResults.length === 0 && searchQuery.trim() !== '' && !loading && (
               <div className="text-center py-8 text-muted-foreground">
                 <Search className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">未找到相关内容</p>
-                <p className="text-xs mt-1">请尝试其他关键词</p>
+                <p className="text-sm">{t("independentPage.addItem.noResults", { ns: "nav.maintenance" })}</p>
+                <p className="text-xs mt-1">{t("independentPage.addItem.noResultsHint", { ns: "nav.maintenance" })}</p>
               </div>
             )}
 
@@ -701,8 +708,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
             {searchResults.length === 0 && searchQuery.trim() === '' && !loading && (
               <div className="text-center py-6 text-muted-foreground">
                 <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p className="text-base font-medium mb-1">开始搜索</p>
-                <p className="text-sm">在上方输入电视剧名称进行搜索</p>
+                <p className="text-base font-medium mb-1">{t("independentPage.addItem.startSearch", { ns: "nav.maintenance" })}</p>
+                <p className="text-sm">{t("independentPage.addItem.startSearchHint", { ns: "nav.maintenance" })}</p>
               </div>
             )}
 
@@ -713,7 +720,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                 {/* 基本信息行 */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-3">
-                    <Label htmlFor="title" className="text-sm font-medium">标题</Label>
+                    <Label htmlFor="title" className="text-sm font-medium">{t("independentPage.addItem.form.title", { ns: "nav.maintenance" })}</Label>
                     <Input
                       id="title"
                       value={getDisplayTitle(selectedResult)}
@@ -723,13 +730,13 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="category" className="text-sm font-medium">分类</Label>
+                    <Label htmlFor="category" className="text-sm font-medium">{t("independentPage.addItem.form.category", { ns: "nav.maintenance" })}</Label>
                     <Select
                       value={formData.category}
                       onValueChange={(value) => setFormData({ ...formData, category: value as CategoryType })}
                     >
                       <SelectTrigger className="h-10">
-                        <SelectValue placeholder="选择分类" />
+                        <SelectValue placeholder={t("independentPage.addItem.form.selectCategory", { ns: "nav.maintenance" })} />
                       </SelectTrigger>
                       <SelectContent>
                         {CATEGORIES.map((category) => (
@@ -747,10 +754,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                   {selectedResult.media_type === "tv" && (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="totalEpisodes" className="text-sm font-medium">总集数</Label>
+                        <Label htmlFor="totalEpisodes" className="text-sm font-medium">{t("independentPage.addItem.form.totalEpisodes", { ns: "nav.maintenance" })}</Label>
                         {tmdbSeasons && tmdbSeasons.length > 1 && (
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            共 {tmdbSeasons.length} 季
+                            {t("independentPage.addItem.form.seasons", { ns: "nav.maintenance", count: tmdbSeasons.length })}
                           </span>
                         )}
                       </div>
@@ -779,7 +786,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                               variant="outline"
                               className="text-[10px] h-5 px-2 py-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400"
                             >
-                              S{season.seasonNumber} {season.totalEpisodes || 0}集
+                              S{season.seasonNumber} {season.totalEpisodes || 0}{t("independentPage.addItem.form.episodes", { ns: "nav.maintenance" })}
                             </Badge>
                           ))}
                         </div>
@@ -791,7 +798,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                 {/* 时间设置行 */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-3">
-                    <Label htmlFor="weekday" className="text-sm font-medium">更新星期</Label>
+                    <Label htmlFor="weekday" className="text-sm font-medium">{t("independentPage.addItem.weekday", { ns: "nav.maintenance" })}</Label>
                     <Select
                       value={formData.weekday.toString()}
                       onValueChange={(value) =>
@@ -799,10 +806,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                       }
                     >
                       <SelectTrigger className="h-10">
-                        <SelectValue placeholder="选择星期" />
+                        <SelectValue placeholder={t("independentPage.addItem.selectWeekday", { ns: "nav.maintenance" })} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">周日</SelectItem>
+                        <SelectItem value="0">{t("weekdaysList.sunday", { ns: "common" })}</SelectItem>
                         {WEEKDAYS.map((day, index) => (
                           <SelectItem key={index} value={(index + 1).toString()}>
                             {day}
@@ -813,10 +820,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="airTime" className="text-sm font-medium">更新时间</Label>
+                    <Label htmlFor="airTime" className="text-sm font-medium">{t("independentPage.addItem.airTime", { ns: "nav.maintenance" })}</Label>
                     <Input
                       id="airTime"
-                      placeholder="时间 (如 18:00)"
+                      placeholder={t("independentPage.addItem.airTimePlaceholder", { ns: "nav.maintenance" })}
                       value={formData.airTime}
                       onChange={(e) =>
                         setFormData({ ...formData, airTime: e.target.value })
@@ -826,7 +833,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="secondWeekday" className="text-sm font-medium">第二播出日</Label>
+                    <Label htmlFor="secondWeekday" className="text-sm font-medium">{t("independentPage.addItem.secondWeekday", { ns: "nav.maintenance" })}</Label>
                     <Select
                       value={formData.secondWeekday.toString()}
                       onValueChange={(value) =>
@@ -834,14 +841,14 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                       }
                     >
                       <SelectTrigger className="h-10">
-                        <SelectValue placeholder="选择星期" />
+                        <SelectValue placeholder={t("independentPage.addItem.selectWeekday", { ns: "nav.maintenance" })} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="-1">无</SelectItem>
-                        <SelectItem value="0">周日</SelectItem>
-                        {WEEKDAYS.map((day, index) => (
+                        <SelectItem value="-1">{t('none', { ns: 'common' })}</SelectItem>
+                        <SelectItem value="0">{t('weekdaysList.sunday', { ns: 'common' })}</SelectItem>
+                        {WEEKDAY_KEYS.map((day, index) => (
                           <SelectItem key={index} value={(index + 1).toString()}>
-                            {day}
+                            {t(`weekdaysList.${day}`, { ns: 'common' })}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -867,14 +874,14 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                     className="text-sm flex items-center cursor-pointer font-medium"
                   >
                     <Zap className="h-4 w-4 mr-2 text-amber-500" />
-                    设为每日更新
+                    {t("independentPage.addItem.setAsDailyUpdate", { ns: "nav.maintenance" })}
                   </Label>
                 </div>
 
                 {/* URL和背景图行 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
-                    <Label htmlFor="platformUrl" className="text-sm font-medium">播出平台URL</Label>
+                    <Label htmlFor="platformUrl" className="text-sm font-medium">{t("independentPage.addItem.platformUrlLabel", { ns: "nav.maintenance" })}</Label>
                     <Input
                       id="platformUrl"
                       placeholder="https://example.com/show-page"
@@ -885,12 +892,12 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                       className="h-10"
                     />
                     <p className="text-xs text-muted-foreground">
-                      💡 用于TMDB导入工具抓取元数据
+                      💡 {t("independentPage.addItem.tmdbImportHint", { ns: "nav.maintenance" })}
                     </p>
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="backdropUrl" className="text-sm font-medium">背景图URL</Label>
+                    <Label htmlFor="backdropUrl" className="text-sm font-medium">{t("independentPage.addItem.backdropUrlLabel", { ns: "nav.maintenance" })}</Label>
                     <div className="flex gap-2">
                       <Input
                         id="backdropUrl"
@@ -907,7 +914,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                         disabled={!customBackdropUrl}
                         className="h-10 px-3"
                       >
-                        预览
+                        {t("independentPage.addItem.preview", { ns: "nav.maintenance" })}
                       </Button>
                     </div>
                     <div className="flex justify-between items-center">
@@ -915,12 +922,12 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                         {backdropUrl ? (
                           <>
                             <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                            已设置背景图
+                            {t("independentPage.addItem.backdropSet", { ns: "nav.maintenance" })}
                           </>
                         ) : (
                           <>
                             <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
-                            未设置背景图
+                            {t("independentPage.addItem.backdropNotSet", { ns: "nav.maintenance" })}
                           </>
                         )}
                       </div>
@@ -932,7 +939,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                           className="h-6 px-2 text-xs"
                           onClick={handleResetBackdrop}
                         >
-                          重置
+                          {t("independentPage.addItem.reset", { ns: "nav.maintenance" })}
                         </Button>
                       )}
                     </div>
@@ -949,7 +956,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                     onClick={() => onOpenChange(false)}
                     className="h-10 px-8 font-medium"
                   >
-                    取消
+                    {t("independentPage.addItem.cancel", { ns: "nav.maintenance" })}
                   </Button>
                   <Button
                     type="submit"
@@ -959,10 +966,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                     {(detailLoading || loading) ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {detailLoading ? "加载中" : "添加中"}
+                        {detailLoading ? t("independentPage.addItem.loading", { ns: "nav.maintenance" }) : t("independentPage.addItem.adding", { ns: "nav.maintenance" })}
                       </>
                     ) : (
-                      "添加词条"
+                      t("independentPage.addItem.addItem", { ns: "nav.maintenance" })
                     )}
                   </Button>
                 </div>

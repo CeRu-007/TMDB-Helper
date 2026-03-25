@@ -1,0 +1,69 @@
+{
+  "export": {
+    "title": "Export Data",
+    "dataStats": "Data Statistics",
+    "itemCount": "Item Count",
+    "exportFormat": "Export Format",
+    "jsonFormat": "JSON Format",
+    "jsonFormatDesc": "Complete data backup with all fields and structure",
+    "csvFormat": "CSV Format",
+    "csvFormatDesc": "Spreadsheet format, easy to view in Excel and other software",
+    "cancel": "Cancel",
+    "exporting": "Exporting...",
+    "export": "Export",
+    "noDataToExport": "No data to export",
+    "exportSuccess": "Export successful",
+    "exportedItems": "Exported {{count}} items",
+    "exportFailed": "Export failed",
+    "checkDataIntegrity": "Please check data integrity and try again",
+    "unknownError": "Unknown error",
+    "columns": {
+      "title": "Title",
+      "originalTitle": "Original Title",
+      "type": "Type",
+      "posterUrl": "Poster URL",
+      "airWeekday": "Air Day",
+      "airTime": "Air Time",
+      "totalEpisodes": "Total Episodes",
+      "completed": "Completed",
+      "status": "Status",
+      "platformUrl": "Platform URL",
+      "notes": "Notes",
+      "category": "Category",
+      "createdAt": "Created At"
+    },
+    "statusValues": {
+      "ongoing": "Ongoing",
+      "completed": "Completed"
+    }
+  },
+  "import": {
+    "title": "Import Data",
+    "selectBackupFile": "Select Backup File",
+    "selectFile": "Select File",
+    "supportJsonFormat": "Supports JSON format backup files",
+    "fileInfo": "File Information",
+    "fileName": "File Name",
+    "fileSize": "File Size",
+    "validationPassed": "Data format validation passed",
+    "taskCount": "Task Count",
+    "version": "Version",
+    "exportTime": "Export Time",
+    "skipInvalidData": "Some data with incorrect format will be skipped",
+    "duplicateData": "Note: Imported data is exactly the same as current data ({{count}} items). You can choose to continue importing to ensure data consistency.",
+    "fileReadFailed": "Failed to read file",
+    "importFailed": "Import failed",
+    "steps": {
+      "parsing": "Parsing file...",
+      "preparing": "Preparing to import {{count}} items...",
+      "backingUp": "Backing up original data...",
+      "writing": "Writing to data file...",
+      "complete": "Import complete!",
+      "failed": "Import failed"
+    },
+    "uploading": "Uploading: {{fileName}}",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "import": "Import"
+  }
+}

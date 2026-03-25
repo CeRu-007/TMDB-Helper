@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { Clock, Play, CheckCircle, XCircle, Loader2, X } from "lucide-react"
 import type { TMDBItem } from "@/types/tmdb-item"
 import type { ScheduleTask, ScheduleLog } from "@/types/schedule"
@@ -27,6 +28,7 @@ function formatExecutionTime(dateStr: string): string {
 }
 
 export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
+  const { t } = useTranslation()
   const [task, setTask] = useState<ScheduleTask | null>(null)
   const [latestLog, setLatestLog] = useState<ScheduleLog | null>(null)
   const [loading, setLoading] = useState(true)
@@ -50,7 +52,7 @@ export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
         setTask(null)
       }
     } catch (error) {
-      console.error("[CardDrawer] 加载任务失败:", error)
+      console.error("[CardDrawer] Load task failed:", error)
     } finally {
       setLoading(false)
     }
@@ -96,7 +98,7 @@ export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
         setTask(data.data)
       }
     } catch (error) {
-      console.error("[CardDrawer] 更新任务失败:", error)
+      console.error("[CardDrawer] Update task failed:", error)
     }
   }
 
@@ -113,7 +115,7 @@ export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
 
       await loadTask()
     } catch (error) {
-      console.error("[CardDrawer] 执行失败:", error)
+      console.error("[CardDrawer] Execute failed:", error)
     } finally {
       setExecuting(false)
     }
@@ -129,7 +131,7 @@ export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
       <div className="flex items-center justify-between p-3 border-b border-gray-700">
         <div className="flex items-center">
           <Clock className="h-4 w-4 mr-2 text-purple-400" />
-          <h3 className="text-sm font-semibold text-gray-100">定时任务</h3>
+          <h3 className="text-sm font-semibold text-gray-100">{t("schedule.scheduleManagement", { ns: "schedule" })}</h3>
         </div>
         <Button
           variant="ghost"
@@ -148,12 +150,12 @@ export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
           </div>
         ) : !task ? (
           <div className="text-center py-4">
-            <p className="text-sm text-gray-400">尚未配置定时任务</p>
+            <p className="text-sm text-gray-400">{t("schedule.noSchedules", { ns: "schedule" })}</p>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-xs text-gray-300">启用定时任务</Label>
+              <Label className="text-xs text-gray-300">{t("schedule.taskEnabled", { ns: "schedule" })}</Label>
               <Switch
                 checked={task.enabled}
                 onCheckedChange={handleToggleEnabled}
@@ -164,7 +166,7 @@ export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
               <>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs text-gray-400">执行时间</Label>
+                    <Label className="text-xs text-gray-400">{t("schedule.executionTime", { ns: "schedule" })}</Label>
                     <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 text-xs">
                       {getTimeFromCron(task.cron)}
                     </Badge>
@@ -176,32 +178,32 @@ export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
 
                 {task.nextRunAt && (
                   <div className="space-y-1">
-                    <Label className="text-xs text-gray-400">下次执行</Label>
+                    <Label className="text-xs text-gray-400">{t("schedule.nextRun", { ns: "schedule" })}</Label>
                     <p className="text-xs text-gray-200">{getNextRunTime(task.cron)}</p>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <Label className="text-xs text-gray-400">最近执行</Label>
+                  <Label className="text-xs text-gray-400">{t("schedule.recentRun", { ns: "schedule" })}</Label>
                   {latestLog ? (
                     <div className="flex items-center justify-between bg-gray-800/50 rounded-md px-3 py-2">
                       <div className="flex items-center space-x-2">
                         {latestLog.status === "success" && (
                           <>
                             <CheckCircle className="h-3.5 w-3.5 text-green-400" />
-                            <span className="text-xs text-green-400">成功</span>
+                            <span className="text-xs text-green-400">{t("schedule.success", { ns: "schedule" })}</span>
                           </>
                         )}
                         {latestLog.status === "failed" && (
                           <>
                             <XCircle className="h-3.5 w-3.5 text-red-400" />
-                            <span className="text-xs text-red-400">失败</span>
+                            <span className="text-xs text-red-400">{t("schedule.failed", { ns: "schedule" })}</span>
                           </>
                         )}
                         {latestLog.status === "running" && (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-400" />
-                            <span className="text-xs text-blue-400">执行中</span>
+                            <span className="text-xs text-blue-400">{t("schedule.running", { ns: "schedule" })}</span>
                           </>
                         )}
                       </div>
@@ -211,7 +213,7 @@ export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between bg-gray-800/50 rounded-md px-3 py-2">
-                      <span className="text-xs text-gray-500">暂无记录</span>
+                      <span className="text-xs text-gray-500">{t("schedule.noLogs", { ns: "schedule" })}</span>
                       <span className="text-xs text-gray-500">--</span>
                     </div>
                   )}
@@ -235,7 +237,7 @@ export function CardDrawer({ item, open, onOpenChange }: CardDrawerProps) {
             ) : (
               <Play className="h-3.5 w-3.5 mr-1.5" />
             )}
-            立即执行
+            {t("schedule.executeNow", { ns: "schedule" })}
           </Button>
         </div>
       )}

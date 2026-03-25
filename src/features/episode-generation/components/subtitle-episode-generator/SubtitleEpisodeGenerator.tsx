@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { TooltipProvider } from "@/shared/components/ui/tooltip"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
 import { Button } from "@/shared/components/ui/button"
@@ -35,6 +36,8 @@ export function SubtitleEpisodeGenerator({
 }: {
   onOpenGlobalSettings?: (section: string) => void
 } = {}): JSX.Element {
+  const { t } = useTranslation("episode-generation")
+  
   // 文件输入引用
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -160,8 +163,8 @@ export function SubtitleEpisodeGenerator({
         localStorage.removeItem('pending-subtitle-import')
 
         toast({
-          title: "字幕已自动导入",
-          description: `${fileName} 已成功导入`,
+          title: t("subtitleGenerator.subtitleAutoImported"),
+          description: t("subtitleGenerator.subtitleAutoImportedDesc", { fileName: fileName }),
         })
       }
     } catch (error) {
@@ -196,10 +199,10 @@ export function SubtitleEpisodeGenerator({
               </div>
             </div>
             <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-              释放文件以上传
+              {t("subtitleGenerator.dropFileHint")}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              支持 SRT、VTT、ASS、SSA 格式
+              {t("subtitleGenerator.supportedFormats")}
             </p>
           </div>
         </div>
@@ -318,15 +321,15 @@ export function SubtitleEpisodeGenerator({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-red-500" />
-              余额不足
+              {t("subtitleGenerator.insufficientBalance")}
             </DialogTitle>
             <DialogDescription>
-              您的硅基流动余额已用完，无法继续使用AI生成功能。
+              {t("subtitleGenerator.insufficientBalanceDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              <p>请前往硅基流动官网充值后继续使用：</p>
+              <p>{t("subtitleGenerator.visitToRecharge")}</p>
               <a
                 href="https://cloud.siliconflow.cn"
                 target="_blank"
@@ -341,7 +344,7 @@ export function SubtitleEpisodeGenerator({
                 variant="outline"
                 onClick={() => setShowInsufficientBalanceDialog(false)}
               >
-                知道了
+                {t("subtitleGenerator.gotIt")}
               </Button>
               <Button
                 onClick={() => {
@@ -350,7 +353,7 @@ export function SubtitleEpisodeGenerator({
                 }}
                 className="bg-blue-500 hover:bg-blue-600"
               >
-                前往充值
+                {t("subtitleGenerator.goToRecharge")}
               </Button>
             </div>
           </div>

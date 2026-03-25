@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type Platform } from '@/lib/media/platform-data';
+import { useTranslation } from 'react-i18next';
 
 interface SmartTooltipProps {
   platform: Platform;
@@ -12,6 +13,7 @@ interface SmartTooltipProps {
 }
 
 const SmartTooltip: React.FC<SmartTooltipProps> = ({ platform, children, disabled = false }) => {
+  const { t } = useTranslation('nav.platforms')
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState<'top' | 'bottom' | 'left' | 'right'>('top');
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -125,12 +127,12 @@ const SmartTooltip: React.FC<SmartTooltipProps> = ({ platform, children, disable
         {/* 平台信息 */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-700/30">
           <div className="flex items-center gap-3 text-xs">
-            <span className="text-gray-400">地区: <span className="text-gray-300">{platform.region}</span></span>
-            <span className="text-gray-400">分类: <span className="text-gray-300">{platform.category}</span></span>
+            <span className="text-gray-400">{t("region")}: <span className="text-gray-300">{platform.region}</span></span>
+            <span className="text-gray-400">{t("category")}: <span className="text-gray-300">{platform.category}</span></span>
           </div>
           {platform.popular && (
             <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-full">
-              <span className="text-xs text-orange-400 font-medium">热门</span>
+              <span className="text-xs text-orange-400 font-medium">{t("hot")}</span>
             </div>
           )}
         </div>

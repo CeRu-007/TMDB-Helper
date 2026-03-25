@@ -1,0 +1,46 @@
+{
+  "title": "Media News",
+  "upcoming": "Upcoming",
+  "recent": "Recently Aired",
+  "regionLabel": "Region",
+  "unknownRegion": "Unknown Region",
+  "regionGroup": {
+    "asia": "Asia",
+    "western": "Western"
+  },
+  "streamingNav": "Streaming Nav",
+  "schedule": "Schedule",
+  "mediaNewsSection": {
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "configureApi": "Configure API",
+    "noContentUpcoming": "No upcoming content",
+    "noContentRecent": "No recently aired content",
+    "loadMore": "Load More ({{count}} items)",
+    "lastUpdated": "Last Updated",
+    "movie": "Movie",
+    "tv": "TV Series",
+    "releaseDate": "Release Date",
+    "configureApiKey": "Configure API Key",
+    "error": "Error",
+    "noResults": "No matching results found",
+    "tryDifferentImage": "Try using a different image or adjust search settings",
+    "addToMaintenanceList": "Add to maintenance list",
+    "viewOnTmdb": "View on TMDB",
+    "todayUpoming": "Releasing today",
+    "tomorrowUpoming": "Releasing tomorrow",
+    "daysLaterUpoming": " days later",
+    "todayAired": "Aired today",
+    "yesterdayAired": "Aired yesterday",
+    "daysAgoAired": " days ago"
+  },
+  "regions": {
+    "CN": "China Mainland",
+    "HK": "Hong Kong",
+    "TW": "Taiwan",
+    "JP": "Japan",
+    "KR": "South Korea",
+    "US": "United States",
+    "GB": "United Kingdom"
+  }
+}

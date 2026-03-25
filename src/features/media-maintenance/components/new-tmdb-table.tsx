@@ -10,11 +10,8 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/shar
 import { Separator } from "@/shared/components/ui/separator"
 import { TableHelpTooltip } from "../../../shared/components/ui/table-help-tooltip"
 import { Trash2, Save } from "lucide-react"
-
-// 导入CSV数据类型
+import { useTranslation } from "react-i18next"
 import type { CSVData } from "@/types/csv-editor"
-
-// 导入TMDBTableProps类型并扩展
 import type { TMDBTableProps } from "@/features/media-maintenance/components/tmdb-table/tmdb-table"
 export interface NewTMDBTableProps extends TMDBTableProps {
   onChange?: (newData: CSVData) => void
@@ -37,7 +34,7 @@ export interface NewTMDBTableProps extends TMDBTableProps {
  * - 改善的单元格编辑体验
  */
 const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
-  // 表格配置状态
+  const { t } = useTranslation('media')
   const [config, setConfig] = useState({
     showGridLines: true,
     fixedRowHeight: true,
@@ -107,13 +104,13 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
                   pressed={config.showGridLines}
                   onPressedChange={toggleGridLines}
                   size="sm"
-                  aria-label="切换网格线"
+                  aria-label={t('table.toggleGridLines')}
                 >
                   <Grid className="h-4 w-4" />
                 </Toggle>
               </TooltipTrigger>
               <TooltipContent>
-                <p>切换网格线显示</p>
+                <p>{t('table.toggleGridLines')}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -125,13 +122,13 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
                   pressed={config.alternateRowColors}
                   onPressedChange={toggleAlternateRowColors}
                   size="sm"
-                  aria-label="切换交替行颜色"
+                  aria-label={t('table.toggleAlternateRowColors')}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Toggle>
               </TooltipTrigger>
               <TooltipContent>
-                <p>切换交替行颜色</p>
+                <p>{t('table.toggleAlternateRowColors')}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -139,7 +136,7 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
           <Separator orientation="vertical" className="h-6" />
           
           <span className="text-xs text-muted-foreground">
-            {props.data?.rows?.length || 0} 行 × {props.data?.headers?.length || 0} 列
+            {t('table.rowCount', { rows: props.data?.rows?.length || 0, cols: props.data?.headers?.length || 0 })}
           </span>
         </div>
 
@@ -147,7 +144,7 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
           {props.isSaving && (
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
-              <span>保存中...</span>
+              <span>{t('table.saving')}</span>
             </div>
           )}
 
@@ -161,7 +158,7 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
               className="h-7 px-2 text-xs"
             >
               <Save className="h-3.5 w-3.5 mr-1" />
-              保存
+              {t('save')}
             </Button>
           )}
 

@@ -1,0 +1,69 @@
+{
+  "export": {
+    "title": "匯出資料",
+    "dataStats": "資料統計",
+    "itemCount": "項目數量",
+    "exportFormat": "匯出格式",
+    "jsonFormat": "JSON 格式",
+    "jsonFormatDesc": "完整的資料備份，包含所有欄位和結構",
+    "csvFormat": "CSV 格式",
+    "csvFormatDesc": "表格格式，適合在Excel等軟體中檢視",
+    "cancel": "取消",
+    "exporting": "匯出中...",
+    "export": "匯出",
+    "noDataToExport": "沒有可匯出的資料",
+    "exportSuccess": "匯出成功",
+    "exportedItems": "已匯出 {{count}} 個項目",
+    "exportFailed": "匯出失敗",
+    "checkDataIntegrity": "請檢查資料完整性後重試",
+    "unknownError": "未知錯誤",
+    "columns": {
+      "title": "標題",
+      "originalTitle": "原標題",
+      "type": "類型",
+      "posterUrl": "海報URL",
+      "airWeekday": "播出星期",
+      "airTime": "播出時間",
+      "totalEpisodes": "總集數",
+      "completed": "已完成",
+      "status": "狀態",
+      "platformUrl": "平台URL",
+      "notes": "備註",
+      "category": "分類",
+      "createdAt": "建立時間"
+    },
+    "statusValues": {
+      "ongoing": "進行中",
+      "completed": "已完成"
+    }
+  },
+  "import": {
+    "title": "匯入資料",
+    "selectBackupFile": "選擇備份檔案",
+    "selectFile": "選擇檔案",
+    "supportJsonFormat": "支援 JSON 格式的備份檔案",
+    "fileInfo": "檔案資訊",
+    "fileName": "檔案名稱",
+    "fileSize": "檔案大小",
+    "validationPassed": "資料格式驗證通過",
+    "taskCount": "任務數量",
+    "version": "版本",
+    "exportTime": "匯出時間",
+    "skipInvalidData": "部分資料格式不正確將被跳過",
+    "duplicateData": "注意：匯入的資料與當前資料完全一致（{{count}} 個項目）。您可以選擇繼續匯入以確保資料一致性。",
+    "fileReadFailed": "檔案讀取失敗",
+    "importFailed": "匯入失敗",
+    "steps": {
+      "parsing": "正在解析檔案...",
+      "preparing": "準備匯入 {{count}} 個項目...",
+      "backingUp": "正在備份原資料...",
+      "writing": "正在寫入資料檔案...",
+      "complete": "匯入完成！",
+      "failed": "匯入失敗"
+    },
+    "uploading": "正在上傳: {{fileName}}",
+    "cancel": "取消",
+    "continue": "繼續",
+    "import": "匯入"
+  }
+}
