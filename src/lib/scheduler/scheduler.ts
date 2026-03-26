@@ -8,6 +8,9 @@ import { scheduleLogRepository } from '@/lib/data/schedule-log-repository';
 import { taskQueue } from './task-queue';
 import { logger } from '@/lib/utils/logger';
 import type { ScheduleTask } from '@/types/schedule';
+import { executeScheduleTask, type LogEntry } from './schedule-executor';
+import { itemsRepository } from '@/lib/database/repositories/items.repository';
+import { notifier } from './notifier';
 
 class Scheduler {
   private tasks: Map<string, ScheduledTask> = new Map();
@@ -49,12 +52,17 @@ class Scheduler {
       return;
     }
 
-    const scheduledTask = cron.schedule(task.cron, () => {
-      this.executeTask(task);
-    }, {
-      scheduled: true,
-      timezone: 'Asia/Shanghai',
-    });
+    const scheduledTask = cron.schedule(
+      task.cron,
+      () => {
+        this.executeTask(task);
+      },
+      {
+        timezone: 'Asia/Shanghai',
+      }
+    );
+
+    scheduledTask.start();
 
     this.tasks.set(task.id, scheduledTask);
     logger.debug(`[Scheduler] 任务已调度: ${task.id}, cron: ${task.cron}`);
@@ -98,24 +106,34 @@ class Scheduler {
     }
 
     const logId = logResult.data.id;
+    const logs: LogEntry[] = [];
 
     try {
       logger.info(`[Scheduler] 开始执行任务: ${task.id}`);
 
-      const executeResult = await this.executeTaskLogic(task);
+      const item = itemsRepository.findByIdWithRelations(task.itemId);
+      if (!item) {
+        scheduleLogRepository.updateStatus(logId, 'failed', '词条不存在');
+        logger.error(`[Scheduler] 词条不存在: ${task.itemId}`);
+        return;
+      }
+
+      const executeResult = await executeScheduleTask(item, task, logs);
 
       const endAt = new Date().toISOString();
 
       if (executeResult.success) {
-        scheduleLogRepository.updateStatus(logId, 'success', executeResult.message);
+        scheduleLogRepository.updateStatus(logId, 'success', executeResult.message, executeResult.details || null);
         scheduleRepository.updateLastRunAt(
           task.id,
           endAt,
           this.calculateNextRunTime(task.cron)
         );
+        notifier.sendSuccessNotification(item.title, executeResult.episodeCount || 0);
         logger.info(`[Scheduler] 任务执行成功: ${task.id}`);
       } else {
         scheduleLogRepository.updateStatus(logId, 'failed', executeResult.message);
+        notifier.sendErrorNotification(item.title, executeResult.message);
         logger.error(`[Scheduler] 任务执行失败: ${task.id}, ${executeResult.message}`);
       }
     } catch (error) {
@@ -123,10 +141,6 @@ class Scheduler {
       scheduleLogRepository.updateStatus(logId, 'failed', message);
       logger.error(`[Scheduler] 任务执行异常: ${task.id}`, error);
     }
-  }
-
-  private async executeTaskLogic(task: ScheduleTask): Promise<{ success: boolean; message: string }> {
-    return { success: true, message: '任务执行完成' };
   }
 
   private calculateNextRunTime(cronExpression: string): string {
