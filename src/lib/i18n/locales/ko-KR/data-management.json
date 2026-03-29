@@ -1,0 +1,69 @@
+{
+  "export": {
+    "title": "데이터 내보내기",
+    "dataStats": "데이터 통계",
+    "itemCount": "항목 수",
+    "exportFormat": "내보내기 형식",
+    "jsonFormat": "JSON 형식",
+    "jsonFormatDesc": "모든 필드와 구조를 포함한 완전한 데이터 백업",
+    "csvFormat": "CSV 형식",
+    "csvFormatDesc": "스프레드시트 형식. Excel 등에서 보기 쉽습니다",
+    "cancel": "취소",
+    "exporting": "내보내는 중...",
+    "export": "내보내기",
+    "noDataToExport": "내보낼 데이터가 없습니다",
+    "exportSuccess": "내보내기에 성공했습니다",
+    "exportedItems": "{{count}}개 항목을 내보냈습니다",
+    "exportFailed": "내보내기에 실패했습니다",
+    "checkDataIntegrity": "데이터 무결성을 확인하고 다시 시도하세요",
+    "unknownError": "알 수 없는 오류",
+    "columns": {
+      "title": "제목",
+      "originalTitle": "원본 제목",
+      "type": "유형",
+      "posterUrl": "포스터 URL",
+      "airWeekday": "방영일",
+      "airTime": "방영 시간",
+      "totalEpisodes": "총 에피소드 수",
+      "completed": "완료",
+      "status": "상태",
+      "platformUrl": "플랫폼 URL",
+      "notes": "메모",
+      "category": "카테고리",
+      "createdAt": "생성 시간"
+    },
+    "statusValues": {
+      "ongoing": "방영 중",
+      "completed": "완결"
+    }
+  },
+  "import": {
+    "title": "데이터 가져오기",
+    "selectBackupFile": "백업 파일 선택",
+    "selectFile": "파일 선택",
+    "supportJsonFormat": "JSON 형식 백업 파일 지원",
+    "fileInfo": "파일 정보",
+    "fileName": "파일명",
+    "fileSize": "파일 크기",
+    "validationPassed": "데이터 형식 검증에 통과했습니다",
+    "taskCount": "작업 수",
+    "version": "버전",
+    "exportTime": "내보내기 시간",
+    "skipInvalidData": "형식이 잘못된 일부 데이터가 건너뛰어집니다",
+    "duplicateData": "주의: 가져온 데이터가 현재 데이터와 정확히 동일합니다 ({{count}}개 항목). 데이터 일관성을确保하기 위해 가져오기를 계속할 수 있습니다.",
+    "fileReadFailed": "파일 읽기에 실패했습니다",
+    "importFailed": "가져오기에 실패했습니다",
+    "steps": {
+      "parsing": "파일 구문 분석 중...",
+      "preparing": "{{count}}개 항목 가져오기 준비 중...",
+      "backingUp": "원본 데이터 백업 중...",
+      "writing": "데이터 파일에 쓰는 중...",
+      "complete": "가져오기 완료!",
+      "failed": "가져오기에 실패했습니다"
+    },
+    "uploading": "업로드 중: {{fileName}}",
+    "cancel": "취소",
+    "continue": "계속",
+    "import": "가져오기"
+  }
+}

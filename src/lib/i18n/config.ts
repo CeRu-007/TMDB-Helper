@@ -38,6 +38,18 @@ export const SUPPORTED_LANGUAGES: LanguageConfig[] = [
     nativeName: "繁體中文（香港）",
     isTraditional: true,
   },
+  {
+    code: "ja-JP",
+    name: "日本語",
+    nativeName: "日本語",
+    isTraditional: false,
+  },
+  {
+    code: "ko-KR",
+    name: "한국어",
+    nativeName: "한국어",
+    isTraditional: false,
+  },
 ]
 
 export const DEFAULT_LANGUAGE = "auto"

@@ -1,0 +1,46 @@
+{
+  "title": "미디어 뉴스",
+  "upcoming": "다가오는",
+  "recent": "최근 방영",
+  "regionLabel": "지역",
+  "unknownRegion": "알 수 없는 지역",
+  "regionGroup": {
+    "asia": "아시아",
+    "western": "서양"
+  },
+  "streamingNav": "스트리밍 탐색",
+  "schedule": "일정",
+  "mediaNewsSection": {
+    "loading": "로딩 중...",
+    "refresh": "새로고침",
+    "configureApi": "API 구성",
+    "noContentUpcoming": "다가오는 콘텐츠가 없습니다",
+    "noContentRecent": "최근 방영된 콘텐츠가 없습니다",
+    "loadMore": "더 보기 ({{count}}개)",
+    "lastUpdated": "마지막 업데이트",
+    "movie": "영화",
+    "tv": "드라마",
+    "releaseDate": "출시일",
+    "configureApiKey": "API 키 구성",
+    "error": "오류",
+    "noResults": "일치하는 결과를 찾을 수 없습니다",
+    "tryDifferentImage": "다른 이미지를 사용하거나 검색 설정을 조정해 보세요",
+    "addToMaintenanceList": "유지보수 목록에 추가",
+    "viewOnTmdb": "TMDB에서 보기",
+    "todayUpoming": "오늘 공개",
+    "tomorrowUpoming": "내일 공개",
+    "daysLaterUpoming": "일 후 공개",
+    "todayAired": "오늘 방영",
+    "yesterdayAired": "어제 방영",
+    "daysAgoAired": "일 전 방영"
+  },
+  "regions": {
+    "CN": "중국 본토",
+    "HK": "홍콩",
+    "TW": "대만",
+    "JP": "일본",
+    "KR": "한국",
+    "US": "미국",
+    "GB": "영국"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "required": "필수 매개변수가 없습니다",
+  "serverError": "내부 서버 오류",
+  "dataUpdateFailed": "데이터 업데이트 후 저장에 실패했습니다"
+}

@@ -1,0 +1,69 @@
+{
+  "export": {
+    "title": "データをエクスポート",
+    "dataStats": "データ統計",
+    "itemCount": "項目数",
+    "exportFormat": "エクスポート形式",
+    "jsonFormat": "JSON形式",
+    "jsonFormatDesc": "すべてのフィールドと構造を含む完全なデータバックアップ",
+    "csvFormat": "CSV形式",
+    "csvFormatDesc": "スプレッドシート形式、Excelなどで表示しやすい",
+    "cancel": "キャンセル",
+    "exporting": "エクスポート中...",
+    "export": "エクスポート",
+    "noDataToExport": "エクスポートするデータがありません",
+    "exportSuccess": "エクスポートに成功しました",
+    "exportedItems": "{{count}}件をエクスポートしました",
+    "exportFailed": "エクスポートに失敗しました",
+    "checkDataIntegrity": "データの整合性を確認して、もう一度お試しください",
+    "unknownError": "不明なエラー",
+    "columns": {
+      "title": "タイトル",
+      "originalTitle": "オリジナルタイトル",
+      "type": "タイプ",
+      "posterUrl": "ポスターURL",
+      "airWeekday": "放映日",
+      "airTime": "放映時間",
+      "totalEpisodes": "総Episode数",
+      "completed": "完了",
+      "status": "ステータス",
+      "platformUrl": "プラットフォームURL",
+      "notes": "メモ",
+      "category": "カテゴリー",
+      "createdAt": "作成日時"
+    },
+    "statusValues": {
+      "ongoing": "放送中",
+      "completed": "完結"
+    }
+  },
+  "import": {
+    "title": "データをインポート",
+    "selectBackupFile": "バックアップファイルを選択",
+    "selectFile": "ファイルを選択",
+    "supportJsonFormat": "JSON形式バックアップファイルに対応",
+    "fileInfo": "ファイル情報",
+    "fileName": "ファイル名",
+    "fileSize": "ファイルサイズ",
+    "validationPassed": "データ形式検証に合格しました",
+    "taskCount": "タスク数",
+    "version": "バージョン",
+    "exportTime": "エクスポート時間",
+    "skipInvalidData": "形式が正しくない一部のデータがスキップされます",
+    "duplicateData": "注意：インポートされたデータは現在のデータと全く同じです（{{count}}件）。データの整合性を確保するためにインポートを続行することを選択できます。",
+    "fileReadFailed": "ファイルの読み取りに失敗しました",
+    "importFailed": "インポートに失敗しました",
+    "steps": {
+      "parsing": "ファイルを解析中...",
+      "preparing": "{{count}}件のインポートを準備中...",
+      "backingUp": "元のデータをバックアップ中...",
+      "writing": "データファイルに書き込んでいます...",
+      "complete": "インポート完了！",
+      "failed": "インポートに失敗しました"
+    },
+    "uploading": "アップロード中：{{fileName}}",
+    "cancel": "キャンセル",
+    "continue": "続ける",
+    "import": "インポート"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "saveSuccess": "正常に保存されました",
+  "saveFailed": "保存に失敗しました",
+  "executeFailed": "実行に失敗しました",
+  "configSaved": "設定が保存されました"
+}

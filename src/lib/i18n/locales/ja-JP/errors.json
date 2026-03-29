@@ -1,0 +1,5 @@
+{
+  "required": "必須パラメータがありません",
+  "serverError": "サーバー内部エラー",
+  "dataUpdateFailed": "データ更新後の保存に失敗しました"
+}

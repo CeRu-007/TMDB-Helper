@@ -93,6 +93,50 @@ import zhHK_episodeGeneration from "./locales/zh-HK/episode-generation.json"
 import zhHK_dataManagement from "./locales/zh-HK/data-management.json"
 import zhHK_ui from "./locales/zh-HK/ui.json"
 
+import jaJP_common from "./locales/ja-JP/common.json"
+import jaJP_nav_maintenance from "./locales/ja-JP/nav/maintenance.json"
+import jaJP_nav_news from "./locales/ja-JP/nav/news.json"
+import jaJP_nav_content from "./locales/ja-JP/nav/content.json"
+import jaJP_nav_image from "./locales/ja-JP/nav/image.json"
+import jaJP_nav_tools from "./locales/ja-JP/nav/tools.json"
+import jaJP_nav_platforms from "./locales/ja-JP/nav/platforms.json"
+import jaJP_media from "./locales/ja-JP/media.json"
+import jaJP_schedule from "./locales/ja-JP/schedule.json"
+import jaJP_settings from "./locales/ja-JP/settings.json"
+import jaJP_user from "./locales/ja-JP/user.json"
+import jaJP_dialogs from "./locales/ja-JP/dialogs.json"
+import jaJP_messages from "./locales/ja-JP/messages.json"
+import jaJP_errors from "./locales/ja-JP/errors.json"
+import jaJP_weekdays from "./locales/ja-JP/weekdays.json"
+import jaJP_categories from "./locales/ja-JP/categories.json"
+import jaJP_aiChat from "./locales/ja-JP/ai-chat.json"
+import jaJP_imageProcessing from "./locales/ja-JP/image-processing.json"
+import jaJP_episodeGeneration from "./locales/ja-JP/episode-generation.json"
+import jaJP_dataManagement from "./locales/ja-JP/data-management.json"
+import jaJP_ui from "./locales/ja-JP/ui.json"
+
+import koKR_common from "./locales/ko-KR/common.json"
+import koKR_nav_maintenance from "./locales/ko-KR/nav/maintenance.json"
+import koKR_nav_news from "./locales/ko-KR/nav/news.json"
+import koKR_nav_content from "./locales/ko-KR/nav/content.json"
+import koKR_nav_image from "./locales/ko-KR/nav/image.json"
+import koKR_nav_tools from "./locales/ko-KR/nav/tools.json"
+import koKR_nav_platforms from "./locales/ko-KR/nav/platforms.json"
+import koKR_media from "./locales/ko-KR/media.json"
+import koKR_schedule from "./locales/ko-KR/schedule.json"
+import koKR_settings from "./locales/ko-KR/settings.json"
+import koKR_user from "./locales/ko-KR/user.json"
+import koKR_dialogs from "./locales/ko-KR/dialogs.json"
+import koKR_messages from "./locales/ko-KR/messages.json"
+import koKR_errors from "./locales/ko-KR/errors.json"
+import koKR_weekdays from "./locales/ko-KR/weekdays.json"
+import koKR_categories from "./locales/ko-KR/categories.json"
+import koKR_aiChat from "./locales/ko-KR/ai-chat.json"
+import koKR_imageProcessing from "./locales/ko-KR/image-processing.json"
+import koKR_episodeGeneration from "./locales/ko-KR/episode-generation.json"
+import koKR_dataManagement from "./locales/ko-KR/data-management.json"
+import koKR_ui from "./locales/ko-KR/ui.json"
+
 const resources = {
   "zh-CN": {
     common: zhCN_common,
@@ -186,6 +230,52 @@ const resources = {
     "data-management": zhHK_dataManagement,
     ui: zhHK_ui,
   },
+  "ja-JP": {
+    common: jaJP_common,
+    "nav.maintenance": jaJP_nav_maintenance,
+    "nav.news": jaJP_nav_news,
+    "nav.content": jaJP_nav_content,
+    "nav.image": jaJP_nav_image,
+    "nav.tools": jaJP_nav_tools,
+    "nav.platforms": jaJP_nav_platforms,
+    media: jaJP_media,
+    schedule: jaJP_schedule,
+    settings: jaJP_settings,
+    user: jaJP_user,
+    dialogs: jaJP_dialogs,
+    messages: jaJP_messages,
+    errors: jaJP_errors,
+    weekdays: jaJP_weekdays,
+    categories: jaJP_categories,
+    "ai-chat": jaJP_aiChat,
+    "image-processing": jaJP_imageProcessing,
+    "episode-generation": jaJP_episodeGeneration,
+    "data-management": jaJP_dataManagement,
+    ui: jaJP_ui,
+  },
+  "ko-KR": {
+    common: koKR_common,
+    "nav.maintenance": koKR_nav_maintenance,
+    "nav.news": koKR_nav_news,
+    "nav.content": koKR_nav_content,
+    "nav.image": koKR_nav_image,
+    "nav.tools": koKR_nav_tools,
+    "nav.platforms": koKR_nav_platforms,
+    media: koKR_media,
+    schedule: koKR_schedule,
+    settings: koKR_settings,
+    user: koKR_user,
+    dialogs: koKR_dialogs,
+    messages: koKR_messages,
+    errors: koKR_errors,
+    weekdays: koKR_weekdays,
+    categories: koKR_categories,
+    "ai-chat": koKR_aiChat,
+    "image-processing": koKR_imageProcessing,
+    "episode-generation": koKR_episodeGeneration,
+    "data-management": koKR_dataManagement,
+    ui: koKR_ui,
+  },
 }
 
 function getInitialLanguage(): string {
@@ -202,7 +292,7 @@ function getInitialLanguage(): string {
 }
 
 function isValidLanguage(code: string): boolean {
-  return ["zh-CN", "en-US", "zh-TW", "zh-HK"].includes(code)
+  return ["zh-CN", "en-US", "zh-TW", "zh-HK", "ja-JP", "ko-KR"].includes(code)
 }
 
 i18n
@@ -266,6 +356,14 @@ export function mapSystemLanguageToAppLanguage(systemLang: string): string {
 
   if (lang.startsWith("en")) {
     return "en-US"
+  }
+
+  if (lang.startsWith("ja")) {
+    return "ja-JP"
+  }
+
+  if (lang.startsWith("ko")) {
+    return "ko-KR"
   }
 
   return DEFAULT_LANGUAGE

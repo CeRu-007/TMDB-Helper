@@ -1,0 +1,17 @@
+{
+  "selectCategory": "카테고리 선택",
+  "selectAirDay": "방영일 선택",
+  "selectWeekday": "요일 선택",
+  "confirm": "확인",
+  "cancel": "취소",
+  "delete": "삭제",
+  "save": "저장",
+  "close": "닫기",
+  "edit": "편집",
+  "add": "추가",
+  "confirmDelete": "삭제하시겠습니까?",
+  "operationSuccess": "작업이 성공했습니다",
+  "operationFailed": "작업이 실패했습니다",
+  "loading": "로딩 중...",
+  "noData": "데이터가 없습니다"
+}

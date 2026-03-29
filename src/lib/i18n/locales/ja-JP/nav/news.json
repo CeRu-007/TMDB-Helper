@@ -1,0 +1,46 @@
+{
+  "title": "メディアニュース",
+  "upcoming": "今後公開",
+  "recent": "最近放送",
+  "regionLabel": "地域",
+  "unknownRegion": "不明な地域",
+  "regionGroup": {
+    "asia": "アジア",
+    "western": "西洋"
+  },
+  "streamingNav": "ストリーミングナビ",
+  "schedule": "スケジュール",
+  "mediaNewsSection": {
+    "loading": "読み込み中...",
+    "refresh": "更新",
+    "configureApi": "APIを設定",
+    "noContentUpcoming": "今後公開予定の内容がありません",
+    "noContentRecent": "最近放送された内容がありません",
+    "loadMore": "もっと読み込む（{{count}}件）",
+    "lastUpdated": "最終更新",
+    "movie": "映画",
+    "tv": "ドラマ",
+    "releaseDate": "公開日",
+    "configureApiKey": "APIキーを設定",
+    "error": "エラー",
+    "noResults": "一致する結果が見つかりません",
+    "tryDifferentImage": "別の画像を使用するか、検索設定を調整してみてください",
+    "addToMaintenanceList": "メンテナンスリストに追加",
+    "viewOnTmdb": "TMDBで表示",
+    "todayUpoming": "本日公開",
+    "tomorrowUpoming": "明日公開",
+    "daysLaterUpoming": "日後公開",
+    "todayAired": "本日放送",
+    "yesterdayAired": "昨日放送",
+    "daysAgoAired": "日前に放送"
+  },
+  "regions": {
+    "CN": "中国本土",
+    "HK": "香港",
+    "TW": "台湾",
+    "JP": "日本",
+    "KR": "韓国",
+    "US": "アメリカ合衆国",
+    "GB": "イギリス"
+  }
+}

@@ -33,7 +33,9 @@
       "auto": "Auto",
       "zh-CN": "Simplified Chinese",
       "zh-TW": "Traditional Chinese (Taiwan)",
-      "zh-HK": "Traditional Chinese (Hong Kong)"
+      "zh-HK": "Traditional Chinese (Hong Kong)",
+      "ja-JP": "Japanese",
+      "ko-KR": "Korean"
     }
   }
 }

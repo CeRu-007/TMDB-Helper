@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware"
 import { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY, isValidLanguage } from "./config"
 import { mapSystemLanguageToAppLanguage } from "./index"
 
-export type SupportedLanguage = "zh-CN" | "en-US" | "zh-TW" | "zh-HK" | "auto"
+export type SupportedLanguage = "zh-CN" | "en-US" | "zh-TW" | "zh-HK" | "ja-JP" | "ko-KR" | "auto"
 
 interface LanguageState {
   language: SupportedLanguage

@@ -1,0 +1,41 @@
+{
+  "ui": {
+    "table": {
+      "noData": "데이터가 없습니다",
+      "sort": "정렬",
+      "ascending": "오름차순",
+      "descending": "내림차순"
+    },
+    "terminal": {
+      "execute": "실행",
+      "clear": "지우기",
+      "copy": "복사"
+    },
+    "timePicker": {
+      "confirm": "확인",
+      "cancel": "취소",
+      "selectTime": "시간 선택"
+    },
+    "dialog": {
+      "confirm": "확인",
+      "cancel": "취소",
+      "close": "닫기"
+    },
+    "loading": {
+      "loading": "로딩 중..."
+    },
+    "error": {
+      "error": "오류",
+      "retry": "재시도",
+      "somethingWrong": "문제가 발생했습니다"
+    },
+    "language": {
+      "auto": "자동",
+      "zh-CN": "중국어 간체",
+      "zh-TW": "중국어 번체 (대만)",
+      "zh-HK": "중국어 번체 (홍콩)",
+      "ja-JP": "일본어",
+      "ko-KR": "한국어"
+    }
+  }
+}
