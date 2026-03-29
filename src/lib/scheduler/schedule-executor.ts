@@ -15,6 +15,11 @@ export interface ExecuteResult {
   details?: string
 }
 
+export interface ProcessResult {
+  completed: boolean
+  message: string
+}
+
 export interface LogEntry {
   type: 'stdout' | 'stderr' | 'info'
   message: string
@@ -301,4 +306,64 @@ async function getServerConfigValue(key: string): Promise<string | null> {
   }
 
   return null
+}
+
+export async function processScheduleTaskResult(
+  item: NonNullable<ReturnType<typeof itemsRepository.findByIdWithRelations>>,
+  task: NonNullable<ReturnType<typeof scheduleRepository.findById>>,
+  executeResult: ExecuteResult,
+  isScheduledTask: boolean = false
+): Promise<ProcessResult> {
+  if (!executeResult.success) {
+    return { completed: false, message: executeResult.message }
+  }
+
+  const episodeCount = executeResult.episodeCount || 0
+  const seasonNumber = task.tmdbSeason || 1
+  const targetSeason = item.seasons?.find(s => s.seasonNumber === seasonNumber)
+  const previousCurrentEpisode = targetSeason?.currentEpisode || 0
+
+  if (previousCurrentEpisode < episodeCount) {
+    let updatedItem = { ...item }
+
+    if (updatedItem.seasons) {
+      updatedItem.seasons = updatedItem.seasons.map(season => {
+        if (season.seasonNumber === seasonNumber) {
+          return { ...season, currentEpisode: episodeCount }
+        }
+        return season
+      })
+
+      updatedItem.episodes = updatedItem.seasons.flatMap(season =>
+        season.episodes?.map(ep => ({ ...ep, seasonNumber: season.seasonNumber })) || []
+      )
+    }
+
+    const totalEpisodes = targetSeason?.totalEpisodes || 0
+    if (totalEpisodes > 0 && episodeCount >= totalEpisodes) {
+      updatedItem.status = 'completed'
+      updatedItem.completed = true
+      logger.info(`[Schedule Executor] 词条已完结: ${item.id}, episodeCount=${episodeCount}, totalEpisodes=${totalEpisodes}`)
+    }
+
+    updatedItem.updatedAt = new Date().toISOString()
+
+    const result = itemsRepository.update(updatedItem)
+    if (result.success) {
+      logger.info(`[Schedule Executor] 词条集数已更新: ${item.id}, season=${seasonNumber}, episode=${episodeCount}`)
+    } else {
+      logger.error(`[Schedule Executor] 词条集数更新失败: ${item.id}, ${result.error}`)
+    }
+  }
+
+  if (isScheduledTask) {
+    const updatedItem = itemsRepository.findByIdWithRelations(item.id)
+    if (updatedItem?.status === 'completed') {
+      logger.info(`[Schedule Executor] 词条已完结，删除定时任务: ${task.id}`)
+      scheduleRepository.deleteByItemId(item.id)
+      return { completed: true, message: '词条已完结，任务已自动删除' }
+    }
+  }
+
+  return { completed: false, message: executeResult.message }
 }

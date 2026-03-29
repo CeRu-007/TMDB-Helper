@@ -2,16 +2,9 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { scheduleRepository } from '@/lib/data/schedule-repository'
 import { scheduleLogRepository } from '@/lib/data/schedule-log-repository'
 import { itemsRepository } from '@/lib/database/repositories/items.repository'
-import { executeScheduleTask, type LogEntry } from '@/lib/scheduler/schedule-executor'
+import { executeScheduleTask, processScheduleTaskResult, type LogEntry } from '@/lib/scheduler/schedule-executor'
 import { notifier } from '@/lib/scheduler/notifier'
 import { logger } from '@/lib/utils/logger'
-
-interface ExecuteResult {
-  success: boolean
-  message: string
-  episodeCount?: number
-  details?: string
-}
 
 export async function POST(request: NextRequest) {
   const logs: LogEntry[] = []
@@ -53,7 +46,7 @@ export async function POST(request: NextRequest) {
     const logId = logResult.data.id
 
     try {
-      let result: ExecuteResult
+      let result
       try {
         result = await executeScheduleTask(item, task, logs)
       } catch (execError) {
@@ -64,6 +57,8 @@ export async function POST(request: NextRequest) {
       const endAt = new Date().toISOString()
 
       if (result.success) {
+        await processScheduleTaskResult(item, task, result, false)
+
         scheduleLogRepository.updateStatus(logId, 'success', result.message, result.details || null)
         scheduleRepository.updateLastRunAt(task.id, endAt, '')
 

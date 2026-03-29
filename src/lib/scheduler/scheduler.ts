@@ -8,7 +8,7 @@ import { scheduleLogRepository } from '@/lib/data/schedule-log-repository';
 import { taskQueue } from './task-queue';
 import { logger } from '@/lib/utils/logger';
 import type { ScheduleTask } from '@/types/schedule';
-import { executeScheduleTask, type LogEntry } from './schedule-executor';
+import { executeScheduleTask, processScheduleTaskResult, type LogEntry } from './schedule-executor';
 import { itemsRepository } from '@/lib/database/repositories/items.repository';
 import { notifier } from './notifier';
 
@@ -63,17 +63,24 @@ class Scheduler {
     );
 
     scheduledTask.start();
-
     this.tasks.set(task.id, scheduledTask);
     logger.debug(`[Scheduler] 任务已调度: ${task.id}, cron: ${task.cron}`);
   }
 
   unscheduleTask(taskId: string): void {
-    const task = this.tasks.get(taskId);
-    if (task) {
-      task.stop();
+    const scheduledTask = this.tasks.get(taskId);
+    if (scheduledTask) {
+      scheduledTask.stop();
       this.tasks.delete(taskId);
       logger.debug(`[Scheduler] 任务已取消: ${taskId}`);
+    }
+  }
+
+  async updateTask(task: ScheduleTask): Promise<void> {
+    this.unscheduleTask(task.id);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    if (task.enabled) {
+      this.scheduleTask(task);
     }
   }
 
@@ -123,13 +130,21 @@ class Scheduler {
       const endAt = new Date().toISOString();
 
       if (executeResult.success) {
-        scheduleLogRepository.updateStatus(logId, 'success', executeResult.message, executeResult.details || null);
-        scheduleRepository.updateLastRunAt(
-          task.id,
-          endAt,
-          this.calculateNextRunTime(task.cron)
-        );
-        notifier.sendSuccessNotification(item.title, executeResult.episodeCount || 0);
+        const processResult = await processScheduleTaskResult(item, task, executeResult, true);
+
+        if (processResult.completed) {
+          this.removeTask(task.id);
+          scheduleLogRepository.updateStatus(logId, 'success', processResult.message);
+        } else {
+          scheduleLogRepository.updateStatus(logId, 'success', executeResult.message, executeResult.details || null);
+          scheduleRepository.updateLastRunAt(
+            task.id,
+            endAt,
+            this.calculateNextRunTime(task.cron)
+          );
+          notifier.sendSuccessNotification(item.title, executeResult.episodeCount || 0);
+        }
+
         logger.info(`[Scheduler] 任务执行成功: ${task.id}`);
       } else {
         scheduleLogRepository.updateStatus(logId, 'failed', executeResult.message);
