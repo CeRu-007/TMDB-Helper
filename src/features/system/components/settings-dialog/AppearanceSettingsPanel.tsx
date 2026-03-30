@@ -90,7 +90,7 @@ export default function AppearanceSettingsPanel({
           </div>
 
           <div>
-            <Label className="text-sm font-medium">{t("primaryColor")}</Label>
+            <Label className="text-sm font-medium">{t("appearancePanel.primaryColor")}</Label>
             <div className="grid grid-cols-5 gap-3 mt-2">
               {colorOptions.map((option) => (
                 <button

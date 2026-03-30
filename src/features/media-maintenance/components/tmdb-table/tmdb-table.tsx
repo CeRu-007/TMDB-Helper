@@ -1479,7 +1479,7 @@ const TMDBTableComponent = ({
   if (!localData || !localData.headers || !localData.rows) {
     return (
       <div className={cn("tmdb-table-empty", className)}>
-        <p className="text-center p-4">{t("table.noData")}</p>
+        <p className="text-center p-4">{t("ui.table.noData", { ns: "ui" })}</p>
       </div>
     )
   }
