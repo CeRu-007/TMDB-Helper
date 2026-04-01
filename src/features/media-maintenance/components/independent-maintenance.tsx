@@ -67,10 +67,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   const [selectedSeason, setSelectedSeason] = useState<number>(1)
   const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [terminalOutput, setTerminalOutput] = useState<string[]>([
-    "$ Independent Maintenance Mode Started",
-    "$ Waiting for commands..."
-  ])
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([])
   const [csvData, setCsvData] = useState<CSVData | null>(null)
   const [editorMode, setEditorMode] = useState<"table" | "text">("table")
   const [csvContent, setCsvContent] = useState("")
@@ -115,6 +112,15 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
     scrollToBottom()
   }, [terminalOutput, scrollToBottom])
 
+  useEffect(() => {
+    if (terminalOutput.length === 0) {
+      setTerminalOutput([
+        t("independentPage.terminalStarted"),
+        t("independentPage.waitingForCommands")
+      ])
+    }
+  }, [t])
+
   // 添加终端输出
   const appendTerminalOutput = useCallback((message: string, type: "info" | "success" | "error" | "warning" = "info") => {
     const timestamp = new Date().toLocaleTimeString()
@@ -125,10 +131,10 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   // 清空终端输出
   const clearTerminal = useCallback(() => {
     setTerminalOutput([
-      "$ Independent Maintenance Mode Started",
-      "$ Waiting for commands..."
+      t("independentPage.terminalStarted"),
+      t("independentPage.waitingForCommands")
     ])
-  }, [])
+  }, [t])
 
   // 自动检测平台
   const detectPlatform = useCallback((url: string) => {
@@ -532,7 +538,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     </div>
                   ))}
                   <div className="mt-2">
-                    <span className="animate-pulse">█</span>
+                    <span className="animate-pulse">{t("independentPage.cursor")}</span>
                   </div>
                 </div>
               ) : (
@@ -719,7 +725,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       {t("independentPage.tmdbSeason")}
                     </Label>
                     <div className="flex items-center space-x-1 mt-1">
-                      <span className="text-xs">/</span>
+                      <span className="text-xs">{t("independentPage.seasonNumber")}</span>
                       <Input
                         id="season-select"
                         type="number"
@@ -729,7 +735,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                         onChange={(e) => handleSeasonChange(e.target.value)}
                         className="w-12 h-8 text-xs"
                       />
-                      <span className="text-xs">Season</span>
+                      <span className="text-xs">{t("independentPage.season")}</span>
                     </div>
                   </div>
                   <div>

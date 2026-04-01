@@ -52,6 +52,11 @@
     "tmdbCommandCopied": "TMDB 명령이 클립보드에 복사되었습니다",
     "terminalOutputCopied": "터미널 출력이 클립보드에 복사되었습니다",
     "noCsvYet": "아직 CSV 데이터가 없습니다",
+    "terminalStarted": "$ 독립 유지보수 모드가 시작되었습니다",
+    "waitingForCommands": "$ 명령 대기 중...",
+    "cursor": "█",
+    "season": "시즌",
+    "seasonNumber": "제",
     "addItem": {
       "title": "새 항목 추가",
       "searchHint": "드라마를 검색하여 유지보수 목록에 추가",

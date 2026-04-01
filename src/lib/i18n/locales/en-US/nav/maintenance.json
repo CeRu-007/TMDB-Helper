@@ -52,6 +52,11 @@
     "tmdbCommandCopied": "TMDB command copied to clipboard",
     "terminalOutputCopied": "Terminal output copied to clipboard",
     "noCsvYet": "No CSV data yet",
+    "terminalStarted": "$ Independent Maintenance Mode Started",
+    "waitingForCommands": "$ Waiting for commands...",
+    "cursor": "█",
+    "season": "Season",
+    "seasonNumber": "",
     "addItem": {
       "title": "Add New Item",
       "searchHint": "Search and add TV series to maintenance list",

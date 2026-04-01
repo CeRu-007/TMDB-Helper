@@ -52,6 +52,11 @@
     "tmdbCommandCopied": "TMDBコマンドがクリップボードにコピーされました",
     "terminalOutputCopied": "ターミナル出力がクリップボードにコピーされました",
     "noCsvYet": "CSVデータがまだありません",
+    "terminalStarted": "$ 独立メンテナンスモードが開始されました",
+    "waitingForCommands": "$ コマンド待機中...",
+    "cursor": "█",
+    "season": "シーズン",
+    "seasonNumber": "第",
     "addItem": {
       "title": "新しい項目を追加",
       "searchHint": "ドラマを検索してメンテナンスリストに追加",

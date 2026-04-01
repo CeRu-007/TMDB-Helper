@@ -52,6 +52,11 @@
     "tmdbCommandCopied": "TMDB命令已複製到剪貼簿",
     "terminalOutputCopied": "終端輸出已複製到剪貼簿",
     "noCsvYet": "暫無CSV資料",
+    "terminalStarted": "$ 獨立維護模式已啟動",
+    "waitingForCommands": "$ 等待命令...",
+    "cursor": "█",
+    "season": "季",
+    "seasonNumber": "第",
     "addItem": {
       "title": "新增條目",
       "searchHint": "搜尋並新增電視劇到維護列表",
