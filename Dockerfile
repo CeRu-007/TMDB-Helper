@@ -1,6 +1,6 @@
 # TMDB Helper Docker 配置
 # 多阶段构建，支持 Node.js 和 Python 环境
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 # 安装系统依赖、Python 支持和 pnpm
 RUN apk add --no-cache \
