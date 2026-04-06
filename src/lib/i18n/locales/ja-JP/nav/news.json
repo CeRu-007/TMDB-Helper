@@ -1,7 +1,9 @@
 {
   "title": "メディアニュース",
   "upcoming": "今後公開",
+  "upcomingDesc": "今後30日以内に公開されるコンテンツ",
   "recent": "最近放送",
+  "recentDesc": "過去30日以内に放送開始したコンテンツ",
   "regionLabel": "地域",
   "unknownRegion": "不明な地域",
   "regionGroup": {
@@ -10,6 +12,10 @@
   },
   "streamingNav": "ストリーミングナビ",
   "schedule": "スケジュール",
+  "lastUpdate": "最終更新",
+  "selectMenu": "左側のメニューを選択してください",
+  "selectMenuDesc": "左側のナビゲーションメニューからオプションを選択してコンテンツを表示",
+  "checkNetworkOrRetry": "ネットワーク接続を確認するか、後でもう一度お試しください",
   "mediaNewsSection": {
     "loading": "読み込み中...",
     "refresh": "更新",

@@ -1,7 +1,9 @@
 {
   "title": "影視資訊",
   "upcoming": "即將上線",
+  "upcomingDesc": "未來30天將要上線的內容",
   "recent": "近期開播",
+  "recentDesc": "過去30天剛剛開播的內容",
   "regionLabel": "區域",
   "unknownRegion": "未知區域",
   "regionGroup": {
@@ -10,6 +12,10 @@
   },
   "streamingNav": "平台導航",
   "schedule": "時間表",
+  "lastUpdate": "最後更新",
+  "selectMenu": "請選擇左側選單",
+  "selectMenuDesc": "選擇左側導航選單中的選項來查看相應內容",
+  "checkNetworkOrRetry": "請檢查網絡連接或稍後重試",
   "mediaNewsSection": {
     "loading": "載入中...",
     "refresh": "刷新",

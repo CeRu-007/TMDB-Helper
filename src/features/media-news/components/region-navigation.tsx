@@ -144,12 +144,14 @@ export function RegionNavigation({
                   : 'opacity-0 scale-95 -translate-y-1 invisible pointer-events-none'
               }`}>
                 <div className="p-2 max-h-[320px] overflow-y-auto scrollbar-thin">
-                  {REGION_GROUPS.map(group => (
+                  {REGION_GROUPS.map(group => {
+                    const groupKey = group.name === "亚洲" ? "regionGroup.asia" : "regionGroup.western"
+                    return (
                     <div key={group.name} className="mb-2 last:mb-0">
                       <div className="flex items-center px-2 py-1">
                         <div className="h-px w-2 bg-blue-200 dark:bg-blue-800/70 mr-1.5"></div>
                         <span className="text-[10px] font-medium text-blue-600/80 dark:text-blue-400/80 uppercase tracking-wider">
-                          {group.name}
+                          {t(groupKey)}
                         </span>
                         <div className="h-px flex-grow bg-blue-200 dark:bg-blue-800/70 ml-1.5"></div>
                       </div>
@@ -182,7 +184,7 @@ export function RegionNavigation({
                                 }`}>
                                   <span className="text-sm">{region.icon}</span>
                                 </div>
-                                <span className="ml-2 text-xs font-medium">{region.name}</span>
+                                <span className="ml-2 text-xs font-medium">{t(`regions.${regionId}`)}</span>
                                 {isActive && (
                                   <Check className="ml-2 h-3 w-3 text-blue-500" />
                                 )}
@@ -201,7 +203,7 @@ export function RegionNavigation({
                         })}
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
             </div>

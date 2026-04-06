@@ -24,17 +24,10 @@ import { useToast } from "@/lib/hooks/use-toast"
 
 import { categories, type Category } from '@/lib/constants/categories'
 import type { MediaItem } from '@/types/media'
+import type { UseMediaNewsReturn } from '@/lib/hooks/use-media-news'
+import type { TFunction } from 'i18next'
 
-interface MediaNewsData {
-  upcomingItems: MediaItem[]
-  recentItems: MediaItem[]
-  loadingUpcoming: boolean
-  loadingRecent: boolean
-  upcomingError?: string
-  recentError?: string
-  fetchUpcomingItems: (region: string, force?: boolean) => Promise<void>
-  fetchRecentItems: (region: string, force?: boolean) => Promise<void>
-}
+type MediaNewsData = UseMediaNewsReturn
 
 // 导入组件
 import { SidebarLayout } from "@/shared/components/layouts/sidebar-layout-v2"
@@ -72,7 +65,7 @@ const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: numbe
   return isCompleted ? `${weekdayName}${t("noCompletedItemsSuffix", { ns: "media" })}` : `${weekdayName}${t("noItemsSuffix", { ns: "media" })}`
 }
 
-const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaNewsData, items: MediaItem[], selectedRegion: string, t: (key: string, options?: Record<string, unknown>) => string) => {
+const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaNewsData, items: MediaItem[], selectedRegion: string, t: TFunction, i18n: { language: string }) => {
   const isUpcoming = mediaNewsType === 'upcoming'
   const newsData = isUpcoming ? mediaNews.upcomingItems : mediaNews.recentItems
   const loading = isUpcoming ? mediaNews.loadingUpcoming : mediaNews.loadingRecent
@@ -80,6 +73,16 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
   const fetchFunction = () => isUpcoming
     ? mediaNews.fetchUpcomingItems(selectedRegion, false)
     : mediaNews.fetchRecentItems(selectedRegion, false)
+
+  const localeMap: Record<string, string> = {
+    'zh-CN': 'zh-CN',
+    'zh-TW': 'zh-TW',
+    'zh-HK': 'zh-HK',
+    'en-US': 'en-US',
+    'ja-JP': 'ja-JP',
+    'ko-KR': 'ko-KR'
+  }
+  const currentLocale = localeMap[i18n.language] || 'zh-CN'
 
   if (loading) {
     return (
@@ -136,29 +139,60 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
     )
   )
 
+  const getTimeText = (releaseDate: string) => {
+    const today = new Date()
+    const date = new Date(releaseDate)
+    const isUpcomingItem = date > today
+    const daysDiff = Math.abs(Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+
+    if (isUpcomingItem) {
+      return daysDiff <= 0 
+        ? t("mediaNewsSection.todayUpoming", { ns: "nav.news" }) 
+        : daysDiff === 1 
+          ? t("mediaNewsSection.tomorrowUpoming", { ns: "nav.news" }) 
+          : `${daysDiff}${t("mediaNewsSection.daysLaterUpoming", { ns: "nav.news" })}`
+    } else {
+      return daysDiff <= 0 
+        ? t("mediaNewsSection.todayAired", { ns: "nav.news" }) 
+        : daysDiff === 1 
+          ? t("mediaNewsSection.yesterdayAired", { ns: "nav.news" }) 
+          : `${daysDiff}${t("mediaNewsSection.daysAgoAired", { ns: "nav.news" })}`
+    }
+  }
+
   return (
     <div className="grid grid-cols-6 gap-6 overflow-y-auto max-h-[calc(100vh-350px)]">
-      {filteredItems.map((item) => (
-        <div key={`${item.mediaType}-${item.id}`} className="group">
-          <div className="mb-2">
-            <Badge className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-              {new Date(item.releaseDate).toLocaleDateString('zh-CN')}
-            </Badge>
+      {filteredItems.map((item) => {
+        const isUpcomingItem = new Date(item.releaseDate) > new Date()
+        const badgeColor = isUpcomingItem ? "bg-blue-500" : "bg-green-500"
+        
+        return (
+          <div key={`${item.mediaType}-${item.id}`} className="group">
+            <div className="mb-2">
+              <Badge className={`${badgeColor} text-white text-xs px-2 py-1 rounded-full`}>
+                {new Date(item.releaseDate).toLocaleDateString(currentLocale)}
+              </Badge>
+            </div>
+            <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl">
+              <img
+                src={item.posterUrl ? `https://image.tmdb.org/t/p/w500${item.posterUrl}` : "/placeholder.svg"}
+                alt={item.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="mt-2">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+                {item.title}
+              </h3>
+              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <span>{item.mediaType === 'movie' ? t("mediaNewsSection.movie", { ns: "nav.news" }) : t("mediaNewsSection.tv", { ns: "nav.news" })}</span>
+                <span className="mx-1">·</span>
+                <span>{getTimeText(item.releaseDate)}</span>
+              </div>
+            </div>
           </div>
-          <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl">
-            <img
-              src={item.posterUrl ? `https://image.tmdb.org/t/p/w500${item.posterUrl}` : "/placeholder.svg"}
-              alt={item.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="mt-2">
-            <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
-              {item.title}
-            </h3>
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -182,7 +216,7 @@ const MediaCardList = function MediaCardList({ items, onItemClick, showAirTime }
 }
 
 export default function HomePage() {
-  const { t } = useTranslation("nav/image")
+  const { t, i18n } = useTranslation("nav/image")
   const { toast } = useToast()
   const homeState = useHomeState()
   const { filterItemsByCategory } = useCategoryFilter()
@@ -352,7 +386,7 @@ export default function HomePage() {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {mediaNewsType === 'upcoming' ? '未来30天将要上线的内容' : '过去30天刚刚开播的内容'}
+                    {mediaNewsType === 'upcoming' ? t("upcomingDesc", { ns: "nav.news" }) : t("recentDesc", { ns: "nav.news" })}
                   </p>
                 </div>
               </div>
@@ -369,7 +403,7 @@ export default function HomePage() {
             />
 
             <div className="overflow-y-auto">
-              {renderMediaNews(mediaNewsType, mediaNews, items, selectedRegion, t)}
+              {renderMediaNews(mediaNewsType, mediaNews, items, selectedRegion, t, i18n)}
             </div>
           </TabsContent>
 

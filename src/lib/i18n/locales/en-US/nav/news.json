@@ -1,7 +1,9 @@
 {
   "title": "Media News",
   "upcoming": "Upcoming",
+  "upcomingDesc": "Content releasing in the next 30 days",
   "recent": "Recently Aired",
+  "recentDesc": "Content that started airing in the past 30 days",
   "regionLabel": "Region",
   "unknownRegion": "Unknown Region",
   "regionGroup": {
@@ -10,6 +12,10 @@
   },
   "streamingNav": "Streaming Nav",
   "schedule": "Schedule",
+  "lastUpdate": "Last Update",
+  "selectMenu": "Please select from the left menu",
+  "selectMenuDesc": "Select an option from the left navigation menu to view content",
+  "checkNetworkOrRetry": "Please check your network connection or try again later",
   "mediaNewsSection": {
     "loading": "Loading...",
     "refresh": "Refresh",

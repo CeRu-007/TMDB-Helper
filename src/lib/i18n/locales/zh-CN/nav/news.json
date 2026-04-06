@@ -1,7 +1,9 @@
 {
   "title": "影视资讯",
   "upcoming": "即将上线",
+  "upcomingDesc": "未来30天将要上线的内容",
   "recent": "近期开播",
+  "recentDesc": "过去30天刚刚开播的内容",
   "regionLabel": "区域",
   "unknownRegion": "未知区域",
   "regionGroup": {
@@ -10,6 +12,10 @@
   },
   "streamingNav": "平台导航",
   "schedule": "时间表",
+  "lastUpdate": "最后更新",
+  "selectMenu": "请选择左侧菜单",
+  "selectMenuDesc": "选择左侧导航菜单中的选项来查看相应内容",
+  "checkNetworkOrRetry": "请检查网络连接或稍后重试",
   "mediaNewsSection": {
     "loading": "加载中...",
     "refresh": "刷新",

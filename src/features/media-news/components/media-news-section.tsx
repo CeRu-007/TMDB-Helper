@@ -82,12 +82,22 @@ export function MediaNewsSection({
   onRefresh,
   onShowSettings
 }: MediaNewsSectionProps) {
-  const { t } = useTranslation("nav.news")
+  const { t, i18n } = useTranslation("nav.news")
+  
+  const localeMap: Record<string, string> = {
+    'zh-CN': 'zh-CN',
+    'zh-TW': 'zh-TW',
+    'zh-HK': 'zh-HK',
+    'en-US': 'en-US',
+    'ja-JP': 'ja-JP',
+    'ko-KR': 'ko-KR'
+  }
+  const currentLocale = localeMap[i18n.language] || 'zh-CN'
   
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString)
-      return date.toLocaleDateString('zh-CN', {
+      return date.toLocaleDateString(currentLocale, {
         month: 'short',
         day: 'numeric'
       })

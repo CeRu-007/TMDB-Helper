@@ -1,5 +1,6 @@
 import React from "react"
 import { useTranslation } from "react-i18next"
+import type { TFunction } from "i18next"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { logger } from "@/lib/utils/logger"
@@ -212,7 +213,8 @@ export function ContentRenderers({
       fetchUpcomingItems,
       setSelectedRegion,
       onQuickAddItem,
-      ApiKeySetupGuide
+      ApiKeySetupGuide,
+      t
     })
   }
 
@@ -242,7 +244,8 @@ export function ContentRenderers({
       fetchRecentItems,
       setSelectedRegion,
       onQuickAddItem,
-      ApiKeySetupGuide
+      ApiKeySetupGuide,
+      t
     })
   }
 
@@ -280,10 +283,10 @@ export function ContentRenderers({
     <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
       <div className="bg-gray-50 dark:bg-gray-800/30 p-6 rounded-lg border border-gray-200 dark:border-gray-700 max-w-md text-center">
         <h2 className="text-xl font-semibold mb-2 text-gray-700 dark:text-gray-300">
-          请选择左侧菜单
+          {t("selectMenu")}
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
-          选择左侧导航菜单中的选项来查看相应内容
+          {t("selectMenuDesc")}
         </p>
       </div>
     </div>
@@ -304,7 +307,8 @@ function renderUpcomingContent({
   fetchUpcomingItems,
   setSelectedRegion,
   onQuickAddItem,
-  ApiKeySetupGuide
+  ApiKeySetupGuide,
+  t
 }: {
   upcomingItems: MediaNewsItem[]
   loadingUpcoming: boolean
@@ -319,6 +323,7 @@ function renderUpcomingContent({
   setSelectedRegion: (region: string) => void
   onQuickAddItem: (item: MediaNewsItem) => void
   ApiKeySetupGuide: React.ComponentType
+  t: TFunction<"nav.news">
 }) {
   return (
     <div className="container mx-auto p-4 max-w-7xl">
@@ -333,7 +338,7 @@ function renderUpcomingContent({
         <div>
           <div className="flex items-center">
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-              即将上线
+              {t("upcoming")}
             </h2>
             {upcomingItems.length > 0 && (
               <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
@@ -347,7 +352,7 @@ function renderUpcomingContent({
             )}
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {upcomingLastUpdated ? `最后更新: ${upcomingLastUpdated}` : '未来30天将要上线的内容'}
+            {upcomingLastUpdated ? `${t("lastUpdate")}: ${upcomingLastUpdated}` : t("upcomingDesc")}
           </p>
         </div>
       </div>
@@ -372,7 +377,7 @@ function renderUpcomingContent({
           <div className="flex justify-center items-center h-48">
             <div className="flex flex-col items-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">加载中，请稍候...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t("mediaNewsSection.loading")}</p>
             </div>
           </div>
         ) : upcomingError ? (
@@ -384,25 +389,25 @@ function renderUpcomingContent({
               </p>
               <p className="text-red-500 dark:text-red-400 text-sm mb-4">
                 {isMissingApiKey
-                  ? '请按照上方指南配置TMDB API密钥'
-                  : '请检查网络连接或稍后重试'}
+                  ? t("mediaNewsSection.configureApiKey")
+                  : t("checkNetworkOrRetry")}
               </p>
               <Button
                 onClick={() => fetchUpcomingItems(false, 0, selectedRegion)}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                重试
+                {t("mediaNewsSection.refresh")}
               </Button>
             </div>
           </div>
         ) : upcomingItems.length === 0 ? (
           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
             <p className="text-gray-500 dark:text-gray-400 mb-1">
-              暂无即将上线的内容
+              {t("mediaNewsSection.noContentUpcoming")}
             </p>
             <p className="text-gray-400 dark:text-gray-500 text-sm">
-              未找到未来30天内上线的影视动态
+              {t("mediaNewsSection.noContentUpcoming")}
             </p>
           </div>
         ) : (
@@ -442,7 +447,8 @@ function renderRecentContent({
   fetchRecentItems,
   setSelectedRegion,
   onQuickAddItem,
-  ApiKeySetupGuide
+  ApiKeySetupGuide,
+  t
 }: {
   recentItems: MediaNewsItem[]
   loadingRecent: boolean
@@ -457,6 +463,7 @@ function renderRecentContent({
   setSelectedRegion: (region: string) => void
   onQuickAddItem: (item: MediaNewsItem) => void
   ApiKeySetupGuide: React.ComponentType
+  t: TFunction<"nav.news">
 }) {
   return (
     <div className="container mx-auto p-4 max-w-7xl">
@@ -471,7 +478,7 @@ function renderRecentContent({
         <div>
           <div className="flex items-center">
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-              近期开播
+              {t("recent")}
             </h2>
             {recentItems.length > 0 && (
               <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
@@ -485,7 +492,7 @@ function renderRecentContent({
             )}
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {recentLastUpdated ? `最后更新: ${recentLastUpdated}` : '过去30天刚刚开播的内容'}
+            {recentLastUpdated ? `${t("lastUpdate")}: ${recentLastUpdated}` : t("recentDesc")}
           </p>
         </div>
       </div>
@@ -510,7 +517,7 @@ function renderRecentContent({
           <div className="flex justify-center items-center h-48">
             <div className="flex flex-col items-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">加载中，请稍候...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t("mediaNewsSection.loading")}</p>
             </div>
           </div>
         ) : recentError ? (
@@ -522,25 +529,25 @@ function renderRecentContent({
               </p>
               <p className="text-red-500 dark:text-red-400 text-sm mb-4">
                 {isMissingApiKey
-                  ? '请按照上方指南配置TMDB API密钥'
-                  : '无法连接到TMDB服务，请检查网络连接或稍后重试'}
+                  ? t("mediaNewsSection.configureApiKey")
+                  : t("checkNetworkOrRetry")}
               </p>
               <Button
                 onClick={() => fetchRecentItems(false, 0, selectedRegion)}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                重试
+                {t("mediaNewsSection.refresh")}
               </Button>
             </div>
           </div>
         ) : recentItems.length === 0 ? (
           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
             <p className="text-gray-500 dark:text-gray-400 mb-1">
-              暂无近期开播的内容
+              {t("mediaNewsSection.noContentRecent")}
             </p>
             <p className="text-gray-400 dark:text-gray-500 text-sm">
-              未找到过去30天内开播的影视动态
+              {t("mediaNewsSection.noContentRecent")}
             </p>
           </div>
         ) : (
@@ -568,7 +575,7 @@ function renderRecentContent({
 
 // Media news card component
 function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: (item: MediaNewsItem) => void }) {
-  const { t } = useTranslation("nav.news")
+  const { t, i18n } = useTranslation("nav.news")
 
   const isUpcoming = new Date(item.releaseDate) > new Date()
   const badgeColor = isUpcoming ? "bg-blue-500" : "bg-green-500"
@@ -578,8 +585,18 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
   const daysDiff = Math.abs(Math.ceil((releaseDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
 
   const timeText = isUpcoming
-    ? daysDiff <= 0 ? t("todayUpoming") : daysDiff === 1 ? t("tomorrowUpoming") : `${daysDiff}${t("daysLaterUpoming")}`
-    : daysDiff <= 0 ? t("todayAired") : daysDiff === 1 ? t("yesterdayAired") : `${daysDiff}${t("daysAgoAired")}`
+    ? daysDiff <= 0 ? t("mediaNewsSection.todayUpoming") : daysDiff === 1 ? t("mediaNewsSection.tomorrowUpoming") : `${daysDiff}${t("mediaNewsSection.daysLaterUpoming")}`
+    : daysDiff <= 0 ? t("mediaNewsSection.todayAired") : daysDiff === 1 ? t("mediaNewsSection.yesterdayAired") : `${daysDiff}${t("mediaNewsSection.daysAgoAired")}`
+
+  const localeMap: Record<string, string> = {
+    'zh-CN': 'zh-CN',
+    'zh-TW': 'zh-TW',
+    'zh-HK': 'zh-HK',
+    'en-US': 'en-US',
+    'ja-JP': 'ja-JP',
+    'ko-KR': 'ko-KR'
+  }
+  const currentLocale = localeMap[i18n.language] || 'zh-CN'
 
   function handleAddClick(e: React.MouseEvent) {
     e.preventDefault()
@@ -592,7 +609,7 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
       {/* Release date badge */}
       <div className="mb-2">
         <Badge className={`${badgeColor} text-white text-xs px-2 py-1 rounded-full`}>
-          {new Date(item.releaseDate).toLocaleDateString('zh-CN')}
+          {new Date(item.releaseDate).toLocaleDateString(currentLocale)}
         </Badge>
       </div>
 
@@ -609,7 +626,7 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
             <div className="flex items-center gap-3 transform transition-transform duration-300 group-hover:scale-105">
               <button
                 className="flex items-center justify-center h-11 w-11 rounded-full bg-blue-500/90 hover:bg-blue-600 text-white transition-all shadow-lg hover:shadow-blue-500/50 group-hover:rotate-3"
-                title={t("addToMaintenanceList", { ns: "nav.news" })}
+                title={t("mediaNewsSection.addToMaintenanceList")}
                 onClick={handleAddClick}
               >
                 <Plus className="h-5 w-5" />
@@ -620,7 +637,7 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center h-11 w-11 rounded-full bg-gray-800/80 hover:bg-gray-900 text-white transition-all shadow-lg hover:shadow-gray-800/50 group-hover:-rotate-3"
-                title={t("viewOnTmdb", { ns: "nav.news" })}
+                title={t("mediaNewsSection.viewOnTmdb")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink className="h-5 w-5" />
@@ -630,7 +647,7 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
             {/* Time text */}
             <div className="absolute bottom-4 left-0 right-0 text-center">
               <span className="text-xs font-medium text-white/95 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
-                {item.mediaType === 'movie' ? t("mediaNewsSection.movie", { ns: "nav.news" }) : t("mediaNewsSection.tv", { ns: "nav.news" })}
+                {item.mediaType === 'movie' ? t("mediaNewsSection.movie") : t("mediaNewsSection.tv")}
                 <span className="mx-1">·</span>
                 {timeText}
               </span>
@@ -643,7 +660,7 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
             {item.title}
           </h3>
           <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-            <span className="flex items-center">{item.mediaType === 'movie' ? t("mediaNewsSection.movie", { ns: "nav.news" }) : t("mediaNewsSection.tv", { ns: "nav.news" })}</span>
+            <span className="flex items-center">{item.mediaType === 'movie' ? t("mediaNewsSection.movie") : t("mediaNewsSection.tv")}</span>
             <span className="mx-1">·</span>
             <span className="flex items-center">{timeText}</span>
           </div>
