@@ -7,6 +7,11 @@ import { logger } from '@/lib/utils/logger';
  */
 export async function POST(_request: NextRequest) {
   try {
+    // Cookie secure 配置: 默认生产环境启用,可通过 COOKIE_SECURE 环境变量覆盖
+    const isSecure = process.env.COOKIE_SECURE !== undefined
+      ? (process.env.COOKIE_SECURE === 'true')
+      : (process.env.NODE_ENV === 'production');
+
     // 创建响应
     const response = NextResponse.json({
       success: true,
@@ -16,7 +21,7 @@ export async function POST(_request: NextRequest) {
     // 清除认证cookie
     response.cookies.set('auth-token', '', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecure,
       sameSite: 'lax',
       maxAge: 0,
       path: '/'

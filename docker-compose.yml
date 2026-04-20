@@ -35,6 +35,11 @@ services:
       - PORT=4949
       - HOSTNAME=0.0.0.0
 
+      # Cookie Secure 配置
+      # 如果通过 HTTP 直接访问(没有 HTTPS 反向代理),设置为 'false'
+      # 如果通过 HTTPS 访问(有 SSL 终端),设置为 'true' 或删除此行(默认为 true)
+      - COOKIE_SECURE=false
+
       # 数据库配置（如果需要）
       # - DATABASE_URL=your_database_url_here
 

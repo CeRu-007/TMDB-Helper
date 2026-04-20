@@ -62,6 +62,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const sessionDays = Math.max(user.sessionExpiryDays || 0, 15);
     const maxAge = (rememberMe ? sessionDays * 2 : sessionDays) * 24 * 60 * 60;
 
+    // Cookie secure 配置: 默认生产环境启用,可通过 COOKIE_SECURE 环境变量覆盖
+    const isSecure = process.env.COOKIE_SECURE !== undefined
+      ? (process.env.COOKIE_SECURE === 'true')
+      : (process.env.NODE_ENV === 'production');
+
     const response = NextResponse.json({
       success: true,
       user: {
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     response.cookies.set('auth-token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecure,
       sameSite: 'lax',
       maxAge,
       path: '/',
