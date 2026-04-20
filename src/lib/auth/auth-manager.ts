@@ -223,6 +223,21 @@ export class AuthManager {
     // Create new user
     if (!envUsername || !envPassword) {
       if (isProduction) {
+        const isDocker = process.env.DOCKER_CONTAINER === 'true';
+        if (isDocker) {
+          const isFirstTime = !this.hasAdminUser();
+          if (isFirstTime) {
+            logger.info('========================================');
+            logger.info('🚀 TMDB Helper Docker 首次部署成功!');
+            logger.info('📋 默认管理员账号信息:');
+            logger.info('   用户名: admin');
+            logger.info('   密码: admin');
+            logger.info('⚠️  请首次登录后立即修改密码!');
+            logger.info('========================================');
+          }
+          return await this.createAdminUser('admin', 'admin');
+        }
+
         throw new Error(
           'ADMIN_USERNAME and ADMIN_PASSWORD environment variables are required in production. ' +
           'Please set these variables to initialize the admin user.'

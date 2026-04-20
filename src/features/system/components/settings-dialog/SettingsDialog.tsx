@@ -7,6 +7,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useMemo } from "react"
+import packageJson from "../../../../../package.json"
 import { logger } from '@/lib/utils/logger'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
@@ -196,8 +197,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const [helpTab, setHelpTab] = useState<'about' | 'updates' | 'help' | 'feedback'>('about')
   const [appInfo] = useState<AppInfo>({
       name: 'TMDB Helper',
-      version: '0.5.6',
-      buildDate: '2024'
+      version: packageJson.version,
+      buildDate: packageJson.buildTime || new Date().toISOString().split('T')[0]
   })
   
     // 保存状态
