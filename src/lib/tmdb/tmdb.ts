@@ -1,4 +1,4 @@
- 
+ import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants';
 
 interface TMDBTVResponse {
   id: number
@@ -104,11 +104,7 @@ export class TMDBService {
   private static readonly NETWORK_LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300" // 网络Logo基础URL
 
   private static async getApiKey(): Promise<string> {
-    const apiKey = process.env.TMDB_API_KEY;
-    if (!apiKey) {
-      throw new Error("TMDB API密钥未配置");
-    }
-    return apiKey;
+    return process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK;
   }
 
 

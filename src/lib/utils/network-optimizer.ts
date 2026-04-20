@@ -5,6 +5,7 @@
 
 import { indexedDBStorage } from './indexed-db-storage';
 import { dockerStorageAdapter } from './docker-storage-adapter';
+import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants';
 
 interface RequestConfig {
   url: string;
@@ -471,8 +472,7 @@ export class TMDBNetworkOptimizer {
 
   constructor() {
     this.optimizer = NetworkOptimizer.getInstance();
-    // 使用内置的 TMDB API Key
-    this.apiKey = process.env.TMDB_API_KEY || '';
+    this.apiKey = process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK;
   }
 
   private buildUrl(endpoint: string, params: Record<string, any> = {}): string {

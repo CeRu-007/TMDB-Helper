@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ServerConfigManager } from '@/lib/data/server-config-manager';
+import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants';
 
 export async function GET() {
   try {
@@ -15,7 +16,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       config: {
-        hasTmdbApiKey: !!process.env.TMDB_API_KEY,
+        hasTmdbApiKey: !!(process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK),
         tmdbImportPath: config.tmdbImportPath,
         siliconFlowApiKey: config.siliconFlowApiKey ? '***已配置***' : null,
         siliconFlowThumbnailModel: config.siliconFlowThumbnailModel,

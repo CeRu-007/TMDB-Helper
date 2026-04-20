@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ServerConfigManager } from '@/lib/data/server-config-manager';
 import { fetchTmdbFeed } from '@/lib/tmdb/tmdb-feed';
+import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants';
 
 type FeedType = 'recent' | 'upcoming';
 
@@ -14,14 +15,7 @@ export async function handleTmdbFeedRequest(
   feedType: FeedType
 ): Promise<NextResponse> {
   try {
-    const apiKey = process.env.TMDB_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: 'TMDB API密钥未配置' },
-        { status: 400 }
-      );
-    }
+    const apiKey = process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK;
 
     const url = new URL(request.url);
     const region = url.searchParams.get('region') || 'CN';

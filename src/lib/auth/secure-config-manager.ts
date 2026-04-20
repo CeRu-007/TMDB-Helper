@@ -5,6 +5,7 @@
  */
 
 import { ServerConfigManager } from './server-config-manager';
+import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants';
 
 interface SecureConfig {
   tmdbApiKey?: string;
@@ -113,13 +114,7 @@ export class SecureConfigManager {
   }
   
   static async getTmdbApiKey(): Promise<string> {
-    const apiKey = process.env.TMDB_API_KEY;
-
-    if (!apiKey) {
-      throw new Error('TMDB API密钥未配置');
-    }
-
-    return apiKey;
+    return process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK;
   }
 
   static clearConfig(): void {

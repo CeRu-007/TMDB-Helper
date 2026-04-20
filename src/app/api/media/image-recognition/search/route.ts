@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ServerConfigManager } from '@/lib/data/server-config-manager'
 import { ApiResponse } from '@/types/common'
+import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants'
 
 // 请求接口
 interface ImageSearchRequest {
@@ -47,18 +48,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const apiKey = process.env.TMDB_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: 'TMDB API密钥未配置',
-          data: null
-        },
-        { status: 400 }
-      )
-    }
+    const apiKey = process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK;
 
     // 构建搜索查询
     const searchQueries = buildSearchQueries(description, keywords)
