@@ -36,7 +36,7 @@ const isElectronEnvironment = (): boolean => {
   return typeof window !== 'undefined' && (
     navigator.userAgent.includes('Electron') ||
     navigator.userAgent.includes('TMDB-Helper-Electron') ||
-    process.env.ELECTRON_BUILD === 'true'
+    process.env.NEXT_PUBLIC_ELECTRON_BUILD === 'true'
   )
 }
 

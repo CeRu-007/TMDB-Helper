@@ -4,12 +4,17 @@ import { TMDBItem } from '@/types/tmdb-item';
 import { getUserIdFromRequest } from '@/lib/auth/user-utils';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
+import { getDatabasePath } from '@/lib/database/connection';
 
 const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
 
 // POST /api/storage/item - 添加新项目
 export async function POST(request: NextRequest) {
   try {
+    // 记录数据库路径
+    const dbPath = getDatabasePath();
+    logger.info(`[API] 添加项目请求 - 数据库路径: ${dbPath}`);
+    
     // 确保数据库已初始化
     await ServerStorageManager.init();
     
@@ -47,10 +52,12 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     logger.error('[API] 添加项目错误:', error);
+    console.error('[API] 添加项目详细错误:', error);
 
     return NextResponse.json({
       error: ErrorHandler.toUserMessage(error),
       success: false,
+      details: error instanceof Error ? error.message : '未知错误',
     }, { status: ErrorHandler.getStatusCode(error) });
   }
 }

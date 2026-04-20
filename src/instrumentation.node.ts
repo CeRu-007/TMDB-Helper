@@ -1,12 +1,14 @@
 /**
- * 开发环境初始化逻辑
+ * 开发环境和 Electron 环境初始化逻辑
  * 只在 Node.js runtime 中执行
  */
 
 import path from 'path';
 
 export async function initializeDev() {
-  console.log('[Instrumentation] 开发环境初始化开始...');
+  const isElectron = process.env.ELECTRON_BUILD === 'true';
+  const envName = isElectron ? 'Electron' : '开发';
+  console.log(`[Instrumentation] ${envName}环境初始化开始...`);
 
   try {
     const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data');
@@ -29,7 +31,7 @@ export async function initializeDev() {
     scheduler.initialize();
     console.log('[Instrumentation] 定时任务调度器初始化完成');
 
-    console.log('[Instrumentation] 所有初始化任务完成');
+    console.log(`[Instrumentation] ${envName}环境所有初始化任务完成`);
   } catch (error) {
     console.error('[Instrumentation] 初始化失败:', error);
   }

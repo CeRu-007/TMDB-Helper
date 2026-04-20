@@ -1,11 +1,15 @@
 const { spawn } = require('child_process');
 const { createServer } = require('http');
 const path = require('path');
+const os = require('os');
 const { logger } = require('./logger');
 
 const port = 3000;
 let nextProcess = null;
 let electronProcess = null;
+
+// 开发环境：使用项目目录下的 data 文件夹
+const appDataDir = path.join(process.cwd(), 'data');
 
 // 检查端口是否可用
 function checkPort(port) {
@@ -67,6 +71,7 @@ async function startElectronDev() {
     process.exit(1);
   } else {
     logger.info('✅ 端口 3000 可用');
+    logger.info(`📁 数据目录: ${appDataDir}`);
 
     // 启动 Next.js 开发服务器
     logger.info('🚀 启动 Next.js 开发服务器...');
@@ -75,7 +80,9 @@ async function startElectronDev() {
       shell: true,
       env: {
         ...process.env,
-        NODE_ENV: 'development'
+        NODE_ENV: 'development',
+        ELECTRON_BUILD: 'true',
+        TMDB_DATA_DIR: appDataDir
       }
     });
 
@@ -103,7 +110,9 @@ async function startElectronDev() {
     env: {
       ...process.env,
       NODE_ENV: 'development',
-      ELECTRON_IS_DEV: '1'
+      ELECTRON_IS_DEV: '1',
+      ELECTRON_BUILD: 'true',
+      TMDB_DATA_DIR: appDataDir
     }
   });
 

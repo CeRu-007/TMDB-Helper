@@ -1,19 +1,40 @@
 /**
  * 数据库连接管理
  * 单例模式，确保整个应用只有一个数据库连接
- * 使用 Node.js 内置的 SQLite 模块 (node:sqlite)
+ * 优先使用 Node.js 内置的 SQLite 模块 (node:sqlite)
+ * Electron 环境下回退到 better-sqlite3
  */
 
-import { DatabaseSync, StatementSync } from 'node:sqlite';
 import path from 'path';
 import fs from 'fs';
 import { logger } from '@/lib/utils/logger';
 
-// 类型定义
-export type SQLiteDatabase = DatabaseSync;
-export type SQLiteStatement = StatementSync;
+// 动态加载数据库模块
+function loadDatabaseModule() {
+  try {
+    // 优先尝试 node:sqlite（Node.js 22.5+）
+    const { DatabaseSync } = require('node:sqlite');
+    logger.info('[Database] 使用 node:sqlite');
+    return DatabaseSync;
+  } catch (e) {
+    // 回退到 better-sqlite3（Electron 使用 Node.js 20）
+    try {
+      const Database = require('better-sqlite3');
+      logger.info('[Database] 使用 better-sqlite3');
+      return Database;
+    } catch (e2) {
+      throw new Error('无法加载 SQLite 模块，请安装 better-sqlite3');
+    }
+  }
+}
 
-let db: DatabaseSync | null = null;
+const DatabaseSync = loadDatabaseModule();
+
+// 类型定义
+export type SQLiteDatabase = InstanceType<typeof DatabaseSync>;
+export type SQLiteStatement = ReturnType<SQLiteDatabase['prepare']>;
+
+let db: SQLiteDatabase | null = null;
 
 /**
  * 获取数据库文件路径

@@ -4,16 +4,170 @@ const fs = require('fs');
 const os = require('os');
 
 // 开发环境检测
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = process.env.NODE_ENV === 'development' || process.defaultApp || /[\\/]electron/.test(process.execPath);
 const port = 3000; // 统一使用3000端口，与Next.js开发服务器保持一致
 
-// 应用数据目录
-const userDataPath = app.getPath('userData');
-const appDataDir = path.join(userDataPath, 'tmdb-helper-data');
+// 数据目录（在 app.whenReady 后重新计算）
+let appDataDir = null;
 
-// 确保数据目录存在
-if (!fs.existsSync(appDataDir)) {
-  fs.mkdirSync(appDataDir, { recursive: true });
+/**
+ * 初始化数据目录和数据库
+ * 必须在 app.whenReady() 之后调用
+ */
+function initDataDir() {
+  if (isDev) {
+    // 开发环境：使用项目目录下的 data 文件夹
+    appDataDir = path.join(process.cwd(), 'data');
+  } else {
+    // 生产环境：使用应用 exe 所在目录下的 data 文件夹
+    // 这样用户可以在安装目录下找到数据文件
+    const exeDir = path.dirname(app.getPath('exe'));
+    appDataDir = path.join(exeDir, 'data');
+  }
+
+  // 确保数据目录存在
+  if (!fs.existsSync(appDataDir)) {
+    fs.mkdirSync(appDataDir, { recursive: true });
+  }
+
+  // 设置环境变量
+  process.env.TMDB_DATA_DIR = appDataDir;
+  process.env.ELECTRON_BUILD = 'true';
+
+  console.log('[Electron] 数据目录:', appDataDir);
+  console.log('[Electron] exe 路径:', app.getPath('exe'));
+  console.log('[Electron] app 路径:', app.getAppPath());
+  
+  // 初始化数据库
+  initDatabase();
+}
+
+/**
+ * 初始化数据库
+ * 使用 better-sqlite3 创建数据库和表（Electron 使用 Node.js 20，不支持 node:sqlite）
+ */
+function initDatabase() {
+  try {
+    const dbPath = path.join(appDataDir, 'tmdb-helper.db');
+    console.log('[Electron] 初始化数据库:', dbPath);
+    
+    // 检查数据库是否已存在
+    if (fs.existsSync(dbPath)) {
+      console.log('[Electron] 数据库已存在，跳过初始化');
+      return;
+    }
+    
+    // 使用 better-sqlite3 初始化数据库（Electron 33 使用 Node.js 20，不支持 node:sqlite）
+    const Database = require('better-sqlite3');
+    console.log('[Electron] 使用 better-sqlite3');
+    const db = new Database(dbPath);
+    db.exec('PRAGMA journal_mode = WAL');
+    db.exec('PRAGMA foreign_keys = ON');
+    
+    // 创建 items 表
+    db.exec(`CREATE TABLE IF NOT EXISTS items (
+      id TEXT PRIMARY KEY, tmdbId TEXT, imdbId TEXT, title TEXT NOT NULL,
+      originalTitle TEXT, overview TEXT, year INTEGER, releaseDate TEXT,
+      genres TEXT, runtime INTEGER, voteAverage REAL, mediaType TEXT DEFAULT 'tv',
+      posterPath TEXT, posterUrl TEXT, backdropPath TEXT, backdropUrl TEXT,
+      logoPath TEXT, logoUrl TEXT, networkId INTEGER, networkName TEXT,
+      networkLogoUrl TEXT, status TEXT, completed INTEGER DEFAULT 0,
+      platformUrl TEXT, totalEpisodes INTEGER, manuallySetEpisodes INTEGER DEFAULT 0,
+      weekday INTEGER, secondWeekday INTEGER, airTime TEXT, category TEXT,
+      tmdbUrl TEXT, notes TEXT, isDailyUpdate INTEGER DEFAULT 0,
+      blurIntensity TEXT, rating INTEGER, createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL, deletedAt TEXT
+    )`);
+    
+    // 创建 seasons 表
+    db.exec(`CREATE TABLE IF NOT EXISTS seasons (
+      id TEXT PRIMARY KEY, itemId TEXT NOT NULL, seasonNumber INTEGER NOT NULL,
+      name TEXT, totalEpisodes INTEGER NOT NULL, currentEpisode INTEGER,
+      createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL,
+      FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE
+    )`);
+    
+    // 创建 episodes 表
+    db.exec(`CREATE TABLE IF NOT EXISTS episodes (
+      id TEXT PRIMARY KEY, itemId TEXT NOT NULL, seasonId TEXT,
+      seasonNumber INTEGER, number INTEGER NOT NULL, completed INTEGER DEFAULT 0,
+      createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL,
+      FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE,
+      FOREIGN KEY (seasonId) REFERENCES seasons(id) ON DELETE CASCADE
+    )`);
+    
+    // 创建 adminUsers 表
+    db.exec(`CREATE TABLE IF NOT EXISTS adminUsers (
+      id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL,
+      passwordHash TEXT NOT NULL, createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL, lastLoginAt TEXT, sessionExpiryDays INTEGER DEFAULT 7,
+      deletedAt TEXT
+    )`);
+    
+    // 创建 config 表
+    db.exec(`CREATE TABLE IF NOT EXISTS config (
+      key TEXT PRIMARY KEY, value TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL
+    )`);
+    
+    // 创建 chatHistories 表
+    db.exec(`CREATE TABLE IF NOT EXISTS chatHistories (
+      id TEXT PRIMARY KEY, title TEXT NOT NULL, createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL, deletedAt TEXT
+    )`);
+    
+    // 创建 messages 表
+    db.exec(`CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY, chatId TEXT NOT NULL, role TEXT NOT NULL,
+      content TEXT NOT NULL, timestamp TEXT NOT NULL, type TEXT DEFAULT 'text',
+      fileName TEXT, fileContent TEXT, isStreaming INTEGER DEFAULT 0,
+      suggestions TEXT, rating TEXT, isEdited INTEGER DEFAULT 0,
+      canContinue INTEGER DEFAULT 0, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL,
+      FOREIGN KEY (chatId) REFERENCES chatHistories(id) ON DELETE CASCADE
+    )`);
+    
+    // 创建 image_cache 表
+    db.exec(`CREATE TABLE IF NOT EXISTS image_cache (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, tmdbId TEXT NOT NULL, itemId TEXT,
+      imageType TEXT NOT NULL, imagePath TEXT, imageUrl TEXT, sizeType TEXT DEFAULT 'original',
+      createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL, lastVerifiedAt TEXT,
+      isPermanent INTEGER DEFAULT 1, sourceType TEXT DEFAULT 'tmdb',
+      UNIQUE(tmdbId, imageType, sizeType)
+    )`);
+    
+    // 创建 schedule_tasks 表
+    db.exec(`CREATE TABLE IF NOT EXISTS schedule_tasks (
+      id TEXT PRIMARY KEY, itemId TEXT NOT NULL, cron TEXT NOT NULL,
+      enabled INTEGER DEFAULT 1, headless INTEGER DEFAULT 1, incremental INTEGER DEFAULT 1,
+      autoImport INTEGER DEFAULT 0, tmdbSeason INTEGER DEFAULT 1, tmdbLanguage TEXT DEFAULT 'zh-CN',
+      tmdbAutoResponse TEXT DEFAULT 'w', fieldCleanup TEXT DEFAULT '{}',
+      lastRunAt TEXT, nextRunAt TEXT, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL
+    )`);
+    
+    // 创建 schedule_logs 表
+    db.exec(`CREATE TABLE IF NOT EXISTS schedule_logs (
+      id TEXT PRIMARY KEY, taskId TEXT NOT NULL, status TEXT NOT NULL,
+      startAt TEXT NOT NULL, endAt TEXT, message TEXT NOT NULL, details TEXT,
+      FOREIGN KEY (taskId) REFERENCES schedule_tasks(id) ON DELETE CASCADE
+    )`);
+    
+    // 创建索引
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_items_tmdbId ON items(tmdbId)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_items_weekday ON items(weekday)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_items_deletedAt ON items(deletedAt)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_episodes_itemId ON episodes(itemId)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_seasons_itemId ON seasons(itemId)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_chatId ON messages(chatId)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_chatHistories_deletedAt ON chatHistories(deletedAt)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_adminUsers_deletedAt ON adminUsers(deletedAt)`);
+    
+    // 设置 schema 版本
+    db.exec(`PRAGMA user_version = 9`);
+    
+    db.close();
+    console.log('[Electron] 数据库初始化完成');
+  } catch (error) {
+    console.error('[Electron] 数据库初始化失败:', error);
+  }
 }
 
 let mainWindow;
@@ -253,57 +407,61 @@ function startNextServer() {
     // 生产环境下直接在当前进程中启动 Next.js
     
     try {
-      // 设置环境变量
+      // 设置 NODE_ENV（TMDB_DATA_DIR 和 ELECTRON_BUILD 已在 initDataDir 中设置）
       process.env.NODE_ENV = 'production';
-      process.env.TMDB_DATA_DIR = appDataDir;
-      process.env.ELECTRON_BUILD = 'true';
 
       // 获取正确的应用路径
       const appPath = app.getAppPath();
-      let nextDir = path.join(appPath, '.next');
+      const exeDir = path.dirname(app.getPath('exe'));
+      
+      // 尝试多个可能的 .next 目录位置
+      const possibleNextDirs = [
+        path.join(appPath, '.next'),                    // app.asar/.next
+        path.join(path.dirname(appPath), 'app.asar.unpacked', '.next'),  // app.asar.unpacked/.next
+        path.join(exeDir, 'resources', 'app.asar.unpacked', '.next'),    // exe目录下的 unpacked
+        path.join(exeDir, 'resources', 'app', '.next'),                  // exe目录下的 app
+        path.join(process.resourcesPath, 'app.asar.unpacked', '.next'),  // resourcesPath 下的 unpacked
+      ];
 
-      // 在打包后的应用中，.next 可能在不同位置
-      if (!fs.existsSync(nextDir)) {
-        // 尝试在 resources/app.asar/.next
-        nextDir = path.join(appPath, '.next');
-        if (!fs.existsSync(nextDir)) {
-          // 尝试在 resources/.next
-          nextDir = path.join(path.dirname(appPath), '.next');
-          if (!fs.existsSync(nextDir)) {
-            // 尝试在应用根目录
-            nextDir = path.join(process.cwd(), '.next');
-          }
+      let nextDir = null;
+      for (const dir of possibleNextDirs) {
+        console.log('[Electron] 检查 .next 目录:', dir, '存在:', fs.existsSync(dir));
+        if (fs.existsSync(dir)) {
+          nextDir = dir;
+          break;
         }
       }
 
-      console.log('📁 .next 目录存在:', fs.existsSync(nextDir));
-
-      // 检查 .next 目录是否存在
-      if (!fs.existsSync(nextDir)) {
-        
-        console.error('  -', path.join(appPath, '.next'));
-        console.error('  -', path.join(path.dirname(appPath), '.next'));
-        console.error('  -', path.join(process.cwd(), '.next'));
-        reject(new Error(`Next.js 构建目录不存在: ${nextDir}`));
+      if (!nextDir) {
+        console.error('[Electron] 未找到 .next 目录');
+        reject(new Error('Next.js 构建目录不存在'));
         return;
       }
+
+      console.log('[Electron] 使用 .next 目录:', nextDir);
 
       // 直接 require server.js 的逻辑
       const { createServer } = require('http');
       const next = require('next');
       const { parse } = require('url');
 
+      // 确定应用根目录（.next 的父目录）
+      const appRoot = path.dirname(nextDir);
+      console.log('[Electron] 应用根目录:', appRoot);
+
       const nextApp = next({
         dev: false,
-        dir: path.dirname(nextDir), // 使用 .next 目录的父目录作为应用目录
+        dir: appRoot,
         conf: {
-          distDir: path.basename(nextDir) // 使用相对路径
+          distDir: '.next'
         }
       });
 
       const handle = nextApp.getRequestHandler();
 
-      nextApp.prepare().then(() => {
+      nextApp.prepare().then(async () => {
+        console.log('[Electron] Next.js 准备完成');
+
         const server = createServer(async (req, res) => {
           try {
             
@@ -332,7 +490,7 @@ function startNextServer() {
         });
 
       }).catch((error) => {
-        
+        console.error('[Electron] Next.js prepare 失败:', error);
         reject(error);
       });
 
@@ -510,6 +668,9 @@ function createMenu() {
 // 应用事件处理
 app.whenReady().then(async () => {
   try {
+    // 初始化数据目录（必须在 app.whenReady 之后，startNextServer 之前）
+    initDataDir();
+
     // 生产环境性能优化
     if (!isDev) {
       // 提高内存限制到1024MB，避免内存不足导致崩溃

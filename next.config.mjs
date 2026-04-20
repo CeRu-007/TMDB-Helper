@@ -6,6 +6,11 @@ const nextConfig = {
   
   compress: true,
   
+  // 将 ELECTRON_BUILD 暴露给客户端
+  env: {
+    NEXT_PUBLIC_ELECTRON_BUILD: process.env.ELECTRON_BUILD || 'false',
+  },
+  
   // 开发环境快速启动优化
   experimental: {
     // 优化大型包的导入，减少编译时间
