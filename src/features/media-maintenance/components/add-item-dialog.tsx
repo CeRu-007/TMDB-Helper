@@ -96,7 +96,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
     { id: "short" as const, name: t('categoryNames.short'), icon: <Ticket className="h-4 w-4" strokeWidth={2} /> },
   ]
 
-  const WEEKDAYS = WEEKDAY_KEYS.map(key => t(`weekdaysList.${key}`, { ns: "common" }))
+  const WEEKDAYS = WEEKDAY_KEYS.map(key => t(`weekdaysList.${key}`))
 
   const [formData, setFormData] = useState({
     weekday: 1,
@@ -809,7 +809,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                         <SelectValue placeholder={t("independentPage.addItem.selectWeekday", { ns: "nav.maintenance" })} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">{t("weekdaysList.sunday", { ns: "common" })}</SelectItem>
+                        <SelectItem value="0">{t("weekdaysList.sunday")}</SelectItem>
                         {WEEKDAYS.map((day, index) => (
                           <SelectItem key={index} value={(index + 1).toString()}>
                             {day}
@@ -845,10 +845,10 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="-1">{t('none', { ns: 'common' })}</SelectItem>
-                        <SelectItem value="0">{t('weekdaysList.sunday', { ns: 'common' })}</SelectItem>
+                        <SelectItem value="0">{t('weekdaysList.sunday')}</SelectItem>
                         {WEEKDAY_KEYS.map((day, index) => (
                           <SelectItem key={index} value={(index + 1).toString()}>
-                            {t(`weekdaysList.${day}`, { ns: 'common' })}
+                            {t(`weekdaysList.${day}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>
