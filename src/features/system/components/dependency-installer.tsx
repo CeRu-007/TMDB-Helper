@@ -18,7 +18,9 @@ import {
   Globe,
   Terminal,
   Info,
-  Loader2
+  Loader2,
+  Monitor,
+  Container
 } from "lucide-react"
 
 interface DependencyStatus {
@@ -30,6 +32,8 @@ interface DependencyStatus {
   packages: {
     [key: string]: boolean
   }
+  environment?: 'web' | 'docker' | 'electron'
+  platform?: string
 }
 
 interface InstallProgress {
@@ -37,15 +41,6 @@ interface InstallProgress {
   status: 'running' | 'success' | 'error'
   output: string
   progress?: number
-}
-
-interface InstallResult {
-  results: InstallProgress[]
-  summary: {
-    total: number
-    success: number
-    failed: number
-  }
 }
 
 const PYTHON_PACKAGES = [
@@ -71,6 +66,31 @@ const PYTHON_PACKAGES = [
   }
 ]
 
+// 环境图标和标签
+const ENVIRONMENT_CONFIG = {
+  web: {
+    icon: Globe,
+    label: 'Web',
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-50 dark:bg-blue-950',
+    borderColor: 'border-blue-200 dark:border-blue-800'
+  },
+  docker: {
+    icon: Container,
+    label: 'Docker',
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-50 dark:bg-blue-950',
+    borderColor: 'border-blue-200 dark:border-blue-800'
+  },
+  electron: {
+    icon: Monitor,
+    label: '桌面端',
+    color: 'text-purple-500',
+    bgColor: 'bg-purple-50 dark:bg-purple-950',
+    borderColor: 'border-purple-200 dark:border-purple-800'
+  }
+}
+
 export default function DependencyInstaller() {
   const { toast } = useToast()
   const { t } = useTranslation("settings")
@@ -78,7 +98,7 @@ export default function DependencyInstaller() {
   const [loading, setLoading] = useState(false)
   const [installing, setInstalling] = useState(false)
   const [installProgress, setInstallProgress] = useState<InstallProgress[]>([])
-  // 移除activeTab状态，因为现在是统一界面
+  const [installType, setInstallType] = useState<'python' | 'playwright' | null>(null)
 
   // 检查依赖状态
   const checkDependencies = async () => {
@@ -86,10 +106,17 @@ export default function DependencyInstaller() {
     try {
       const response = await fetch('/api/system/install-dependencies')
       const data = await response.json()
-      
+
       if (data.success) {
         setStatus(data.data)
       } else {
+        // 即使检查失败也设置状态，显示环境信息
+        setStatus({
+          python: { available: false },
+          packages: {},
+          environment: data.environment,
+          platform: data.platform
+        })
         toast({
           title: t("dependencyInstaller.checkFailed"),
           description: data.error,
@@ -119,6 +146,7 @@ export default function DependencyInstaller() {
     }
 
     setInstalling(true)
+    setInstallType('python')
     setInstallProgress([])
 
     try {
@@ -132,6 +160,7 @@ export default function DependencyInstaller() {
           description: t("dependencyInstaller.allPackagesInstalled"),
         })
         setInstalling(false)
+        setInstallType(null)
         return
       }
 
@@ -147,7 +176,7 @@ export default function DependencyInstaller() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         setInstallProgress(data.data.results)
         toast({
@@ -157,6 +186,11 @@ export default function DependencyInstaller() {
         // 重新检查状态
         await checkDependencies()
       } else {
+        setInstallProgress(data.data?.results || [{
+          step: '安装失败',
+          status: 'error',
+          output: data.error || '未知错误'
+        }])
         toast({
           title: t("dependencyInstaller.installFailed"),
           description: data.error,
@@ -171,6 +205,7 @@ export default function DependencyInstaller() {
       })
     } finally {
       setInstalling(false)
+      setInstallType(null)
     }
   }
 
@@ -186,6 +221,7 @@ export default function DependencyInstaller() {
     }
 
     setInstalling(true)
+    setInstallType('playwright')
     setInstallProgress([])
 
     try {
@@ -201,7 +237,7 @@ export default function DependencyInstaller() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         setInstallProgress(data.data.results)
         toast({
@@ -209,6 +245,11 @@ export default function DependencyInstaller() {
           description: t("dependencyInstaller.chromiumInstalled"),
         })
       } else {
+        setInstallProgress(data.data?.results || [{
+          step: '浏览器安装失败',
+          status: 'error',
+          output: data.error || '未知错误'
+        }])
         toast({
           title: t("dependencyInstaller.browserInstallFailed"),
           description: data.error,
@@ -223,6 +264,7 @@ export default function DependencyInstaller() {
       })
     } finally {
       setInstalling(false)
+      setInstallType(null)
     }
   }
 
@@ -250,6 +292,15 @@ export default function DependencyInstaller() {
     )
   }
 
+  // 获取环境显示配置
+  const getEnvironmentDisplay = () => {
+    const envType = status?.environment || 'web'
+    return ENVIRONMENT_CONFIG[envType] || ENVIRONMENT_CONFIG.web
+  }
+
+  const envDisplay = getEnvironmentDisplay()
+  const EnvIcon = envDisplay.icon
+
   return (
     <div className="space-y-6">
       <div>
@@ -261,6 +312,23 @@ export default function DependencyInstaller() {
           {t("dependencyInstaller.description")}
         </p>
       </div>
+
+      {/* 环境信息 */}
+      {status?.environment && (
+        <div className={`p-3 ${envDisplay.bgColor} rounded-lg border ${envDisplay.borderColor}`}>
+          <div className="flex items-center space-x-2">
+            <EnvIcon className={`h-4 w-4 ${envDisplay.color}`} />
+            <span className="text-sm font-medium">
+              运行环境: {envDisplay.label}
+            </span>
+            {status.platform && (
+              <span className="text-xs text-gray-500">
+                ({status.platform})
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Python环境检查 */}
       <Card>
@@ -287,6 +355,11 @@ export default function DependencyInstaller() {
                   {status.python.version && (
                     <div className="text-sm text-gray-500">
                       {status.python.version} ({status.python.path})
+                    </div>
+                  )}
+                  {!status.python.available && (
+                    <div className="text-sm text-red-500 mt-1">
+                      请确保系统已安装 Python 3.8+ 并添加到环境变量
                     </div>
                   )}
                 </div>
@@ -320,7 +393,7 @@ export default function DependencyInstaller() {
               disabled={installing || !status?.python.available}
               className="min-w-[120px]"
             >
-              {installing ? (
+              {installing && installType === 'python' ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t("dependencyInstaller.installing")}
@@ -381,7 +454,7 @@ export default function DependencyInstaller() {
               disabled={installing || !status?.packages.playwright}
               className="min-w-[120px]"
             >
-              {installing ? (
+              {installing && installType === 'playwright' ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t("dependencyInstaller.installing")}
@@ -483,7 +556,9 @@ export default function DependencyInstaller() {
                     {progress.progress !== undefined && progress.status === 'running' && (
                       <Progress value={progress.progress} className="h-2" />
                     )}
-                    <div className="text-xs text-gray-500 pl-6">{progress.output}</div>
+                    {progress.output && (
+                      <div className="text-xs text-gray-500 pl-6">{progress.output}</div>
+                    )}
                     {index < installProgress.length - 1 && <Separator />}
                   </div>
                 ))}
