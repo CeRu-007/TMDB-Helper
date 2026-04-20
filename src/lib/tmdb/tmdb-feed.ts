@@ -43,7 +43,7 @@ export interface FeedItem {
   region: string
 }
 
-const BASE_URL = 'https://api.themoviedb.org/3'
+const BASE_URL = 'https://api.tmdb.org/3'
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 30000): Promise<Response> => {
   const controller = new AbortController()
@@ -53,7 +53,6 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout 
       ...options,
       signal: controller.signal,
       cache: "no-store",
-      next: { revalidate: 0 },
     })
     return res
   } finally {
