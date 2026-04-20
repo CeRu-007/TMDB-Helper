@@ -45,10 +45,17 @@ export function needsMigration(): boolean {
 }
 
 /**
+ * 获取数据目录路径
+ */
+function getDataDir(): string {
+  return process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data');
+}
+
+/**
  * 检查是否存在旧数据文件
  */
 function hasOldDataFiles(): boolean {
-  const dataDir = path.join(process.cwd(), 'data');
+  const dataDir = getDataDir();
 
   for (const files of Object.values(OLD_DATA_PATHS)) {
     for (const file of files) {
@@ -66,7 +73,7 @@ function hasOldDataFiles(): boolean {
  * 执行迁移
  */
 export async function migrateFromJson(): Promise<MigrationStatus> {
-  const dataDir = path.join(process.cwd(), 'data');
+  const dataDir = getDataDir();
   let itemCount = 0;
 
   try {

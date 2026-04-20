@@ -5,7 +5,12 @@ import * as path from 'path';
 
 const GITHUB_REPO = 'CeRu-007/TMDB-Helper';
 const GITHUB_API_BASE = 'https://api.github.com';
-const CACHE_FILE_PATH = path.join(process.cwd(), 'data', 'updates', 'cache.json');
+
+function getCacheFilePath(): string {
+  const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data');
+  return path.join(dataDir, 'updates', 'cache.json');
+}
+
 const CACHE_DURATION = 60 * 60 * 1000;
 
 interface UpdateManagerConfig {
@@ -154,7 +159,7 @@ export class UpdateManager {
         releaseInfo: result.releaseInfo!,
       };
 
-      fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(cacheData, null, 2), 'utf-8');
+      fs.writeFileSync(getCacheFilePath(), JSON.stringify(cacheData, null, 2), 'utf-8');
     } catch (error) {
       console.error('Failed to save cache:', error);
     }
@@ -162,11 +167,12 @@ export class UpdateManager {
 
   private getCachedResult(currentVersion: string): UpdateCheckResult | null {
     try {
-      if (!fs.existsSync(CACHE_FILE_PATH)) {
+      const cacheFilePath = getCacheFilePath();
+      if (!fs.existsSync(cacheFilePath)) {
         return null;
       }
 
-      const cacheData: UpdateCache = JSON.parse(fs.readFileSync(CACHE_FILE_PATH, 'utf-8'));
+      const cacheData: UpdateCache = JSON.parse(fs.readFileSync(cacheFilePath, 'utf-8'));
 
       return {
         hasUpdate: false,
@@ -183,7 +189,7 @@ export class UpdateManager {
   }
 
   private ensureCacheDirectory(): void {
-    const cacheDir = path.dirname(CACHE_FILE_PATH);
+    const cacheDir = path.dirname(getCacheFilePath());
     if (!fs.existsSync(cacheDir)) {
       fs.mkdirSync(cacheDir, { recursive: true });
     }

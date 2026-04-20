@@ -19,7 +19,7 @@ let db: DatabaseSync | null = null;
  * 获取数据库文件路径
  */
 export function getDatabasePath(): string {
-  const dataDir = path.join(process.cwd(), 'data');
+  const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data');
   return path.join(dataDir, 'tmdb-helper.db');
 }
 

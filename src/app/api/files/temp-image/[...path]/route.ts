@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
-// 临时文件目录
-const TEMP_DIR = path.join(process.cwd(), 'temp', 'video-analysis');
+function getTempDir(): string {
+  const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data');
+  return path.join(dataDir, 'temp', 'video-analysis');
+}
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { path: string[] } }
 ) {
   try {
+    const TEMP_DIR = getTempDir();
     // 构建文件路径
     const filePath = path.join(TEMP_DIR, ...params.path);
     

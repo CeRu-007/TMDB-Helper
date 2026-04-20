@@ -53,7 +53,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=4949
 ENV HOSTNAME="0.0.0.0"
 ENV DOCKER_CONTAINER=true
+ENV TMDB_DATA_DIR=/app/data
 ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV COOKIE_SECURE=false
 
 # 创建非root用户
 RUN addgroup --system --gid 1001 nodejs && \
@@ -72,6 +74,9 @@ RUN mkdir -p /app/data /app/scripts /app/logs && \
 
 # 复制脚本文件
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+
+# 为启动脚本安装 bcryptjs (指定版本与 package.json 一致)
+RUN cd /app/scripts && npm init -y && npm install bcryptjs@3.0.2
 
 # 安装健康检查工具
 RUN apk add --no-cache curl

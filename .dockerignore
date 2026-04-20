@@ -215,6 +215,10 @@ releases/
 *.sqlite
 *.sqlite3
 
+# Data directory
+data/
+logs/
+
 # Cache directories
 .cache/
 .tmp/

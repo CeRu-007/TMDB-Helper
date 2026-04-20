@@ -29,9 +29,11 @@ services:
       # Next.js 环境
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
+      - COOKIE_SECURE=false
 
       # Docker 优化配置
       - DOCKER_CONTAINER=true
+      - TMDB_DATA_DIR=/app/data
       - NODE_OPTIONS=--max-old-space-size=1024
 
       # 端口和主机配置

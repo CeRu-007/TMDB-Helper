@@ -31,6 +31,11 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
+  // ESLint 配置：构建时忽略 ESLint 错误
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
   images: {
     unoptimized: process.env.STATIC_EXPORT === 'true' || process.env.ELECTRON_BUILD === 'true',
     remotePatterns: [

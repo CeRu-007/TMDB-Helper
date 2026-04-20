@@ -68,11 +68,14 @@ interface VideoInfo {
   url: string;
 }
 
-// 临时文件目录（使用data文件夹）
-const TEMP_DIR = path.join(process.cwd(), 'data', 'temp', 'audio-analysis');
+function getTempDir(): string {
+  const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data');
+  return path.join(dataDir, 'temp', 'audio-analysis');
+}
 
 // 确保临时目录存在
 async function ensureTempDir() {
+  const TEMP_DIR = getTempDir();
   try {
     await fs.access(TEMP_DIR);
   } catch {
@@ -83,7 +86,7 @@ async function ensureTempDir() {
 // 清理临时文件
 async function cleanupTempFiles(sessionId: string) {
   try {
-    const sessionDir = path.join(TEMP_DIR, sessionId);
+    const sessionDir = path.join(getTempDir(), sessionId);
     await fs.rm(sessionDir, { recursive: true, force: true });
   } catch (error) {
     
@@ -126,7 +129,7 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
     throw new Error('ffmpeg未安装或不可用。在Docker环境中，请确保Dockerfile包含ffmpeg安装指令。');
   }
 
-  const sessionDir = path.join(TEMP_DIR, sessionId);
+  const sessionDir = path.join(getTempDir(), sessionId);
   await fs.mkdir(sessionDir, { recursive: true });
 
   const audioPath = path.join(sessionDir, 'audio.wav');
