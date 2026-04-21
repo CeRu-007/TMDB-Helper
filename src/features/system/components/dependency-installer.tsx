@@ -47,22 +47,26 @@ const PYTHON_PACKAGES = [
   {
     name: 'playwright',
     displayName: 'Playwright',
-    description: '现代化的浏览器自动化框架'
+    description: '现代化的浏览器自动化框架',
+    translationKey: 'playwright'
   },
   {
     name: 'python-dateutil',
     displayName: 'Python DateUtil',
-    description: '强大的日期时间处理库'
+    description: '强大的日期时间处理库',
+    translationKey: 'pythonDateutil'
   },
   {
     name: 'Pillow',
     displayName: 'Pillow (PIL)',
-    description: 'Python图像处理库'
+    description: 'Python图像处理库',
+    translationKey: 'pillow'
   },
   {
     name: 'bordercrop',
     displayName: 'BorderCrop',
-    description: '图像边框裁剪工具'
+    description: '图像边框裁剪工具',
+    translationKey: 'bordercrop'
   }
 ]
 
@@ -413,8 +417,8 @@ export default function DependencyInstaller() {
               <div className="flex items-center space-x-3">
                 {getStatusIcon(status?.packages[pkg.name] || false, loading)}
                 <div>
-                  <div className="font-medium">{t(`dependencyInstaller.${pkg.name}`)}</div>
-                  <div className="text-sm text-gray-500">{t(`dependencyInstaller.${pkg.name}Note`)}</div>
+                  <div className="font-medium">{t(`dependencyInstaller.${pkg.translationKey}`)}</div>
+                  <div className="text-sm text-gray-500">{t(`dependencyInstaller.${pkg.translationKey}Note`)}</div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
