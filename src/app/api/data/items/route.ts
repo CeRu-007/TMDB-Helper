@@ -33,7 +33,8 @@ export async function GET(request: NextRequest) {
     // 获取用户的项目数据
     let items: TMDBItem[] = [];
     try {
-      items = await StorageManager.getItemsWithRetry();
+      const result = await StorageManager.getItemsWithRetry();
+      items = (result ?? []) as TMDBItem[];
     } catch (error) {
       items = [];
     }
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { action, items } = await request.json();
+    const { action, items: _items } = await request.json();
 
     if (!action) {
       return NextResponse.json(

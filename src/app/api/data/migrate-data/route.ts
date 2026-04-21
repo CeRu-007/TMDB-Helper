@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });
     }
 
-    const { action } = await request.json();
+    const { action: _action } = await request.json();
 
     // 迁移功能已移除
     return NextResponse.json({

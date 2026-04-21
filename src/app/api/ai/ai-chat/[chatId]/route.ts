@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ChatHistory, Message } from '@/types/ai-chat'
+import { ChatHistory } from '@/types/ai-chat'
 import { ApiResponse } from '@/types/common'
 import { logger } from '@/lib/utils/logger'
 import { chatRepository } from '@/lib/database/repositories/chat.repository'

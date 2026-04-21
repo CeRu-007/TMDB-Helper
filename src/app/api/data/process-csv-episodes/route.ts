@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       csvPath,
       markedEpisodes,
       platformUrl,
-      itemId,
+      itemId: _itemId,
       testMode = false,
       itemTitle,
       enableYoukuSpecialHandling = true,
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       removeBackdropColumn = false,
     } = await request.json();
 
-    if (!csvPath || !Array.isArray(markedEpisodes)) {
+    if (!csvPath || !Array.isArray(markedEpisodes) || markedEpisodes.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -131,7 +131,17 @@ export async function POST(request: NextRequest) {
       }
 
       // 解析CSV头部
-      const headers = lines[0]
+      const headerLine = lines[0];
+      if (!headerLine) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'CSV文件头部为空',
+          },
+          { status: 400 },
+        );
+      }
+      const headers = headerLine
         .split(',')
         .map((h) => h.trim().replace(/"/g, ''));
       logger.info(`[API] CSV头部列名: [${headers.join(', ')}]`);
@@ -149,14 +159,12 @@ export async function POST(request: NextRequest) {
       ];
 
       let episodeNumberIndex = -1;
-      let matchedColumnName = '';
 
       for (const possibleName of possibleEpisodeColumns) {
         episodeNumberIndex = headers.findIndex((h) =>
           h.toLowerCase().includes(possibleName.toLowerCase()),
         );
         if (episodeNumberIndex !== -1) {
-          matchedColumnName = headers[episodeNumberIndex];
           break;
         }
       }

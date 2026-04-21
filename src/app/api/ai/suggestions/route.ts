@@ -12,6 +12,9 @@ interface ModelScopeRequestBody {
   model: string;
   messages: ModelScopeMessage[];
   stream: boolean;
+  apiKey?: string;
+  lastMessage?: string;
+  apiBaseUrl?: string;
 }
 
 interface ModelScopeChoice {

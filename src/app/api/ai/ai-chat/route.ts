@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json<ApiResponse<{ saved: number }>>({
       success: true,
-      data: result.data,
+      data: result.data ?? { saved: 0 },
       timestamp: Date.now()
     })
   } catch (error: unknown) {

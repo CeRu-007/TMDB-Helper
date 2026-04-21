@@ -206,7 +206,7 @@ async function handleVerifyCsv(request: NextRequest) {
 }
 
 // 处理上传CSV文件
-async function handleUploadCsv(request: NextRequest) {
+async function handleUploadCsv(_request: NextRequest) {
   return NextResponse.json(
     { success: false, error: '文件上传功能需要进一步实现' },
     { status: 501 },
