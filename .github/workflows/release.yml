@@ -1,0 +1,322 @@
+name: Release Manager
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (如: 0.6.0，不带v前缀)'
+        required: true
+        type: string
+      release_notes:
+        description: '版本描述 (留空则自动生成)'
+        required: false
+        type: string
+        default: ''
+      skip_docker:
+        description: '跳过 Docker 构建'
+        required: false
+        type: boolean
+        default: false
+      skip_electron:
+        description: '跳过 Electron 构建'
+        required: false
+        type: boolean
+        default: false
+
+  push:
+    tags:
+      - '[0-9]+\.[0-9]+\.[0-9]+'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKER_IMAGE: ceru007/tmdb-helper
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      release_notes: ${{ steps.notes.outputs.notes }}
+      trigger: ${{ steps.version.outputs.trigger }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ inputs.version }}"
+            TRIGGER="manual"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+            TRIGGER="tag"
+          fi
+
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "错误: 版本号格式不正确，应为 x.y.z 格式"
+            exit 1
+          fi
+          echo "版本号: $VERSION (触发方式: $TRIGGER)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+          echo "trigger=$TRIGGER" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          if [[ "${{ steps.version.outputs.trigger }}" == "manual" && -n "${{ inputs.release_notes }}" ]]; then
+            NOTES="${{ inputs.release_notes }}"
+          elif [[ "${{ steps.version.outputs.trigger }}" == "tag" ]]; then
+            NOTES=$(git tag -l --format '%(contents)' "${{ steps.version.outputs.tag }}" 2>/dev/null || echo "")
+            if [[ -z "$NOTES" ]]; then
+              NOTES="## TMDB Helper v${{ steps.version.outputs.version }}\n\n"
+              NOTES+="### Docker\n"
+              NOTES+="- 镜像: \`ceru007/tmdb-helper:${{ steps.version.outputs.version }}\`\n"
+              NOTES+="- latest: \`ceru007/tmdb-helper:latest\`\n\n"
+              NOTES+="### 下载说明\n"
+              NOTES+="- Docker 镜像: 下载 \`.tar\` 文件后使用 \`docker load < tmdb-helper-${{ steps.version.outputs.version }}.tar\` 导入\n"
+              NOTES+="- Windows 安装包: 下载 \`.exe\` 文件直接安装\n"
+            fi
+          else
+            NOTES="## TMDB Helper v${{ steps.version.outputs.version }}\n\n"
+            NOTES+="### Docker\n"
+            NOTES+="- 镜像: \`ceru007/tmdb-helper:${{ steps.version.outputs.version }}\`\n"
+            NOTES+="- latest: \`ceru007/tmdb-helper:latest\`\n\n"
+            NOTES+="### 下载说明\n"
+            NOTES+="- Docker 镜像: 下载 \`.tar\` 文件后使用 \`docker load < tmdb-helper-${{ steps.version.outputs.version }}.tar\` 导入\n"
+            NOTES+="- Windows 安装包: 下载 \`.exe\` 文件直接安装\n"
+          fi
+          echo "notes=$NOTES" >> $GITHUB_OUTPUT
+
+      - name: Configure git
+        if: steps.version.outputs.trigger == 'manual'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Update version in package.json
+        if: steps.version.outputs.trigger == 'manual'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" package.json
+          cat package.json | grep '"version"'
+
+      - name: Update version in README.md
+        if: steps.version.outputs.trigger == 'manual'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if grep -q "version.*[0-9]\+\.[0-9]\+\.[0-9]\+" README.md; then
+            sed -i "s/version.*[0-9]\+\.[0-9]\+\.[0-9]\+/version $VERSION/g" README.md
+          fi
+          grep -i "version" README.md | head -5 || true
+
+      - name: Create commit and tag
+        if: steps.version.outputs.trigger == 'manual'
+        run: |
+          git add package.json README.md
+          git commit -m "chore: bump version to ${{ steps.version.outputs.tag }}"
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin main --tags
+
+  docker:
+    needs: prepare
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_docker != true }}
+    environment: docker-publish
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:${{ needs.prepare.outputs.tag }}
+            ${{ env.DOCKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Export Docker image to tar
+        run: |
+          docker save -o tmdb-helper-${{ needs.prepare.outputs.tag }}.tar ${{ env.DOCKER_IMAGE }}:${{ needs.prepare.outputs.tag }}
+
+      - name: Upload Docker tar as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: tmdb-helper-${{ needs.prepare.outputs.tag }}.tar
+          retention-days: 2
+
+  electron:
+    needs: prepare
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+    environment: electron-build
+
+    strategy:
+      matrix:
+        platform: [windows, mac, linux]
+        include:
+          - platform: windows
+            build_cmd: electron:build:win
+          - platform: mac
+            build_cmd: electron:build:mac
+          - platform: linux
+            build_cmd: electron:build:linux
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Electron App
+        run: pnpm run ${{ matrix.build_cmd }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: |
+            dist/win-unpacked/*.exe
+            dist/*.exe
+          retention-days: 2
+
+      - name: Upload macOS artifacts
+        if: matrix.platform == 'mac'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-dmg
+          path: dist/*.dmg
+          retention-days: 2
+
+      - name: Upload Linux artifacts
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+          retention-days: 2
+
+  create-release:
+    needs: [prepare, docker, electron]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.skip_docker != true || inputs.skip_electron != true)) }}
+
+    steps:
+      - name: Download Docker artifact
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_docker != true }}
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: dist/
+
+      - name: Download Electron artifacts
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Display all artifacts
+        run: |
+          echo "=== 所有产物 ==="
+          ls -laR dist/
+
+      - name: Collect files for release
+        id: collect_files
+        shell: bash
+        run: |
+          FILES=""
+          # Docker tar
+          if [ -f "dist/tmdb-helper-${{ needs.prepare.outputs.tag }}.tar" ]; then
+            FILES="$FILES dist/tmdb-helper-${{ needs.prepare.outputs.tag }}.tar"
+          fi
+          # Windows exe
+          while IFS= read -r f; do
+            FILES="$FILES $f"
+          done < <(find dist -name "*.exe" -type f 2>/dev/null)
+          # macOS dmg
+          while IFS= read -r f; do
+            FILES="$FILES $f"
+          done < <(find dist -name "*.dmg" -type f 2>/dev/null)
+          # Linux packages
+          while IFS= read -r f; do
+            FILES="$FILES $f"
+          done < <(find dist \( -name "*.AppImage" -o -name "*.deb" \) -type f 2>/dev/null)
+
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "=== 待上传文件 ==="
+          echo "$FILES"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: ${{ needs.prepare.outputs.tag }}
+          body: ${{ needs.prepare.outputs.release_notes }}
+          files: ${{ needs.collect_files.outputs.files }}
+          draft: false
+          overwrite: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## TMDB Helper ${{ needs.prepare.outputs.tag }} 发布完成"
+          echo ""
+          echo "触发方式: ${{ needs.prepare.outputs.trigger }}"
+          echo ""
+          echo "已完成"
+          if ${{ github.event_name != 'workflow_dispatch' || inputs.skip_docker != true }}; then echo "- Docker 镜像已构建并推送"; fi
+          if ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}; then echo "- Electron 应用已构建"; fi
+          echo "- GitHub Release 已创建"
