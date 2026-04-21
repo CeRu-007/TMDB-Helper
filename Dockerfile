@@ -124,6 +124,9 @@ RUN npm install -g playwright && \
 # 切换到非root用户
 USER nextjs
 
+# 预设卷挂载点 - 图形化界面创建容器时会自动显示
+VOLUME ["/app/data", "/app/logs"]
+
 # 暴露端口
 EXPOSE 4949
 

@@ -54,6 +54,8 @@ function ensureDirectories() {
         fs.mkdirSync(dir, { recursive: true });
         log(`创建目录: ${dir}`);
       }
+      // 确保目录权限为 777
+      fs.chmodSync(dir, 0o777);
     } catch (error) {
       logError(`创建目录失败: ${dir}`, error);
     }
@@ -74,6 +76,35 @@ function checkPermissions() {
     } catch (error) {
       results[testPath] = false;
       logError(`权限检查失败: ${testPath}`, error);
+
+      // 尝试自动修复权限
+      try {
+        const { execSync } = require('child_process');
+        // 检查当前用户
+        const currentUser = execSync('whoami', { encoding: 'utf8' }).trim();
+        log(`当前用户: ${currentUser}`);
+
+        if (currentUser === 'root') {
+          // root 用户，尝试修复权限
+          execSync(`chmod -R 777 ${testPath}`, { stdio: 'ignore' });
+          log(`已修复权限: ${testPath}`);
+
+          // 重新检查
+          try {
+            const testFile = path.join(testPath, '.write_test');
+            fs.writeFileSync(testFile, 'test');
+            fs.unlinkSync(testFile);
+            results[testPath] = true;
+            log(`权限修复成功: ${testPath}`);
+          } catch (e2) {
+            logError(`权限修复后仍失败: ${testPath}`, e2);
+          }
+        } else {
+          log(`非 root 用户 (${currentUser})，无法自动修复权限`);
+        }
+      } catch (e) {
+        logError(`自动修复权限失败`, e);
+      }
     }
   });
 

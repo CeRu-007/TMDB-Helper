@@ -11,9 +11,9 @@ const GITHUB_REPO = 'fzlins/TMDB-Import'
 const GITHUB_API_BASE = 'https://api.github.com'
 const DOWNLOAD_BASE = 'https://github.com'
 
-// 工具安装目录 - 保持解压后的原始目录名
-const TOOLS_DIR = process.cwd()
-const TMDB_IMPORT_DIR = path.join(TOOLS_DIR, 'TMDB-Import-master')
+// 工具安装目录 - 安装到数据目录下
+const DATA_DIR = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data')
+const TMDB_IMPORT_DIR = path.join(DATA_DIR, 'TMDB-Import-master')
 
 interface GitHubCommit {
   sha: string

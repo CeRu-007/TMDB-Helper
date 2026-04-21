@@ -2,63 +2,28 @@ version: '3.8'
 
 services:
   tmdb-helper:
-    # 使用 Docker Hub 镜像
     image: ceru007/tmdb-helper:latest
-    # 如果需要本地构建，注释上面一行，取消注释下面一行
-    # build: .
-
     container_name: tmdb-helper
-
     ports:
       - "4949:4949"
-
     environment:
-      # 管理员账户配置
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=change_this_password
-
-      # JWT 密钥（生产环境必须修改）
       - JWT_SECRET=your_jwt_secret_key_here_change_in_production
-
-      # 会话有效期（天）
       - SESSION_EXPIRY_DAYS=15
-
-      # Next.js 环境
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
       - COOKIE_SECURE=false
-
-      # Docker 优化配置
       - DOCKER_CONTAINER=true
       - TMDB_DATA_DIR=/app/data
       - NODE_OPTIONS=--max-old-space-size=1024
-
-      # 端口和主机配置
       - PORT=4949
       - HOSTNAME=0.0.0.0
-
-      # Cookie Secure 配置
-      # 如果通过 HTTP 直接访问(没有 HTTPS 反向代理),设置为 'false'
-      # 如果通过 HTTPS 访问(有 SSL 终端),设置为 'true' 或删除此行(默认为 true)
-      - COOKIE_SECURE=false
-
-      # 数据库配置（如果需要）
-      # - DATABASE_URL=your_database_url_here
-
     volumes:
-      # 持久化数据目录 - 使用命名卷（推荐）
-      - tmdb_data:/app/data
-      # 持久化日志目录
-      - tmdb_logs:/app/logs
-
-      # 可选：绑定挂载到宿主机目录（取消注释以使用）
-      # 注意：使用绑定挂载时，请确保宿主机目录存在且有正确的权限
-      # - ./data:/app/data
-      # - ./logs:/app/logs
-
+      - ${TMDB_DATA_PATH:-.}/data:/app/data
+      - ${TMDB_DATA_PATH:-.}/logs:/app/logs
+    user: "0:0"
     restart: unless-stopped
-
-    # 资源限制
     deploy:
       resources:
         limits:
@@ -67,44 +32,14 @@ services:
         reservations:
           memory: 512M
           cpus: '0.15'
-
-    # 健康检查
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4949/api/auth/init"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
-    # 网络配置
     networks:
       - tmdb-network
-
-    # 依赖关系（如果有数据库等其他服务）
-    # depends_on:
-    #   - database
-
-  # 可选：添加数据库服务
-  # database:
-  #   image: postgres:15-alpine
-  #   container_name: tmdb-postgres
-  #   environment:
-  #     - POSTGRES_DB=tmdb_helper
-  #     - POSTGRES_USER=tmdb_user
-  #     - POSTGRES_PASSWORD=change_this_password
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - tmdb-network
-  #   restart: unless-stopped
-
-volumes:
-  tmdb_data:
-    driver: local
-  tmdb_logs:
-    driver: local
-  # postgres_data:
-  #   driver: local
 
 networks:
   tmdb-network:
