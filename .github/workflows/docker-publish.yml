@@ -14,6 +14,7 @@ on:
 
 env:
   DOCKER_IMAGE: ceru007/tmdb-helper
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   docker:
