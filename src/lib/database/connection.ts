@@ -1,40 +1,62 @@
 /**
  * 数据库连接管理
  * 单例模式，确保整个应用只有一个数据库连接
- * 优先使用 Node.js 内置的 SQLite 模块 (node:sqlite)
- * Electron 环境下回退到 better-sqlite3
+ * 优先使用 better-sqlite3（兼容 Web 和 Electron 环境）
  */
 
 import path from 'path';
 import fs from 'fs';
 import { logger } from '@/lib/utils/logger';
 
-// 动态加载数据库模块
-function loadDatabaseModule() {
-  try {
-    // 优先尝试 node:sqlite（Node.js 22.5+）
-    const { DatabaseSync } = require('node:sqlite');
-    logger.info('[Database] 使用 node:sqlite');
-    return DatabaseSync;
-  } catch (e) {
-    // 回退到 better-sqlite3（Electron 使用 Node.js 20）
-    try {
-      const Database = require('better-sqlite3');
-      logger.info('[Database] 使用 better-sqlite3');
-      return Database;
-    } catch (e2) {
-      throw new Error('无法加载 SQLite 模块，请安装 better-sqlite3');
-    }
-  }
-}
-
-const DatabaseSync = loadDatabaseModule();
-
 // 类型定义
-export type SQLiteDatabase = InstanceType<typeof DatabaseSync>;
-export type SQLiteStatement = ReturnType<SQLiteDatabase['prepare']>;
+export type SQLiteDatabase = any;
+export type SQLiteStatement = any;
 
 let db: SQLiteDatabase | null = null;
+let DatabaseSync: any = null;
+let moduleLoaded = false;
+let loadError: Error | null = null;
+
+/**
+ * 动态加载数据库模块（同步）
+ * 只在第一次调用时执行
+ */
+function loadDatabaseModule(): void {
+  if (moduleLoaded) {
+    return;
+  }
+
+  // 检测是否在 Electron 环境
+  const isElectron = process.env.ELECTRON_BUILD === 'true' || 
+                     process.versions?.electron !== undefined;
+
+  // 首先尝试 better-sqlite3
+  try {
+    DatabaseSync = require('better-sqlite3');
+    logger.info('[Database] 使用 better-sqlite3');
+    moduleLoaded = true;
+    return;
+  } catch (e) {
+    // better-sqlite3 不可用，尝试 node:sqlite
+  }
+
+  // Web 环境尝试 node:sqlite
+  if (!isElectron) {
+    try {
+      // 使用 require 而不是动态 import，保持同步
+      const sqlite = require('node:sqlite');
+      DatabaseSync = sqlite.DatabaseSync;
+      logger.info('[Database] 使用 node:sqlite');
+      moduleLoaded = true;
+      return;
+    } catch (e) {
+      // node:sqlite 也不可用
+    }
+  }
+
+  loadError = new Error('无法加载 SQLite 模块，请安装 better-sqlite3: pnpm add -D better-sqlite3');
+  moduleLoaded = true;
+}
 
 /**
  * 获取数据库文件路径
@@ -47,9 +69,25 @@ export function getDatabasePath(): string {
 /**
  * 初始化数据库连接
  */
-export function getDatabase(): DatabaseSync {
+export function getDatabase(): SQLiteDatabase {
+  // 检查加载错误
+  if (loadError) {
+    throw loadError;
+  }
+
   if (db) {
     return db;
+  }
+
+  // 动态加载数据库模块
+  loadDatabaseModule();
+
+  if (loadError) {
+    throw loadError;
+  }
+
+  if (!DatabaseSync) {
+    throw new Error('数据库模块未初始化');
   }
 
   const dbPath = getDatabasePath();

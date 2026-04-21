@@ -146,9 +146,6 @@ importers:
       bcryptjs:
         specifier: ^3.0.2
         version: 3.0.3
-      better-sqlite3:
-        specifier: ^12.9.0
-        version: 12.9.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -288,6 +285,9 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^8.53.1
         version: 8.54.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
+      better-sqlite3:
+        specifier: ^12.9.0
+        version: 12.9.0
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
