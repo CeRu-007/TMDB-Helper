@@ -1701,12 +1701,22 @@ const TMDBTableComponent = ({
                       const getCellContent = () => {
                         const baseClass = "px-2 py-1 text-sm h-full"
                         const hoverClass = shouldShowUrlFeatures ? "hover:text-primary hover:underline cursor-pointer transition-colors" : ""
+                        const isAirDate = columnName.toLowerCase() === 'air_date';
 
                         if (isOverview) {
                           return (
                             <div className={cn(baseClass, hoverClass, "whitespace-nowrap overflow-hidden text-ellipsis")}
                                  title={cell || ''}
                                  style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {cell}
+                            </div>
+                          )
+                        }
+
+                        if (isAirDate) {
+                          return (
+                            <div className={cn(baseClass, hoverClass)}
+                                 title={cell || undefined}>
                               {cell}
                             </div>
                           )
@@ -1721,8 +1731,12 @@ const TMDBTableComponent = ({
                       }
 
                       const getCellStyle = () => {
+                        const isAirDate = columnName.toLowerCase() === 'air_date';
                         if (isOverview) {
                           return { minWidth: '400px', maxWidth: '600px', width: '400px' }
+                        }
+                        if (isAirDate) {
+                          return { minWidth: '100px', maxWidth: 'none', width: '120px' }
                         }
                         return {
                           minWidth: '100px',
