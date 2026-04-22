@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     await ServerStorageManager.init();
 
-    const items: TMDBItem[] = ServerStorageManager.getItems();
+    const items: TMDBItem[] = await ServerStorageManager.getItems();
 
     const itemVersions = items
       .map((item) => new Date(item.updatedAt).getTime())

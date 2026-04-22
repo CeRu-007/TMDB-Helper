@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
 
-    const success = ServerStorageManager.addItem(item);
+    const success = await ServerStorageManager.addItem(item);
 
     if (success) {
       logger.info(`[API] 项目添加成功: ${item.title} (${item.id})`);
@@ -84,7 +84,7 @@ export async function PUT(request: NextRequest) {
     // 获取用户ID
     const userId = await getUserIdFromRequest(request);
 
-    const success = ServerStorageManager.updateItem(item);
+    const success = await ServerStorageManager.updateItem(item);
 
     if (success) {
       return NextResponse.json({ success: true, item, userId }, { status: 200 });
@@ -123,7 +123,7 @@ export async function DELETE(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
     logger.info(`[API] 删除项目 - 用户ID: ${userId}, 项目ID: ${id}`);
 
-    const success = ServerStorageManager.deleteItem(id);
+    const success = await ServerStorageManager.deleteItem(id);
 
     if (success) {
       logger.info(`[API] 项目删除成功: ${id}`);

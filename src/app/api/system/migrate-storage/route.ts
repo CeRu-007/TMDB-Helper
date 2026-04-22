@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 读取现有的数据库数据
-    const existingItems = ServerStorageManager.getItems();
+    const existingItems = await ServerStorageManager.getItems();
 
     // 合并数据，避免重复
     let addedCount = 0;
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       
       if (existingItem) {
         // 更新现有项目
-        ServerStorageManager.updateItem({
+        await ServerStorageManager.updateItem({
           ...existingItem,
           ...newItem,
           updatedAt: new Date().toISOString()
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         updatedCount++;
       } else {
         // 添加新项目
-        ServerStorageManager.addItem({
+        await ServerStorageManager.addItem({
           ...newItem,
           createdAt: newItem.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -64,11 +64,13 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    const totalItems = await ServerStorageManager.getItems();
+    
     return NextResponse.json({
       success: true,
       message: '数据迁移成功',
       stats: {
-        totalItems: ServerStorageManager.getItems().length,
+        totalItems: totalItems.length,
         addedItems: addedCount,
         updatedItems: updatedCount,
         originalItems: existingItems.length
@@ -91,7 +93,7 @@ export async function GET(request: NextRequest) {
     // 确保数据库已初始化
     await ServerStorageManager.init();
     
-    const serverItems = ServerStorageManager.getItems();
+    const serverItems = await ServerStorageManager.getItems();
     
     return NextResponse.json({
       success: true,

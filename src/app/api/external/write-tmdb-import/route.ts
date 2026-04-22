@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // TMDB-Import 工具的 import.csv 路径（从服务端配置读取）
-    const configuredPath = ServerConfigManager.getConfigItem('tmdbImportPath') as string | undefined
+    const configuredPath = await ServerConfigManager.getConfigItem('tmdbImportPath') as string | undefined
     const tmdbDir = configuredPath ?? join(process.cwd(), 'TMDB-Import-master')
     const tmdbImportPath = join(tmdbDir, 'import.csv')
 

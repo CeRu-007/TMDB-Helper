@@ -11,7 +11,7 @@ export async function GET() {
       );
     }
 
-    const config = ServerConfigManager.getConfig();
+    const config = await ServerConfigManager.getConfig();
 
     return NextResponse.json({
       success: true,
@@ -53,35 +53,35 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (tmdbImportPath) {
-      ServerConfigManager.setConfigItem('tmdbImportPath', tmdbImportPath);
+      await ServerConfigManager.setConfigItem('tmdbImportPath', tmdbImportPath);
     }
 
     if (siliconFlowApiKey) {
-      ServerConfigManager.setConfigItem('siliconFlowApiKey', siliconFlowApiKey);
+      await ServerConfigManager.setConfigItem('siliconFlowApiKey', siliconFlowApiKey);
     }
 
     if (siliconFlowThumbnailModel) {
-      ServerConfigManager.setConfigItem('siliconFlowThumbnailModel', siliconFlowThumbnailModel);
+      await ServerConfigManager.setConfigItem('siliconFlowThumbnailModel', siliconFlowThumbnailModel);
     }
 
     if (modelScopeApiKey) {
-      ServerConfigManager.setConfigItem('modelScopeApiKey', modelScopeApiKey);
+      await ServerConfigManager.setConfigItem('modelScopeApiKey', modelScopeApiKey);
     }
 
     if (modelScopeEpisodeModel) {
-      ServerConfigManager.setConfigItem('modelScopeEpisodeModel', modelScopeEpisodeModel);
+      await ServerConfigManager.setConfigItem('modelScopeEpisodeModel', modelScopeEpisodeModel);
     }
 
     if (generalSettings) {
-      ServerConfigManager.setConfigItem('generalSettings', generalSettings);
+      await ServerConfigManager.setConfigItem('generalSettings', generalSettings);
     }
 
     if (appearanceSettings) {
-      ServerConfigManager.setConfigItem('appearanceSettings', appearanceSettings);
+      await ServerConfigManager.setConfigItem('appearanceSettings', appearanceSettings);
     }
 
     if (videoThumbnailSettings) {
-      ServerConfigManager.setConfigItem('videoThumbnailSettings', videoThumbnailSettings);
+      await ServerConfigManager.setConfigItem('videoThumbnailSettings', videoThumbnailSettings);
     }
 
     return NextResponse.json({

@@ -3,7 +3,19 @@
  */
 
 // 连接管理
-export { getDatabase, closeDatabase, isDatabaseInitialized, getDatabasePath, transaction, batchInsert, checkDatabaseHealth } from './connection';
+export { 
+  getDatabase, 
+  getDatabaseAsync, 
+  initDatabaseModule,
+  closeDatabase, 
+  isDatabaseInitialized, 
+  isDatabaseInitializedAsync,
+  getDatabasePath, 
+  transaction, 
+  batchInsert, 
+  checkDatabaseHealth,
+  checkDatabaseHealthAsync
+} from './connection';
 
 // Schema
 export { initializeSchema, getDatabaseStats, clearAllData, SCHEMA_VERSION } from './schema';
@@ -35,7 +47,7 @@ export { cacheManager, CacheKeys, CacheManager } from './services/cache.service'
 export { itemsService, ItemsService } from './services/items.service';
 
 // 初始化数据库（应用启动时调用）
-export function initializeDatabase(): void {
-  const { initializeSchema } = require('./schema');
-  initializeSchema();
+export async function initializeDatabase(): Promise<void> {
+  const { initializeSchema } = await import('./schema');
+  await initializeSchema();
 }

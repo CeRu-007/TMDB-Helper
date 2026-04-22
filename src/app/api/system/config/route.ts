@@ -33,14 +33,14 @@ function clearCache(): void {
   cacheTimestamp = 0
 }
 
-function getCachedConfig(): ServerConfig {
+async function getCachedConfig(): Promise<ServerConfig> {
   const now = Date.now()
 
   if (configCache && now - cacheTimestamp < CACHE_TTL) {
     return configCache
   }
 
-  configCache = ServerConfigManager.getConfig()
+  configCache = await ServerConfigManager.getConfig()
   cacheTimestamp = now
   return configCache
 }
@@ -73,11 +73,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (key) {
       const mappedKey = mapKeyName(key)
-      const value = ServerConfigManager.getConfigItem(mappedKey)
+      const value = await ServerConfigManager.getConfigItem(mappedKey)
       return NextResponse.json({ success: true, key, value })
     }
 
-    const config = getCachedConfig()
+    const config = await getCachedConfig()
     const safeConfig = maskSensitiveKeys(config)
 
     return NextResponse.json({
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }, { status: 400 })
         }
 
-        const newConfig = ServerConfigManager.updateConfig(updates)
+        const newConfig = await ServerConfigManager.updateConfig(updates)
         clearCache()
 
         return NextResponse.json({
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }, { status: 400 })
         }
 
-        ServerConfigManager.setConfigItem(mapKeyName(key), value)
+        await ServerConfigManager.setConfigItem(mapKeyName(key), value)
         clearCache()
 
         return NextResponse.json({
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }, { status: 400 })
         }
 
-        ServerConfigManager.removeConfigItem(mapKeyName(key))
+        await ServerConfigManager.removeConfigItem(mapKeyName(key))
         clearCache()
 
         return NextResponse.json({
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       case 'reset': {
-        const defaultConfig = ServerConfigManager.resetToDefault()
+        const defaultConfig = await ServerConfigManager.resetToDefault()
         clearCache()
 
         return NextResponse.json({
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }, { status: 400 })
         }
 
-        const importedConfig = ServerConfigManager.importConfig(configJson)
+        const importedConfig = await ServerConfigManager.importConfig(configJson)
         clearCache()
 
         return NextResponse.json({
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       case 'export': {
-        const configJson = ServerConfigManager.exportConfig()
+        const configJson = await ServerConfigManager.exportConfig()
         return NextResponse.json({ success: true, configJson })
       }
 
@@ -235,7 +235,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       }, { status: 400 })
     }
 
-    ServerConfigManager.saveConfig(config)
+    await ServerConfigManager.saveConfig(config)
     clearCache()
 
     return NextResponse.json({
@@ -257,14 +257,14 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     const key = searchParams.get('key')
 
     if (key) {
-      ServerConfigManager.removeConfigItem(key as keyof ServerConfig)
+      await ServerConfigManager.removeConfigItem(key as keyof ServerConfig)
       return NextResponse.json({
         success: true,
         message: `配置项 ${key} 删除成功`
       })
     }
 
-    const defaultConfig = ServerConfigManager.resetToDefault()
+    const defaultConfig = await ServerConfigManager.resetToDefault()
 
     return NextResponse.json({
       success: true,

@@ -249,7 +249,7 @@ async function migrateConfig(dataDir: string): Promise<void> {
         const config = JSON.parse(content);
 
         logger.info(`[Migration] 迁移配置数据: ${filePath}`);
-        configRepository.set(configKey, config);
+        await configRepository.set(configKey, config);
       } catch (error) {
         logger.error(`[Migration] 读取配置数据失败: ${filePath}`, error);
       }

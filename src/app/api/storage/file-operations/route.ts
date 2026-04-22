@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     // 确保数据库已初始化
     await ServerStorageManager.init();
     
-    const items = ServerStorageManager.getItems();
+    const items = await ServerStorageManager.getItems();
     
     return NextResponse.json({ 
       items,
@@ -58,18 +58,18 @@ export async function POST(request: NextRequest) {
     });
     
     // 清空现有数据并导入新数据
-    const existingItems = ServerStorageManager.getItems();
+    const existingItems = await ServerStorageManager.getItems();
     
     // 如果需要备份，记录备份数量
     const backupCount = backup ? existingItems.length : 0;
     
     // 清空现有数据
-    ServerStorageManager.clearAllItems();
+    await ServerStorageManager.clearAllItems();
     
     // 批量添加新数据
     let addedCount = 0;
     for (const item of validItems) {
-      const success = ServerStorageManager.addItem({
+      const success = await ServerStorageManager.addItem({
         ...item,
         createdAt: item.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -121,7 +121,7 @@ export async function PUT(request: NextRequest) {
              item.title.trim() !== '';
     });
     
-    const existingItems = ServerStorageManager.getItems();
+    const existingItems = await ServerStorageManager.getItems();
     let addedCount = 0;
     let updatedCount = 0;
     let skippedCount = 0;
@@ -134,7 +134,7 @@ export async function PUT(request: NextRequest) {
         if (existingItem) {
           if (mode === 'merge') {
             // 更新现有项目
-            ServerStorageManager.updateItem({
+            await ServerStorageManager.updateItem({
               ...existingItem,
               ...newItem,
               updatedAt: new Date().toISOString()
@@ -146,7 +146,7 @@ export async function PUT(request: NextRequest) {
           }
         } else {
           // 添加新项目
-          ServerStorageManager.addItem({
+          await ServerStorageManager.addItem({
             ...newItem,
             createdAt: newItem.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -156,9 +156,9 @@ export async function PUT(request: NextRequest) {
       }
     } else {
       // 替换模式（默认）
-      ServerStorageManager.clearAllItems();
+      await ServerStorageManager.clearAllItems();
       for (const item of validItems) {
-        ServerStorageManager.addItem({
+        await ServerStorageManager.addItem({
           ...item,
           createdAt: item.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -167,7 +167,7 @@ export async function PUT(request: NextRequest) {
       }
     }
     
-    const finalItems = ServerStorageManager.getItems();
+    const finalItems = await ServerStorageManager.getItems();
     
     return NextResponse.json({ 
       success: true,

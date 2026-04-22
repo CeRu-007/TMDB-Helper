@@ -22,8 +22,8 @@ export async function initializeStorage(): Promise<void> {
   }
 
   try {
-    // 初始化数据库
-    initializeDatabase();
+    // 初始化数据库（现在需要 await）
+    await initializeDatabase();
 
     // 检查并执行迁移
     await checkAndMigrate();

@@ -18,9 +18,10 @@ interface TMDBConfig {
 /**
  * 解析TMDB配置路径
  */
-function resolveTmdbPath(pathParam: string | null): string {
+async function resolveTmdbPath(pathParam: string | null): Promise<string> {
+  const configuredPath = await ServerConfigManager.getConfigItem('tmdbImportPath') as string | undefined
   const tmdbDir = pathParam
-    ?? ServerConfigManager.getConfigItem('tmdbImportPath') as string | undefined
+    ?? configuredPath
     ?? path.join(process.cwd(), 'TMDB-Import-master')
   return path.resolve(tmdbDir)
 }
@@ -31,7 +32,7 @@ function resolveTmdbPath(pathParam: string | null): string {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const absolutePath = resolveTmdbPath(searchParams.get('path'))
+    const absolutePath = await resolveTmdbPath(searchParams.get('path'))
     const configPath = path.join(absolutePath, 'config.ini')
 
     if (!fs.existsSync(absolutePath)) {
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const absolutePath = resolveTmdbPath(requestPath)
+    const absolutePath = await resolveTmdbPath(requestPath)
     const configPath = path.join(absolutePath, 'config.ini')
 
     if (!fs.existsSync(absolutePath)) {

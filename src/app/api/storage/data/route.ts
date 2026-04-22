@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const success = ServerStorageManager.importData(validItems);
+    const success = await ServerStorageManager.importData(validItems);
 
     if (success) {
       logger.info(`[API] 导入成功: ${validItems.length} 个项目`);
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     const userId = await getUserIdFromRequest(request);
     logger.info(`[API] 导出数据 - 用户ID: ${userId}`);
 
-    const { items } = ServerStorageManager.exportData();
+    const { items } = await ServerStorageManager.exportData();
 
     return NextResponse.json(
       {

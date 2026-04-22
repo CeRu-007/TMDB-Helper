@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     await ServerStorageManager.init();
     
     // 从数据库读取管理员的项目数据
-    const items = ServerStorageManager.getItems();
+    const items = await ServerStorageManager.getItems();
 
     return NextResponse.json({
       items,

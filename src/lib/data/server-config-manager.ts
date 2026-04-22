@@ -194,13 +194,13 @@ export class ServerConfigManager {
   /**
    * 读取配置
    */
-  static getConfig(): ServerConfig {
+  static async getConfig(): Promise<ServerConfig> {
     try {
-      const config = configRepository.get<ServerConfig>(this.CONFIG_KEY);
+      const config = await configRepository.get<ServerConfig>(this.CONFIG_KEY);
       
       if (!config) {
         const defaultConfig = this.getDefaultConfig();
-        this.saveConfig(defaultConfig);
+        await this.saveConfig(defaultConfig);
         return defaultConfig;
       }
 
@@ -212,7 +212,7 @@ export class ServerConfigManager {
           version: this.CONFIG_VERSION,
           lastUpdated: Date.now(),
         });
-        this.saveConfig(upgradedConfig);
+        await this.saveConfig(upgradedConfig);
         return upgradedConfig;
       }
 
@@ -220,7 +220,7 @@ export class ServerConfigManager {
     } catch (error) {
       logger.error('[ServerConfigManager] 读取配置失败', error);
       const defaultConfig = this.getDefaultConfig();
-      this.saveConfig(defaultConfig);
+      await this.saveConfig(defaultConfig);
       return defaultConfig;
     }
   }
@@ -228,7 +228,7 @@ export class ServerConfigManager {
   /**
    * 保存配置
    */
-  static saveConfig(config: ServerConfig): void {
+  static async saveConfig(config: ServerConfig): Promise<void> {
     try {
       const validatedConfig = this.validateConfig(config);
       const configToSave = {
@@ -237,7 +237,7 @@ export class ServerConfigManager {
         lastUpdated: Date.now(),
       };
 
-      configRepository.set(this.CONFIG_KEY, configToSave);
+      await configRepository.set(this.CONFIG_KEY, configToSave);
     } catch (error) {
       logger.error('[ServerConfigManager] 保存配置失败', error);
       throw new Error('保存配置失败');
@@ -247,18 +247,18 @@ export class ServerConfigManager {
   /**
    * 更新配置
    */
-  static updateConfig(updates: Partial<ServerConfig>): ServerConfig {
-    const currentConfig = this.getConfig();
+  static async updateConfig(updates: Partial<ServerConfig>): Promise<ServerConfig> {
+    const currentConfig = await this.getConfig();
     const newConfig = { ...currentConfig, ...updates };
-    this.saveConfig(newConfig);
+    await this.saveConfig(newConfig);
     return newConfig;
   }
 
   /**
    * 获取特定配置项
    */
-  static getConfigItem<T extends keyof ServerConfig>(key: T): ServerConfig[T] | undefined {
-    const config = this.getConfig();
+  static async getConfigItem<T extends keyof ServerConfig>(key: T): Promise<ServerConfig[T] | undefined> {
+    const config = await this.getConfig();
     const value = config[key];
 
     if (typeof value === 'object' && value !== null) {
@@ -275,80 +275,59 @@ export class ServerConfigManager {
   /**
    * 设置特定配置项
    */
-  static setConfigItem<T extends keyof ServerConfig>(key: T, value: ServerConfig[T]): void {
+  static async setConfigItem<T extends keyof ServerConfig>(key: T, value: ServerConfig[T]): Promise<void> {
     const updates = { [key]: value } as Partial<ServerConfig>;
-    this.updateConfig(updates);
+    await this.updateConfig(updates);
   }
 
   /**
    * 删除配置项
    */
-  static removeConfigItem(key: keyof ServerConfig): void {
-    const config = this.getConfig();
+  static async removeConfigItem(key: keyof ServerConfig): Promise<void> {
+    const config = await this.getConfig();
     delete config[key];
-    this.saveConfig(config);
+    await this.saveConfig(config);
   }
 
   /**
    * 重置为默认配置
    */
-  static resetToDefault(): ServerConfig {
+  static async resetToDefault(): Promise<ServerConfig> {
     const defaultConfig = this.getDefaultConfig();
-    this.saveConfig(defaultConfig);
+    await this.saveConfig(defaultConfig);
     return defaultConfig;
   }
 
   /**
-   * 导出配置
+   * 导出配置为 JSON 字符串
    */
-  static exportConfig(): string {
-    const config = this.getConfig();
+  static async exportConfig(): Promise<string> {
+    const config = await this.getConfig();
     return JSON.stringify(config, null, 2);
   }
 
   /**
-   * 导入配置
+   * 从 JSON 字符串导入配置
    */
-  static importConfig(configJson: string): ServerConfig {
+  static async importConfig(configJson: string): Promise<ServerConfig> {
     try {
       const importedConfig = JSON.parse(configJson) as ServerConfig;
-
-      if (typeof importedConfig !== 'object' || importedConfig === null) {
-        throw new Error('无效的配置格式');
-      }
-
-      this.saveConfig(importedConfig);
-      return importedConfig;
+      const validatedConfig = this.validateConfig(importedConfig);
+      await this.saveConfig(validatedConfig);
+      return validatedConfig;
     } catch (error) {
-      throw new Error(
-        '导入配置失败: ' +
-          (error instanceof Error ? error.message : '未知错误'),
-      );
+      logger.error('[ServerConfigManager] 导入配置失败', error);
+      throw new Error('导入配置失败：无效的 JSON 格式');
     }
   }
 
   /**
-   * 检查配置是否存在
+   * 获取配置信息（文件路径、大小等）
    */
-  static configExists(): boolean {
-    return configRepository.has(this.CONFIG_KEY);
-  }
-
-  /**
-   * 获取配置信息
-   */
-  static getConfigInfo(): {
-    exists: boolean;
-    lastUpdated?: number;
-  } {
-    const exists = this.configExists();
-    if (exists) {
-      const config = this.getConfig();
-      return {
-        exists: true,
-        lastUpdated: config.lastUpdated,
-      };
-    }
-    return { exists: false };
+  static getConfigInfo(): { path: string; exists: boolean } {
+    return {
+      path: 'SQLite Database (config table)',
+      exists: true,
+    };
   }
 }

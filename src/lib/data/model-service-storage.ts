@@ -137,7 +137,7 @@ export class ModelServiceStorage {
    */
   static async getConfig(): Promise<ModelServiceConfig> {
     try {
-      const config = configRepository.get<ModelServiceConfig>(CONFIG_KEY);
+      const config = await configRepository.get<ModelServiceConfig>(CONFIG_KEY);
 
       if (!config) {
         logger.warn('模型服务配置不存在，创建默认配置');
@@ -242,7 +242,7 @@ export class ModelServiceStorage {
         lastUpdated: Date.now(),
       };
 
-      configRepository.set(CONFIG_KEY, configToSave);
+      await configRepository.set(CONFIG_KEY, configToSave);
     } catch (error) {
       logger.error('[ModelServiceStorage] 保存配置失败', error);
       throw error;
@@ -385,7 +385,7 @@ export class ModelServiceStorage {
    */
   static async createDefaultConfig(): Promise<void> {
     try {
-      const exists = configRepository.has(CONFIG_KEY);
+      const exists = await configRepository.has(CONFIG_KEY);
       if (exists) {
         logger.info('模型服务配置已存在，跳过创建');
         return;

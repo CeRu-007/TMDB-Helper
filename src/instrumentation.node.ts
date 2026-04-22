@@ -15,8 +15,13 @@ export async function initializeDev() {
     const dbPath = path.join(dataDir, 'tmdb-helper.db');
     console.log('[Instrumentation] 数据库路径:', dbPath);
 
+    // 先初始化数据库模块并建立连接
+    const { getDatabaseAsync } = await import('./lib/database/connection');
+    await getDatabaseAsync();
+    console.log('[Instrumentation] 数据库连接已建立');
+
     const { initializeSchema } = await import('./lib/database/schema');
-    initializeSchema();
+    await initializeSchema();
     console.log('[Instrumentation] Schema 初始化完成');
 
     const { checkAndMigrate } = await import('./lib/database/migrations/json-to-sqlite');

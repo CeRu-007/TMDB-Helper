@@ -3,7 +3,7 @@
  * 所有字段使用 camelCase 命名，与 TypeScript 代码保持一致
  */
 
-import { getDatabase } from './connection';
+import { getDatabaseAsync } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
@@ -12,11 +12,11 @@ export const SCHEMA_VERSION = 9;
 /**
  * 初始化数据库 Schema
  */
-export function initializeSchema(): void {
-  const db = getDatabase();
+export async function initializeSchema(): Promise<void> {
+  const db = await getDatabaseAsync();
 
   // 获取当前版本
-  const currentVersion = getUserVersion();
+  const currentVersion = getUserVersion(db);
 
   if (currentVersion === SCHEMA_VERSION) {
     logger.debug('[Database] Schema 已是最新版本，跳过初始化');
@@ -29,7 +29,7 @@ export function initializeSchema(): void {
     createTables(db);
     createIndexes(db);
     initializeDefaultConfig(db);
-    setUserVersion(SCHEMA_VERSION);
+    setUserVersion(db, SCHEMA_VERSION);
     logger.info('[Database] Schema 初始化完成');
   } else {
     // 版本升级：创建新表（IF NOT EXISTS 确保不会重复创建）
@@ -51,7 +51,7 @@ export function initializeSchema(): void {
       migrateToV9(db);
     }
 
-    setUserVersion(SCHEMA_VERSION);
+    setUserVersion(db, SCHEMA_VERSION);
     logger.info('[Database] Schema 升级完成');
   }
 }
@@ -285,8 +285,7 @@ function createIndexes(db: ReturnType<typeof getDatabase>): void {
 /**
  * 获取用户版本
  */
-function getUserVersion(): number {
-  const db = getDatabase();
+function getUserVersion(db: any): number {
   const result = db.prepare('PRAGMA user_version').get() as { user_version: number };
   return result.user_version;
 }
@@ -294,8 +293,7 @@ function getUserVersion(): number {
 /**
  * 设置用户版本
  */
-function setUserVersion(version: number): void {
-  const db = getDatabase();
+function setUserVersion(db: any, version: number): void {
   db.exec(`PRAGMA user_version = ${version}`);
 }
 
@@ -383,12 +381,13 @@ function migrateToV9(db: ReturnType<typeof getDatabase>): void {
 /**
  * 获取数据库统计信息
  */
-export function getDatabaseStats(): {
+export async function getDatabaseStats(): Promise<{
   items: number;
   chatHistories: number;
   messages: number;
-} {
-  const db = getDatabase();
+}> {
+  const { getDatabaseAsync } = await import('./connection');
+  const db = await getDatabaseAsync();
 
   const items = safeCount(db, 'items', 'deletedAt IS NULL');
   const chatHistories = safeCount(db, 'chatHistories', 'deletedAt IS NULL');
@@ -400,8 +399,9 @@ export function getDatabaseStats(): {
 /**
  * 清空所有数据（保留表结构）
  */
-export function clearAllData(): void {
-  const db = getDatabase();
+export async function clearAllData(): Promise<void> {
+  const { getDatabaseAsync } = await import('./connection');
+  const db = await getDatabaseAsync();
 
   db.exec('DELETE FROM messages');
   db.exec('DELETE FROM chatHistories');

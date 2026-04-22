@@ -3,7 +3,7 @@
  * 使用 camelCase 字段名，与数据库 Schema 保持一致
  */
 
-import { getDatabase } from '../connection';
+import { getDatabaseAsync } from '../connection';
 import { BaseRepository } from './base.repository';
 import type { ConfigRow, DatabaseResult } from '../types';
 import { logger } from '@/lib/utils/logger';
@@ -14,8 +14,8 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
   /**
    * 获取配置值
    */
-  get<T = unknown>(key: string, defaultValue?: T): T | undefined {
-    const db = getDatabase();
+  async get<T = unknown>(key: string, defaultValue?: T): Promise<T | undefined> {
+    const db = await getDatabaseAsync();
     const row = db.prepare('SELECT value FROM config WHERE key = ?').get(key) as ConfigRow | undefined;
 
     if (!row) return defaultValue;
@@ -30,8 +30,8 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
   /**
    * 设置配置值
    */
-  set<T>(key: string, value: T): DatabaseResult {
-    const db = getDatabase();
+  async set<T>(key: string, value: T): Promise<DatabaseResult> {
+    const db = await getDatabaseAsync();
 
     try {
       const serializedValue = typeof value === 'string' ? value : JSON.stringify(value);
@@ -60,8 +60,8 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
   /**
    * 删除配置
    */
-  delete(key: string): DatabaseResult {
-    const db = getDatabase();
+  async delete(key: string): Promise<DatabaseResult> {
+    const db = await getDatabaseAsync();
 
     try {
       db.prepare('DELETE FROM config WHERE key = ?').run(key);
@@ -77,8 +77,8 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
   /**
    * 检查配置是否存在
    */
-  has(key: string): boolean {
-    const db = getDatabase();
+  async has(key: string): Promise<boolean> {
+    const db = await getDatabaseAsync();
     const result = db.prepare('SELECT 1 FROM config WHERE key = ?').get(key);
     return !!result;
   }
@@ -86,8 +86,8 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
   /**
    * 获取所有配置
    */
-  getAll(): Record<string, unknown> {
-    const db = getDatabase();
+  async getAll(): Promise<Record<string, unknown>> {
+    const db = await getDatabaseAsync();
     const rows = db.prepare('SELECT key, value FROM config').all() as ConfigRow[];
 
     const config: Record<string, unknown> = {};
@@ -105,11 +105,11 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
   /**
    * 批量设置配置
    */
-  setMany(config: Record<string, unknown>): DatabaseResult<number> {
+  async setMany(config: Record<string, unknown>): Promise<DatabaseResult<number>> {
     let count = 0;
 
     for (const [key, value] of Object.entries(config)) {
-      const result = this.set(key, value);
+      const result = await this.set(key, value);
       if (result.success) {
         count++;
       }
@@ -121,7 +121,7 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
   /**
    * 获取配置数量
    */
-  getConfigCount(): number {
+  async getConfigCount(): Promise<number> {
     return this.count();
   }
 }
