@@ -196,7 +196,7 @@ jobs:
         platform: [windows, mac, linux]
         include:
           - platform: windows
-            build_cmd: electron:build:win
+            build_cmd: electron:build
           - platform: mac
             build_cmd: electron:build:mac
           - platform: linux
