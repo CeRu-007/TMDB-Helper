@@ -123,7 +123,8 @@
     "vaul": "^1.1.2",
     "xlsx": "^0.18.5",
     "zod": "^3.24.1",
-    "zustand": "^5.0.11"
+    "zustand": "^5.0.11",
+    "better-sqlite3": "^12.9.0"
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",
@@ -132,7 +133,6 @@
     "@types/react-dom": "^18",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.1",
-    "better-sqlite3": "^12.9.0",
     "cross-env": "^7.0.3",
     "electron": "33.4.11",
     "electron-builder": "^25.1.8",
@@ -161,6 +161,7 @@
       "node_modules/react-dom/**/*",
       "node_modules/@next/**/*",
       "node_modules/styled-jsx/**/*",
+      "node_modules/better-sqlite3/**/*",
       "public/tmdb-helper-logo.png",
       "public/images/tmdb-helper-logo-new.png",
       "public/placeholder*.png",
@@ -172,7 +173,8 @@
       ".next/**/*",
       "node_modules/next/**/*",
       "node_modules/react/**/*",
-      "node_modules/react-dom/**/*"
+      "node_modules/react-dom/**/*",
+      "node_modules/better-sqlite3/**/*.node"
     ],
     "extraResources": [],
     "win": {
@@ -231,6 +233,7 @@
     "compression": "maximum",
     "removePackageScripts": true,
     "nodeGypRebuild": false,
+    "npmRebuild": true,
     "buildDependenciesFromSource": false,
     "asar": {
       "smartUnpack": true

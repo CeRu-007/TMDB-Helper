@@ -58,8 +58,9 @@ function initDatabase() {
     }
     
     // 使用 better-sqlite3 初始化数据库（Electron 33 使用 Node.js 20，不支持 node:sqlite）
+    console.log('[Electron] 尝试加载 better-sqlite3...');
     const Database = require('better-sqlite3');
-    console.log('[Electron] 使用 better-sqlite3');
+    console.log('[Electron] better-sqlite3 加载成功');
     const db = new Database(dbPath);
     db.exec('PRAGMA journal_mode = WAL');
     db.exec('PRAGMA foreign_keys = ON');
@@ -167,6 +168,15 @@ function initDatabase() {
     console.log('[Electron] 数据库初始化完成');
   } catch (error) {
     console.error('[Electron] 数据库初始化失败:', error);
+    console.error('[Electron] 错误详情:', error instanceof Error ? error.stack : String(error));
+    // 在 Electron 中显示错误对话框
+    try {
+      const { dialog } = require('electron');
+      dialog.showErrorBox('数据库初始化失败', 
+        `无法初始化数据库，请检查 better-sqlite3 是否正确安装。\n\n错误信息: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (e) {
+      // 如果 dialog 还没准备好，只记录日志
+    }
   }
 }
 

@@ -38,6 +38,7 @@ function loadDatabaseModule(): void {
     return;
   } catch (e) {
     // better-sqlite3 不可用，尝试 node:sqlite
+    logger.warn('[Database] better-sqlite3 加载失败:', e instanceof Error ? e.message : String(e));
   }
 
   // Web 环境尝试 node:sqlite
@@ -51,10 +52,15 @@ function loadDatabaseModule(): void {
       return;
     } catch (e) {
       // node:sqlite 也不可用
+      logger.warn('[Database] node:sqlite 加载失败:', e instanceof Error ? e.message : String(e));
     }
   }
 
-  loadError = new Error('无法加载 SQLite 模块，请安装 better-sqlite3: pnpm add -D better-sqlite3');
+  const errorMsg = isElectron
+    ? 'Electron 环境无法加载 better-sqlite3，请检查是否正确打包'
+    : '无法加载 SQLite 模块，请安装 better-sqlite3: pnpm add -D better-sqlite3';
+  loadError = new Error(errorMsg);
+  logger.error('[Database]', errorMsg);
   moduleLoaded = true;
 }
 
