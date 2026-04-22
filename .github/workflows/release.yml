@@ -168,6 +168,7 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          load: true
           tags: |
             ${{ env.DOCKER_IMAGE }}:${{ needs.prepare.outputs.tag }}
             ${{ env.DOCKER_IMAGE }}:latest
