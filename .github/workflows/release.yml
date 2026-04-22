@@ -162,18 +162,23 @@ jobs:
             type=semver,pattern={{version}}
             type=raw,value=latest
 
-      - name: Build and push
+      - name: Build and load
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
-          push: true
+          push: false
           load: true
           tags: |
             ${{ env.DOCKER_IMAGE }}:${{ needs.prepare.outputs.tag }}
             ${{ env.DOCKER_IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Push to Docker Hub
+        run: |
+          docker push ${{ env.DOCKER_IMAGE }}:${{ needs.prepare.outputs.tag }}
+          docker push ${{ env.DOCKER_IMAGE }}:latest
 
       - name: Export Docker image to tar
         run: |
