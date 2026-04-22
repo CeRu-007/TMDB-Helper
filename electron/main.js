@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain, Tray } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -171,6 +171,8 @@ function initDatabase() {
 }
 
 let mainWindow;
+let tray = null;
+let isQuitting = false;
 
 // 创建主窗口
 function createWindow() {
@@ -380,9 +382,26 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // 窗口关闭事件
+  // 窗口关闭事件 - 修改为最小化到托盘
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();  // 阻止默认关闭行为
+      mainWindow.hide();       // 隐藏窗口到托盘
+
+      // Windows 系统下可以显示托盘提示
+      if (process.platform === 'win32' && tray) {
+        tray.displayBalloon({
+          iconType: 'info',
+          title: 'TMDB Helper',
+          content: '应用已最小化到系统托盘，点击托盘图标可重新打开'
+        });
+      }
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
+    // 注意：这里不销毁 tray，因为应用还在运行
   });
   
   // 添加定期垃圾回收（仅生产环境）
@@ -665,6 +684,57 @@ function createMenu() {
   Menu.setApplicationMenu(menu);
 }
 
+// 创建系统托盘
+function createTray() {
+  // 使用应用图标作为托盘图标
+  const iconPath = path.join(__dirname, '../public/images/tmdb-helper-logo-new.png');
+
+  // 创建托盘实例
+  tray = new Tray(iconPath);
+
+  // 设置托盘提示文字
+  tray.setToolTip('TMDB Helper');
+
+  // 创建托盘右键菜单
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '显示主窗口',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        } else {
+          createWindow();
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '退出',
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setContextMenu(contextMenu);
+
+  // 点击托盘图标显示/隐藏窗口
+  tray.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide();
+      } else {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    } else {
+      createWindow();
+    }
+  });
+}
+
 // 应用事件处理
 app.whenReady().then(async () => {
   try {
@@ -699,8 +769,11 @@ app.whenReady().then(async () => {
     createWindow();
 
     // 始终创建菜单（包含开发菜单）
-    
+
     createMenu();
+
+    // 创建系统托盘
+    createTray();
 
   } catch (error) {
 
@@ -710,9 +783,12 @@ app.whenReady().then(async () => {
   }
 });
 
-// 所有窗口关闭时退出应用（除了 macOS）
+// 所有窗口关闭时不再自动退出应用（最小化到托盘）
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  // 不再自动退出，让应用在后台运行
+  // 用户需要通过托盘菜单退出
+  if (process.platform === 'darwin') {
+    // macOS 特殊处理
     app.quit();
   }
 });
@@ -726,6 +802,12 @@ app.on('activate', () => {
 
 // 应用退出前清理
 app.on('before-quit', () => {
+  isQuitting = true;
+  // 销毁托盘图标
+  if (tray) {
+    tray.destroy();
+    tray = null;
+  }
   // Next.js 服务器在同一进程中，会随应用一起退出
 });
 
@@ -759,7 +841,8 @@ ipcMain.on('window-unmaximize', () => {
 
 ipcMain.on('window-close', () => {
   if (mainWindow) {
-    mainWindow.close();
+    // 使用 hide() 代替 close()，让窗口最小化到托盘
+    mainWindow.hide();
   }
 });
 
@@ -768,4 +851,25 @@ ipcMain.handle('window-is-maximized', () => {
     return mainWindow.isMaximized();
   }
   return false;
+});
+
+// 托盘相关 IPC 接口
+ipcMain.handle('get-tray-status', () => {
+  return {
+    hasTray: !!tray,
+    isWindowVisible: mainWindow ? mainWindow.isVisible() : false
+  };
+});
+
+ipcMain.on('show-window', () => {
+  if (mainWindow) {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
+
+ipcMain.on('hide-window', () => {
+  if (mainWindow) {
+    mainWindow.hide();
+  }
 });
