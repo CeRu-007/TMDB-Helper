@@ -63,51 +63,7 @@ interface OCRResponse {
   };
 }
 
-// ============ 模型轮换器 ============
 
-/**
- * 模型轮换器 - 轮换使用多个模型避免触发速率限制
- */
-class ModelRotator {
-  private models: string[] = []
-  private currentIndex = 0
-
-  constructor(models: string[]) {
-    this.models = models
-    this.currentIndex = 0
-  }
-
-  /**
-   * 获取下一个模型
-   */
-  getNext(): string {
-    if (this.models.length === 0) {
-      throw new Error('没有可用的模型')
-    }
-
-    const model = this.models[this.currentIndex]
-    this.currentIndex = (this.currentIndex + 1) % this.models.length
-    return model
-  }
-
-  /**
-   * 更新模型列表
-   */
-  updateModels(models: string[]): void {
-    this.models = models
-    this.currentIndex = 0
-  }
-
-  /**
-   * 获取可用模型数量
-   */
-  getCount(): number {
-    return this.models.length
-  }
-}
-
-// 全局模型轮换器
-let globalModelRotator: ModelRotator | null = null
 
 export interface OCRRequest {
   /** 图像数据 (base64 或 URL) */
@@ -172,7 +128,6 @@ export class SubtitleOCR {
 
   /**
    * 识别单帧图像中的字幕
-   * 使用模型轮换机制避免触发速率限制
    */
   async recognize(request: OCRRequest): Promise<OCRResult> {
     const modelServiceData = await this.getModelConfig()
@@ -181,20 +136,9 @@ export class SubtitleOCR {
       throw new Error('OCR模型未配置，请在模型服务-使用场景中配置字幕OCR模型')
     }
 
-    const { apiBaseUrl, apiKey, primaryModelId, backupModels } = this.extractModelInfo(modelServiceData)
+    const { apiBaseUrl, apiKey, primaryModelId } = this.extractModelInfo(modelServiceData)
 
-    // 初始化或更新模型轮换器
-    const allModels = [primaryModelId, ...(backupModels || [])]
-    logger.debug('SubtitleOCR', '模型轮换器初始化', { models: allModels })
-
-    if (!globalModelRotator || globalModelRotator.getCount() !== allModels.length) {
-      globalModelRotator = new ModelRotator(allModels)
-      logger.debug('SubtitleOCR', '创建新的模型轮换器')
-    }
-
-    // 轮换使用模型
-    const currentModelId = globalModelRotator.getNext()
-    logger.debug('SubtitleOCR', `使用模型: ${currentModelId}`)
+    logger.debug('SubtitleOCR', `使用模型: ${primaryModelId}`)
 
     // 构建提示词
     const prompt = this.buildOCRPrompt(request.region)
@@ -203,7 +147,7 @@ export class SubtitleOCR {
     const messages = this.buildMessages(request.image, prompt)
 
     // 调用模型API（不重试，失败即抛出）
-    const response = await this.callModelAPI(apiBaseUrl, apiKey, currentModelId, messages)
+    const response = await this.callModelAPI(apiBaseUrl, apiKey, primaryModelId, messages)
 
     // 解析结果
     const result = this.parseOCRResult(response)
@@ -227,22 +171,12 @@ export class SubtitleOCR {
       throw new Error('OCR模型未配置，请在模型服务-使用场景中配置字幕OCR模型')
     }
 
-    const { apiBaseUrl, apiKey, primaryModelId, backupModels } = this.extractModelInfo(modelServiceData)
+    const { apiBaseUrl, apiKey, primaryModelId } = this.extractModelInfo(modelServiceData)
 
-    // 初始化或更新模型轮换器
-    const allModels = [primaryModelId, ...(backupModels || [])]
     logger.debug('SubtitleOCR', '批量识别', {
       frameCount: request.timestamps.length,
-      modelCount: allModels.length
+      modelId: primaryModelId
     })
-
-    if (!globalModelRotator || globalModelRotator.getCount() !== allModels.length) {
-      globalModelRotator = new ModelRotator(allModels)
-    }
-
-    // 轮换使用模型
-    const currentModelId = globalModelRotator.getNext()
-    logger.debug('SubtitleOCR', `批量识别使用模型: ${currentModelId}`)
 
     // 构建批量识别的提示词
     const prompt = this.buildBatchOCRPrompt(request.timestamps.length)
@@ -251,7 +185,7 @@ export class SubtitleOCR {
     const messages = this.buildMessages(request.image, prompt)
 
     // 调用模型API
-    const response = await this.callModelAPI(apiBaseUrl, apiKey, currentModelId, messages)
+    const response = await this.callModelAPI(apiBaseUrl, apiKey, primaryModelId, messages)
 
     // 解析结果
     const allText = response.choices?.[0]?.message?.content || ''
@@ -336,7 +270,7 @@ export class SubtitleOCR {
   }
 
   /**
-   * 提取模型信息（包含备用模型）
+   * 提取模型信息
    */
   private extractModelInfo(data: ModelServiceData) {
     const primaryModelId = data.scenario.primaryModelId
@@ -352,21 +286,14 @@ export class SubtitleOCR {
       throw new Error('OCR模型提供商未配置API密钥')
     }
 
-    // 获取所有可用的备用模型（从场景配置的模型中，排除主模型）
-    const backupModels = data.models
-      .filter((m) => m.id !== primaryModelId)
-      .map((m) => m.modelId || m.id)
-
-    logger.debug('SubtitleOCR', '可用模型列表', {
-      primary: primaryModel.modelId || primaryModel.id,
-      backup: backupModels
+    logger.debug('SubtitleOCR', '使用模型', {
+      primary: primaryModel.modelId || primaryModel.id
     });
 
     return {
       apiBaseUrl: provider.apiBaseUrl,
       apiKey: provider.apiKey,
-      primaryModelId: primaryModel.modelId || primaryModel.id,
-      backupModels
+      primaryModelId: primaryModel.modelId || primaryModel.id
     }
   }
 

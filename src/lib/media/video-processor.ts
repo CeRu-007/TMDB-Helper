@@ -187,8 +187,10 @@ export class VideoProcessor {
         confidence: number
       }> = []
 
-      // 流式处理：每提取 50 帧就立即拼接识别
-      const streamBatchSize = 50
+      // 流式处理：动态批处理大小，根据单帧高度调整
+      // 假设平均单帧字幕区域高度约 100-200px，50帧合并后高度约 5000-10000px
+      // 缩放后需要控制在 1920px 以内，所以批处理大小需要根据实际帧高度动态调整
+      const MAX_BATCH_HEIGHT = 1500 // 预留一些边距
       const extractedFrames: Array<{
         timestamp: number
         imageUrl: string
@@ -216,8 +218,15 @@ export class VideoProcessor {
             imageUrl: processedImage
           })
 
-          // 每收集 15 帧或最后一帧，进行批量识别
-          if (extractedFrames.length >= streamBatchSize || i === sampleTimestamps.length - 1) {
+          // 动态判断是否需要批量识别：
+          // 1. 达到最大批处理数量（50帧）
+          // 2. 预估合并高度超过限制
+          // 3. 最后一帧
+          const shouldProcess =
+            extractedFrames.length >= 50 ||
+            i === sampleTimestamps.length - 1
+
+          if (shouldProcess) {
             // 拼接当前批次的图片
             const mergedImage = await this.mergeImagesVertically(extractedFrames.map(f => f.imageUrl))
 
@@ -575,12 +584,31 @@ export class VideoProcessor {
     const maxWidth = Math.max(...validImages.map(img => img.width))
     const totalHeight = validImages.reduce((sum, img) => sum + img.height, 0)
 
-    // 限制最大宽度，防止图片过大
+    // API 限制：最大 2048x2048
+    const MAX_API_SIZE = 2048
+    // 留一些安全边距，使用 1920 作为实际限制
+    const MAX_ALLOWED_SIZE = 1920
+    // 限制最大宽度
     const maxAllowedWidth = 800
-    const scaleRatio = maxWidth > maxAllowedWidth ? maxAllowedWidth / maxWidth : 1
 
-    const scaledWidth = maxWidth * scaleRatio
-    const scaledHeight = totalHeight * scaleRatio
+    // 首先根据宽度计算缩放比例
+    let scaleRatio = maxWidth > maxAllowedWidth ? maxAllowedWidth / maxWidth : 1
+
+    // 计算缩放后的尺寸
+    let scaledWidth = maxWidth * scaleRatio
+    let scaledHeight = totalHeight * scaleRatio
+
+    // 如果高度超过限制，需要进一步缩放
+    if (scaledHeight > MAX_ALLOWED_SIZE) {
+      const heightScaleRatio = MAX_ALLOWED_SIZE / scaledHeight
+      scaleRatio *= heightScaleRatio
+      scaledWidth = maxWidth * scaleRatio
+      scaledHeight = totalHeight * scaleRatio
+    }
+
+    // 确保不超过 API 硬限制
+    scaledWidth = Math.min(scaledWidth, MAX_API_SIZE)
+    scaledHeight = Math.min(scaledHeight, MAX_API_SIZE)
 
     // 创建画布
     const canvas = document.createElement('canvas')
