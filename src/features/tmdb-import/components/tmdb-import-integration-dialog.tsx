@@ -42,7 +42,8 @@ import {
   Maximize2,
   Activity as ActivityIcon,
   Square,
-  CircleDashed
+  CircleDashed,
+  Eraser
 } from "lucide-react"
 import path from "path"
 import { logger } from '@/lib/utils/logger'
@@ -52,7 +53,7 @@ import { useTranslation } from "react-i18next"
 import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
 import { TMDBItem } from "@/lib/data/storage"
 import { LanguageSelector } from "@/shared/components/ui/language-selector"
-import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
+import { parseCsvContent, serializeCsvData, CSVData, cleanCsvNewlines } from "@/lib/data/csv-processor-client"
 import { saveCSV, handleSaveError } from "@/lib/data/csv-save-helper"
 import { validateCsvData, fixCsvData } from "@/lib/data/csv-validator"
 import FixTMDBImportBugDialog from "./fix-tmdb-import-bug-dialog"
@@ -1006,6 +1007,33 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     }
   }
 
+  // 清理CSV中的换行符
+  const handleCleanNewlines = useCallback(() => {
+    if (!csvContent) return;
+
+    try {
+      const cleanedContent = cleanCsvNewlines(csvContent);
+      setCsvContent(cleanedContent);
+
+      // 同时更新csvData
+      const newData = parseCsvContent(cleanedContent);
+      setCsvData(newData);
+
+      appendTerminalOutput('已清理CSV中的换行符', 'success');
+      toast({
+        title: '清理完成',
+        description: 'overview字段中的换行符已替换为空格',
+      });
+    } catch (error) {
+      appendTerminalOutput(`清理换行符失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error');
+      toast({
+        title: '清理失败',
+        description: error instanceof Error ? error.message : '未知错误',
+        variant: 'destructive',
+      });
+    }
+  }, [csvContent, appendTerminalOutput, toast]);
+
   // 键盘快捷键处理
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // 保存快捷键: Ctrl+S
@@ -1864,6 +1892,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   )}
                   {t('tmdbIntegration.save')}
                 </Button>
+
               </div>
             </div>
 
@@ -1878,6 +1907,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                         className="h-full w-full"
                         height="100%"
                         isSaving={isSaving}
+                        onCleanNewlines={handleCleanNewlines}
                       />
               ) : editorMode === "text" ? (
                 <div className="h-full flex flex-col csv-text-editor-container">

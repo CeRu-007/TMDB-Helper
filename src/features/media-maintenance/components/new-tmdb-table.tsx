@@ -9,7 +9,7 @@ import { Toggle } from "@/shared/components/ui/toggle"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/shared/components/ui/tooltip"
 import { Separator } from "@/shared/components/ui/separator"
 import { TableHelpTooltip } from "../../../shared/components/ui/table-help-tooltip"
-import { Trash2, Save } from "lucide-react"
+import { Trash2, Save, Eraser } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { CSVData } from "@/types/csv-editor"
 import type { TMDBTableProps } from "@/features/media-maintenance/components/tmdb-table/tmdb-table"
@@ -19,6 +19,7 @@ export interface NewTMDBTableProps extends TMDBTableProps {
   onCancel?: () => void
   height?: string
   isSaving?: boolean
+  onCleanNewlines?: () => void
 }
 
 /**
@@ -159,6 +160,19 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
             >
               <Save className="h-3.5 w-3.5 mr-1" />
               {t('save')}
+            </Button>
+          )}
+
+          {props.onCleanNewlines && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={props.onCleanNewlines}
+              className="h-7 px-2 text-xs"
+              title="清理overview字段中的换行符"
+            >
+              <Eraser className="h-3.5 w-3.5 mr-1" />
+              {'清理换行符'}
             </Button>
           )}
 

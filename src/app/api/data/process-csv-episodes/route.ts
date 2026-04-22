@@ -200,7 +200,6 @@ export async function POST(request: NextRequest) {
       }
 
       // 过滤数据行，删除已标记的集数
-      const headerLine = lines[0];
       const dataLines = lines.slice(1).filter((line) => line.trim() !== '');
       const filteredLines = [];
       const titleMatchedLines = [];

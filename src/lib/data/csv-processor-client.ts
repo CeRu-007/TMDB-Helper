@@ -132,6 +132,7 @@ function parseCsvLine(line: string): string[] {
   // 添加最后一个字段
   result.push(current);
 
+  // 返回时保留引号状态信息，通过最后一个元素是否以"开头来判断
   return result;
 }
 
@@ -242,3 +243,178 @@ export function getCsvStatistics(data: CSVData) {
     averageRowLength: totalRows > 0 ? totalColumns : 0,
   };
 }
+
+/**
+ * 检查是否为新数据行的开始（以数字开头）
+ * @param line CSV行
+ * @returns 是否为新行开始
+ */
+function isNewRowStart(line: string): boolean {
+  return /^\d+\s*,/.test(line.trim());
+}
+
+/**
+ * 从文本中提取URL
+ * @param text 文本
+ * @returns URL或空字符串
+ */
+function extractBackdropUrl(text: string): string {
+  const urlMatch = text.match(/(https?:\/\/[^\s,]+)/);
+  return urlMatch ? urlMatch[1] : '';
+}
+
+/**
+ * 清理CSV内容中的换行符（专门用于overview字段）
+ * 处理抓取时产生的格式错误：overview中的换行符导致行断裂
+ * 将overview字段中的 \r\n、\n、\r 替换为空格
+ * @param csvContent 原始CSV内容
+ * @returns 清理后的CSV内容
+ */
+export function cleanCsvNewlines(csvContent: string): string {
+  if (!csvContent || csvContent.trim() === '') {
+    return csvContent;
+  }
+
+  // 移除BOM头
+  if (csvContent.charCodeAt(0) === 0xFEFF) {
+    csvContent = csvContent.slice(1);
+  }
+
+  const rawLines = csvContent.split(/\r?\n/);
+  if (rawLines.length < 2) {
+    return csvContent;
+  }
+
+  // 解析头部
+  const headers = rawLines[0].split(',').map(h => h.trim().toLowerCase());
+  const expectedCount = headers.length;
+
+  if (headers.indexOf('overview') === -1) {
+    // 没有overview列，直接返回原内容
+    return csvContent;
+  }
+
+  // 收集所有属于同一集的行
+  const episodes: string[][] = [];
+  let currentEpisodeLines: string[] = [];
+
+  for (let i = 1; i < rawLines.length; i++) {
+    const line = rawLines[i];
+    if (!line.trim()) continue;
+
+    if (isNewRowStart(line)) {
+      // 保存之前的集
+      if (currentEpisodeLines.length > 0) {
+        episodes.push(currentEpisodeLines);
+      }
+      // 开始新集
+      currentEpisodeLines = [line];
+    } else {
+      // 这是当前集的续行
+      currentEpisodeLines.push(line);
+    }
+  }
+
+  // 保存最后一集
+  if (currentEpisodeLines.length > 0) {
+    episodes.push(currentEpisodeLines);
+  }
+
+  // 处理每一集
+  const cleanedRows: string[][] = [];
+
+  for (const episodeLines of episodes) {
+    // 解析第一行获取基本信息
+    const firstLine = episodeLines[0];
+
+    // 找到前5个逗号的位置
+    const commaIndices: number[] = [];
+    let searchStart = 0;
+    for (let j = 0; j < 5; j++) {
+      const idx = firstLine.indexOf(',', searchStart);
+      if (idx === -1) break;
+      commaIndices.push(idx);
+      searchStart = idx + 1;
+    }
+
+    if (commaIndices.length < 5) {
+      // 格式不正确，跳过
+      continue;
+    }
+
+    const episodeNumber = firstLine.substring(0, commaIndices[0]).trim();
+    const name = firstLine.substring(commaIndices[0] + 1, commaIndices[1]).trim();
+    const airDate = firstLine.substring(commaIndices[1] + 1, commaIndices[2]).trim();
+    const runtime = firstLine.substring(commaIndices[2] + 1, commaIndices[3]).trim();
+
+    // 第一行的overview部分（第4个逗号后到第5个逗号前）
+    let overview = firstLine.substring(commaIndices[3] + 1, commaIndices[4]).trim();
+
+    // backdrop从第5个逗号后开始
+    let backdrop = firstLine.substring(commaIndices[4] + 1).trim();
+
+    // 处理续行
+    for (let j = 1; j < episodeLines.length; j++) {
+      let line = episodeLines[j].trim();
+
+      // 移除首尾的引号
+      line = line.replace(/^"|"$/g, '');
+
+      // 移除末尾的逗号组（如 ,,,,,）
+      line = line.replace(/,+$/, '');
+
+      // 检查这一行是否包含URL
+      const urlInLine = extractBackdropUrl(line);
+      if (urlInLine) {
+        // 移除URL
+        const textPart = line.replace(urlInLine, '').replace(/,+$/, '').trim();
+
+        // 文本部分添加到overview
+        if (textPart) {
+          overview += ' ' + textPart;
+        }
+
+        // URL作为backdrop（如果还没有）
+        if (!backdrop) {
+          backdrop = urlInLine;
+        }
+      } else {
+        // 没有URL，全部添加到overview
+        overview += ' ' + line;
+      }
+    }
+
+    // 清理overview
+    overview = overview
+      .replace(/\r\n/g, ' ')
+      .replace(/\n/g, ' ')
+      .replace(/\r/g, ' ')
+      .replace(/,+$/, '')
+      .trim();
+
+    // 清理backdrop
+    backdrop = backdrop.replace(/^"|"$/g, '').trim();
+
+    cleanedRows.push([episodeNumber, name, airDate, runtime, overview, backdrop]);
+  }
+
+  // 重新组装CSV内容
+  return [
+    rawLines[0], // 保留原始头部
+    ...cleanedRows.map(row => row.map(v => escapeCsvValue(v)).join(','))
+  ].join('\n');
+}
+
+/**
+ * 转义CSV值（与 csv-cleaner.ts 中的 escapeCSVValue 一致）
+ * @param value 字段值
+ * @returns 转义后的值
+ */
+function escapeCsvValue(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+

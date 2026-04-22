@@ -33,11 +33,12 @@ import {
   Square,
   Trash2,
   Copy,
-  Activity as ActivityIcon
+  Activity as ActivityIcon,
+  Eraser
 } from "lucide-react"
 
 import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
-import { parseCsvContent, serializeCsvData, CSVData } from "@/lib/data/csv-processor-client"
+import { parseCsvContent, serializeCsvData, CSVData, cleanCsvNewlines } from "@/lib/data/csv-processor-client"
 import { saveCSV } from "@/lib/data/csv-save-helper"
 import { LanguageSelector } from "@/shared/components/ui/language-selector"
 
@@ -489,6 +490,41 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
     })
   }, [csvData, csvContent, editorMode, getTmdbImportPath, appendTerminalOutput, toast])
 
+  // 清理CSV中的换行符
+  const handleCleanNewlines = useCallback(() => {
+    if (!csvContent) {
+      toast({
+        title: "清理失败",
+        description: "没有CSV内容可清理",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const cleanedContent = cleanCsvNewlines(csvContent)
+      setCsvContent(cleanedContent)
+
+      // 同时更新csvData
+      const newData = parseCsvContent(cleanedContent)
+      setCsvData(newData)
+
+      appendTerminalOutput("已清理CSV中的换行符", "success")
+      toast({
+        title: "清理完成",
+        description: "overview字段中的换行符已替换为空格"
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "未知错误"
+      appendTerminalOutput(`清理换行符失败: ${errorMessage}`, "error")
+      toast({
+        title: "清理失败",
+        description: errorMessage,
+        variant: "destructive"
+      })
+    }
+  }, [csvContent, appendTerminalOutput, toast])
+
   return (
     <div className="h-full independent-maintenance">
       <div className="h-full flex flex-row">
@@ -552,6 +588,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                           onChange={setCsvData}
                           className="h-full w-full"
                           height="100%"
+                          onCleanNewlines={handleCleanNewlines}
                         />
                       </div>
                     ) : (
@@ -903,6 +940,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                   <Save className="h-4 w-4 mr-2" />
                   {t("independentPage.saveCsv")}
                 </Button>
+
               </div>
 
               {/* 编辑器状态 */}
