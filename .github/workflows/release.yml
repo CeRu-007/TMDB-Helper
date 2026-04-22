@@ -95,7 +95,11 @@ jobs:
             NOTES+="- Docker 镜像: 下载 \`.tar\` 文件后使用 \`docker load < tmdb-helper-${{ steps.version.outputs.version }}.tar\` 导入\n"
             NOTES+="- Windows 安装包: 下载 \`.exe\` 文件直接安装\n"
           fi
-          echo "notes=$NOTES" >> $GITHUB_OUTPUT
+          {
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Configure git
         if: steps.version.outputs.trigger == 'manual'
