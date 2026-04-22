@@ -48,9 +48,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 // 在页面加载完成后注入桌面应用标识
 window.addEventListener('DOMContentLoaded', () => {
-  // 添加桌面应用的 CSS 类
-  document.body.classList.add('electron-app');
-  
   // 设置全局变量
   window.isElectronApp = true;
 });
