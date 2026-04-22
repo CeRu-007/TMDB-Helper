@@ -81,6 +81,9 @@ const nextConfig = {
     } : false,
     emotion: true,
   },
+  
+  // 禁用 source map 以减少 404 错误
+  productionBrowserSourceMaps: false,
 }
 
 export default nextConfig

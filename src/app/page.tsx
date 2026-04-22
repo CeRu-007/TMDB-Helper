@@ -161,7 +161,7 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
   }
 
   return (
-    <div className="grid grid-cols-6 gap-6 overflow-y-auto max-h-[calc(100vh-350px)]">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 overflow-y-auto max-h-[calc(100vh-350px)]">
       {filteredItems.map((item) => {
         const isUpcomingItem = new Date(item.releaseDate) > new Date()
         const badgeColor = isUpcomingItem ? "bg-blue-500" : "bg-green-500"
@@ -205,7 +205,7 @@ interface MediaCardListProps {
 
 const MediaCardList = function MediaCardList({ items, onItemClick, showAirTime }: MediaCardListProps) {
   return (
-    <div className="grid grid-cols-6 gap-x-6 gap-y-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 md:gap-x-6 gap-y-4">
       {items.map((item) => (
         <div key={item.id} className="transform scale-[0.98] origin-top-left">
           <MediaCard item={item} itemId={item.id} onItemClick={onItemClick} showAirTime={showAirTime} />
