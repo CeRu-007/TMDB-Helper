@@ -28,9 +28,35 @@ interface SearchResult extends TMDBResult {
   matchScore: number
 }
 
-// TMDB API配置
-const TMDB_API_BASE = 'https://api.tmdb.org/3'
+const PRIMARY_API_BASE = 'https://api.themoviedb.org/3'
+const FALLBACK_API_BASE = 'https://api.tmdb.org/3'
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
+
+async function fetchWithFallback(urlPath: string, apiKey: string, options?: RequestInit): Promise<Response> {
+  const fullUrlPath = `${urlPath}${urlPath.includes('?') ? '&' : '?'}api_key=${apiKey}`;
+  const primaryUrl = `${PRIMARY_API_BASE}${fullUrlPath}`;
+  
+  try {
+    return await fetch(primaryUrl, {
+      ...options,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'TMDB-Helper/1.0',
+        ...options?.headers,
+      }
+    });
+  } catch {
+    const fallbackUrl = `${FALLBACK_API_BASE}${fullUrlPath}`;
+    return fetch(fallbackUrl, {
+      ...options,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'TMDB-Helper/1.0',
+        ...options?.headers,
+      }
+    });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -175,14 +201,16 @@ function extractSearchWords(description: string): string[] {
 
 // 搜索TMDB
 async function searchTMDB(type: 'movie' | 'tv', query: string, apiKey: string) {
-  const url = `${TMDB_API_BASE}/search/${type}?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=zh-CN`
-  
-  const response = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-      'User-Agent': 'TMDB-Helper/1.0'
+  const response = await fetchWithFallback(
+    `/search/${type}?query=${encodeURIComponent(query)}&language=zh-CN`,
+    apiKey,
+    {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'TMDB-Helper/1.0'
+      }
     }
-  })
+  )
 
   if (!response.ok) {
     throw new Error(`TMDB API error: ${response.status}`)

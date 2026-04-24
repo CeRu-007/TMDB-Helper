@@ -64,22 +64,25 @@ export function SidebarLayout({
   const items = useMediaStore((s) => s.items)
 
   // 从 MediaNews Store 获取状态
-  // 注意：这里需要类型转换，MediaNewsItem 是即将上线/近期开播页面使用的类型
-  const upcomingItems = useMediaNewsStore((s) => s.upcomingItems) as unknown as { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]
-  const recentItems = useMediaNewsStore((s) => s.recentItems) as unknown as { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]
+  const selectedRegion = useMediaNewsStore((s) => s.selectedRegion)
+  const mediaNewsType = useMediaNewsStore((s) => s.mediaNewsType)
+  const isMissingApiKey = useMediaNewsStore((s) => s.isMissingApiKey)
   const loadingUpcoming = useMediaNewsStore((s) => s.loadingUpcoming)
   const loadingRecent = useMediaNewsStore((s) => s.loadingRecent)
   const upcomingError = useMediaNewsStore((s) => s.upcomingError)
   const recentError = useMediaNewsStore((s) => s.recentError)
-  const upcomingLastUpdated = useMediaNewsStore((s) => s.upcomingLastUpdated)
-  const recentLastUpdated = useMediaNewsStore((s) => s.recentLastUpdated)
-  const selectedRegion = useMediaNewsStore((s) => s.selectedRegion)
-  const mediaNewsType = useMediaNewsStore((s) => s.mediaNewsType)
-  const isMissingApiKey = useMediaNewsStore((s) => s.isMissingApiKey)
   const upcomingItemsByRegion = useMediaNewsStore((s) => s.upcomingItemsByRegion) as unknown as Record<string, { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]>
   const recentItemsByRegion = useMediaNewsStore((s) => s.recentItemsByRegion) as unknown as Record<string, { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]>
+  const upcomingLastUpdatedByRegion = useMediaNewsStore((s) => s.upcomingLastUpdated)
+  const recentLastUpdatedByRegion = useMediaNewsStore((s) => s.recentLastUpdated)
   const setSelectedRegion = useMediaNewsStore((s) => s.setSelectedRegion)
   const setMediaNewsType = useMediaNewsStore((s) => s.setMediaNewsType)
+
+  // 计算当前区域的数据
+  const upcomingItems = upcomingItemsByRegion[selectedRegion] || []
+  const recentItems = recentItemsByRegion[selectedRegion] || []
+  const upcomingLastUpdated = upcomingLastUpdatedByRegion[selectedRegion] || null
+  const recentLastUpdated = recentLastUpdatedByRegion[selectedRegion] || null
 
   // 处理区域选择 - 设置区域并加载数据
   const handleRegionSelect = useCallback((region: string) => {

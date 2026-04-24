@@ -43,37 +43,42 @@ export interface FeedItem {
   region: string
 }
 
-const BASE_URL = 'https://api.tmdb.org/3'
+const PRIMARY_BASE_URL = 'https://api.themoviedb.org/3'
+const FALLBACK_BASE_URL = 'https://api.tmdb.org/3'
 
-const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 30000): Promise<Response> => {
-  const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), timeout)
-  try {
-    const res = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-      cache: "no-store",
-    })
-    return res
-  } finally {
-    clearTimeout(id)
-  }
-}
-
-const fetchTMDB = async (endpoint: string, params: Record<string, string>, apiKey: string): Promise<Response> => {
+async function fetchTMDB(endpoint: string, params: Record<string, string>, apiKey: string): Promise<Response> {
   const queryParams = new URLSearchParams({ api_key: apiKey, ...params }).toString()
-  const url = `${BASE_URL}${endpoint}?${queryParams}`
-  const res = await fetchWithTimeout(url, {
-    headers: {
-      "Content-Type": "application/json",
-      "User-Agent": "TMDB-Helper/1.0",
-      Accept: "application/json",
-    },
-  })
-  if (!res.ok) {
-    throw new Error(`API请求失败: ${res.status} ${res.statusText}`)
+  const primaryUrl = `${PRIMARY_BASE_URL}${endpoint}?${queryParams}`
+  
+  try {
+    const res = await fetch(primaryUrl, {
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "TMDB-Helper/1.0",
+        Accept: "application/json",
+      },
+    })
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => 'Unknown error')
+      throw new Error(`API请求失败: ${res.status} ${res.statusText} - ${errorText}`)
+    }
+    return res
+  } catch (primaryError) {
+    // 主域名失败，尝试备用域名
+    const fallbackUrl = `${FALLBACK_BASE_URL}${endpoint}?${queryParams}`
+    const res = await fetch(fallbackUrl, {
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "TMDB-Helper/1.0",
+        Accept: "application/json",
+      },
+    })
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => 'Unknown error')
+      throw new Error(`API请求失败: ${res.status} ${res.statusText} - ${errorText}`)
+    }
+    return res
   }
-  return res
 }
 
 function getDateRange(kind: FeedKind): { from: string; to: string } {
@@ -129,11 +134,9 @@ export async function fetchTmdbFeed(
   const regionStr = String(region)
   const langStr = String(language)
 
-  // 检查是否需要中文内容
   const needsChineseContent = region === "CN" || region === "HK" || region === "TW"
   const chineseFilter = needsChineseContent ? { with_original_language: "zh" } : {}
 
-  // 构建电影和电视节目的请求参数
   const baseParams = {
     language: langStr,
     "release_date.gte": from,
@@ -155,66 +158,62 @@ export async function fetchTmdbFeed(
     "first_air_date.lte": to,
   }
 
-  try {
-    // 串行请求以避免并发问题
-    const [moviesResponse, tvShowsResponse] = await Promise.all([
-      fetchTMDB("/discover/movie", movieParams, apiKey),
-      fetchTMDB("/discover/tv", tvParams, apiKey),
-    ])
+  const moviesResponse = await fetchTMDB("/discover/movie", movieParams, apiKey)
+  await new Promise(resolve => setTimeout(resolve, 100))
+  const tvShowsResponse = await fetchTMDB("/discover/tv", tvParams, apiKey)
 
-    const [moviesData, tvShowsData] = await Promise.all([
-      moviesResponse.json(),
-      tvShowsResponse.json(),
-    ])
+  const moviesData = await moviesResponse.json()
+  const tvShowsData = await tvShowsResponse.json()
 
-    // 转换电影数据
-    const movies: FeedItem[] = (moviesData.results as MovieLike[]).map((m) => ({
-      id: m.id,
-      title: m.title,
-      posterPath: m.poster_path,
-      releaseDate: m.release_date,
-      mediaType: "movie" as const,
-      overview: m.overview,
-      voteAverage: m.vote_average,
-      popularity: m.popularity,
-      originalLanguage: m.original_language,
-      genreIds: m.genre_ids,
-      region: regionStr,
-    }))
+  if (!moviesData || !Array.isArray(moviesData.results)) {
+    throw new Error(`电影API返回无效数据`)
+  }
+  if (!tvShowsData || !Array.isArray(tvShowsData.results)) {
+    throw new Error(`电视节目API返回无效数据`)
+  }
 
-    // 转换电视节目数据
-    const tvShows: FeedItem[] = (tvShowsData.results as TVLike[]).map((t) => ({
-      id: t.id,
-      title: t.name,
-      posterPath: t.poster_path,
-      releaseDate: t.first_air_date,
-      mediaType: "tv" as const,
-      overview: t.overview,
-      voteAverage: t.vote_average,
-      popularity: t.popularity,
-      originalLanguage: t.original_language,
-      genreIds: t.genre_ids,
-      region: regionStr,
-    }))
+  const movies: FeedItem[] = (moviesData.results as MovieLike[]).map((m) => ({
+    id: m.id,
+    title: m.title,
+    posterPath: m.poster_path,
+    releaseDate: m.release_date,
+    mediaType: "movie" as const,
+    overview: m.overview,
+    voteAverage: m.vote_average,
+    popularity: m.popularity,
+    originalLanguage: m.original_language,
+    genreIds: m.genre_ids,
+    region: regionStr,
+  }))
 
-    // 合并、过滤和排序
-    const combined = [...movies, ...tvShows]
-      .filter((item) => shouldKeep(kind, item.releaseDate))
-      .sort((a, b) => {
-        const timeA = new Date(a.releaseDate).getTime()
-        const timeB = new Date(b.releaseDate).getTime()
-        return kind === "upcoming" ? timeA - timeB : timeB - timeA
-      })
+  const tvShows: FeedItem[] = (tvShowsData.results as TVLike[]).map((t) => ({
+    id: t.id,
+    title: t.name,
+    posterPath: t.poster_path,
+    releaseDate: t.first_air_date,
+    mediaType: "tv" as const,
+    overview: t.overview,
+    voteAverage: t.vote_average,
+    popularity: t.popularity,
+    originalLanguage: t.original_language,
+    genreIds: t.genre_ids,
+    region: regionStr,
+  }))
 
-    return {
-      success: true,
-      results: combined,
-      region: regionStr,
-      language: langStr,
-      type: kind,
-      timestamp: new Date().toISOString(),
-    }
-  } catch (error: { message?: string }) {
-    throw new Error(`TMDB API请求失败: ${error.message}`)
+  const combined = [...movies, ...tvShows]
+    .filter((item) => shouldKeep(kind, item.releaseDate))
+    .sort((a, b) => {
+      const timeA = new Date(a.releaseDate).getTime()
+      const timeB = new Date(b.releaseDate).getTime()
+      return kind === "upcoming" ? timeA - timeB : timeB - timeA
+    })
+
+  return {
+    success: true,
+    results: combined,
+    region: regionStr,
+    language: langStr,
+    type: kind,
+    timestamp: new Date().toISOString(),
   }
 }

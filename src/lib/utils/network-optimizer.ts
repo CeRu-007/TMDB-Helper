@@ -468,14 +468,15 @@ export class NetworkOptimizer {
 export class TMDBNetworkOptimizer {
   private optimizer: NetworkOptimizer;
   private apiKey: string;
-  private baseURL = 'https://api.tmdb.org/3';
+  private primaryBaseURL = 'https://api.themoviedb.org/3';
+  private fallbackBaseURL = 'https://api.tmdb.org/3';
 
   constructor() {
     this.optimizer = NetworkOptimizer.getInstance();
     this.apiKey = process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK;
   }
 
-  private buildUrl(endpoint: string, params: Record<string, any> = {}): string {
+  private buildUrl(endpoint: string, params: Record<string, any> = {}, useFallback = false): string {
     const allParams = { api_key: this.apiKey, ...params };
     const searchParams = new URLSearchParams();
 
@@ -485,7 +486,26 @@ export class TMDBNetworkOptimizer {
       }
     }
 
-    return `${this.baseURL}${endpoint}?${searchParams.toString()}`;
+    const baseURL = useFallback ? this.fallbackBaseURL : this.primaryBaseURL;
+    return `${baseURL}${endpoint}?${searchParams.toString()}`;
+  }
+
+  private async requestWithFallback(endpoint: string, params: Record<string, any> = {}, requestConfig: Omit<RequestConfig, 'url'> = {}): Promise<any> {
+    const primaryUrl = this.buildUrl(endpoint, params, false);
+    
+    try {
+      return await this.optimizer.request({
+        url: primaryUrl,
+        ...requestConfig
+      });
+    } catch {
+      // 主域名失败，尝试备用域名
+      const fallbackUrl = this.buildUrl(endpoint, params, true);
+      return this.optimizer.request({
+        url: fallbackUrl,
+        ...requestConfig
+      });
+    }
   }
 
   /**
@@ -499,7 +519,7 @@ export class TMDBNetworkOptimizer {
     year?: number;
     primaryReleaseYear?: number;
   } = {}): Promise<any> {
-    const url = this.buildUrl('/search/movie', {
+    return this.requestWithFallback('/search/movie', {
       query,
       language: options.language || 'zh-CN',
       page: options.page || 1,
@@ -507,10 +527,7 @@ export class TMDBNetworkOptimizer {
       region: options.region,
       year: options.year,
       primary_release_year: options.primaryReleaseYear
-    });
-
-    return this.optimizer.request({
-      url,
+    }, {
       method: 'GET',
       cache: true,
       cacheTTL: 10 * 60 * 1000, // 10分钟缓存
@@ -527,16 +544,13 @@ export class TMDBNetworkOptimizer {
     includeAdult?: boolean;
     firstAirDateYear?: number;
   } = {}): Promise<any> {
-    const url = this.buildUrl('/search/tv', {
+    return this.requestWithFallback('/search/tv', {
       query,
       language: options.language || 'zh-CN',
       page: options.page || 1,
       include_adult: options.includeAdult || false,
       first_air_date_year: options.firstAirDateYear
-    });
-
-    return this.optimizer.request({
-      url,
+    }, {
       method: 'GET',
       cache: true,
       cacheTTL: 10 * 60 * 1000,
@@ -551,13 +565,10 @@ export class TMDBNetworkOptimizer {
     language?: string;
     appendToResponse?: string[];
   } = {}): Promise<any> {
-    const url = this.buildUrl(`/movie/${movieId}`, {
+    return this.requestWithFallback(`/movie/${movieId}`, {
       language: options.language || 'zh-CN',
       append_to_response: options.appendToResponse?.join(',')
-    });
-
-    return this.optimizer.request({
-      url,
+    }, {
       method: 'GET',
       cache: true,
       cacheTTL: 30 * 60 * 1000, // 30分钟缓存
@@ -572,13 +583,10 @@ export class TMDBNetworkOptimizer {
     language?: string;
     appendToResponse?: string[];
   } = {}): Promise<any> {
-    const url = this.buildUrl(`/tv/${tvId}`, {
+    return this.requestWithFallback(`/tv/${tvId}`, {
       language: options.language || 'zh-CN',
       append_to_response: options.appendToResponse?.join(',')
-    });
-
-    return this.optimizer.request({
-      url,
+    }, {
       method: 'GET',
       cache: true,
       cacheTTL: 30 * 60 * 1000,

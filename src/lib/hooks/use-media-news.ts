@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { logger } from "@/lib/utils/logger"
 import { handleError, retryOperation } from "@/lib/utils/error-handler"
-import { perf } from "@/lib/utils/performance-manager"
-import { REGIONS } from "@/lib/constants/regions"
 import { useMediaNewsStore } from "@/stores/media-news-store"
 
 export interface MediaNewsItem {
@@ -33,106 +31,32 @@ export interface UseMediaNewsReturn {
   fetchUpcomingItems: (region?: string, silent?: boolean) => Promise<void>
   fetchRecentItems: (region?: string, silent?: boolean) => Promise<void>
   refreshData: () => Promise<void>
+  isTransitioning: boolean
 }
 
 export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn {
-  const [upcomingItems, setUpcomingItems] = useState<MediaNewsItem[]>([])
-  const [recentItems, setRecentItems] = useState<MediaNewsItem[]>([])
-  const [upcomingItemsByRegion, setUpcomingItemsByRegion] = useState<Record<string, MediaNewsItem[]>>({})
-  const [recentItemsByRegion, setRecentItemsByRegion] = useState<Record<string, MediaNewsItem[]>>({})
+  // 切换区域时的过渡状态
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
-  const [loadingUpcoming, setLoadingUpcoming] = useState(false)
-  const [loadingRecent, setLoadingRecent] = useState(false)
-  const [upcomingError, setUpcomingError] = useState<string | null>(null)
-  const [recentError, setRecentError] = useState<string | null>(null)
-  const [upcomingLastUpdated, setUpcomingLastUpdated] = useState<string | null>(null)
-  const [recentLastUpdated, setRecentLastUpdated] = useState<string | null>(null)
-  const [isMissingApiKey, setIsMissingApiKey] = useState(false)
+  // 从 Zustand store 获取所有状态
+  const store = useMediaNewsStore()
 
-  // 获取 Zustand store 的 setter 函数
-  const storeSetUpcomingItems = useMediaNewsStore((s) => s.setUpcomingItems)
-  const storeSetRecentItems = useMediaNewsStore((s) => s.setRecentItems)
-  const storeSetLoadingUpcoming = useMediaNewsStore((s) => s.setLoadingUpcoming)
-  const storeSetLoadingRecent = useMediaNewsStore((s) => s.setLoadingRecent)
-  const storeSetUpcomingError = useMediaNewsStore((s) => s.setUpcomingError)
-  const storeSetRecentError = useMediaNewsStore((s) => s.setRecentError)
-  const storeSetUpcomingLastUpdated = useMediaNewsStore((s) => s.setUpcomingLastUpdated)
-  const storeSetRecentLastUpdated = useMediaNewsStore((s) => s.setRecentLastUpdated)
-  const storeSetIsMissingApiKey = useMediaNewsStore((s) => s.setIsMissingApiKey)
+  // 使用 useMemo 计算当前区域的数据，避免不必要的重渲染
+  const upcomingItems = useMemo(() => {
+    return store.upcomingItemsByRegion[selectedRegion] || []
+  }, [store.upcomingItemsByRegion, selectedRegion])
 
-  // Cache keys for better maintainability
-  const cacheKeys = useMemo(() => ({
-    getItemsKey: (type: "upcoming" | "recent", regionId: string) => `${type}Items_${regionId}`,
-    getTimestampKey: (type: "upcoming" | "recent") => `${type}LastUpdated`
-  }), [])
+  const recentItems = useMemo(() => {
+    return store.recentItemsByRegion[selectedRegion] || []
+  }, [store.recentItemsByRegion, selectedRegion])
 
-  // Cache loading helper
-  const loadCacheForType = useCallback((type: "upcoming" | "recent"): Record<string, MediaNewsItem[]> => {
-    const itemsByRegion: Record<string, MediaNewsItem[]> = {}
+  const upcomingLastUpdated = useMemo(() => {
+    return store.upcomingLastUpdated[selectedRegion] || null
+  }, [store.upcomingLastUpdated, selectedRegion])
 
-    REGIONS.forEach(region => {
-      const cached = localStorage.getItem(cacheKeys.getItemsKey(type, region.id))
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached)
-          if (Array.isArray(parsed)) {
-            itemsByRegion[region.id] = parsed
-          }
-        } catch (error) {
-          logger.warn(`[useMediaNews] 解析${type}缓存数据失败: ${region.id}`, error)
-          localStorage.removeItem(cacheKeys.getItemsKey(type, region.id))
-        }
-      }
-    })
-
-    return itemsByRegion
-  }, [cacheKeys])
-
-  // 加载缓存数据
-  const loadCachedData = useCallback(() => {
-    if (typeof window === "undefined") return
-
-    try {
-      const upcomingCache = loadCacheForType("upcoming")
-      const recentCache = loadCacheForType("recent")
-
-      if (Object.keys(upcomingCache).length > 0) {
-        setUpcomingItemsByRegion(upcomingCache)
-        // 同步更新 store 中的所有区域数据
-        Object.entries(upcomingCache).forEach(([region, items]) => {
-          storeSetUpcomingItems(items, region)
-        })
-        if (upcomingCache[selectedRegion]) {
-          setUpcomingItems(upcomingCache[selectedRegion])
-        }
-      }
-
-      if (Object.keys(recentCache).length > 0) {
-        setRecentItemsByRegion(recentCache)
-        // 同步更新 store 中的所有区域数据
-        Object.entries(recentCache).forEach(([region, items]) => {
-          storeSetRecentItems(items, region)
-        })
-        if (recentCache[selectedRegion]) {
-          setRecentItems(recentCache[selectedRegion])
-        }
-      }
-
-      // 加载更新时间
-      const cachedUpcomingLastUpdated = localStorage.getItem(cacheKeys.getTimestampKey("upcoming"))
-      const cachedRecentLastUpdated = localStorage.getItem(cacheKeys.getTimestampKey("recent"))
-      if (cachedUpcomingLastUpdated) {
-        setUpcomingLastUpdated(cachedUpcomingLastUpdated)
-        storeSetUpcomingLastUpdated(cachedUpcomingLastUpdated)
-      }
-      if (cachedRecentLastUpdated) {
-        setRecentLastUpdated(cachedRecentLastUpdated)
-        storeSetRecentLastUpdated(cachedRecentLastUpdated)
-      }
-    } catch (error) {
-      logger.error("[useMediaNews] 加载缓存数据失败", error)
-    }
-  }, [selectedRegion, loadCacheForType, storeSetUpcomingItems, storeSetRecentItems, storeSetUpcomingLastUpdated, storeSetRecentLastUpdated])
+  const recentLastUpdated = useMemo(() => {
+    return store.recentLastUpdated[selectedRegion] || null
+  }, [store.recentLastUpdated, selectedRegion])
 
   // 通用的数据获取函数
   const fetchItems = useCallback(
@@ -141,31 +65,16 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
       region: string = selectedRegion,
       silent: boolean = false
     ): Promise<void> => {
-      const timingLabel = `fetch${type === "upcoming" ? "Upcoming" : "Recent"}_${region}`
-      perf.startTiming(timingLabel)
-
-      const setLoading = type === "upcoming" ? setLoadingUpcoming : setLoadingRecent
-      const setError = type === "upcoming" ? setUpcomingError : setRecentError
-      const setLastUpdated = type === "upcoming" ? setUpcomingLastUpdated : setRecentLastUpdated
-      const itemsByRegion = type === "upcoming" ? upcomingItemsByRegion : recentItemsByRegion
-      const setItemsByRegion = type === "upcoming" ? setUpcomingItemsByRegion : setRecentItemsByRegion
-      const setItems = type === "upcoming" ? setUpcomingItems : setRecentItems
-
-      // Store setter 函数
-      const storeSetLoading = type === "upcoming" ? storeSetLoadingUpcoming : storeSetLoadingRecent
-      const storeSetError = type === "upcoming" ? storeSetUpcomingError : storeSetRecentError
-      const storeSetLastUpdated = type === "upcoming" ? storeSetUpcomingLastUpdated : storeSetRecentLastUpdated
-      const storeSetItems = type === "upcoming" ? storeSetUpcomingItems : storeSetRecentItems
+      const setLoading = type === "upcoming" ? store.setLoadingUpcoming : store.setLoadingRecent
+      const setError = type === "upcoming" ? store.setUpcomingError : store.setRecentError
+      const setItems = type === "upcoming" ? store.setUpcomingItems : store.setRecentItems
 
       if (!silent) {
         setLoading(true)
-        storeSetLoading(true)
       }
       setError(null)
-      storeSetError(null)
       if (type === "upcoming") {
-        setIsMissingApiKey(false)
-        storeSetIsMissingApiKey(false)
+        store.setIsMissingApiKey(false)
       }
 
       try {
@@ -185,44 +94,46 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
 
         if (!response.ok) {
           const errorText = await response.text()
-          if (response.status === 400 && errorText.includes("API密钥未配置")) {
-            setIsMissingApiKey(true)
-            storeSetIsMissingApiKey(true)
+          let errorMessage = errorText
+          try {
+            const errorJson = JSON.parse(errorText)
+            errorMessage = errorJson.error || errorText
+          } catch {
+            // 不是JSON格式，使用原始文本
+          }
+
+          if (response.status === 400 && errorMessage.includes("API密钥未配置")) {
+            store.setIsMissingApiKey(true)
             throw new Error("TMDB API密钥未配置")
           }
           if (response.status === 401) {
-            setIsMissingApiKey(true)
-            storeSetIsMissingApiKey(true)
-            throw new Error("用户身份验证失败，请刷新页面重试")
+            store.setIsMissingApiKey(true)
+            throw new Error("API密钥无效或已过期，请在设置中配置有效的TMDB API密钥")
           }
-          throw new Error(`获取${type === "upcoming" ? "即将上线" : "近期开播"}内容失败 (${response.status})`)
+          if (response.status === 429) {
+            throw new Error("请求过于频繁，请稍后再试")
+          }
+          throw new Error(`${errorMessage} (${response.status})`)
         }
 
         const data = await response.json()
         if (data.success) {
-          // 更新区域数据
-          const newItemsByRegion = { ...itemsByRegion }
-          newItemsByRegion[region] = data.results
-          setItemsByRegion(newItemsByRegion)
-
-          // 如果是当前选中区域，更新主数据
-          if (region === selectedRegion) {
-            setItems(data.results)
-          }
+          // 更新store中的数据
+          setItems(data.results, region)
 
           const timestamp = new Date().toLocaleString("zh-CN")
-          setLastUpdated(timestamp)
+          if (type === "upcoming") {
+            store.setUpcomingLastUpdated(timestamp, region)
+          } else {
+            store.setRecentLastUpdated(timestamp, region)
+          }
 
-          // 同时更新 Zustand store
-          storeSetItems(data.results, region)
-          storeSetLastUpdated(timestamp)
-
-          // 缓存数据
+          // 缓存到localStorage
           try {
-            localStorage.setItem(cacheKeys.getItemsKey(type, region), JSON.stringify(data.results))
-            localStorage.setItem(cacheKeys.getTimestampKey(type), timestamp)
+            localStorage.setItem(`${type}Items_${region}`, JSON.stringify(data.results))
+            localStorage.setItem(`${type}LastUpdated_${region}`, timestamp)
           } catch (error) {
-            logger.warn(`[useMediaNews] 缓存${type === "upcoming" ? "即将上线" : "近期开播"}数据失败`, error)
+            logger.warn(`[useMediaNews] 缓存${type}数据失败`, error)
           }
         } else {
           throw new Error(data.error || `获取${type === "upcoming" ? "即将上线" : "近期开播"}内容失败`)
@@ -230,126 +141,138 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
       } catch (error) {
         const appError = handleError(error, { region, silent })
 
-        // 对于TMDB API连接错误，不设置错误状态，避免在界面上显示错误
         if (!appError.message.includes("TMDB API连接失败") && !appError.message.includes("网络连接异常")) {
           setError(appError.userMessage)
-          storeSetError(appError.userMessage)
         }
 
         if (appError.type === "API" && appError.code === "401") {
-          setIsMissingApiKey(true)
-          storeSetIsMissingApiKey(true)
+          store.setIsMissingApiKey(true)
         }
 
-        // 静默记录日志，不显示用户错误
         logger.debug(`[useMediaNews] 获取${type === "upcoming" ? "即将上线" : "近期开播"}内容失败`, appError)
       } finally {
         if (!silent) {
           setLoading(false)
-          storeSetLoading(false)
         }
-        perf.endTiming(timingLabel)
       }
     },
-    [
-      selectedRegion,
-      upcomingItemsByRegion,
-      recentItemsByRegion,
-      cacheKeys,
-      storeSetLoadingUpcoming,
-      storeSetLoadingRecent,
-      storeSetUpcomingError,
-      storeSetRecentError,
-      storeSetUpcomingLastUpdated,
-      storeSetRecentLastUpdated,
-      storeSetUpcomingItems,
-      storeSetRecentItems,
-      storeSetIsMissingApiKey
-    ]
+    [selectedRegion, store]
   )
 
-  // 获取即将上线内容
+  // 加载缓存数据
+  const loadCachedData = useCallback(() => {
+    if (typeof window === "undefined") return
+
+    try {
+      // 加载所有区域的缓存数据
+      const regions = ["CN", "HK", "TW", "JP", "KR", "US", "GB"]
+
+      regions.forEach((region) => {
+        const upcomingCached = localStorage.getItem(`upcomingItems_${region}`)
+        const recentCached = localStorage.getItem(`recentItems_${region}`)
+        const upcomingTimeCached = localStorage.getItem(`upcomingLastUpdated_${region}`)
+        const recentTimeCached = localStorage.getItem(`recentLastUpdated_${region}`)
+
+        if (upcomingCached) {
+          try {
+            const parsed = JSON.parse(upcomingCached)
+            if (Array.isArray(parsed)) {
+              store.setUpcomingItems(parsed, region)
+            }
+          } catch {
+            localStorage.removeItem(`upcomingItems_${region}`)
+          }
+        }
+
+        if (recentCached) {
+          try {
+            const parsed = JSON.parse(recentCached)
+            if (Array.isArray(parsed)) {
+              store.setRecentItems(parsed, region)
+            }
+          } catch {
+            localStorage.removeItem(`recentItems_${region}`)
+          }
+        }
+
+        if (upcomingTimeCached) {
+          store.setUpcomingLastUpdated(upcomingTimeCached, region)
+        }
+        if (recentTimeCached) {
+          store.setRecentLastUpdated(recentTimeCached, region)
+        }
+      })
+    } catch (error) {
+      logger.error("[useMediaNews] 加载缓存数据失败", error)
+    }
+  }, [store])
+
+  // 获取指定区域的数据
   const fetchUpcomingItems = useCallback(
-    async (region: string = selectedRegion, silent: boolean = false) => {
-      await fetchItems("upcoming", region, silent)
+    async (region?: string, silent?: boolean) => {
+      await fetchItems("upcoming", region || selectedRegion, silent)
     },
-    [fetchItems]
+    [fetchItems, selectedRegion]
   )
 
-  // 获取近期开播内容
   const fetchRecentItems = useCallback(
-    async (region: string = selectedRegion, silent: boolean = false) => {
-      await fetchItems("recent", region, silent)
+    async (region?: string, silent?: boolean) => {
+      await fetchItems("recent", region || selectedRegion, silent)
     },
-    [fetchItems]
+    [fetchItems, selectedRegion]
   )
 
-  // 刷新所有数据
-  const refreshData = useCallback(async (): Promise<void> => {
+  const refreshData = useCallback(async () => {
     logger.info("[useMediaNews] 刷新所有媒体资讯数据")
     await Promise.all([
       fetchItems("upcoming", selectedRegion, false),
       fetchItems("recent", selectedRegion, false),
     ])
-  }, [selectedRegion, fetchItems])
+  }, [fetchItems, selectedRegion])
 
   // 初始化加载
   useEffect(() => {
     loadCachedData()
 
-    // 延迟获取最新数据，避免阻塞UI
-    const timeoutId = perf.setTimeout(() => {
+    // 延迟获取最新数据
+    const timeoutId = setTimeout(() => {
       fetchItems("upcoming", selectedRegion, true)
       fetchItems("recent", selectedRegion, true)
     }, 100)
 
-    // 定期刷新数据 (1小时)
-    const intervalId = perf.setInterval(
-      () => {
-        fetchItems("upcoming", selectedRegion, true)
-        fetchItems("recent", selectedRegion, true)
-      },
-      60 * 60 * 1000,
-      "mediaNewsRefresh"
-    )
+    return () => clearTimeout(timeoutId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // 只在挂载时运行
 
-    return () => {
-      perf.cleanup(timeoutId)
-      perf.cleanup(intervalId)
-    }
-  }, [loadCachedData, selectedRegion])
-
-  // 当选中区域变化时更新数据
+  // 当选中区域变化时，加载该区域的数据（如果还没有）
   useEffect(() => {
-    // 更新即将上线内容
-    if (upcomingItemsByRegion[selectedRegion]) {
-      setUpcomingItems(upcomingItemsByRegion[selectedRegion])
-    } else {
+    const upcomingForRegion = store.upcomingItemsByRegion[selectedRegion]
+    const recentForRegion = store.recentItemsByRegion[selectedRegion]
+
+    // 如果该区域没有数据，加载它
+    if (!upcomingForRegion || upcomingForRegion.length === 0) {
       fetchItems("upcoming", selectedRegion, false)
     }
-
-    // 更新近期开播内容
-    if (recentItemsByRegion[selectedRegion]) {
-      setRecentItems(recentItemsByRegion[selectedRegion])
-    } else {
+    if (!recentForRegion || recentForRegion.length === 0) {
       fetchItems("recent", selectedRegion, false)
     }
-  }, [selectedRegion, upcomingItemsByRegion, recentItemsByRegion, fetchItems])
+  }, [selectedRegion, fetchItems, store.upcomingItemsByRegion, store.recentItemsByRegion])
 
   return {
     upcomingItems,
     recentItems,
-    upcomingItemsByRegion,
-    recentItemsByRegion,
-    loadingUpcoming,
-    loadingRecent,
-    upcomingError,
-    recentError,
+    upcomingItemsByRegion: store.upcomingItemsByRegion,
+    recentItemsByRegion: store.recentItemsByRegion,
+    loadingUpcoming: store.loadingUpcoming,
+    loadingRecent: store.loadingRecent,
+    upcomingError: store.upcomingError,
+    recentError: store.recentError,
     upcomingLastUpdated,
     recentLastUpdated,
-    isMissingApiKey,
+    isMissingApiKey: store.isMissingApiKey,
     fetchUpcomingItems,
     fetchRecentItems,
-    refreshData
+    refreshData,
+    isTransitioning,
   }
 }

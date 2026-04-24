@@ -1,4 +1,4 @@
- import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants';
+import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants';
 
 interface TMDBTVResponse {
   id: number
@@ -94,8 +94,9 @@ export type BackdropSize = 'w300' | 'w780' | 'w1280' | 'original';
 export type LogoSize = 'w45' | 'w92' | 'w154' | 'w185' | 'w300' | 'w500' | 'original';
 
 export class TMDBService {
-  // 使用备用域名以解决某些网络环境的连接问题
-  private static readonly BASE_URL = "https://api.tmdb.org/3"
+  // 双域名配置：主域名和备用域名
+  private static readonly PRIMARY_BASE_URL = "https://api.themoviedb.org/3"
+  private static readonly FALLBACK_BASE_URL = "https://api.tmdb.org/3"
   // 直接使用TMDB的原始URL，不再使用代理
   private static readonly IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
   private static readonly BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
@@ -107,7 +108,32 @@ export class TMDBService {
     return process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK;
   }
 
-
+  private static async fetchWithFallback(urlPath: string, options?: RequestInit): Promise<Response> {
+    const apiKey = await this.getApiKey();
+    const fullUrlPath = `${urlPath}${urlPath.includes('?') ? '&' : '?'}api_key=${apiKey}`;
+    const primaryUrl = `${this.PRIMARY_BASE_URL}${fullUrlPath}`;
+    
+    try {
+      return await fetch(primaryUrl, {
+        ...options,
+        headers: {
+          'User-Agent': 'TMDB-Helper/1.0',
+          'Accept': 'application/json',
+          ...options?.headers,
+        }
+      });
+    } catch {
+      const fallbackUrl = `${this.FALLBACK_BASE_URL}${fullUrlPath}`;
+      return fetch(fallbackUrl, {
+        ...options,
+        headers: {
+          'User-Agent': 'TMDB-Helper/1.0',
+          'Accept': 'application/json',
+          ...options?.headers,
+        }
+      });
+    }
+  }
 
   /**
    * 获取 Logo 路径
@@ -118,10 +144,8 @@ export class TMDBService {
     id: string
   ): Promise<{ url: string | null; path: string | null }> {
     try {
-      const apiKey = await this.getApiKey();
       const endpoint = mediaType === 'movie' ? 'movie' : 'tv';
-
-      const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}/images?api_key=${apiKey}`);
+      const response = await this.fetchWithFallback(`/${endpoint}/${id}/images`);
 
       if (!response.ok) {
         throw new Error('获取TMDB图片数据失败');
@@ -158,15 +182,9 @@ export class TMDBService {
    */
   static async search(query: string, page: number = 1): Promise<any> {
     try {
-      const apiKey = await this.getApiKey()
-      const url = `${this.BASE_URL}/search/multi?api_key=${apiKey}&language=zh-CN&query=${encodeURIComponent(query)}&page=${page}&include_adult=true`
-
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'TMDB-Helper/1.0',
-          'Accept': 'application/json',
-        }
-      })
+      const response = await this.fetchWithFallback(
+        `/search/multi?language=zh-CN&query=${encodeURIComponent(query)}&page=${page}&include_adult=true`
+      );
 
       if (!response.ok) {
         throw new Error(`TMDB搜索请求失败: ${response.status} ${response.statusText}`)
@@ -174,7 +192,6 @@ export class TMDBService {
 
       return response.json()
     } catch (error) {
-      
       throw error
     }
   }
@@ -188,23 +205,17 @@ export class TMDBService {
         throw new Error("无效的TMDB URL")
       }
 
-      const apiKey = await this.getApiKey()
       const endpoint = "tv"
 
       // 创建AbortController用于超时控制
       const controller = new AbortController();
       const timeout = setTimeout(() => {
-        
         controller.abort();
       }, 30000); // 30秒超时
 
-      // 使用传统fetch方式（网络优化器可能还未完全集成）
-      const response = await fetch(`${this.BASE_URL}/${endpoint}/${id}?api_key=${apiKey}&language=zh-CN`, {
+      // 使用带备用域名的fetch
+      const response = await this.fetchWithFallback(`/${endpoint}/${id}?language=zh-CN`, {
         signal: controller.signal,
-        headers: {
-          'User-Agent': 'TMDB-Helper/1.0',
-          'Accept': 'application/json',
-        }
       });
 
       clearTimeout(timeout);
@@ -215,11 +226,10 @@ export class TMDBService {
         const { PerformanceOptimizer } = await import('../utils/performance-optimizer');
         PerformanceOptimizer.recordApiResponse(startTime, endTime);
       } catch (error) {
-
+        // 忽略性能记录错误
       }
 
       if (!response.ok) {
-        
         return null;
       }
 
@@ -231,11 +241,10 @@ export class TMDBService {
       let recommendedCategory: "anime" | "tv" | "kids" | "variety" | "short" | undefined = undefined
 
       // 获取标志，传入forceRefresh参数
-      const logoData = await this.getItemLogoFromId(mediaType, id, forceRefresh)
+      const logoData = await this.getItemLogoFromId(mediaType, id)
 
       // 只支持电视剧类型
       if (mediaType !== "tv") {
-        
         return null
       }
       
@@ -338,7 +347,6 @@ export class TMDBService {
         overview: tvData.overview === null ? undefined : tvData.overview
       }
     } catch (error) {
-      
       return null;
     }
   }
@@ -358,12 +366,9 @@ export class TMDBService {
 
       return { mediaType: null, id: null }
     } catch (error) {
-      
       return { mediaType: null, id: null }
     }
   }
-
-
 
   // 预加载背景图
   static preloadBackdrop(backdropPath: string | null | undefined, size: BackdropSize = 'w1280'): void {
@@ -428,9 +433,7 @@ export class TMDBService {
    */
   static async getNetworkLogo(networkId: number): Promise<string | null> {
     try {
-      const apiKey = await this.getApiKey();
-
-      const response = await fetch(`${this.BASE_URL}/network/${networkId}?api_key=${apiKey}`);
+      const response = await this.fetchWithFallback(`/network/${networkId}`);
 
       if (!response.ok) {
         throw new Error('获取TMDB网络数据失败');

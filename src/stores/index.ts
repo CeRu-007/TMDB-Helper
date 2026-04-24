@@ -16,8 +16,8 @@ export {
 // MediaNews Store
 export {
   useMediaNewsStore,
-  useUpcomingItems,
-  useRecentItems,
+  useUpcomingItemsForRegion,
+  useRecentItemsForRegion,
   useMediaNewsLoading,
   useMediaNewsErrors,
   useMediaNewsRegion,
