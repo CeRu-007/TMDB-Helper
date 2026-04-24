@@ -1,13 +1,9 @@
-/**
- * 开发环境和 Electron 环境初始化逻辑
- * 只在 Node.js runtime 中执行
- */
-
 import path from 'path';
 
 export async function initializeDev() {
   const isElectron = process.env.ELECTRON_BUILD === 'true';
-  const envName = isElectron ? 'Electron' : '开发';
+  const isDocker = process.env.DOCKER_CONTAINER === 'true';
+  const envName = isElectron ? 'Electron' : isDocker ? 'Docker' : '开发';
   console.log(`[Instrumentation] ${envName}环境初始化开始...`);
 
   try {
@@ -15,7 +11,6 @@ export async function initializeDev() {
     const dbPath = path.join(dataDir, 'tmdb-helper.db');
     console.log('[Instrumentation] 数据库路径:', dbPath);
 
-    // 先初始化数据库模块并建立连接
     const { getDatabaseAsync } = await import('./lib/database/connection');
     await getDatabaseAsync();
     console.log('[Instrumentation] 数据库连接已建立');

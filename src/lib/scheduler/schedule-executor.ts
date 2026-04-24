@@ -143,6 +143,11 @@ export async function executeScheduleTask(
   }
 }
 
+function getBaseUrl(): string {
+  const port = process.env.PORT || '3000';
+  return `http://localhost:${port}`;
+}
+
 async function executeExternalCommand(
   command: string,
   workingDirectory: string,
@@ -150,7 +155,7 @@ async function executeExternalCommand(
 ): Promise<{ success: boolean; output: string; error: string }> {
   try {
     logger.info(`[Schedule Execute] 调用execute-command API, workingDirectory=${workingDirectory}`)
-    const response = await fetch('http://localhost:3000/api/commands/execute-command', {
+    const response = await fetch(`${getBaseUrl()}/api/commands/execute-command`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ command, workingDirectory }),
@@ -203,7 +208,7 @@ async function executeInteractiveCommand(
       let errorMessage = ''
       let autoResponseSent = false
 
-      const response = await fetch('http://localhost:3000/api/commands/execute-command-interactive', {
+      const response = await fetch(`${getBaseUrl()}/api/commands/execute-command-interactive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command, workingDirectory }),
@@ -222,7 +227,7 @@ async function executeInteractiveCommand(
 
       const sendAutoResponse = async (pid: number, input: string) => {
         try {
-          await fetch('http://localhost:3000/api/commands/send-input', {
+          await fetch(`${getBaseUrl()}/api/commands/send-input`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ processId: pid, input, sendDirectly: true }),
@@ -296,7 +301,7 @@ async function getServerConfigValue(key: string): Promise<string | null> {
   }
 
   try {
-    const response = await fetch(`http://localhost:3000/api/system/config?key=${encodeURIComponent(key)}`)
+    const response = await fetch(`${getBaseUrl()}/api/system/config?key=${encodeURIComponent(key)}`)
     if (response.ok) {
       const data = await response.json()
       if (data.value) return data.value

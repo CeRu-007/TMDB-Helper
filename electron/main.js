@@ -207,7 +207,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       devTools: isDev, // 只在开发环境启用
       webSecurity: true, // 始终启用web安全
-      backgroundThrottling: true, // 启用后台节流以节省内存
+      backgroundThrottling: false, // 禁用后台节流，确保定时任务在后台正常运行
       spellcheck: false, // 禁用拼写检查
       enableWebSQL: false, // 禁用WebSQL
       experimentalFeatures: false, // 禁用实验性功能
@@ -795,12 +795,8 @@ app.whenReady().then(async () => {
 
 // 所有窗口关闭时不再自动退出应用（最小化到托盘）
 app.on('window-all-closed', () => {
-  // 不再自动退出，让应用在后台运行
+  // 所有平台都不自动退出，让应用在后台运行
   // 用户需要通过托盘菜单退出
-  if (process.platform === 'darwin') {
-    // macOS 特殊处理
-    app.quit();
-  }
 });
 
 // macOS 重新激活应用
@@ -883,3 +879,5 @@ ipcMain.on('hide-window', () => {
     mainWindow.hide();
   }
 });
+
+

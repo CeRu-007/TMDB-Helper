@@ -19,6 +19,16 @@ import { v4 as uuidv4 } from 'uuid';
 export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTaskRow> {
   protected tableName = 'schedule_tasks';
 
+  findById(id: string): ScheduleTask | undefined {
+    const db = getDatabase();
+    const row = db
+      .prepare('SELECT * FROM schedule_tasks WHERE id = ?')
+      .get(id) as ScheduleTaskRow | undefined;
+
+    if (!row) return undefined;
+    return scheduleTaskRowToScheduleTask(row);
+  }
+
   findByItemId(itemId: string): ScheduleTask | undefined {
     const db = getDatabase();
     const row = db
@@ -95,12 +105,10 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
     const db = getDatabase();
     const now = new Date().toISOString();
 
-    const existingRow = this.findById(input.id);
-    if (!existingRow) {
+    const existing = this.findById(input.id);
+    if (!existing) {
       return { success: false, error: '任务不存在' };
     }
-
-    const existing = scheduleTaskRowToScheduleTask(existingRow);
 
     const updated: ScheduleTask = {
       ...existing,
