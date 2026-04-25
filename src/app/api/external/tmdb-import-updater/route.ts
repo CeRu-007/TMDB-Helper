@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { ServerConfigManager } from '@/lib/data/server-config-manager'
 
 const execAsync = promisify(exec)
 
@@ -14,6 +15,7 @@ const DOWNLOAD_BASE = 'https://github.com'
 // 工具安装目录 - 安装到数据目录下
 const DATA_DIR = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data')
 const TMDB_IMPORT_DIR = path.join(DATA_DIR, 'TMDB-Import-master')
+const TOOLS_DIR = DATA_DIR
 
 interface GitHubCommit {
   sha: string
@@ -39,7 +41,9 @@ interface VersionInfo {
     commitSha: string
     commitDate: string
     commitMessage: string
+    htmlUrl?: string
   }
+  isInstalled: boolean
   needsUpdate: boolean
 }
 
@@ -111,13 +115,15 @@ async function checkVersion(): Promise<NextResponse> {
     // 获取本地版本信息
     const localInfo = await getLocalVersion()
     
-    // 判断是否需要更新
-    const needsUpdate = !localInfo.exists || 
-                       localInfo.commitSha !== remoteInfo.commitSha
+    // 判断是否已安装
+    const isInstalled = localInfo.exists
+    // 判断是否需要更新：已安装且版本不一致
+    const needsUpdate = isInstalled && localInfo.commitSha !== remoteInfo.commitSha
 
     const versionInfo: VersionInfo = {
       local: localInfo,
-      remote: remoteInfo,
+      remote: remoteInfo as VersionInfo['remote'],
+      isInstalled,
       needsUpdate
     }
 
@@ -137,35 +143,52 @@ async function checkVersion(): Promise<NextResponse> {
 
 /**
  * 获取安装状态
+ * 优先检测用户手动配置的路径
  */
 async function getStatus(): Promise<NextResponse> {
   try {
-    const exists = fs.existsSync(TMDB_IMPORT_DIR)
-    const hasMainModule = exists && fs.existsSync(path.join(TMDB_IMPORT_DIR, 'tmdb-import'))
-    const hasConfigFile = exists && fs.existsSync(path.join(TMDB_IMPORT_DIR, 'config.ini'))
-    
+    let checkPath = TMDB_IMPORT_DIR
+    let customPath: string | undefined
+
+    // 读取用户手动配置的路径
+    try {
+      const config = await ServerConfigManager.getConfig()
+      customPath = config.tmdbImportPath
+    } catch (error) {
+      // 读取配置失败，使用默认路径
+    }
+
+    // 如果用户配置了有效路径，优先使用
+    if (customPath && customPath.trim() && fs.existsSync(customPath)) {
+      checkPath = customPath
+    }
+
+    const exists = fs.existsSync(checkPath)
+    const hasMainModule = exists && fs.existsSync(path.join(checkPath, 'tmdb-import'))
+    const hasConfigFile = exists && fs.existsSync(path.join(checkPath, 'config.ini'))
+
     let fileCount = 0
     if (exists) {
       try {
-        const files = fs.readdirSync(TMDB_IMPORT_DIR, { recursive: true })
+        const files = fs.readdirSync(checkPath, { recursive: true })
         fileCount = files.length
       } catch (error) {
-        
+
       }
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        installed: exists,
+        installed: exists && (hasMainModule || hasConfigFile),
         hasMainModule,
         hasConfigFile,
-        installPath: TMDB_IMPORT_DIR,
+        installPath: checkPath,
         fileCount
       }
     })
   } catch (error) {
-    
+
     return NextResponse.json({
       success: false,
       error: '获取安装状态失败',
@@ -252,8 +275,8 @@ async function getLatestCommitFallback() {
 
     return {
       commitSha: shaMatch[1],
-      commitDate: new Date(dateMatch[1]).toISOString(),
-      commitMessage: messageMatch[1].trim(),
+      commitDate: new Date(dateMatch[1]!).toISOString(),
+      commitMessage: messageMatch[1]!.trim(),
       htmlUrl: `https://github.com/${GITHUB_REPO}/commit/${shaMatch[1]}`
     }
   } catch (error) {
@@ -268,31 +291,65 @@ async function getLatestCommitFallback() {
 }
 
 /**
- * 获取本地版本信息
+ * 检测指定路径是否为有效的 TMDB-Import 安装目录
+ * 采用灵活检测：不依赖固定目录名，而是检测关键特征文件
  */
-async function getLocalVersion() {
-  const versionFile = path.join(TMDB_IMPORT_DIR, '.version')
-  
-  if (!fs.existsSync(TMDB_IMPORT_DIR) || !fs.existsSync(versionFile)) {
-    return {
-      exists: false
+function detectTmdbImportAtDir(dirPath: string): { exists: boolean; commitSha?: string; commitDate?: string; commitMessage?: string } {
+  if (!fs.existsSync(dirPath)) {
+    return { exists: false }
+  }
+
+  // 检测关键特征文件：tmdb-import 主模块或 config.ini
+  const hasMainModule = fs.existsSync(path.join(dirPath, 'tmdb-import'))
+  const hasConfigFile = fs.existsSync(path.join(dirPath, 'config.ini'))
+
+  if (!hasMainModule && !hasConfigFile) {
+    return { exists: false }
+  }
+
+  // 尝试读取版本文件
+  const versionFile = path.join(dirPath, '.version')
+  if (fs.existsSync(versionFile)) {
+    try {
+      const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf-8'))
+      return {
+        exists: true,
+        commitSha: versionData.commitSha,
+        commitDate: versionData.commitDate,
+        commitMessage: versionData.commitMessage
+      }
+    } catch (error) {
+      // 版本文件损坏，但目录仍视为有效安装
     }
   }
 
+  return { exists: true }
+}
+
+/**
+ * 获取本地版本信息
+ * 优先检测用户手动配置的路径，回退到默认安装路径
+ */
+async function getLocalVersion() {
+  // 先尝试读取用户手动配置的路径
+  let customPath: string | undefined
   try {
-    const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf-8'))
-    return {
-      exists: true,
-      commitSha: versionData.commitSha,
-      commitDate: versionData.commitDate,
-      commitMessage: versionData.commitMessage
-    }
+    const config = await ServerConfigManager.getConfig()
+    customPath = config.tmdbImportPath
   } catch (error) {
-    
-    return {
-      exists: true // 目录存在但版本文件损坏
+    // 读取配置失败，使用默认路径
+  }
+
+  // 如果用户配置了有效路径且与默认路径不同，优先检测用户路径
+  if (customPath && customPath !== TMDB_IMPORT_DIR && fs.existsSync(customPath)) {
+    const result = detectTmdbImportAtDir(customPath)
+    if (result.exists) {
+      return result
     }
   }
+
+  // 回退到默认安装路径检测
+  return detectTmdbImportAtDir(TMDB_IMPORT_DIR)
 }
 
 /**
@@ -500,6 +557,13 @@ async function installUpdate(): Promise<NextResponse> {
     // 清理临时文件
     fs.unlinkSync(tempZipPath);
 
+    // 保存安装路径到系统配置
+    try {
+      await ServerConfigManager.setConfigItem('tmdbImportPath', TMDB_IMPORT_DIR)
+    } catch (error) {
+      console.log(`[TMDB-Import Updater] 保存路径到配置失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
+
     // 构建完成消息
     let message = '安装完成'
     const hasCredentials = existingCredentials.tmdb_username || existingCredentials.tmdb_password
@@ -541,8 +605,9 @@ function extractTMDBCredentials(configContent: string): { tmdb_username?: string
 
     const [key, ...valueParts] = trimmedLine.split('=')
     const value = valueParts.join('=').trim()
+    const trimmedKey = key?.trim()
 
-    switch (key.trim()) {
+    switch (trimmedKey) {
       case 'tmdb_username':
         if (value) {
           credentials.tmdb_username = value
@@ -573,13 +638,15 @@ function updateConfigWithCredentials(configPath: string, credentials: { tmdb_use
     const lines = configContent.split('\n')
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim()
+      const line = lines[i]!.trim()
       if (line.startsWith('#') || !line.includes('=')) {
         continue
       }
 
-      const [key] = line.split('=')
-      const trimmedKey = key.trim()
+      const parts = line.split('=')
+      if (parts.length < 2) continue
+      const key = parts[0]
+      const trimmedKey = key?.trim()
 
       if (trimmedKey === 'tmdb_username' && credentials.tmdb_username) {
         lines[i] = `tmdb_username = ${credentials.tmdb_username}`

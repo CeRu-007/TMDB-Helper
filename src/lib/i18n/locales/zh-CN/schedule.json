@@ -62,6 +62,7 @@
   "waitingForExecution": "等待执行任务...",
   "clickToExecute": "点击「立即执行」开始运行定时任务",
   "taskLoadFailed": "加载任务失败",
+  "retry": "重试",
   "saveFailed": "保存失败",
   "executeFailed": "执行失败",
   "startExecution": "开始执行定时任务...",

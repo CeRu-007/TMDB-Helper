@@ -313,7 +313,10 @@
     "otherSettings": "その他の設定",
     "filterWords": "フィルタリング単語（カンマ区切り）",
     "toolPathNotConfigured": "ツールパスが設定されていません",
-    "enterToolPath": "TMDB-Importツールパスを入力してください"
+    "enterToolPath": "TMDB-Importツールパスを入力してください",
+    "pathValid": "パスが有効で、TMDB-Importツールが検出されました",
+    "pathInvalid": "パスが無効で、TMDB-Importツールが検出されませんでした",
+    "pathCheckError": "パスの検証に失敗しました。ネットワークまたはサーバーの状態を確認してください"
   },
   "securityPanel": {
     "securityDesc": "管理者アカウントパスワードを変更してアカウントの安全を確保",
@@ -361,6 +364,7 @@
     "checkVersionFailed": "バージョンの確認に失敗しました",
     "getInstallStatusFailed": "インストール状態の取得に失敗しました",
     "unknownError": "不明なエラー",
+    "notInstalledDesc": "TMDB-Importツールがまだインストールされていません。ダウンロードしてインストールをクリックしてください",
     "updateAvailable": "新バージョンが利用可能です。更新することをお勧めします",
     "currentIsLatest": "现在是最新版本",
     "updateVersion": "バージョンを更新",

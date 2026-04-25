@@ -32,6 +32,7 @@ interface VersionInfo {
     commitMessage: string
     htmlUrl?: string
   }
+  isInstalled: boolean
   needsUpdate: boolean
 }
 
@@ -65,7 +66,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
   // 缓存功能已禁用，直接返回空函数
   const clearCache = () => {}
 
-  const saveToCache = (versionData?: VersionInfo | null, statusData?: InstallStatus | null) => {}
+  const saveToCache = (_versionData?: VersionInfo | null, _statusData?: InstallStatus | null) => {}
 
   const loadFromCache = () => {
     return false
@@ -361,7 +362,12 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                   <Info className="h-4 w-4 text-gray-500" />
                   <span className="text-sm font-medium">{t("tmdbImportUpdater.versionInfo")}</span>
                 </div>
-                {versionInfo.needsUpdate ? (
+                {!versionInfo.isInstalled ? (
+                  <Badge variant="secondary" className="text-xs">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {t("tmdbImportUpdater.notInstalled")}
+                  </Badge>
+                ) : versionInfo.needsUpdate ? (
                   <Badge variant="destructive" className="text-xs">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     {t("tmdbImportUpdater.needsUpdate")}
@@ -432,7 +438,12 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {versionInfo.needsUpdate ? (
+                    {!versionInfo.isInstalled ? (
+                      <span className="flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-1 text-orange-500" />
+                        {t("tmdbImportUpdater.notInstalledDesc")}
+                      </span>
+                    ) : versionInfo.needsUpdate ? (
                       <span className="flex items-center">
                         <AlertCircle className="h-4 w-4 mr-1 text-orange-500" />
                         {t("tmdbImportUpdater.updateAvailable")}
@@ -445,7 +456,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                     )}
                   </div>
                   <div className="flex space-x-2">
-                    {versionInfo.needsUpdate ? (
+                    {!versionInfo.isInstalled || versionInfo.needsUpdate ? (
                       <Button
                         onClick={performUpdate}
                         size="sm"
@@ -453,7 +464,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                         className="px-4"
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        {installStatus?.installed ? t("tmdbImportUpdater.updateVersion") : t("tmdbImportUpdater.downloadInstall")}
+                        {versionInfo.isInstalled ? t("tmdbImportUpdater.updateVersion") : t("tmdbImportUpdater.downloadInstall")}
                       </Button>
                     ) : (
                       <Button

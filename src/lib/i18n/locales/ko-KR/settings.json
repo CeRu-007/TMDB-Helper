@@ -313,7 +313,10 @@
     "otherSettings": "기타 설정",
     "filterWords": "필터링 단어 (쉼표로 구분)",
     "toolPathNotConfigured": "도구 경로가 구성되지 않았습니다",
-    "enterToolPath": "TMDB-Import 도구 경로를 입력하세요"
+    "enterToolPath": "TMDB-Import 도구 경로를 입력하세요",
+    "pathValid": "경로가 유효하며 TMDB-Import 도구가 감지되었습니다",
+    "pathInvalid": "경로가 유효하지 않으며 TMDB-Import 도구가 감지되지 않았습니다",
+    "pathCheckError": "경로 검증에 실패했습니다. 네트워크 또는 서버 상태를 확인하세요"
   },
   "securityPanel": {
     "securityDesc": "관리자 계정 비밀번호를 변경하여 계정 보안確保",
@@ -361,6 +364,7 @@
     "checkVersionFailed": "버전 확인에 실패했습니다",
     "getInstallStatusFailed": "설치 상태 가져오기에 실패했습니다",
     "unknownError": "알 수 없는 오류",
+    "notInstalledDesc": "TMDB-Import 도구가 아직 설치되지 않았습니다. 다운로드 및 설치를 클릭하세요",
     "updateAvailable": "새 버전을 사용할 수 있습니다. 업데이트를 권장합니다",
     "currentIsLatest": "현재 최신 버전입니다",
     "updateVersion": "버전 업데이트",

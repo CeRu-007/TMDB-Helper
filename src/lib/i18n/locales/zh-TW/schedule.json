@@ -62,6 +62,7 @@
   "waitingForExecution": "等待執行任務...",
   "clickToExecute": "點擊「立即執行」開始執行定時任務",
   "taskLoadFailed": "載入任務失敗",
+  "retry": "重試",
   "saveFailed": "儲存失敗",
   "executeFailed": "執行失敗",
   "startExecution": "開始執行定時任務...",

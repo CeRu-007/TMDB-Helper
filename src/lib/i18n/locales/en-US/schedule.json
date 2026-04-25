@@ -62,6 +62,7 @@
   "waitingForExecution": "Waiting for task execution...",
   "clickToExecute": "Click 'Execute Now' to start the scheduled task",
   "taskLoadFailed": "Failed to load task",
+  "retry": "Retry",
   "saveFailed": "Failed to save",
   "executeFailed": "Failed to execute",
   "startExecution": "Starting scheduled task execution...",

@@ -312,7 +312,10 @@
     "deleteCsvDesc": "匯入完成後自動刪除 CSV 檔案，避免重複匯入",
     "otherSettings": "其他設置",
     "filterWords": "過濾詞 (用逗號分隔)",
-    "enterToolPath": "請輸入TMDB-Import工具路徑"
+    "enterToolPath": "請輸入TMDB-Import工具路徑",
+    "pathValid": "路徑有效，檢測到 TMDB-Import 工具",
+    "pathInvalid": "路徑無效，未檢測到 TMDB-Import 工具",
+    "pathCheckError": "路徑驗證失敗，請檢查網絡或伺服器狀態"
   },
   "securityPanel": {
     "securityDesc": "修改管理員帳戶密碼，確保帳戶安全",
@@ -360,6 +363,7 @@
     "checkVersionFailed": "檢查版本失敗",
     "getInstallStatusFailed": "獲取安裝狀態失敗",
     "unknownError": "未知錯誤",
+    "notInstalledDesc": "尚未安裝 TMDB-Import 工具，請點擊下載安裝",
     "updateAvailable": "發現新版本可用，建議更新",
     "currentIsLatest": "當前已是最新版本",
     "updateVersion": "更新版本",

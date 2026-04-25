@@ -4,7 +4,7 @@
 
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useCallback } from "react"
 import { logger } from '@/lib/utils/logger'
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
@@ -54,6 +54,7 @@ export default function ToolsSettingsPanel({
   isDockerEnv
 }: ToolsSettingsPanelProps) {
   const { t } = useTranslation("settings")
+
   // 提取保存TMDB导入路径的逻辑
   const saveTmdbImportPath = useCallback(async (path: string) => {
     try {

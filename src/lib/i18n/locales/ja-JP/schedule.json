@@ -62,6 +62,7 @@
   "waitingForExecution": "タスクの実行を待機中...",
   "clickToExecute": "「今すぐ実行」をクリックしてスケジュールタスクを開始",
   "taskLoadFailed": "タスクの読み込みに失敗しました",
+  "retry": "再試行",
   "saveFailed": "保存に失敗しました",
   "executeFailed": "実行に失敗しました",
   "startExecution": "スケジュールタスクの実行を開始...",

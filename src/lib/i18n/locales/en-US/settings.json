@@ -312,7 +312,10 @@
     "deleteCsvDesc": "Automatically delete CSV files after import to avoid duplicate imports",
     "otherSettings": "Other Settings",
     "filterWords": "Filter Words (comma separated)",
-    "enterToolPath": "Please enter TMDB-Import tool path"
+    "enterToolPath": "Please enter TMDB-Import tool path",
+    "pathValid": "Path valid, TMDB-Import tool detected",
+    "pathInvalid": "Path invalid, TMDB-Import tool not detected",
+    "pathCheckError": "Path validation failed, please check network or server status"
   },
   "securityPanel": {
     "securityDesc": "Modify administrator account password to ensure account security",
@@ -360,6 +363,7 @@
     "checkVersionFailed": "Failed to check version",
     "getInstallStatusFailed": "Failed to get install status",
     "unknownError": "Unknown error",
+    "notInstalledDesc": "TMDB-Import tool is not installed yet, please click Download & Install",
     "updateAvailable": "New version available, recommended to update",
     "currentIsLatest": "Current version is already the latest",
     "updateVersion": "Update Version",

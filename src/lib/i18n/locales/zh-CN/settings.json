@@ -313,7 +313,10 @@
     "otherSettings": "其他设置",
     "filterWords": "过滤词 (用逗号分隔)",
     "toolPathNotConfigured": "未配置工具路径",
-    "enterToolPath": "请输入TMDB-Import工具路径"
+    "enterToolPath": "请输入TMDB-Import工具路径",
+    "pathValid": "路径有效，检测到 TMDB-Import 工具",
+    "pathInvalid": "路径无效，未检测到 TMDB-Import 工具",
+    "pathCheckError": "路径验证失败，请检查网络或服务器状态"
   },
   "securityPanel": {
     "securityDesc": "修改管理员账户密码，确保账户安全",
@@ -361,6 +364,7 @@
     "checkVersionFailed": "检查版本失败",
     "getInstallStatusFailed": "获取安装状态失败",
     "unknownError": "未知错误",
+    "notInstalledDesc": "尚未安装 TMDB-Import 工具，请点击下载安装",
     "updateAvailable": "发现新版本可用，建议更新",
     "currentIsLatest": "当前已是最新版本",
     "updateVersion": "更新版本",
