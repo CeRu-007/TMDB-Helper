@@ -32,13 +32,13 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
   const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false)
 
   const WEEKDAYS = [
-    t('weekdays.monday'),
-    t('weekdays.tuesday'),
-    t('weekdays.wednesday'),
-    t('weekdays.thursday'),
-    t('weekdays.friday'),
-    t('weekdays.saturday'),
-    t('weekdays.sunday'),
+    t('weekdaysList.monday'),
+    t('weekdaysList.tuesday'),
+    t('weekdaysList.wednesday'),
+    t('weekdaysList.thursday'),
+    t('weekdaysList.friday'),
+    t('weekdaysList.saturday'),
+    t('weekdaysList.sunday'),
   ]
 
   useEffect(() => {

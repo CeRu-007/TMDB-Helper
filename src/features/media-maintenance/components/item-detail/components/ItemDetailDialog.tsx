@@ -88,7 +88,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     { id: "short", name: t("categoryShort"), icon: <Ticket className="h-4 w-4 mr-2" strokeWidth={2} /> },
   ]
 
-  const WEEKDAYS = WEEKDAYS_KEYS.map(key => t(`weekdays.${key}` as const))
+  const WEEKDAYS = WEEKDAYS_KEYS.map(key => t(`weekdaysList.${key}` as const))
 
   // 核心状态管理
   const {
@@ -774,7 +774,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   const getAirTime = (weekday?: number): string => {
     if (weekday === undefined) return ""
-    const days = WEEKDAYS.map((_, i) => t(`weekdays.${["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][i]}`))
+    const days = WEEKDAYS.map((_, i) => t(`weekdaysList.${["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][i]}`))
     return days[weekday] || ""
   }
 

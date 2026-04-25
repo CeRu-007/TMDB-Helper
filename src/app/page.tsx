@@ -61,7 +61,7 @@ const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: numbe
 
   const weekdaysKey = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
   const weekdayIndex = selectedDayFilter === 0 ? 6 : selectedDayFilter - 1
-  const weekdayName = t(`weekdays.${weekdaysKey[weekdayIndex]}`, { ns: "common" })
+  const weekdayName = t(`weekdaysList.${weekdaysKey[weekdayIndex]}`, { ns: "weekdays" })
   return isCompleted ? `${weekdayName}${t("noCompletedItemsSuffix", { ns: "media" })}` : `${weekdayName}${t("noItemsSuffix", { ns: "media" })}`
 }
 
