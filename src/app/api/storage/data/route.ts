@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ServerStorageManager } from '@/lib/data/server-storage-manager';
-import { getUserIdFromRequest } from '@/lib/auth/user-utils';
+import { AuthService } from '@/lib/auth/auth-service';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 import type { TMDBItem } from '@/types/tmdb-item';
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = await getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
     logger.info(
       `[API] 导入数据 - 用户ID: ${userId}, 项目数: ${items.length}`,
     );
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
   try {
     await ServerStorageManager.init();
 
-    const userId = await getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
     logger.info(`[API] 导出数据 - 用户ID: ${userId}`);
 
     const { items } = await ServerStorageManager.exportData();

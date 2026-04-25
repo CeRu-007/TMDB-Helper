@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserIdFromRequest } from '@/lib/auth/user-utils'
+import { AuthService } from '@/lib/auth/auth-service'
 // import { clearUserData } from '@/lib/user-aware-storage' // 替换为StorageManager
 import { StorageManager } from '@/lib/data/storage'
 import { ErrorHandler } from '@/lib/utils/error-handler'
@@ -11,7 +11,7 @@ import { logger } from '@/lib/utils/logger'
 export async function POST(request: NextRequest) {
   try {
     // 获取用户ID
-    const userId = await getUserIdFromRequest(request)
+    const userId = await AuthService.getUserIdFromRequest(request)
     
     if (!userId) {
       return NextResponse.json({

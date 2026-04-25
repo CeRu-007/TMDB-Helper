@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserIdFromRequest } from '@/lib/auth/user-utils'
+import { AuthService } from '@/lib/auth/auth-service'
 import { TIMEOUT_30S, INTERVAL_10S, INTERVAL_15S } from '@/lib/constants/constants'
 
 // 存储活跃的SSE连接
@@ -31,7 +31,7 @@ setInterval(() => {
  * GET /api/system/realtime-sync - 建立Server-Sent Events连接
  */
 export async function GET(request: NextRequest) {
-  const userId = await getUserIdFromRequest(request)
+  const userId = await AuthService.getUserIdFromRequest(request)
   
   if (!userId) {
     return NextResponse.json({ error: '缺少用户身份信息' }, { status: 401 })
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(request)
+    const userId = await AuthService.getUserIdFromRequest(request)
     
     if (!userId) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 401 })
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = getUserIdFromRequest(request)
+    const userId = await AuthService.getUserIdFromRequest(request)
     
     if (!userId) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 401 })

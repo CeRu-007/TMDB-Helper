@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 // import { readUserItems } from '@/lib/user-aware-storage'; // 替换为StorageManager
 import { StorageManager } from '@/lib/data/storage';
-import { getUserIdFromRequest } from '@/lib/auth/user-utils';
+import { AuthService } from '@/lib/auth/auth-service';
 import { TMDBItem } from '@/types/tmdb-item';
 import { logger } from '@/lib/utils/logger';
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     logger.info(`[API] 获取项目数据请求 (force=${force})`);
 
     // 获取用户ID
-    const userId = await getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json(
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 获取用户ID
-    const userId = await getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json(

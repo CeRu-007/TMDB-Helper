@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 // import { migrateExistingData, getAllUsers, getUserStats } from '@/lib/user-aware-storage'; // 移除迁移功能
 // 使用默认的StorageManager
-import { getUserIdFromRequest } from '@/lib/auth/user-utils';
+import { AuthService } from '@/lib/auth/auth-service';
 
 /**
  * 数据迁移API
@@ -14,7 +14,7 @@ import { getUserIdFromRequest } from '@/lib/auth/user-utils';
 export async function POST(request: NextRequest) {
   try {
     // 获取用户ID
-    const userId = await getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // 获取用户ID
-    const userId = await getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });
@@ -84,7 +84,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const userId = getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 400 });

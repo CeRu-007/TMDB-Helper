@@ -23,9 +23,12 @@ export async function initializeDev() {
     await checkAndMigrate();
     console.log('[Instrumentation] 数据迁移完成');
 
-    const { AuthManager } = await import('./lib/auth/auth-manager');
-    await AuthManager.initializeFromEnv();
-    console.log('[Instrumentation] 认证系统初始化完成');
+    const { AuthService } = await import('./lib/auth/auth-service');
+    if (!AuthService.hasAdmin()) {
+      console.log('[Instrumentation] 认证系统未初始化，等待用户注册');
+    } else {
+      console.log('[Instrumentation] 认证系统已初始化');
+    }
 
     const { scheduler } = await import('./lib/scheduler/scheduler');
     scheduler.initialize();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ServerStorageManager } from '@/lib/data/server-storage-manager';
 import { TMDBItem } from '@/types/tmdb-item';
-import { getUserIdFromRequest } from '@/lib/auth/user-utils';
+import { AuthService } from '@/lib/auth/auth-service';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 import { getDatabasePath } from '@/lib/database/connection';
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 获取用户ID
-    const userId = await getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
 
     const success = await ServerStorageManager.addItem(item);
 
@@ -82,7 +82,7 @@ export async function PUT(request: NextRequest) {
     item.updatedAt = new Date().toISOString();
 
     // 获取用户ID
-    const userId = await getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
 
     const success = await ServerStorageManager.updateItem(item);
 
@@ -120,7 +120,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 获取用户ID
-    const userId = await getUserIdFromRequest(request);
+    const userId = await AuthService.getUserIdFromRequest(request);
     logger.info(`[API] 删除项目 - 用户ID: ${userId}, 项目ID: ${id}`);
 
     const success = await ServerStorageManager.deleteItem(id);

@@ -7,7 +7,7 @@ import { getDatabaseAsync } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 /**
  * 初始化数据库 Schema
@@ -49,6 +49,9 @@ export async function initializeSchema(): Promise<void> {
     }
     if (currentVersion < 9) {
       migrateToV9(db);
+    }
+    if (currentVersion < 10) {
+      migrateToV10(db);
     }
 
     setUserVersion(db, SCHEMA_VERSION);
@@ -170,14 +173,14 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
 
   // 管理员用户表
   db.exec(`
-    CREATE TABLE IF NOT EXISTS adminUsers (
+    CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       username TEXT UNIQUE NOT NULL,
       passwordHash TEXT NOT NULL,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL,
       lastLoginAt TEXT,
-      sessionExpiryDays INTEGER DEFAULT 7,
+      sessionExpiryDays INTEGER DEFAULT 15,
       deletedAt TEXT
     )
   `);
@@ -268,7 +271,7 @@ function createIndexes(db: ReturnType<typeof getDatabase>): void {
     'CREATE INDEX IF NOT EXISTS idx_seasons_itemId ON seasons(itemId)',
     'CREATE INDEX IF NOT EXISTS idx_messages_chatId ON messages(chatId)',
     'CREATE INDEX IF NOT EXISTS idx_chatHistories_deletedAt ON chatHistories(deletedAt)',
-    'CREATE INDEX IF NOT EXISTS idx_adminUsers_deletedAt ON adminUsers(deletedAt)',
+    'CREATE INDEX IF NOT EXISTS idx_users_deletedAt ON users(deletedAt)',
     'CREATE INDEX IF NOT EXISTS idx_image_cache_tmdbId ON image_cache(tmdbId)',
     'CREATE INDEX IF NOT EXISTS idx_image_cache_itemId ON image_cache(itemId)',
     'CREATE INDEX IF NOT EXISTS idx_image_cache_type ON image_cache(imageType)',
@@ -378,6 +381,39 @@ function migrateToV9(db: ReturnType<typeof getDatabase>): void {
   }
 }
 
+function migrateToV10(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V10 迁移: adminUsers 表重命名为 users');
+
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        passwordHash TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        lastLoginAt TEXT,
+        sessionExpiryDays INTEGER DEFAULT 15,
+        deletedAt TEXT
+      )
+    `);
+
+    const adminCount = safeCount(db, 'adminUsers');
+    if (adminCount > 0) {
+      db.exec('INSERT INTO users SELECT * FROM adminUsers');
+      logger.info(`[Database] V10 迁移: 已迁移 ${adminCount} 条 adminUsers 数据到 users`);
+    }
+
+    db.exec('DROP TABLE IF EXISTS adminUsers');
+
+    db.exec('CREATE INDEX IF NOT EXISTS idx_users_deletedAt ON users(deletedAt)');
+
+    logger.info('[Database] V10 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V10 迁移失败:', error);
+  }
+}
+
 /**
  * 获取数据库统计信息
  */
@@ -408,7 +444,7 @@ export async function clearAllData(): Promise<void> {
   db.exec('DELETE FROM episodes');
   db.exec('DELETE FROM seasons');
   db.exec('DELETE FROM items');
-  db.exec('DELETE FROM adminUsers');
+  db.exec('DELETE FROM users');
   db.exec('DELETE FROM config');
 
   logger.info('[Database] 所有数据已清空');

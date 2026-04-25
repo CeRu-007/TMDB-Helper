@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ApiResponse, ApiError } from '@/types/api'
-import { getUserIdFromRequest } from '@/lib/auth/user-utils'
 import { logger } from '@/lib/utils/logger'
 
 export abstract class BaseAPIRoute {
@@ -9,31 +8,13 @@ export abstract class BaseAPIRoute {
     context?: { params?: Record<string, string> }
   ): Promise<NextResponse>
 
-  protected async validateRequest(request: NextRequest): Promise<{
+  protected async validateRequest(_request: NextRequest): Promise<{
     valid: boolean
     error?: string
     statusCode?: number
     userId?: string
   }> {
-    try {
-      const userId = await getUserIdFromRequest(request)
-
-      if (!userId) {
-        return {
-          valid: false,
-          error: 'Unauthorized - Missing user identity',
-          statusCode: 401
-        }
-      }
-
-      return { valid: true, userId }
-    } catch (error) {
-      return {
-        valid: false,
-        error: 'Authentication failed',
-        statusCode: 401
-      }
-    }
+    return { valid: true }
   }
 
   protected successResponse<T>(data: T, options?: {

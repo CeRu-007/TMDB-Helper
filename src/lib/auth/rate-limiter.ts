@@ -127,7 +127,7 @@ export class RateLimiter {
         if (header === 'x-forwarded-for') {
           // x-forwarded-for format: clientIP, proxy1IP, proxy2IP
           const ips = value.split(',').map(ip => ip.trim());
-          return ips[ips.length - 1]; // Take the last IP (closest to server)
+          return ips[ips.length - 1] ?? 'unknown'; // Take the last IP (closest to server)
         }
         return value;
       }

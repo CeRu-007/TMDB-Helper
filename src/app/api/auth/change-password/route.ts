@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthManager } from '@/lib/auth/auth-manager';
+import { AuthService } from '@/lib/auth/auth-service';
 import { AuthMiddleware } from '@/lib/auth/auth-middleware';
+import { validatePassword } from '@/lib/auth/password-validator';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 
-/**
- * POST /api/auth/change-password - 修改管理员密码
- */
 export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { currentPassword, newPassword } = body;
 
-    // 验证输入
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
         { success: false, error: '当前密码和新密码不能为空' },
@@ -20,21 +17,29 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
       );
     }
 
-    if (newPassword.length < 6) {
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
       return NextResponse.json(
-        { success: false, error: '新密码长度至少为6位' },
+        { success: false, error: passwordValidation.error },
         { status: 400 }
       );
     }
 
-    // 修改密码
-    const success = await AuthManager.changePassword(currentPassword, newPassword);
+    const success = await AuthService.changePassword(currentPassword, newPassword);
 
     if (success) {
-      return NextResponse.json({
+      const isSecure = process.env.COOKIE_SECURE !== undefined
+        ? process.env.COOKIE_SECURE === 'true'
+        : process.env.NODE_ENV === 'production';
+
+      const response = NextResponse.json({
         success: true,
-        message: '密码修改成功'
+        message: '密码修改成功，请重新登录'
       });
+      response.cookies.set('auth-token', '', {
+        httpOnly: true, secure: isSecure, sameSite: 'lax', maxAge: 0, path: '/'
+      });
+      return response;
     } else {
       return NextResponse.json(
         { success: false, error: '当前密码错误' },

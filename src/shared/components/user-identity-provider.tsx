@@ -4,7 +4,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { createPortal } from "react-dom"
 import ImportDataDialog from "@/features/data-management/components/import-data-dialog"
 import ExportDataDialog from "@/features/data-management/components/export-data-dialog"
-import { UserManager, UserInfo } from "@/lib/auth/user-manager"
 import { formatUserDateTime } from "@/lib/utils"
 import { useAuth } from "@/shared/components/auth-provider"
 import { useIsClient } from "@/lib/hooks/use-is-client"
@@ -12,19 +11,15 @@ import { useData } from "@/shared/components/client-data-provider"
 import { useTheme } from "next-themes"
 import {
   User,
-  Settings,
   BarChart3,
   Download,
   Upload,
   Palette,
-  HelpCircle,
-  Info,
   LogOut,
   Edit3,
   Calendar,
   Database,
-  ChevronDown,
-  Sidebar
+  ChevronDown
 } from "lucide-react"
 
 import { useToast } from "@/lib/hooks/use-toast"
@@ -38,6 +33,14 @@ import { useTranslation } from "react-i18next"
  * 用户身份提供者组件
  * 管理用户身份识别和会话状态
  */
+
+interface UserInfo {
+  userId: string;
+  displayName: string;
+  avatarUrl?: string;
+  createdAt: string;
+  lastActiveAt: string;
+}
 
 interface UserContextType {
   userInfo: UserInfo | null
@@ -66,72 +69,55 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
   const { user: authUser } = useAuth()
   const isClient = useIsClient()
 
-  // 初始化用户身份
-  const initializeUser = async () => {
+  useEffect(() => {
+    if (isClient && authUser) {
+      setUserInfo(prev => {
+        if (prev && prev.userId === authUser.id && prev.displayName === authUser.username) {
+          return prev
+        }
+        const storedAvatar = localStorage.getItem('tmdb_helper_avatar_url')
+        return {
+          userId: authUser.id,
+          displayName: authUser.username,
+          ...(storedAvatar ? { avatarUrl: storedAvatar } : {}),
+          createdAt: prev?.createdAt || new Date().toISOString(),
+          lastActiveAt: new Date().toISOString(),
+        }
+      })
+    }
+  }, [isClient, authUser])
+
+  useEffect(() => {
     if (!isClient) return
 
-    setIsLoading(true)
-
-    try {
-      // 设置管理员用户ID（用于认证系统）
-      UserManager.setAdminUserId()
-
-      // 验证现有会话
-      const isValidSession = UserManager.validateSession()
-
-      if (isValidSession) {
-        // 获取用户信息
-        const info = UserManager.getUserInfo()
-        // 如果有认证用户信息且用户信息中显示名称是默认值，则使用认证用户的显示名称
-        if (authUser && info.displayName.startsWith('用户')) {
-          info.displayName = authUser.username
-          UserManager.updateDisplayName(authUser.username)
-        }
-        setUserInfo(info)
-        
-      } else {
-        // 创建新用户会话
-        const info = UserManager.getUserInfo()
-        // 如果有认证用户信息且用户信息中显示名称是默认值，则使用认证用户的显示名称
-        if (authUser && info.displayName.startsWith('用户')) {
-          info.displayName = authUser.username
-          UserManager.updateDisplayName(authUser.username)
-        }
-        setUserInfo(info)
-        
-      }
-
-      // 调用服务器端API确保用户ID同步
+    const init = async () => {
+      setIsLoading(true)
       try {
-        const response = await fetch('/api/auth/user', {
-          method: 'GET',
-          credentials: 'include',
-        })
-
-        if (response.ok) {
-          const data = await response.json();
-
+        if (authUser) {
+          const storedAvatar = localStorage.getItem('tmdb_helper_avatar_url')
+          setUserInfo({
+            userId: authUser.id,
+            displayName: authUser.username,
+            ...(storedAvatar ? { avatarUrl: storedAvatar } : {}),
+            createdAt: new Date().toISOString(),
+            lastActiveAt: new Date().toISOString(),
+          })
         }
-      } catch (apiError) {
-        
-        // 不影响客户端功能，继续执行
+
+        try {
+          await fetch('/api/auth/user', {
+            method: 'GET',
+            credentials: 'include',
+          })
+        } catch {}
+
+      } catch {
+      } finally {
+        setIsInitialized(true)
+        setIsLoading(false)
       }
-
-      setIsInitialized(true)
-    } catch (error) {
-      
-      // 即使出错也要设置为已初始化，避免无限加载
-      setIsInitialized(true)
-    } finally {
-      setIsLoading(false)
     }
-  }
-
-  // 当客户端准备好时初始化用户
-  useEffect(() => {
-    if (isClient) {
-      initializeUser()
-    }
+    init()
   }, [isClient])
 
   // 更新用户显示名称
@@ -139,36 +125,27 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
     if (!isClient || !userInfo) return false
 
     try {
-      const success = UserManager.updateDisplayName(name)
+      setUserInfo(prev => prev ? { ...prev, displayName: name, lastActiveAt: new Date().toISOString() } : null)
 
-      if (success) {
-        // 更新本地状态
-        const updatedInfo = UserManager.getUserInfo()
-        setUserInfo(updatedInfo)
+      try {
+        await fetch('/api/auth/user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            displayName: name,
+            userId: userInfo.userId
+          }),
+        })
+      } catch (apiError) {
 
-        // 同步到服务器
-        try {
-          await fetch('/api/auth/user', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              displayName: name,
-              userId: updatedInfo.userId
-            }),
-          })
-        } catch (apiError) {
-          
-        }
-
-        return true
       }
 
-      return false
+      return true
     } catch (error) {
-      
+
       return false
     }
   }
@@ -178,36 +155,33 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
     if (!isClient || !userInfo) return false
 
     try {
-      const success = UserManager.updateAvatarUrl(avatarUrl)
-
-      if (success) {
-        // 更新本地状态
-        const updatedInfo = UserManager.getUserInfo()
-        setUserInfo(updatedInfo)
-
-        // 同步到服务器
-        try {
-          await fetch('/api/auth/user', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              avatarUrl: avatarUrl,
-              userId: updatedInfo.userId
-            }),
-          })
-        } catch (apiError) {
-          
-        }
-
-        return true
+      if (avatarUrl) {
+        localStorage.setItem('tmdb_helper_avatar_url', avatarUrl)
+      } else {
+        localStorage.removeItem('tmdb_helper_avatar_url')
       }
 
-      return false
+      setUserInfo(prev => prev ? { ...prev, ...(avatarUrl ? { avatarUrl } : {}), lastActiveAt: new Date().toISOString() } : null)
+
+      try {
+        await fetch('/api/auth/user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            avatarUrl: avatarUrl,
+            userId: userInfo.userId
+          }),
+        })
+      } catch (apiError) {
+
+      }
+
+      return true
     } catch (error) {
-      
+
       return false
     }
   }
@@ -217,9 +191,8 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
     if (!isClient) return
 
     try {
-      UserManager.clearUserData()
-      
-      // 调用服务器端API清除会话
+      localStorage.removeItem('tmdb_helper_avatar_url')
+
       fetch('/api/auth/user', {
         method: 'DELETE',
         credentials: 'include',
@@ -227,24 +200,21 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
 
       })
 
-      // 重新初始化
       setTimeout(() => {
         initializeUser()
       }, 100)
     } catch (error) {
-      
+
     }
   }
 
-  // 刷新用户信息
   const refreshUserInfo = () => {
     if (!isClient) return
 
     try {
-      const info = UserManager.getUserInfo()
-      setUserInfo(info)
+      initializeUser()
     } catch (error) {
-      
+
     }
   }
 
@@ -276,7 +246,6 @@ export function UserAvatar({
   onShowExportDialog?: () => void
 } = {}) {
   const { userInfo, isLoading } = useUser()
-  const { logout } = useAuth()
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -968,20 +937,6 @@ function DataStatsSection({
     (new Date().getTime() - new Date(userInfo.createdAt).getTime()) / (1000 * 60 * 60 * 24)
   )
 
-  const stats = userInfo.stats || {
-    loginCount: 1,
-    totalUsageTime: 0,
-    lastSessionStart: new Date().toISOString(),
-    featuresUsed: []
-  }
-
-  const formatUsageTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes}${t("minutes", { ns: "user" })}`
-    const hours = Math.floor(minutes / 60)
-    const remainingMinutes = minutes % 60
-    return `${hours}${t("hours", { ns: "user" })}${remainingMinutes > 0 ? remainingMinutes + t("minutes", { ns: "user" }) : ''}`
-  }
-
   return (
     <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-l-2 border-green-500 mx-4 mb-2 rounded">
       <div className="grid grid-cols-2 gap-3 text-xs">
@@ -999,223 +954,12 @@ function DataStatsSection({
             <div className="text-gray-500 dark:text-gray-400">{t("usageDays", { ns: "user" })}</div>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <User className="w-3 h-3 text-purple-500" />
-          <div>
-            <div className="font-medium text-gray-900 dark:text-gray-100">{stats.loginCount}</div>
-            <div className="text-gray-500 dark:text-gray-400">{t("loginCount", { ns: "user" })}</div>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <BarChart3 className="w-3 h-3 text-orange-500" />
-          <div>
-            <div className="font-medium text-gray-900 dark:text-gray-100">{formatUsageTime(stats.totalUsageTime)}</div>
-            <div className="text-gray-500 dark:text-gray-400">{t("usageTime", { ns: "user" })}</div>
-          </div>
-        </div>
       </div>
       <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
         <div>{t("lastActive", { ns: "user" })}: {formatUserDateTime(userInfo.lastActiveAt)}</div>
-        {stats.featuresUsed.length > 0 && (
-          <div className="mt-1">
-            {t("featuresUsed", { ns: "user" })}: {stats.featuresUsed.slice(0, 3).join(', ')}
-            {stats.featuresUsed.length > 3 && ` ${t("andMore", { count: stats.featuresUsed.length, ns: "user" })}`}
-          </div>
-        )}
       </div>
     </div>
   )
 }
 
-/**
- * 用户资料对话框 - 保持向后兼容
- * @deprecated 请使用 UserDropdownMenu
- */
-function UserProfileDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { userInfo, updateDisplayName, resetUser } = useUser()
-  const { items } = useData()
-  const [isEditing, setIsEditing] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [isResetting, setIsResetting] = useState(false)
 
-  useEffect(() => {
-    if (userInfo && open) {
-      setNewName(userInfo.displayName)
-    }
-  }, [userInfo, open])
-
-  const handleSaveName = async () => {
-    if (newName.trim() && userInfo) {
-      const success = await updateDisplayName(newName.trim())
-      if (success) {
-        setIsEditing(false)
-      }
-    }
-  }
-
-  const handleReset = async () => {
-    if (confirm('确定要重置用户数据吗？这将清除所有本地数据并创建新的用户ID。此操作无法撤销！')) {
-      setIsResetting(true)
-      try {
-        resetUser()
-        onOpenChange(false)
-      } catch (error) {
-        
-      } finally {
-        setIsResetting(false)
-      }
-    }
-  }
-
-  if (!userInfo) return null
-
-  return (
-    <div className={`fixed inset-0 z-50 ${open ? 'block' : 'hidden'}`}>
-      {/* 背景遮罩 */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={() => onOpenChange(false)}
-      />
-
-      {/* 对话框 */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md mx-4">
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl border dark:border-gray-700 p-6 max-h-[90vh] overflow-y-auto">
-          {/* 头部 */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              个人资料
-            </h2>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* 用户头像和基本信息 */}
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-xl font-medium shadow-lg">
-              {userInfo.displayName.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1">
-              {isEditing ? (
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
-                    placeholder="输入显示名称"
-                    onKeyPress={(e) => e.key === 'Enter' && handleSaveName()}
-                    autoFocus
-                  />
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={handleSaveName}
-                      className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                      保存
-                    </button>
-                    <button
-                      onClick={() => setIsEditing(false)}
-                      className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
-                    >
-                      取消
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {userInfo.displayName}
-                    </h3>
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="text-sm text-blue-500 hover:text-blue-600"
-                    >
-                      编辑
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    ID: {userInfo.userId}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 账户信息 */}
-          <div className="space-y-4 mb-6">
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">{t("accountInfo", { ns: "common" })}</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t("createdAt", { ns: "common" })}:</span>
-                  <span className="text-gray-900 dark:text-gray-100">
-                    {formatUserDateTime(userInfo.createdAt)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t("lastActive", { ns: "common" })}:</span>
-                  <span className="text-gray-900 dark:text-gray-100">
-                    {formatUserDateTime(userInfo.lastActiveAt)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t("dataItemCount", { ns: "common" })}:</span>
-                  <span className="text-gray-900 dark:text-gray-100">
-                    {items?.length || 0} {t("items", { ns: "common" })}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 操作按钮 */}
-          <div className="flex flex-row justify-between space-x-3">
-            <button
-              onClick={() => onOpenChange(false)}
-              className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
-            >
-              {t("close", { ns: "common" })}
-            </button>
-
-            <button
-              onClick={handleReset}
-              disabled={isResetting}
-              className="px-4 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {isResetting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>{t("resetting", { ns: "common" })}</span>
-                </>
-              ) : (
-                <span>{t("resetUserData", { ns: "common" })}</span>
-              )}
-            </button>
-
-            <button
-              onClick={() => onOpenChange(false)}
-              className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
-            >
-              {t("close", { ns: "common" })}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/**
- * 用户信息显示组件 - 保持向后兼容
- * @deprecated 请使用 UserAvatar 组件
- */
-export function UserInfoDisplay() {
-  return <UserAvatar />
-}

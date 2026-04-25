@@ -27,7 +27,7 @@ export type {
   EpisodeRow,
   ChatHistoryRow,
   MessageRow,
-  AdminUserRow,
+  UserRow,
   ItemWithRelations,
   DatabaseResult,
   ExportData,
@@ -39,7 +39,8 @@ export { tmdbItemToRow, rowToTMDBItem } from './types';
 export { BaseRepository } from './repositories/base.repository';
 export { ItemsRepository, itemsRepository } from './repositories/items.repository';
 export { ChatRepository, chatRepository } from './repositories/chat.repository';
-export { AuthRepository, authRepository, type AdminUser } from './repositories/auth.repository';
+export { UserRepository, userRepository } from './repositories/auth.repository';
+export type { User } from './repositories/auth.repository';
 export { ConfigRepository, configRepository } from './repositories/config.repository';
 
 // Services (推荐使用)

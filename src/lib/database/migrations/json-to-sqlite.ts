@@ -9,7 +9,7 @@ import { getDatabase, isDatabaseInitialized, getDatabasePath } from '../connecti
 import { initializeSchema, getDatabaseStats } from '../schema';
 import { itemsRepository } from '../repositories/items.repository';
 import { chatRepository } from '../repositories/chat.repository';
-import { authRepository } from '../repositories/auth.repository';
+import { userRepository } from '../repositories/auth.repository';
 import { configRepository } from '../repositories/config.repository';
 import type { MigrationStatus, DatabaseResult } from '../types';
 import { logger } from '@/lib/utils/logger';
@@ -215,7 +215,7 @@ async function migrateAuth(dataDir: string): Promise<void> {
 
         if (admin && admin.id && admin.username) {
           logger.info(`[Migration] 迁移管理员数据: ${filePath}`);
-          authRepository.upsertAdmin({
+          userRepository.upsertAdmin({
             id: admin.id,
             username: admin.username,
             passwordHash: admin.passwordHash,

@@ -95,7 +95,7 @@ export interface MessageRow {
   updatedAt: string;
 }
 
-export interface AdminUserRow {
+export interface UserRow {
   id: string;
   username: string;
   passwordHash: string;

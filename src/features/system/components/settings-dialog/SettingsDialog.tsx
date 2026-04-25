@@ -884,7 +884,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       return
     }
 
-    if (passwordForm.newPassword.length < 6) {
+    if (passwordForm.newPassword.length < 8) {
       toast({
         title: t("common.error"),
         description: t("settings.passwordTooShort"),
@@ -905,6 +905,9 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         newPassword: "",
         confirmPassword: ""
       })
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 1500)
     } catch (error) {
       toast({
         title: t("common.error"),

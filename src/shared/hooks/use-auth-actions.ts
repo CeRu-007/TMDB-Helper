@@ -10,7 +10,7 @@ export function useAuthActions() {
     username: string,
     password: string,
     rememberMe: boolean = false
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; user?: AuthUser }> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -21,9 +21,12 @@ export function useAuthActions() {
 
       const data = await response.json()
 
-      return response.ok && data.success
+      if (response.ok && data.success) {
+        return { success: true, user: data.user }
+      }
+      return { success: false }
     } catch {
-      return false
+      return { success: false }
     }
   }
 
@@ -33,9 +36,7 @@ export function useAuthActions() {
         method: 'POST',
         credentials: 'include'
       })
-    } catch {
-      // Silent failure
-    }
+    } catch {}
 
     router.push('/login')
   }
@@ -57,5 +58,23 @@ export function useAuthActions() {
     }
   }
 
-  return { login, logout, changePassword }
+  const register = async (username: string, password: string): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password })
+      })
+      const data = await response.json()
+      if (response.ok && data.success) {
+        return { success: true, user: data.user }
+      }
+      return { success: false, error: data.error || '注册失败' }
+    } catch {
+      return { success: false, error: '网络错误，请稍后重试' }
+    }
+  }
+
+  return { login, logout, changePassword, register }
 }

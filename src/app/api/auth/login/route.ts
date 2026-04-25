@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthManager, LoginRequest } from '@/lib/auth/auth-manager';
+import { AuthService } from '@/lib/auth/auth-service';
 import { RateLimiter } from '@/lib/auth/rate-limiter';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { authLogger } from '@/lib/utils/logger';
+import { getDatabaseAsync } from '@/lib/database/connection';
 
-/**
- * POST /api/auth/login - 用户登录
- */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const body: LoginRequest = await request.json();
+    await getDatabaseAsync();
+
+    const body = await request.json();
     const { username, password, rememberMe = false } = body;
 
-    // 验证输入（在速率限制检查之前，避免空输入也消耗尝试次数）
     if (!username?.trim() || !password?.trim()) {
       return NextResponse.json(
         { success: false, error: '用户名或密码错误' },
@@ -20,7 +19,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // 检查速率限制（使用用户名 + IP 组合作为标识符）
     const identifier = RateLimiter.getIdentifier(username, request);
     const rateLimitResult = RateLimiter.check(identifier);
 
@@ -39,8 +37,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // 验证登录
-    const user = await AuthManager.validateLogin(username, password);
+    const user = await AuthService.validateLogin(username, password);
     if (!user) {
       return NextResponse.json(
         {
@@ -52,17 +49,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // 登录成功，重置速率限制
     RateLimiter.reset(identifier);
 
-    // 生成JWT Token
-    const token = AuthManager.generateToken(user, rememberMe);
+    const token = AuthService.generateToken(user, rememberMe);
 
-    // 设置httpOnly cookie
     const sessionDays = Math.max(user.sessionExpiryDays || 0, 15);
     const maxAge = (rememberMe ? sessionDays * 2 : sessionDays) * 24 * 60 * 60;
 
-    // Cookie secure 配置: 默认生产环境启用,可通过 COOKIE_SECURE 环境变量覆盖
     const isSecure = process.env.COOKIE_SECURE !== undefined
       ? (process.env.COOKIE_SECURE === 'true')
       : (process.env.NODE_ENV === 'production');

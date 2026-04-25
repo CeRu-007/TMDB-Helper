@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthManager } from '@/lib/auth/auth-manager';
+import { AuthService } from '@/lib/auth/auth-service';
 import { AuthMiddleware } from '@/lib/auth/auth-middleware';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 
-/**
- * GET /api/auth/profile - 获取管理员信息
- */
 export const GET = AuthMiddleware.withAuth(async (_request: NextRequest) => {
   try {
-    const adminUser = AuthManager.getAdminUser();
-    
-    if (!adminUser) {
+    const user = AuthService.getUser();
+
+    if (!user) {
       return NextResponse.json(
         { success: false, error: '用户不存在' },
         { status: 404 }
@@ -20,7 +17,7 @@ export const GET = AuthMiddleware.withAuth(async (_request: NextRequest) => {
 
     return NextResponse.json({
       success: true,
-      user: adminUser
+      user: user
     });
 
   } catch (error) {
@@ -32,9 +29,6 @@ export const GET = AuthMiddleware.withAuth(async (_request: NextRequest) => {
   }
 });
 
-/**
- * PUT /api/auth/profile - 更新管理员信息
- */
 export const PUT = AuthMiddleware.withAuth(async (request: NextRequest) => {
   try {
     const body = await request.json();
@@ -47,8 +41,7 @@ export const PUT = AuthMiddleware.withAuth(async (request: NextRequest) => {
       );
     }
 
-    // 获取当前用户信息
-    const currentUser = AuthManager.getAdminUser();
+    const currentUser = AuthService.getUser();
     if (!currentUser) {
       return NextResponse.json(
         { success: false, error: '用户不存在' },
@@ -56,9 +49,6 @@ export const PUT = AuthMiddleware.withAuth(async (request: NextRequest) => {
       );
     }
 
-    // 这里可以添加更新用户名的逻辑
-    // 目前只是返回成功响应，因为AuthManager还没有updateUsername方法
-    
     return NextResponse.json({
       success: true,
       message: '用户信息更新成功',

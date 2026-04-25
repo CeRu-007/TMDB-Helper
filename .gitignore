@@ -29,6 +29,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# test coverage
+/coverage/
+
 # IDE files
 .idea/
 .vscode/

@@ -1,99 +1,88 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthCheck } from '@/shared/hooks/use-auth-check'
 import { useAuthActions } from '@/shared/hooks/use-auth-actions'
 import type { AuthUser } from '@/shared/types/auth.types'
 
-// Constants
-const ADMIN_USER_ID = 'admin'
-const SYSTEM_USER_ID = 'user_admin_system'
-const DEFAULT_ADMIN_USER = {
-  id: ADMIN_USER_ID,
-  username: ADMIN_USER_ID,
-  lastLoginAt: new Date().toISOString()
-}
-
 export interface AuthState {
   user: AuthUser | null
   isLoading: boolean
   isAuthenticated: boolean
-  systemUserId: string | null
 }
 
 export interface AuthContextType extends AuthState {
   login: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>
+  register: (username: string, password: string) => Promise<{ success: boolean; error?: string | undefined }>
   logout: () => Promise<void>
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>
+  isInitialSetup: boolean
 }
 
-// Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Helper functions
-const isElectronEnvironment = (): boolean => {
-  return typeof window !== 'undefined' && (
-    navigator.userAgent.includes('Electron') ||
-    navigator.userAgent.includes('TMDB-Helper-Electron') ||
-    process.env.NEXT_PUBLIC_ELECTRON_BUILD === 'true'
-  )
-}
-
-const createAuthState = (
-  user: AuthUser | null,
-  isAuthenticated: boolean,
-  isLoading: boolean = false
-): AuthState => ({
-  user,
-  isLoading,
-  isAuthenticated,
-  systemUserId: isAuthenticated ? SYSTEM_USER_ID : null
-})
-
-// Provider Component
 export function AuthProvider({ children }: { children: React.ReactNode }): JSX.Element {
-  const [authState, setAuthState] = useState<AuthState>(() => {
-    if (isElectronEnvironment()) {
-      return createAuthState(DEFAULT_ADMIN_USER, true, false)
-    }
-    return createAuthState(null, false, true)
-  })
+  const checkState = useAuthCheck()
+  const [overrideState, setOverrideState] = useState<AuthState | null>(null)
+  const [overrideInitialSetup, setOverrideInitialSetup] = useState<boolean | null>(null)
 
-  const isElectron = isElectronEnvironment()
-  const checkState = useAuthCheck(isElectron)
-  const { login, logout, changePassword } = useAuthActions()
+  const { login: loginAction, logout: logoutAction, changePassword, register: registerAction } = useAuthActions()
+  const router = useRouter()
 
-  useEffect(() => {
-    if (!isElectron) {
-      setAuthState(createAuthState(checkState.user, checkState.isAuthenticated, checkState.isLoading))
-    }
-  }, [checkState, isElectron])
+  const authState = overrideState ?? {
+    user: checkState.user,
+    isLoading: checkState.isLoading,
+    isAuthenticated: checkState.isAuthenticated
+  }
+  const isInitialSetup = overrideInitialSetup ?? checkState.isInitialSetup
 
-  const handleLogin = async (
+  const handleLogin = useCallback(async (
     username: string,
     password: string,
     rememberMe: boolean = false
   ): Promise<boolean> => {
-    const success = await login(username, password, rememberMe)
-    if (success && !isElectron) {
-      window.location.reload()
+    const result = await loginAction(username, password, rememberMe)
+    if (result.success && result.user) {
+      setOverrideState({
+        user: result.user,
+        isLoading: false,
+        isAuthenticated: true
+      })
+      setOverrideInitialSetup(false)
+      router.replace('/')
+      return true
     }
-    return success
-  }
+    return false
+  }, [loginAction, router])
 
-  const handleLogout = async (): Promise<void> => {
-    if (!isElectron) {
-      setAuthState(createAuthState(null, false, false))
+  const handleRegister = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string | undefined }> => {
+    const result = await registerAction(username, password)
+    if (result.success && result.user) {
+      setOverrideState({
+        user: result.user,
+        isLoading: false,
+        isAuthenticated: true
+      })
+      setOverrideInitialSetup(false)
+      router.replace('/')
+      return { success: true }
     }
-    await logout()
-  }
+    return result.error ? { success: false, error: result.error } : { success: false }
+  }, [registerAction, router])
+
+  const handleLogout = useCallback(async (): Promise<void> => {
+    setOverrideState({ user: null, isLoading: false, isAuthenticated: false })
+    await logoutAction()
+  }, [logoutAction])
 
   const contextValue: AuthContextType = {
     ...authState,
     login: handleLogin,
+    register: handleRegister,
     logout: handleLogout,
-    changePassword
+    changePassword,
+    isInitialSetup
   }
 
   return (
@@ -103,7 +92,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   )
 }
 
-// Hooks
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext)
   if (context === undefined) {
@@ -112,18 +100,21 @@ export function useAuth(): AuthContextType {
   return context
 }
 
-// Components
-export function AuthGuard({ children }: { children: React.ReactNode }): JSX.Element {
-  const { isAuthenticated, isLoading } = useAuth()
-  const router = useRouter()
+export function AuthGuard({ children }: { children: React.ReactNode }): React.ReactNode {
+  const { isAuthenticated, isLoading, isInitialSetup } = useAuth()
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login')
+  if (isLoading) {
+    return null
+  }
+
+  if (isInitialSetup) {
+    return <>{children}</>
+  }
+
+  if (!isAuthenticated) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
     }
-  }, [isAuthenticated, isLoading, router])
-
-  if (!isLoading && !isAuthenticated) {
     return null
   }
 

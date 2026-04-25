@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useIsClient } from "@/lib/hooks/use-is-client"
 import { StorageManager, TMDBItem } from "@/lib/data/storage"
 import { realtimeSyncManager, DataChangeEvent } from "@/lib/data/realtime-sync-manager"
+import { useAuth } from "@/shared/components/auth-provider"
 
 export function useDataSync() {
   const [items, setItems] = useState<TMDBItem[]>([])
@@ -11,6 +12,7 @@ export function useDataSync() {
   const [initialized, setInitialized] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
   const isClient = useIsClient()
+  const { isAuthenticated } = useAuth()
 
   const loadData = useCallback(async () => {
     if (!isClient) return
@@ -31,6 +33,12 @@ export function useDataSync() {
     if (!isClient) return
 
     let mounted = true
+
+    if (!isAuthenticated) {
+      realtimeSyncManager.cleanup()
+      setIsConnected(false)
+      return
+    }
 
     const initializeSync = async () => {
       try {
@@ -58,7 +66,11 @@ export function useDataSync() {
 
     loadData()
     initializeSync()
-  }, [isClient, loadData])
+
+    return () => {
+      mounted = false
+    }
+  }, [isClient, loadData, isAuthenticated])
 
   // Handle data change events
   useEffect(() => {

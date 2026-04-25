@@ -1,14 +1,12 @@
-/**
- * Security Settings Panel
- */
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import { Shield, Eye, EyeOff } from "lucide-react"
+import { Shield, Eye, EyeOff, Check, X } from "lucide-react"
 import type { PasswordForm } from "./types"
 import { useTranslation } from "react-i18next"
+import { useMemo } from "react"
+import { validatePassword } from "@/lib/auth/password-validator"
 
 interface SecuritySettingsPanelProps {
   passwordForm: PasswordForm
@@ -36,6 +34,21 @@ export default function SecuritySettingsPanel({
   handlePasswordChange
 }: SecuritySettingsPanelProps) {
   const { t } = useTranslation("settings")
+
+  const passwordStrength = useMemo(() => validatePassword(passwordForm.newPassword), [passwordForm.newPassword])
+
+  const strengthColor = {
+    weak: 'bg-red-500',
+    medium: 'bg-yellow-500',
+    strong: 'bg-green-500',
+  }
+
+  const strengthWidth = {
+    weak: 'w-1/3',
+    medium: 'w-2/3',
+    strong: 'w-full',
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -53,7 +66,6 @@ export default function SecuritySettingsPanel({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* 当前密码 */}
           <div>
             <Label htmlFor="currentPassword">{t("securityPanel.currentPassword")}</Label>
             <div className="relative mt-1">
@@ -83,7 +95,6 @@ export default function SecuritySettingsPanel({
             </div>
           </div>
 
-          {/* 新密码 */}
           <div>
             <Label htmlFor="newPassword">{t("securityPanel.newPassword")}</Label>
             <div className="relative mt-1">
@@ -111,9 +122,43 @@ export default function SecuritySettingsPanel({
                 )}
               </Button>
             </div>
+
+            {passwordForm.newPassword && (
+              <div className="space-y-2 mt-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${strengthColor[passwordStrength.strength]} ${strengthWidth[passwordStrength.strength]}`}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {[
+                    { key: 'minLength' as const, label: t("securityPanel.passwordReq1") },
+                    { key: 'hasUppercase' as const, label: t("securityPanel.passwordReq2") },
+                    { key: 'hasLowercase' as const, label: t("securityPanel.passwordReq3") },
+                    { key: 'hasNumber' as const, label: t("securityPanel.passwordReq4") },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-1.5">
+                      {passwordStrength.checks[key] ? (
+                        <Check className="h-3 w-3 text-green-500 shrink-0" />
+                      ) : (
+                        <X className="h-3 w-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                      )}
+                      <span className={`text-xs ${
+                        passwordStrength.checks[key]
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-gray-400 dark:text-gray-500'
+                      }`}>
+                        {label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 确认新密码 */}
           <div>
             <Label htmlFor="confirmPassword">{t("securityPanel.confirmNewPassword")}</Label>
             <div className="relative mt-1">
@@ -143,17 +188,6 @@ export default function SecuritySettingsPanel({
             </div>
           </div>
 
-          {/* 密码要求提示 */}
-          <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-            <p>{t("securityPanel.passwordRequirements")}</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>{t("securityPanel.passwordReq1")}</li>
-              <li>{t("securityPanel.passwordReq2")}</li>
-              <li>{t("securityPanel.passwordReq3")}</li>
-            </ul>
-          </div>
-
-          {/* 修改按钮 */}
           <div className="flex justify-end pt-4">
             <Button
               onClick={handlePasswordChange}
