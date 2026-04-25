@@ -3,7 +3,7 @@
  * 使用 camelCase 字段名，与数据库 Schema 保持一致
  */
 
-import { getDatabase } from '../connection';
+import { getDatabase, getDatabaseAsync } from '../connection';
 import { BaseRepository } from './base.repository';
 import type { UserRow, DatabaseResult } from '../types';
 import { logger } from '@/lib/utils/logger';
@@ -128,6 +128,17 @@ export class UserRepository extends BaseRepository<User, UserRow> {
 
   getAdmin(): User | null {
     const db = getDatabase();
+    const row = db
+      .prepare('SELECT * FROM users WHERE deletedAt IS NULL LIMIT 1')
+      .get() as UserRow | undefined;
+
+    if (!row) return null;
+
+    return mapRowToUser(row);
+  }
+
+  async getAdminAsync(): Promise<User | null> {
+    const db = await getDatabaseAsync();
     const row = db
       .prepare('SELECT * FROM users WHERE deletedAt IS NULL LIMIT 1')
       .get() as UserRow | undefined;

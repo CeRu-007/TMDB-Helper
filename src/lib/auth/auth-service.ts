@@ -197,7 +197,7 @@ export class AuthService {
     if (!token) return null;
     const decoded = this.verifyToken(token);
     if (!decoded) return null;
-    const user = userRepository.getAdmin();
+    const user = await userRepository.getAdminAsync();
     if (!user) return null;
     return decoded.userId;
   }
