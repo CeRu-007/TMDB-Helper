@@ -9,7 +9,13 @@ import { AuthProvider, useAuth } from "@/shared/components/auth-provider"
 import { Toaster } from "@/shared/components/ui/toaster"
 import { ModelServiceProvider } from "@/lib/contexts/ModelServiceContext"
 import { useAppInitialization } from "@/shared/hooks/use-app-initialization"
+import { useThemePersistence } from "@/shared/hooks/use-theme-persistence"
 import "@/lib/i18n"
+
+function ThemeSync() {
+  useThemePersistence()
+  return null
+}
 
 const AppWithToaster = ({ children }: { children: ReactNode }) => (
   <>
@@ -67,6 +73,7 @@ export default function MidLayout({
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeSync />
       <AuthProvider>
         <AuthContent isLoginPage={isLoginPage}>
           {children}

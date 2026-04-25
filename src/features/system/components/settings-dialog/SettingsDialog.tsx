@@ -29,6 +29,7 @@ import SecuritySettingsPanel from "./SecuritySettingsPanel"
 import HelpSettingsPanel from "./HelpSettingsPanel"
 import { CheckCircle2, AlertCircle } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { useTheme } from "next-themes"
 import type {
   SettingsDialogProps,
   TMDBConfig,
@@ -75,6 +76,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const { toast } = useToast()
   const { changePassword } = useAuth()
   const { updateScenario } = useModelService()
+  const { setTheme } = useTheme()
 
   const validSections = useMemo(() => [
     'model-service',
@@ -311,6 +313,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
                 ...saved,
               }
               setAppearanceSettings(merged)
+              // 主题由 useThemePersistence 统一管理，这里只同步 next-themes 状态
+              setTheme(merged.theme)
               applyThemeSettings(merged)
             }
           }
@@ -657,23 +661,11 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     return colors[saveStatus] || "text-gray-600 dark:text-gray-400"
   }
 
-// 应用主题设置
+// 应用非主题类外观设置（主题由 next-themes 统一管理）
   const applyThemeSettings = useCallback((settings: AppearanceSettings) => {
     const root = document.documentElement
 
-    if (settings.theme === 'dark') {
-      root.classList.add('dark')
-    } else if (settings.theme === 'light') {
-      root.classList.remove('dark')
-    } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      if (prefersDark) {
-        root.classList.add('dark')
-      } else {
-        root.classList.remove('dark')
-      }
-    }
-
+    // 主题切换由 next-themes 的 setTheme 处理，这里只处理其他外观属性
     root.setAttribute('data-primary-color', settings.primaryColor)
 
     const fontSizeMap = {
@@ -823,6 +815,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         await ClientConfigManager.setItem("appearance_settings", JSON.stringify(appearanceSettings))
       }
 
+      // 同步主题到 next-themes（next-themes 会自动处理 DOM 和 localStorage）
+      setTheme(appearanceSettings.theme)
       applyThemeSettings(appearanceSettings)
 
       toast({
@@ -837,7 +831,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         description: t("settings.appearanceSaveFailed")
       })
     }
-  }, [appearanceSettings, toast])
+  }, [appearanceSettings, toast, setTheme])
 
   // 保存视频缩略图设置
   const saveVideoThumbnailSettings = useCallback(async () => {
