@@ -7,7 +7,7 @@ import { logger } from '@/lib/utils/logger';
 export async function GET(_request: NextRequest) {
   try {
     await getDatabaseAsync();
-    initializeSchema();
+    await initializeSchema();
     const hasAdmin = AuthService.hasAdmin();
     return NextResponse.json({
       success: true,

@@ -11,7 +11,7 @@ import { getDatabaseAsync } from '@/lib/database/connection';
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     await getDatabaseAsync();
-    initializeSchema();
+    await initializeSchema();
 
     const token = request.cookies.get('auth-token')?.value;
 
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const decoded = AuthService.verifyToken(token);
     if (!decoded) {
+      authLogger.warn('[Auth] Token verification failed for request');
       return NextResponse.json(
         { success: false, error: '认证信息无效', code: 'UNAUTHORIZED' },
         { status: 401 }
