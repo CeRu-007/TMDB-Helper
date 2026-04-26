@@ -271,24 +271,27 @@ jobs:
   create-release:
     needs: [prepare, docker, electron]
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.skip_docker != true || inputs.skip_electron != true)) }}
+    if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.prepare.result == 'success' && (needs.docker.result == 'success' || needs.docker.result == 'skipped') && (needs.electron.result == 'success' || needs.electron.result == 'skipped') }}
 
     steps:
       - name: Download Docker artifact
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_docker != true }}
+        if: ${{ github.event_name == 'push' || inputs.skip_docker != true }}
         uses: actions/download-artifact@v4
         with:
           name: docker-image
           path: dist/
+        continue-on-error: true
 
       - name: Download Electron artifacts
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+        if: ${{ github.event_name == 'push' || inputs.skip_electron != true }}
         uses: actions/download-artifact@v4
         with:
           path: dist/
+        continue-on-error: true
 
       - name: Display all artifacts
         run: |
+          mkdir -p dist
           echo "=== 所有产物 ==="
           ls -laR dist/
 
