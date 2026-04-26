@@ -83,36 +83,6 @@ export class PerformanceOptimizer {
   }
 
   /**
-   * 监控chunk加载错误
-   */
-  static monitorChunkLoading(): void {
-    if (typeof window === 'undefined') return;
-
-    window.addEventListener('error', (event) => {
-      if (event.filename && event.filename.includes('_next/static/chunks/')) {
-        this.handleChunkLoadError(event.filename);
-      }
-    });
-
-    window.addEventListener('unhandledrejection', (event) => {
-      if (event.reason?.message?.includes('ChunkLoadError')) {
-        this.handleChunkLoadError('unknown');
-      }
-    });
-  }
-
-  /**
-   * 处理chunk加载错误
-   */
-  private static handleChunkLoadError(chunkName: string): void {
-    setTimeout(() => {
-      if (confirm('检测到资源加载失败，是否重新加载页面？')) {
-        window.location.reload();
-      }
-    }, DELAY_1S);
-  }
-
-  /**
    * 获取内存使用情况
    */
   private static getMemoryUsage(): number {
@@ -286,7 +256,7 @@ export class PerformanceOptimizer {
   static initialize(): void {
     if (typeof window === 'undefined') return;
 
-    this.monitorChunkLoading();
+    // 注意：已移除 chunk 加载错误监控，避免干扰正常错误恢复
 
     if (document.readyState === 'complete') {
       this.recordPageLoad();

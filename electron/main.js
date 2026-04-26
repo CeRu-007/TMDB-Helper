@@ -273,14 +273,7 @@ function createWindow() {
     // 生产环境性能优化
     if (!isDev) {
       // 禁用不必要的功能以节省资源
-      mainWindow.webContents.setAudioMuted(true); // 如果不需要音频
-
-      // 优化内存使用
-      setInterval(() => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.session.clearCache();
-        }
-      }, 300000); // 每5分钟清理一次缓存
+      mainWindow.webContents.setAudioMuted(true);
     }
   });
 
