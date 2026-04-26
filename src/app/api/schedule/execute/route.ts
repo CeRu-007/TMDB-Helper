@@ -5,11 +5,23 @@ import { itemsRepository } from '@/lib/database/repositories/items.repository'
 import { executeScheduleTask, processScheduleTaskResult, type LogEntry } from '@/lib/scheduler/schedule-executor'
 import { notifier } from '@/lib/scheduler/notifier'
 import { logger } from '@/lib/utils/logger'
+import { initializeDatabase } from '@/lib/database'
+
+async function ensureDatabaseInitialized(): Promise<void> {
+  try {
+    await initializeDatabase()
+  } catch (error) {
+    console.error('[Schedule Execute API] 数据库初始化失败:', error)
+    throw error
+  }
+}
 
 export async function POST(request: NextRequest) {
   const logs: LogEntry[] = []
 
   try {
+    await ensureDatabaseInitialized()
+
     logger.info('[Schedule Execute] === POST 开始 ===')
     const body = await request.json()
     const { itemId } = body

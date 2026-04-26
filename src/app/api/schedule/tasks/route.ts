@@ -1,10 +1,22 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { scheduleRepository } from '@/lib/data/schedule-repository'
 import { scheduler } from '@/lib/scheduler/scheduler'
+import { initializeDatabase } from '@/lib/database'
 import type { CreateScheduleTaskInput, UpdateScheduleTaskInput } from '@/types/schedule'
+
+async function ensureDatabaseInitialized(): Promise<void> {
+  try {
+    await initializeDatabase()
+  } catch (error) {
+    console.error('[Schedule Tasks API] 数据库初始化失败:', error)
+    throw error
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
+    await ensureDatabaseInitialized()
+
     const { searchParams } = new URL(request.url)
     const itemId = searchParams.get('itemId')
 
@@ -23,6 +35,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await ensureDatabaseInitialized()
+
     const body: CreateScheduleTaskInput = await request.json()
 
     if (!body.itemId || !body.cron) {
@@ -51,6 +65,8 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    await ensureDatabaseInitialized()
+
     const body: UpdateScheduleTaskInput = await request.json()
 
     if (!body.id) {
@@ -79,6 +95,8 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await ensureDatabaseInitialized()
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 

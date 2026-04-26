@@ -1,8 +1,20 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { scheduleLogRepository } from '@/lib/data/schedule-log-repository'
+import { initializeDatabase } from '@/lib/database'
+
+async function ensureDatabaseInitialized(): Promise<void> {
+  try {
+    await initializeDatabase()
+  } catch (error) {
+    console.error('[Schedule Logs API] 数据库初始化失败:', error)
+    throw error
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
+    await ensureDatabaseInitialized()
+
     const { searchParams } = new URL(request.url)
     const taskId = searchParams.get('taskId')
     const limit = parseInt(searchParams.get('limit') || '10', 10)
