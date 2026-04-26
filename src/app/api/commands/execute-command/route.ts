@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { spawn } from "child_process"
 import fs from "fs"
-import { TIMEOUT_30S } from "@/lib/constants/constants"
+import { TIMEOUT_3M } from "@/lib/constants/constants"
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         )
       })
 
-      // 设置超时（30秒）
+      // 设置超时（3分钟）
       setTimeout(() => {
         childProcess.kill()
         resolve(
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
             workingDirectory: workingDirectory,
           }),
         )
-      }, TIMEOUT_30S)
+      }, TIMEOUT_3M)
     })
   } catch (error) {
     return NextResponse.json({ error: "服务器内部错误" }, { status: 500 })
