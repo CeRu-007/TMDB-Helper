@@ -135,9 +135,6 @@ export default function SecuritySettingsPanel({
                 <div className="space-y-1">
                   {[
                     { key: 'minLength' as const, label: t("securityPanel.passwordReq1") },
-                    { key: 'hasUppercase' as const, label: t("securityPanel.passwordReq2") },
-                    { key: 'hasLowercase' as const, label: t("securityPanel.passwordReq3") },
-                    { key: 'hasNumber' as const, label: t("securityPanel.passwordReq4") },
                   ].map(({ key, label }) => (
                     <div key={key} className="flex items-center gap-1.5">
                       {passwordStrength.checks[key] ? (

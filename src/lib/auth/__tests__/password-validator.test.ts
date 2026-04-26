@@ -7,84 +7,12 @@ describe('validatePassword', () => {
       const result = validatePassword('Ab1')
       expect(result.valid).toBe(false)
       expect(result.strength).toBe('medium')
-      expect(result.error).toBe('密码长度至少为8位')
+      expect(result.error).toBe('密码长度至少为6位')
       expect(result.checks.minLength).toBe(false)
     })
 
-    it('rejects password with no uppercase letter', () => {
-      const result = validatePassword('abcdefgh1')
-      expect(result.valid).toBe(false)
-      expect(result.error).toBe('密码需包含大写字母')
-      expect(result.checks.hasUppercase).toBe(false)
-    })
-
-    it('rejects password with no lowercase letter', () => {
-      const result = validatePassword('ABCDEFGH1')
-      expect(result.valid).toBe(false)
-      expect(result.error).toBe('密码需包含小写字母')
-      expect(result.checks.hasLowercase).toBe(false)
-    })
-
-    it('rejects password with no number', () => {
-      const result = validatePassword('Abcdefgh')
-      expect(result.valid).toBe(false)
-      expect(result.error).toBe('密码需包含数字')
-      expect(result.checks.hasNumber).toBe(false)
-    })
-
-    it('rejects password with only lowercase', () => {
-      const result = validatePassword('abcdefgh')
-      expect(result.valid).toBe(false)
-      expect(result.strength).toBe('weak')
-    })
-  })
-
-  describe('medium passwords', () => {
-    it('accepts password meeting minimum criteria without special chars', () => {
-      const result = validatePassword('Abcdefg1')
-      expect(result.valid).toBe(true)
-      expect(result.strength).toBe('strong')
-      expect(result.checks.hasSpecial).toBe(false)
-      expect(result.error).toBeUndefined()
-    })
-
-    it('classifies 4 checks met as strong', () => {
-      const result = validatePassword('Abcdefg1!')
-      expect(result.valid).toBe(true)
-      expect(result.strength).toBe('strong')
-      expect(result.checks.hasSpecial).toBe(true)
-    })
-  })
-
-  describe('strong passwords', () => {
-    it('accepts password meeting all criteria', () => {
-      const result = validatePassword('Abcdefg1!')
-      expect(result.valid).toBe(true)
-      expect(result.strength).toBe('strong')
-      expect(result.checks.minLength).toBe(true)
-      expect(result.checks.hasUppercase).toBe(true)
-      expect(result.checks.hasLowercase).toBe(true)
-      expect(result.checks.hasNumber).toBe(true)
-      expect(result.checks.hasSpecial).toBe(true)
-      expect(result.error).toBeUndefined()
-    })
-
-    it('accepts complex password with various special chars', () => {
-      const result = validatePassword('MyP@ssw0rd!')
-      expect(result.valid).toBe(true)
-      expect(result.strength).toBe('strong')
-    })
-  })
-
-  describe('boundary values', () => {
-    it('accepts password with exactly 8 characters meeting all criteria', () => {
-      const result = validatePassword('Abcd1234')
-      expect(result.valid).toBe(true)
-      expect(result.checks.minLength).toBe(true)
-    })
-
-    it('rejects password with exactly 7 characters', () => {
-      const result = validatePassword('Abcd123')
+    it('rejects password with exactly 5 characters', () => {
+      const result = validatePassword('abcde')
       expect(result.valid).toBe(false)
       expect(result.checks.minLength).toBe(false)
     })
@@ -94,6 +22,66 @@ describe('validatePassword', () => {
       expect(result.valid).toBe(false)
       expect(result.strength).toBe('weak')
       expect(result.checks.minLength).toBe(false)
+    })
+  })
+
+  describe('valid passwords', () => {
+    it('accepts password with exactly 6 characters', () => {
+      const result = validatePassword('abcdef')
+      expect(result.valid).toBe(true)
+      expect(result.checks.minLength).toBe(true)
+      expect(result.error).toBeUndefined()
+    })
+
+    it('accepts password with only lowercase letters', () => {
+      const result = validatePassword('abcdefgh')
+      expect(result.valid).toBe(true)
+      expect(result.strength).toBe('weak')
+      expect(result.error).toBeUndefined()
+    })
+
+    it('accepts password with only uppercase letters', () => {
+      const result = validatePassword('ABCDEFGH')
+      expect(result.valid).toBe(true)
+      expect(result.strength).toBe('weak')
+      expect(result.error).toBeUndefined()
+    })
+
+    it('accepts password with only numbers', () => {
+      const result = validatePassword('12345678')
+      expect(result.valid).toBe(true)
+      expect(result.strength).toBe('weak')
+      expect(result.error).toBeUndefined()
+    })
+
+    it('accepts password with mixed case and numbers', () => {
+      const result = validatePassword('Abcdefg1')
+      expect(result.valid).toBe(true)
+      expect(result.strength).toBe('strong')
+      expect(result.error).toBeUndefined()
+    })
+
+    it('accepts password with special characters', () => {
+      const result = validatePassword('MyP@ssw0rd!')
+      expect(result.valid).toBe(true)
+      expect(result.strength).toBe('strong')
+    })
+  })
+
+  describe('strength levels', () => {
+    it('classifies only minLength met as weak', () => {
+      const result = validatePassword('abcdefgh')
+      expect(result.strength).toBe('weak')
+    })
+
+    it('classifies 2-3 checks met as medium', () => {
+      const result = validatePassword('Abcdefgh')
+      expect(result.strength).toBe('medium')
+    })
+
+    it('classifies 4+ checks met as strong', () => {
+      const result = validatePassword('Abcdefg1!')
+      expect(result.strength).toBe('strong')
     })
   })
 

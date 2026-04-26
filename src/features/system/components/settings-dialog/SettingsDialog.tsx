@@ -878,7 +878,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       return
     }
 
-    if (passwordForm.newPassword.length < 8) {
+    if (passwordForm.newPassword.length < 6) {
       toast({
         title: t("common.error"),
         description: t("settings.passwordTooShort"),

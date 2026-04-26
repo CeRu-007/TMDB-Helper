@@ -18,7 +18,7 @@ export interface UsernameValidationResult {
   error?: string;
 }
 
-const MIN_PASSWORD_LENGTH = 8;
+const MIN_PASSWORD_LENGTH = 6;
 const MIN_USERNAME_LENGTH = 3;
 const MAX_USERNAME_LENGTH = 20;
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]+$/;
@@ -38,12 +38,9 @@ export function validatePassword(password: string): PasswordValidationResult {
   else if (metCount <= 3) strength = 'medium';
   else strength = 'strong';
 
-  const valid = checks.minLength && checks.hasUppercase && checks.hasLowercase && checks.hasNumber;
+  const valid = checks.minLength;
   let error: string | undefined;
-  if (!checks.minLength) error = '密码长度至少为8位';
-  else if (!checks.hasUppercase) error = '密码需包含大写字母';
-  else if (!checks.hasLowercase) error = '密码需包含小写字母';
-  else if (!checks.hasNumber) error = '密码需包含数字';
+  if (!checks.minLength) error = '密码长度至少为6位';
 
   return error
     ? { valid, error, strength, checks }

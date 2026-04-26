@@ -267,10 +267,7 @@ export default function LoginPage() {
                       </div>
                       <div className="space-y-1">
                         {[
-                          { key: 'minLength' as const, label: '至少8个字符' },
-                          { key: 'hasUppercase' as const, label: '包含大写字母' },
-                          { key: 'hasLowercase' as const, label: '包含小写字母' },
-                          { key: 'hasNumber' as const, label: '包含数字' },
+                          { key: 'minLength' as const, label: '至少6个字符' },
                         ].map(({ key, label }) => (
                           <div key={key} className="flex items-center gap-1.5">
                             {passwordStrength.checks[key] ? (
