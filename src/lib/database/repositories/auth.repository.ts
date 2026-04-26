@@ -16,6 +16,7 @@ export interface User {
   updatedAt: string;
   lastLoginAt?: string | undefined;
   sessionExpiryDays: number;
+  avatarUrl?: string | undefined;
 }
 
 function mapRowToUser(row: UserRow): User {
@@ -27,6 +28,7 @@ function mapRowToUser(row: UserRow): User {
     updatedAt: row.updatedAt,
     lastLoginAt: row.lastLoginAt ?? undefined,
     sessionExpiryDays: row.sessionExpiryDays,
+    avatarUrl: row.avatarUrl ?? undefined,
   };
 }
 
@@ -61,8 +63,8 @@ export class UserRepository extends BaseRepository<User, UserRow> {
     try {
       const now = new Date().toISOString();
       db.prepare(`
-        INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, deletedAt)
-        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @deletedAt)
+        INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, deletedAt)
+        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @avatarUrl, @deletedAt)
       `).run({
         id: user.id,
         username: user.username,
@@ -71,6 +73,7 @@ export class UserRepository extends BaseRepository<User, UserRow> {
         updatedAt: user.updatedAt || now,
         lastLoginAt: user.lastLoginAt ?? null,
         sessionExpiryDays: user.sessionExpiryDays,
+        avatarUrl: user.avatarUrl ?? null,
         deletedAt: null,
       });
 
@@ -108,6 +111,21 @@ export class UserRepository extends BaseRepository<User, UserRow> {
       return { success: true };
     } catch (error) {
       logger.error('[UserRepository] 更新密码失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '更新失败',
+      };
+    }
+  }
+
+  updateAvatar(id: string, avatarUrl: string): DatabaseResult {
+    const db = getDatabase();
+
+    try {
+      db.prepare('UPDATE users SET avatarUrl = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(avatarUrl || null, new Date().toISOString(), id);
+      return { success: true };
+    } catch (error) {
+      logger.error('[UserRepository] 更新头像失败:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : '更新失败',
@@ -154,13 +172,14 @@ export class UserRepository extends BaseRepository<User, UserRow> {
     try {
       const now = new Date().toISOString();
       db.prepare(`
-        INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, deletedAt)
-        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @deletedAt)
+        INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, deletedAt)
+        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @avatarUrl, @deletedAt)
         ON CONFLICT(id) DO UPDATE SET
           username = @username,
           passwordHash = @passwordHash,
           lastLoginAt = @lastLoginAt,
           sessionExpiryDays = @sessionExpiryDays,
+          avatarUrl = @avatarUrl,
           updatedAt = @updatedAt
       `).run({
         id: user.id,
@@ -170,6 +189,7 @@ export class UserRepository extends BaseRepository<User, UserRow> {
         updatedAt: now,
         lastLoginAt: user.lastLoginAt ?? null,
         sessionExpiryDays: user.sessionExpiryDays,
+        avatarUrl: user.avatarUrl ?? null,
         deletedAt: null,
       });
 

@@ -75,11 +75,10 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
         if (prev && prev.userId === authUser.id && prev.displayName === authUser.username) {
           return prev
         }
-        const storedAvatar = localStorage.getItem('tmdb_helper_avatar_url')
         return {
           userId: authUser.id,
           displayName: authUser.username,
-          ...(storedAvatar ? { avatarUrl: storedAvatar } : {}),
+          avatarUrl: prev?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
           createdAt: prev?.createdAt || new Date().toISOString(),
           lastActiveAt: new Date().toISOString(),
         }
@@ -93,24 +92,34 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
     const init = async () => {
       setIsLoading(true)
       try {
-        if (authUser) {
-          const storedAvatar = localStorage.getItem('tmdb_helper_avatar_url')
-          setUserInfo({
-            userId: authUser.id,
-            displayName: authUser.username,
-            ...(storedAvatar ? { avatarUrl: storedAvatar } : {}),
-            createdAt: new Date().toISOString(),
-            lastActiveAt: new Date().toISOString(),
-          })
-        }
+        let avatarUrl = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka'
+        let createdAt = new Date().toISOString()
 
         try {
-          await fetch('/api/auth/user', {
+          const res = await fetch('/api/auth/user', {
             method: 'GET',
             credentials: 'include',
           })
+          const data = await res.json()
+          if (data.success && data.user) {
+            if (data.user.avatarUrl) {
+              avatarUrl = data.user.avatarUrl
+            }
+            if (data.user.createdAt) {
+              createdAt = data.user.createdAt
+            }
+          }
         } catch {}
 
+        if (authUser) {
+          setUserInfo({
+            userId: authUser.id,
+            displayName: authUser.username,
+            avatarUrl,
+            createdAt,
+            lastActiveAt: new Date().toISOString(),
+          })
+        }
       } catch {
       } finally {
         setIsInitialized(true)
@@ -118,7 +127,7 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
       }
     }
     init()
-  }, [isClient])
+  }, [isClient, authUser])
 
   // 更新用户显示名称
   const updateDisplayName = async (name: string): Promise<boolean> => {
@@ -155,12 +164,6 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
     if (!isClient || !userInfo) return false
 
     try {
-      if (avatarUrl) {
-        localStorage.setItem('tmdb_helper_avatar_url', avatarUrl)
-      } else {
-        localStorage.removeItem('tmdb_helper_avatar_url')
-      }
-
       setUserInfo(prev => prev ? { ...prev, ...(avatarUrl ? { avatarUrl } : {}), lastActiveAt: new Date().toISOString() } : null)
 
       try {
@@ -191,8 +194,6 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
     if (!isClient) return
 
     try {
-      localStorage.removeItem('tmdb_helper_avatar_url')
-
       fetch('/api/auth/user', {
         method: 'DELETE',
         credentials: 'include',

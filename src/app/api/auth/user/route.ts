@@ -3,8 +3,9 @@ import { AuthMiddleware } from '@/lib/auth/auth-middleware';
 import { AuthService } from '@/lib/auth/auth-service';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
+import { userRepository } from '@/lib/database/repositories/auth.repository';
 
-function buildUserInfo(user: { id: string; username: string; createdAt: string; lastLoginAt?: string } | null) {
+function buildUserInfo(user: { id: string; username: string; createdAt: string; lastLoginAt?: string; avatarUrl?: string } | null) {
   if (!user) {
     return {
       userId: 'anonymous',
@@ -16,6 +17,7 @@ function buildUserInfo(user: { id: string; username: string; createdAt: string; 
   return {
     userId: user.id,
     displayName: user.username,
+    avatarUrl: user.avatarUrl,
     createdAt: user.createdAt,
     lastActiveAt: user.lastLoginAt || new Date().toISOString(),
   };
@@ -67,6 +69,10 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
     }
 
     logger.info(`在服务器端接收到用户信息更新请求: displayName=${displayName}, avatarUrl=${avatarUrl}`);
+
+    if (typeof avatarUrl === 'string') {
+      userRepository.updateAvatar(userId, avatarUrl);
+    }
 
     const user = AuthService.getUser();
     return NextResponse.json({

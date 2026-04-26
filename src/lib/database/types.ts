@@ -103,6 +103,7 @@ export interface UserRow {
   updatedAt: string;
   lastLoginAt: string | null;
   sessionExpiryDays: number;
+  avatarUrl: string | null;
   deletedAt: string | null;
 }
 

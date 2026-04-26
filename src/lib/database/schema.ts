@@ -7,7 +7,7 @@ import { getDatabaseAsync } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 /**
  * 初始化数据库 Schema
@@ -52,6 +52,9 @@ export async function initializeSchema(): Promise<void> {
     }
     if (currentVersion < 10) {
       migrateToV10(db);
+    }
+    if (currentVersion < 11) {
+      migrateToV11(db);
     }
 
     setUserVersion(db, SCHEMA_VERSION);
@@ -181,6 +184,7 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       updatedAt TEXT NOT NULL,
       lastLoginAt TEXT,
       sessionExpiryDays INTEGER DEFAULT 15,
+      avatarUrl TEXT,
       deletedAt TEXT
     )
   `);
@@ -411,6 +415,19 @@ function migrateToV10(db: ReturnType<typeof getDatabase>): void {
     logger.info('[Database] V10 迁移完成');
   } catch (error) {
     logger.error('[Database] V10 迁移失败:', error);
+  }
+}
+
+function migrateToV11(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V11 迁移: 为 users 表添加 avatarUrl 字段');
+
+  try {
+    db.exec(`
+      ALTER TABLE users ADD COLUMN avatarUrl TEXT
+    `);
+    logger.info('[Database] V11 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V11 迁移失败:', error);
   }
 }
 
