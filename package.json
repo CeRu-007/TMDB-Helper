@@ -232,7 +232,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "TMDB Helper",
-      "differentialPackage": false
+      "differentialPackage": false,
+      "include": "scripts/nsis-installer.nsh"
     },
     "compression": "maximum",
     "removePackageScripts": true,
