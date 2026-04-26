@@ -153,44 +153,83 @@ async function executeExternalCommand(
   workingDirectory: string,
   addLog: (type: 'stdout' | 'stderr' | 'info', message: string) => void
 ): Promise<{ success: boolean; output: string; error: string }> {
-  try {
-    logger.info(`[Schedule Execute] 调用execute-command API, workingDirectory=${workingDirectory}`)
-    const response = await fetch(`${getBaseUrl()}/api/commands/execute-command`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ command, workingDirectory }),
-    })
+  return new Promise(async (resolve) => {
+    try {
+      logger.info(`[Schedule Execute] 调用execute-command-interactive API, workingDirectory=${workingDirectory}`)
 
-    const data = await response.json()
-    logger.info(`[Schedule Execute] API响应: success=${data.success}, stdoutLen=${data.output?.length}, stderrLen=${data.error?.length}`)
+      let fullOutput = ''
+      let errorMessage = ''
+      let hasClose = false
 
-    const output = data.output || data.error || ''
+      const response = await fetch(`${getBaseUrl()}/api/commands/execute-command-interactive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command, workingDirectory, timeout: 300000 }),
+      })
 
-    if (output.includes('【CSV内容】')) {
-      logger.info(`[Schedule Execute] 输出中包含CSV内容标记`)
-    } else {
-      logger.info(`[Schedule Execute] 输出不包含CSV标记，前100字符: ${output.substring(0, 100)}`)
-      output.split('\n').forEach((line: string) => {
-        if (line.trim()) {
-          addLog('stdout', line)
+      if (!response.ok || !response.body) {
+        const err = `HTTP错误: ${response.status}`
+        addLog('stderr', err)
+        resolve({ success: false, output: '', error: err })
+        return
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.substring(6))
+
+              if (data.type === 'start' && data.processId) {
+                logger.info(`[Schedule Execute] 交互进程启动: PID=${data.processId}`)
+                addLog('info', `进程已启动 (PID: ${data.processId})`)
+              } else if (data.type === 'stdout') {
+                fullOutput += data.message
+                addLog('stdout', data.message)
+              } else if (data.type === 'stderr') {
+                fullOutput += data.message
+                errorMessage += data.message
+                addLog('stderr', data.message)
+              } else if (data.type === 'close') {
+                hasClose = true
+                logger.info(`[Schedule Execute] 进程关闭: status=${data.status}, exitCode=${data.exitCode}`)
+                addLog('info', data.message)
+              } else if (data.type === 'timeout') {
+                errorMessage += data.message
+                addLog('stderr', data.message)
+              }
+            } catch (err) {
+              logger.warn(`[Schedule Execute] 解析SSE数据失败: ${err}`)
+            }
+          }
         }
+      }
+
+      logger.info(`[Schedule Execute] 流读取结束, hasClose=${hasClose}, errorLen=${errorMessage.length}`)
+
+      const success = !errorMessage.includes('Error') && !errorMessage.includes('error') && !errorMessage.includes('超时')
+      resolve({ success, output: fullOutput, error: errorMessage })
+    } catch (error) {
+      logger.error(`[Schedule Execute] executeExternalCommand异常:`, error)
+      addLog('stderr', `API调用失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      resolve({
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : 'API调用失败',
       })
     }
-
-    return {
-      success: data.success,
-      output: output,
-      error: data.error || '',
-    }
-  } catch (error) {
-    logger.error(`[Schedule Execute] executeExternalCommand异常:`, error)
-    addLog('stderr', `API调用失败: ${error instanceof Error ? error.message : '未知错误'}`)
-    return {
-      success: false,
-      output: '',
-      error: error instanceof Error ? error.message : 'API调用失败',
-    }
-  }
+  })
 }
 
 async function executeInteractiveCommand(
