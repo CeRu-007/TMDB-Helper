@@ -23,6 +23,7 @@
   "enterDisplayName": "输入显示名称",
   "quickSelect": "快速选择",
   "avatarUpdated": "头像已更新",
+  "avatarUpdateSuccess": "您的头像已成功更新",
   "avatarUpdateFailed": "头像更新失败",
   "invalidUrl": "无效的URL",
   "enterValidImageUrl": "请输入有效的图片网络地址",

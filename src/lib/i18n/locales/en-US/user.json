@@ -23,6 +23,7 @@
   "enterDisplayName": "Enter display name",
   "quickSelect": "Quick Select",
   "avatarUpdated": "Avatar Updated",
+  "avatarUpdateSuccess": "Your avatar has been successfully updated",
   "avatarUpdateFailed": "Avatar Update Failed",
   "invalidUrl": "Invalid URL",
   "enterValidImageUrl": "Please enter a valid image URL",

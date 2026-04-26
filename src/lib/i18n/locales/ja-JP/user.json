@@ -23,6 +23,7 @@
   "enterDisplayName": "表示名を入力",
   "quickSelect": "クイック選択",
   "avatarUpdated": "アバターが更新されました",
+  "avatarUpdateSuccess": "アバターが正常に更新されました",
   "avatarUpdateFailed": "アバターの更新に失敗しました",
   "invalidUrl": "無効なURL",
   "enterValidImageUrl": "有効な画像URLを入力してください",

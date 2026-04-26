@@ -23,6 +23,7 @@
   "enterDisplayName": "표시 이름을 입력하세요",
   "quickSelect": "빠른 선택",
   "avatarUpdated": "아바타가 업데이트되었습니다",
+  "avatarUpdateSuccess": "아바타가 성공적으로 업데이트되었습니다",
   "avatarUpdateFailed": "아바타 업데이트에 실패했습니다",
   "invalidUrl": "유효하지 않은 URL",
   "enterValidImageUrl": "유효한 이미지 URL을 입력하세요",
