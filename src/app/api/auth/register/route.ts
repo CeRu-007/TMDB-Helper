@@ -22,22 +22,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const result = await AuthService.register(username.trim(), password);
 
-    if (!result.success) {
+    if (!result.success || !result.user) {
       return NextResponse.json(
-        { success: false, error: result.error },
+        { success: false, error: result.error || '注册失败' },
         { status: 400 }
       );
     }
 
-    const user = await AuthService.validateLogin(username.trim(), password);
-    if (!user) {
-      return NextResponse.json(
-        { success: true, message: '注册成功，请登录', needsLogin: true },
-        { status: 200 }
-      );
-    }
-
-    const token = AuthService.generateToken(user, false);
+    // 注册成功后自动登录
+    const user = result.user;
+    const token = AuthService.generateToken(user as import('@/lib/auth/auth-service').User, false);
     const sessionDays = Math.max(user.sessionExpiryDays || 0, 15);
     const maxAge = sessionDays * 24 * 60 * 60;
     const isSecure = process.env.COOKIE_SECURE !== undefined
