@@ -8,7 +8,7 @@ import { getDatabaseAsync } from '@/lib/database/connection';
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     await getDatabaseAsync();
-    initializeSchema();
+    await initializeSchema();
 
     const body = await request.json();
     const { username, password } = body;
@@ -29,14 +29,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // 注册成功后自动登录
-    const user = result.user;
-    const token = AuthService.generateToken(user as import('@/lib/auth/auth-service').User, false);
+    const user = await AuthService.getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: '注册成功但无法获取用户信息' },
+        { status: 500 }
+      );
+    }
+
+    const token = AuthService.generateToken(user, false);
     const sessionDays = Math.max(user.sessionExpiryDays || 0, 15);
     const maxAge = sessionDays * 24 * 60 * 60;
     const isSecure = process.env.COOKIE_SECURE !== undefined
       ? process.env.COOKIE_SECURE === 'true'
-      : process.env.NODE_ENV === 'production';
+      : process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD !== 'true';
 
     const response = NextResponse.json({
       success: true,

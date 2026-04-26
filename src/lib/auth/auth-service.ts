@@ -43,24 +43,26 @@ export class AuthService {
 
     const secret = process.env.JWT_SECRET;
     const isProduction = process.env.NODE_ENV === 'production';
+    const isElectron = process.env.ELECTRON_BUILD === 'true';
 
     if (!secret) {
-      if (isProduction) {
+      if (isProduction && !isElectron) {
         throw new Error(
           'JWT_SECRET environment variable is required in production. ' +
           'Please set a strong, random secret key.'
         );
       }
       logger.warn(
-        'WARNING: Using default JWT_SECRET for development only. ' +
-        'Set JWT_SECRET environment variable for production use.'
+        'WARNING: Using default JWT_SECRET for %s only. ' +
+        'Set JWT_SECRET environment variable for production use.',
+        isElectron ? 'Electron desktop' : 'development'
       );
       this._jwtSecret = DEFAULT_DEV_SECRET;
       return this._jwtSecret;
     }
 
     if (secret === DEFAULT_PROD_SECRET) {
-      if (isProduction) {
+      if (isProduction && !isElectron) {
         throw new Error(
           'JWT_SECRET must be changed from the default value in production. ' +
           'Please set a strong, random secret key.'
@@ -139,7 +141,7 @@ export class AuthService {
     return null;
   }
 
-  static generateToken(user: User, rememberMe: boolean = false): string {
+  static generateToken(user: User | Omit<User, 'passwordHash'>, rememberMe: boolean = false): string {
     const expiryDays = rememberMe ? user.sessionExpiryDays * 2 : user.sessionExpiryDays;
 
     const payload: object = {

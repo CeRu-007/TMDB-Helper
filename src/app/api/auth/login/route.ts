@@ -3,11 +3,13 @@ import { AuthService } from '@/lib/auth/auth-service';
 import { RateLimiter } from '@/lib/auth/rate-limiter';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { authLogger } from '@/lib/utils/logger';
+import { initializeSchema } from '@/lib/database/schema';
 import { getDatabaseAsync } from '@/lib/database/connection';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     await getDatabaseAsync();
+    await initializeSchema();
 
     const body = await request.json();
     const { username, password, rememberMe = false } = body;
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const user = await AuthService.validateLogin(username, password);
+    const user = await AuthService.validateLogin(username.trim(), password);
     if (!user) {
       return NextResponse.json(
         {
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const isSecure = process.env.COOKIE_SECURE !== undefined
       ? (process.env.COOKIE_SECURE === 'true')
-      : (process.env.NODE_ENV === 'production');
+      : (process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD !== 'true');
 
     const response = NextResponse.json({
       success: true,

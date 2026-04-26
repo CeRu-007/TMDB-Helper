@@ -33,6 +33,13 @@ function initDataDir() {
   // 设置环境变量
   process.env.TMDB_DATA_DIR = appDataDir;
   process.env.ELECTRON_BUILD = 'true';
+  process.env.COOKIE_SECURE = 'false';
+
+  if (!process.env.JWT_SECRET) {
+    const crypto = require('crypto');
+    const machineId = crypto.createHash('sha256').update(app.getPath('exe')).digest('hex');
+    process.env.JWT_SECRET = 'tmdb-helper-electron-' + machineId.substring(0, 32);
+  }
 
   console.log('[Electron] 数据目录:', appDataDir);
   console.log('[Electron] exe 路径:', app.getPath('exe'));
@@ -97,11 +104,11 @@ function initDatabase() {
       FOREIGN KEY (seasonId) REFERENCES seasons(id) ON DELETE CASCADE
     )`);
     
-    // 创建 adminUsers 表
-    db.exec(`CREATE TABLE IF NOT EXISTS adminUsers (
+    // 创建 users 表
+    db.exec(`CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL,
       passwordHash TEXT NOT NULL, createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL, lastLoginAt TEXT, sessionExpiryDays INTEGER DEFAULT 7,
+      updatedAt TEXT NOT NULL, lastLoginAt TEXT, sessionExpiryDays INTEGER DEFAULT 15,
       deletedAt TEXT
     )`);
     
@@ -159,10 +166,10 @@ function initDatabase() {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_seasons_itemId ON seasons(itemId)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_chatId ON messages(chatId)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_chatHistories_deletedAt ON chatHistories(deletedAt)`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_adminUsers_deletedAt ON adminUsers(deletedAt)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_users_deletedAt ON users(deletedAt)`);
     
     // 设置 schema 版本
-    db.exec(`PRAGMA user_version = 9`);
+    db.exec(`PRAGMA user_version = 10`);
     
     db.close();
     console.log('[Electron] 数据库初始化完成');

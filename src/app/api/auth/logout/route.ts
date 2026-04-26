@@ -6,7 +6,7 @@ export async function POST(_request: NextRequest) {
   try {
     const isSecure = process.env.COOKIE_SECURE !== undefined
       ? (process.env.COOKIE_SECURE === 'true')
-      : (process.env.NODE_ENV === 'production');
+      : (process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD !== 'true');
 
     const response = NextResponse.json({
       success: true,

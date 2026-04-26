@@ -95,9 +95,11 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const success = await login(username, password, rememberMe)
+      const result = await login(username, password, rememberMe)
 
-      if (success) {
+      if (!result.success) {
+        setError(result.error || '用户名或密码错误')
+      } else {
         try {
           if (rememberMe) {
             void saveRemember(username, password, true)
@@ -105,11 +107,9 @@ export default function LoginPage() {
             clearRemember()
           }
         } catch {}
-      } else {
-        setError('用户名或密码错误')
       }
     } catch (error) {
-      setError('登录失败,请稍后重试')
+      setError(error instanceof Error ? error.message : '登录失败,请稍后重试')
     } finally {
       setIsLoading(false)
     }
@@ -137,7 +137,7 @@ export default function LoginPage() {
         setError(result.error || '注册失败,请稍后重试')
       }
     } catch (error) {
-      setError('注册失败,请稍后重试')
+      setError(error instanceof Error ? error.message : '注册失败,请稍后重试')
     } finally {
       setIsLoading(false)
     }

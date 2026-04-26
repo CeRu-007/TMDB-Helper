@@ -10,7 +10,7 @@ export function useAuthActions() {
     username: string,
     password: string,
     rememberMe: boolean = false
-  ): Promise<{ success: boolean; user?: AuthUser }> => {
+  ): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -24,9 +24,9 @@ export function useAuthActions() {
       if (response.ok && data.success) {
         return { success: true, user: data.user }
       }
-      return { success: false }
+      return { success: false, error: data.error || '用户名或密码错误' }
     } catch {
-      return { success: false }
+      return { success: false, error: '网络错误，请稍后重试' }
     }
   }
 

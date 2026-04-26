@@ -13,7 +13,7 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  login: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>
+  login: (username: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>
   register: (username: string, password: string) => Promise<{ success: boolean; error?: string | undefined }>
   logout: () => Promise<void>
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     username: string,
     password: string,
     rememberMe: boolean = false
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     const result = await loginAction(username, password, rememberMe)
     if (result.success && result.user) {
       setOverrideState({
@@ -51,9 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       })
       setOverrideInitialSetup(false)
       router.replace('/')
-      return true
+      return { success: true }
     }
-    return false
+    return { success: false, error: result.error || '用户名或密码错误' }
   }, [loginAction, router])
 
   const handleRegister = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string | undefined }> => {
