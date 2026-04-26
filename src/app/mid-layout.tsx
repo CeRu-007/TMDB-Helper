@@ -31,6 +31,7 @@ function AuthContent({ children, isLoginPage }: { children: ReactNode; isLoginPa
     return null
   }
 
+  // 登录页面直接渲染，不检查认证状态
   if (isLoginPage) {
     return (
       <UserIdentityProvider>
@@ -43,7 +44,16 @@ function AuthContent({ children, isLoginPage }: { children: ReactNode; isLoginPa
     )
   }
 
-  if (isInitialSetup || !isAuthenticated) {
+  // 首次设置时重定向到登录页（注册模式）
+  if (isInitialSetup) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
+    return null
+  }
+
+  // 未认证用户重定向到登录页
+  if (!isAuthenticated) {
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
     }
@@ -67,7 +77,7 @@ export default function MidLayout({
   children: ReactNode
 }): JSX.Element {
   const pathname = usePathname()
-  const isLoginPage = pathname === '/login'
+  const isLoginPage = pathname === '/login' || pathname === '/login/'
 
   useAppInitialization()
 
