@@ -72,27 +72,32 @@ jobs:
 
       - name: Generate release notes
         id: notes
+        env:
+          TRIGGER: ${{ steps.version.outputs.trigger }}
+          RELEASE_NOTES_INPUT: ${{ inputs.release_notes }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          if [[ "${{ steps.version.outputs.trigger }}" == "manual" && -n "${{ inputs.release_notes }}" ]]; then
-            NOTES="${{ inputs.release_notes }}"
-          elif [[ "${{ steps.version.outputs.trigger }}" == "tag" ]]; then
-            NOTES=$(git tag -l --format '%(contents)' "${{ steps.version.outputs.tag }}" 2>/dev/null || echo "")
+          if [[ "$TRIGGER" == "manual" && -n "$RELEASE_NOTES_INPUT" ]]; then
+            NOTES="$RELEASE_NOTES_INPUT"
+          elif [[ "$TRIGGER" == "tag" ]]; then
+            NOTES=$(git tag -l --format '%(contents)' "$TAG" 2>/dev/null || echo "")
             if [[ -z "$NOTES" ]]; then
-              NOTES="## TMDB Helper v${{ steps.version.outputs.version }}\n\n"
+              NOTES="## TMDB Helper v${VERSION}\n\n"
               NOTES+="### Docker\n"
-              NOTES+="- 镜像: \`ceru007/tmdb-helper:${{ steps.version.outputs.version }}\`\n"
+              NOTES+="- 镜像: \`ceru007/tmdb-helper:${VERSION}\`\n"
               NOTES+="- latest: \`ceru007/tmdb-helper:latest\`\n\n"
               NOTES+="### 下载说明\n"
-              NOTES+="- Docker 镜像: 下载 \`.tar\` 文件后使用 \`docker load < tmdb-helper-${{ steps.version.outputs.version }}.tar\` 导入\n"
+              NOTES+="- Docker 镜像: 下载 \`.tar\` 文件后使用 \`docker load < tmdb-helper-${VERSION}.tar\` 导入\n"
               NOTES+="- Windows 安装包: 下载 \`.exe\` 文件直接安装\n"
             fi
           else
-            NOTES="## TMDB Helper v${{ steps.version.outputs.version }}\n\n"
+            NOTES="## TMDB Helper v${VERSION}\n\n"
             NOTES+="### Docker\n"
-            NOTES+="- 镜像: \`ceru007/tmdb-helper:${{ steps.version.outputs.version }}\`\n"
+            NOTES+="- 镜像: \`ceru007/tmdb-helper:${VERSION}\`\n"
             NOTES+="- latest: \`ceru007/tmdb-helper:latest\`\n\n"
             NOTES+="### 下载说明\n"
-            NOTES+="- Docker 镜像: 下载 \`.tar\` 文件后使用 \`docker load < tmdb-helper-${{ steps.version.outputs.version }}.tar\` 导入\n"
+            NOTES+="- Docker 镜像: 下载 \`.tar\` 文件后使用 \`docker load < tmdb-helper-${VERSION}.tar\` 导入\n"
             NOTES+="- Windows 安装包: 下载 \`.exe\` 文件直接安装\n"
           fi
           {
