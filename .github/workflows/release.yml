@@ -120,7 +120,7 @@ jobs:
         if: steps.version.outputs.trigger == 'manual'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" package.json
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/g" package.json
           cat package.json | grep '"version"'
 
       - name: Update version in README.md
