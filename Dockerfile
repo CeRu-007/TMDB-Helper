@@ -87,17 +87,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 # 为启动脚本安装 bcryptjs
 RUN cd /app/scripts && npm init -y && npm install bcryptjs@3.0.2
 
-# 切换到 nextjs 用户来安装 Python 包和 Playwright
-USER nextjs
+# 安装 Python 包（使用 --break-system-packages 因为我们在容器中）
+RUN pip3 install --break-system-packages python-dateutil Pillow bordercrop playwright
 
-# 安装 Python 包
-RUN pip3 install --user python-dateutil Pillow bordercrop playwright
-
-# 安装 Playwright Chromium 浏览器（安装到用户目录）
+# 安装 Playwright Chromium 浏览器
 RUN python3 -m playwright install chromium
 
-# 切换回 root 进行后续配置
-USER root
+# 设置浏览器目录权限
+RUN mkdir -p /root/.cache/ms-playwright && chmod -R 755 /root/.cache/ms-playwright
 
 # 确保 nextjs 用户对 .cache 目录有权限
 RUN chown -R nextjs:nodejs /app/.cache
