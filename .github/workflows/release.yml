@@ -251,6 +251,7 @@ jobs:
         run: pnpm run electron:build
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -262,7 +263,7 @@ jobs:
           retention-days: 2
 
   electron-mac:
-    needs: [prepare, electron-windows]
+    needs: prepare
     runs-on: macos-latest
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
     environment: electron-build
@@ -290,6 +291,7 @@ jobs:
         run: pnpm run electron:build:mac
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -299,7 +301,7 @@ jobs:
           retention-days: 2
 
   electron-linux:
-    needs: [prepare, electron-mac]
+    needs: prepare
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
     environment: electron-build
@@ -327,6 +329,7 @@ jobs:
         run: pnpm run electron:build:linux
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
