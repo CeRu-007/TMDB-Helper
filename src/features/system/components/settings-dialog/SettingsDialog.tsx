@@ -30,6 +30,7 @@ import HelpSettingsPanel from "./HelpSettingsPanel"
 import { CheckCircle2, AlertCircle } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useTheme } from "next-themes"
+import { useUpdateCheck } from "@/lib/hooks/use-update-check"
 import type {
   SettingsDialogProps,
   TMDBConfig,
@@ -77,6 +78,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const { changePassword } = useAuth()
   const { updateScenario } = useModelService()
   const { setTheme } = useTheme()
+  const { hasUpdate } = useUpdateCheck()
 
   const validSections = useMemo(() => [
     'model-service',
@@ -1081,6 +1083,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           <SettingsMenu
             activeSection={activeSection}
             onSectionChange={setActiveSection}
+            hasUpdate={hasUpdate}
           />
 
           <div className="flex-1 flex flex-col">

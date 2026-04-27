@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import {
   Clock,
@@ -236,6 +236,23 @@ export default function HomePage() {
     updateItem: handleUpdateItem,
     deleteItem: handleDeleteItem
   } = useData()
+
+  // 监听打开设置对话框的事件（用于版本更新提示跳转）
+  useEffect(() => {
+    const handleOpenSettingsDialog = (event: CustomEvent<{ section?: string }>) => {
+      const { section } = event.detail || {}
+      if (section) {
+        homeState.setSettingsInitialSection(section)
+      } else {
+        homeState.setShowSettingsDialog(true)
+      }
+    }
+
+    window.addEventListener('open-settings-dialog', handleOpenSettingsDialog as EventListener)
+    return () => {
+      window.removeEventListener('open-settings-dialog', handleOpenSettingsDialog as EventListener)
+    }
+  }, [homeState])
 
   const handleCardClick = useCallback((itemId: string) => {
     const item = items.find(i => i.id === itemId)

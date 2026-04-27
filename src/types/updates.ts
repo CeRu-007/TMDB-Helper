@@ -30,4 +30,5 @@ export interface UpdateCache {
 export interface UpdateCheckOptions {
   force?: boolean;
   showToast?: boolean;
+  silent?: boolean; // 静默模式，不显示任何提示
 }
