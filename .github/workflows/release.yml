@@ -110,21 +110,37 @@ jobs:
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
-      - name: Configure git
+      - name: Check if version needs update
+        id: check_version
         if: steps.version.outputs.trigger == 'manual'
+        run: |
+          INPUT_VERSION="${{ steps.version.outputs.version }}"
+          CURRENT_VERSION=$(grep -oP '"version": "\K[^"]+' package.json | head -1)
+          echo "Input version: $INPUT_VERSION"
+          echo "Current version: $CURRENT_VERSION"
+          if [ "$INPUT_VERSION" = "$CURRENT_VERSION" ]; then
+            echo "Version already up to date, skipping version bump"
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version needs update"
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure git
+        if: steps.version.outputs.trigger == 'manual' && steps.check_version.outputs.needs_update == 'true'
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
       - name: Update version in package.json
-        if: steps.version.outputs.trigger == 'manual'
+        if: steps.version.outputs.trigger == 'manual' && steps.check_version.outputs.needs_update == 'true'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/g" package.json
           cat package.json | grep '"version"'
 
       - name: Update version in README.md
-        if: steps.version.outputs.trigger == 'manual'
+        if: steps.version.outputs.trigger == 'manual' && steps.check_version.outputs.needs_update == 'true'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           if grep -q "version.*[0-9]\+\.[0-9]\+\.[0-9]\+" README.md; then
@@ -133,12 +149,18 @@ jobs:
           grep -i "version" README.md | head -5 || true
 
       - name: Create commit and tag
-        if: steps.version.outputs.trigger == 'manual'
+        if: steps.version.outputs.trigger == 'manual' && steps.check_version.outputs.needs_update == 'true'
         run: |
           git add package.json README.md
           git commit -m "chore: bump version to ${{ steps.version.outputs.tag }}"
           git tag ${{ steps.version.outputs.tag }}
           git push origin main --tags
+
+      - name: Create tag only (version unchanged)
+        if: steps.version.outputs.trigger == 'manual' && steps.check_version.outputs.needs_update == 'false'
+        run: |
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
 
   docker:
     needs: prepare
