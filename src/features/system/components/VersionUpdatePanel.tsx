@@ -193,8 +193,8 @@ export function VersionUpdatePanel() {
             </div>
           </CardHeader>
           <CardContent className="pt-3">
-            <div className="rounded-lg border">
-              <ScrollArea className="max-h-[400px] w-full">
+            <div className="rounded-lg border h-[400px]">
+              <ScrollArea className="h-full w-full">
                 <div className="p-4">
                   <Markdown className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed">
                     {releaseInfo.body || '暂无发布说明'}
