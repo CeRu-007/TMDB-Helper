@@ -94,8 +94,9 @@ RUN cd /app/scripts && npm init -y && npm install bcryptjs@3.0.2
 # 安装 Python 包（使用 --break-system-packages 因为我们在容器中）
 RUN pip3 install --break-system-packages python-dateutil Pillow bordercrop playwright
 
-# 安装 Playwright Chromium 浏览器（安装到 root 目录，但设置全局可访问）
+# 安装 Playwright Chromium 浏览器及其系统依赖
 RUN python3 -m playwright install chromium && \
+    python3 -m playwright install-deps chromium && \
     chmod -R 755 /root/.cache/ms-playwright
 
 # 安装 Node.js Playwright（如果尚未安装）
