@@ -7,6 +7,7 @@ import type { ScheduleTask } from '@/types/schedule';
 import { executeScheduleTask, processScheduleTaskResult, type LogEntry } from './schedule-executor';
 import { itemsRepository } from '@/lib/database/repositories/items.repository';
 import { notifier } from './notifier';
+import { notifyDataChangeFromServer } from '@/lib/data/sse-broadcaster';
 
 const TASK_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -173,6 +174,14 @@ class Scheduler {
 
       if (executeResult.success) {
         const processResult = await processScheduleTaskResult(item, task, executeResult, true);
+
+        const updatedItem = itemsRepository.findByIdWithRelations(item.id);
+        if (updatedItem) {
+          notifyDataChangeFromServer({
+            type: 'item_updated',
+            data: updatedItem,
+          });
+        }
 
         if (processResult.completed) {
           this.removeTask(task.id);

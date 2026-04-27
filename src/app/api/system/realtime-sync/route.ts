@@ -1,35 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AuthService } from '@/lib/auth/auth-service'
-import { TIMEOUT_30S, INTERVAL_10S, INTERVAL_15S } from '@/lib/constants/constants'
+import { INTERVAL_15S } from '@/lib/constants/constants'
+import {
+  addConnection,
+  updatePing,
+  removeConnection,
+  sendToConnection,
+  broadcastToUser,
+  closeUserConnections,
+} from '@/lib/data/sse-broadcaster'
 
-// 存储活跃的SSE连接
-const connections = new Map<string, {
-  controller: ReadableStreamDefaultController
-  userId: string
-  lastPing: number
-}>()
-
-// 定期清理超时连接
-setInterval(() => {
-  const now = Date.now()
-  const timeout = TIMEOUT_30S // 30秒超时
-
-  for (const [connectionId, connection] of connections.entries()) {
-    if (now - connection.lastPing > timeout) {
-      try {
-        connection.controller.close()
-      } catch (error) {
-
-      }
-      connections.delete(connectionId)
-
-    }
-  }
-}, INTERVAL_10S) // 每10秒检查一次
-
-/**
- * GET /api/system/realtime-sync - 建立Server-Sent Events连接
- */
 export async function GET(request: NextRequest) {
   const userId = await AuthService.getUserIdFromRequest(request)
   
@@ -41,14 +21,8 @@ export async function GET(request: NextRequest) {
     start(controller) {
       const connectionId = `${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      // 存储连接信息
-      connections.set(connectionId, {
-        controller,
-        userId,
-        lastPing: Date.now()
-      })
+      addConnection(connectionId, controller, userId)
 
-      // 发送初始连接确认
       const initMessage = `data: ${JSON.stringify({
         type: 'connection_established',
         connectionId,
@@ -57,32 +31,28 @@ export async function GET(request: NextRequest) {
       
       controller.enqueue(new TextEncoder().encode(initMessage))
 
-      // 设置心跳检测
       const heartbeat = setInterval(() => {
         try {
-          const connection = connections.get(connectionId)
-          if (connection) {
-            connection.lastPing = Date.now()
+          if (updatePing(connectionId)) {
             const pingMessage = `data: ${JSON.stringify({
               type: 'ping',
               timestamp: Date.now()
             })}\n\n`
-            controller.enqueue(new TextEncoder().encode(pingMessage))
+            sendToConnection(connectionId, pingMessage)
           } else {
             clearInterval(heartbeat)
           }
         } catch (error) {
 
           clearInterval(heartbeat)
-          connections.delete(connectionId)
+          removeConnection(connectionId)
         }
-      }, INTERVAL_15S) // 每15秒发送心跳
+      }, INTERVAL_15S)
 
-      // 连接关闭时清理
       request.signal.addEventListener('abort', () => {
         
         clearInterval(heartbeat)
-        connections.delete(connectionId)
+        removeConnection(connectionId)
       })
     }
   })
@@ -98,9 +68,6 @@ export async function GET(request: NextRequest) {
   })
 }
 
-/**
- * POST /api/system/realtime-sync - 接收数据变更通知并广播给相关用户
- */
 export async function POST(request: NextRequest) {
   try {
     const userId = await AuthService.getUserIdFromRequest(request)
@@ -111,32 +78,11 @@ export async function POST(request: NextRequest) {
 
     const eventData = await request.json()
     
-    // 广播给该用户的所有连接
-    const userConnections = Array.from(connections.entries())
-      .filter(([_, connection]) => connection.userId === userId)
+    const broadcastCount = broadcastToUser(userId, eventData)
 
-    if (userConnections.length === 0) {
+    if (broadcastCount === 0) {
       
       return NextResponse.json({ success: true, broadcastCount: 0 })
-    }
-
-    let broadcastCount = 0
-    const message = `data: ${JSON.stringify({
-      ...eventData,
-      userId,
-      timestamp: Date.now()
-    })}\n\n`
-
-    for (const [connectionId, connection] of userConnections) {
-      try {
-        connection.controller.enqueue(new TextEncoder().encode(message))
-        broadcastCount++
-        
-      } catch (error) {
-        
-        // 移除失效连接
-        connections.delete(connectionId)
-      }
     }
 
     return NextResponse.json({ 
@@ -157,9 +103,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * DELETE /api/system/realtime-sync - 关闭指定用户的所有连接
- */
 export async function DELETE(request: NextRequest) {
   try {
     const userId = await AuthService.getUserIdFromRequest(request)
@@ -168,21 +111,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '缺少用户身份信息' }, { status: 401 })
     }
 
-    // 关闭该用户的所有连接
-    const userConnections = Array.from(connections.entries())
-      .filter(([_, connection]) => connection.userId === userId)
-
-    let closedCount = 0
-    for (const [connectionId, connection] of userConnections) {
-      try {
-        connection.controller.close()
-        connections.delete(connectionId)
-        closedCount++
-        
-      } catch (error) {
-        
-      }
-    }
+    const closedCount = closeUserConnections(userId)
 
     return NextResponse.json({ 
       success: true, 

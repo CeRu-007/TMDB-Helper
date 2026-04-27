@@ -6,6 +6,7 @@ import { executeScheduleTask, processScheduleTaskResult, type LogEntry } from '@
 import { notifier } from '@/lib/scheduler/notifier'
 import { logger } from '@/lib/utils/logger'
 import { initializeDatabase } from '@/lib/database'
+import { notifyDataChangeFromServer } from '@/lib/data/sse-broadcaster'
 
 async function ensureDatabaseInitialized(): Promise<void> {
   try {
@@ -70,6 +71,14 @@ export async function POST(request: NextRequest) {
 
       if (result.success) {
         await processScheduleTaskResult(item, task, result, false)
+
+        const updatedItem = itemsRepository.findByIdWithRelations(itemId)
+        if (updatedItem) {
+          notifyDataChangeFromServer({
+            type: 'item_updated',
+            data: updatedItem,
+          })
+        }
 
         scheduleLogRepository.updateStatus(logId, 'success', result.message, result.details || null)
         scheduleRepository.updateLastRunAt(task.id, endAt, '')
