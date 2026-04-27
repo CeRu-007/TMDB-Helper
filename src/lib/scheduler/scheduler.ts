@@ -26,6 +26,12 @@ class Scheduler {
     logger.info(`[Scheduler] 加载 ${enabledTasks.length} 个启用的定时任务`);
 
     for (const task of enabledTasks) {
+      const item = itemsRepository.findByIdWithRelations(task.itemId);
+      if (item?.status === 'completed') {
+        logger.info(`[Scheduler] 词条已完结，清理定时任务: ${item.title} (${task.id})`);
+        scheduleRepository.deleteByItemId(task.itemId);
+        continue;
+      }
       this.scheduleTask(task);
     }
 
@@ -148,6 +154,14 @@ class Scheduler {
       if (!item) {
         scheduleLogRepository.updateStatus(logId, 'failed', '词条不存在');
         logger.error(`[Scheduler] 词条不存在: ${task.itemId}`);
+        this.removeTask(task.id);
+        scheduleRepository.deleteByItemId(task.itemId);
+        return;
+      }
+
+      if (item.status === 'completed') {
+        scheduleLogRepository.updateStatus(logId, 'failed', '词条已完结，任务已自动删除');
+        logger.info(`[Scheduler] 词条已完结，删除定时任务: ${task.id}`);
         this.removeTask(task.id);
         scheduleRepository.deleteByItemId(task.itemId);
         return;

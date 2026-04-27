@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Clock, Play, Loader2, Info, Terminal, Activity } from "lucide-react"
+import { Clock, Play, Loader2, Info, Terminal, Activity, Ban } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { TMDBItem } from "@/types/tmdb-item"
 import type { ScheduleTask, ScheduleLog, FieldCleanup } from "@/types/schedule"
@@ -28,6 +28,7 @@ interface LogEntry {
 
 export function ScheduleTab({ item }: ScheduleTabProps) {
   const { t } = useTranslation("schedule")
+  const isCompleted = item.status === "completed"
   const [task, setTask] = useState<ScheduleTask | null>(null)
   const [logs, setLogs] = useState<ScheduleLog[]>([])
   const [terminalLogs, setTerminalLogs] = useState<LogEntry[]>([])
@@ -264,10 +265,17 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   <Clock className="h-4 w-4" />
                   <Label>{t("enableSchedule")}</Label>
                 </div>
-                <Switch checked={enabled} onCheckedChange={setEnabled} />
+                <Switch checked={isCompleted ? false : enabled} onCheckedChange={setEnabled} disabled={isCompleted} />
               </div>
 
-              {enabled && (
+              {isCompleted && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50 text-muted-foreground text-xs">
+                  <Ban className="h-4 w-4 flex-shrink-0" />
+                  <span>{t("completedItemDisabled")}</span>
+                </div>
+              )}
+
+              {enabled && !isCompleted && (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="cron">{t("executionTime")}</Label>
@@ -458,14 +466,14 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
           </Card>
         </div>
         <div className="flex gap-2 px-1 py-2 flex-shrink-0">
-          <Button onClick={handleSave} disabled={saving || !isValidCron} className="flex-1 h-8 text-xs">
+          <Button onClick={handleSave} disabled={saving || !isValidCron || isCompleted} className="flex-1 h-8 text-xs">
             {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
             {t("saveConfig")}
           </Button>
           {task && (
             <Button
               onClick={handleExecute}
-              disabled={executing}
+              disabled={executing || isCompleted}
               variant="outline"
               className="flex-1 h-8 text-xs"
             >

@@ -61,6 +61,7 @@
   "executionLogs": "執行日誌",
   "waitingForExecution": "等待執行任務...",
   "clickToExecute": "點擊「立即執行」開始執行定時任務",
+  "completedItemDisabled": "該詞條已完結，定時任務已自動關閉",
   "taskLoadFailed": "載入任務失敗",
   "retry": "重試",
   "saveFailed": "儲存失敗",

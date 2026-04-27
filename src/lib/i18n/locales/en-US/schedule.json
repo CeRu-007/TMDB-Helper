@@ -61,6 +61,7 @@
   "executionLogs": "Execution Logs",
   "waitingForExecution": "Waiting for task execution...",
   "clickToExecute": "Click 'Execute Now' to start the scheduled task",
+  "completedItemDisabled": "This item is completed, schedule task has been automatically disabled",
   "taskLoadFailed": "Failed to load task",
   "retry": "Retry",
   "saveFailed": "Failed to save",

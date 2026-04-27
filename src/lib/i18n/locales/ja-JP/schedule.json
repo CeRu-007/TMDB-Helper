@@ -61,6 +61,7 @@
   "executionLogs": "実行ログ",
   "waitingForExecution": "タスクの実行を待機中...",
   "clickToExecute": "「今すぐ実行」をクリックしてスケジュールタスクを開始",
+  "completedItemDisabled": "この項目は完了しているため、スケジュールタスクは自動的に無効になっています",
   "taskLoadFailed": "タスクの読み込みに失敗しました",
   "retry": "再試行",
   "saveFailed": "保存に失敗しました",

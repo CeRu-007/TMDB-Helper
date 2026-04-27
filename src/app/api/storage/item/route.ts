@@ -5,6 +5,8 @@ import { AuthService } from '@/lib/auth/auth-service';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 import { getDatabasePath } from '@/lib/database/connection';
+import { scheduleRepository } from '@/lib/data/schedule-repository';
+import { scheduler } from '@/lib/scheduler/scheduler';
 
 const ADMIN_USER_ID = 'user_admin_system'; // 固定的管理员用户ID
 
@@ -87,6 +89,15 @@ export async function PUT(request: NextRequest) {
     const success = await ServerStorageManager.updateItem(item);
 
     if (success) {
+      if (item.status === 'completed') {
+        const existingTask = scheduleRepository.findByItemId(item.id);
+        if (existingTask) {
+          scheduler.removeTask(existingTask.id);
+          scheduleRepository.deleteByItemId(item.id);
+          logger.info(`[API] 词条已完结，自动删除定时任务: ${item.title} (${item.id})`);
+        }
+      }
+
       return NextResponse.json({ success: true, item, userId }, { status: 200 });
     } else {
       return NextResponse.json({

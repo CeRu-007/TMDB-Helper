@@ -61,6 +61,7 @@
   "executionLogs": "실행 로그",
   "waitingForExecution": "작업 실행 대기 중...",
   "clickToExecute": "「지금 실행」을 클릭하여 예약 작업 시작",
+  "completedItemDisabled": "이 항목이 완료되어 예약 작업이 자동으로 비활성화되었습니다",
   "taskLoadFailed": "작업 로드에 실패했습니다",
   "retry": "재시도",
   "saveFailed": "저장에 실패했습니다",
