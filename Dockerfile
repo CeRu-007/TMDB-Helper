@@ -89,8 +89,8 @@ RUN pip3 install --break-system-packages python-dateutil Pillow bordercrop playw
 # 安装 Playwright Chromium 浏览器及其系统依赖
 RUN python3 -m playwright install --with-deps chromium
 
-# 安装 Node.js Playwright
-RUN npm install -g playwright
+# 安装 Node.js Playwright（如果尚未安装）
+RUN npm list -g playwright || npm install -g playwright
 
 # 切换到非root用户
 USER nextjs
