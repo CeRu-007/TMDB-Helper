@@ -306,15 +306,37 @@ async function installPythonPackages(
   return results
 }
 
-// 检查系统 Chromium 是否可用（Docker Alpine 环境）
-async function checkSystemChromium(): Promise<{ available: boolean; path?: string }> {
-  const chromiumPaths = [
+// 检查 Playwright Chromium 浏览器是否已安装
+async function checkPlaywrightChromium(): Promise<{ available: boolean; path?: string }> {
+  // 检查 Playwright 浏览器目录
+  const browsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/.cache/ms-playwright'
+  
+  try {
+    // 检查 chromium-* 目录是否存在
+    const result = await executeCommand('ls', ['-d', `${browsersPath}/chromium-*`], { timeout: 5000 })
+    if (result.success && result.output) {
+      const chromiumDir = result.output.trim().split('\n')[0]
+      const chromeExecutable = `${chromiumDir}/chrome-linux/chrome`
+      
+      // 检查 chrome 可执行文件是否存在
+      const execCheck = await executeCommand('ls', ['-la', chromeExecutable], { timeout: 5000 })
+      if (execCheck.success) {
+        logger.info(`[依赖安装] 找到 Playwright Chromium: ${chromeExecutable}`)
+        return { available: true, path: chromeExecutable }
+      }
+    }
+  } catch (error) {
+    logger.debug(`[依赖安装] Playwright Chromium 未找到: ${error}`)
+  }
+
+  // 回退到检查系统 Chromium
+  const systemChromiumPaths = [
     '/usr/bin/chromium-browser',
     '/usr/bin/chromium',
     '/usr/lib/chromium/chromium'
   ]
 
-  for (const chromiumPath of chromiumPaths) {
+  for (const chromiumPath of systemChromiumPaths) {
     try {
       const result = await executeCommand('ls', ['-la', chromiumPath], { timeout: 5000 })
       if (result.success) {
@@ -343,9 +365,9 @@ async function installPlaywrightBrowsers(pythonCmd: string, env: EnvironmentInfo
   logger.info('[依赖安装] 开始安装 Playwright Chromium 浏览器')
 
   if (env.type === 'docker') {
-    const systemChromium = await checkSystemChromium()
+    const playwrightChromium = await checkPlaywrightChromium()
 
-    if (systemChromium.available) {
+    if (playwrightChromium.available) {
       const pipPlaywright = await checkPackageInstalled('playwright', pythonCmd)
       const nodePlaywrightCheck = await executeCommand('npx', ['playwright', '--version'], { timeout: 10000 })
 
@@ -353,10 +375,10 @@ async function installPlaywrightBrowsers(pythonCmd: string, env: EnvironmentInfo
         results[0] = {
           step: '配置 Playwright 浏览器',
           status: 'success',
-          output: `已配置：系统 Chromium (${systemChromium.path})，Python Playwright 已安装，Node.js Playwright: ${nodePlaywrightCheck.output.trim()}`,
+          output: `已配置：Playwright Chromium (${playwrightChromium.path})，Python Playwright 已安装，Node.js Playwright: ${nodePlaywrightCheck.output.trim()}`,
           progress: 100
         }
-        logger.info('[依赖安装] Docker 环境 Python/Node.js Playwright 和系统 Chromium 已配置')
+        logger.info('[依赖安装] Docker 环境 Python/Node.js Playwright 和 Chromium 已配置')
         return results
       } else if (!pipPlaywright) {
         const args = getPipInstallArgs(env, 'playwright')
@@ -365,7 +387,7 @@ async function installPlaywrightBrowsers(pythonCmd: string, env: EnvironmentInfo
           results[0] = {
             step: '配置 Playwright 浏览器',
             status: 'success',
-            output: `已安装 Python Playwright 并配置系统 Chromium: ${systemChromium.path}`,
+            output: `已安装 Python Playwright 并配置 Chromium: ${playwrightChromium.path}`,
             progress: 100
           }
           return results
@@ -384,10 +406,10 @@ async function installPlaywrightBrowsers(pythonCmd: string, env: EnvironmentInfo
       results[0] = {
         step: '检查 Chromium 浏览器',
         status: 'error',
-        output: 'Docker 镜像中未找到系统 Chromium，请检查 Dockerfile 配置',
+        output: 'Docker 镜像中未找到 Playwright Chromium，请检查 Dockerfile 配置',
         progress: 0
       }
-      logger.error('[依赖安装] Docker 环境未找到系统 Chromium')
+      logger.error('[依赖安装] Docker 环境未找到 Playwright Chromium')
       return results
     }
   }
@@ -445,9 +467,9 @@ export async function GET() {
 
     for (const pkg of packages) {
       if (env.type === 'docker' && pkg === 'playwright') {
-        const systemChromium = await checkSystemChromium()
+        const playwrightChromium = await checkPlaywrightChromium()
         const pipPlaywright = await checkPackageInstalled(pkg, pythonCmd)
-        packageStatus[pkg] = systemChromium.available && pipPlaywright
+        packageStatus[pkg] = playwrightChromium.available && pipPlaywright
       } else {
         packageStatus[pkg] = await checkPackageInstalled(pkg, pythonCmd)
       }
