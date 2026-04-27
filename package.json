@@ -137,6 +137,7 @@
     "@typescript-eslint/parser": "^8.53.1",
     "@vitest/coverage-v8": "^4.1.5",
     "cross-env": "^7.0.3",
+    "dmg-license": "^1.0.11",
     "electron": "33.4.11",
     "electron-builder": "^25.1.8",
     "eslint-config-next": "15.2.6",

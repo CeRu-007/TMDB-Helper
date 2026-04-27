@@ -222,22 +222,12 @@ jobs:
           path: tmdb-helper-${{ needs.prepare.outputs.tag }}.tar
           retention-days: 2
 
-  electron:
+  electron-windows:
     needs: prepare
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
     environment: electron-build
-
-    strategy:
-      matrix:
-        platform: [windows, mac, linux]
-        include:
-          - platform: windows
-            build_cmd: electron:build
-          - platform: mac
-            build_cmd: electron:build:mac
-          - platform: linux
-            build_cmd: electron:build:linux
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -257,13 +247,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Electron App
-        run: pnpm run ${{ matrix.build_cmd }}
+      - name: Build Electron App (Windows)
+        run: pnpm run electron:build
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Upload Windows artifacts
-        if: matrix.platform == 'windows'
         uses: actions/upload-artifact@v4
         with:
           name: windows-exe
@@ -272,16 +261,74 @@ jobs:
             dist/*.exe
           retention-days: 2
 
+  electron-mac:
+    needs: [prepare, electron-windows]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+    environment: electron-build
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Electron App (macOS)
+        run: pnpm run electron:build:mac
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
       - name: Upload macOS artifacts
-        if: matrix.platform == 'mac'
         uses: actions/upload-artifact@v4
         with:
           name: mac-dmg
           path: dist/*.dmg
           retention-days: 2
 
+  electron-linux:
+    needs: [prepare, electron-mac]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+    environment: electron-build
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Electron App (Linux)
+        run: pnpm run electron:build:linux
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
       - name: Upload Linux artifacts
-        if: matrix.platform == 'linux'
         uses: actions/upload-artifact@v4
         with:
           name: linux-packages
@@ -291,9 +338,9 @@ jobs:
           retention-days: 2
 
   create-release:
-    needs: [prepare, docker, electron]
+    needs: [prepare, docker, electron-windows, electron-mac, electron-linux]
     runs-on: ubuntu-latest
-    if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.prepare.result == 'success' && (needs.docker.result == 'success' || needs.docker.result == 'skipped') && (needs.electron.result == 'success' || needs.electron.result == 'skipped') }}
+    if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.prepare.result == 'success' }}
 
     steps:
       - name: Download Docker artifact
