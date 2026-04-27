@@ -2,13 +2,12 @@
 
 /**
  * Docker环境启动脚本
- * 确保在Docker容器中正确初始化所有优化功能
+ * 确保在Docker容器中正确初始化数据库和权限
  */
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
 
 const DATA_DIR = process.env.TMDB_DATA_DIR || '/app/data';
 const DB_PATH = path.join(DATA_DIR, 'tmdb-helper.db');
@@ -37,17 +36,11 @@ function detectDockerEnvironment() {
   } catch (error) {
   }
 
-  const isDocker = Object.values(indicators).some(Boolean);
-
-  return isDocker;
+  return Object.values(indicators).some(Boolean);
 }
 
 function ensureDirectories() {
-  const directories = [
-    DATA_DIR,
-    '/app/logs',
-    '/tmp'
-  ];
+  const directories = [DATA_DIR, '/app/logs'];
 
   directories.forEach(dir => {
     try {
@@ -55,73 +48,8 @@ function ensureDirectories() {
         fs.mkdirSync(dir, { recursive: true });
         log(`创建目录: ${dir}`);
       }
-      // 确保目录权限为 777
-      fs.chmodSync(dir, 0o777);
     } catch (error) {
       logError(`创建目录失败: ${dir}`, error);
-    }
-  });
-}
-
-function checkPermissions() {
-  const testPaths = [DATA_DIR, '/app/logs'];
-
-  const results = {};
-
-  testPaths.forEach(testPath => {
-    try {
-      const testFile = path.join(testPath, '.write_test');
-      fs.writeFileSync(testFile, 'test');
-      fs.unlinkSync(testFile);
-      results[testPath] = true;
-    } catch (error) {
-      results[testPath] = false;
-      logError(`权限检查失败: ${testPath}`, error);
-
-      // 尝试自动修复权限
-      try {
-        const { execSync } = require('child_process');
-        // 检查当前用户
-        const currentUser = execSync('whoami', { encoding: 'utf8' }).trim();
-        log(`当前用户: ${currentUser}`);
-
-        if (currentUser === 'root') {
-          // root 用户，尝试修复权限
-          execSync(`chmod -R 777 ${testPath}`, { stdio: 'ignore' });
-          log(`已修复权限: ${testPath}`);
-
-          // 重新检查
-          try {
-            const testFile = path.join(testPath, '.write_test');
-            fs.writeFileSync(testFile, 'test');
-            fs.unlinkSync(testFile);
-            results[testPath] = true;
-            log(`权限修复成功: ${testPath}`);
-          } catch (e2) {
-            logError(`权限修复后仍失败: ${testPath}`, e2);
-          }
-        } else {
-          log(`非 root 用户 (${currentUser})，无法自动修复权限`);
-        }
-      } catch (e) {
-        logError(`自动修复权限失败`, e);
-      }
-    }
-  });
-
-  return results;
-}
-
-function setupEnvironment() {
-  const dockerEnvVars = {
-    DOCKER_CONTAINER: 'true',
-    NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=1024',
-    NEXT_TELEMETRY_DISABLED: '1'
-  };
-
-  Object.entries(dockerEnvVars).forEach(([key, value]) => {
-    if (!process.env[key]) {
-      process.env[key] = value;
     }
   });
 }
@@ -151,7 +79,107 @@ async function initializeDatabase() {
     db = new Database(DB_PATH);
     log('数据库连接成功');
 
+    // 创建完整的 Schema（与 src/lib/database/schema.ts 保持一致）
     db.exec(`
+      -- 媒体项目表
+      CREATE TABLE IF NOT EXISTS items (
+        id TEXT PRIMARY KEY,
+        tmdbId TEXT,
+        imdbId TEXT,
+        title TEXT NOT NULL,
+        originalTitle TEXT,
+        overview TEXT,
+        year INTEGER,
+        releaseDate TEXT,
+        genres TEXT,
+        runtime INTEGER,
+        voteAverage REAL,
+        mediaType TEXT DEFAULT 'tv',
+        posterPath TEXT,
+        posterUrl TEXT,
+        backdropPath TEXT,
+        backdropUrl TEXT,
+        logoPath TEXT,
+        logoUrl TEXT,
+        networkId INTEGER,
+        networkName TEXT,
+        networkLogoUrl TEXT,
+        status TEXT,
+        completed INTEGER DEFAULT 0,
+        platformUrl TEXT,
+        totalEpisodes INTEGER,
+        manuallySetEpisodes INTEGER DEFAULT 0,
+        weekday INTEGER,
+        secondWeekday INTEGER,
+        airTime TEXT,
+        category TEXT,
+        tmdbUrl TEXT,
+        notes TEXT,
+        isDailyUpdate INTEGER DEFAULT 0,
+        blurIntensity TEXT,
+        rating INTEGER,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        deletedAt TEXT
+      );
+
+      -- 季表
+      CREATE TABLE IF NOT EXISTS seasons (
+        id TEXT PRIMARY KEY,
+        itemId TEXT NOT NULL,
+        seasonNumber INTEGER NOT NULL,
+        name TEXT,
+        totalEpisodes INTEGER NOT NULL,
+        currentEpisode INTEGER,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE
+      );
+
+      -- 分集表
+      CREATE TABLE IF NOT EXISTS episodes (
+        id TEXT PRIMARY KEY,
+        itemId TEXT NOT NULL,
+        seasonId TEXT,
+        seasonNumber INTEGER,
+        number INTEGER NOT NULL,
+        completed INTEGER DEFAULT 0,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE,
+        FOREIGN KEY (seasonId) REFERENCES seasons(id) ON DELETE CASCADE
+      );
+
+      -- AI聊天历史表
+      CREATE TABLE IF NOT EXISTS chatHistories (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        deletedAt TEXT
+      );
+
+      -- 消息表
+      CREATE TABLE IF NOT EXISTS messages (
+        id TEXT PRIMARY KEY,
+        chatId TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        type TEXT DEFAULT 'text',
+        fileName TEXT,
+        fileContent TEXT,
+        isStreaming INTEGER DEFAULT 0,
+        suggestions TEXT,
+        rating TEXT,
+        isEdited INTEGER DEFAULT 0,
+        canContinue INTEGER DEFAULT 0,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (chatId) REFERENCES chatHistories(id) ON DELETE CASCADE
+      );
+
+      -- 管理员用户表
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
@@ -164,6 +192,7 @@ async function initializeDatabase() {
         deletedAt TEXT
       );
 
+      -- 配置表
       CREATE TABLE IF NOT EXISTS config (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
@@ -171,6 +200,24 @@ async function initializeDatabase() {
         updatedAt TEXT NOT NULL
       );
 
+      -- 图片缓存表
+      CREATE TABLE IF NOT EXISTS image_cache (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tmdbId TEXT NOT NULL,
+        itemId TEXT,
+        imageType TEXT NOT NULL,
+        imagePath TEXT,
+        imageUrl TEXT,
+        sizeType TEXT DEFAULT 'original',
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        lastVerifiedAt TEXT,
+        isPermanent INTEGER DEFAULT 1,
+        sourceType TEXT DEFAULT 'tmdb',
+        UNIQUE(tmdbId, imageType, sizeType)
+      );
+
+      -- 定时任务表
       CREATE TABLE IF NOT EXISTS schedule_tasks (
         id TEXT PRIMARY KEY,
         itemId TEXT NOT NULL,
@@ -189,6 +236,7 @@ async function initializeDatabase() {
         updatedAt TEXT NOT NULL
       );
 
+      -- 定时任务日志表
       CREATE TABLE IF NOT EXISTS schedule_logs (
         id TEXT PRIMARY KEY,
         taskId TEXT NOT NULL,
@@ -200,54 +248,19 @@ async function initializeDatabase() {
         FOREIGN KEY (taskId) REFERENCES schedule_tasks(id) ON DELETE CASCADE
       );
 
+      -- 索引
+      CREATE INDEX IF NOT EXISTS idx_items_deletedAt ON items(deletedAt);
+      CREATE INDEX IF NOT EXISTS idx_items_tmdbId ON items(tmdbId);
+      CREATE INDEX IF NOT EXISTS idx_seasons_itemId ON seasons(itemId);
+      CREATE INDEX IF NOT EXISTS idx_episodes_itemId ON episodes(itemId);
+      CREATE INDEX IF NOT EXISTS idx_episodes_seasonId ON episodes(seasonId);
+      CREATE INDEX IF NOT EXISTS idx_messages_chatId ON messages(chatId);
       CREATE INDEX IF NOT EXISTS idx_users_deletedAt ON users(deletedAt);
+      CREATE INDEX IF NOT EXISTS idx_image_cache_tmdbId ON image_cache(tmdbId);
       CREATE INDEX IF NOT EXISTS idx_schedule_tasks_itemId ON schedule_tasks(itemId);
       CREATE INDEX IF NOT EXISTS idx_schedule_tasks_enabled ON schedule_tasks(enabled);
       CREATE INDEX IF NOT EXISTS idx_schedule_logs_taskId ON schedule_logs(taskId);
     `);
-
-    const oldAdminUsersExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='adminUsers'").get();
-    if (oldAdminUsersExists) {
-      const adminCount = (db.prepare('SELECT COUNT(*) as count FROM adminUsers').get() || {}).count || 0;
-      if (adminCount > 0) {
-        const existingUserCount = (db.prepare('SELECT COUNT(*) as count FROM users WHERE deletedAt IS NULL').get() || {}).count || 0;
-        if (existingUserCount === 0) {
-          db.exec(`
-            INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, deletedAt)
-            SELECT id, username, passwordHash, createdAt, updatedAt, NULL, sessionExpiryDays, NULL, deletedAt FROM adminUsers
-          `);
-          log(`已迁移 ${adminCount} 条 adminUsers 数据到 users 表`);
-        }
-      }
-      db.exec('DROP TABLE IF EXISTS adminUsers');
-      log('已删除旧 adminUsers 表');
-    }
-
-    const oldAppConfigExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='app_config'").get();
-    if (oldAppConfigExists) {
-      const configCount = (db.prepare('SELECT COUNT(*) as count FROM app_config').get() || {}).count || 0;
-      if (configCount > 0) {
-        const existingConfigCount = (db.prepare('SELECT COUNT(*) as count FROM config').get() || {}).count || 0;
-        if (existingConfigCount === 0) {
-          db.exec('INSERT INTO config (key, value, createdAt, updatedAt) SELECT key, value, updatedAt, updatedAt FROM app_config');
-          log(`已迁移 ${configCount} 条 app_config 数据到 config 表`);
-        }
-      }
-      db.exec('DROP TABLE IF EXISTS app_config');
-      log('已删除旧 app_config 表');
-    }
-
-    const oldUserSessionsExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='user_sessions'").get();
-    if (oldUserSessionsExists) {
-      db.exec('DROP TABLE IF EXISTS user_sessions');
-      log('已删除旧 user_sessions 表');
-    }
-
-    const currentVersion = (db.prepare('PRAGMA user_version').get() || {}).user_version || 0;
-    if (currentVersion < 11) {
-      db.exec('PRAGMA user_version = 11');
-      log('已设置数据库 Schema 版本为 11');
-    }
 
     log('数据库 Schema 初始化完成');
     return db;
@@ -258,42 +271,45 @@ async function initializeDatabase() {
 }
 
 async function initializeAdminUser(db) {
-  log('开始初始化管理员账户...');
-
   const envUsername = process.env.ADMIN_USERNAME;
   const envPassword = process.env.ADMIN_PASSWORD;
 
-  let username = envUsername || 'admin';
-  let password = envPassword || 'admin';
+  // 如果没有配置环境变量，不自动创建管理员（与项目其他端保持一致，进入注册模式）
+  if (!envUsername || !envPassword) {
+    log('未配置 ADMIN_USERNAME 和 ADMIN_PASSWORD，跳过管理员自动创建');
+    log('首次访问将进入注册模式');
+    return true;
+  }
+
+  log('检测到管理员环境变量配置，开始初始化管理员账户...');
 
   try {
     const existingAdmin = db.prepare('SELECT id FROM users WHERE deletedAt IS NULL LIMIT 1').get();
     if (existingAdmin) {
-      log('管理员账户已存在，跳过创建');
-      if (envUsername && envPassword) {
-        const bcrypt = require('bcryptjs');
-        const passwordHash = await bcrypt.hash(password, 12);
-        db.prepare('UPDATE users SET username = ?, passwordHash = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(username, passwordHash, new Date().toISOString(), existingAdmin.id);
-        log('已更新管理员账户凭据');
-      }
+      log('管理员账户已存在，更新凭据...');
+      const bcrypt = require('bcryptjs');
+      const passwordHash = await bcrypt.hash(envPassword, 12);
+      db.prepare('UPDATE users SET username = ?, passwordHash = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL')
+        .run(envUsername, passwordHash, new Date().toISOString(), existingAdmin.id);
+      log('已更新管理员账户凭据');
       return true;
     }
 
     const bcrypt = require('bcryptjs');
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(envPassword, 12);
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
 
     db.prepare(`
       INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, deletedAt)
       VALUES (?, ?, ?, ?, ?, NULL, 15, NULL, NULL)
-    `).run(id, username, passwordHash, now, now);
+    `).run(id, envUsername, passwordHash, now, now);
 
     log('========================================');
     log('🚀 TMDB Helper 管理员账户已创建!');
     log('📋 管理员账号信息:');
-    log(`   用户名: ${username}`);
-    log(`   密码: ${password}`);
+    log(`   用户名: ${envUsername}`);
+    log(`   密码: ${envPassword}`);
     log('⚠️  请首次登录后立即修改密码!');
     log('========================================');
 
@@ -301,87 +317,6 @@ async function initializeAdminUser(db) {
   } catch (error) {
     logError('管理员账户初始化失败', error);
     return false;
-  }
-}
-
-function setupPlaywrightChromium() {
-  log('配置 Python Playwright 浏览器...');
-
-  const systemChromiumPaths = [
-    '/usr/bin/chromium-browser',
-    '/usr/bin/chromium',
-    '/usr/lib/chromium/chromium'
-  ];
-
-  let systemChromium = null;
-  for (const p of systemChromiumPaths) {
-    if (fs.existsSync(p)) {
-      systemChromium = p;
-      break;
-    }
-  }
-
-  if (!systemChromium) {
-    log('未找到系统 Chromium，跳过 Playwright 配置');
-    return;
-  }
-
-  try {
-    const browsersPath = execSync('python3 -c "import os; print(os.environ.get(\'PLAYWRIGHT_BROWSERS_PATH\', os.path.expanduser(\'~/.cache/ms-playwright\')))"', { encoding: 'utf8' }).trim();
-    log(`Playwright 浏览器路径: ${browsersPath}`);
-
-    if (!fs.existsSync(browsersPath)) {
-      fs.mkdirSync(browsersPath, { recursive: true });
-    }
-
-    const entries = fs.readdirSync(browsersPath).filter(e => e.startsWith('chromium-'));
-    let chromiumDir;
-
-    if (entries.length > 0) {
-      chromiumDir = path.join(browsersPath, entries[0]);
-      log(`找到现有 Chromium 目录: ${chromiumDir}`);
-    } else {
-      try {
-        const revision = execSync('python3 -c "from playwright._impl._api_structures import BrowserRevision; print(BrowserRevision.CHROMIUM)"', { encoding: 'utf8' }).trim();
-        chromiumDir = path.join(browsersPath, `chromium-${revision}`);
-      } catch {
-        chromiumDir = path.join(browsersPath, 'chromium-1097');
-      }
-      fs.mkdirSync(path.join(chromiumDir, 'chrome-linux'), { recursive: true });
-      log(`创建 Chromium 目录: ${chromiumDir}`);
-    }
-
-    const chromeLinuxDir = path.join(chromiumDir, 'chrome-linux');
-    if (!fs.existsSync(chromeLinuxDir)) {
-      fs.mkdirSync(chromeLinuxDir, { recursive: true });
-    }
-
-    const chromeLink = path.join(chromeLinuxDir, 'chrome');
-    const chromiumLink = path.join(chromeLinuxDir, 'chromium');
-
-    try {
-      if (fs.existsSync(chromeLink) || fs.lstatSync(chromeLink).isSymbolicLink()) {
-        fs.unlinkSync(chromeLink);
-      }
-    } catch {}
-    try {
-      if (fs.existsSync(chromiumLink) || fs.lstatSync(chromiumLink).isSymbolicLink()) {
-        fs.unlinkSync(chromiumLink);
-      }
-    } catch {}
-
-    fs.symlinkSync(systemChromium, chromeLink);
-    fs.symlinkSync(systemChromium, chromiumLink);
-
-    log(`已链接系统 Chromium (${systemChromium}) -> ${chromeLink}`);
-
-    try {
-      execSync(`chmod -R 777 ${browsersPath}`, { stdio: 'ignore' });
-    } catch {}
-
-    log('Python Playwright 浏览器配置完成');
-  } catch (error) {
-    logError('配置 Python Playwright 浏览器失败', error);
   }
 }
 
@@ -397,7 +332,6 @@ async function main() {
 
     log('检测到 Docker 环境');
 
-    setupEnvironment();
     ensureDirectories();
 
     const db = await initializeDatabase();
@@ -406,10 +340,6 @@ async function main() {
       db.close();
       log('数据库初始化完成');
     }
-
-    checkPermissions();
-
-    setupPlaywrightChromium();
 
     log('Docker 启动脚本执行完成');
 
@@ -429,10 +359,7 @@ if (require.main === module) {
 module.exports = {
   detectDockerEnvironment,
   ensureDirectories,
-  checkPermissions,
-  setupEnvironment,
   initializeDatabase,
   initializeAdminUser,
-  setupPlaywrightChromium,
   main
 };

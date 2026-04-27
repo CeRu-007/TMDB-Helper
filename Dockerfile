@@ -62,8 +62,8 @@ ENV TMDB_DATA_DIR=/app/data
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV COOKIE_SECURE=false
 
-# Playwright 环境变量 - 指定浏览器缓存目录
-ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
+# Playwright 环境变量 - 使用系统全局路径
+ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
 
 # 创建非root用户
@@ -77,9 +77,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# 创建必要的目录并设置权限
-RUN mkdir -p /app/data /app/scripts /app/logs /app/.cache && \
-    chown -R nextjs:nodejs /app/data /app/scripts /app/logs /app/.cache
+# 创建必要的目录并设置权限（在 root 下创建，确保权限正确）
+RUN mkdir -p /app/data /app/scripts /app/logs && \
+    chown -R nextjs:nodejs /app/data /app/scripts /app/logs
 
 # 复制脚本文件
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
@@ -90,14 +90,9 @@ RUN cd /app/scripts && npm init -y && npm install bcryptjs@3.0.2
 # 安装 Python 包（使用 --break-system-packages 因为我们在容器中）
 RUN pip3 install --break-system-packages python-dateutil Pillow bordercrop playwright
 
-# 安装 Playwright Chromium 浏览器
-RUN python3 -m playwright install chromium
-
-# 设置浏览器目录权限
-RUN mkdir -p /root/.cache/ms-playwright && chmod -R 755 /root/.cache/ms-playwright
-
-# 确保 nextjs 用户对 .cache 目录有权限
-RUN chown -R nextjs:nodejs /app/.cache
+# 安装 Playwright Chromium 浏览器（安装到 root 目录，但设置全局可访问）
+RUN python3 -m playwright install chromium && \
+    chmod -R 755 /root/.cache/ms-playwright
 
 # 安装 Node.js Playwright（如果尚未安装）
 RUN which playwright || npm install -g playwright
