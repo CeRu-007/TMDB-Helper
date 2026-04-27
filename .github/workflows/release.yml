@@ -224,7 +224,7 @@ jobs:
 
   electron-windows:
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
     environment: electron-build
     timeout-minutes: 30
@@ -263,7 +263,7 @@ jobs:
 
   electron-mac:
     needs: [prepare, electron-windows]
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
     environment: electron-build
     timeout-minutes: 30
