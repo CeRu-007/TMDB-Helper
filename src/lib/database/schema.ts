@@ -398,13 +398,17 @@ function migrateToV10(db: ReturnType<typeof getDatabase>): void {
         updatedAt TEXT NOT NULL,
         lastLoginAt TEXT,
         sessionExpiryDays INTEGER DEFAULT 15,
+        avatarUrl TEXT,
         deletedAt TEXT
       )
     `);
 
     const adminCount = safeCount(db, 'adminUsers');
     if (adminCount > 0) {
-      db.exec('INSERT INTO users SELECT * FROM adminUsers');
+      db.exec(`
+        INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, deletedAt)
+        SELECT id, username, passwordHash, createdAt, updatedAt, NULL, sessionExpiryDays, NULL, deletedAt FROM adminUsers
+      `);
       logger.info(`[Database] V10 迁移: 已迁移 ${adminCount} 条 adminUsers 数据到 users`);
     }
 

@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execSync } = require('child_process');
 
 const DATA_DIR = process.env.TMDB_DATA_DIR || '/app/data';
 const DB_PATH = path.join(DATA_DIR, 'tmdb-helper.db');
@@ -151,34 +152,102 @@ async function initializeDatabase() {
     log('数据库连接成功');
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS adminUsers (
+      CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         passwordHash TEXT NOT NULL,
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL,
+        lastLoginAt TEXT,
         sessionExpiryDays INTEGER DEFAULT 15,
+        avatarUrl TEXT,
         deletedAt TEXT
       );
 
-      CREATE TABLE IF NOT EXISTS app_config (
+      CREATE TABLE IF NOT EXISTS config (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL
       );
 
-      CREATE TABLE IF NOT EXISTS user_sessions (
+      CREATE TABLE IF NOT EXISTS schedule_tasks (
         id TEXT PRIMARY KEY,
-        adminUserId TEXT NOT NULL,
-        token TEXT UNIQUE NOT NULL,
+        itemId TEXT NOT NULL,
+        cron TEXT NOT NULL,
+        enabled INTEGER DEFAULT 1,
+        headless INTEGER DEFAULT 1,
+        incremental INTEGER DEFAULT 1,
+        autoImport INTEGER DEFAULT 0,
+        tmdbSeason INTEGER DEFAULT 1,
+        tmdbLanguage TEXT DEFAULT 'zh-CN',
+        tmdbAutoResponse TEXT DEFAULT 'w',
+        fieldCleanup TEXT DEFAULT '{}',
+        lastRunAt TEXT,
+        nextRunAt TEXT,
         createdAt TEXT NOT NULL,
-        expiresAt TEXT NOT NULL,
-        FOREIGN KEY (adminUserId) REFERENCES adminUsers(id)
+        updatedAt TEXT NOT NULL
       );
 
-      CREATE INDEX IF NOT EXISTS idx_admin_users_username ON adminUsers(username);
-      CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(token);
+      CREATE TABLE IF NOT EXISTS schedule_logs (
+        id TEXT PRIMARY KEY,
+        taskId TEXT NOT NULL,
+        status TEXT NOT NULL,
+        startAt TEXT NOT NULL,
+        endAt TEXT,
+        message TEXT NOT NULL,
+        details TEXT,
+        FOREIGN KEY (taskId) REFERENCES schedule_tasks(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_users_deletedAt ON users(deletedAt);
+      CREATE INDEX IF NOT EXISTS idx_schedule_tasks_itemId ON schedule_tasks(itemId);
+      CREATE INDEX IF NOT EXISTS idx_schedule_tasks_enabled ON schedule_tasks(enabled);
+      CREATE INDEX IF NOT EXISTS idx_schedule_logs_taskId ON schedule_logs(taskId);
     `);
+
+    const oldAdminUsersExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='adminUsers'").get();
+    if (oldAdminUsersExists) {
+      const adminCount = (db.prepare('SELECT COUNT(*) as count FROM adminUsers').get() || {}).count || 0;
+      if (adminCount > 0) {
+        const existingUserCount = (db.prepare('SELECT COUNT(*) as count FROM users WHERE deletedAt IS NULL').get() || {}).count || 0;
+        if (existingUserCount === 0) {
+          db.exec(`
+            INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, deletedAt)
+            SELECT id, username, passwordHash, createdAt, updatedAt, NULL, sessionExpiryDays, NULL, deletedAt FROM adminUsers
+          `);
+          log(`已迁移 ${adminCount} 条 adminUsers 数据到 users 表`);
+        }
+      }
+      db.exec('DROP TABLE IF EXISTS adminUsers');
+      log('已删除旧 adminUsers 表');
+    }
+
+    const oldAppConfigExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='app_config'").get();
+    if (oldAppConfigExists) {
+      const configCount = (db.prepare('SELECT COUNT(*) as count FROM app_config').get() || {}).count || 0;
+      if (configCount > 0) {
+        const existingConfigCount = (db.prepare('SELECT COUNT(*) as count FROM config').get() || {}).count || 0;
+        if (existingConfigCount === 0) {
+          db.exec('INSERT INTO config (key, value, createdAt, updatedAt) SELECT key, value, updatedAt, updatedAt FROM app_config');
+          log(`已迁移 ${configCount} 条 app_config 数据到 config 表`);
+        }
+      }
+      db.exec('DROP TABLE IF EXISTS app_config');
+      log('已删除旧 app_config 表');
+    }
+
+    const oldUserSessionsExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='user_sessions'").get();
+    if (oldUserSessionsExists) {
+      db.exec('DROP TABLE IF EXISTS user_sessions');
+      log('已删除旧 user_sessions 表');
+    }
+
+    const currentVersion = (db.prepare('PRAGMA user_version').get() || {}).user_version || 0;
+    if (currentVersion < 11) {
+      db.exec('PRAGMA user_version = 11');
+      log('已设置数据库 Schema 版本为 11');
+    }
 
     log('数据库 Schema 初始化完成');
     return db;
@@ -198,17 +267,26 @@ async function initializeAdminUser(db) {
   let password = envPassword || 'admin';
 
   try {
+    const existingAdmin = db.prepare('SELECT id FROM users WHERE deletedAt IS NULL LIMIT 1').get();
+    if (existingAdmin) {
+      log('管理员账户已存在，跳过创建');
+      if (envUsername && envPassword) {
+        const bcrypt = require('bcryptjs');
+        const passwordHash = await bcrypt.hash(password, 12);
+        db.prepare('UPDATE users SET username = ?, passwordHash = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(username, passwordHash, new Date().toISOString(), existingAdmin.id);
+        log('已更新管理员账户凭据');
+      }
+      return true;
+    }
+
     const bcrypt = require('bcryptjs');
     const passwordHash = await bcrypt.hash(password, 12);
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
 
-    db.prepare('DELETE FROM adminUsers').run();
-    log('已清除旧的管理员账户');
-
     db.prepare(`
-      INSERT INTO adminUsers (id, username, passwordHash, createdAt, updatedAt, sessionExpiryDays, deletedAt)
-      VALUES (?, ?, ?, ?, ?, 15, NULL)
+      INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, deletedAt)
+      VALUES (?, ?, ?, ?, ?, NULL, 15, NULL, NULL)
     `).run(id, username, passwordHash, now, now);
 
     log('========================================');
@@ -223,6 +301,87 @@ async function initializeAdminUser(db) {
   } catch (error) {
     logError('管理员账户初始化失败', error);
     return false;
+  }
+}
+
+function setupPlaywrightChromium() {
+  log('配置 Python Playwright 浏览器...');
+
+  const systemChromiumPaths = [
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+    '/usr/lib/chromium/chromium'
+  ];
+
+  let systemChromium = null;
+  for (const p of systemChromiumPaths) {
+    if (fs.existsSync(p)) {
+      systemChromium = p;
+      break;
+    }
+  }
+
+  if (!systemChromium) {
+    log('未找到系统 Chromium，跳过 Playwright 配置');
+    return;
+  }
+
+  try {
+    const browsersPath = execSync('python3 -c "import os; print(os.environ.get(\'PLAYWRIGHT_BROWSERS_PATH\', os.path.expanduser(\'~/.cache/ms-playwright\')))"', { encoding: 'utf8' }).trim();
+    log(`Playwright 浏览器路径: ${browsersPath}`);
+
+    if (!fs.existsSync(browsersPath)) {
+      fs.mkdirSync(browsersPath, { recursive: true });
+    }
+
+    const entries = fs.readdirSync(browsersPath).filter(e => e.startsWith('chromium-'));
+    let chromiumDir;
+
+    if (entries.length > 0) {
+      chromiumDir = path.join(browsersPath, entries[0]);
+      log(`找到现有 Chromium 目录: ${chromiumDir}`);
+    } else {
+      try {
+        const revision = execSync('python3 -c "from playwright._impl._api_structures import BrowserRevision; print(BrowserRevision.CHROMIUM)"', { encoding: 'utf8' }).trim();
+        chromiumDir = path.join(browsersPath, `chromium-${revision}`);
+      } catch {
+        chromiumDir = path.join(browsersPath, 'chromium-1097');
+      }
+      fs.mkdirSync(path.join(chromiumDir, 'chrome-linux'), { recursive: true });
+      log(`创建 Chromium 目录: ${chromiumDir}`);
+    }
+
+    const chromeLinuxDir = path.join(chromiumDir, 'chrome-linux');
+    if (!fs.existsSync(chromeLinuxDir)) {
+      fs.mkdirSync(chromeLinuxDir, { recursive: true });
+    }
+
+    const chromeLink = path.join(chromeLinuxDir, 'chrome');
+    const chromiumLink = path.join(chromeLinuxDir, 'chromium');
+
+    try {
+      if (fs.existsSync(chromeLink) || fs.lstatSync(chromeLink).isSymbolicLink()) {
+        fs.unlinkSync(chromeLink);
+      }
+    } catch {}
+    try {
+      if (fs.existsSync(chromiumLink) || fs.lstatSync(chromiumLink).isSymbolicLink()) {
+        fs.unlinkSync(chromiumLink);
+      }
+    } catch {}
+
+    fs.symlinkSync(systemChromium, chromeLink);
+    fs.symlinkSync(systemChromium, chromiumLink);
+
+    log(`已链接系统 Chromium (${systemChromium}) -> ${chromeLink}`);
+
+    try {
+      execSync(`chmod -R 777 ${browsersPath}`, { stdio: 'ignore' });
+    } catch {}
+
+    log('Python Playwright 浏览器配置完成');
+  } catch (error) {
+    logError('配置 Python Playwright 浏览器失败', error);
   }
 }
 
@@ -250,6 +409,8 @@ async function main() {
 
     checkPermissions();
 
+    setupPlaywrightChromium();
+
     log('Docker 启动脚本执行完成');
 
   } catch (error) {
@@ -272,5 +433,6 @@ module.exports = {
   setupEnvironment,
   initializeDatabase,
   initializeAdminUser,
+  setupPlaywrightChromium,
   main
 };

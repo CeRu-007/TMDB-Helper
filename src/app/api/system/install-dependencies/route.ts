@@ -220,17 +220,34 @@ async function installPythonPackages(
   const results: InstallProgress[] = []
 
   for (const pkg of packages) {
-    // Docker 环境：playwright Python 包在 Alpine 上无法通过 pip 安装
-    // 但 Node.js Playwright 已全局安装，系统 Chromium 也可用
     if (env.type === 'docker' && pkg === 'playwright') {
       const systemChromium = await checkSystemChromium()
-      if (systemChromium.available) {
+      const pipPlaywright = await checkPackageInstalled(pkg, pythonCmd)
+      if (systemChromium.available && pipPlaywright) {
         results.push({
           step: `检查 ${pkg}`,
           status: 'success',
-          output: 'Docker 环境已配置系统 Chromium，Node.js Playwright 已安装',
+          output: 'Docker 环境：Python Playwright 已安装，系统 Chromium 可用',
           progress: 100
         })
+      } else if (!pipPlaywright) {
+        const args = getPipInstallArgs(env, pkg)
+        const result = await executeCommand(pythonCmd, args, { timeout: 120000 })
+        if (result.success) {
+          results.push({
+            step: `安装 ${pkg}`,
+            status: 'success',
+            output: 'Python Playwright 安装成功（使用系统 Chromium）',
+            progress: 100
+          })
+        } else {
+          results.push({
+            step: `安装 ${pkg}`,
+            status: 'error',
+            output: `Python Playwright 安装失败: ${result.error || result.output || '未知错误'}`,
+            progress: 0
+          })
+        }
       } else {
         results.push({
           step: `检查 ${pkg}`,
@@ -325,33 +342,44 @@ async function installPlaywrightBrowsers(pythonCmd: string, env: EnvironmentInfo
 
   logger.info('[依赖安装] 开始安装 Playwright Chromium 浏览器')
 
-  // Docker 环境使用系统 Chromium + Node.js Playwright
   if (env.type === 'docker') {
     const systemChromium = await checkSystemChromium()
 
     if (systemChromium.available) {
-      // 检查 Node.js Playwright 是否可用
+      const pipPlaywright = await checkPackageInstalled('playwright', pythonCmd)
       const nodePlaywrightCheck = await executeCommand('npx', ['playwright', '--version'], { timeout: 10000 })
 
-      if (nodePlaywrightCheck.success) {
+      if (pipPlaywright && nodePlaywrightCheck.success) {
         results[0] = {
           step: '配置 Playwright 浏览器',
           status: 'success',
-          output: `已配置使用系统 Chromium: ${systemChromium.path}，Node.js Playwright: ${nodePlaywrightCheck.output.trim()}`,
+          output: `已配置：系统 Chromium (${systemChromium.path})，Python Playwright 已安装，Node.js Playwright: ${nodePlaywrightCheck.output.trim()}`,
           progress: 100
         }
-        logger.info('[依赖安装] Docker 环境 Node.js Playwright 和系统 Chromium 已配置')
+        logger.info('[依赖安装] Docker 环境 Python/Node.js Playwright 和系统 Chromium 已配置')
         return results
-      } else {
-        results[0] = {
-          step: '配置 Playwright 浏览器',
-          status: 'error',
-          output: `Node.js Playwright 检查失败: ${nodePlaywrightCheck.error || nodePlaywrightCheck.output}`,
-          progress: 0
+      } else if (!pipPlaywright) {
+        const args = getPipInstallArgs(env, 'playwright')
+        const pipResult = await executeCommand(pythonCmd, args, { timeout: 120000 })
+        if (pipResult.success) {
+          results[0] = {
+            step: '配置 Playwright 浏览器',
+            status: 'success',
+            output: `已安装 Python Playwright 并配置系统 Chromium: ${systemChromium.path}`,
+            progress: 100
+          }
+          return results
         }
-        logger.error('[依赖安装] Docker 环境 Node.js Playwright 不可用')
-        return results
       }
+
+      results[0] = {
+        step: '配置 Playwright 浏览器',
+        status: 'error',
+        output: 'Playwright 配置不完整，请检查 Python playwright 包是否已安装',
+        progress: 0
+      }
+      logger.error('[依赖安装] Docker 环境 Playwright 配置不完整')
+      return results
     } else {
       results[0] = {
         step: '检查 Chromium 浏览器',
@@ -416,10 +444,10 @@ export async function GET() {
     const packageStatus: Record<string, boolean> = {}
 
     for (const pkg of packages) {
-      // Docker 环境：playwright 在 Alpine 上无法通过 pip 安装，检查系统 Chromium
       if (env.type === 'docker' && pkg === 'playwright') {
         const systemChromium = await checkSystemChromium()
-        packageStatus[pkg] = systemChromium.available
+        const pipPlaywright = await checkPackageInstalled(pkg, pythonCmd)
+        packageStatus[pkg] = systemChromium.available && pipPlaywright
       } else {
         packageStatus[pkg] = await checkPackageInstalled(pkg, pythonCmd)
       }

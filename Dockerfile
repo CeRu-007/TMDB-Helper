@@ -112,14 +112,11 @@ RUN cd /app/scripts && npm init -y && npm install bcryptjs@3.0.2
 # 安装健康检查工具
 RUN apk add --no-cache curl
 
-# 安装 Python 包（不包括 playwright，Alpine 不支持 Python playwright）
-# 但安装其他依赖包
-RUN pip3 install --break-system-packages python-dateutil Pillow bordercrop
+# 安装 Python 包（playwright Python 包使用系统 Chromium，无需下载浏览器）
+RUN pip3 install --break-system-packages python-dateutil Pillow bordercrop playwright
 
 # 安装 Node.js Playwright（支持 Alpine）
-# 这样 TMDB-Import 工具可以通过 playwright 的 CLI 使用系统 Chromium
-RUN npm install -g playwright && \
-    npx playwright install chromium || true
+RUN npm install -g playwright
 
 # 切换到非root用户
 USER nextjs
