@@ -1,41 +1,23 @@
 # TMDB Helper Docker 配置
 # 多阶段构建，支持 Node.js 和 Python 环境
-FROM node:22-alpine AS base
+FROM node:22-slim AS base
 
 # 安装系统依赖、Python 支持、Playwright 系统依赖和 pnpm
-RUN apk add --no-cache \
-    libc6-compat \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    py3-pip \
+    python3-pip \
     python3-dev \
     make \
     g++ \
     gcc \
-    musl-dev \
-    linux-headers \
+    libc6-dev \
     libffi-dev \
-    openssl-dev \
-    jpeg-dev \
-    zlib-dev \
+    libssl-dev \
     curl \
     ffmpeg \
-    # Playwright/Chromium 运行所需的最小系统库 (Alpine)
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    && ln -sf python3 /usr/bin/python \
-    && npm install -g pnpm
-
-# 设置 Playwright 环境变量（使用系统 Chromium）
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-ENV CHROME_BIN=/usr/bin/chromium-browser
-ENV CHROME_PATH=/usr/lib/chromium/
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && npm install -g pnpm \
+    && rm -rf /var/lib/apt/lists/*
 
 # 设置工作目录
 WORKDIR /app
@@ -44,7 +26,7 @@ WORKDIR /app
 FROM base AS deps
 WORKDIR /app
 
-# 复制包管理文件（只复制pnpm相关文件）
+# 复制包管理文件
 COPY package.json pnpm-lock.yaml ./
 
 # 安装 Node.js 依赖
@@ -80,14 +62,6 @@ ENV TMDB_DATA_DIR=/app/data
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV COOKIE_SECURE=false
 
-# Playwright 环境变量（运行时）
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-ENV CHROME_BIN=/usr/bin/chromium-browser
-ENV CHROME_PATH=/usr/lib/chromium/
-
 # 创建非root用户
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -106,22 +80,22 @@ RUN mkdir -p /app/data /app/scripts /app/logs && \
 # 复制脚本文件
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
-# 为启动脚本安装 bcryptjs (指定版本与 package.json 一致)
+# 为启动脚本安装 bcryptjs
 RUN cd /app/scripts && npm init -y && npm install bcryptjs@3.0.2
 
-# 安装健康检查工具
-RUN apk add --no-cache curl
-
-# 安装 Python 包（playwright Python 包使用系统 Chromium，无需下载浏览器）
+# 安装 Python 包
 RUN pip3 install --break-system-packages python-dateutil Pillow bordercrop playwright
 
-# 安装 Node.js Playwright（支持 Alpine）
+# 安装 Playwright Chromium 浏览器及其系统依赖
+RUN python3 -m playwright install --with-deps chromium
+
+# 安装 Node.js Playwright
 RUN npm install -g playwright
 
 # 切换到非root用户
 USER nextjs
 
-# 预设卷挂载点 - 图形化界面创建容器时会自动显示
+# 预设卷挂载点
 VOLUME ["/app/data", "/app/logs"]
 
 # 暴露端口
@@ -131,5 +105,5 @@ EXPOSE 4949
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:4949/api/auth/init || exit 1
 
-# 启动应用 - 先运行Docker初始化脚本，然后启动服务器
+# 启动应用
 CMD ["sh", "-c", "node scripts/docker-startup.js && node server.js"]
