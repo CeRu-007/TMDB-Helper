@@ -352,6 +352,7 @@ jobs:
         with:
           name: docker-image
           path: dist/
+          merge-multiple: true
         continue-on-error: true
 
       - name: Download Electron artifacts
@@ -372,10 +373,10 @@ jobs:
         shell: bash
         run: |
           FILES=""
-          # Docker tar
-          if [ -f "dist/tmdb-helper-${{ needs.prepare.outputs.tag }}.tar" ]; then
-            FILES="$FILES dist/tmdb-helper-${{ needs.prepare.outputs.tag }}.tar"
-          fi
+          # Docker tar (search recursively in dist)
+          while IFS= read -r f; do
+            FILES="$FILES $f"
+          done < <(find dist -name "tmdb-helper-*.tar" -type f 2>/dev/null)
           # Windows exe
           while IFS= read -r f; do
             FILES="$FILES $f"
