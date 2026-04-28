@@ -22,16 +22,16 @@ interface WeekdayNavigationProps {
 }
 
 function getDayButtonClasses(isSelected: boolean, isToday: boolean): string {
-  const baseClasses = "flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+  const baseClasses = "flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2"
 
   if (isSelected) {
     return `${baseClasses} bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 ${
-      isToday ? "!border-2 !border-yellow-400 relative z-10" : "border border-blue-300 dark:border-blue-600"
+      isToday ? "border-yellow-400" : "border-blue-100 dark:border-blue-900"
     }`
   }
 
   return `${baseClasses} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 ${
-    isToday ? "!border-2 !border-yellow-400 relative z-10" : ""
+    isToday ? "border-yellow-400" : "border-transparent"
   }`
 }
 
