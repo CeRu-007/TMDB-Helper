@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/shared/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
+import { cn } from "@/lib/utils"
 import { TMDBItem } from '@/lib/data/storage'
 import { Calendar, Clock, CheckCircle2 } from 'lucide-react'
 
@@ -75,41 +77,51 @@ export function WeekdayNavigation({
   return (
     <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10">
       <div className="mx-auto px-6">
-        <div className="flex justify-between items-center py-3">
-          <div className="flex space-x-1 overflow-x-auto">
-            <button
-              onClick={() => onDayFilterChange("recent")}
-              className={getDayButtonClasses(selectedDayFilter === "recent", false)}
-            >
-              {t("recentlyUpdated", { ns: "common" })}
-            </button>
-
-            {WEEKDAYS.map((day, index) => {
-              const jsWeekday = index === 6 ? 0 : index + 1
-              const dayItems = getItemsByDay(filteredItems, jsWeekday)
-              const isToday = mounted && index === localCurrentDay
-              const isSelected = selectedDayFilter === jsWeekday
-
-              return (
+        <div className="flex justify-between items-center py-3 gap-4">
+          <ScrollAreaPrimitive.Root className="flex-1 whitespace-nowrap overflow-hidden">
+            <ScrollAreaPrimitive.Viewport className="h-full w-full">
+              <div className="flex space-x-1">
                 <button
-                  key={day}
-                  onClick={() => onDayFilterChange(jsWeekday)}
-                  className={getDayButtonClasses(isSelected, isToday)}
-                  suppressHydrationWarning
+                  onClick={() => onDayFilterChange("recent")}
+                  className={getDayButtonClasses(selectedDayFilter === "recent", false)}
                 >
-                  <div className="flex items-center space-x-1">
-                    <span>{day}</span>
-                    {isToday && <Calendar className="h-3 w-3 text-yellow-600" suppressHydrationWarning />}
-                    {dayItems.length > 0 && (
-                      <span className="bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
-                        {dayItems.length}
-                      </span>
-                    )}
-                  </div>
+                  {t("recentlyUpdated", { ns: "common" })}
                 </button>
-              )
-            })}
-          </div>
+
+                {WEEKDAYS.map((day, index) => {
+                  const jsWeekday = index === 6 ? 0 : index + 1
+                  const dayItems = getItemsByDay(filteredItems, jsWeekday)
+                  const isToday = mounted && index === localCurrentDay
+                  const isSelected = selectedDayFilter === jsWeekday
+
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => onDayFilterChange(jsWeekday)}
+                      className={getDayButtonClasses(isSelected, isToday)}
+                      suppressHydrationWarning
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>{day}</span>
+                        {isToday && <Calendar className="h-3 w-3 text-yellow-600" suppressHydrationWarning />}
+                        {dayItems.length > 0 && (
+                          <span className="bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
+                            {dayItems.length}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </ScrollAreaPrimitive.Viewport>
+            <ScrollAreaPrimitive.ScrollAreaScrollbar
+              orientation="horizontal"
+              className="flex h-3 touch-none select-none flex-col border-t border-t-transparent p-[2px] transition-colors"
+            >
+              <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-gray-400/70 dark:bg-gray-500/70 hover:bg-gray-500/80 dark:hover:bg-gray-400/80" />
+            </ScrollAreaPrimitive.ScrollAreaScrollbar>
+          </ScrollAreaPrimitive.Root>
 
           <div className="flex items-center space-x-4 ml-4 flex-shrink-0">
             {onCategoryChange && (
