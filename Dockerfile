@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     ca-certificates \
     dnsutils \
+    xvfb \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && npm install -g pnpm \
     && rm -rf /var/lib/apt/lists/*
@@ -69,6 +70,7 @@ ENV COOKIE_SECURE=false
 # Playwright 环境变量 - 使用系统全局路径
 ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
+ENV DISPLAY=:99
 
 # 创建非root用户
 RUN addgroup --system --gid 1001 nodejs && \

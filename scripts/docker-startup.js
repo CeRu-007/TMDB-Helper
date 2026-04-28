@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { spawn } = require('child_process');
 
 const DATA_DIR = process.env.TMDB_DATA_DIR || '/app/data';
 const DB_PATH = path.join(DATA_DIR, 'tmdb-helper.db');
@@ -52,6 +53,56 @@ function ensureDirectories() {
       logError(`创建目录失败: ${dir}`, error);
     }
   });
+}
+
+function startXvfb() {
+  try {
+    const display = process.env.DISPLAY || ':99';
+    const displayNum = display.replace(':', '');
+
+    const lockFile = `/tmp/.X${displayNum}-lock`;
+    const socketDir = '/tmp/.X11-unix';
+    const socketFile = `${socketDir}/X${displayNum}`;
+
+    if (fs.existsSync(lockFile) || fs.existsSync(socketFile)) {
+      log(`Xvfb 虚拟显示服务已在运行 (DISPLAY=${display})`);
+      return true;
+    }
+
+    if (!fs.existsSync(socketDir)) {
+      fs.mkdirSync(socketDir, { recursive: true });
+    }
+
+    const xvfb = spawn('Xvfb', [display, '-screen', '0', '1280x720x16', '-ac', '-nolisten', 'tcp'], {
+      detached: true,
+      stdio: 'ignore'
+    });
+
+    xvfb.unref();
+
+    xvfb.on('error', (err) => {
+      logError('Xvfb 进程错误', err);
+    });
+
+    const startTime = Date.now();
+    const maxWait = 3000;
+    while (Date.now() - startTime < maxWait) {
+      if (fs.existsSync(lockFile) || fs.existsSync(socketFile)) {
+        log(`Xvfb 虚拟显示服务已启动 (DISPLAY=${display})`);
+        return true;
+      }
+      const slept = Date.now() - startTime;
+      if (slept < maxWait) {
+        require('child_process').spawnSync('sleep', ['0.1']);
+      }
+    }
+
+    log('Xvfb 启动超时，前台模式可能不可用');
+    return false;
+  } catch (error) {
+    logError('Xvfb 启动失败，前台模式可能不可用', error);
+    return false;
+  }
 }
 
 async function initializeDatabase() {
@@ -333,6 +384,8 @@ async function main() {
     log('检测到 Docker 环境');
 
     ensureDirectories();
+
+    startXvfb();
 
     const db = await initializeDatabase();
     if (db) {
