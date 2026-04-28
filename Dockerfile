@@ -76,6 +76,8 @@ ENV DOCKER_CONTAINER=true
 ENV TMDB_DATA_DIR=/app/data
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV COOKIE_SECURE=false
+ENV JWT_SECRET=your_jwt_secret_key_here_change_in_production
+ENV SESSION_EXPIRY_DAYS=15
 
 # Playwright 环境变量 - 浏览器由用户运行时手动安装
 # 使用 /app/data 目录，确保 nextjs 用户有写入权限
@@ -107,8 +109,7 @@ RUN cd /app/scripts && npm init -y && npm install bcryptjs@3.0.2
 RUN chown -R nextjs:nodejs /app && \
     chmod 755 /usr/bin/unzip /usr/bin/cp /usr/bin/mv /usr/bin/rm /usr/bin/git 2>/dev/null || true
 
-# 切换到非root用户运行应用
-USER nextjs
+USER root
 
 # 设置环境变量确保 PATH 包含系统命令
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
