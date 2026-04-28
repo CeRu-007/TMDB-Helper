@@ -251,4 +251,29 @@ export class ItemManager {
       return false;
     }
   }
+
+  /**
+   * 根据 TMDB ID 检查项目是否已存在（简化版，不加载关联数据）
+   */
+  static async checkDuplicateByTmdbId(tmdbId: string, mediaType: string): Promise<boolean> {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    try {
+      const response = await ItemManager.makeApiCall(
+        `${ItemManager.API_BASE_URL}/check-duplicate?tmdbId=${encodeURIComponent(tmdbId)}&mediaType=${encodeURIComponent(mediaType)}`,
+        { method: 'GET' }
+      );
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      return data.exists === true;
+    } catch (_error) {
+      return false;
+    }
+  }
 }

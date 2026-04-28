@@ -129,4 +129,13 @@ export class ServerStorageManager {
     await ensureInitialized();
     return itemsRepository.importItems(items);
   }
+
+  /**
+   * 根据 TMDB ID 检查项目是否已存在（简化版，不加载关联数据）
+   */
+  static async checkDuplicateByTmdbId(tmdbId: string, mediaType: string): Promise<boolean> {
+    await ensureInitialized();
+    const item = itemsRepository.findByTmdbId(tmdbId);
+    return item !== undefined && item.mediaType === mediaType;
+  }
 }

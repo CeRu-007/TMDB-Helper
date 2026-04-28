@@ -13,6 +13,7 @@ export class StorageManager {
   static deleteItem = ItemManager.deleteItem;
   static findItemById = ItemManager.findItemById;
   static hasAnyItems = ItemManager.hasAnyItems;
+  static checkDuplicateByTmdbId = ItemManager.checkDuplicateByTmdbId;
 
   // Import/Export methods
   static exportData = ImportExportManager.exportData;

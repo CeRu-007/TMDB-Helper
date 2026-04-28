@@ -112,26 +112,54 @@ export class TMDBService {
     const apiKey = await this.getApiKey();
     const fullUrlPath = `${urlPath}${urlPath.includes('?') ? '&' : '?'}api_key=${apiKey}`;
     const primaryUrl = `${this.PRIMARY_BASE_URL}${fullUrlPath}`;
-    
+    const fallbackUrl = `${this.FALLBACK_BASE_URL}${fullUrlPath}`;
+
+    // 创建超时控制器（5秒超时）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    // 并发请求两个域名，哪个先成功用哪个
+    const primaryPromise = fetch(primaryUrl, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'TMDB-Helper/1.0',
+        'Accept': 'application/json',
+        ...options?.headers,
+      }
+    });
+
+    const fallbackPromise = fetch(fallbackUrl, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'TMDB-Helper/1.0',
+        'Accept': 'application/json',
+        ...options?.headers,
+      }
+    });
+
     try {
-      return await fetch(primaryUrl, {
-        ...options,
-        headers: {
-          'User-Agent': 'TMDB-Helper/1.0',
-          'Accept': 'application/json',
-          ...options?.headers,
-        }
-      });
-    } catch {
-      const fallbackUrl = `${this.FALLBACK_BASE_URL}${fullUrlPath}`;
-      return fetch(fallbackUrl, {
-        ...options,
-        headers: {
-          'User-Agent': 'TMDB-Helper/1.0',
-          'Accept': 'application/json',
-          ...options?.headers,
-        }
-      });
+      // 使用 Promise.race 获取最快响应的请求
+      const response = await Promise.race([
+        primaryPromise,
+        fallbackPromise
+      ]);
+
+      clearTimeout(timeoutId);
+
+      // 如果响应成功，直接返回
+      if (response.ok) {
+        return response;
+      }
+
+      // 如果最快的响应失败，等待另一个响应
+      const otherResponse = await (response.url === primaryUrl ? fallbackPromise : primaryPromise);
+      clearTimeout(timeoutId);
+      return otherResponse;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
     }
   }
 

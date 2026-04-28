@@ -500,14 +500,13 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
         updatedAt: new Date().toISOString(),
       }
 
-      // 检查重复项目
-      const existingItems = await StorageManager.getItemsWithRetry();
-      const duplicateItem = existingItems.find(item =>
-        item.tmdbId === newItem.tmdbId &&
-        item.mediaType === newItem.mediaType
+      // 检查重复项目（简化版，直接查询数据库）
+      const isDuplicate = await StorageManager.checkDuplicateByTmdbId(
+        newItem.tmdbId,
+        newItem.mediaType
       );
 
-      if (duplicateItem) {
+      if (isDuplicate) {
         // 显示重复提示
         toast({
           title: t("independentPage.addItem.errors.alreadyExists", { ns: "nav.maintenance" }),
