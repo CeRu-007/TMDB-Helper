@@ -37,7 +37,6 @@ import {
   RefreshCw,
   Send,
   Table as TableIcon,
-  Save,
   Minimize2,
   Maximize2,
   Activity as ActivityIcon,
@@ -1877,22 +1876,6 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       {t('tmdbIntegration.textMode')}
                     </Button>
                 </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={saveCsvChanges}
-                  disabled={isSaving}
-                  className="h-7 px-2 text-xs"
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                  ) : (
-                    <Save className="h-3.5 w-3.5 mr-1" />
-                  )}
-                  {t('tmdbIntegration.save')}
-                </Button>
-
               </div>
             </div>
 
