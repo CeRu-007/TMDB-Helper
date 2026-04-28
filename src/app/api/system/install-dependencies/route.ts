@@ -628,13 +628,7 @@ export async function GET() {
     const packageStatus: Record<string, boolean> = {}
 
     for (const pkg of packages) {
-      if (env.type === 'docker' && pkg === 'playwright') {
-        const playwrightChromium = await checkPlaywrightChromium()
-        const pipPlaywright = await checkPackageInstalled(pkg, pythonCmd)
-        packageStatus[pkg] = playwrightChromium.available && pipPlaywright
-      } else {
-        packageStatus[pkg] = await checkPackageInstalled(pkg, pythonCmd)
-      }
+      packageStatus[pkg] = await checkPackageInstalled(pkg, pythonCmd)
     }
 
     logger.info(`[依赖安装] 依赖状态检查完成:`, packageStatus)
