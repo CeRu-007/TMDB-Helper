@@ -41,6 +41,84 @@ interface InstallProgress {
   status: 'running' | 'success' | 'error'
   output: string
   progress?: number
+  errorType?: string
+  errorSuggestion?: string
+  isRetryable?: boolean
+}
+
+type ErrorType =
+  | 'network_timeout'
+  | 'network_connection'
+  | 'permission_denied'
+  | 'disk_space'
+  | 'python_not_found'
+  | 'pip_not_found'
+  | 'package_not_found'
+  | 'installation_cancelled'
+  | 'unknown'
+
+interface ErrorConfig {
+  title: string
+  description: string
+  suggestion: string
+  isRetryable: boolean
+}
+
+const ERROR_CONFIG: Record<ErrorType, ErrorConfig> = {
+  network_timeout: {
+    title: '网络连接超时',
+    description: '下载依赖包时间过长，可能是网络较慢或不稳定',
+    suggestion: '请检查网络连接，或稍后重试。如果网络较慢，可以尝试更换 pip 镜像源。',
+    isRetryable: true
+  },
+  network_connection: {
+    title: '网络连接失败',
+    description: '无法访问 pip 镜像源，可能是网络或 DNS 问题',
+    suggestion: '请检查网络连接和 DNS 设置。如果使用代理，请检查代理配置。可以尝试在设置中更换 pip 镜像源。',
+    isRetryable: true
+  },
+  permission_denied: {
+    title: '权限不足',
+    description: '无法写入安装目录',
+    suggestion: 'Docker 环境通常不会出现此问题。如果是本地部署，请尝试使用 --user 参数安装，或以管理员身份运行。',
+    isRetryable: false
+  },
+  disk_space: {
+    title: '磁盘空间不足',
+    description: '无法下载和安装依赖',
+    suggestion: '请清理磁盘空间，确保至少有 500MB 可用空间。Docker 环境请检查容器存储卷空间。',
+    isRetryable: false
+  },
+  python_not_found: {
+    title: '未找到 Python 环境',
+    description: '系统中没有可用的 Python',
+    suggestion: '请确保系统已安装 Python 3.8+ 并添加到 PATH 环境变量。Docker 镜像应已包含 Python，请检查容器是否正确运行。',
+    isRetryable: false
+  },
+  pip_not_found: {
+    title: '未找到 pip 包管理器',
+    description: 'Python 环境中没有 pip',
+    suggestion: '请确保 Python 安装包含 pip。可以尝试运行 "python -m ensurepip --upgrade" 安装 pip。',
+    isRetryable: false
+  },
+  package_not_found: {
+    title: '找不到指定的包',
+    description: 'pip 无法找到指定的包或版本',
+    suggestion: '可能是包名称错误或当前 Python 版本不支持。请检查包名称是否正确，或尝试更换 pip 镜像源。',
+    isRetryable: false
+  },
+  installation_cancelled: {
+    title: '安装被中断',
+    description: '安装过程被用户或系统中断',
+    suggestion: '安装过程被中断，请重新尝试安装。',
+    isRetryable: true
+  },
+  unknown: {
+    title: '未知错误',
+    description: '安装过程中发生未知错误',
+    suggestion: '请查看详细错误信息，或尝试重新安装。如果问题持续存在，请检查系统日志。',
+    isRetryable: true
+  }
 }
 
 const PYTHON_PACKAGES = [
@@ -182,29 +260,61 @@ export default function DependencyInstaller() {
       const data = await response.json()
 
       if (data.success) {
-        setInstallProgress(data.data.results)
-        toast({
-          title: t("dependencyInstaller.installComplete"),
-          description: t("dependencyInstaller.successInstallCount", { count: data.data.summary.success }),
+        // 处理后端返回的结果，添加错误类型信息
+        const processedResults = data.data.results.map((result: InstallProgress) => {
+          if (result.status === 'error' && result.errorType) {
+            const errorConfig = ERROR_CONFIG[result.errorType as ErrorType] || ERROR_CONFIG.unknown
+            return {
+              ...result,
+              errorSuggestion: errorConfig.suggestion,
+              isRetryable: errorConfig.isRetryable
+            }
+          }
+          return result
         })
-        // 重新检查状态
-        await checkDependencies()
+        setInstallProgress(processedResults)
+
+        const hasErrors = processedResults.some((r: InstallProgress) => r.status === 'error')
+        if (!hasErrors) {
+          toast({
+            title: t("dependencyInstaller.installComplete"),
+            description: t("dependencyInstaller.successInstallCount", { count: data.data.summary.success }),
+          })
+          // 重新检查状态
+          await checkDependencies()
+        }
       } else {
-        setInstallProgress(data.data?.results || [{
+        // API 返回失败状态
+        const errorType = data.errorType as ErrorType || 'unknown'
+        const errorConfig = ERROR_CONFIG[errorType] || ERROR_CONFIG.unknown
+        setInstallProgress([{
           step: '安装失败',
           status: 'error',
-          output: data.error || '未知错误'
+          output: data.error || errorConfig.description,
+          errorType: errorType,
+          errorSuggestion: errorConfig.suggestion,
+          isRetryable: errorConfig.isRetryable
         }])
         toast({
-          title: t("dependencyInstaller.installFailed"),
-          description: data.error,
+          title: errorConfig.title,
+          description: errorConfig.suggestion,
           variant: "destructive"
         })
       }
     } catch (error) {
+      // 网络请求失败
+      const errorConfig = ERROR_CONFIG.network_connection
+      setInstallProgress([{
+        step: '网络请求失败',
+        status: 'error',
+        output: '无法连接到服务器，请检查网络连接',
+        errorType: 'network_connection',
+        errorSuggestion: errorConfig.suggestion,
+        isRetryable: true
+      }])
       toast({
-        title: t("dependencyInstaller.installFailed"),
-        description: t("dependencyInstaller.networkError"),
+        title: errorConfig.title,
+        description: errorConfig.suggestion,
         variant: "destructive"
       })
     } finally {
@@ -524,7 +634,7 @@ export default function DependencyInstaller() {
             <CardTitle className="text-base">{t("dependencyInstaller.installProgress")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-48">
+            <ScrollArea className="h-64">
               <div className="space-y-3">
                 {installProgress.map((progress, index) => (
                   <div key={index} className="space-y-2">
@@ -541,27 +651,62 @@ export default function DependencyInstaller() {
                         )}
                         <span className="text-sm font-medium">{progress.step}</span>
                       </div>
-                      <Badge
-                        variant={
-                          progress.status === 'success'
-                            ? 'default'
-                            : progress.status === 'error'
-                            ? 'destructive'
-                            : 'secondary'
-                        }
-                      >
-                        {progress.status === 'running'
-                          ? t("dependencyInstaller.running")
-                          : progress.status === 'success'
-                          ? t("dependencyInstaller.success")
-                          : t("dependencyInstaller.failed")}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge
+                          variant={
+                            progress.status === 'success'
+                              ? 'default'
+                              : progress.status === 'error'
+                              ? 'destructive'
+                              : 'secondary'
+                          }
+                        >
+                          {progress.status === 'running'
+                            ? t("dependencyInstaller.running")
+                            : progress.status === 'success'
+                            ? t("dependencyInstaller.success")
+                            : t("dependencyInstaller.failed")}
+                        </Badge>
+                        {/* 重试按钮 - 仅对可重试的错误显示 */}
+                        {progress.status === 'error' && progress.isRetryable && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (installType === 'python') {
+                                installPythonPackages()
+                              } else if (installType === 'playwright') {
+                                installPlaywrightBrowsers()
+                              }
+                            }}
+                            disabled={installing}
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            重试
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     {progress.progress !== undefined && progress.status === 'running' && (
                       <Progress value={progress.progress} className="h-2" />
                     )}
                     {progress.output && (
                       <div className="text-xs text-gray-500 pl-6">{progress.output}</div>
+                    )}
+                    {/* 错误详情和建议 */}
+                    {progress.status === 'error' && progress.errorType && (
+                      <div className="pl-6 space-y-2">
+                        {progress.errorSuggestion && (
+                          <div className="p-3 bg-amber-50 dark:bg-amber-950 rounded border border-amber-200 dark:border-amber-800">
+                            <p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
+                              解决建议：
+                            </p>
+                            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                              {progress.errorSuggestion}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )}
                     {index < installProgress.length - 1 && <Separator />}
                   </div>

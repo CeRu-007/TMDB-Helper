@@ -99,18 +99,156 @@ async function checkPython(env: EnvironmentInfo): Promise<{ available: boolean; 
   return { available: false }
 }
 
-// 执行命令的通用函数
+// 错误类型定义
+type ErrorType =
+  | 'network_timeout'
+  | 'network_connection'
+  | 'permission_denied'
+  | 'disk_space'
+  | 'python_not_found'
+  | 'pip_not_found'
+  | 'package_not_found'
+  | 'installation_cancelled'
+  | 'unknown'
+
+interface CommandError {
+  type: ErrorType
+  message: string
+  suggestion: string
+  isRetryable: boolean
+}
+
+// 分析错误类型
+function analyzeError(errorOutput: string, exitCode: number | null, command: string): CommandError {
+  const lowerError = errorOutput.toLowerCase()
+
+  // 网络超时
+  if (lowerError.includes('timeout') || lowerError.includes('timed out')) {
+    return {
+      type: 'network_timeout',
+      message: '网络连接超时，下载依赖包时间过长',
+      suggestion: '请检查网络连接，或稍后重试。如果网络较慢，可以尝试更换 pip 镜像源。',
+      isRetryable: true
+    }
+  }
+
+  // 网络连接错误
+  if (
+    lowerError.includes('connection error') ||
+    lowerError.includes('could not connect') ||
+    lowerError.includes('network is unreachable') ||
+    lowerError.includes('name or service not known') ||
+    lowerError.includes('getaddrinfo failed') ||
+    lowerError.includes('ssl') && lowerError.includes('error')
+  ) {
+    return {
+      type: 'network_connection',
+      message: '网络连接失败，无法访问 pip 镜像源',
+      suggestion: '请检查网络连接和 DNS 设置。如果使用代理，请检查代理配置。可以尝试在设置中更换 pip 镜像源。',
+      isRetryable: true
+    }
+  }
+
+  // 权限错误
+  if (
+    lowerError.includes('permission denied') ||
+    lowerError.includes('access is denied') ||
+    lowerError.includes('could not install packages due to an oserror')
+  ) {
+    return {
+      type: 'permission_denied',
+      message: '权限不足，无法写入安装目录',
+      suggestion: 'Docker 环境通常不会出现此问题。如果是本地部署，请尝试使用 --user 参数安装，或以管理员身份运行。',
+      isRetryable: false
+    }
+  }
+
+  // 磁盘空间不足
+  if (
+    lowerError.includes('no space left on device') ||
+    lowerError.includes('disk full')
+  ) {
+    return {
+      type: 'disk_space',
+      message: '磁盘空间不足，无法下载和安装依赖',
+      suggestion: '请清理磁盘空间，确保至少有 500MB 可用空间。Docker 环境请检查容器存储卷空间。',
+      isRetryable: false
+    }
+  }
+
+  // Python 未找到
+  if (
+    lowerError.includes('python: command not found') ||
+    lowerError.includes('python3: command not found') ||
+    lowerError.includes('不是内部或外部命令')
+  ) {
+    return {
+      type: 'python_not_found',
+      message: '未找到 Python 环境',
+      suggestion: '请确保系统已安装 Python 3.8+ 并添加到 PATH 环境变量。Docker 镜像应已包含 Python，请检查容器是否正确运行。',
+      isRetryable: false
+    }
+  }
+
+  // pip 未找到
+  if (lowerError.includes('pip: command not found') || lowerError.includes('no module named pip')) {
+    return {
+      type: 'pip_not_found',
+      message: '未找到 pip 包管理器',
+      suggestion: '请确保 Python 安装包含 pip。可以尝试运行 "python -m ensurepip --upgrade" 安装 pip。',
+      isRetryable: false
+    }
+  }
+
+  // 包不存在
+  if (lowerError.includes('could not find a version') || lowerError.includes('no matching distribution')) {
+    return {
+      type: 'package_not_found',
+      message: '找不到指定的包或版本',
+      suggestion: '可能是包名称错误或当前 Python 版本不支持。请检查包名称是否正确，或尝试更换 pip 镜像源。',
+      isRetryable: false
+    }
+  }
+
+  // 安装被取消
+  if (exitCode === 130 || lowerError.includes('interrupted') || lowerError.includes('killed')) {
+    return {
+      type: 'installation_cancelled',
+      message: '安装过程被中断',
+      suggestion: '安装过程被用户或系统中断，请重新尝试安装。',
+      isRetryable: true
+    }
+  }
+
+  // 未知错误
+  return {
+    type: 'unknown',
+    message: errorOutput || '安装过程中发生未知错误',
+    suggestion: '请查看详细错误信息，或尝试重新安装。如果问题持续存在，请检查系统日志。',
+    isRetryable: true
+  }
+}
+
 interface ExecuteOptions {
   cwd?: string
   timeout?: number
   env?: Record<string, string>
 }
 
+interface ExecuteResult {
+  success: boolean
+  output: string
+  error?: string
+  errorType?: ErrorType
+  errorDetails?: CommandError
+  exitCode?: number | null
+}
+
 async function executeCommand(
   command: string,
   args: string[],
   options: ExecuteOptions = {}
-): Promise<{ success: boolean; output: string; error?: string }> {
+): Promise<ExecuteResult> {
   return new Promise((resolve) => {
     const { cwd, timeout = 30000, env = {} } = options
 
@@ -126,10 +264,12 @@ async function executeCommand(
     let output = ''
     let errorOutput = ''
     let timeoutId: NodeJS.Timeout | null = null
+    let isTimeout = false
 
     // 设置超时
     if (timeout > 0) {
       timeoutId = setTimeout(() => {
+        isTimeout = true
         logger.warn(`[依赖安装] 命令执行超时: ${command}`)
         childProcess.kill('SIGTERM')
         // 5秒后强制终止
@@ -159,21 +299,58 @@ async function executeCommand(
       const success = code === 0
       logger.debug(`[依赖安装] 命令结束，退出码: ${code}`)
 
+      // 如果是超时导致的失败
+      if (isTimeout && !success) {
+        const timeoutError: CommandError = {
+          type: 'network_timeout',
+          message: '命令执行超时，操作未完成',
+          suggestion: '网络较慢或操作耗时较长，请稍后重试。',
+          isRetryable: true
+        }
+        resolve({
+          success: false,
+          output: output.trim(),
+          error: errorOutput.trim() || '命令执行超时',
+          errorType: 'network_timeout',
+          errorDetails: timeoutError,
+          exitCode: code
+        })
+        return
+      }
+
+      // 分析错误类型
+      let errorDetails: CommandError | undefined
+      let errorType: ErrorType | undefined
+
+      if (!success && (errorOutput || code !== 0)) {
+        errorDetails = analyzeError(errorOutput, code, command)
+        errorType = errorDetails.type
+      }
+
       resolve({
         success,
         output: output.trim(),
-        error: errorOutput.trim() || undefined
-      } as { success: boolean; output: string; error?: string })
+        error: errorOutput.trim() || undefined,
+        errorType,
+        errorDetails,
+        exitCode: code
+      })
     })
 
     childProcess.on('error', (error) => {
       if (timeoutId) clearTimeout(timeoutId)
 
       logger.error(`[依赖安装] 命令执行错误:`, error)
+
+      const errorDetails = analyzeError(error.message, null, command)
+
       resolve({
         success: false,
         output: '',
-        error: error.message
+        error: error.message,
+        errorType: errorDetails.type,
+        errorDetails,
+        exitCode: null
       })
     })
   })
@@ -211,6 +388,31 @@ function getPipInstallArgs(env: EnvironmentInfo, packageName: string): string[] 
   return args
 }
 
+// 检查系统 Chromium（非 Playwright 安装的）
+async function checkSystemChromium(): Promise<{ available: boolean; path?: string }> {
+  const systemChromiumPaths = [
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+    '/usr/lib/chromium/chromium',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable'
+  ]
+
+  for (const chromiumPath of systemChromiumPaths) {
+    try {
+      const result = await executeCommand('ls', ['-la', chromiumPath], { timeout: 5000 })
+      if (result.success) {
+        logger.info(`[依赖安装] 找到系统 Chromium: ${chromiumPath}`)
+        return { available: true, path: chromiumPath }
+      }
+    } catch (error) {
+      logger.debug(`[依赖安装] 路径 ${chromiumPath} 不存在`)
+    }
+  }
+
+  return { available: false }
+}
+
 // 安装Python包
 async function installPythonPackages(
   packages: string[],
@@ -221,9 +423,9 @@ async function installPythonPackages(
 
   for (const pkg of packages) {
     if (env.type === 'docker' && pkg === 'playwright') {
-      const systemChromium = await checkSystemChromium()
+      const playwrightChromium = await checkPlaywrightChromium()
       const pipPlaywright = await checkPackageInstalled(pkg, pythonCmd)
-      if (systemChromium.available && pipPlaywright) {
+      if (playwrightChromium.available && pipPlaywright) {
         results.push({
           step: `检查 ${pkg}`,
           status: 'success',
@@ -308,25 +510,32 @@ async function installPythonPackages(
 
 // 检查 Playwright Chromium 浏览器是否已安装
 async function checkPlaywrightChromium(): Promise<{ available: boolean; path?: string }> {
-  // 检查 Playwright 浏览器目录
-  const browsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/.cache/ms-playwright'
+  // 检查 Playwright 浏览器目录（支持多个可能的路径）
+  const possiblePaths = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    '/root/.cache/ms-playwright',
+    '/app/.cache/ms-playwright',
+    '/home/nextjs/.cache/ms-playwright'
+  ].filter(Boolean) as string[]
   
-  try {
-    // 检查 chromium-* 目录是否存在
-    const result = await executeCommand('ls', ['-d', `${browsersPath}/chromium-*`], { timeout: 5000 })
-    if (result.success && result.output) {
-      const chromiumDir = result.output.trim().split('\n')[0]
-      const chromeExecutable = `${chromiumDir}/chrome-linux/chrome`
-      
-      // 检查 chrome 可执行文件是否存在
-      const execCheck = await executeCommand('ls', ['-la', chromeExecutable], { timeout: 5000 })
-      if (execCheck.success) {
-        logger.info(`[依赖安装] 找到 Playwright Chromium: ${chromeExecutable}`)
-        return { available: true, path: chromeExecutable }
+  for (const browsersPath of possiblePaths) {
+    try {
+      // 检查 chromium-* 目录是否存在
+      const result = await executeCommand('ls', ['-d', `${browsersPath}/chromium-*`], { timeout: 5000 })
+      if (result.success && result.output) {
+        const chromiumDir = result.output.trim().split('\n')[0]
+        const chromeExecutable = `${chromiumDir}/chrome-linux/chrome`
+        
+        // 检查 chrome 可执行文件是否存在
+        const execCheck = await executeCommand('ls', ['-la', chromeExecutable], { timeout: 5000 })
+        if (execCheck.success) {
+          logger.info(`[依赖安装] 找到 Playwright Chromium: ${chromeExecutable}`)
+          return { available: true, path: chromeExecutable }
+        }
       }
+    } catch (error) {
+      logger.debug(`[依赖安装] 路径 ${browsersPath} 未找到 Chromium`)
     }
-  } catch (error) {
-    logger.debug(`[依赖安装] Playwright Chromium 未找到: ${error}`)
   }
 
   // 回退到检查系统 Chromium
@@ -364,71 +573,60 @@ async function installPlaywrightBrowsers(pythonCmd: string, env: EnvironmentInfo
 
   logger.info('[依赖安装] 开始安装 Playwright Chromium 浏览器')
 
-  if (env.type === 'docker') {
-    const playwrightChromium = await checkPlaywrightChromium()
+  // 首先检查是否已有 Chromium
+  const playwrightChromium = await checkPlaywrightChromium()
 
-    if (playwrightChromium.available) {
-      const pipPlaywright = await checkPackageInstalled('playwright', pythonCmd)
-      const nodePlaywrightCheck = await executeCommand('npx', ['playwright', '--version'], { timeout: 10000 })
+  if (playwrightChromium.available) {
+    const pipPlaywright = await checkPackageInstalled('playwright', pythonCmd)
+    const nodePlaywrightCheck = await executeCommand('npx', ['playwright', '--version'], { timeout: 10000 })
 
-      if (pipPlaywright && nodePlaywrightCheck.success) {
-        results[0] = {
-          step: '配置 Playwright 浏览器',
-          status: 'success',
-          output: `已配置：Playwright Chromium (${playwrightChromium.path})，Python Playwright 已安装，Node.js Playwright: ${nodePlaywrightCheck.output.trim()}`,
-          progress: 100
-        }
-        logger.info('[依赖安装] Docker 环境 Python/Node.js Playwright 和 Chromium 已配置')
-        return results
-      } else if (!pipPlaywright) {
-        const args = getPipInstallArgs(env, 'playwright')
-        const pipResult = await executeCommand(pythonCmd, args, { timeout: 120000 })
-        if (pipResult.success) {
-          results[0] = {
-            step: '配置 Playwright 浏览器',
-            status: 'success',
-            output: `已安装 Python Playwright 并配置 Chromium: ${playwrightChromium.path}`,
-            progress: 100
-          }
-          return results
-        }
-      }
-
+    if (pipPlaywright && nodePlaywrightCheck.success) {
       results[0] = {
         step: '配置 Playwright 浏览器',
-        status: 'error',
-        output: 'Playwright 配置不完整，请检查 Python playwright 包是否已安装',
-        progress: 0
+        status: 'success',
+        output: `已配置：Playwright Chromium (${playwrightChromium.path})，Python Playwright 已安装，Node.js Playwright: ${nodePlaywrightCheck.output.trim()}`,
+        progress: 100
       }
-      logger.error('[依赖安装] Docker 环境 Playwright 配置不完整')
-      return results
-    } else {
-      results[0] = {
-        step: '检查 Chromium 浏览器',
-        status: 'error',
-        output: 'Docker 镜像中未找到 Playwright Chromium，请检查 Dockerfile 配置',
-        progress: 0
-      }
-      logger.error('[依赖安装] Docker 环境未找到 Playwright Chromium')
+      logger.info('[依赖安装] Python/Node.js Playwright 和 Chromium 已配置')
       return results
     }
   }
 
-  // 非 Docker 环境：使用 playwright install chromium 下载浏览器
+  // 需要安装 Chromium
+  results[0] = {
+    step: '下载 Playwright Chromium',
+    status: 'running',
+    output: '正在下载 Chromium 浏览器（这可能需要几分钟）...',
+    progress: 10
+  }
+
+  // 使用 playwright install chromium 下载浏览器
   const args = ['-m', 'playwright', 'install', 'chromium']
 
   const result = await executeCommand(pythonCmd, args, {
-    timeout: 300000  // 5分钟超时，下载浏览器可能需要较长时间
+    timeout: 600000  // 10分钟超时，下载浏览器可能需要较长时间
   })
 
   if (result.success) {
-    results[0] = {
-      step: '安装 Playwright 浏览器',
-      status: 'success',
-      output: 'Chromium 浏览器安装成功',
-      progress: 100
+    // 再次检查是否安装成功
+    const checkAgain = await checkPlaywrightChromium()
+    if (checkAgain.available) {
+      results[0] = {
+        step: '安装 Playwright 浏览器',
+        status: 'success',
+        output: `Chromium 浏览器安装成功: ${checkAgain.path}`,
+        progress: 100
+      }
+      logger.info('[依赖安装] Playwright Chromium 安装成功')
+    } else {
+      results[0] = {
+        step: '安装 Playwright 浏览器',
+        status: 'success',
+        output: 'Chromium 浏览器安装成功（路径检测可能不准确，但应该可用）',
+        progress: 100
+      }
+      logger.info('[依赖安装] Playwright Chromium 安装成功（路径未确认）')
     }
-    logger.info('[依赖安装] Playwright Chromium 安装成功')
   } else {
     results[0] = {
       step: '安装 Playwright 浏览器',

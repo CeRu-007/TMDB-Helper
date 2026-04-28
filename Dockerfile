@@ -2,24 +2,17 @@
 # 多阶段构建，支持 Node.js 和 Python 环境
 FROM node:22-slim AS base
 
-# 安装系统依赖、Python 支持、Playwright 系统依赖和 pnpm
+# 安装系统依赖、Python 支持和 pnpm
+# 注意：Python 包和 Playwright 浏览器由用户在运行时通过设置页面手动安装
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
-    python3-dev \
-    make \
-    g++ \
-    gcc \
-    libc6-dev \
-    libffi-dev \
-    libssl-dev \
     curl \
     ffmpeg \
     unzip \
     git \
     ca-certificates \
     dnsutils \
-    xvfb \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && npm install -g pnpm \
     && rm -rf /var/lib/apt/lists/*
@@ -67,10 +60,9 @@ ENV TMDB_DATA_DIR=/app/data
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV COOKIE_SECURE=false
 
-# Playwright 环境变量 - 使用系统全局路径
+# Playwright 环境变量 - 浏览器由用户运行时手动安装
 ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
-ENV DISPLAY=:99
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # 创建非root用户
 RUN addgroup --system --gid 1001 nodejs && \
@@ -92,17 +84,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 # 为启动脚本安装 bcryptjs
 RUN cd /app/scripts && npm init -y && npm install bcryptjs@3.0.2
-
-# 安装 Python 包（使用 --break-system-packages 因为我们在容器中）
-RUN pip3 install --break-system-packages python-dateutil Pillow bordercrop playwright
-
-# 安装 Playwright Chromium 浏览器及其系统依赖
-RUN python3 -m playwright install chromium && \
-    python3 -m playwright install-deps chromium && \
-    chmod -R 755 /root/.cache/ms-playwright
-
-# 安装 Node.js Playwright（如果尚未安装）
-RUN which playwright || npm install -g playwright
 
 # 确保 nextjs 用户可以访问必要的命令和目录
 RUN chown -R nextjs:nodejs /app && \
