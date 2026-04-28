@@ -61,7 +61,8 @@ ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV COOKIE_SECURE=false
 
 # Playwright 环境变量 - 浏览器由用户运行时手动安装
-ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+# 使用 /app/data 目录，确保 nextjs 用户有写入权限
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/data/.cache/ms-playwright
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # 创建非root用户

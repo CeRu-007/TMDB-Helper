@@ -475,8 +475,10 @@ async function installPythonPackages(
 // 检查 Playwright Chromium 浏览器是否已安装
 async function checkPlaywrightChromium(): Promise<{ available: boolean; path?: string }> {
   // 检查 Playwright 浏览器目录（支持多个可能的路径）
+  // 优先使用环境变量设置的路径，确保与安装时使用相同路径
   const possiblePaths = [
     process.env.PLAYWRIGHT_BROWSERS_PATH,
+    '/app/data/.cache/ms-playwright',
     '/root/.cache/ms-playwright',
     '/app/.cache/ms-playwright',
     '/home/nextjs/.cache/ms-playwright'

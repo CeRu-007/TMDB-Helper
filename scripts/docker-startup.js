@@ -52,6 +52,17 @@ function ensureDirectories() {
       logError(`创建目录失败: ${dir}`, error);
     }
   });
+
+  // 创建 Playwright 浏览器缓存目录
+  const playwrightCacheDir = process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/data/.cache/ms-playwright';
+  try {
+    if (!fs.existsSync(playwrightCacheDir)) {
+      fs.mkdirSync(playwrightCacheDir, { recursive: true });
+      log(`创建 Playwright 缓存目录: ${playwrightCacheDir}`);
+    }
+  } catch (error) {
+    logError(`创建 Playwright 缓存目录失败: ${playwrightCacheDir}`, error);
+  }
 }
 
 async function initializeDatabase() {
