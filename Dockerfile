@@ -4,6 +4,7 @@ FROM node:22-slim AS base
 
 # 安装系统依赖、Python 支持和 pnpm
 # 注意：Python 包和 Playwright 浏览器由用户在运行时通过设置页面手动安装
+# 但 Chromium 运行需要的系统依赖必须预装
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
@@ -13,6 +14,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     ca-certificates \
     dnsutils \
+    # Chromium 运行需要的依赖库
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && npm install -g pnpm \
     && rm -rf /var/lib/apt/lists/*
