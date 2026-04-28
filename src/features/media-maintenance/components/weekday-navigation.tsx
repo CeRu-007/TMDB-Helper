@@ -2,17 +2,18 @@
 
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Badge } from '@/shared/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 import { cn } from "@/lib/utils"
 import { TMDBItem } from '@/lib/data/storage'
 import { Calendar, Clock, CheckCircle2 } from 'lucide-react'
+import { FilterDropdown } from './filter-dropdown'
 
 interface WeekdayNavigationProps {
   selectedDayFilter: "recent" | number
   onDayFilterChange: (filter: "recent" | number) => void
   filteredItems: TMDBItem[]
+  allItems: TMDBItem[]
   categories: Array<{ id: string; name: string }>
   selectedCategory: string
   onCategoryChange?: (category: string) => void
@@ -39,6 +40,7 @@ export function WeekdayNavigation({
   selectedDayFilter,
   onDayFilterChange,
   filteredItems,
+  allItems,
   categories,
   selectedCategory,
   onCategoryChange,
@@ -125,21 +127,7 @@ export function WeekdayNavigation({
 
           <div className="flex items-center space-x-4 ml-4 flex-shrink-0">
             {onCategoryChange && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("category", { ns: "common" })}:</span>
-                <Select value={selectedCategory || 'all'} onValueChange={onCategoryChange}>
-                  <SelectTrigger className="w-28">
-                    <SelectValue placeholder={t("all", { ns: "common" })} />
-                  </SelectTrigger>
-                  <SelectContent className="z-[60]">
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.id === 'all' ? t("all", { ns: "common" }) : t(`categoryNames.${category.id}`, { ns: "media" })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <FilterDropdown items={allItems} categories={categories} />
             )}
 
             {activeTab && onActiveTabChange && (

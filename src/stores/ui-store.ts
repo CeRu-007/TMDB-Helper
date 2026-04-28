@@ -31,6 +31,7 @@ interface FilterState {
   selectedDayFilter: 'recent' | number
   selectedCategory: string
   searchQuery: string
+  selectedPlatform: string
 }
 
 // 选中的项目类型
@@ -55,6 +56,7 @@ interface UIState extends DialogState, FilterState, SelectionState {
   setSelectedDayFilter: (filter: 'recent' | number) => void
   setSelectedCategory: (category: string) => void
   setSearchQuery: (query: string) => void
+  setSelectedPlatform: (platform: string) => void
   resetFilters: () => void
 
   // 选中项操作
@@ -81,6 +83,7 @@ const initialFilterState: FilterState = {
   selectedDayFilter: 'recent',
   selectedCategory: 'all',
   searchQuery: '',
+  selectedPlatform: 'all',
 }
 
 const initialSelectionState: SelectionState = {
@@ -126,6 +129,7 @@ export const useUIStore = create<UIState>()(
           'setSelectedCategory'
         ),
         setSearchQuery: (searchQuery) => set({ searchQuery }, false, 'setSearchQuery'),
+        setSelectedPlatform: (selectedPlatform) => set({ selectedPlatform }, false, 'setSelectedPlatform'),
         resetFilters: () => set(initialFilterState, false, 'resetFilters'),
 
         // 选中项操作
@@ -165,6 +169,7 @@ export const useFilterState = () => useUIStore((state) => ({
   selectedDayFilter: state.selectedDayFilter,
   selectedCategory: state.selectedCategory,
   searchQuery: state.searchQuery,
+  selectedPlatform: state.selectedPlatform,
 }))
 
 export const useSelectionState = () => useUIStore((state) => ({

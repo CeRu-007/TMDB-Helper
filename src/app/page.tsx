@@ -10,7 +10,8 @@ import {
   AlertTriangle,
   Plus,
   PlayCircle,
-  RefreshCw
+  RefreshCw,
+  Search
 } from "lucide-react"
 
 // 导入 hooks - 使用 Zustand 版本
@@ -21,6 +22,8 @@ import { useCurrentDay } from '@/lib/hooks/use-current-day'
 import { useMediaNews } from '@/lib/hooks/use-media-news'
 import { useData } from "@/shared/components/client-data-provider"
 import { useToast } from "@/lib/hooks/use-toast"
+import { useUIStore } from '@/stores/ui-store'
+import { getPlatformInfo } from '@/lib/utils'
 
 import { categories, type Category } from '@/lib/constants/categories'
 import type { MediaItem } from '@/types/media'
@@ -222,6 +225,8 @@ export default function HomePage() {
   const { filterItemsByCategory } = useCategoryFilter()
   const { getFilteredItems: getWeekdayFilteredItems } = useWeekdayFilter()
   const { currentDay } = useCurrentDay()
+  const searchQuery = useUIStore((s) => s.searchQuery)
+  const selectedPlatform = useUIStore((s) => s.selectedPlatform)
   const [selectedRegion, setSelectedRegion] = useState<string>("CN")
   const [mediaNewsType, setMediaNewsType] = useState<'upcoming' | 'recent'>('upcoming')
   const mediaNews = useMediaNews(selectedRegion)
@@ -271,19 +276,49 @@ export default function HomePage() {
   const filteredOngoingCount = filteredOngoingItems.length
   const filteredCompletedCount = filteredCompletedItems.length
 
+  const filterItemsBySearchQuery = useCallback((items: MediaItem[], query: string): MediaItem[] => {
+    if (!query.trim()) return items
+    const lowerQuery = query.toLowerCase().trim()
+    return items.filter(item =>
+      item.title?.toLowerCase().includes(lowerQuery) ||
+      item.notes?.toLowerCase().includes(lowerQuery)
+    )
+  }, [])
+
+  const filterItemsByPlatform = useCallback((items: MediaItem[], platform: string): MediaItem[] => {
+    if (platform === 'all') return items
+    return items.filter(item => {
+      if (item.networkName) {
+        const platformId = item.networkName.toLowerCase().replace(/[^a-z0-9]/g, '')
+        return platformId === platform
+      }
+      if (item.platformUrl) {
+        const info = getPlatformInfo(item.platformUrl)
+        return info && info.icon === platform
+      }
+      return false
+    })
+  }, [])
+
   const getFinalFilteredItems = useCallback((items: MediaItem[]) => {
     const categoryFiltered = filterItemsByCategory(items, homeState.selectedCategory)
-    return getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
-  }, [filterItemsByCategory, getWeekdayFilteredItems, homeState.selectedCategory, homeState.selectedDayFilter])
+    const weekdayFiltered = getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
+    const searchFiltered = filterItemsBySearchQuery(weekdayFiltered, searchQuery)
+    return filterItemsByPlatform(searchFiltered, selectedPlatform)
+  }, [filterItemsByCategory, getWeekdayFilteredItems, filterItemsBySearchQuery, filterItemsByPlatform, homeState.selectedCategory, homeState.selectedDayFilter, searchQuery, selectedPlatform])
 
   const finalOngoingItems = useMemo(() => {
     const categoryFiltered = filterItemsByCategory(ongoingItems, homeState.selectedCategory)
-    return getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
+    const weekdayFiltered = getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
+    const searchFiltered = filterItemsBySearchQuery(weekdayFiltered, searchQuery)
+    return filterItemsByPlatform(searchFiltered, selectedPlatform)
   }, [ongoingItems, getFinalFilteredItems])
 
   const finalCompletedItems = useMemo(() => {
     const categoryFiltered = filterItemsByCategory(completedItems, homeState.selectedCategory)
-    return getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
+    const weekdayFiltered = getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
+    const searchFiltered = filterItemsBySearchQuery(weekdayFiltered, searchQuery)
+    return filterItemsByPlatform(searchFiltered, selectedPlatform)
   }, [completedItems, getFinalFilteredItems])
 
   // 渲染内容
@@ -300,6 +335,7 @@ export default function HomePage() {
               selectedDayFilter={homeState.selectedDayFilter}
               onDayFilterChange={homeState.setSelectedDayFilter}
               filteredItems={filteredOngoingItems}
+              allItems={ongoingItems}
               categories={categories}
               selectedCategory={homeState.selectedCategory}
               onCategoryChange={homeState.setSelectedCategory}
@@ -317,15 +353,27 @@ export default function HomePage() {
               {finalOngoingItems.length === 0 && (
                 <div className="text-center py-16">
                   <div className="p-8 max-w-md mx-auto">
-                    <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
-                    <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, false)}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("startMaintenanceHint", { ns: "media" })}</p>
-                    <Button onClick={() => homeState.setShowAddDialog(true)} className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t("addNewItem", { ns: "media" })}
-                    </Button>
+                    {searchQuery.trim() ? (
+                      <>
+                        <Search className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
+                        <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                          {t("searchResultsFor", { query: searchQuery, ns: "common" })}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("noSearchResultsHint", { ns: "media" })}</p>
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
+                        <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                          {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, false)}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("startMaintenanceHint", { ns: "media" })}</p>
+                        <Button onClick={() => homeState.setShowAddDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+                          <Plus className="h-4 w-4 mr-2" />
+                          {t("addNewItem", { ns: "media" })}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -337,6 +385,7 @@ export default function HomePage() {
               selectedDayFilter={homeState.selectedDayFilter}
               onDayFilterChange={homeState.setSelectedDayFilter}
               filteredItems={filteredCompletedItems}
+              allItems={completedItems}
               categories={categories}
               selectedCategory={homeState.selectedCategory}
               onCategoryChange={homeState.setSelectedCategory}
@@ -353,11 +402,23 @@ export default function HomePage() {
 
               {finalCompletedItems.length === 0 && (
                 <div className="text-center py-16">
-                  <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
-                  <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, true)}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("completedItemsHint", { ns: "media" })}</p>
+                  {searchQuery.trim() ? (
+                    <>
+                      <Search className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
+                      <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                        {t("searchResultsFor", { query: searchQuery, ns: "common" })}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("noSearchResultsHint", { ns: "media" })}</p>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
+                      <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                        {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, true)}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("completedItemsHint", { ns: "media" })}</p>
+                    </>
+                  )}
                 </div>
               )}
             </div>
