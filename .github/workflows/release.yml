@@ -360,6 +360,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist/
+          pattern: '*-exe|*-dmg|linux-packages'
+          merge-multiple: true
         continue-on-error: true
 
       - name: Display all artifacts
@@ -373,7 +375,7 @@ jobs:
         shell: bash
         run: |
           FILES=""
-          # Docker tar (search recursively in dist)
+          # Docker tar
           while IFS= read -r f; do
             FILES="$FILES $f"
           done < <(find dist -name "tmdb-helper-*.tar" -type f 2>/dev/null)

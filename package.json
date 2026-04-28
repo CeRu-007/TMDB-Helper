@@ -235,6 +235,9 @@
       "compression": "maximum",
       "category": "Office"
     },
+    "deb": {
+      "compression": "xz"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
