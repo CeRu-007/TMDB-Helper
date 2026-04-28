@@ -422,45 +422,6 @@ async function installPythonPackages(
   const results: InstallProgress[] = []
 
   for (const pkg of packages) {
-    if (env.type === 'docker' && pkg === 'playwright') {
-      const playwrightChromium = await checkPlaywrightChromium()
-      const pipPlaywright = await checkPackageInstalled(pkg, pythonCmd)
-      if (playwrightChromium.available && pipPlaywright) {
-        results.push({
-          step: `检查 ${pkg}`,
-          status: 'success',
-          output: 'Docker 环境：Python Playwright 已安装，系统 Chromium 可用',
-          progress: 100
-        })
-      } else if (!pipPlaywright) {
-        const args = getPipInstallArgs(env, pkg)
-        const result = await executeCommand(pythonCmd, args, { timeout: 120000 })
-        if (result.success) {
-          results.push({
-            step: `安装 ${pkg}`,
-            status: 'success',
-            output: 'Python Playwright 安装成功（使用系统 Chromium）',
-            progress: 100
-          })
-        } else {
-          results.push({
-            step: `安装 ${pkg}`,
-            status: 'error',
-            output: `Python Playwright 安装失败: ${result.error || result.output || '未知错误'}`,
-            progress: 0
-          })
-        }
-      } else {
-        results.push({
-          step: `检查 ${pkg}`,
-          status: 'error',
-          output: 'Docker 环境未找到系统 Chromium',
-          progress: 0
-        })
-      }
-      continue
-    }
-
     // 首先检查是否已安装
     const isInstalled = await checkPackageInstalled(pkg, pythonCmd)
 
@@ -499,6 +460,9 @@ async function installPythonPackages(
         step: `安装 ${pkg}`,
         status: 'error',
         output: `${pkg} 安装失败: ${result.error || result.output || '未知错误'}`,
+        errorType: result.errorType,
+        errorDetails: result.errorDetails?.message,
+        isRetryable: result.errorDetails?.isRetryable,
         progress: 0
       }
       logger.error(`[依赖安装] ${pkg} 安装失败:`, result.error || result.output)
