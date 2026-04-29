@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, memo, useCallback, useEffect } from "react"
+import { useState, memo, useCallback, useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { Badge } from "@/shared/components/ui/badge"
 import { ExternalLink, MousePointer2, Zap, Clock, Settings } from "lucide-react"
@@ -30,6 +30,7 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
   const [isClicked, setIsClicked] = useState(false)
   const [scheduleTask, setScheduleTask] = useState<ScheduleTaskInfo | null>(null)
   const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const WEEKDAYS = [
     t('weekdaysList.monday'),
@@ -149,6 +150,7 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
 
   return (
     <div
+      ref={cardRef}
       className="cursor-pointer group relative"
       data-media-card="true"
       data-item={JSON.stringify(item)}
@@ -290,6 +292,7 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
         item={item as any}
         open={scheduleDrawerOpen}
         onOpenChange={setScheduleDrawerOpen}
+        cardRef={cardRef}
       />
     </div>
   )
