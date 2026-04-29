@@ -17,6 +17,7 @@ export interface CronRecommendation {
   description: string;
   labelKey?: string;
   descriptionKey?: string;
+  weekday?: string;
 }
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -269,16 +270,27 @@ export function getRecommendations(item: {
     });
   }
 
-  if (item.isDailyUpdate && item.airTime) {
+  if (item.airTime) {
     const [hour, minute] = item.airTime.split(':').map(Number);
     if (!isNaN(hour) && !isNaN(minute)) {
-      recommendations.push({
-        cron: `${minute} ${hour} * * *`,
-        label: '每日播出时间',
-        labelKey: 'dailyAirTime',
-        description: `每日 ${item.airTime}`,
-        descriptionKey: 'dailyAirTimeDesc',
-      });
+      if (item.isDailyUpdate) {
+        recommendations.push({
+          cron: `${minute} ${hour} * * *`,
+          label: '每日播出时间',
+          labelKey: 'dailyAirTime',
+          description: `每日 ${item.airTime}`,
+          descriptionKey: 'dailyAirTimeDesc',
+        });
+      } else if (typeof item.weekday === 'number' && item.weekday >= 0) {
+        recommendations.push({
+          cron: `${minute} ${hour} * * ${item.weekday}`,
+          label: '播出时间',
+          labelKey: 'airTime',
+          description: `${item.airTime}`,
+          descriptionKey: 'weeklyAirTimeDesc',
+          weekday: WEEKDAYS[item.weekday],
+        });
+      }
     }
   }
 

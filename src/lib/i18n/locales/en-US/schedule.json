@@ -31,6 +31,8 @@
   "inOneMinuteAt": "At {{time}}",
   "dailyAirTime": "Daily Air Time",
   "dailyAirTimeDesc": "Daily at {{time}}",
+  "airTime": "Air Time",
+  "weeklyAirTimeDesc": "Every {{day}} at {{time}}",
   "success": "Success",
   "failed": "Failed",
   "running": "Running",

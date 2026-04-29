@@ -31,6 +31,8 @@
   "inOneMinuteAt": "{{time}}에",
   "dailyAirTime": "일일 방송 시간",
   "dailyAirTimeDesc": "매일 {{time}}",
+  "airTime": "방송 시간",
+  "weeklyAirTimeDesc": "매주 {{day}} {{time}}",
   "success": "성공",
   "failed": "실패",
   "running": "실행 중",

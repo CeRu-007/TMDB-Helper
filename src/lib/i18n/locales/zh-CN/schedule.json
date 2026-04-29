@@ -31,6 +31,8 @@
   "inOneMinuteAt": "在 {{time}} 执行",
   "dailyAirTime": "每日播出时间",
   "dailyAirTimeDesc": "每日 {{time}}",
+  "airTime": "播出时间",
+  "weeklyAirTimeDesc": "每周{{day}} {{time}}执行",
   "success": "成功",
   "failed": "失败",
   "running": "执行中",
