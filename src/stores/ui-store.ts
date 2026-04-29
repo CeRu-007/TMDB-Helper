@@ -14,6 +14,8 @@ interface DialogState {
   settingsInitialSection: string | undefined
   showImportDialog: boolean
   showExportDialog: boolean
+  showJournalDialog: boolean
+  journalUnreadCount: number
   addDialogPrefilledData: {
     id: number
     title: string
@@ -50,6 +52,9 @@ interface UIState extends DialogState, FilterState, SelectionState {
   closeImportDialog: () => void
   openExportDialog: () => void
   closeExportDialog: () => void
+  openJournalDialog: () => void
+  closeJournalDialog: () => void
+  setJournalUnreadCount: (count: number) => void
 
   // 过滤操作
   setActiveTab: (tab: string) => void
@@ -75,6 +80,8 @@ const initialDialogState: DialogState = {
   settingsInitialSection: undefined,
   showImportDialog: false,
   showExportDialog: false,
+  showJournalDialog: false,
+  journalUnreadCount: 0,
   addDialogPrefilledData: null,
 }
 
@@ -115,6 +122,9 @@ export const useUIStore = create<UIState>()(
         closeImportDialog: () => set({ showImportDialog: false }, false, 'closeImportDialog'),
         openExportDialog: () => set({ showExportDialog: true }, false, 'openExportDialog'),
         closeExportDialog: () => set({ showExportDialog: false }, false, 'closeExportDialog'),
+        openJournalDialog: () => set({ showJournalDialog: true }, false, 'openJournalDialog'),
+        closeJournalDialog: () => set({ showJournalDialog: false }, false, 'closeJournalDialog'),
+        setJournalUnreadCount: (count: number) => set({ journalUnreadCount: count }, false, 'setJournalUnreadCount'),
 
         // 过滤操作
         setActiveTab: (activeTab) => set({ activeTab }, false, 'setActiveTab'),
@@ -162,6 +172,7 @@ export const useDialogState = () => useUIStore((state) => ({
   settingsInitialSection: state.settingsInitialSection,
   showImportDialog: state.showImportDialog,
   showExportDialog: state.showExportDialog,
+  showJournalDialog: state.showJournalDialog,
 }))
 
 export const useFilterState = () => useUIStore((state) => ({

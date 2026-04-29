@@ -26,6 +26,7 @@ import zhCN_imageProcessing from "./locales/zh-CN/image-processing.json"
 import zhCN_episodeGeneration from "./locales/zh-CN/episode-generation.json"
 import zhCN_dataManagement from "./locales/zh-CN/data-management.json"
 import zhCN_ui from "./locales/zh-CN/ui.json"
+import zhCN_journal from "./locales/zh-CN/journal.json"
 
 import enUS_common from "./locales/en-US/common.json"
 import enUS_nav_maintenance from "./locales/en-US/nav/maintenance.json"
@@ -48,6 +49,7 @@ import enUS_imageProcessing from "./locales/en-US/image-processing.json"
 import enUS_episodeGeneration from "./locales/en-US/episode-generation.json"
 import enUS_dataManagement from "./locales/en-US/data-management.json"
 import enUS_ui from "./locales/en-US/ui.json"
+import enUS_journal from "./locales/en-US/journal.json"
 
 import zhTW_common from "./locales/zh-TW/common.json"
 import zhTW_nav_maintenance from "./locales/zh-TW/nav/maintenance.json"
@@ -70,6 +72,7 @@ import zhTW_imageProcessing from "./locales/zh-TW/image-processing.json"
 import zhTW_episodeGeneration from "./locales/zh-TW/episode-generation.json"
 import zhTW_dataManagement from "./locales/zh-TW/data-management.json"
 import zhTW_ui from "./locales/zh-TW/ui.json"
+import zhTW_journal from "./locales/zh-TW/journal.json"
 
 import zhHK_common from "./locales/zh-HK/common.json"
 import zhHK_nav_maintenance from "./locales/zh-HK/nav/maintenance.json"
@@ -92,6 +95,7 @@ import zhHK_imageProcessing from "./locales/zh-HK/image-processing.json"
 import zhHK_episodeGeneration from "./locales/zh-HK/episode-generation.json"
 import zhHK_dataManagement from "./locales/zh-HK/data-management.json"
 import zhHK_ui from "./locales/zh-HK/ui.json"
+import zhHK_journal from "./locales/zh-HK/journal.json"
 
 import jaJP_common from "./locales/ja-JP/common.json"
 import jaJP_nav_maintenance from "./locales/ja-JP/nav/maintenance.json"
@@ -114,6 +118,7 @@ import jaJP_imageProcessing from "./locales/ja-JP/image-processing.json"
 import jaJP_episodeGeneration from "./locales/ja-JP/episode-generation.json"
 import jaJP_dataManagement from "./locales/ja-JP/data-management.json"
 import jaJP_ui from "./locales/ja-JP/ui.json"
+import jaJP_journal from "./locales/ja-JP/journal.json"
 
 import koKR_common from "./locales/ko-KR/common.json"
 import koKR_nav_maintenance from "./locales/ko-KR/nav/maintenance.json"
@@ -136,6 +141,7 @@ import koKR_imageProcessing from "./locales/ko-KR/image-processing.json"
 import koKR_episodeGeneration from "./locales/ko-KR/episode-generation.json"
 import koKR_dataManagement from "./locales/ko-KR/data-management.json"
 import koKR_ui from "./locales/ko-KR/ui.json"
+import koKR_journal from "./locales/ko-KR/journal.json"
 
 const resources = {
   "zh-CN": {
@@ -160,6 +166,7 @@ const resources = {
     "episode-generation": zhCN_episodeGeneration,
     "data-management": zhCN_dataManagement,
     ui: zhCN_ui,
+    journal: zhCN_journal,
   },
   "en-US": {
     common: enUS_common,
@@ -183,6 +190,7 @@ const resources = {
     "episode-generation": enUS_episodeGeneration,
     "data-management": enUS_dataManagement,
     ui: enUS_ui,
+    journal: enUS_journal,
   },
   "zh-TW": {
     common: zhTW_common,
@@ -206,6 +214,7 @@ const resources = {
     "episode-generation": zhTW_episodeGeneration,
     "data-management": zhTW_dataManagement,
     ui: zhTW_ui,
+    journal: zhTW_journal,
   },
   "zh-HK": {
     common: zhHK_common,
@@ -229,6 +238,7 @@ const resources = {
     "episode-generation": zhHK_episodeGeneration,
     "data-management": zhHK_dataManagement,
     ui: zhHK_ui,
+    journal: zhHK_journal,
   },
   "ja-JP": {
     common: jaJP_common,
@@ -252,6 +262,7 @@ const resources = {
     "episode-generation": jaJP_episodeGeneration,
     "data-management": jaJP_dataManagement,
     ui: jaJP_ui,
+    journal: jaJP_journal,
   },
   "ko-KR": {
     common: koKR_common,
@@ -275,6 +286,7 @@ const resources = {
     "episode-generation": koKR_episodeGeneration,
     "data-management": koKR_dataManagement,
     ui: koKR_ui,
+    journal: koKR_journal,
   },
 }
 
@@ -324,6 +336,7 @@ i18n
       "episode-generation",
       "data-management",
       "ui",
+      "journal",
     ],
     interpolation: {
       escapeValue: false,

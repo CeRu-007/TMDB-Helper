@@ -1,6 +1,7 @@
 import cron, { ScheduledTask } from 'node-cron';
 import { scheduleRepository } from '@/lib/data/schedule-repository';
 import { scheduleLogRepository } from '@/lib/data/schedule-log-repository';
+import { taskJournalRepository } from '@/lib/data/task-journal-repository';
 import { taskQueue } from './task-queue';
 import { logger } from '@/lib/utils/logger';
 import type { ScheduleTask } from '@/types/schedule';
@@ -187,7 +188,7 @@ class Scheduler {
           this.removeTask(task.id);
           scheduleLogRepository.updateStatus(logId, 'success', processResult.message);
         } else {
-          scheduleLogRepository.updateStatus(logId, 'success', executeResult.message, executeResult.details || null);
+          scheduleLogRepository.updateStatus(logId, 'success', executeResult.message, executeResult.details ?? undefined);
           scheduleRepository.updateLastRunAt(
             task.id,
             endAt,
@@ -196,10 +197,43 @@ class Scheduler {
           notifier.sendSuccessNotification(item.title, executeResult.episodeCount || 0);
         }
 
+        taskJournalRepository.create({
+          itemId: item.id,
+          itemTitle: item.title,
+          status: 'success',
+          title: item.title,
+          content: `第${executeResult.episodeCount || 0}集维护完成`,
+          dataPreview: executeResult.details || null,
+          startAt,
+          endAt,
+        })
+
+        notifyDataChangeFromServer({
+          type: 'journal_updated',
+          data: { itemId: item.id, status: 'success' },
+        })
+
         logger.info(`[Scheduler] 任务执行成功: ${task.id}`);
       } else {
         scheduleLogRepository.updateStatus(logId, 'failed', executeResult.message);
         notifier.sendErrorNotification(item.title, executeResult.message);
+
+        taskJournalRepository.create({
+          itemId: item.id,
+          itemTitle: item.title,
+          status: 'failed',
+          title: item.title,
+          content: '定时任务执行失败',
+          errorMessage: executeResult.message,
+          startAt,
+          endAt,
+        })
+
+        notifyDataChangeFromServer({
+          type: 'journal_updated',
+          data: { itemId: item.id, status: 'failed' },
+        })
+
         logger.error(`[Scheduler] 任务执行失败: ${task.id}, ${executeResult.message}`);
       }
     } catch (error) {

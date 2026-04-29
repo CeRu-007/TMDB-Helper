@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { scheduleRepository } from '@/lib/data/schedule-repository'
 import { scheduleLogRepository } from '@/lib/data/schedule-log-repository'
+import { taskJournalRepository } from '@/lib/data/task-journal-repository'
 import { itemsRepository } from '@/lib/database/repositories/items.repository'
 import { executeScheduleTask, processScheduleTaskResult, type LogEntry } from '@/lib/scheduler/schedule-executor'
 import { notifier } from '@/lib/scheduler/notifier'
@@ -80,10 +81,26 @@ export async function POST(request: NextRequest) {
           })
         }
 
-        scheduleLogRepository.updateStatus(logId, 'success', result.message, result.details || null)
+        scheduleLogRepository.updateStatus(logId, 'success', result.message, result.details ?? undefined)
         scheduleRepository.updateLastRunAt(task.id, endAt, '')
 
         notifier.sendSuccessNotification(item.title, result.episodeCount || 0)
+
+        taskJournalRepository.create({
+          itemId: item.id,
+          itemTitle: item.title,
+          status: 'success',
+          title: item.title,
+          content: `第${result.episodeCount || 0}集维护完成`,
+          dataPreview: result.details || null,
+          startAt,
+          endAt,
+        })
+
+        notifyDataChangeFromServer({
+          type: 'journal_updated',
+          data: { itemId: item.id, status: 'success' },
+        })
 
         return NextResponse.json({
           success: true,
@@ -94,12 +111,46 @@ export async function POST(request: NextRequest) {
       } else {
         scheduleLogRepository.updateStatus(logId, 'failed', result.message)
         notifier.sendErrorNotification(item.title, result.message)
+
+        taskJournalRepository.create({
+          itemId: item.id,
+          itemTitle: item.title,
+          status: 'failed',
+          title: item.title,
+          content: '定时任务执行失败',
+          errorMessage: result.message,
+          startAt,
+          endAt,
+        })
+
+        notifyDataChangeFromServer({
+          type: 'journal_updated',
+          data: { itemId: item.id, status: 'failed' },
+        })
+
         return NextResponse.json({ success: false, error: result.message, logs }, { status: 500 })
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '未知错误'
       scheduleLogRepository.updateStatus(logId, 'failed', errorMessage)
       notifier.sendErrorNotification(item.title, errorMessage)
+
+      taskJournalRepository.create({
+        itemId: item.id,
+        itemTitle: item.title,
+        status: 'failed',
+        title: item.title,
+        content: '定时任务执行异常',
+        errorMessage,
+        startAt,
+        endAt: new Date().toISOString(),
+      })
+
+      notifyDataChangeFromServer({
+        type: 'journal_updated',
+        data: { itemId: item.id, status: 'failed' },
+      })
+
       logger.error(`[Schedule Execute API] 执行失败: ${task.id}`, error)
       return NextResponse.json({ success: false, error: errorMessage, logs }, { status: 500 })
     }

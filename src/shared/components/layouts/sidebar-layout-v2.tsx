@@ -59,6 +59,9 @@ export function SidebarLayout({
   const openSettingsDialog = useUIStore((s) => s.openSettingsDialog)
   const openImportDialog = useUIStore((s) => s.openImportDialog)
   const openExportDialog = useUIStore((s) => s.openExportDialog)
+  const openJournalDialog = useUIStore((s) => s.openJournalDialog)
+  const showJournalDialog = useUIStore((s) => s.showJournalDialog)
+  const closeJournalDialog = useUIStore((s) => s.closeJournalDialog)
 
   // 从 Media Store 获取状态
   const items = useMediaStore((s) => s.items)
@@ -203,6 +206,7 @@ export function SidebarLayout({
   const handleShowSettingsDialog = useCallback((section?: string) => openSettingsDialog(section), [openSettingsDialog])
   const handleShowImportDialog = useCallback(() => openImportDialog(), [openImportDialog])
   const handleShowExportDialog = useCallback(() => openExportDialog(), [openExportDialog])
+  const handleShowJournalDialog = useCallback(() => openJournalDialog(), [openJournalDialog])
 
   // 处理快速添加词条（从即将上线/近期开播页面）
   // 打开添加对话框并预填数据
@@ -228,6 +232,7 @@ export function SidebarLayout({
         onShowImportDialog={handleShowImportDialog}
         onShowExportDialog={handleShowExportDialog}
         onShowAddDialog={handleShowAddDialog}
+        onShowJournalDialog={handleShowJournalDialog}
       />
 
       {/* 主体内容 */}
@@ -278,6 +283,11 @@ export function SidebarLayout({
           />
         </MainContentArea>
       </div>
+
+      <TaskJournalDialog
+        open={showJournalDialog}
+        onOpenChange={(open) => { if (!open) closeJournalDialog() }}
+      />
     </div>
   )
 }
@@ -286,3 +296,4 @@ export function SidebarLayout({
 import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
 import VideoScreenshot from "@/features/image-processing/components/video-screenshot"
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"
+import { TaskJournalDialog } from "@/features/system/components/task-journal-dialog"

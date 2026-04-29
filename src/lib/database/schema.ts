@@ -7,7 +7,7 @@ import { getDatabaseAsync } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 /**
  * 初始化数据库 Schema
@@ -55,6 +55,9 @@ export async function initializeSchema(): Promise<void> {
     }
     if (currentVersion < 11) {
       migrateToV11(db);
+    }
+    if (currentVersion < 12) {
+      migrateToV12(db);
     }
 
     setUserVersion(db, SCHEMA_VERSION);
@@ -261,6 +264,24 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       FOREIGN KEY (taskId) REFERENCES schedule_tasks(id) ON DELETE CASCADE
     )
   `);
+
+  // 任务记事表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_journal (
+      id TEXT PRIMARY KEY,
+      itemId TEXT NOT NULL,
+      itemTitle TEXT NOT NULL,
+      status TEXT NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      dataPreview TEXT,
+      errorMessage TEXT,
+      startAt TEXT NOT NULL,
+      endAt TEXT,
+      read INTEGER DEFAULT 0,
+      createdAt TEXT NOT NULL
+    )
+  `);
 }
 
 /**
@@ -282,6 +303,10 @@ function createIndexes(db: ReturnType<typeof getDatabase>): void {
     'CREATE INDEX IF NOT EXISTS idx_schedule_tasks_itemId ON schedule_tasks(itemId)',
     'CREATE INDEX IF NOT EXISTS idx_schedule_tasks_enabled ON schedule_tasks(enabled)',
     'CREATE INDEX IF NOT EXISTS idx_schedule_logs_taskId ON schedule_logs(taskId)',
+    'CREATE INDEX IF NOT EXISTS idx_task_journal_itemId ON task_journal(itemId)',
+    'CREATE INDEX IF NOT EXISTS idx_task_journal_status ON task_journal(status)',
+    'CREATE INDEX IF NOT EXISTS idx_task_journal_read ON task_journal(read)',
+    'CREATE INDEX IF NOT EXISTS idx_task_journal_createdAt ON task_journal(createdAt)',
   ];
 
   for (const sql of indexes) {
@@ -432,6 +457,38 @@ function migrateToV11(db: ReturnType<typeof getDatabase>): void {
     logger.info('[Database] V11 迁移完成');
   } catch (error) {
     logger.error('[Database] V11 迁移失败:', error);
+  }
+}
+
+function migrateToV12(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V12 迁移: 创建 task_journal 表');
+
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS task_journal (
+        id TEXT PRIMARY KEY,
+        itemId TEXT NOT NULL,
+        itemTitle TEXT NOT NULL,
+        status TEXT NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        dataPreview TEXT,
+        errorMessage TEXT,
+        startAt TEXT NOT NULL,
+        endAt TEXT,
+        read INTEGER DEFAULT 0,
+        createdAt TEXT NOT NULL
+      )
+    `);
+
+    db.exec('CREATE INDEX IF NOT EXISTS idx_task_journal_itemId ON task_journal(itemId)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_task_journal_status ON task_journal(status)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_task_journal_read ON task_journal(read)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_task_journal_createdAt ON task_journal(createdAt)');
+
+    logger.info('[Database] V12 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V12 迁移失败:', error);
   }
 }
 
