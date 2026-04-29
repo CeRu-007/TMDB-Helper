@@ -1,1838 +1,424 @@
 "use client"
 
-import React, { useState, useEffect, useRef, useCallback } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
+import React, { useRef, useEffect, useCallback } from "react"
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Button } from "@/shared/components/ui/button"
-import { cn } from "@/lib/utils"
-import TableContextMenu from "../../../../shared/components/ui/table-context-menu"
-import BatchInsertRowDialog from "../batch-insert-row-dialog"
-import BatchEditDialog from "../batch-edit-dialog"
-import { DELAY_1500MS } from "@/lib/constants/constants"
 import { useTranslation } from "react-i18next"
+import { useTMDBTableState } from "./hooks/useTMDBTableState"
+import { useTMDBTableSelection } from "./hooks/useTMDBTableSelection"
+import { useTMDBTableHistory } from "./hooks/useTMDBTableHistory"
+import { useTMDBTableKeyboard } from "./hooks/useTMDBTableKeyboard"
+import { useTMDBTableMouse } from "./hooks/useTMDBTableMouse"
+import { useTMDBTableClipboard } from "./hooks/useTMDBTableClipboard"
+import HeaderRenderer from "./components/HeaderRenderer"
+import RowRenderer from "./components/RowRenderer"
+import type { TMDBTableProps, CellPosition } from "./types"
 import {
-  Plus,
-  ChevronDown,
-  MoreHorizontal,
-  ArrowUp, 
-  ArrowDown, 
-  ArrowLeft, 
-  ArrowRight,
-  Copy,
-  Trash2
-} from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu"
+  insertRow,
+  deleteRow,
+  insertColumn,
+  deleteColumn,
+  moveRow,
+  moveColumn,
+  duplicateRow,
+  duplicateColumn,
+  batchInsertRows,
+  getMaxEpisodeNumber,
+  findColumnIndex,
+  calculateSelectionArea,
+} from "./lib"
+import { isOverviewColumn } from "./lib"
 
-
-// 导入CSV数据类型
-import type { CSVData } from "@/types/csv-editor"
-
-// 表格属性接口
-export interface TMDBTableProps {
-  data: CSVData
-  className?: string
-  enableColumnResizing?: boolean
-  enableColumnReordering?: boolean
-  rowHeight?: number
-  onCellChange?: (row: number, col: number, value: string) => void
-  onSelectionChange?: (selection: { row: number, col: number }[]) => void
-  onDataChange?: (newData: CSVData) => void
-  showRowNumbers?: boolean
-  showColumnOperations?: boolean
-  showRowOperations?: boolean
-}
-
-
-
-// 拖拽框选配置
-const DEBOUNCE_DELAY = 16; // 鼠标移动防抖延迟，单位毫秒（约60fps）
-
-/**
- * 验证字符串是否为有效URL
- */
-function isValidUrl(str: string): boolean {
-  if (!str || typeof str !== 'string') return false;
-  try {
-    const url = new URL(str);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
-
-/**
- * 判断是否为backdrop列
- */
-function isBackdropColumn(columnName: string): boolean {
-  return columnName.toLowerCase() === 'backdrop';
-}
-
-/**
- * 防抖函数 - 用于优化频繁触发的事件
- */
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  delay: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
-  
-  return function(...args: Parameters<T>): void {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-    
-    timeout = setTimeout(() => {
-      func(...args);
-      timeout = null;
-    }, delay);
-  };
-}
-
-/**
- * TMDBTable 组件
- * 基本的表格组件，用于显示和编辑CSV数据
- */
-const TMDBTableComponent = ({
+const TMDBTableComponent: React.FC<TMDBTableProps> = ({
   data,
   className,
-  enableColumnResizing = true,
-  enableColumnReordering = true,
+  enableColumnResizing,
+  enableColumnReordering,
   rowHeight,
   onCellChange,
   onSelectionChange,
   onDataChange,
   showRowNumbers = true,
   showColumnOperations = true,
-  showRowOperations = true
-}: TMDBTableProps) => {
-  const { t } = useTranslation('ui')
-  // 列宽状态
-  const [_columnWidths, _setColumnWidths] = useState<number[]>([])
-  // 选中单元格状态
-  const [selectedCells, setSelectedCells] = useState<{ row: number, col: number }[]>([])
-  // 表格容器引用
-  const tableRef = useRef<HTMLDivElement>(null)
-  // 当前活动单元格（用于键盘导航）
-  const [activeCell, setActiveCell] = useState<{ row: number, col: number } | null>(null)
-  // 拖拽选择状态
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState<{ row: number, col: number } | null>(null)
-  // 是否可以开始拖拽（只有在长按后才能拖拽）
-  const [canStartDragging, setCanStartDragging] = useState(false)
-  // 鼠标是否处于按下状态
-  const [isMouseDown, setIsMouseDown] = useState(false)
-  // 鼠标位置状态
-  const [_mouseDownPosition, _setMouseDownPosition] = useState<{ x: number, y: number } | null>(null)
-  // 剪贴板数据
-  const [_clipboardData, _setClipboardData] = useState<string[][] | null>(null)
-  // 编辑状态
-  const [isEditing, setIsEditing] = useState(false)
-  const [editCell, setEditCell] = useState<{ row: number, col: number, value: string } | null>(null)
-  // 编辑输入引用
+  showRowOperations = true,
+}) => {
+  const { t } = useTranslation("ui")
   const editInputRef = useRef<HTMLInputElement>(null)
-  // 表格数据的本地副本
-  const [localData, setLocalData] = useState<CSVData>(data)
-  // 选择区域信息
-  const [_selectionInfo, _setSelectionInfo] = useState<{
-    rows: number,
-    cols: number,
-    visible: boolean
-  }>({ rows: 0, cols: 0, visible: false })
-  // 是否使用Shift键框选
-  const [isShiftSelecting, setIsShiftSelecting] = useState(false)
-  // 记录鼠标移动处理函数的引用
-  const mouseMoveHandlerRef = useRef<any>(null)
-  // 操作历史记录
-  const [history, setHistory] = useState<CSVData[]>([])
-  // 最大历史记录数量
-  const MAX_HISTORY_SIZE = 50
-  // 长按定时器引用
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
-  // 长按激活时间（毫秒）- 优化为200ms以提供更好的响应性
-  const LONG_PRESS_DELAY = 200
-  // 记录初始点击的单元格位置
-  const [_initialClickCell, _setInitialClickCell] = useState<{ row: number, col: number } | null>(null)
-  // 行选择状态
-  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
-  // 全选状态
-  const [isAllRowsSelected, setIsAllRowsSelected] = useState(false)
-  // 批量插入行对话框状态
-  const [showBatchInsertDialog, setShowBatchInsertDialog] = useState(false)
-  const [_batchInsertCount, _setBatchInsertCount] = useState<number>(1)
-  const [_batchInsertPosition, _setBatchInsertPosition] = useState<'before' | 'after'>('after')
-  const [targetRowIndex, setTargetRowIndex] = useState<number>(-1)
-  // 批量编辑对话框状态（支持name和overview列）
-  const [showBatchEditDialog, setShowBatchEditDialog] = useState(false)
-  const [batchEditData, setBatchEditData] = useState<{ row: number, col: number, value: string, columnName: string } | null>(null)
 
-  // 忽略未使用的props
+  // 忽略未使用的 props
   void enableColumnResizing
   void enableColumnReordering
-  
-  // 使用useRef存储最新状态，避免事件监听器频繁重新创建
-  const stateRef = useRef({
+
+  // 核心状态管理
+  const {
+    localData,
+    isEditing,
+    editCell,
+    stateRef,
+    updateCellData,
+    startEditing,
+    finishEditing,
+    cancelEditing,
+    updateEditValue,
+    syncExternalData,
+    updateStateRef,
+  } = useTMDBTableState({
+    initialData: data,
+    onDataChange,
+    onCellChange,
+  })
+
+  // 选择逻辑
+  const {
+    selectedCells,
+    activeCell,
+    selectedRows,
+    isAllRowsSelected,
+    selectCell,
+    selectCells,
+    clearSelection,
+    selectRow,
+    selectAll,
+    setSelectedRows,
+    setIsAllRowsSelected,
+  } = useTMDBTableSelection()
+
+  // 历史记录
+  const { saveToHistory, undo, redo } = useTMDBTableHistory(data)
+
+  // 剪贴板操作
+  const { copy, paste, cut } = useTMDBTableClipboard({
+    selectedCells,
+    localData,
+    updateCellData: (updates) => {
+      saveToHistory(localData)
+      updates.forEach(({ row, col, value }) => {
+        updateCellData(row, col, value)
+      })
+    },
+  })
+
+  // 键盘导航处理
+  const handleKeyboardNavigation = useCallback(
+    (direction: string, shiftKey: boolean) => {
+      if (!activeCell) return
+
+      let newRow = activeCell.row
+      let newCol = activeCell.col
+
+      switch (direction) {
+        case "ArrowUp":
+          newRow = Math.max(0, activeCell.row - 1)
+          break
+        case "ArrowDown":
+          newRow = Math.min(localData.rows.length - 1, activeCell.row + 1)
+          break
+        case "ArrowLeft":
+          newCol = Math.max(0, activeCell.col - 1)
+          break
+        case "ArrowRight":
+          newCol = Math.min(localData.headers.length - 1, activeCell.col + 1)
+          break
+      }
+
+      const newCell = { row: newRow, col: newCol }
+
+      if (shiftKey && activeCell) {
+        const cells = calculateSelectionArea(activeCell, newCell)
+        selectCells(cells)
+        onSelectionChange?.(cells)
+      } else {
+        selectCell(newCell)
+        onSelectionChange?.([newCell])
+      }
+    },
+    [activeCell, localData, selectCell, selectCells, onSelectionChange]
+  )
+
+  // 键盘事件处理
+  useTMDBTableKeyboard({
+    isActive: true,
     selectedCells,
     activeCell,
     isEditing,
-    localData,
-    isDragging,
-    isShiftSelecting,
-    history
+    onDelete: () => {
+      saveToHistory(localData)
+      selectedCells.forEach(({ row, col }) => {
+        updateCellData(row, col, "")
+      })
+    },
+    onCopy: copy,
+    onPaste: paste,
+    onUndo: () => {
+      const previousData = undo()
+      if (previousData) {
+        syncExternalData(previousData)
+      }
+    },
+    onRedo: () => {
+      const nextData = redo()
+      if (nextData) {
+        syncExternalData(nextData)
+      }
+    },
+    onSelectAll: () => selectAll(localData.rows.length),
+    onNavigate: handleKeyboardNavigation,
+    onEdit: () => {
+      if (activeCell) {
+        startEditing(activeCell.row, activeCell.col)
+      }
+    },
+    onEscape: clearSelection,
   })
-  
+
+  // 鼠标事件处理
+  const {
+    isDragging,
+    handleMouseDown: handleCellMouseDown,
+    handleMouseMove: handleCellMouseMove,
+    handleMouseUp: handleCellMouseUp,
+    handleDoubleClick: handleCellDoubleClick,
+  } = useTMDBTableMouse({
+    onCellClick: (cell, event) => {
+      selectCell(cell)
+      onSelectionChange?.([cell])
+    },
+    onCellDoubleClick: (cell, event) => {
+      const columnName = localData.headers[cell.col]
+      if (isOverviewColumn(columnName || "")) {
+        // 打开批量编辑对话框 - 这里可以触发事件或回调
+        // 暂时使用普通编辑模式
+        startEditing(cell.row, cell.col)
+      } else {
+        startEditing(cell.row, cell.col)
+      }
+    },
+    onSelectionStart: (cell) => {
+      // 开始框选
+    },
+    onSelectionChange: (cells) => {
+      selectCells(cells)
+      onSelectionChange?.(cells)
+    },
+    onSelectionEnd: () => {
+      // 结束框选
+    },
+  })
+
+  // 同步外部数据
+  useEffect(() => {
+    syncExternalData(data)
+  }, [data, syncExternalData])
+
   // 更新状态引用
   useEffect(() => {
-    stateRef.current = {
-      selectedCells,
-      activeCell,
-      isEditing,
-      localData,
-      isDragging,
-      isShiftSelecting,
-      history
-    }
-    return
-  })
-  
-  
-  
-  // 当外部数据变化时更新本地数据
+    updateStateRef()
+  }, [updateStateRef])
+
+  // 聚焦到编辑输入框
   useEffect(() => {
-    setLocalData(data)
-  }, [data])
-  
-  // 初始化列宽
-  useEffect(() => {
-    if (data && data.headers) {
-      // 默认列宽为150px
-      _setColumnWidths(data.headers.map(() => 150))
+    if (isEditing && editInputRef.current) {
+      editInputRef.current.focus()
+      editInputRef.current.select()
     }
-    return
-  }, [data])
-  
-  // 监听全选状态变化，确保表格正确渲染
-  useEffect(() => {
-    if (isAllRowsSelected || selectedRows.size > 0) {
-      // 延迟执行以确保DOM更新完成
-      const timer = setTimeout(() => {
-        // 触发表格重新计算布局
-        const tableContainer = document.querySelector('.tmdb-table');
-        if (tableContainer) {
-          const scrollArea = tableContainer.querySelector('[data-radix-scroll-area-viewport]');
-          if (scrollArea) {
-            // 强制重新计算滚动区域
-            const currentScrollTop = (scrollArea as HTMLElement).scrollTop;
-            (scrollArea as HTMLElement).style.height = (scrollArea as HTMLElement).style.height; // 触发重新计算
-            (scrollArea as HTMLElement).scrollTop = currentScrollTop;
-          }
-        }
-      }, 50);
-      
-      return () => clearTimeout(timer);
-    }
-    return
-  }, [isAllRowsSelected, selectedRows.size])
-  
-  // 添加键盘事件监听
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const { selectedCells, activeCell, isEditing, localData, isDragging, isShiftSelecting, history } = stateRef.current
-      
-      if (isEditing) return; // 编辑模式下不处理全局键盘事件
-      
-      // 删除选中单元格内容 (Del键)
-      if (e.key === 'Delete' && selectedCells.length > 0) {
-        e.preventDefault()
-        handleDeleteSelectedCells()
-      }
-      
-      // 复制 (Ctrl+C)
-      if (e.key === 'c' && (e.ctrlKey || e.metaKey) && selectedCells.length > 0) {
-        e.preventDefault()
-        handleCopy()
-      }
-      
-      // 剪切 (Ctrl+X)
-      if (e.key === 'x' && (e.ctrlKey || e.metaKey) && selectedCells.length > 0) {
-        e.preventDefault()
-        handleCut()
-      }
-      
-      // 粘贴 (Ctrl+V)
-      if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault()
-        handlePaste()
-      }
-      
-      // 撤销 (Ctrl+Z)
-      if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault()
-        
-        // 内联撤销函数，避免依赖问题
-        if (history.length === 0) {
-          
-          return;
-        }
-
-        // 获取最近的历史记录
-        const prevData = history[0];
-        if (prevData) {
-          // 从历史记录中移除该记录并恢复数据
-          setHistory(prev => prev.slice(1));
-          setLocalData(prevData);
-          onDataChange?.(prevData);
-
-        }
-      }
-      
-      // 全选 (Ctrl+A)
-      if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault()
-        handleSelectAll()
-      }
-      
-      // 键盘导航
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        e.preventDefault()
-        handleKeyboardNavigation(e.key, e.shiftKey)
-      }
-      
-      // 按Enter键开始编辑
-      if (e.key === 'Enter' && activeCell && !isEditing) {
-        e.preventDefault()
-        startEditing(activeCell.row, activeCell.col)
-      }
-      
-      // 按F2键开始编辑
-      if (e.key === 'F2' && activeCell && !isEditing) {
-        e.preventDefault()
-        startEditing(activeCell.row, activeCell.col)
-      }
-      
-      // 插入行快捷键 (Ctrl+Shift+Plus)
-      if (e.key === '+' && e.ctrlKey && e.shiftKey && activeCell) {
-        e.preventDefault()
-        insertRow(activeCell.row, 'after')
-      }
-      
-      // 插入列快捷键 (Ctrl+Alt+Plus)
-      if (e.key === '+' && e.ctrlKey && e.altKey && activeCell) {
-        e.preventDefault()
-        insertColumn(activeCell.col, 'after')
-      }
-      
-      // 删除行快捷键 (Ctrl+Shift+Minus)
-      if (e.key === '-' && e.ctrlKey && e.shiftKey && activeCell && localData.rows.length > 1) {
-        e.preventDefault()
-        deleteRow(activeCell.row)
-      }
-      
-      // 删除列快捷键 (Ctrl+Alt+Minus)
-      if (e.key === '-' && e.ctrlKey && e.altKey && activeCell && localData.headers.length > 1) {
-        e.preventDefault()
-        deleteColumn(activeCell.col)
-      }
-      
-      // 按Escape键取消选择或框选模式
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        
-        // 如果正在框选模式，先取消框选模式
-        if (isDragging || isShiftSelecting) {
-          setIsShiftSelecting(false)
-          setIsDragging(false)
-          _setSelectionInfo(prev => ({ ...prev, visible: false }))
-        } 
-        // 否则清除选择
-        else {
-          setSelectedCells([])
-          onSelectionChange?.([])
-        }
-      }
-      
-      // 使用Shift键临时启用框选模式
-      if (e.key === 'Shift' && activeCell && !isShiftSelecting) {
-        setIsShiftSelecting(true)
-        setDragStart(activeCell)
-      }
-    }
-    
-    const handleKeyUp = (e: KeyboardEvent) => {
-      const { isShiftSelecting } = stateRef.current
-      
-      // 松开Shift键时，如果是通过Shift键启用的框选模式，则退出框选模式
-      if (e.key === 'Shift' && isShiftSelecting) {
-        setIsShiftSelecting(false)
-        
-        // 隐藏选择区域信息（延迟一段时间）
-        setTimeout(() => {
-          _setSelectionInfo(prev => ({ ...prev, visible: false }))
-        }, DELAY_1500MS)
-      }
-    }
-    
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
-    }
-  }, []) // 移除所有依赖，使用useRef来访问最新状态
-  
-  // 处理单元格点击
-  const handleCellClick = (row: number, col: number, event: React.MouseEvent) => {
-    // 清除之前的长按定时器
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    
-    // 重置拖拽状态
-    setCanStartDragging(false)
-    setIsDragging(false)
-    
-    // 设置鼠标按下状态
-    setIsMouseDown(true)
-    
-    // 设置活动单元格
-    setActiveCell({ row, col })
-    
-    // 如果正在编辑，只有点击其他单元格时才结束编辑
-    if (isEditing) {
-      if (editCell?.row !== row || editCell?.col !== col) {
-        finishEditing()
-      }
-      return
-    }
-    
-    // 如果按住Ctrl键，添加或移除选中单元格
-    if (event.ctrlKey) {
-      const cellIndex = selectedCells.findIndex(cell => cell.row === row && cell.col === col)
-      if (cellIndex === -1) {
-        const newSelection = [...selectedCells, { row, col }]
-        setSelectedCells(newSelection)
-        onSelectionChange?.(newSelection)
-      } else {
-        const newSelection = selectedCells.filter((_, index) => index !== cellIndex)
-        setSelectedCells(newSelection)
-        onSelectionChange?.(newSelection)
-      }
-    }
-    // 如果按住Shift键，选择范围
-    else if (event.shiftKey && selectedCells.length > 0) {
-      // 传统的Shift+点击选择范围
-      const lastCell = selectedCells[selectedCells.length - 1]
-      if (lastCell) {
-        const startRow = Math.min(lastCell.row, row)
-        const endRow = Math.max(lastCell.row, row)
-        const startCol = Math.min(lastCell.col, col)
-        const endCol = Math.max(lastCell.col, col)
-        
-        const newSelection = []
-        for (let r = startRow; r <= endRow; r++) {
-          for (let c = startCol; c <= endCol; c++) {
-            newSelection.push({ row: r, col: c })
-          }
-        }
-        
-        setSelectedCells(newSelection)
-        onSelectionChange?.(newSelection)
-      }
-    }
-    // 普通点击，选择单个单元格
-    else {
-      const newSelection = [{ row, col }]
-      setSelectedCells(newSelection)
-      onSelectionChange?.(newSelection)
-      
-      // 记录初始点击的单元格位置
-      if (newSelection[0]) {
-        _setInitialClickCell(newSelection[0])
-      }
-      
-      // 使用长按定时器启用框选模式
-      longPressTimerRef.current = setTimeout(() => {
-        // 长按时间到，启用框选模式
-        setCanStartDragging(true)
-        setIsDragging(true)
-        setDragStart({ row, col })
-        // 记录鼠标按下的位置（只在长按后记录）
-        _setMouseDownPosition({ x: event.clientX, y: event.clientY })
-        
-        // 清除定时器引用
-        longPressTimerRef.current = null;
-      }, LONG_PRESS_DELAY);
-      
-      // 阻止默认的文本选择行为
-      event.preventDefault()
-    }
-  }
-  
-  // 原始鼠标移动处理函数（未防抖）
-  const handleMouseMoveOriginal = (row: number, col: number, event: React.MouseEvent) => {
-    const { isDragging, selectedCells } = stateRef.current
-    
-    // 只有在鼠标按下且允许拖拽框选后才能执行拖拽操作
-    if (isDragging && dragStart && canStartDragging && isMouseDown) {
-      const startRow = Math.min(dragStart.row, row)
-      const endRow = Math.max(dragStart.row, row)
-      const startCol = Math.min(dragStart.col, col)
-      const endCol = Math.max(dragStart.col, col)
-      
-      // 计算选择区域大小
-      const rowCount = endRow - startRow + 1
-      const colCount = endCol - startCol + 1
-      
-      // 优化：只有在选择区域发生变化时才更新选中单元格
-      const selectionSize = rowCount * colCount
-      
-      // 使用更精确的比较，避免不必要的更新
-      if (selectedCells.length !== selectionSize || 
-          !selectedCells.every((cell, index) => {
-            const expectedRow = startRow + Math.floor(index / colCount)
-            const expectedCol = startCol + (index % colCount)
-            return cell.row === expectedRow && cell.col === expectedCol
-          })) {
-        
-        const newSelection = []
-        for (let r = startRow; r <= endRow; r++) {
-          for (let c = startCol; c <= endCol; c++) {
-            newSelection.push({ row: r, col: c })
-          }
-        }
-        
-        setSelectedCells(newSelection)
-        onSelectionChange?.(newSelection)
-      }
-      
-      // 阻止默认的文本选择行为
-      event.preventDefault()
-    }
-  }
-  
-  // 使用防抖处理鼠标移动
-  const handleMouseMove = useCallback(
-    debounce((row: number, col: number, event: React.MouseEvent) => {
-      handleMouseMoveOriginal(row, col, event)
-    }, DEBOUNCE_DELAY),
-    [] // 移除依赖数组，使用stateRef访问最新状态
-  )
-  
-  // 处理鼠标抬起（结束拖拽选择）
-  const handleMouseUp = () => {
-    // 清除长按定时器
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    
-    setIsDragging(false)
-    setIsShiftSelecting(false)
-    _setMouseDownPosition(null)
-    _setInitialClickCell(null)
-    setIsMouseDown(false)
-  }
-  
-  // 处理鼠标离开表格
-  const handleMouseLeave = () => {
-    // 清除长按定时器
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    
-    if (isDragging) {
-      document.addEventListener('mouseup', handleMouseUp, { once: true })
-    }
-    _setMouseDownPosition(null)
-    _setInitialClickCell(null)
-    setIsMouseDown(false)
-  }
-
-  // 处理右键点击，自动选中该单元格
-  const handleContextMenu = (row: number, col: number) => {
-    // 设置当前单元格为选中状态
-    const newSelection = [{ row, col }]
-    setSelectedCells(newSelection)
-    onSelectionChange?.(newSelection)
-    setActiveCell({ row, col })
-  }
-  
-  // 处理单元格鼠标按下事件
-  const handleCellMouseDown = (_row: number, _col: number, event: React.MouseEvent) => {
-    // 设置鼠标按下状态
-    setIsMouseDown(true)
-    
-    // 阻止默认事件
-    event.preventDefault()
-  }
-  
-  // 处理单元格双击，进入编辑模式
-  const handleCellDoubleClick = (row: number, col: number, event: React.MouseEvent) => {
-    // 如果按住Ctrl键，选择整列
-    if (event.ctrlKey) {
-      const colSelection = []
-      for (let r = 0; r < localData.rows.length; r++) {
-        colSelection.push({ row: r, col })
-      }
-      setSelectedCells(colSelection)
-      onSelectionChange?.(colSelection)
-    }
-    // 如果按住Shift键，选择整行
-    else if (event.shiftKey) {
-      const rowSelection = []
-      for (let c = 0; c < localData.headers.length; c++) {
-        rowSelection.push({ row, col: c })
-      }
-      setSelectedCells(rowSelection)
-      onSelectionChange?.(rowSelection)
-    }
-    // 普通双击
-    else {
-      const columnName = localData.headers[col]!
-      // 如果是overview列，打开批量编辑对话框
-      if (columnName.toLowerCase() === 'overview') {
-        setBatchEditData({
-          row,
-          col,
-          value: localData.rows[row]![col]!,
-          columnName: columnName
-        })
-        setShowBatchEditDialog(true)
-      }
-      // 其他列（包括name列），进入普通编辑模式
-      else {
-        startEditing(row, col)
-      }
-    }
-    
-    // 阻止默认的文本选择行为
-    event.preventDefault()
-  }
-  
-  // 开始编辑单元格
-  const startEditing = (row: number, col: number) => {
-    if (row < 0 || row >= localData.rows.length || col < 0 || col >= localData.headers.length) {
-      return
-    }
-    
-    setEditCell({
-      row,
-      col,
-      value: localData.rows[row]![col]!
-    })
-    setIsEditing(true)
-    
-    // 聚焦到编辑输入框
-    setTimeout(() => {
-      if (editInputRef.current) {
-        editInputRef.current.focus()
-        editInputRef.current.select()
-      }
-    }, 0)
-  }
-  
-  // 完成编辑
-  const finishEditing = () => {
-    if (editCell && editCell.row < localData.rows.length && editCell.col < localData.headers.length) {
-      // 保存当前状态到历史记录
-      saveToHistory(localData);
-      
-      // 更新数据
-      const newData = { ...localData }
-      newData.rows = [...newData.rows]
-      if (newData.rows[editCell.row]) {
-        newData.rows[editCell.row] = [...newData.rows[editCell.row]!]
-        newData.rows[editCell.row]![editCell.col] = editCell.value
-        
-        setLocalData(newData)
-        onCellChange?.(editCell.row, editCell.col, editCell.value)
-        onDataChange?.(newData)
-      }
-    }
-    
-    setIsEditing(false)
-    setEditCell(null)
-  }
-
-  // 处理批量编辑对话框保存
-  const handleBatchEditSave = (value: string) => {
-    if (!batchEditData) return
-
-    saveToHistory(localData)
-    updateCellData(batchEditData.row, batchEditData.col, value)
-    setBatchEditData(null)
-  }
-
-  // 处理批量修改
-  const handleBatchSave = (matchInfo: { pattern: string, replaceWith: string, affectedRows: number[] }) => {
-    if (!batchEditData) return
-
-    const { col, columnName } = batchEditData
-    const isOverview = columnName.toLowerCase() === 'overview'
-
-    saveToHistory(localData)
-
-    const newData = { ...localData }
-    newData.rows = [...newData.rows]
-
-    matchInfo.affectedRows.forEach(rowIndex => {
-      if (rowIndex >= 0 && rowIndex < newData.rows.length) {
-        const originalText = newData.rows[rowIndex]![col]!
-        const modifiedText = applyBatchModification(originalText, matchInfo, isOverview)
-
-        newData.rows[rowIndex]![col] = modifiedText
-        onCellChange?.(rowIndex, col, modifiedText)
-      }
-    })
-
-    setLocalData(newData)
-    onDataChange?.(newData)
-    setBatchEditData(null)
-  }
-
-  // 应用批量修改规则
-  function applyBatchModification(
-    text: string,
-    matchInfo: { pattern: string, replaceWith: string },
-    isOverview: boolean
-  ): string {
-    if (isOverview) {
-      // overview列：处理前缀和后缀
-      if (text.endsWith(matchInfo.pattern)) {
-        return text.slice(0, -matchInfo.pattern.length) + matchInfo.replaceWith
-      }
-      if (text.startsWith(matchInfo.pattern)) {
-        return matchInfo.replaceWith + text.slice(matchInfo.pattern.length)
-      }
-    } else {
-      // 其他列：文本替换
-      const index = text.indexOf(matchInfo.pattern)
-      if (index !== -1) {
-        return text.slice(0, index) + matchInfo.replaceWith + text.slice(index + matchInfo.pattern.length)
-      }
-    }
-    return text
-  }
-
-  // 获取指定列的所有数据用于重复检测
-  const getAllColumnData = (columnName: string) => {
-    const colIndex = localData.headers.findIndex(h => h.toLowerCase() === columnName.toLowerCase())
-    if (colIndex === -1) return []
-
-    return localData.rows.map((row, rowIndex) => ({
-      rowIndex,
-      value: row[colIndex] || ''
-    }))
-  }
-
-  // 更新单元格数据
-  function updateCellData(row: number, col: number, value: string) {
-    const newData = { ...localData }
-    newData.rows = [...newData.rows]
-
-    if (newData.rows[row]) {
-      newData.rows[row] = [...newData.rows[row]!]
-      newData.rows[row]![col] = value
-    }
-
-    setLocalData(newData)
-    onCellChange?.(row, col, value)
-    onDataChange?.(newData)
-  }
-  
-  // 取消编辑
-  const cancelEditing = () => {
-    setIsEditing(false)
-    setEditCell(null)
-  }
-  
-  // 处理编辑输入变化
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (editCell) {
-      setEditCell({
-        ...editCell,
-        value: e.target.value
-      })
-    }
-  }
-  
-  // 处理编辑输入键盘事件
-  const handleEditInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      finishEditing()
-      
-      // Enter后移动到下一行同一列
-      if (activeCell && activeCell.row < localData.rows.length - 1) {
-        const nextCell = { row: activeCell.row + 1, col: activeCell.col }
-        setActiveCell(nextCell)
-        setSelectedCells([nextCell])
-        onSelectionChange?.([nextCell])
-      }
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      cancelEditing()
-    } else if (e.key === 'Tab') {
-      e.preventDefault()
-      finishEditing()
-      
-      // Tab键移动到下一列
-      if (activeCell) {
-        let nextRow = activeCell.row
-        let nextCol = activeCell.col + 1
-        
-        // 如果到了行末，移动到下一行的第一列
-        if (nextCol >= localData.headers.length) {
-          nextCol = 0
-          nextRow = activeCell.row + 1
-        }
-        
-        // 如果还在表格范围内
-        if (nextRow < localData.rows.length) {
-          const nextCell = { row: nextRow, col: nextCol }
-          setActiveCell(nextCell)
-          setSelectedCells([nextCell])
-          onSelectionChange?.([nextCell])
-        }
-      }
-    }
-  }
-  
-  // 处理删除选中单元格内容
-  const handleDeleteSelectedCells = () => {
-    if (selectedCells.length === 0) return
-    
-    // 保存当前状态到历史记录
-    saveToHistory(localData);
-    
-    const newData = { ...localData }
-    newData.rows = [...newData.rows]
-    
-    // 创建已修改行的集合，避免重复创建同一行的副本
-    const modifiedRows = new Set<number>()
-    
-    // 清空选中单元格的内容
-    selectedCells.forEach(cell => {
-      if (cell.row >= 0 && cell.row < newData.rows.length && 
-          cell.col >= 0 && cell.col < newData.headers.length) {
-        
-        // 如果这一行还没有被修改过，创建它的副本
-        if (!modifiedRows.has(cell.row)) {
-          newData.rows[cell.row] = [...newData.rows[cell.row]!]
-          modifiedRows.add(cell.row)
-        }
-        
-        // 设置单元格内容为空字符串
-        newData.rows[cell.row]![cell.col] = ''
-        
-        // 触发单元格变更回调
-        onCellChange?.(cell.row, cell.col, '')
-      }
-    })
-    
-    // 更新本地数据并触发数据变更回调
-    setLocalData(newData)
-    onDataChange?.(newData)
-  }
-  
-  // 处理复制操作
-  const handleCopy = async () => {
-    if (selectedCells.length === 0) return
-    
-    // 找出选中区域的边界
-    const rows = selectedCells.map(cell => cell.row)
-    const cols = selectedCells.map(cell => cell.col)
-    const minRow = Math.min(...rows)
-    const maxRow = Math.max(...rows)
-    const minCol = Math.min(...cols)
-    const maxCol = Math.max(...cols)
-    
-    // 创建复制数据的二维数组
-    const copyData: string[][] = []
-    
-    // 填充数据
-    for (let r = minRow; r <= maxRow; r++) {
-      const rowData: string[] = []
-      for (let c = minCol; c <= maxCol; c++) {
-        // 检查该单元格是否被选中
-        const isSelected = selectedCells.some(cell => cell.row === r && cell.col === c)
-        
-        if (isSelected && r < localData.rows.length && c < localData.headers.length) {
-          rowData.push(localData.rows[r]![c]!)
-        } else {
-          rowData.push('')
-        }
-      }
-      copyData.push(rowData)
-    }
-    
-    // 保存到剪贴板数据
-    _setClipboardData(copyData)
-    
-    // 转换为制表符分隔的文本，用于系统剪贴板
-    const copyText = copyData.map(row => row.join('\t')).join('\n')
-    
-    try {
-      await navigator.clipboard.writeText(copyText)
-      
-    } catch (err) {
-      
-    }
-  }
-  
-  // 处理剪切操作
-  const handleCut = async () => {
-    if (selectedCells.length === 0) return
-    
-    // 先复制
-    await handleCopy()
-    
-    // 然后删除（handleDeleteSelectedCells函数内部已经会保存历史记录）
-    handleDeleteSelectedCells()
-  }
-  
-  // 处理粘贴操作
-  const handlePaste = async () => {
-    // 如果没有活动单元格，无法确定粘贴位置
-    if (!activeCell) return
-    
-    try {
-      // 从系统剪贴板获取文本
-      const clipText = await navigator.clipboard.readText()
-      
-      // 解析剪贴板文本为二维数组
-      // 假设文本是制表符分隔的行，换行符分隔的列
-      const pasteData = clipText
-        .split('\n')
-        .map(line => line.split('\t'))
-      
-      // 如果没有数据，直接返回
-      if (pasteData.length === 0 || (pasteData.length === 1 && pasteData[0]?.length === 0)) {
-        return
-      }
-      
-      // 保存当前状态到历史记录
-      saveToHistory(localData);
-      
-      // 创建新的数据副本
-      const newData = { ...localData }
-      newData.rows = [...newData.rows]
-      
-      // 从活动单元格开始粘贴
-      const startRow = activeCell.row
-      const startCol = activeCell.col
-      
-      // 计算粘贴区域的边界
-      const endRow = Math.min(startRow + pasteData.length - 1, newData.rows.length - 1)
-      const endCol = Math.min(startCol + Math.max(...pasteData.map(row => row?.length || 0)) - 1, newData.headers.length - 1)
-      
-      // 创建新的选择区域
-      const newSelection: { row: number, col: number }[] = []
-      
-      // 粘贴数据
-      for (let r = startRow; r <= endRow; r++) {
-        // 创建行的副本
-        if (r < newData.rows.length) {
-          newData.rows[r] = [...newData.rows[r]!]
-          
-          const pasteRow = pasteData[r - startRow]
-          if (pasteRow) {
-            for (let c = startCol; c <= endCol; c++) {
-              const pasteCol = c - startCol
-              if (pasteCol < pasteRow.length) {
-                newData.rows[r]![c] = pasteRow[pasteCol]!
-                
-                // 添加到选择区域
-                newSelection.push({ row: r, col: c })
-                
-                // 触发单元格变更回调
-                onCellChange?.(r, c, pasteRow[pasteCol]!)
-              }
-            }
-          }
-        }
-      }
-      
-      // 更新本地数据
-      setLocalData(newData)
-      onDataChange?.(newData)
-      
-      // 更新选择区域
-      setSelectedCells(newSelection)
-      onSelectionChange?.(newSelection)
-      
-    } catch (err) {
-      
-    }
-  }
-  
-  // 处理全选操作
-  const handleSelectAll = () => {
-    if (!localData || !localData.rows || localData.rows.length === 0) return
-    
-    const allCells: { row: number, col: number }[] = []
-    
-    // 选择所有单元格
-    for (let r = 0; r < localData.rows.length; r++) {
-      for (let c = 0; c < localData.headers.length; c++) {
-        allCells.push({ row: r, col: c })
-      }
-    }
-    
-    setSelectedCells(allCells)
-    onSelectionChange?.(allCells)
-  }
-  
-  // 处理键盘导航
-  const handleKeyboardNavigation = (key: string, shiftKey: boolean) => {
-    if (!activeCell) return
-    
-    const { row, col } = activeCell
-    let newRow = row
-    let newCol = col
-    
-    // 计算新的活动单元格位置
-    switch (key) {
-      case 'ArrowUp':
-        newRow = Math.max(0, row - 1)
-        break
-      case 'ArrowDown':
-        newRow = Math.min(localData.rows.length - 1, row + 1)
-        break
-      case 'ArrowLeft':
-        newCol = Math.max(0, col - 1)
-        break
-      case 'ArrowRight':
-        newCol = Math.min(localData.headers.length - 1, col + 1)
-        break
-    }
-    
-    // 如果位置没有变化，直接返回
-    if (newRow === row && newCol === col) return
-    
-    // 更新活动单元格
-    setActiveCell({ row: newRow, col: newCol })
-    
-    // 如果按住Shift键，扩展选择区域
-    if (shiftKey && selectedCells.length > 0) {
-      // 找出当前选择区域的起点
-      const anchorCell = selectedCells[0]!
-      
-      // 计算新的选择区域
-      const startRow = Math.min(anchorCell.row, newRow)
-      const endRow = Math.max(anchorCell.row, newRow)
-      const startCol = Math.min(anchorCell.col, newCol)
-      const endCol = Math.max(anchorCell.col, newCol)
-      
-      const newSelection = []
-      for (let r = startRow; r <= endRow; r++) {
-        for (let c = startCol; c <= endCol; c++) {
-          newSelection.push({ row: r, col: c })
-        }
-      }
-      
-      setSelectedCells(newSelection)
-      onSelectionChange?.(newSelection)
-            } else {
-      // 否则，只选择新的活动单元格
-      const newSelection = [{ row: newRow, col: newCol }]
-      setSelectedCells(newSelection)
-      onSelectionChange?.(newSelection)
-    }
-  }
-  
-  // 检查单元格是否被选中
-  const isCellSelected = (_row: number, _col: number) => {
-    return selectedCells.some(cell => cell.row === _row && cell.col === _col)
-  }
-  
-  // 检查单元格是否是活动单元格
-  const isActiveCell = (row: number, col: number) => {
-    return activeCell?.row === row && activeCell?.col === col
-  }
-  
-  // 处理批量单元格更新
-  const handleCellsUpdate = (cells: { row: number, col: number, value: string }[]) => {
-    if (cells.length === 0) return
-    
-    // 保存当前状态到历史记录
-    saveToHistory(localData);
-    
-    // 创建新的数据副本
-    const newData = { ...localData }
-    newData.rows = [...newData.rows]
-    
-    // 创建已修改行的集合
-    const modifiedRows = new Set<number>()
-    
-    // 更新单元格
-    cells.forEach(cell => {
-      if (cell.row >= 0 && cell.row < newData.rows.length && 
-          cell.col >= 0 && cell.col < newData.headers.length) {
-        
-        // 如果这一行还没有被修改过，创建它的副本
-        if (!modifiedRows.has(cell.row)) {
-          newData.rows[cell.row] = [...newData.rows[cell.row]!]
-          modifiedRows.add(cell.row)
-        }
-        
-        // 更新单元格值
-        newData.rows[cell.row]![cell.col] = cell.value
-        
-        // 触发单元格变更回调
-        onCellChange?.(cell.row, cell.col, cell.value)
-      }
-    })
-    
-    // 更新本地数据并触发数据变更回调
-    setLocalData(newData)
-    onDataChange?.(newData)
-  }
-  
-  // 清除鼠标事件处理器引用
-  const clearMouseHandlers = () => {
-    if (mouseMoveHandlerRef.current) {
-      clearInterval(mouseMoveHandlerRef.current)
-      mouseMoveHandlerRef.current = null
-    }
-    
-    // 清除长按定时器
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current)
-      longPressTimerRef.current = null
-    }
-    
-    // 重置拖拽状态
-    setCanStartDragging(false)
-    _setInitialClickCell(null)
-    setIsMouseDown(false)
-  }
-  
-  // 组件卸载时清除事件处理器
-  useEffect(() => {
-    return () => {
-      clearMouseHandlers()
-    }
-  }, [])
-  
-  // 处理鼠标按下事件，阻止默认行为
-  const handleMouseDown = (event: React.MouseEvent) => {
-    // 阻止默认的文本选择和复制行为
-    event.preventDefault();
-  };
-  
-  // 保存当前状态到历史记录
-  const saveToHistory = (currentData: CSVData) => {
-    
-    // 创建当前数据的深拷贝
-    const dataCopy: CSVData = {
-      headers: [...currentData.headers],
-      rows: currentData.rows.map(row => [...row])
-    };
-    
-    // 添加到历史记录，并限制历史记录大小
-    setHistory(prev => {
-      const newHistory = [dataCopy, ...prev];
-      
-      return newHistory.slice(0, MAX_HISTORY_SIZE);
-    });
-  };
-
-  // 列操作函数
-  const insertColumn = (index: number, position: 'before' | 'after' = 'after') => {
-    saveToHistory(localData);
-    
-    const insertIndex = position === 'before' ? index : index + 1;
-    const newData = { ...localData };
-    
-    // 插入新列头
-    newData.headers = [
-      ...newData.headers.slice(0, insertIndex),
-      `新列${insertIndex + 1}`,
-      ...newData.headers.slice(insertIndex)
-    ];
-    
-    // 为每行插入新的空单元格
-    newData.rows = newData.rows.map(row => [
-      ...row.slice(0, insertIndex),
-      '',
-      ...row.slice(insertIndex)
-    ]);
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-  };
-
-  const deleteColumn = (index: number) => {
-    if (localData.headers.length <= 1) return; // 至少保留一列
-    
-    saveToHistory(localData);
-    
-    const newData = { ...localData };
-    
-    // 删除列头
-    newData.headers = newData.headers.filter((_, i) => i !== index);
-    
-    // 删除每行对应的单元格
-    newData.rows = newData.rows.map(row => row.filter((_, i) => i !== index));
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-    
-    // 清除选择状态
-    setSelectedCells([]);
-    setActiveCell(null);
-  };
-
-  const duplicateColumn = (index: number) => {
-    saveToHistory(localData);
-    
-    const newData = { ...localData };
-    
-    // 复制列头
-    const originalHeader = newData.headers[index]!;
-    newData.headers = [
-      ...newData.headers.slice(0, index + 1),
-      `${originalHeader}_副本`,
-      ...newData.headers.slice(index + 1)
-    ];
-    
-    // 复制每行对应的单元格
-    newData.rows = newData.rows.map(row => [
-      ...row.slice(0, index + 1),
-      row[index] || '',
-      ...row.slice(index + 1)
-    ]);
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-  };
-
-  const moveColumn = (fromIndex: number, direction: 'left' | 'right') => {
-    const toIndex = direction === 'left' ? fromIndex - 1 : fromIndex + 1;
-    
-    if (toIndex < 0 || toIndex >= localData.headers.length) return;
-    
-    saveToHistory(localData);
-    
-    const newData = { ...localData };
-    
-    // 交换列头
-    const tempHeader = newData.headers[fromIndex]!;
-    newData.headers[fromIndex] = newData.headers[toIndex]!;
-    newData.headers[toIndex] = tempHeader;
-    
-    // 交换每行对应的单元格
-    newData.rows = newData.rows.map(row => {
-      const newRow = [...row];
-      const tempCell = newRow[fromIndex]!;
-      newRow[fromIndex] = newRow[toIndex]!;
-      newRow[toIndex] = tempCell;
-      return newRow;
-    });
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-  };
+  }, [isEditing])
 
   // 行操作函数
-  const insertRow = (index: number, position: 'before' | 'after' = 'after') => {
-    saveToHistory(localData);
-    
-    const insertIndex = position === 'before' ? index : index + 1;
-    const newData = { ...localData };
-    
-    // 创建新的空行
-    const newRow = new Array(newData.headers.length).fill('');
-    
-    newData.rows = [
-      ...newData.rows.slice(0, insertIndex),
-      newRow,
-      ...newData.rows.slice(insertIndex)
-    ];
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-  };
+  const handleInsertRow = useCallback(
+    (index: number, position: "before" | "after") => {
+      saveToHistory(localData)
+      const newData = insertRow(localData, index, position)
+      syncExternalData(newData)
+      onDataChange?.(newData)
+    },
+    [localData, saveToHistory, syncExternalData, onDataChange]
+  )
 
-  // 批量插入行函数
-  const batchInsertRows = (index: number, count: number, position: 'before' | 'after' = 'after') => {
-    if (count <= 0) return;
-    
-    saveToHistory(localData);
-    
-    const insertIndex = position === 'before' ? index : index + 1;
-    const newData = { ...localData };
-    
-    // 检测 episode_number 列的位置
-    const episodeColumnIndex = newData.headers.findIndex(
-      header => header.toLowerCase() === 'episode_number'
-    );
-    
-    // 检测 runtime 列的位置
-    const runtimeColumnIndex = newData.headers.findIndex(
-      header => header.toLowerCase() === 'runtime'
-    );
-    
-    // 计算现有数据的最大 episode_number 值
-    let maxEpisodeNumber = 0;
-    if (episodeColumnIndex !== -1) {
-      for (const row of newData.rows) {
-        const episodeValue = row[episodeColumnIndex]?.trim();
-        const episodeNum = parseInt(episodeValue || '0', 10);
-        if (!isNaN(episodeNum) && episodeNum > maxEpisodeNumber) {
-          maxEpisodeNumber = episodeNum;
-        }
-      }
-    }
-    
-    // 获取上一行的值（用于复制 runtime 列）
-    const prevRowIndex = insertIndex - 1;
-    const prevRow = prevRowIndex >= 0 && prevRowIndex < newData.rows.length ? newData.rows[prevRowIndex] : null;
-    
-    // 创建新行
-    const newRows: string[][] = [];
-    for (let i = 0; i < count; i++) {
-      const newRow = new Array(newData.headers.length).fill('');
-      
-      // 填充 episode_number 列（自动递增）
-      if (episodeColumnIndex !== -1) {
-        maxEpisodeNumber++;
-        newRow[episodeColumnIndex] = maxEpisodeNumber.toString();
-      }
-      
-      // 填充 runtime 列（复制上一行的值）
-      if (runtimeColumnIndex !== -1 && prevRow) {
-        newRow[runtimeColumnIndex] = prevRow[runtimeColumnIndex];
-      }
-      
-      newRows.push(newRow);
-    }
-    
-    // 插入新行
-    newData.rows = [
-      ...newData.rows.slice(0, insertIndex),
-      ...newRows,
-      ...newData.rows.slice(insertIndex)
-    ];
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-  };
+  const handleDeleteRow = useCallback(
+    (index: number) => {
+      if (localData.rows.length <= 1) return
+      saveToHistory(localData)
+      const newData = deleteRow(localData, index)
+      syncExternalData(newData)
+      onDataChange?.(newData)
+      clearSelection()
+    },
+    [localData, saveToHistory, syncExternalData, onDataChange, clearSelection]
+  )
 
-  // 处理批量插入行对话框打开
-  const handleBatchInsertRow = (index: number, position: 'before' | 'after', count: number) => {
-    setTargetRowIndex(index);
-    _setBatchInsertPosition(position);
-    _setBatchInsertCount(count);
-    setShowBatchInsertDialog(true);
-  };
+  const handleDuplicateRow = useCallback(
+    (index: number) => {
+      saveToHistory(localData)
+      const newData = duplicateRow(localData, index)
+      syncExternalData(newData)
+      onDataChange?.(newData)
+    },
+    [localData, saveToHistory, syncExternalData, onDataChange]
+  )
 
-  // 处理批量插入行应用
-  const handleBatchInsertApply = (count: number, position: 'before' | 'after') => {
-    batchInsertRows(targetRowIndex, count, position);
-    return
-  };
+  const handleMoveRow = useCallback(
+    (index: number, direction: "up" | "down") => {
+      saveToHistory(localData)
+      const newData = moveRow(localData, index, direction)
+      syncExternalData(newData)
+      onDataChange?.(newData)
+    },
+    [localData, saveToHistory, syncExternalData, onDataChange]
+  )
 
-  const deleteRow = (index: number) => {
-    if (localData.rows.length <= 1) return; // 至少保留一行
-    
-    saveToHistory(localData);
-    
-    const newData = { ...localData };
-    newData.rows = newData.rows.filter((_, i) => i !== index);
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-    
-    // 清除选择状态
-    setSelectedCells([]);
-    setActiveCell(null);
-  };
+  // 列操作函数
+  const handleInsertColumn = useCallback(
+    (index: number, position: "before" | "after") => {
+      saveToHistory(localData)
+      const newData = insertColumn(localData, index, position)
+      syncExternalData(newData)
+      onDataChange?.(newData)
+    },
+    [localData, saveToHistory, syncExternalData, onDataChange]
+  )
 
-  const duplicateRow = (index: number) => {
-    saveToHistory(localData);
-    
-    const newData = { ...localData };
-    const rowToDuplicate = [...newData.rows[index]!];
-    
-    newData.rows = [
-      ...newData.rows.slice(0, index + 1),
-      rowToDuplicate,
-      ...newData.rows.slice(index + 1)
-    ];
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-  };
+  const handleDeleteColumn = useCallback(
+    (index: number) => {
+      if (localData.headers.length <= 1) return
+      saveToHistory(localData)
+      const newData = deleteColumn(localData, index)
+      syncExternalData(newData)
+      onDataChange?.(newData)
+    },
+    [localData, saveToHistory, syncExternalData, onDataChange]
+  )
 
-  const moveRow = (fromIndex: number, direction: 'up' | 'down') => {
-    const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
-    
-    if (toIndex < 0 || toIndex >= localData.rows.length) return;
-    
-    saveToHistory(localData);
-    
-    const newData = { ...localData };
-    const tempRow = newData.rows[fromIndex]!;
-    newData.rows[fromIndex] = newData.rows[toIndex]!;
-    newData.rows[toIndex] = tempRow;
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-  };
+  const handleDuplicateColumn = useCallback(
+    (index: number) => {
+      saveToHistory(localData)
+      const newData = duplicateColumn(localData, index)
+      syncExternalData(newData)
+      onDataChange?.(newData)
+    },
+    [localData, saveToHistory, syncExternalData, onDataChange]
+  )
 
-  // 行选择相关函数
-  const handleRowSelect = (rowIndex: number, checked: boolean) => {
-    const newSelectedRows = new Set(selectedRows);
-    if (checked) {
-      newSelectedRows.add(rowIndex);
-    } else {
-      newSelectedRows.delete(rowIndex);
-    }
-    setSelectedRows(newSelectedRows);
-    
-    // 更新全选状态
-    setIsAllRowsSelected(newSelectedRows.size === localData.rows.length);
-  };
+  const handleMoveColumn = useCallback(
+    (index: number, direction: "left" | "right") => {
+      saveToHistory(localData)
+      const newData = moveColumn(localData, index, direction)
+      syncExternalData(newData)
+      onDataChange?.(newData)
+    },
+    [localData, saveToHistory, syncExternalData, onDataChange]
+  )
 
-  const handleSelectAllRows = useCallback((checked: boolean) => {
-    // 使用requestAnimationFrame确保DOM更新完成后再处理状态
-    requestAnimationFrame(() => {
-      if (checked) {
-        const allRows = new Set(Array.from({ length: localData.rows.length }, (_, i) => i));
-        setSelectedRows(allRows);
-        setIsAllRowsSelected(true);
-      } else {
-        setSelectedRows(new Set());
-        setIsAllRowsSelected(false);
-      }
-      
-      // 确保滚动容器正确更新
-      setTimeout(() => {
-        const scrollArea = document.querySelector('.tmdb-table .scroll-area-viewport');
-        if (scrollArea) {
-          scrollArea.scrollTop = scrollArea.scrollTop; // 触发重新计算
-        }
-      }, 0);
-    });
-  }, [localData.rows.length]);
+  // 批量插入行
+  const handleBatchInsertRows = useCallback(
+    (index: number, count: number, position: "before" | "after") => {
+      if (count <= 0) return
 
-  const deleteSelectedRows = () => {
-    if (selectedRows.size === 0) return;
-    if (localData.rows.length - selectedRows.size < 1) {
-      // 至少保留一行
-      return;
-    }
-    
-    saveToHistory(localData);
-    
-    const newData = { ...localData };
-    const sortedIndices = Array.from(selectedRows).sort((a, b) => b - a); // 从大到小排序，避免索引问题
-    
-    sortedIndices.forEach(index => {
-      newData.rows.splice(index, 1);
-    });
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-    
-    // 清除选择状态
-    setSelectedRows(new Set());
-    setIsAllRowsSelected(false);
-    setSelectedCells([]);
-    setActiveCell(null);
-  };
+      saveToHistory(localData)
 
-  const duplicateSelectedRows = () => {
-    if (selectedRows.size === 0) return;
-    
-    saveToHistory(localData);
-    
-    const newData = { ...localData };
-    const sortedIndices = Array.from(selectedRows).sort((a, b) => a - b); // 从小到大排序
-    
-    // 从后往前插入，避免索引问题
-    for (let i = sortedIndices.length - 1; i >= 0; i--) {
-      const index = sortedIndices[i]!;
-      const rowToDuplicate = [...newData.rows[index]!];
-      newData.rows.splice(index + 1, 0, rowToDuplicate);
-    }
-    
-    setLocalData(newData);
-    onDataChange?.(newData);
-    
-    // 清除选择状态
-    setSelectedRows(new Set());
-    setIsAllRowsSelected(false);
-  };
-  
-  // 如果没有数据，显示空表格
-  if (!localData || !localData.headers || !localData.rows) {
-    return (
-      <div className={cn("tmdb-table-empty", className)}>
-        <p className="text-center p-4">{t("ui.table.noData", { ns: "ui" })}</p>
-      </div>
-    )
-  }
-  
+      const episodeColumnIndex = findColumnIndex(localData, "episode_number")
+      const runtimeColumnIndex = findColumnIndex(localData, "runtime")
+      const maxEpisodeNumber = getMaxEpisodeNumber(localData, episodeColumnIndex)
+
+      const prevRowIndex = position === "before" ? index - 1 : index
+      const prevRow =
+        prevRowIndex >= 0 && prevRowIndex < localData.rows.length
+          ? localData.rows[prevRowIndex]
+          : null
+      const prevRuntimeValue =
+        runtimeColumnIndex !== -1 && prevRow
+          ? prevRow[runtimeColumnIndex] || ""
+          : ""
+
+      const newData = batchInsertRows(localData, index, count, position, {
+        episodeColumnIndex,
+        runtimeColumnIndex,
+        startEpisodeNumber: maxEpisodeNumber + 1,
+        prevRuntimeValue,
+      })
+
+      syncExternalData(newData)
+      onDataChange?.(newData)
+    },
+    [localData, saveToHistory, syncExternalData, onDataChange]
+  )
+
   return (
-    <TableContextMenu
-        selectedCells={selectedCells}
-      data={localData}
-      onCellsUpdate={handleCellsUpdate}
-        onCopy={handleCopy}
-      onCut={handleCut}
-        onPaste={handlePaste}
-      onDelete={handleDeleteSelectedCells}
-      onInsertRow={insertRow}
-      onDeleteRow={deleteRow}
-      onInsertColumn={insertColumn}
-      onDeleteColumn={deleteColumn}
-      onDuplicateRow={duplicateRow}
-      onDuplicateColumn={duplicateColumn}
-      onBatchInsertRow={handleBatchInsertRow}
-      onOpenOverviewEdit={(row, col) => {
-        const columnName = localData.headers[col]!
-        setBatchEditData({
-          row,
-          col,
-          value: localData.rows[row]![col]!,
-          columnName: columnName
-        })
-        setShowBatchEditDialog(true)
-      }}
-    >
-      <div
-        className={cn(
-          "tmdb-table",
-          className,
-          isAllRowsSelected && "selecting-all"
-        )}
-        ref={tableRef}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        onMouseDown={handleMouseDown}
-      >
-        {/* 批量操作工具栏 */}
-        {selectedRows.size > 0 && (
-          <div className="mb-2 bg-background border rounded-lg shadow-sm p-2 flex items-center space-x-2">
-            <span className="text-xs text-muted-foreground">
-              已选择 {selectedRows.size} 行
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={duplicateSelectedRows}
-              className="h-7 text-xs"
-            >
-              <Copy className="h-3 w-3 mr-1" />
-              复制
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={deleteSelectedRows}
-              disabled={localData.rows.length - selectedRows.size < 1}
-              className="h-7 text-xs"
-            >
-              <Trash2 className="h-3 w-3 mr-1" />
-              删除
-            </Button>
-          </div>
-        )}
-
-        <ScrollArea className="h-full w-full scroll-area-viewport">
-          <div className="relative w-full" style={{ paddingBottom: '80px' }}>
-            <Table className="w-full" style={{ tableLayout: 'fixed', minWidth: '100%' }}>
-                        <TableHeader>
-          <TableRow>
-            {showRowNumbers && (
-              <TableHead className="w-16 text-center bg-muted/50 sticky left-0 z-10">
-                <div className="flex items-center justify-center space-x-1">
-                  <input
-                    type="checkbox"
-                    checked={isAllRowsSelected}
-                    onChange={(e) => handleSelectAllRows(e.target.checked)}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-xs">#</span>
-                </div>
-              </TableHead>
-            )}
-
-            {localData.headers.map((header, index) => {
-              const isOverview = header.toLowerCase() === 'overview'
-              const headerStyle = {
-                minWidth: isOverview ? '400px' : '100px',
-                maxWidth: isOverview ? '600px' : '250px',
-                width: isOverview ? '400px' : `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
-              }
-
-              return (
-                <TableHead
-                  key={index}
-                  data-column={header.toLowerCase().replace(/\s+/g, '_')}
-                  className={cn("relative group", isOverview && "overview-header")}
-                  style={headerStyle}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="truncate">{header}</span>
-
-                    {showColumnOperations && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <ChevronDown className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem onClick={() => insertColumn(index, 'before')}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            在左侧插入列
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => insertColumn(index, 'after')}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            在右侧插入列
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => duplicateColumn(index)}>
-                            <Copy className="mr-2 h-4 w-4" />
-                            复制列
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => moveColumn(index, 'left')} disabled={index === 0}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            左移
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => moveColumn(index, 'right')} disabled={index === localData.headers.length - 1}>
-                            <ArrowRight className="mr-2 h-4 w-4" />
-                            右移
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => deleteColumn(index)} disabled={localData.headers.length <= 1} className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            删除列
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                </TableHead>
-              )
-            })}
-          </TableRow>
-        </TableHeader>
+    <div className={className}>
+      <ScrollArea className="h-full">
+        <div className="tmdb-table">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {showRowNumbers && (
+                  <TableHead className="w-16 text-center bg-muted/50 sticky left-0 z-10 border-r">
+                    <div className="flex items-center justify-center space-x-1">
+                      <input
+                        type="checkbox"
+                        checked={isAllRowsSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            selectAll(localData.rows.length)
+                          } else {
+                            setSelectedRows(new Set())
+                            setIsAllRowsSelected(false)
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-xs text-muted-foreground">#</span>
+                    </div>
+                  </TableHead>
+                )}
+                <HeaderRenderer
+                  headers={localData.headers}
+                  showColumnOperations={showColumnOperations}
+                  onInsertColumn={handleInsertColumn}
+                  onDeleteColumn={handleDeleteColumn}
+                  onDuplicateColumn={handleDuplicateColumn}
+                  onMoveColumn={handleMoveColumn}
+                  t={t}
+                />
+              </TableRow>
+            </TableHeader>
             <TableBody>
-                {localData.rows.map((row, rowIndex) => (
-          <TableRow key={rowIndex} style={{ height: rowHeight }} className="group">
-            {showRowNumbers && (
-              <TableCell className="w-16 text-center bg-muted/50 sticky left-0 z-10 border-r">
-                <div className="flex items-center justify-center space-x-1">
-                  <input type="checkbox" checked={selectedRows.has(rowIndex)} onChange={(e) => handleRowSelect(rowIndex, e.target.checked)} className="w-4 h-4" />
-                  <span className="text-xs text-muted-foreground">{rowIndex + 1}</span>
-
-                  {showRowOperations && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreHorizontal className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-48">
-                        <DropdownMenuItem onClick={() => insertRow(rowIndex, 'before')}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          在上方插入行
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => insertRow(rowIndex, 'after')}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          在下方插入行
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => duplicateRow(rowIndex)}>
-                          <Copy className="mr-2 h-4 w-4" />
-                          复制行
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => moveRow(rowIndex, 'up')} disabled={rowIndex === 0}>
-                          <ArrowUp className="mr-2 h-4 w-4" />
-                          上移
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => moveRow(rowIndex, 'down')} disabled={rowIndex === localData.rows.length - 1}>
-                          <ArrowDown className="mr-2 h-4 w-4" />
-                          下移
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => deleteRow(rowIndex)} disabled={localData.rows.length <= 1} className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          删除行
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </TableCell>
-            )}
-
-            {row.map((cell, colIndex) => {
-                      const columnName = localData.headers[colIndex]!;
-                      const isBackdrop = isBackdropColumn(columnName);
-                      const isUrl = isValidUrl(cell);
-                      const isOverview = columnName.toLowerCase() === 'overview';
-                      const shouldShowUrlFeatures = isBackdrop && isUrl && !(isEditing && editCell?.row === rowIndex && editCell?.col === colIndex);
-                      const handleUrlClick = (e: React.MouseEvent) => {
-                        if ((e.ctrlKey || e.metaKey) && shouldShowUrlFeatures) {
-                          e.stopPropagation();
-                          window.open(cell, '_blank', 'noopener,noreferrer');
-                        } else {
-                          handleCellClick(rowIndex, colIndex, e);
-                        }
-                      };
-                      const getCellContent = () => {
-                        const baseClass = "px-2 py-1 text-sm h-full"
-                        const hoverClass = shouldShowUrlFeatures ? "hover:text-primary hover:underline cursor-pointer transition-colors" : ""
-                        const isAirDate = columnName.toLowerCase() === 'air_date';
-
-                        if (isOverview) {
-                          return (
-                            <div className={cn(baseClass, hoverClass, "whitespace-nowrap overflow-hidden text-ellipsis")}
-                                 title={cell || ''}
-                                 style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {cell}
-                            </div>
-                          )
-                        }
-
-                        if (isAirDate) {
-                          return (
-                            <div className={cn(baseClass, hoverClass)}
-                                 title={cell || undefined}>
-                              {cell}
-                            </div>
-                          )
-                        }
-
-                        return (
-                          <div className={cn(baseClass, "truncate", hoverClass)}
-                               title={shouldShowUrlFeatures ? "按住Ctrl点击查看图片" : undefined}>
-                            {cell}
-                          </div>
-                        )
-                      }
-
-                      const getCellStyle = () => {
-                        const isAirDate = columnName.toLowerCase() === 'air_date';
-                        if (isOverview) {
-                          return { minWidth: '400px', maxWidth: '600px', width: '400px' }
-                        }
-                        if (isAirDate) {
-                          return { minWidth: '100px', maxWidth: 'none', width: '120px' }
-                        }
-                        return {
-                          minWidth: '100px',
-                          maxWidth: '250px',
-                          width: `${Math.max(100, Math.min(200, 100 / (localData.headers.length + (showRowNumbers ? 1 : 0))))}%`
-                        }
-                      }
-                      const isEditingThisCell = isEditing && editCell?.row === rowIndex && editCell?.col === colIndex
-
-                      return (
-                        <TableCell
-                          key={colIndex}
-                          className={cn(
-                            isCellSelected(rowIndex, colIndex) && "bg-primary/20",
-                            isActiveCell(rowIndex, colIndex) && "ring-2 ring-primary",
-                            (isDragging && canStartDragging && dragStart?.row === rowIndex && dragStart?.col === colIndex) && "cursor-crosshair",
-                            isShiftSelecting && "cursor-crosshair",
-                            (canStartDragging && isDragging) && "cursor-crosshair",
-                            isEditingThisCell ? "relative whitespace-nowrap overflow-hidden" : "relative select-none whitespace-nowrap overflow-hidden cursor-text hover:bg-accent/30 transition-colors",
-                            isOverview && "overview-cell"
-                          )}
-                          onClick={handleUrlClick}
-                          onDoubleClick={(e) => handleCellDoubleClick(rowIndex, colIndex, e)}
-                          onContextMenu={() => handleContextMenu(rowIndex, colIndex)}
-                          onMouseMove={(e) => handleMouseMove(rowIndex, colIndex, e)}
-                          onMouseDown={(e) => {
-                            if (!isEditingThisCell) {
-                              handleCellMouseDown(rowIndex, colIndex, e)
-                            }
-                          }}
-                          data-column={columnName.toLowerCase().replace(/\s+/g, '_')}
-                          style={getCellStyle()}
-                        >
-                          {isEditingThisCell ? (
-                            <input
-                              ref={editInputRef}
-                              className="w-full h-full px-2 py-1 border-2 border-primary rounded focus:ring-2 focus:ring-primary/50 focus:outline-none bg-background text-sm absolute inset-0"
-                              value={editCell.value}
-                              onChange={handleEditInputChange}
-                              onKeyDown={handleEditInputKeyDown}
-                              onBlur={finishEditing}
-                              onClick={(e) => e.stopPropagation()}
-                              onMouseDown={(e) => e.stopPropagation()}
-                              onMouseUp={(e) => e.stopPropagation()}
-                              autoFocus
-                              style={{ zIndex: 50 }}
-                            />
-                          ) : (
-                            getCellContent()
-                          )}
-                        </TableCell>
-                      )
-                    })}
-          </TableRow>
-                ))}
+              {localData.rows.map((row, rowIndex) => (
+                <RowRenderer
+                  key={rowIndex}
+                  rowIndex={rowIndex}
+                  rowData={row}
+                  headers={localData.headers}
+                  isSelected={selectedRows.has(rowIndex)}
+                  selectedCells={selectedCells}
+                  activeCell={activeCell}
+                  editingCell={editCell}
+                  isDragging={isDragging}
+                  canStartDragging={false}
+                  showRowNumbers={showRowNumbers}
+                  showRowOperations={showRowOperations}
+                  rowHeight={rowHeight}
+                  onCellClick={handleCellMouseDown}
+                  onCellDoubleClick={handleCellDoubleClick}
+                  onCellContextMenu={() => {}}
+                  onCellMouseMove={handleCellMouseMove}
+                  onCellMouseDown={handleCellMouseDown}
+                  onEditInputChange={updateEditValue}
+                  onEditFinish={finishEditing}
+                  onEditCancel={cancelEditing}
+                  onRowSelect={selectRow}
+                  onInsertRow={handleInsertRow}
+                  onDeleteRow={handleDeleteRow}
+                  onDuplicateRow={handleDuplicateRow}
+                  onMoveRow={handleMoveRow}
+                  editInputRef={editInputRef}
+                />
+              ))}
             </TableBody>
           </Table>
-      </div>
-        </ScrollArea>
         </div>
-      
-      {/* 批量插入行对话框 */}
-      <BatchInsertRowDialog
-        open={showBatchInsertDialog}
-        onOpenChange={setShowBatchInsertDialog}
-        onApply={handleBatchInsertApply}
-      />
-      
-      {/* 批量编辑对话框（支持name和overview列） */}
-      <BatchEditDialog
-        open={showBatchEditDialog}
-        onOpenChange={setShowBatchEditDialog}
-        value={batchEditData?.value || ''}
-        onSave={handleBatchEditSave}
-        onBatchSave={handleBatchSave}
-        allColumnData={batchEditData ? getAllColumnData(batchEditData.columnName) : []}
-        currentRowIndex={batchEditData?.row}
-        columnName={batchEditData?.columnName || '内容'}
-      />
-    </TableContextMenu>
+      </ScrollArea>
+    </div>
   )
 }
 
-// 使用React.memo优化性能，避免不必要的重新渲染
-export const TMDBTable = React.memo(TMDBTableComponent, (prevProps, nextProps) => {
-  // 自定义比较函数，只在关键属性变化时才重新渲染
-  return (
-    prevProps.data === nextProps.data &&
-    prevProps.className === nextProps.className &&
-    prevProps.enableColumnResizing === nextProps.enableColumnResizing &&
-    prevProps.enableColumnReordering === nextProps.enableColumnReordering &&
-    prevProps.rowHeight === nextProps.rowHeight &&
-    prevProps.showRowNumbers === nextProps.showRowNumbers &&
-    prevProps.showColumnOperations === nextProps.showColumnOperations &&
-    prevProps.showRowOperations === nextProps.showRowOperations
-  )
-})
-
-TMDBTable.displayName = 'TMDBTable'
+export default TMDBTableComponent
+export { TMDBTableComponent as TMDBTable }
