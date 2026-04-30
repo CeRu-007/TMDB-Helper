@@ -20,5 +20,6 @@
   "deleteGroup": "删除该词条所有记录",
   "clearAllConfirmTitle": "确认清空所有记录？",
   "clearAllConfirmDesc": "此操作将删除所有任务记事记录，且不可恢复。",
-  "cancel": "取消"
+  "cancel": "取消",
+  "viewOnTMDB": "在TMDB上查看"
 }

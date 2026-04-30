@@ -1,7 +1,44 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { taskJournalRepository } from '@/lib/data/task-journal-repository'
+import { itemsRepository } from '@/lib/database/repositories/items.repository'
+import { scheduleRepository } from '@/lib/data/schedule-repository'
 import { initializeDatabase } from '@/lib/database'
 import { notifyDataChangeFromServer } from '@/lib/data/sse-broadcaster'
+import type { TaskJournal } from '@/types/task-journal'
+
+function enrichEntriesWithTmdbUrl(entries: TaskJournal[]): TaskJournal[] {
+  const itemCache = new Map<string, { tmdbId?: string; season?: number; language?: string } | null>()
+
+  return entries.map(entry => {
+    if (!itemCache.has(entry.itemId)) {
+      const item = itemsRepository.findByIdWithRelations(entry.itemId)
+      if (item?.tmdbId) {
+        const task = scheduleRepository.findByItemId(entry.itemId)
+        const season = task?.tmdbSeason || item.seasons?.find(s => s.currentEpisode)?.seasonNumber || 1
+        const language = task?.tmdbLanguage || 'zh-CN'
+        itemCache.set(entry.itemId, { tmdbId: item.tmdbId, season, language })
+      } else {
+        itemCache.set(entry.itemId, null)
+      }
+    }
+
+    const cached = itemCache.get(entry.itemId)
+    if (!cached) return entry
+
+    let episodeCount: number | undefined
+    if (entry.dataPreview) {
+      try {
+        episodeCount = JSON.parse(entry.dataPreview).episodeCount
+      } catch {}
+    }
+
+    const tmdbUrl = episodeCount
+      ? `https://www.themoviedb.org/tv/${cached.tmdbId}/season/${cached.season}/episode/${episodeCount}?language=${cached.language}`
+      : `https://www.themoviedb.org/tv/${cached.tmdbId}/season/${cached.season}?language=${cached.language}`
+
+    return { ...entry, tmdbUrl }
+  })
+}
 
 async function ensureDatabaseInitialized(): Promise<void> {
   try {
@@ -37,12 +74,14 @@ export async function GET(request: NextRequest) {
       entries = taskJournalRepository.findAllOrdered(limit, offset)
     }
 
+    const enrichedEntries = enrichEntriesWithTmdbUrl(entries)
+
     const totalCount = taskJournalRepository.getTotalCount()
     const unread = taskJournalRepository.getUnreadCount()
 
     return NextResponse.json({
       success: true,
-      data: entries,
+      data: enrichedEntries,
       meta: { totalCount, unreadCount: unread },
     })
   } catch (error) {

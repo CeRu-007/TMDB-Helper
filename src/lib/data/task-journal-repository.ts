@@ -76,6 +76,7 @@ export class TaskJournalRepository extends BaseRepository<TaskJournal, TaskJourn
       content: input.content,
       dataPreview: input.dataPreview || null,
       errorMessage: input.errorMessage || null,
+      tmdbUrl: null,
       startAt: input.startAt,
       endAt: input.endAt || null,
       read: false,

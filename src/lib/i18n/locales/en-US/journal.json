@@ -20,5 +20,6 @@
   "deleteGroup": "Delete all records for this item",
   "clearAllConfirmTitle": "Clear all records?",
   "clearAllConfirmDesc": "This will delete all task journal records and cannot be undone.",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "viewOnTMDB": "View on TMDB"
 }

@@ -7,6 +7,7 @@ export interface TaskJournal {
   content: string
   dataPreview: string | null
   errorMessage: string | null
+  tmdbUrl: string | null
   startAt: string
   endAt: string | null
   read: boolean
@@ -50,6 +51,7 @@ export function taskJournalRowToTaskJournal(row: TaskJournalRow): TaskJournal {
     content: row.content,
     dataPreview: row.dataPreview,
     errorMessage: row.errorMessage,
+    tmdbUrl: null,
     startAt: row.startAt,
     endAt: row.endAt,
     read: row.read === 1,

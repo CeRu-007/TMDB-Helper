@@ -20,5 +20,6 @@
   "deleteGroup": "이 항목의 모든 기록 삭제",
   "clearAllConfirmTitle": "모든 기록을 삭제하시겠습니까?",
   "clearAllConfirmDesc": "모든 작업 저널 기록이 삭제되며 복원할 수 없습니다.",
-  "cancel": "취소"
+  "cancel": "취소",
+  "viewOnTMDB": "TMDB에서 보기"
 }

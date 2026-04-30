@@ -20,5 +20,6 @@
   "deleteGroup": "刪除該條目所有記錄",
   "clearAllConfirmTitle": "確認清空所有記錄？",
   "clearAllConfirmDesc": "此操作將刪除所有任務記事記錄，且不可恢復。",
-  "cancel": "取消"
+  "cancel": "取消",
+  "viewOnTMDB": "在TMDB上查看"
 }

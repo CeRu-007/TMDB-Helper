@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Bell, CheckCircle2, XCircle, Clock, Trash2, ChevronDown, ChevronRight, Search, Trash } from "lucide-react"
+import { Bell, CheckCircle2, XCircle, Clock, Trash2, ChevronDown, ChevronRight, Search, Trash, ExternalLink } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
 import type { TaskJournal } from "@/types/task-journal"
@@ -426,6 +426,19 @@ function JournalEntryItem({
             </span>
             {entry.endAt && (
               <span>{formatDuration(entry.startAt, entry.endAt)}</span>
+            )}
+            {entry.tmdbUrl && (
+              <a
+                href={entry.tmdbUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto inline-flex items-center gap-1 text-blue-500 hover:text-blue-600 hover:underline"
+                title={t("viewOnTMDB")}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="h-3 w-3" />
+                TMDB
+              </a>
             )}
           </div>
           {entry.status === 'failed' && entry.errorMessage && entry.errorMessage.length > 50 && (
