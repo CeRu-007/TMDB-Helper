@@ -748,7 +748,7 @@ export default function ModelServiceSettingsPanel({
                         className="flex-1"
                       />
                       <a
-                        href="https://open.bigmodel.cn/usercenter/apikeys"
+                        href="https://open.bigmodel.cn/apikey/platform"
                         target="_blank"
                         rel="noopener noreferrer"
                         title={t("modelServicePanel.jumpToZhipu")}
