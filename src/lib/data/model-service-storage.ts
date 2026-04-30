@@ -74,15 +74,6 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
   ],
   scenarios: [
     {
-      type: 'thumbnail_filter',
-      label: '视频缩略图智能筛选',
-      description:
-        '用于"视频缩略图提取"页面的AI智能筛选功能，自动识别包含人物且无字幕的优质帧',
-      requiredCapabilities: ['vision'],
-      selectedModelIds: ['zhipu-glm-4v-flash'],
-      primaryModelId: 'zhipu-glm-4v-flash',
-    },
-    {
       type: 'image_analysis',
       label: '影视图像识别分析',
       description:

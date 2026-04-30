@@ -561,9 +561,6 @@ function initializeDefaultConfig(db: ReturnType<typeof getDatabase>): void {
           thumbnailCount: 5,
           frameInterval: 30,
           keepOriginalResolution: true,
-          enableAIFilter: false,
-          siliconFlowApiKey: '',
-          siliconFlowModel: 'Qwen/Qwen2.5-VL-32B-Instruct',
         }),
         // 分集生成器 API 提供商
         episodeGeneratorApiProvider: 'modelscope',
@@ -643,9 +640,6 @@ function initializeDefaultConfig(db: ReturnType<typeof getDatabase>): void {
         thumbnailCount: 9,
         frameInterval: 30,
         keepOriginalResolution: true,
-        enableAIFilter: false,
-        siliconFlowApiKey: '',
-        siliconFlowModel: 'Qwen/Qwen2.5-VL-32B-Instruct',
       }),
     },
     // TMDB-Import 工具路径（单独存储，兼容 ClientConfigManager）

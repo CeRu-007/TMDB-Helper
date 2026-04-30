@@ -138,7 +138,9 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
             results: {
               staticScore: 0.5,
               subtitleScore: 0.5,
-              peopleScore: 0.5
+              peopleScore: 0.5,
+              motionBlurScore: 0.5,
+              atmosphereScore: 0.5
             },
             taskId 
           });
@@ -164,26 +166,22 @@ function batchAnalyzeImage(
   height: number, 
   options?: AnalysisOptions
 ) {
-  // 获取选项，设置合理的默认值
   const sampleRate = options?.sampleRate || 2;
   const subtitleDetectionStrength = options?.subtitleDetectionStrength || 0.8;
-  const simplifiedAnalysis = options?.simplifiedAnalysis || false; // 是否使用简化分析
-  
-  // 如果开启了简化分析，增加采样率以减少计算量
+  const simplifiedAnalysis = options?.simplifiedAnalysis || false;
   const effectiveSampleRate = simplifiedAnalysis ? Math.max(sampleRate, 4) : sampleRate;
   
   try {
-    // 创建分析结果对象
     let results: Record<string, number | boolean | Uint8Array | any> = {};
 
-    // 计算基本分数
     results.staticScore = calculateStaticScore(imageData, effectiveSampleRate);
     results.subtitleScore = calculateSubtitleScore(imageData, width, height, subtitleDetectionStrength);
     results.peopleScore = calculatePeopleScore(imageData, effectiveSampleRate);
     results.emptyFrameScore = detectEmptyFrame(imageData, effectiveSampleRate);
     results.diversityScore = calculateDiversityScore(imageData, effectiveSampleRate);
+    results.motionBlurScore = calculateMotionBlurScore(imageData, effectiveSampleRate);
+    results.atmosphereScore = calculateAtmosphereScore(imageData, effectiveSampleRate);
 
-    // 如果不是简化分析，添加更详细的分析结果
     if (!simplifiedAnalysis) {
       results.edgeMap = generateEdgeMap(imageData, width, height, effectiveSampleRate);
       results.colorProfile = analyzeColorProfile(imageData, effectiveSampleRate);
@@ -196,13 +194,14 @@ function batchAnalyzeImage(
     return results;
   } catch (error) {
     workerLogger.error('ImageProcessingWorker', '批量分析失败', error);
-    // 返回默认结果
     return {
       staticScore: 0.5,
       subtitleScore: 0.5,
       peopleScore: 0.5,
       emptyFrameScore: 0.5,
-      diversityScore: 0.5
+      diversityScore: 0.5,
+      motionBlurScore: 0.5,
+      atmosphereScore: 0.5
     };
   }
 }
@@ -463,299 +462,85 @@ function calculateStaticScore(imageData: ImageData, sampleRate: number = 1): num
   // 4. 综合评分 - 静态帧质量
   // 静态帧的理想特征: 边缘适中、颜色丰富、内容均匀分布
   const staticScore = 
-    (1 - features.edgeDensity * 8) * 0.5 +     // 边缘密度适中 (保留原有逻辑)
-    features.colorDiversity * 0.2 +            // 颜色多样性高
-    features.contentRichness * 0.2 +           // 内容丰富
-    features.uniformityScore * 0.1;            // 内容分布均匀
+    Math.max(0, 1 - features.edgeDensity * 5) * 0.4 +
+    features.colorDiversity * 0.25 +
+    features.contentRichness * 0.2 +
+    features.uniformityScore * 0.15;
   
   return Math.min(1, Math.max(0, staticScore));
 }
 
 // 计算字幕分数
 function calculateSubtitleScore(
-  imageData: ImageData, 
-  width: number, 
+  imageData: ImageData,
+  width: number,
   height: number,
   detectionStrength: number = 0.8
 ): number {
   try {
-  const data = imageData.data;
-  
-    // 增强字幕检测 - 使用多种特征
-    
-    // 1. 水平线检测 - 字幕通常是水平线
-    const horizontalLineScore = detectHorizontalLines(data, width, height);
-    
-    // 2. 底部区域检测 - 字幕通常在底部
-    const bottomAreaScore = analyzeBottomArea(data, width, height);
-    
-    // 3. 文本区域检测 - 字幕通常有特定的文本特征
-    const textRegionScore = detectTextRegions(data, width, height);
-    
-    // 4. 对比度检测 - 字幕通常与背景有高对比度
-    const contrastScore = detectHighContrast(data, width, height);
-    
-    // 综合评分 - 根据检测强度调整权重
-    const subtitleScore = (
-      horizontalLineScore * 0.3 + 
-      bottomAreaScore * 0.3 + 
-      textRegionScore * 0.25 + 
-      contrastScore * 0.15
-    ) * detectionStrength;
-    
-    // 返回0-1之间的分数
-    return Math.min(1, Math.max(0, subtitleScore));
+    const data = imageData.data;
+    const bottomStart = Math.floor(height * 0.82);
+    const sampleStep = 6;
+    let subtitleRows = 0;
+    let totalRowsChecked = 0;
+
+    for (let y = bottomStart; y < height; y += sampleStep) {
+      let transitions = 0;
+      let prevLuma = -1;
+
+      for (let x = 0; x < width; x += sampleStep) {
+        const idx = (y * width + x) * 4;
+        if (idx >= data.length - 3) continue;
+        const luma = 0.299 * data[idx]! + 0.587 * data[idx + 1]! + 0.114 * data[idx + 2]!;
+        if (prevLuma >= 0 && Math.abs(luma - prevLuma) > 45) {
+          transitions++;
+        }
+        prevLuma = luma;
+      }
+
+      totalRowsChecked++;
+      if (transitions > 2 && transitions < width / sampleStep * 0.35) {
+        subtitleRows++;
+      }
+    }
+
+    let topSubtitleRows = 0;
+    for (let y = 0; y < Math.floor(height * 0.12); y += sampleStep) {
+      let transitions = 0;
+      let prevLuma = -1;
+      for (let x = 0; x < width; x += sampleStep) {
+        const idx = (y * width + x) * 4;
+        if (idx >= data.length - 3) continue;
+        const luma = 0.299 * data[idx]! + 0.587 * data[idx + 1]! + 0.114 * data[idx + 2]!;
+        if (prevLuma >= 0 && Math.abs(luma - prevLuma) > 45) {
+          transitions++;
+        }
+        prevLuma = luma;
+      }
+      if (transitions > 2 && transitions < width / sampleStep * 0.35) {
+        topSubtitleRows++;
+      }
+    }
+
+    const bottomRatio = totalRowsChecked > 0 ? subtitleRows / totalRowsChecked : 0;
+    const topRatio = topSubtitleRows / Math.max(1, Math.ceil(height * 0.12 / sampleStep));
+    return Math.min(1, (Math.max(bottomRatio, topRatio) * 4)) * detectionStrength;
   } catch (error) {
-    
-    return 0.5; // 返回中间值
+    return 0.5;
   }
 }
 
-// 检测水平线 - 字幕通常是水平排列的
-function detectHorizontalLines(data: Uint8ClampedArray, width: number, height: number): number {
-  // 检查图像下半部分的水平线
-  const startY = Math.floor(height * 0.6); // 从60%的高度开始检查
-  const sampleRows = 20; // 采样行数
-  const step = Math.max(1, Math.floor((height - startY) / sampleRows));
-  
-  let horizontalLineCount = 0;
-  let totalChecks = 0;
-  
-  // 对每一采样行
-  for (let y = startY; y < height; y += step) {
-    // 计算该行的水平变化
-    let horizontalChanges = 0;
-    let prevLuma = -1;
-    
-    // 采样该行的点
-    for (let x = 0; x < width; x += 4) {
-      const idx = (y * width + x) * 4;
-      
-      // 计算亮度
-      const luma = 0.299 * data[idx]! + 0.587 * data[idx + 1]! + 0.114 * data[idx + 2]!;
-      
-      // 检测亮度变化
-      if (prevLuma >= 0) {
-        const diff = Math.abs(luma - prevLuma);
-        if (diff > 30) { // 亮度变化阈值
-          horizontalChanges++;
-        }
-      }
-      
-      prevLuma = luma;
-      totalChecks++;
-    }
-    
-    // 如果水平变化在合理范围内（不太少也不太多），可能是字幕
-    if (horizontalChanges > 5 && horizontalChanges < width / 10) {
-      horizontalLineCount++;
-    }
-  }
-  
-  // 计算得分
-  return Math.min(1, horizontalLineCount / (sampleRows * 0.6));
-}
-
-// 分析底部区域 - 字幕通常在底部
-function analyzeBottomArea(data: Uint8ClampedArray, width: number, height: number): number {
-  // 定义底部区域
-  const bottomStart = Math.floor(height * 0.7);
-  const bottomHeight = height - bottomStart;
-  
-  // 计算底部区域的特征
-  let textLikeRegions = 0;
-  let samplesCount = 0;
-  
-  // 网格采样
-  const gridSize = 8;
-  const xStep = Math.max(1, Math.floor(width / gridSize));
-  const yStep = Math.max(1, Math.floor(bottomHeight / 4));
-  
-  for (let y = bottomStart; y < height; y += yStep) {
-    let hasTextFeature = false;
-    let prevColor = -1;
-    let colorChanges = 0;
-    
-    for (let x = 0; x < width; x += xStep) {
-      const idx = (y * width + x) * 4;
-      
-      // 简化的颜色表示
-      const color = Math.floor(data[idx]! / 32) * 32 + 
-                   Math.floor(data[idx + 1]! / 32) * 32 + 
-                   Math.floor(data[idx + 2]! / 32) * 32;
-      
-      // 检测颜色变化
-      if (prevColor >= 0 && prevColor !== color) {
-        colorChanges++;
-      }
-      
-      prevColor = color;
-    }
-    
-    // 如果一行中有适量的颜色变化，可能是文本
-    if (colorChanges >= 3 && colorChanges <= gridSize * 0.8) {
-      hasTextFeature = true;
-    }
-    
-    if (hasTextFeature) {
-      textLikeRegions++;
-    }
-    
-    samplesCount++;
-  }
-  
-  // 如果底部区域有足够的文本特征，返回较高的分数
-  return Math.min(1, textLikeRegions / (samplesCount * 0.5));
-}
-
-// 检测文本区域 - 基于文本的特征
-function detectTextRegions(data: Uint8ClampedArray, width: number, height: number): number {
-  // 文本通常有规律的边缘和特定的纹理
-  
-  // 计算图像的边缘密度图
-  const edgeDensity = new Float32Array(width * height);
-  let maxEdgeDensity = 0;
-  
-  // 简化的Sobel边缘检测
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const _idx = (y * width + x) * 4;
-
-      // 获取周围像素
-      const topIdx = ((y - 1) * width + x) * 4;
-      const bottomIdx = ((y + 1) * width + x) * 4;
-      const leftIdx = (y * width + (x - 1)) * 4;
-      const rightIdx = (y * width + (x + 1)) * 4;
-
-      // 计算亮度
-      const topLuma = 0.299 * data[topIdx]! + 0.587 * data[topIdx + 1]! + 0.114 * data[topIdx + 2]!;
-      const bottomLuma = 0.299 * data[bottomIdx]! + 0.587 * data[bottomIdx + 1]! + 0.114 * data[bottomIdx + 2]!;
-      const leftLuma = 0.299 * data[leftIdx]! + 0.587 * data[leftIdx + 1]! + 0.114 * data[leftIdx + 2]!;
-      const rightLuma = 0.299 * data[rightIdx]! + 0.587 * data[rightIdx + 1]! + 0.114 * data[rightIdx + 2]!;
-
-      // 计算梯度
-      const dx = rightLuma - leftLuma;
-      const dy = bottomLuma - topLuma;
-      const gradient = Math.sqrt(dx * dx + dy * dy);
-
-      // 存储边缘强度
-      edgeDensity[y * width + x] = gradient;
-      maxEdgeDensity = Math.max(maxEdgeDensity, gradient);
-    }
-  }
-
-  // 如果没有显著边缘，返回低分数
-  if (maxEdgeDensity < 10) {
-    return 0.1;
-  }
-
-  // 归一化边缘密度
-  for (let i = 0; i < edgeDensity.length; i++) {
-    edgeDensity[i] /= maxEdgeDensity;
-  }
-  
-  // 检测文本区域特征
-  const blockSize = 16;
-  const xBlocks = Math.floor(width / blockSize);
-  const yBlocks = Math.floor(height / blockSize);
-  let textRegionCount = 0;
-  
-  // 分析图像块
-  for (let by = 0; by < yBlocks; by++) {
-    for (let bx = 0; bx < xBlocks; bx++) {
-      let edgeCount = 0;
-      let edgeSum = 0;
-      
-      // 分析块内的边缘
-      for (let y = by * blockSize; y < (by + 1) * blockSize && y < height; y++) {
-        for (let x = bx * blockSize; x < (bx + 1) * blockSize && x < width; x++) {
-          const edge = (edgeDensity[y * width + x] ?? 0);
-          if (edge > 0.2) { // 边缘阈值
-            edgeCount++;
-          }
-          edgeSum += edge;
-        }
-      }
-      
-      // 计算平均边缘密度
-      const avgEdgeDensity = edgeSum / (blockSize * blockSize);
-      
-      // 文本区域通常有适中的边缘密度和数量
-      if (avgEdgeDensity > 0.15 && avgEdgeDensity < 0.5 && 
-          edgeCount > blockSize * blockSize * 0.1 && 
-          edgeCount < blockSize * blockSize * 0.5) {
-        textRegionCount++;
-      }
-    }
-  }
-  
-  // 计算得分
-  return Math.min(1, textRegionCount / (xBlocks * yBlocks * 0.3));
-}
-
-// 检测高对比度区域 - 字幕通常与背景有高对比度
-function detectHighContrast(data: Uint8ClampedArray, width: number, height: number): number {
-  // 检查图像底部的高对比度区域
-  const bottomStart = Math.floor(height * 0.7);
-  let highContrastCount = 0;
-  let totalSamples = 0;
-  
-  // 采样步长
-  const xStep = Math.max(1, Math.floor(width / 40));
-  const yStep = Math.max(1, Math.floor((height - bottomStart) / 10));
-  
-  for (let y = bottomStart; y < height; y += yStep) {
-    for (let x = 0; x < width; x += xStep) {
-      const _idx = (y * width + x) * 4;
-
-      // 计算局部对比度
-      let minLuma = 255;
-      let maxLuma = 0;
-
-      // 检查3x3邻域
-      for (let ny = -1; ny <= 1; ny++) {
-        for (let nx = -1; nx <= 1; nx++) {
-          const newY = y + ny;
-          const newX = x + nx;
-
-          if (newY >= 0 && newY < height && newX >= 0 && newX < width) {
-            const neighborIdx = (newY * width + newX) * 4;
-            const luma = 0.299 * data[neighborIdx]! + 0.587 * data[neighborIdx + 1]! + 0.114 * data[neighborIdx + 2]!;
-
-            minLuma = Math.min(minLuma, luma);
-            maxLuma = Math.max(maxLuma, luma);
-          }
-        }
-      }
-      
-      // 计算对比度
-      const contrast = maxLuma - minLuma;
-      
-      // 如果对比度高，可能是字幕
-      if (contrast > 100) {
-        highContrastCount++;
-      }
-      
-      totalSamples++;
-    }
-  }
-  
-  // 计算得分
-  return Math.min(1, highContrastCount / (totalSamples * 0.2));
-}
-
-// 优化版的人物检测评分函数
 function calculatePeopleScore(imageData: ImageData, sampleRate: number = 4): number {
   const { data, width, height } = imageData;
   let skinColorPixels = 0;
+  let animeCharPixels = 0;
   let totalPixels = 0;
   
-  // 将图像划分为3x3网格，分别计算每个区域的肤色比例
   const gridSize = 3;
   const gridScores: number[][] = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0));
+  const gridAnimeScores: number[][] = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0));
   const gridCounts: number[][] = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0));
   
-  // 使用更高效的采样方式
   for (let y = 0; y < height; y += sampleRate) {
     for (let x = 0; x < width; x += sampleRate) {
       const pixelOffset = (y * width + x) * 4;
@@ -765,44 +550,56 @@ function calculatePeopleScore(imageData: ImageData, sampleRate: number = 4): num
       const g = data[pixelOffset + 1]!;
       const b = data[pixelOffset + 2]!;
       
-      // 计算网格位置
       const gridX = Math.min(gridSize - 1, Math.floor(x / width * gridSize));
       const gridY = Math.min(gridSize - 1, Math.floor(y / height * gridSize));
-      gridCounts[gridY][gridX]++;
+      gridCounts[gridY]![gridX]!++;
       
-      // 改进的肤色检测 - 结合RGB和YCbCr模型
-      // RGB模型检测
       const isSkinRGB = (
-        r > 95 && g > 40 && b > 20 && // 基本亮度要求
-        r > g && r > b && // 红色分量最大
-        Math.abs(r - g) > 15 && // 红绿差异明显
-        r - g > 15 && // 红色明显大于绿色
-        r - b > 15 // 红色明显大于蓝色
+        r > 95 && g > 40 && b > 20 &&
+        r > g && r > b &&
+        Math.abs(r - g) > 15 &&
+        r - g > 15 &&
+        r - b > 15
       );
       
-      // YCbCr模型检测
       const yColor = 0.299 * r + 0.587 * g + 0.114 * b;
-    const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
-    const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+      const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+      const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
       const isSkinYCbCr = (
-        yColor > 80 && // 足够亮
-        cb > 85 && cb < 135 && // Cb在肤色范围内
-        cr > 135 && cr < 180 // Cr在肤色范围内
+        yColor > 80 &&
+        cb > 85 && cb < 135 &&
+        cr > 135 && cr < 180
       );
       
-      // 综合两种模型的结果
       if (isSkinRGB || isSkinYCbCr) {
-      skinColorPixels++;
+        skinColorPixels++;
         gridScores[gridY]![gridX]!++;
-    }
+      }
+
+      const maxC = Math.max(r, g, b);
+      const minC = Math.min(r, g, b);
+      const saturation = maxC > 0 ? (maxC - minC) / maxC : 0;
+      const isAnimeSkin = (
+        yColor > 140 && yColor < 250 &&
+        saturation < 0.25 &&
+        r > 180 && g > 140 && b > 120 &&
+        Math.abs(r - g) < 50 && Math.abs(r - b) < 70
+      );
+      const isAnimeHair = saturation > 0.4 && maxC > 100;
+      const isAnimeFeature = isAnimeSkin || isAnimeHair;
+      
+      if (isAnimeFeature) {
+        animeCharPixels++;
+        gridAnimeScores[gridY]![gridX]!++;
+      }
     
     totalPixels++;
     }
   }
   
-  // 计算基础肤色分数
   const skinRatio = skinColorPixels / totalPixels;
-  let peopleScore = Math.min(1, skinRatio * 5); // 基础分数
+  const animeRatio = animeCharPixels / totalPixels;
+  let peopleScore = Math.min(1, Math.max(skinRatio * 5, animeRatio * 3));
   
   // 人脸特征检测 - 基于肤色区域分布
   // 1. 中心区域权重更高（人脸通常在中心）
@@ -811,27 +608,26 @@ function calculatePeopleScore(imageData: ImageData, sampleRate: number = 4): num
   
   // 2. 计算加权的区域肤色分数
   let weightedRegionScore = 0;
+  let weightedAnimeRegionScore = 0;
   let totalWeight = 0;
   
   for (let y = 0; y < gridSize; y++) {
     for (let x = 0; x < gridSize; x++) {
-      // 计算与中心的距离作为权重
       const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
       const weight = 1 / (1 + distance) * (distance < 1 ? centerWeight : 1);
       
-      // 计算该区域的肤色比例
       const regionRatio = gridCounts[y]![x]! > 0 ? gridScores[y]![x]! / gridCounts[y]![x]! : 0;
+      const animeRegionRatio = gridCounts[y]![x]! > 0 ? gridAnimeScores[y]![x]! / gridCounts[y]![x]! : 0;
 
       weightedRegionScore += regionRatio * weight;
+      weightedAnimeRegionScore += animeRegionRatio * weight;
       totalWeight += weight;
     }
   }
 
-  // 标准化加权分数
   const normalizedRegionScore = totalWeight > 0 ? weightedRegionScore / totalWeight : 0;
+  const normalizedAnimeRegionScore = totalWeight > 0 ? weightedAnimeRegionScore / totalWeight : 0;
 
-  // 3. 检测人脸特征的可能性 - 基于区域分布模式
-  // 人脸通常在上半部分有较高的肤色比例
   const topHalfSkinRatio = (
     gridScores[0]![0]! + gridScores[0]![1]! + gridScores[0]![2]! +
     gridScores[1]![0]! + gridScores[1]![1]! + gridScores[1]![2]!
@@ -840,10 +636,17 @@ function calculatePeopleScore(imageData: ImageData, sampleRate: number = 4): num
     gridCounts[1]![0]! + gridCounts[1]![1]! + gridCounts[1]![2]! || 1
   );
   
-  // 中心区域通常有更高的肤色比例
+  const topHalfAnimeRatio = (
+    gridAnimeScores[0]![0]! + gridAnimeScores[0]![1]! + gridAnimeScores[0]![2]! +
+    gridAnimeScores[1]![0]! + gridAnimeScores[1]![1]! + gridAnimeScores[1]![2]!
+  ) / (
+    gridCounts[0]![0]! + gridCounts[0]![1]! + gridCounts[0]![2]! +
+    gridCounts[1]![0]! + gridCounts[1]![1]! + gridCounts[1]![2]! || 1
+  );
+  
   const centerSkinRatio = gridCounts[1]![1]! > 0 ? gridScores[1]![1]! / gridCounts[1]![1]! : 0;
+  const centerAnimeRatio = gridCounts[1]![1]! > 0 ? gridAnimeScores[1]![1]! / gridCounts[1]![1]! : 0;
 
-  // 检测面部对称性 - 左右区域肤色比例相近
   const leftSkinRatio = (
     gridScores[0]![0]! + gridScores[1]![0]! + gridScores[2]![0]!
   ) / (
@@ -856,25 +659,19 @@ function calculatePeopleScore(imageData: ImageData, sampleRate: number = 4): num
     gridCounts[0]![2]! + gridCounts[1]![2]! + gridCounts[2]![2]! || 1
   );
   
-  // 对称性分数 - 左右肤色比例差异越小，对称性越高
   const symmetryScore = 1 - Math.min(1, Math.abs(leftSkinRatio - rightSkinRatio) * 3);
   
-  // 4. 综合多种特征，计算最终的人脸分数
-  // 肤色比例、区域分布、对称性综合评分
   const faceScore = (
-    normalizedRegionScore * 0.4 + // 区域分布权重
-    centerSkinRatio * 0.3 + // 中心区域肤色权重
-    topHalfSkinRatio * 0.2 + // 上半部分肤色权重
-    symmetryScore * 0.1 // 对称性权重
+    Math.max(normalizedRegionScore, normalizedAnimeRegionScore) * 0.4 +
+    Math.max(centerSkinRatio, centerAnimeRatio) * 0.3 +
+    Math.max(topHalfSkinRatio, topHalfAnimeRatio) * 0.2 +
+    symmetryScore * 0.1
   );
   
-  // 5. 结合基础人物分数和人脸分数
-  // 如果检测到较强的人脸特征，提升总分
   if (faceScore > 0.4) {
     peopleScore = Math.max(peopleScore, faceScore);
   }
   
-  // 应用非线性变换，使高分更突出
   peopleScore = Math.pow(peopleScore, 0.8);
   
   return peopleScore;
@@ -1293,5 +1090,135 @@ function detectEmptyFrame(imageData: ImageData, sampleRate: number = 2): number 
   return Math.min(1, Math.max(0, emptyFrameScore));
 }
 
-// 声明类型，使TypeScript在Web Worker中正常工作
+function calculateMotionBlurScore(imageData: ImageData, sampleRate: number = 2): number {
+  const { data, width, height } = imageData;
+  let laplacianVariance = 0;
+  let laplacianMean = 0;
+  let count = 0;
+  const laplacianValues: number[] = [];
+
+  for (let y = 1; y < height - 1; y += sampleRate) {
+    for (let x = 1; x < width - 1; x += sampleRate) {
+      const center = (y * width + x) * 4;
+      const left = (y * width + (x - 1)) * 4;
+      const right = (y * width + (x + 1)) * 4;
+      const top = ((y - 1) * width + x) * 4;
+      const bottom = ((y + 1) * width + x) * 4;
+
+      if (center >= data.length - 4 || left < 0 || right >= data.length || top < 0 || bottom >= data.length) continue;
+
+      const cb = 0.299 * data[center]! + 0.587 * data[center + 1]! + 0.114 * data[center + 2]!;
+      const lb = 0.299 * data[left]! + 0.587 * data[left + 1]! + 0.114 * data[left + 2]!;
+      const rb = 0.299 * data[right]! + 0.587 * data[right + 1]! + 0.114 * data[right + 2]!;
+      const tb = 0.299 * data[top]! + 0.587 * data[top + 1]! + 0.114 * data[top + 2]!;
+      const bb = 0.299 * data[bottom]! + 0.587 * data[bottom + 1]! + 0.114 * data[bottom + 2]!;
+
+      const laplacian = Math.abs(4 * cb - lb - rb - tb - bb);
+      laplacianValues.push(laplacian);
+      laplacianMean += laplacian;
+      count++;
+    }
+  }
+
+  if (count === 0) return 0.5;
+
+  laplacianMean /= count;
+
+  for (const val of laplacianValues) {
+    laplacianVariance += (val - laplacianMean) * (val - laplacianMean);
+  }
+  laplacianVariance /= count;
+
+  const sharpness = laplacianVariance;
+  const blurScore = 1 - Math.min(1, sharpness / 2000);
+
+  return Math.max(0, Math.min(1, blurScore));
+}
+
+function calculateAtmosphereScore(imageData: ImageData, sampleRate: number = 4): number {
+  const { data, width, height } = imageData;
+
+  let colorRichness = 0;
+  let contrastScore = 0;
+  let compositionScore = 0;
+  let visualWeight = 0;
+
+  const effectiveRate = Math.max(sampleRate, 3);
+
+  const colorBuckets = new Map<number, number>();
+  let totalSamples = 0;
+  let minLuma = 255;
+  let maxLuma = 0;
+  let lumaSum = 0;
+
+  const gridWeights = [
+    [0.5, 0.8, 0.5],
+    [0.8, 1.5, 0.8],
+    [0.5, 0.8, 0.5]
+  ];
+
+  let weightedContent = 0;
+  let totalWeight = 0;
+
+  for (let y = 0; y < height; y += effectiveRate) {
+    for (let x = 0; x < width; x += effectiveRate) {
+      const idx = (y * width + x) * 4;
+      if (idx >= data.length - 3) continue;
+
+      const r = data[idx]!;
+      const g = data[idx + 1]!;
+      const b = data[idx + 2]!;
+
+      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+      minLuma = Math.min(minLuma, luma);
+      maxLuma = Math.max(maxLuma, luma);
+      lumaSum += luma;
+
+      const cr = Math.floor(r / 24) * 24;
+      const cg = Math.floor(g / 24) * 24;
+      const cb = Math.floor(b / 24) * 24;
+      const colorKey = (cr << 16) | (cg << 8) | cb;
+      colorBuckets.set(colorKey, (colorBuckets.get(colorKey) || 0) + 1);
+      totalSamples++;
+
+      const gridX = Math.min(2, Math.floor(x / width * 3));
+      const gridY = Math.min(2, Math.floor(y / height * 3));
+      const weight = gridWeights[gridY]![gridX]!;
+      totalWeight += weight;
+
+      const saturation = Math.max(r, g, b) - Math.min(r, g, b);
+      if (saturation > 30 || luma > 30) {
+        weightedContent += weight;
+      }
+    }
+  }
+
+  if (totalSamples === 0) return 0.5;
+
+  let entropy = 0;
+  for (const count of colorBuckets.values()) {
+    const p = count / totalSamples;
+    if (p > 0) entropy -= p * Math.log2(p);
+  }
+  colorRichness = Math.min(1, entropy / 5);
+
+  contrastScore = Math.min(1, (maxLuma - minLuma) / 200);
+
+  compositionScore = totalWeight > 0 ? Math.min(1, weightedContent / totalWeight) : 0;
+
+  const avgLuma = lumaSum / totalSamples;
+  const idealLuma = 128;
+  const lumaDistance = Math.abs(avgLuma - idealLuma) / idealLuma;
+  visualWeight = Math.max(0, 1 - lumaDistance * 0.5);
+
+  const atmosphereScore = (
+    colorRichness * 0.3 +
+    contrastScore * 0.25 +
+    compositionScore * 0.25 +
+    visualWeight * 0.2
+  );
+
+  return Math.max(0, Math.min(1, atmosphereScore));
+}
+
 export {}; 

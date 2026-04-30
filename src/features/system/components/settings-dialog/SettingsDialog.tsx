@@ -141,16 +141,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     thumbnailCount: 9,
     frameInterval: 30,
     keepOriginalResolution: true,
-    enableAIFilter: false,
-    siliconFlowApiKey: "",
-    siliconFlowModel: "Qwen/Qwen2.5-VL-32B-Instruct"
   })
 
   // API配置状态
   const [apiSettings, setApiSettings] = useState<ApiSettings>({
     siliconFlow: {
       apiKey: "",
-      thumbnailFilterModel: "Qwen/Qwen2.5-VL-32B-Instruct"
     },
     modelScope: {
       apiKey: "",
@@ -336,9 +332,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
               threadCount: Number(settings.threadCount || prev.threadCount),
               thumbnailCount: Number(settings.thumbnailCount || prev.thumbnailCount),
               frameInterval: Number(settings.frameInterval || prev.frameInterval),
-              enableAIFilter: settings.enableAIFilter || prev.enableAIFilter,
-              siliconFlowApiKey: "",
-              siliconFlowModel: settings.siliconFlowModel || prev.siliconFlowModel
             }))
           }
         } catch (error) {
@@ -1018,8 +1011,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           <VideoThumbnailSettingsPanel
             videoThumbnailSettings={videoThumbnailSettings}
             setVideoThumbnailSettings={setVideoThumbnailSettings}
-            apiSettings={apiSettings}
-            setApiSettings={setApiSettings}
             saveVideoThumbnailSettings={saveVideoThumbnailSettings}
           />
         )

@@ -1,13 +1,10 @@
 /**
  * ImageProcessor类 - 图像处理工具
  * 使用单例模式实现，确保整个应用中只有一个实例
- * 集成硅基流动AI模型进行智能帧分析
  */
 
 import { logger } from '@/lib/utils/logger'
-import { SiliconFlowAPI, createSiliconFlowAPI } from '@/lib/utils/siliconflow-api'
 
-// 定义Worker类型
 type ImageProcessingWorker = Worker;
 
 export class ImageProcessor {
@@ -16,8 +13,6 @@ export class ImageProcessor {
   private taskCallbacks: Map<string, (result: unknown) => void> = new Map();
   private initialized: boolean = false;
   private initializationPromise: Promise<void> | null = null;
-  private siliconFlowAPI: SiliconFlowAPI | null = null;
-  private aiAnalysisEnabled: boolean = false;
 
   /**
    * 私有构造函数，防止直接实例化
@@ -169,56 +164,6 @@ export class ImageProcessor {
     });
     
     return this.initializationPromise;
-  }
-
-  /**
-   * 配置硅基流动API
-   * @param apiKey API密钥
-   * @param options 可选配置
-   */
-  public configureSiliconFlowAPI(apiKey: string, options?: { model?: string; baseUrl?: string }): void {
-    try {
-      this.siliconFlowAPI = createSiliconFlowAPI(apiKey, options);
-      this.aiAnalysisEnabled = true;
-      logger.info('[ImageProcessor] 硅基流动API配置成功');
-    } catch (error) {
-      logger.error('[ImageProcessor] 硅基流动API配置失败', error);
-      this.aiAnalysisEnabled = false;
-    }
-  }
-
-  /**
-   * 禁用AI分析
-   */
-  public disableAIAnalysis(): void {
-    this.aiAnalysisEnabled = false;
-    this.siliconFlowAPI = null;
-    logger.info('[ImageProcessor] AI分析已禁用');
-  }
-
-  /**
-   * 检查AI分析是否可用
-   */
-  public isAIAnalysisEnabled(): boolean {
-    return this.aiAnalysisEnabled && this.siliconFlowAPI !== null;
-  }
-
-  /**
-   * 测试硅基流动API连接
-   */
-  public async testSiliconFlowConnection(): Promise<{ success: boolean; error?: string }> {
-    if (!this.siliconFlowAPI) {
-      return { success: false, error: '硅基流动API未配置' };
-    }
-
-    try {
-      return await this.siliconFlowAPI.testConnection();
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : '连接测试失败'
-      };
-    }
   }
 
   /**
@@ -490,24 +435,19 @@ export class ImageProcessor {
     options: {
       startTime?: number;
       frameCount?: number;
-      interval?: 'uniform' | 'random' | 'keyframes'; // 新增关键帧模式
+      interval?: 'uniform' | 'random' | 'keyframes';
       keepOriginalResolution?: boolean;
       enhancedFrameDiversity?: boolean;
-      useAIPrefilter?: boolean; // 新增AI预筛选选项
-      useMultiModelValidation?: boolean; // 新增多模型验证选项
     }
   ): Promise<ImageData[]> {
     try {
-        
-        // 获取视频时长和设置
         const duration = video.duration;
         const startTime = options.startTime || 0;
-        const frameCount = Math.min(options.frameCount || 10, 30); // 优化：减少初始提取数量
-        const interval = options.interval || 'keyframes'; // 默认使用关键帧模式
+        const frameCount = Math.min(options.frameCount || 10, 30);
+        const interval = options.interval || 'keyframes';
         const keepOriginalResolution = options.keepOriginalResolution || false;
         const enhancedFrameDiversity = options.enhancedFrameDiversity !== undefined ?
           options.enhancedFrameDiversity : true;
-        const useAIPrefilter = options.useAIPrefilter && this.isAIAnalysisEnabled();
 
         // 快速验证视频状态
         if (duration <= 0 || isNaN(duration)) {
@@ -824,40 +764,20 @@ export class ImageProcessor {
           }
         }
 
-        // 🤖 AI预筛选（如果启用且候选帧过多）
-        if (useAIPrefilter && candidateFrames.length > frameCount) {
-
-          // TODO: 实现 performAIPrefiltering 方法
-          // await this.performAIPrefiltering(candidateFrames, frameCount, {
-          //   useMultiModel: options.useMultiModelValidation
-          // });
-          logger.debug('[ImageProcessor] AI预筛选功能暂未实现');
-        }
-
-        // 🏆 最终帧选择
         let finalFrames: ImageData[];
 
-        if (useAIPrefilter && candidateFrames.some(f => f.aiScore !== undefined)) {
-          // 基于AI评分选择
-          finalFrames = candidateFrames
-            .sort((a, b) => (b.aiScore || 0.5) - (a.aiScore || 0.5))
-            .slice(0, frameCount)
-            .map(f => f.imageData);
-
+        if (candidateFrames.length <= frameCount) {
+          finalFrames = candidateFrames.map(f => f.imageData);
         } else {
-          // 基于时间分布选择
           const step = Math.max(1, Math.floor(candidateFrames.length / frameCount));
           finalFrames = candidateFrames
             .filter((_, index) => index % step === 0)
             .slice(0, frameCount)
             .map(f => f.imageData);
-
         }
 
-        // 应用多样性过滤（如果启用）
         if (enhancedFrameDiversity && finalFrames.length > 1) {
           finalFrames = this.applyDiversityFilter(finalFrames, 0.75);
-          
         }
 
         return finalFrames;
@@ -900,20 +820,17 @@ export class ImageProcessor {
         peopleScore: number;
         emptyFrameScore?: number;
         diversityScore?: number;
+        motionBlurScore?: number;
+        atmosphereScore?: number;
       };
     }>;
   }> {
     try {
-      // 检查是否启用AI分析
-      const useAIAnalysis = this.isAIAnalysisEnabled();
-
-      // 如果帧数过多，先进行初步筛选以减轻计算负担
       let framesToAnalyze = frames;
-      const maxFramesToAnalyze = useAIAnalysis ? 20 : 40; // AI分析时减少帧数以控制成本
+      const maxFramesToAnalyze = 40;
 
       if (frames.length > maxFramesToAnalyze) {
         logger.debug(`帧数过多 (${frames.length})，进行初步筛选`);
-        // 均匀选择帧进行分析
         const step = Math.floor(frames.length / maxFramesToAnalyze);
         framesToAnalyze = [];
         for (let i = 0; i < frames.length; i += step) {
@@ -936,6 +853,8 @@ export class ImageProcessor {
           peopleScore: number;
           emptyFrameScore?: number;
           diversityScore?: number;
+          motionBlurScore?: number;
+          atmosphereScore?: number;
         };
       }
 
@@ -954,68 +873,30 @@ export class ImageProcessor {
             const originalIndex = framesToAnalyze.indexOf(frame);
 
             try {
-              let scores: Record<string, number> = {};
+              const effectiveSampleRate = Math.min(options.sampleRate || 2, 3);
+              const results = await this._batchAnalyzeImage(frame, {
+                sampleRate: effectiveSampleRate,
+                subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
+                staticFrameThreshold: options.staticFrameThreshold || 0.8,
+                simplifiedAnalysis: true
+              });
 
-              if (useAIAnalysis && this.siliconFlowAPI) {
-                // 使用AI分析
-                const aiResult = await this.siliconFlowAPI.analyzeFrame(frame);
-
-                if (!aiResult.error) {
-                  // 将AI结果转换为传统评分格式
-                  scores = {
-                    staticScore: 0.8, // AI分析的帧通常质量较好
-                    subtitleScore: aiResult.hasSubtitles ? 0.9 : 0.1, // 有字幕得分高，无字幕得分低
-                    peopleScore: aiResult.hasPeople ? 0.9 : 0.1, // 有人物得分高，无人物得分低
-                    emptyFrameScore: aiResult.hasPeople ? 0.1 : 0.8, // 有人物时空帧得分低
-                    diversityScore: aiResult.confidence || 0.7 // 使用AI的置信度作为多样性分数
-                  };
-
-                } else {
-                  
-                  // AI分析失败，回退到传统方法
-                  const effectiveSampleRate = Math.min(options.sampleRate || 2, 3);
-                  const results = await this._batchAnalyzeImage(frame, {
-                    sampleRate: effectiveSampleRate,
-                    subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
-                    staticFrameThreshold: options.staticFrameThreshold || 0.8,
-                    simplifiedAnalysis: true
-                  });
-
-                  scores = {
-                    staticScore: results.staticScore || 0.5,
-                    subtitleScore: results.subtitleScore || 0.5,
-                    peopleScore: results.peopleScore || 0.5,
-                    emptyFrameScore: results.emptyFrameScore || 0.5,
-                    diversityScore: results.diversityScore || 0.5
-                  };
-                }
-              } else {
-                // 使用传统像素分析方法
-                const effectiveSampleRate = Math.min(options.sampleRate || 2, 3);
-                const results = await this._batchAnalyzeImage(frame, {
-                  sampleRate: effectiveSampleRate,
-                  subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
-                  staticFrameThreshold: options.staticFrameThreshold || 0.8,
-                  simplifiedAnalysis: true
-                });
-
-                scores = {
-                  staticScore: results.staticScore || 0.5,
-                  subtitleScore: results.subtitleScore || 0.5,
-                  peopleScore: results.peopleScore || 0.5,
-                  emptyFrameScore: results.emptyFrameScore || 0.5,
-                  diversityScore: results.diversityScore || 0.5
-                };
-              }
+              const scores: Record<string, number> = {
+                staticScore: results.staticScore || 0.5,
+                subtitleScore: results.subtitleScore || 0.5,
+                peopleScore: results.peopleScore || 0.5,
+                emptyFrameScore: results.emptyFrameScore || 0.5,
+                diversityScore: results.diversityScore || 0.5,
+                motionBlurScore: results.motionBlurScore ?? 0.5,
+                atmosphereScore: results.atmosphereScore ?? 0.5
+              };
 
               return {
-                index: frames.indexOf(frame), // 获取原始帧数组中的索引
-                originalIndex: originalIndex, // 保存在筛选后数组中的索引
+                index: frames.indexOf(frame),
+                originalIndex: originalIndex,
                 scores: scores
               };
             } catch (error) {
-              
-              // 返回默认分数，而不是失败整个批次
               return {
                 index: frames.indexOf(frame),
                 originalIndex: originalIndex,
@@ -1024,7 +905,9 @@ export class ImageProcessor {
                   subtitleScore: 0.5,
                   peopleScore: 0.5,
                   emptyFrameScore: 0.5,
-                  diversityScore: 0.5
+                  diversityScore: 0.5,
+                  motionBlurScore: 0.5,
+                  atmosphereScore: 0.5
                 }
               };
             }
@@ -1212,29 +1095,35 @@ export class ImageProcessor {
       const scoredFrames = frameAnalysis.map(frame => {
         const { scores } = frame;
         let totalScore = 0;
-        
-        // 根据偏好设置计算得分
-        if (preferences.prioritizeStatic) {
-          totalScore += scores.staticScore * 2;
-        }
-        
+
         if (preferences.avoidSubtitles) {
-          totalScore += (1 - scores.subtitleScore) * 3; // 字幕分数越低越好
+          totalScore += (1 - scores.subtitleScore) * 5;
         }
-        
+
         if (preferences.preferPeople) {
-          totalScore += scores.peopleScore * 2;
+          totalScore += scores.peopleScore * 2.5;
         }
-        
+
+        if (preferences.prioritizeStatic) {
+          totalScore += scores.staticScore * 1.5;
+        }
+
         if (preferences.avoidEmptyFrames && scores.emptyFrameScore !== undefined) {
-          totalScore += (1 - scores.emptyFrameScore) * 2; // 空帧分数越低越好
+          totalScore += (1 - scores.emptyFrameScore) * 1.5;
         }
-        
-        // 添加多样性分数，始终考虑多样性
+
         if (scores.diversityScore !== undefined) {
-          totalScore += scores.diversityScore * 3.0; // 增强多样性权重，确保选择内容更有差异的帧
+          totalScore += scores.diversityScore * 1.5;
         }
-        
+
+        if (scores.motionBlurScore !== undefined) {
+          totalScore += (1 - scores.motionBlurScore) * 2.5;
+        }
+
+        if (scores.atmosphereScore !== undefined) {
+          totalScore += scores.atmosphereScore * 2.0;
+        }
+
         return {
           ...frame,
           totalScore
@@ -1319,7 +1208,9 @@ export class ImageProcessor {
             scores: { 
               staticScore: 0.5, 
               subtitleScore: 0.5, 
-              peopleScore: 0.5 
+              peopleScore: 0.5,
+              motionBlurScore: 0.5,
+              atmosphereScore: 0.5
             } 
           }]
         };
@@ -1612,41 +1503,182 @@ export class ImageProcessor {
     peopleScore: number;
     emptyFrameScore?: number;
     diversityScore?: number;
+    motionBlurScore?: number;
+    atmosphereScore?: number;
   }> {
-    // 简化的图像分析实现
+    if (this.worker && this.initialized) {
+      return new Promise((resolve) => {
+        const taskId = `batch_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const timeout = setTimeout(() => {
+          this.taskCallbacks.delete(taskId);
+          resolve(this._fallbackAnalyzeImage(frame, options));
+        }, 10000);
+
+        this.taskCallbacks.set(taskId, (result: any) => {
+          clearTimeout(timeout);
+          if (result.error) {
+            resolve(this._fallbackAnalyzeImage(frame, options));
+            return;
+          }
+          resolve({
+            staticScore: result.results?.staticScore ?? 0.5,
+            subtitleScore: result.results?.subtitleScore ?? 0.5,
+            peopleScore: result.results?.peopleScore ?? 0.5,
+            emptyFrameScore: result.results?.emptyFrameScore ?? 0.5,
+            diversityScore: result.results?.diversityScore ?? 0.5,
+            motionBlurScore: result.results?.motionBlurScore ?? 0.5,
+            atmosphereScore: result.results?.atmosphereScore ?? 0.5,
+          });
+        });
+
+        this.worker!.postMessage({
+          type: 'batchAnalysis',
+          imageData: frame,
+          width: frame.width,
+          height: frame.height,
+          taskId,
+          options
+        });
+      });
+    }
+
+    return this._fallbackAnalyzeImage(frame, options);
+  }
+
+  private _fallbackAnalyzeImage(
+    frame: ImageData,
+    options: {
+      sampleRate?: number;
+      subtitleDetectionStrength?: number;
+      staticFrameThreshold?: number;
+      simplifiedAnalysis?: boolean;
+    }
+  ): {
+    staticScore: number;
+    subtitleScore: number;
+    peopleScore: number;
+    emptyFrameScore: number;
+    diversityScore: number;
+    motionBlurScore: number;
+    atmosphereScore: number;
+  } {
     const data = frame.data;
-    const sampleRate = options.sampleRate || 2;
+    const width = frame.width;
+    const height = frame.height;
+    const sampleRate = Math.max(options.sampleRate || 2, 3);
     let brightPixels = 0;
     let darkPixels = 0;
     let totalPixels = 0;
+    let skinPixels = 0;
+    let animeCharPixels = 0;
+    let laplacianSum = 0;
+    let laplacianSqSum = 0;
+    let laplacianCount = 0;
+    const colorBuckets = new Map<number, number>();
+    let minLuma = 255;
+    let maxLuma = 0;
 
-    for (let i = 0; i < data.length; i += 4 * sampleRate) {
-      const r = data[i!];
-      const g = data[i! + 1];
-      const b = data[i! + 2];
-      const brightness = (r! + g! + b!) / 3;
+    for (let y = 0; y < height; y += sampleRate) {
+      for (let x = 0; x < width; x += sampleRate) {
+        const i = (y * width + x) * 4;
+        if (i >= data.length - 3) continue;
 
-      totalPixels++;
-      if (brightness > 128) {
-        brightPixels++;
-      } else if (brightness < 30) {
-        darkPixels++;
+        const r = data[i]!;
+        const g = data[i + 1]!;
+        const b = data[i + 2]!;
+        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+
+        totalPixels++;
+        if (brightness > 128) brightPixels++;
+        if (brightness < 30) darkPixels++;
+        minLuma = Math.min(minLuma, brightness);
+        maxLuma = Math.max(maxLuma, brightness);
+
+        const isSkinRGB = r > 95 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && (r - b) > 15;
+        const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+        const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+        const isSkinYCbCr = brightness > 80 && cb > 85 && cb < 135 && cr > 135 && cr < 180;
+        if (isSkinRGB || isSkinYCbCr) skinPixels++;
+
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        const saturation = maxC > 0 ? (maxC - minC) / maxC : 0;
+        const isAnimeSkin = brightness > 140 && brightness < 250 && saturation < 0.25 && r > 180 && g > 140 && b > 120 && Math.abs(r - g) < 50 && Math.abs(r - b) < 70;
+        const isAnimeHair = saturation > 0.4 && maxC > 100;
+        if (isAnimeSkin || isAnimeHair) animeCharPixels++;
+
+        if (y > 0 && y < height - 1 && x > 0 && x < width - 1) {
+          const left = (y * width + (x - 1)) * 4;
+          const right = (y * width + (x + 1)) * 4;
+          const top = ((y - 1) * width + x) * 4;
+          const bottom = ((y + 1) * width + x) * 4;
+          if (left >= 0 && right < data.length && top >= 0 && bottom < data.length) {
+            const lb = 0.299 * data[left]! + 0.587 * data[left + 1]! + 0.114 * data[left + 2]!;
+            const rb = 0.299 * data[right]! + 0.587 * data[right + 1]! + 0.114 * data[right + 2]!;
+            const tb = 0.299 * data[top]! + 0.587 * data[top + 1]! + 0.114 * data[top + 2]!;
+            const bb = 0.299 * data[bottom]! + 0.587 * data[bottom + 1]! + 0.114 * data[bottom + 2]!;
+            const laplacian = Math.abs(4 * brightness - lb - rb - tb - bb);
+            laplacianSum += laplacian;
+            laplacianSqSum += laplacian * laplacian;
+            laplacianCount++;
+          }
+        }
+
+        const cKey = (Math.floor(r / 24) * 24 << 16) | (Math.floor(g / 24) * 24 << 8) | Math.floor(b / 24) * 24;
+        colorBuckets.set(cKey, (colorBuckets.get(cKey) || 0) + 1);
       }
     }
 
-    // 计算各种分数
-    const staticScore = brightPixels / totalPixels;
-    const subtitleScore = 1 - staticScore;
-    const peopleScore = staticScore * 0.8;
-    const emptyFrameScore = darkPixels / totalPixels;
-    const diversityScore = 0.7;
+    const staticScore = totalPixels > 0 ? Math.min(1, brightPixels / totalPixels * 1.5) : 0.5;
+    const peopleScore = totalPixels > 0 ? Math.min(1, Math.max((skinPixels / totalPixels) * 5, (animeCharPixels / totalPixels) * 3)) : 0.5;
+    const emptyFrameScore = totalPixels > 0 ? darkPixels / totalPixels : 0.5;
+
+    let subtitleRows = 0;
+    let bottomRowsChecked = 0;
+    const bottomStart = Math.floor(height * 0.82);
+    for (let y = bottomStart; y < height; y += sampleRate) {
+      let transitions = 0;
+      let prevLuma = -1;
+      for (let x = 0; x < width; x += sampleRate) {
+        const i = (y * width + x) * 4;
+        if (i >= data.length - 3) continue;
+        const luma = 0.299 * data[i]! + 0.587 * data[i + 1]! + 0.114 * data[i + 2]!;
+        if (prevLuma >= 0 && Math.abs(luma - prevLuma) > 45) transitions++;
+        prevLuma = luma;
+      }
+      bottomRowsChecked++;
+      if (transitions > 2 && transitions < width / sampleRate * 0.35) subtitleRows++;
+    }
+
+    const bottomRatio = bottomRowsChecked > 0 ? subtitleRows / bottomRowsChecked : 0;
+    const subtitleScore = Math.min(1, bottomRatio * 4);
+
+    let entropy = 0;
+    for (const count of colorBuckets.values()) {
+      const p = count / totalPixels;
+      if (p > 0) entropy -= p * Math.log2(p);
+    }
+    const diversityScore = Math.min(1, entropy / 4);
+
+    let motionBlurScore = 0.5;
+    if (laplacianCount > 0) {
+      const meanLap = laplacianSum / laplacianCount;
+      const varianceLap = laplacianSqSum / laplacianCount - meanLap * meanLap;
+      motionBlurScore = 1 - Math.min(1, Math.max(0, varianceLap) / 2000);
+    }
+
+    const colorRichness = Math.min(1, entropy / 5);
+    const contrastScore = Math.min(1, (maxLuma - minLuma) / 200);
+    const atmosphereScore = colorRichness * 0.4 + contrastScore * 0.3 + staticScore * 0.3;
 
     return {
       staticScore,
       subtitleScore,
       peopleScore,
       emptyFrameScore,
-      diversityScore
+      diversityScore,
+      motionBlurScore,
+      atmosphereScore: Math.max(0, Math.min(1, atmosphereScore)),
     };
   }
 }

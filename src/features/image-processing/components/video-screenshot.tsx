@@ -29,7 +29,6 @@ import { Progress } from "@/shared/components/ui/progress"
 import { Badge } from "@/shared/components/ui/badge"
 import { useToast } from "@/shared/components/ui/use-toast"
 import { useTranslation } from "react-i18next"
-import { useScenarioModels } from '@/lib/hooks/useScenarioModels'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"
 import { DELAY_500MS, DELAY_2000MS } from '@/lib/constants/constants'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
@@ -69,12 +68,8 @@ interface ExtractionSettings {
   thumbnailCount: number
   frameInterval: number
   keepOriginalResolution: boolean
-  enableAIFilter: boolean
-  siliconFlowApiKey: string
-  siliconFlowModel: string
 }
 
-// 预览数据接口
 interface PreviewData {
   url: string
   filename: string
@@ -82,13 +77,6 @@ interface PreviewData {
   thumbnailId: string
 }
 
-// 模型状态接口
-interface ModelStatus {
-  subtitle: "loading" | "ready" | "error"
-  person: "loading" | "ready" | "error"
-}
-
-// 默认设置
 const DEFAULT_SETTINGS: ExtractionSettings = {
   startTime: 0,
   threadCount: 2,
@@ -96,9 +84,6 @@ const DEFAULT_SETTINGS: ExtractionSettings = {
   thumbnailCount: 9,
   frameInterval: 30,
   keepOriginalResolution: true,
-  enableAIFilter: false,
-  siliconFlowApiKey: "",
-  siliconFlowModel: "Qwen/Qwen2.5-VL-32B-Instruct"
 }
 
 const DEFAULT_ITEMS_PER_PAGE = 9
@@ -109,7 +94,6 @@ interface VideoScreenshotProps {
 
 export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreenshotProps = {}) {
   const { t } = useTranslation('image-processing')
-  const thumbnailModels = useScenarioModels('thumbnail_filter')
   const { toast } = useToast()
 
   // 视频列表
@@ -130,19 +114,13 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
   // UI 状态
   const [showHelpDialog, setShowHelpDialog] = useState(false)
   const [showPreviewDialog, setShowPreviewDialog] = useState(false)
-  const [modelStatus, setModelStatus] = useState<ModelStatus>({
-    subtitle: "loading",
-    person: "loading"
-  })
   const [previewData, setPreviewData] = useState<PreviewData | null>(null)
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
 
   // 处理器状态
   const [processorReady, setProcessorReady] = useState<boolean>(false)
   const [processorInitialized, setProcessorInitialized] = useState(false)
-  const [processorError, setProcessorError] = useState<string | null>(null)
 
-  // 引用
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropAreaRef = useRef<HTMLDivElement>(null)
   const imageProcessorRef = useRef<ImageProcessor | null>(null)
@@ -150,20 +128,15 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
   // 加载处理器和设置
   useEffect(() => {
     const initProcessor = async () => {
-      setModelStatus({ subtitle: "loading", person: "loading" })
-
       try {
         if (typeof window !== 'undefined') {
           const processor = ImageProcessor.getInstance()
           await processor.initialize()
           imageProcessorRef.current = processor
-          setModelStatus({ subtitle: "ready", person: "ready" })
           setProcessorInitialized(true)
           setProcessorReady(true)
         }
       } catch (error) {
-        setModelStatus({ subtitle: "error", person: "error" })
-        setProcessorError(t("videoScreenshot.processorError") + ", " + t("videoScreenshot.refreshPage"))
         toast({
           title: t('videoScreenshot.modelLoadFailed'),
           description: t('videoScreenshot.refreshPage'),
@@ -174,7 +147,6 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
     initProcessor()
 
-    // 加载保存的设置
     const savedSettings = localStorage.getItem("video_thumbnail_settings")
     if (savedSettings) {
       try {
@@ -187,9 +159,6 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
           thumbnailCount: Number(parsed.thumbnailCount ?? DEFAULT_SETTINGS.thumbnailCount),
           frameInterval: Number(parsed.frameInterval ?? DEFAULT_SETTINGS.frameInterval),
           keepOriginalResolution: parsed.keepOriginalResolution ?? DEFAULT_SETTINGS.keepOriginalResolution,
-          enableAIFilter: parsed.enableAIFilter ?? DEFAULT_SETTINGS.enableAIFilter,
-          siliconFlowApiKey: parsed.siliconFlowApiKey ?? DEFAULT_SETTINGS.siliconFlowApiKey,
-          siliconFlowModel: parsed.siliconFlowModel ?? DEFAULT_SETTINGS.siliconFlowModel
         })
       } catch (error) {
         logger.error('加载设置失败:', error)
@@ -197,38 +166,6 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     }
   }, [toast])
 
-  // 监听处理器错误
-  useEffect(() => {
-    if (processorError) {
-      toast({
-        title: t("videoScreenshot.processorError"),
-        description: processorError,
-        variant: "destructive",
-      })
-    }
-  }, [processorError, toast, t])
-
-  // 当模型状态变化时显示提示
-  useEffect(() => {
-    const isReady = modelStatus.subtitle === "ready" && modelStatus.person === "ready"
-    const isError = modelStatus.subtitle === "error" || modelStatus.person === "error"
-
-    if (isReady) {
-      toast({
-        title: t('videoScreenshot.modelLoadSuccess'),
-        description: t('videoScreenshot.modelLoadSuccessDesc'),
-        variant: "default",
-      })
-    } else if (isError) {
-      toast({
-        title: t('videoScreenshot.modelLoadFailed'),
-        description: t('videoScreenshot.refreshPage'),
-        variant: "destructive",
-      })
-    }
-  }, [modelStatus, toast])
-
-  // 文件处理函数
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       processFiles(Array.from(event.target.files))
@@ -425,102 +362,6 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     }
   }
 
-  // AI帧筛选函数
-  const analyzeFrameWithAI = async (imageData: ImageData, apiKey: string, model: string, apiBaseUrl: string = 'https://api.siliconflow.cn/v1'): Promise<{
-    hasPeople: boolean;
-    hasSubtitles: boolean;
-    confidence: number;
-  }> => {
-    try {
-      // 将ImageData转换为base64
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error('无法创建Canvas上下文')
-
-      canvas.width = imageData.width
-      canvas.height = imageData.height
-      ctx.putImageData(imageData, 0, 0)
-      
-      const base64Image = canvas.toDataURL('image/jpeg', 0.9)
-
-      // 构建API请求
-      const response = await fetch(`${apiBaseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [{
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: base64Image
-                }
-              },
-              {
-                type: "text",
-                text: `请分析这张视频帧图片，判断：
-1. 是否包含人物（真人、动画人物、卡通角色等）
-2. 是否包含字幕文字（对话字幕、解说字幕等）
-
-请严格按照以下JSON格式回答：
-{
-  "hasPeople": boolean,
-  "hasSubtitles": boolean,
-  "confidence": number
-}
-
-其中confidence为判断的置信度（0-1之间的数值）。`
-              }
-            ]
-          }],
-          temperature: 0.1,
-          max_tokens: 200
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error(`API请求失败: ${response.status}`)
-      }
-
-      const result = await response.json()
-      const content = result.choices[0].message.content
-
-      // 尝试解析JSON响应
-      try {
-        const analysis = JSON.parse(content)
-        return {
-          hasPeople: !!analysis.hasPeople,
-          hasSubtitles: !!analysis.hasSubtitles,
-          confidence: Number(analysis.confidence) || 0.5
-        }
-      } catch (parseError) {
-        // 如果JSON解析失败，使用文本分析
-        const lowerContent = content.toLowerCase()
-        const hasPeople = lowerContent.includes('true') && (lowerContent.includes('人物') || lowerContent.includes('people'))
-        const hasSubtitles = lowerContent.includes('true') && (lowerContent.includes('字幕') || lowerContent.includes('subtitle'))
-        
-        return {
-          hasPeople,
-          hasSubtitles,
-          confidence: 0.7
-        }
-      }
-    } catch (error) {
-      
-      return {
-        hasPeople: false,
-        hasSubtitles: true, // 保守策略：假设有字幕
-        confidence: 0.1
-      }
-    }
-  }
-
-  // 处理单个视频
   const processVideo = async (videoData: VideoFile): Promise<void> => {
     try {
       const video = document.createElement('video')
@@ -550,9 +391,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       )
       const availableDuration = Math.max(0, duration - validStartTime)
 
-      const candidateFrameCount = settings.enableAIFilter ?
-        Math.max(settings.thumbnailCount * 4, 20) :
-        Math.max(settings.thumbnailCount * 3, 15)
+      const candidateFrameCount = Math.max(settings.thumbnailCount * 2, 12)
 
       const frames = await imageProcessorRef.current.extractFramesFromVideo(video, {
         startTime: validStartTime,
@@ -560,12 +399,11 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
         interval: 'keyframes',
         keepOriginalResolution: settings.keepOriginalResolution,
         enhancedFrameDiversity: true,
-        useAIPrefilter: false
       })
 
       setVideos(prev =>
         prev.map(v => v.id === videoData.id ?
-          { ...v, extractionProgress: 50 } : v
+          { ...v, extractionProgress: 40 } : v
         )
       )
 
@@ -573,18 +411,30 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
         throw new Error(t("videoScreenshot.noFrames"))
       }
 
-      const scenarioData = await validateAIConfig()
-
       const thumbnails = await generateThumbnails(
         frames,
         videoData.id,
         validStartTime,
         availableDuration,
-        scenarioData
       )
 
       if (thumbnails.length === 0 && frames.length > 0) {
-        await generateFallbackThumbnail(frames[0], validStartTime, videoData.id)
+        const firstFrame = frames[0]
+        if (firstFrame) {
+          const fallbackThumb = await generateFallbackThumbnail(firstFrame, validStartTime, videoData.id)
+          if (fallbackThumb) {
+            thumbnails.push(fallbackThumb)
+          }
+        }
+      }
+
+      if (thumbnails.length === 0) {
+        setVideos(prev =>
+          prev.map(v => v.id === videoData.id ?
+            { ...v, status: "no-frames", extractionProgress: 0 } : v
+          )
+        )
+        return
       }
 
       setVideos(prev =>
@@ -641,48 +491,147 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     })
   }
 
-  // 验证AI配置
-  const validateAIConfig = async () => {
-    if (!settings.enableAIFilter) return null
+  const hasSubtitleInFrame = (frame: ImageData): boolean => {
+    const { data, width, height } = frame;
+    const bottomStart = Math.floor(height * 0.82);
+    const sampleStep = 8;
+    let highContrastRuns = 0;
+    let prevLuma = -1;
+    let runLength = 0;
 
-    if (!thumbnailModels.primaryModelId || thumbnailModels.availableModels.length === 0) {
-      throw new Error("已启用 AI 筛选，但截图筛选场景未配置模型。请在设置 > 模型服务 > 使用场景中配置截图筛选模型，或关闭 AI 筛选功能。")
+    for (let y = bottomStart; y < height; y += sampleStep) {
+      let rowTransitions = 0;
+      prevLuma = -1;
+      runLength = 0;
+
+      for (let x = 0; x < width; x += sampleStep) {
+        const idx = (y * width + x) * 4;
+        if (idx >= data.length - 3) continue;
+        const luma = 0.299 * data[idx]! + 0.587 * data[idx + 1]! + 0.114 * data[idx + 2]!;
+        if (prevLuma >= 0 && Math.abs(luma - prevLuma) > 50) {
+          rowTransitions++;
+          if (runLength > 0 && runLength < 30) highContrastRuns++;
+          runLength = 0;
+        } else {
+          runLength++;
+        }
+        prevLuma = luma;
+      }
+
+      if (rowTransitions > 3 && rowTransitions < width / sampleStep * 0.4) {
+        return true;
+      }
     }
 
-    const scenarioResponse = await fetch('/api/model-service/scenario?scenario=thumbnail_filter')
-    const scenarioResult = await scenarioResponse.json()
-
-    if (!scenarioResult.success || !scenarioResult.scenario) {
-      throw new Error("获取截图筛选场景配置失败")
+    const topStart = 0;
+    const topEnd = Math.floor(height * 0.12);
+    for (let y = topStart; y < topEnd; y += sampleStep) {
+      let rowTransitions = 0;
+      prevLuma = -1;
+      for (let x = 0; x < width; x += sampleStep) {
+        const idx = (y * width + x) * 4;
+        if (idx >= data.length - 3) continue;
+        const luma = 0.299 * data[idx]! + 0.587 * data[idx + 1]! + 0.114 * data[idx + 2]!;
+        if (prevLuma >= 0 && Math.abs(luma - prevLuma) > 50) {
+          rowTransitions++;
+        }
+        prevLuma = luma;
+      }
+      if (rowTransitions > 3 && rowTransitions < width / sampleStep * 0.4) {
+        return true;
+      }
     }
 
-    return scenarioResult
+    return false;
   }
 
-  // 生成缩略图
+  const scoreFrame = (frame: ImageData): number => {
+    const { data, width, height } = frame;
+    const sampleRate = 6;
+    let skinPixels = 0;
+    let totalPixels = 0;
+    let laplacianSum = 0;
+    let laplacianSqSum = 0;
+    let laplacianCount = 0;
+
+    for (let y = 0; y < height; y += sampleRate) {
+      for (let x = 0; x < width; x += sampleRate) {
+        const i = (y * width + x) * 4;
+        if (i >= data.length - 3) continue;
+        const r = data[i]!;
+        const g = data[i + 1]!;
+        const b = data[i + 2]!;
+        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+        totalPixels++;
+
+        const isSkinRGB = r > 95 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && (r - b) > 15;
+        const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+        const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+        const isSkinYCbCr = brightness > 80 && cb > 85 && cb < 135 && cr > 135 && cr < 180;
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        const saturation = maxC > 0 ? (maxC - minC) / maxC : 0;
+        const isAnimeSkin = brightness > 140 && brightness < 250 && saturation < 0.25 && r > 180 && g > 140 && b > 120 && Math.abs(r - g) < 50 && Math.abs(r - b) < 70;
+        const isAnimeHair = saturation > 0.4 && maxC > 100;
+        if (isSkinRGB || isSkinYCbCr || isAnimeSkin || isAnimeHair) skinPixels++;
+
+        if (y > 0 && y < height - 1 && x > 0 && x < width - 1) {
+          const left = (y * width + (x - 1)) * 4;
+          const right = (y * width + (x + 1)) * 4;
+          const top = ((y - 1) * width + x) * 4;
+          const bottom = ((y + 1) * width + x) * 4;
+          if (left >= 0 && right < data.length && top >= 0 && bottom < data.length) {
+            const lb = 0.299 * data[left]! + 0.587 * data[left + 1]! + 0.114 * data[left + 2]!;
+            const rb = 0.299 * data[right]! + 0.587 * data[right + 1]! + 0.114 * data[right + 2]!;
+            const tb = 0.299 * data[top]! + 0.587 * data[top + 1]! + 0.114 * data[top + 2]!;
+            const bb = 0.299 * data[bottom]! + 0.587 * data[bottom + 1]! + 0.114 * data[bottom + 2]!;
+            const laplacian = Math.abs(4 * brightness - lb - rb - tb - bb);
+            laplacianSum += laplacian;
+            laplacianSqSum += laplacian * laplacian;
+            laplacianCount++;
+          }
+        }
+      }
+    }
+
+    const peopleScore = totalPixels > 0 ? Math.min(1, (skinPixels / totalPixels) * 6) : 0;
+    let sharpnessScore = 0.5;
+    if (laplacianCount > 0) {
+      const meanLap = laplacianSum / laplacianCount;
+      const varianceLap = laplacianSqSum / laplacianCount - meanLap * meanLap;
+      sharpnessScore = Math.min(1, Math.max(0, varianceLap) / 1500);
+    }
+
+    return peopleScore * 0.6 + sharpnessScore * 0.4;
+  }
+
   const generateThumbnails = async (
     frames: ImageData[],
     videoId: string,
     validStartTime: number,
     availableDuration: number,
-    scenarioData: any
   ): Promise<Thumbnail[]> => {
+    const scoredFrames = frames
+      .map((frame, index) => {
+        if (!frame) return { frame, index, score: -1, hasSubtitle: true };
+        const hasSubtitle = hasSubtitleInFrame(frame);
+        const score = hasSubtitle ? -1 : scoreFrame(frame);
+        return { frame, index, score, hasSubtitle };
+      })
+      .filter(f => f.frame && f.score >= 0)
+      .sort((a, b) => b.score - a.score);
+
+    const selectedFrames = scoredFrames.slice(0, settings.thumbnailCount);
+    selectedFrames.sort((a, b) => a.index - b.index);
+
     const thumbnails: Thumbnail[] = []
     let processedFrames = 0
 
-    for (let i = 0; i < frames.length && thumbnails.length < settings.thumbnailCount; i++) {
-      const frame = frames[i]
+    for (const { frame, index } of selectedFrames) {
+      if (!frame) continue
       processedFrames++
 
       try {
-        if (settings.enableAIFilter && scenarioData) {
-          const shouldSkip = await checkShouldSkipFrame(frame, scenarioData)
-          if (shouldSkip) {
-            updateProgress(videoId, processedFrames, frames.length)
-            continue
-          }
-        }
-
         const result = await imageProcessorRef.current!.generateThumbnail(frame, {
           maxWidth: settings.keepOriginalResolution ? frame.width : 640,
           maxHeight: settings.keepOriginalResolution ? frame.height : 360,
@@ -692,47 +641,36 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
         if (!result || !result.url) continue
 
-        const estimatedTimestamp = validStartTime + (i * availableDuration / frames.length)
+        const estimatedTimestamp = validStartTime + (index * availableDuration / frames.length)
 
         thumbnails.push({
-          id: `thumb_${videoId}_${i}_${Date.now()}`,
+          id: `thumb_${videoId}_${index}_${Date.now()}`,
           url: result.url,
           timestamp: estimatedTimestamp,
           quality: 100,
           isMain: thumbnails.length === 0
         })
 
-        updateProgress(videoId, processedFrames, frames.length)
+        updateProgress(videoId, processedFrames, selectedFrames.length)
       } catch (error) {
         logger.warn('处理帧失败，跳过此帧:', error)
         continue
       }
     }
 
+    if (thumbnails.length === 0 && frames.length > 0) {
+      const fallbackFrame = frames.find(f => f != null);
+      if (fallbackFrame) {
+        const fallbackThumb = await generateFallbackThumbnail(fallbackFrame, validStartTime, videoId)
+        if (fallbackThumb) {
+          thumbnails.push(fallbackThumb)
+        }
+      }
+    }
+
     return thumbnails
   }
 
-  // 检查是否应该跳过帧
-  const checkShouldSkipFrame = async (frame: ImageData, scenarioData: any): Promise<boolean> => {
-    const primaryModelId = scenarioData.scenario.primaryModelId
-    const primaryModel = scenarioData.models.find((m: any) => m.id === primaryModelId)
-    const provider = scenarioData.providers.find((p: any) => p.id === primaryModel!.providerId)
-
-    if (!provider || !primaryModel) {
-      throw new Error("模型配置异常，请重新配置截图筛选场景")
-    }
-
-    const aiResult = await analyzeFrameWithAI(
-      frame,
-      provider.apiKey,
-      primaryModel.modelId || primaryModel.id,
-      provider.apiBaseUrl
-    )
-
-    return !aiResult.hasPeople || aiResult.hasSubtitles
-  }
-
-  // 更新进度
   const updateProgress = (videoId: string, processedFrames: number, totalFrames: number) => {
     setVideos(prev =>
       prev.map(v => v.id === videoId ?
@@ -746,27 +684,28 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     frame: ImageData,
     validStartTime: number,
     videoId: string
-  ): Promise<void> => {
-    const result = await imageProcessorRef.current!.generateThumbnail(frame, {
-      maxWidth: settings.keepOriginalResolution ? frame.width : 640,
-      maxHeight: settings.keepOriginalResolution ? frame.height : 360,
-      quality: 0.9,
-      format: settings.outputFormat as 'webp' | 'jpeg' | 'png'
-    })
+  ): Promise<Thumbnail | null> => {
+    try {
+      const result = await imageProcessorRef.current!.generateThumbnail(frame, {
+        maxWidth: settings.keepOriginalResolution ? frame.width : 640,
+        maxHeight: settings.keepOriginalResolution ? frame.height : 360,
+        quality: 0.9,
+        format: settings.outputFormat as 'webp' | 'jpeg' | 'png'
+      })
 
-    if (result && result.url) {
-      setVideos(prev =>
-        prev.map(v => v.id === videoId ? {
-          ...v,
-          thumbnails: [{
-            id: `thumb_${videoId}_fallback_${Date.now()}`,
-            url: result.url,
-            timestamp: validStartTime,
-            quality: 50,
-            isMain: true
-          }]
-        } : v)
-      )
+      if (result && result.url) {
+        return {
+          id: `thumb_${videoId}_fallback_${Date.now()}`,
+          url: result.url,
+          timestamp: validStartTime,
+          quality: 50,
+          isMain: true
+        }
+      }
+      return null
+    } catch (error) {
+      logger.warn('生成回退缩略图失败:', error)
+      return null
     }
   }
 
@@ -1342,6 +1281,23 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                   </div>
                 </div>
               </div>
+            </div>
+          ) : video.status === "completed" && video.thumbnails.length === 0 ? (
+            <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-orange-50/50 rounded-lg border border-orange-100">
+              <AlertTriangle className="h-7 w-7 text-orange-500" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.noFrames")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("videoScreenshot.videoCard.noSuitableFrames")}
+                </p>
+              </div>
+              <Button
+                className="mt-2 text-xs h-7 px-3"
+                onClick={() => retryProcessVideo(video.id)}
+              >
+                <RefreshCw className="mr-2 h-3 w-3" />
+                {t("videoScreenshot.videoCard.retry")}
+              </Button>
             </div>
           ) : video.status === "error" ? (
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-red-50/50 rounded-lg border border-red-100">

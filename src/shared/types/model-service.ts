@@ -27,7 +27,6 @@ export interface ModelConfig {
 }
 
 export type UsageScenarioType =
-  | 'thumbnail_filter'
   | 'image_analysis'
   | 'speech_to_text'
   | 'episode_generation'

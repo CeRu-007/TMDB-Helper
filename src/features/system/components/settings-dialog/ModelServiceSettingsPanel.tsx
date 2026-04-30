@@ -415,12 +415,6 @@ export default function ModelServiceSettingsPanel({
 
   const scenarios = [
     {
-      type: 'thumbnail_filter',
-      label: t("modelServicePanel.scenarioThumbnailFilter"),
-      description: t("modelServicePanel.scenarioThumbnailFilterDesc"),
-      requiredCapabilities: ['vision']
-    },
-    {
       type: 'image_analysis',
       label: t("modelServicePanel.scenarioImageAnalysis"),
       description: t("modelServicePanel.scenarioImageAnalysisDesc"),
@@ -626,9 +620,7 @@ export default function ModelServiceSettingsPanel({
                           setApiSettings({
                             ...apiSettings,
                             siliconFlow: {
-                              ...(apiSettings.siliconFlow || {
-                                thumbnailFilterModel: "Qwen/Qwen2.5-VL-32B-Instruct"
-                              }),
+                              ...(apiSettings.siliconFlow || {}),
                               apiKey: newApiKey
                             }
                           });

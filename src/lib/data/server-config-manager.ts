@@ -105,9 +105,6 @@ export class ServerConfigManager {
         thumbnailCount: 5,
         frameInterval: 30,
         keepOriginalResolution: true,
-        enableAIFilter: true,
-        siliconFlowApiKey: '',
-        siliconFlowModel: 'Qwen/Qwen2.5-VL-32B-Instruct',
       }),
       episodeGeneratorApiProvider: 'modelscope',
       sync_status: JSON.stringify({

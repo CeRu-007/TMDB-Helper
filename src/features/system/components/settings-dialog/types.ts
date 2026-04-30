@@ -42,9 +42,6 @@ export interface VideoThumbnailSettings {
   thumbnailCount: number
   frameInterval: number
   keepOriginalResolution: boolean
-  enableAIFilter: boolean
-  siliconFlowApiKey: string
-  siliconFlowModel: string
 }
 
 export interface SettingsDialogProps {
@@ -63,7 +60,6 @@ export interface ApiSettings {
   tmdb?: TMDBConfig
   siliconFlow?: {
     apiKey: string
-    thumbnailFilterModel: string
   }
   modelScope?: {
     apiKey: string
