@@ -9,8 +9,7 @@ export { default as ModelServiceSettingsPanel } from './ModelServiceSettingsPane
 export { default as ToolsSettingsPanel } from './ToolsSettingsPanel'
 export { default as VideoThumbnailSettingsPanel } from './VideoThumbnailSettingsPanel'
 export { default as GeneralSettingsPanel } from './GeneralSettingsPanel'
-export { default as AppearanceSettingsPanel } from './AppearanceSettingsPanel'
 export { default as SecuritySettingsPanel } from './SecuritySettingsPanel'
 export { default as HelpSettingsPanel } from './HelpSettingsPanel'
 
-export type { SettingsDialogProps } from './SettingsDialog'
+export type { SettingsDialogProps } from './types'

@@ -15,13 +15,10 @@ export interface TMDBConfig {
 }
 
 export interface GeneralSettings {
-  autoSave: boolean
-  dataBackup: boolean
-  cacheCleanup: boolean
-  requestTimeout: number
-  concurrentRequests: number
   useProxy: boolean
   proxyUrl: string
+  detailBackdropBlurEnabled: boolean
+  detailBackdropBlurIntensity: 'light' | 'medium' | 'heavy'
 }
 
 export interface AppearanceSettings {

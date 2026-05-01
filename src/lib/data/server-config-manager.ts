@@ -1,28 +1,6 @@
 import { logger } from '@/lib/utils/logger';
 import { configRepository } from '@/lib/database/repositories/config.repository';
 
-// 通用设置类型定义
-interface GeneralSettings {
-  language?: string;
-  timezone?: string;
-  autoSave?: boolean;
-  debugMode?: boolean;
-}
-
-interface AppearanceSettings {
-  theme?: 'light' | 'dark' | 'auto';
-  fontSize?: 'small' | 'medium' | 'large';
-  compactMode?: boolean;
-  sidebarCollapsed?: boolean;
-}
-
-interface VideoThumbnailSettings {
-  quality?: 'low' | 'medium' | 'high';
-  format?: 'jpg' | 'png' | 'webp';
-  interval?: number;
-  maxThumbnails?: number;
-}
-
 interface SyncStatus {
   lastSync?: number;
   inProgress?: boolean;
@@ -61,9 +39,9 @@ export interface ServerConfig {
   modelScopeApiSettings?: string;
 
   // 通用设置
-  generalSettings?: GeneralSettings;
-  appearanceSettings?: AppearanceSettings;
-  videoThumbnailSettings?: VideoThumbnailSettings;
+  generalSettings?: string;
+  appearanceSettings?: string;
+  videoThumbnailSettings?: string;
   episodeGeneratorApiProvider?: string;
   sync_status?: SyncStatus;
   layout_preferences?: LayoutPreferences;
@@ -143,7 +121,12 @@ export class ServerConfigManager {
         speechRecognitionModel: 'FunAudioLLM/SenseVoiceSmall',
         enableVideoAnalysis: false,
       }),
-      generalSettings: '',
+      generalSettings: JSON.stringify({
+        useProxy: false,
+        proxyUrl: '',
+        detailBackdropBlurEnabled: true,
+        detailBackdropBlurIntensity: 'medium',
+      }),
     };
   }
 

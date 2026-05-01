@@ -24,18 +24,15 @@ import { DELAY_2S } from '@/lib/constants/constants'
 import ToolsSettingsPanel from "./ToolsSettingsPanel"
 import VideoThumbnailSettingsPanel from "./VideoThumbnailSettingsPanel"
 import GeneralSettingsPanel from "./GeneralSettingsPanel"
-import AppearanceSettingsPanel from "./AppearanceSettingsPanel"
 import SecuritySettingsPanel from "./SecuritySettingsPanel"
 import HelpSettingsPanel from "./HelpSettingsPanel"
 import { CheckCircle2, AlertCircle } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useTheme } from "next-themes"
 import { useUpdateCheck } from "@/lib/hooks/use-update-check"
 import type {
   SettingsDialogProps,
   TMDBConfig,
   GeneralSettings,
-  AppearanceSettings,
   VideoThumbnailSettings,
   ApiSettings,
   ModelServiceTabState,
@@ -77,7 +74,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const { toast } = useToast()
   const { changePassword } = useAuth()
   const { updateScenario } = useModelService()
-  const { setTheme } = useTheme()
   const { hasUpdate } = useUpdateCheck()
 
   const validSections = useMemo(() => [
@@ -85,7 +81,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     'tools',
     'video-thumbnail',
     'general',
-    'appearance',
     'security',
     'help'
   ], [])
@@ -112,28 +107,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
   // 通用设置状态
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>({
-    autoSave: true,
-    dataBackup: true,
-    cacheCleanup: false,
-    requestTimeout: 30,
-    concurrentRequests: 5,
     useProxy: false,
-    proxyUrl: ''
-  })
-
-  // 外观设置状态
-  const [appearanceSettings, setAppearanceSettings] = useState<AppearanceSettings>({
-    theme: 'system',
-    primaryColor: 'blue',
-    compactMode: false,
-    fontSize: 'medium',
-    showAnimations: true,
-    showTooltips: true,
+    proxyUrl: '',
     detailBackdropBlurEnabled: true,
     detailBackdropBlurIntensity: 'medium',
   })
 
-  // 视频缩略图设置状态
   const [videoThumbnailSettings, setVideoThumbnailSettings] = useState<VideoThumbnailSettings>({
     startTime: 0,
     threadCount: 2,
@@ -290,34 +269,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           }
         } catch (error) {
           logger.warn('加载通用设置失败:', error)
-        }
-
-        // 加载外观设置
-        try {
-          const savedAppearanceSettings = await ClientConfigManager.getItem("appearance_settings")
-          if (savedAppearanceSettings) {
-            const saved = safeJsonParse<any>(savedAppearanceSettings)
-            if (saved) {
-              if ('detailBackdropOverlayOpacity' in saved) delete saved.detailBackdropOverlayOpacity
-              const merged: AppearanceSettings = {
-                theme: 'system',
-                primaryColor: 'blue',
-                compactMode: false,
-                fontSize: 'medium',
-                showAnimations: true,
-                showTooltips: true,
-                detailBackdropBlurEnabled: true,
-                detailBackdropBlurIntensity: 'medium',
-                ...saved,
-              }
-              setAppearanceSettings(merged)
-              // 主题由 useThemePersistence 统一管理，这里只同步 next-themes 状态
-              setTheme(merged.theme)
-              applyThemeSettings(merged)
-            }
-          }
-        } catch (error) {
-          logger.warn('加载外观设置失败:', error)
         }
 
         // 加载视频缩略图设置
@@ -603,7 +554,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       // 定义各设置面板的保存行为
       const saveActions = {
         "general": () => saveGeneralSettings(),
-        "appearance": () => saveAppearanceSettings(),
         "video-thumbnail": () => saveVideoThumbnailSettings(),
         "model-service": () => toast({ title: t("common.success"), description: t("common.modelServiceSaved") }),
         "tools": () => saveTmdbConfig(),
@@ -648,7 +598,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   }
 
   const getStatusColor = () => {
-    const colors = {
+    const colors: Record<string, string> = {
       saving: "text-blue-600 dark:text-blue-400",
       success: "text-green-600 dark:text-green-400",
       error: "text-red-600 dark:text-red-400"
@@ -656,34 +606,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     return colors[saveStatus] || "text-gray-600 dark:text-gray-400"
   }
 
-// 应用非主题类外观设置（主题由 next-themes 统一管理）
-  const applyThemeSettings = useCallback((settings: AppearanceSettings) => {
-    const root = document.documentElement
-
-    // 主题切换由 next-themes 的 setTheme 处理，这里只处理其他外观属性
-    root.setAttribute('data-primary-color', settings.primaryColor)
-
-    const fontSizeMap = {
-      small: '14px',
-      medium: '16px',
-      large: '18px'
-    }
-    root.style.fontSize = fontSizeMap[settings.fontSize]
-
-    if (settings.compactMode) {
-      root.classList.add('compact-mode')
-    } else {
-      root.classList.remove('compact-mode')
-    }
-
-    if (!settings.showAnimations) {
-      root.classList.add('no-animations')
-    } else {
-      root.classList.remove('no-animations')
-    }
-  }, [])
-
-  // 加载TMDB配置
   const loadTmdbConfig = useCallback(async (path: string) => {
     if (!path) return
 
@@ -800,34 +722,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   }, [generalSettings, toast])
 
   // 保存外观设置
-  const saveAppearanceSettings = useCallback(async () => {
-    try {
-      const isDocker = await checkDockerEnvironment()
-
-      if (isDocker) {
-        await saveDockerConfig({ appearanceSettings })
-      } else {
-        await ClientConfigManager.setItem("appearance_settings", JSON.stringify(appearanceSettings))
-      }
-
-      // 同步主题到 next-themes（next-themes 会自动处理 DOM 和 localStorage）
-      setTheme(appearanceSettings.theme)
-      applyThemeSettings(appearanceSettings)
-
-      toast({
-        title: t("common.success"),
-        description: t("settings.appearanceSaved"),
-      })
-    } catch (error) {
-      logger.error('保存外观设置失败:', error)
-      toast({
-        variant: "destructive",
-        title: t("common.error"),
-        description: t("settings.appearanceSaveFailed")
-      })
-    }
-  }, [appearanceSettings, toast, setTheme])
-
   // 保存视频缩略图设置
   const saveVideoThumbnailSettings = useCallback(async () => {
     try {
@@ -1020,14 +914,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             generalSettings={generalSettings}
             setGeneralSettings={setGeneralSettings}
             saveGeneralSettings={saveGeneralSettings}
-          />
-        )
-      case "appearance":
-        return (
-          <AppearanceSettingsPanel
-            appearanceSettings={appearanceSettings}
-            setAppearanceSettings={setAppearanceSettings}
-            saveAppearanceSettings={saveAppearanceSettings}
           />
         )
       case "security":

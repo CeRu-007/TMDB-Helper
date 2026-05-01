@@ -188,13 +188,13 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
   useEffect(() => {
     const initializeSettings = async () => {
       try {
-        const savedSettings = await ClientConfigManager.getItem("appearance_settings")
+        const savedSettings = await ClientConfigManager.getItem("general_settings")
         const parsed = savedSettings ? JSON.parse(savedSettings) : null
 
         setAppearanceSettings({
           detailBackdropBlurEnabled: parsed?.detailBackdropBlurEnabled ?? true,
           detailBackdropBlurIntensity: parsed?.detailBackdropBlurIntensity ?? 'medium',
-          detailBackdropOverlayOpacity: parsed?.detailBackdropOverlayOpacity ?? 0.25,
+          detailBackdropOverlayOpacity: 0.25,
         })
       } catch {
         setAppearanceSettings({

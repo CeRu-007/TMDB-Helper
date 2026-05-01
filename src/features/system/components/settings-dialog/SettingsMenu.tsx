@@ -7,7 +7,6 @@ import {
   Terminal,
   Film,
   Settings,
-  Palette,
   Shield,
   HelpCircle,
 } from "lucide-react"
@@ -52,12 +51,6 @@ const menuItems: MenuItem[] = [
     labelKey: "menu.general",
     descKey: "menu.generalDesc",
     icon: Settings,
-  },
-  {
-    id: "appearance",
-    labelKey: "menu.appearance",
-    descKey: "menu.appearanceDesc",
-    icon: Palette,
   },
   {
     id: "security",

@@ -607,13 +607,10 @@ function initializeDefaultConfig(db: ReturnType<typeof getDatabase>): void {
     {
       key: 'general_settings',
       value: JSON.stringify({
-        autoSave: true,
-        dataBackup: true,
-        cacheCleanup: false,
-        requestTimeout: 30,
-        concurrentRequests: 5,
         useProxy: false,
         proxyUrl: '',
+        detailBackdropBlurEnabled: true,
+        detailBackdropBlurIntensity: 'medium',
       }),
     },
     // 外观设置（单独存储，兼容 ClientConfigManager）

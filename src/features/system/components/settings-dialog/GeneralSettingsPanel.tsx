@@ -1,14 +1,11 @@
-/**
- * 通用设置面板
- */
-
 import { useTranslation } from "react-i18next"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Switch } from "@/shared/components/ui/switch"
-import { Database, Globe, Settings } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Globe, Settings, Image } from "lucide-react"
 import type { GeneralSettings } from "./types"
 
 interface GeneralSettingsPanelProps {
@@ -36,78 +33,11 @@ export default function GeneralSettingsPanel({
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center">
-            <Database className="h-4 w-4 mr-2" />
-            {t("dataManagement")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-sm font-medium">{t("autoSave")}</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("autoSaveDesc")}</p>
-            </div>
-            <Switch
-              checked={generalSettings.autoSave ?? true}
-              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, autoSave: checked })}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-sm font-medium">{t("dataBackup")}</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("dataBackupDesc")}</p>
-            </div>
-            <Switch
-              checked={generalSettings.dataBackup ?? true}
-              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, dataBackup: checked })}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-sm font-medium">{t("cacheCleanup")}</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("cacheCleanupDesc")}</p>
-            </div>
-            <Switch
-              checked={generalSettings.cacheCleanup ?? true}
-              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, cacheCleanup: checked })}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center">
             <Globe className="h-4 w-4 mr-2" />
             {t("network")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium">{t("requestTimeout")}</Label>
-            <Input
-              type="number"
-              value={generalSettings.requestTimeout}
-              onChange={(e) => setGeneralSettings({ ...generalSettings, requestTimeout: parseInt(e.target.value) || 30 })}
-              className="mt-1"
-              min="5"
-              max="300"
-            />
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium">{t("concurrentRequests")}</Label>
-            <Input
-              type="number"
-              value={generalSettings.concurrentRequests}
-              onChange={(e) => setGeneralSettings({ ...generalSettings, concurrentRequests: parseInt(e.target.value) || 5 })}
-              className="mt-1"
-              min="1"
-              max="20"
-            />
-          </div>
-
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-sm font-medium">{t("useProxy")}</Label>
@@ -125,7 +55,7 @@ export default function GeneralSettingsPanel({
               <Input
                 value={generalSettings.proxyUrl}
                 onChange={(e) => setGeneralSettings({ ...generalSettings, proxyUrl: e.target.value })}
-                placeholder={t("generalSettings.proxyAddressPlaceholder")}
+                placeholder={t("proxyAddressPlaceholder")}
                 className="mt-1"
               />
             </div>
@@ -133,7 +63,46 @@ export default function GeneralSettingsPanel({
         </CardContent>
       </Card>
 
-      {/* 保存按钮 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center">
+            <Image className="h-4 w-4 mr-2" />
+            {t("detailBackdrop")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-medium">{t("enableBlur")}</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("enableBlurDesc")}</p>
+            </div>
+            <Switch
+              checked={generalSettings.detailBackdropBlurEnabled}
+              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, detailBackdropBlurEnabled: checked })}
+            />
+          </div>
+
+          {generalSettings.detailBackdropBlurEnabled && (
+            <div>
+              <Label className="text-sm font-medium">{t("blurIntensity")}</Label>
+              <Select
+                value={generalSettings.detailBackdropBlurIntensity}
+                onValueChange={(value) => setGeneralSettings({ ...generalSettings, detailBackdropBlurIntensity: value as 'light' | 'medium' | 'heavy' })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">{t("blurLight")}</SelectItem>
+                  <SelectItem value="medium">{t("blurMedium")}</SelectItem>
+                  <SelectItem value="heavy">{t("blurHeavy")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end">
         <Button onClick={saveGeneralSettings}>
           <Settings className="h-4 w-4 mr-2" />
