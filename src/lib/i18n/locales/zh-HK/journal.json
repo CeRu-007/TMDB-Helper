@@ -11,6 +11,8 @@
   "showDetails": "查看詳情",
   "hideDetails": "收起詳情",
   "episodeCount": "集數",
+  "rawEpisodeCount": "原始集數",
+  "incompleteEpisodes": "元數據不完整集數",
   "csvLength": "原始資料長度",
   "cleanedLength": "清洗後長度",
   "autoImport": "自動匯入TMDB",

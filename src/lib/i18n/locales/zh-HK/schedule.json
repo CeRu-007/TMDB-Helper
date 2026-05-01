@@ -56,6 +56,8 @@
   "incrementalTip": "僅處理上次更新後的新集數",
   "fullUpdateTip": "處理所有集數，不考慮狀態",
   "fullUpdateDesc": "全量更新，處理所有集數",
+  "checkMetadataCompleteness": "元數據完整性檢查",
+  "checkMetadataCompletenessTip": "開啟後，name或overview為空的集數不計入維護進度，避免不完整元數據導致誤判完結",
   "foregroundTip": "瀏覽器窗口可見，適合調試",
   "backgroundTip": "瀏覽器後台運行，性能更好",
   "executionFailed": "執行失敗",

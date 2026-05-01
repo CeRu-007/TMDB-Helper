@@ -56,6 +56,8 @@
   "incrementalTip": "마지막 업데이트 이후 새 에피소드만 처리",
   "fullUpdateTip": "상태에 관계없이 모든 에피소드 처리",
   "fullUpdateDesc": "전체 업데이트, 모든 에피소드 처리",
+  "checkMetadataCompleteness": "메타데이터 완전성 검사",
+  "checkMetadataCompletenessTip": "활성화하면 name 또는 overview가 비어 있는 에피소드가 유지보수 진행률에 포함되지 않아 불완전한 메타데이터로 인한 완료 오판정을 방지합니다",
   "foregroundTip": "브라우저 창이 표시되어 디버깅에 적합합니다",
   "backgroundTip": "브라우저가 백그라운드에서 실행되어 성능이 더 좋습니다",
   "executionFailed": "실행에 실패했습니다",

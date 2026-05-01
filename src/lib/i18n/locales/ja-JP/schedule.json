@@ -56,6 +56,8 @@
   "incrementalTip": "前回の更新からの新しいEpisodeのみを処理",
   "fullUpdateTip": "ステータスに関係なくすべてのEpisodeを処理",
   "fullUpdateDesc": "完全更新、すべてのEpisodeを処理",
+  "checkMetadataCompleteness": "メタデータ完全性チェック",
+  "checkMetadataCompletenessTip": "有効にすると、nameまたはoverviewが空のエピソードはメンテナンス進捗にカウントされず、不完全なメタデータによる完了誤判定を防ぎます",
   "foregroundTip": "ブラウザウィンドウが表示され、デバッグに適しています",
   "backgroundTip": "ブラウザはバックグラウンドで実行され、パフォーマンスが向上します",
   "executionFailed": "実行に失敗しました",

@@ -5,13 +5,15 @@ import { scheduleLogRepository } from '@/lib/data/schedule-log-repository'
 import { itemsRepository } from '@/lib/database/repositories/items.repository'
 import { getDatabase } from '@/lib/database/connection'
 import { logger } from '@/lib/utils/logger'
-import { cleanCSV, extractEpisodeCount } from '@/lib/scheduler/csv-cleaner'
+import { cleanCSV, extractEpisodeCount, analyzeCSVMetadata } from '@/lib/scheduler/csv-cleaner'
 import { notifier } from '@/lib/scheduler/notifier'
 
 export interface ExecuteResult {
   success: boolean
   message: string
   episodeCount?: number
+  rawEpisodeCount?: number | undefined
+  incompleteEpisodes?: number[] | undefined
   details?: string
 }
 
@@ -89,8 +91,17 @@ export async function executeScheduleTask(
     logger.info(`[Schedule Execute] ${runMode}模式, ${updateMode}, currentMaxEpisode=${currentMaxEpisode}`)
     addLog('info', `${runMode}模式, ${updateMode}, 当前最大集数: ${currentMaxEpisode}`)
 
-    const cleanedCSV = cleanCSV(csvContent, task.fieldCleanup, currentMaxEpisode, task.incremental)
-    const episodeCount = extractEpisodeCount(cleanedCSV)
+    let metadataAnalysis = analyzeCSVMetadata(csvContent)
+    let effectiveEpisodeCount: number | undefined
+
+    if (task.checkMetadataCompleteness) {
+      effectiveEpisodeCount = metadataAnalysis.effectiveEpisodeCount
+      logger.info(`[Schedule Execute] 元数据完整性检查: rawEpisodeCount=${metadataAnalysis.rawEpisodeCount}, effectiveEpisodeCount=${metadataAnalysis.effectiveEpisodeCount}, incompleteEpisodes=[${metadataAnalysis.incompleteEpisodes.join(',')}]`)
+      addLog('info', `元数据完整性检查: 原始${metadataAnalysis.rawEpisodeCount}集, 有效${metadataAnalysis.effectiveEpisodeCount}集${metadataAnalysis.incompleteEpisodes.length > 0 ? `, 第${metadataAnalysis.incompleteEpisodes.join(',')}集元数据不完整` : ''}`)
+    }
+
+    const cleanedCSV = cleanCSV(csvContent, task.fieldCleanup, currentMaxEpisode, task.incremental, effectiveEpisodeCount)
+    const episodeCount = task.checkMetadataCompleteness ? metadataAnalysis.effectiveEpisodeCount : extractEpisodeCount(cleanedCSV)
 
     if (task.incremental) {
       logger.info(`[Schedule Execute] 清理后剩余${episodeCount}集，当前词条维护至第${currentMaxEpisode}集`)
@@ -124,16 +135,22 @@ export async function executeScheduleTask(
       }
     }
 
-    const finalMessage = `成功更新至第${episodeCount}集`
+    const finalMessage = task.checkMetadataCompleteness && metadataAnalysis.incompleteEpisodes.length > 0
+      ? `有效更新至第${episodeCount}集（第${metadataAnalysis.incompleteEpisodes.join(',')}集元数据不完整）`
+      : `成功更新至第${episodeCount}集`
 
     return {
       success: true,
       message: finalMessage,
       episodeCount,
+      rawEpisodeCount: task.checkMetadataCompleteness ? metadataAnalysis.rawEpisodeCount : undefined,
+      incompleteEpisodes: task.checkMetadataCompleteness ? metadataAnalysis.incompleteEpisodes : undefined,
       details: JSON.stringify({
         csvLength: csvContent.length,
         cleanedLength: cleanedCSV.length,
         episodeCount,
+        rawEpisodeCount: task.checkMetadataCompleteness ? metadataAnalysis.rawEpisodeCount : undefined,
+        incompleteEpisodes: task.checkMetadataCompleteness ? metadataAnalysis.incompleteEpisodes : undefined,
         autoImport: task.autoImport,
       }),
     }
@@ -367,7 +384,11 @@ export async function processScheduleTaskResult(
   const targetSeason = item.seasons?.find(s => s.seasonNumber === seasonNumber)
   const previousCurrentEpisode = targetSeason?.currentEpisode || 0
 
-  if (previousCurrentEpisode < episodeCount) {
+  const shouldUpdateEpisode = task.checkMetadataCompleteness
+    ? episodeCount !== previousCurrentEpisode
+    : previousCurrentEpisode < episodeCount
+
+  if (shouldUpdateEpisode) {
     let updatedItem = { ...item }
 
     if (updatedItem.seasons) {
@@ -384,7 +405,8 @@ export async function processScheduleTaskResult(
     }
 
     const totalEpisodes = targetSeason?.totalEpisodes || 0
-    if (totalEpisodes > 0 && episodeCount >= totalEpisodes) {
+    const hasIncompleteEpisodes = task.checkMetadataCompleteness && executeResult.incompleteEpisodes && executeResult.incompleteEpisodes.length > 0
+    if (totalEpisodes > 0 && episodeCount >= totalEpisodes && !hasIncompleteEpisodes) {
       updatedItem.status = 'completed'
       updatedItem.completed = true
       logger.info(`[Schedule Executor] 词条已完结: ${item.id}, episodeCount=${episodeCount}, totalEpisodes=${totalEpisodes}`)

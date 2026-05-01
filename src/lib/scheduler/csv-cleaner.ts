@@ -82,7 +82,8 @@ export function cleanCSV(
   content: string,
   fieldCleanup: FieldCleanup,
   currentEpisodeCount: number = 0,
-  incremental: boolean = true
+  incremental: boolean = true,
+  effectiveEpisodeCount?: number
 ): string {
   if (!content || content.trim() === '') {
     return content;
@@ -126,7 +127,8 @@ export function cleanCSV(
 
     const episodeIdx = headers.indexOf('episode_number');
     const episodeNum = episodeIdx !== -1 ? parseInt(row[headers[episodeIdx]], 10) : NaN;
-    const isExistingEpisode = !isNaN(episodeNum) && episodeNum <= currentEpisodeCount;
+    const incrementalThreshold = effectiveEpisodeCount !== undefined ? effectiveEpisodeCount : currentEpisodeCount;
+    const isExistingEpisode = !isNaN(episodeNum) && episodeNum <= incrementalThreshold;
 
     if (incremental && isExistingEpisode) {
       continue;
@@ -235,6 +237,67 @@ function mergeCSVLines(line1: string, line2: string): string {
   }
 
   return line1 + ' ' + line2;
+}
+
+export interface MetadataAnalysisResult {
+  rawEpisodeCount: number
+  effectiveEpisodeCount: number
+  incompleteEpisodes: number[]
+}
+
+export function analyzeCSVMetadata(csvContent: string): MetadataAnalysisResult {
+  const lines = csvContent.trim().split(/\r?\n/)
+  if (lines.length < 2) {
+    return { rawEpisodeCount: 0, effectiveEpisodeCount: 0, incompleteEpisodes: [] }
+  }
+
+  let content = csvContent
+  if (content.charCodeAt(0) === 0xFEFF) {
+    content = content.slice(1)
+  }
+
+  const contentLines = content.split(/\r?\n/)
+  if (contentLines.length < 2) {
+    return { rawEpisodeCount: 0, effectiveEpisodeCount: 0, incompleteEpisodes: [] }
+  }
+
+  const headers = parseCSVLine(contentLines[0]).map(h => h.toLowerCase().replace(/^"|"$/g, ''))
+  const episodeIdx = headers.indexOf('episode_number')
+  const nameIdx = headers.indexOf('name')
+  const overviewIdx = headers.indexOf('overview')
+
+  if (episodeIdx === -1) {
+    return { rawEpisodeCount: 0, effectiveEpisodeCount: 0, incompleteEpisodes: [] }
+  }
+
+  let rawEpisodeCount = 0
+  const incompleteEpisodes: number[] = []
+
+  for (let i = 1; i < contentLines.length; i++) {
+    let line = contentLines[i]
+    if (!line.trim()) continue
+
+    const values = parseCSVLine(line).map(v => v.replace(/^"|"$/g, ''))
+    const episodeNum = parseInt(values[episodeIdx], 10)
+    if (isNaN(episodeNum)) continue
+
+    if (episodeNum > rawEpisodeCount) {
+      rawEpisodeCount = episodeNum
+    }
+
+    const name = nameIdx !== -1 ? (values[nameIdx] || '').trim() : ''
+    const overview = overviewIdx !== -1 ? (values[overviewIdx] || '').trim() : ''
+
+    if (!name || !overview) {
+      incompleteEpisodes.push(episodeNum)
+    }
+  }
+
+  const effectiveEpisodeCount = incompleteEpisodes.length > 0
+    ? Math.min(...incompleteEpisodes) - 1
+    : rawEpisodeCount
+
+  return { rawEpisodeCount, effectiveEpisodeCount, incompleteEpisodes }
 }
 
 export function extractEpisodeCount(csvContent: string): number {

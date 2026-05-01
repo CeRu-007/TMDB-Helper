@@ -184,6 +184,8 @@ class Scheduler {
           });
         }
 
+        const hasIncompleteEpisodes = executeResult.incompleteEpisodes && executeResult.incompleteEpisodes.length > 0
+
         if (processResult.completed) {
           this.removeTask(task.id);
           scheduleLogRepository.updateStatus(logId, 'success', processResult.message);
@@ -197,12 +199,16 @@ class Scheduler {
           notifier.sendSuccessNotification(item.title, executeResult.episodeCount || 0);
         }
 
+        const journalContent = hasIncompleteEpisodes
+          ? `第${executeResult.episodeCount || 0}集维护完成（第${executeResult.incompleteEpisodes!.join(',')}集元数据不完整，待补充）`
+          : `第${executeResult.episodeCount || 0}集维护完成`
+
         taskJournalRepository.create({
           itemId: item.id,
           itemTitle: item.title,
           status: 'success',
           title: item.title,
-          content: `第${executeResult.episodeCount || 0}集维护完成`,
+          content: journalContent,
           dataPreview: executeResult.details || null,
           startAt,
           endAt,

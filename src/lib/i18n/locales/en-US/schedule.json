@@ -56,6 +56,8 @@
   "incrementalTip": "Only process new episodes since last update",
   "fullUpdateTip": "Process all episodes regardless of status",
   "fullUpdateDesc": "Full update, process all episodes",
+  "checkMetadataCompleteness": "Metadata Completeness Check",
+  "checkMetadataCompletenessTip": "When enabled, episodes with empty name or overview won't count towards maintenance progress, preventing premature completion marking",
   "foregroundTip": "Browser window visible, suitable for debugging",
   "backgroundTip": "Browser runs in background, better performance",
   "executionFailed": "Execution failed",

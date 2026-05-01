@@ -72,6 +72,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       tmdbLanguage: input.tmdbLanguage ?? 'zh-CN',
       tmdbAutoResponse: input.tmdbAutoResponse ?? 'w',
       fieldCleanup: input.fieldCleanup ?? defaultFieldCleanup,
+      checkMetadataCompleteness: input.checkMetadataCompleteness ?? false,
       lastRunAt: null,
       nextRunAt: null,
       createdAt: now,
@@ -84,9 +85,11 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       db.prepare(`
         INSERT INTO schedule_tasks (
           id, itemId, cron, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup,
+          checkMetadataCompleteness,
           lastRunAt, nextRunAt, createdAt, updatedAt
         ) VALUES (
           @id, @itemId, @cron, @enabled, @headless, @incremental, @autoImport, @tmdbSeason, @tmdbLanguage, @tmdbAutoResponse, @fieldCleanup,
+          @checkMetadataCompleteness,
           @lastRunAt, @nextRunAt, @createdAt, @updatedAt
         )
       `).run(row);
@@ -121,6 +124,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       tmdbLanguage: input.tmdbLanguage ?? existing.tmdbLanguage,
       tmdbAutoResponse: input.tmdbAutoResponse ?? existing.tmdbAutoResponse,
       fieldCleanup: input.fieldCleanup ?? existing.fieldCleanup,
+      checkMetadataCompleteness: input.checkMetadataCompleteness ?? existing.checkMetadataCompleteness,
       updatedAt: now,
     };
 
@@ -138,6 +142,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
           tmdbLanguage = @tmdbLanguage,
           tmdbAutoResponse = @tmdbAutoResponse,
           fieldCleanup = @fieldCleanup,
+          checkMetadataCompleteness = @checkMetadataCompleteness,
           updatedAt = @updatedAt
         WHERE id = @id
       `).run({
@@ -151,6 +156,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
         tmdbLanguage: row.tmdbLanguage,
         tmdbAutoResponse: row.tmdbAutoResponse,
         fieldCleanup: row.fieldCleanup,
+        checkMetadataCompleteness: row.checkMetadataCompleteness,
         updatedAt: row.updatedAt,
       });
 

@@ -7,7 +7,7 @@ import { getDatabaseAsync } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 /**
  * 初始化数据库 Schema
@@ -58,6 +58,9 @@ export async function initializeSchema(): Promise<void> {
     }
     if (currentVersion < 12) {
       migrateToV12(db);
+    }
+    if (currentVersion < 13) {
+      migrateToV13(db);
     }
 
     setUserVersion(db, SCHEMA_VERSION);
@@ -244,6 +247,7 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       tmdbLanguage TEXT DEFAULT 'zh-CN',
       tmdbAutoResponse TEXT DEFAULT 'w',
       fieldCleanup TEXT DEFAULT '{}',
+      checkMetadataCompleteness INTEGER DEFAULT 0,
       lastRunAt TEXT,
       nextRunAt TEXT,
       createdAt TEXT NOT NULL,
@@ -489,6 +493,19 @@ function migrateToV12(db: ReturnType<typeof getDatabase>): void {
     logger.info('[Database] V12 迁移完成');
   } catch (error) {
     logger.error('[Database] V12 迁移失败:', error);
+  }
+}
+
+function migrateToV13(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V13 迁移: 为 schedule_tasks 添加 checkMetadataCompleteness 字段');
+
+  try {
+    db.exec(`
+      ALTER TABLE schedule_tasks ADD COLUMN checkMetadataCompleteness INTEGER DEFAULT 0
+    `);
+    logger.info('[Database] V13 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V13 迁移失败:', error);
   }
 }
 

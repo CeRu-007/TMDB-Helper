@@ -53,6 +53,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
     overview: false,
     backdrop: false,
   })
+  const [checkMetadataCompleteness, setCheckMetadataCompleteness] = useState(false)
   const terminalRef = useRef<HTMLDivElement>(null)
   const isUserScrolling = useRef(false)
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -83,6 +84,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         setTmdbLanguage(data.data.tmdbLanguage || 'zh-CN')
         setTmdbAutoResponse(data.data.tmdbAutoResponse || 'w')
         setFieldCleanup(data.data.fieldCleanup)
+        setCheckMetadataCompleteness(data.data.checkMetadataCompleteness ?? false)
 
         const logsResponse = await fetch(`/api/schedule/logs?taskId=${data.data.id}&limit=10`)
         const logsData = await logsResponse.json()
@@ -161,8 +163,8 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
     try {
       const method = task ? "PUT" : "POST"
       const body = task
-        ? { id: task.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup }
-        : { itemId: item.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup }
+        ? { id: task.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup, checkMetadataCompleteness }
+        : { itemId: item.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup, checkMetadataCompleteness }
 
       const response = await fetch("/api/schedule/tasks", {
         method,
@@ -412,6 +414,16 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {incremental ? t("incrementalTip") : t("fullUpdateTip")}
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="checkMetadata">{t("checkMetadataCompleteness")}</Label>
+                    </div>
+                    <Switch id="checkMetadata" checked={checkMetadataCompleteness} onCheckedChange={setCheckMetadataCompleteness} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t("checkMetadataCompletenessTip")}
                   </p>
 
                   <div className="space-y-2">

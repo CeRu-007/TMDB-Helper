@@ -11,6 +11,8 @@
   "showDetails": "상세 보기",
   "hideDetails": "상세 숨기기",
   "episodeCount": "에피소드 수",
+  "rawEpisodeCount": "원본 에피소드 수",
+  "incompleteEpisodes": "메타데이터 불완전 에피소드",
   "csvLength": "원본 데이터 길이",
   "cleanedLength": "정제 후 길이",
   "autoImport": "TMDB 자동 가져오기",

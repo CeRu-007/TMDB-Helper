@@ -11,6 +11,8 @@
   "showDetails": "詳細を表示",
   "hideDetails": "詳細を非表示",
   "episodeCount": "エピソード数",
+  "rawEpisodeCount": "生エピソード数",
+  "incompleteEpisodes": "メタデータ不完全エピソード",
   "csvLength": "生データ長",
   "cleanedLength": "クリーニング後の長さ",
   "autoImport": "TMDB自動インポート",

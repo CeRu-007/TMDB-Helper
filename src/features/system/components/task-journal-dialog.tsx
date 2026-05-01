@@ -393,7 +393,7 @@ function JournalEntryItem({
 }) {
   const [showDetails, setShowDetails] = useState(false)
 
-  let dataPreview: { csvLength?: number; cleanedLength?: number; episodeCount?: number; autoImport?: boolean } | null = null
+  let dataPreview: { csvLength?: number; cleanedLength?: number; episodeCount?: number; autoImport?: boolean; rawEpisodeCount?: number; incompleteEpisodes?: number[] } | null = null
   if (entry.dataPreview) {
     try {
       dataPreview = JSON.parse(entry.dataPreview)
@@ -458,6 +458,12 @@ function JournalEntryItem({
                 <div className="mt-1 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5 space-y-0.5">
                   {dataPreview.episodeCount !== undefined && (
                     <div>{t("episodeCount")}: {dataPreview.episodeCount}</div>
+                  )}
+                  {dataPreview.rawEpisodeCount !== undefined && (
+                    <div>{t("rawEpisodeCount")}: {dataPreview.rawEpisodeCount}</div>
+                  )}
+                  {dataPreview.incompleteEpisodes && dataPreview.incompleteEpisodes.length > 0 && (
+                    <div className="text-amber-600 dark:text-amber-400">{t("incompleteEpisodes")}: {dataPreview.incompleteEpisodes.join(', ')}</div>
                   )}
                   {dataPreview.csvLength !== undefined && (
                     <div>{t("csvLength")}: {dataPreview.csvLength}</div>

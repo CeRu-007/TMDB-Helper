@@ -11,6 +11,8 @@
   "showDetails": "Show details",
   "hideDetails": "Hide details",
   "episodeCount": "Episodes",
+  "rawEpisodeCount": "Raw Episodes",
+  "incompleteEpisodes": "Incomplete Metadata Episodes",
   "csvLength": "Raw data length",
   "cleanedLength": "Cleaned length",
   "autoImport": "Auto import TMDB",
