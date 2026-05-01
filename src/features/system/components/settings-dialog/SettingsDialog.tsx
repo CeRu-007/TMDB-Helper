@@ -172,6 +172,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // 工具设置状态
   const [toolsTab, setToolsTab] = useState<'management' | 'config' | 'dependencies'>('management')
 
+  const [helpTab, setHelpTab] = useState<'about' | 'updates' | 'help' | 'feedback'>('about')
   const [appInfo] = useState<AppInfo>({
       name: 'TMDB Helper',
       version: packageJson.version,
@@ -935,6 +936,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       case "help":
         return (
           <HelpSettingsPanel
+            helpTab={helpTab}
+            setHelpTab={setHelpTab}
             appInfo={appInfo}
           />
         )

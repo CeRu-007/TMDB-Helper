@@ -106,7 +106,7 @@ export interface ToolsTabState {
 
 // 帮助与支持相关类型
 export interface HelpTabState {
-  activeTab: 'about'
+  activeTab: 'about' | 'updates' | 'help' | 'feedback'
 }
 
 export interface AppInfo {
