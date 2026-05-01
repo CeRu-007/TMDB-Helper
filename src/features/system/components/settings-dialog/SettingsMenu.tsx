@@ -83,10 +83,10 @@ export function SettingsMenu({ activeSection, onSectionChange, hasUpdate }: Sett
                 key={item.id}
                 onClick={() => onSectionChange(item.id)}
                 className={`
-                  w-full flex items-start space-x-3 p-3 rounded-lg text-left transition-all
+                  w-full flex items-start space-x-3 p-3 rounded-lg text-left transition-colors
                   ${isActive
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 ring-1 ring-transparent'
                   }
                 `}
               >
