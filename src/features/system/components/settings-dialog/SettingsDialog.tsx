@@ -111,6 +111,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     proxyUrl: '',
     detailBackdropBlurEnabled: true,
     detailBackdropBlurIntensity: 'medium',
+    tmdbButtonBehavior: 'detail',
   })
 
   const [videoThumbnailSettings, setVideoThumbnailSettings] = useState<VideoThumbnailSettings>({
@@ -706,6 +707,9 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       } else {
         await ClientConfigManager.setItem("general_settings", JSON.stringify(generalSettings))
       }
+
+      // 发送配置更新事件，通知所有监听组件
+      window.dispatchEvent(new CustomEvent('general-settings-updated', { detail: generalSettings }))
 
       toast({
         title: t("common.success"),

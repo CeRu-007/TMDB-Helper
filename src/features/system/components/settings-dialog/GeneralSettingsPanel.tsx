@@ -5,7 +5,7 @@ import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Switch } from "@/shared/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Globe, Settings, Image } from "lucide-react"
+import { Globe, Settings, Image, ExternalLink } from "lucide-react"
 import type { GeneralSettings } from "./types"
 
 interface GeneralSettingsPanelProps {
@@ -100,6 +100,33 @@ export default function GeneralSettingsPanel({
               </Select>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            {t("tmdbHoverButton")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">{t("tmdbHoverButtonAction")}</Label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("tmdbHoverButtonActionDesc")}</p>
+            <Select
+              value={generalSettings.tmdbButtonBehavior}
+              onValueChange={(value) => setGeneralSettings({ ...generalSettings, tmdbButtonBehavior: value as 'detail' | 'search' })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="detail">{t("tmdbHoverButtonActionDetail")}</SelectItem>
+                <SelectItem value="search">{t("tmdbHoverButtonActionSearch")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 

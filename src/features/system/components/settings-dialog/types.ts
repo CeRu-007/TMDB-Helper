@@ -19,6 +19,7 @@ export interface GeneralSettings {
   proxyUrl: string
   detailBackdropBlurEnabled: boolean
   detailBackdropBlurIntensity: 'light' | 'medium' | 'heavy'
+  tmdbButtonBehavior: 'detail' | 'search'
 }
 
 export interface AppearanceSettings {

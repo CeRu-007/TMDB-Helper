@@ -10,6 +10,8 @@ import { CachedImage } from "@/shared/components/ui/cached-image"
 import { CLICK_RESET_DELAY, TMDB_IMAGE_BASE_URL, TMDB_POSTER_SIZE } from "@/lib/constants/constants"
 import { getTimeFromCron } from "@/lib/utils/cron-utils"
 import { CardDrawer } from "./card-drawer"
+import { ClientConfigManager } from "@/lib/utils/client-config-manager"
+import { safeJsonParse } from "@/lib/utils"
 
 interface MediaCardProps {
   item: TMDBItem
@@ -30,6 +32,7 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
   const [isClicked, setIsClicked] = useState(false)
   const [scheduleTask, setScheduleTask] = useState<ScheduleTaskInfo | null>(null)
   const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false)
+  const [tmdbButtonBehavior, setTmdbButtonBehavior] = useState<'detail' | 'search'>('detail')
   const cardRef = useRef<HTMLDivElement>(null)
 
   const WEEKDAYS = [
@@ -59,6 +62,33 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
     }
     loadScheduleTask()
   }, [itemId])
+
+  useEffect(() => {
+    async function loadTmdbButtonBehavior() {
+      try {
+        const savedSettings = await ClientConfigManager.getItem("general_settings")
+        if (savedSettings) {
+          const parsed = safeJsonParse<{ tmdbButtonBehavior?: 'detail' | 'search' }>(savedSettings)
+          if (parsed?.tmdbButtonBehavior) {
+            setTmdbButtonBehavior(parsed.tmdbButtonBehavior)
+          }
+        }
+      } catch {
+        // ignore error, use default
+      }
+    }
+    loadTmdbButtonBehavior()
+
+    // 监听配置更新事件
+    const handleSettingsUpdate = (event: CustomEvent<{ tmdbButtonBehavior?: 'detail' | 'search' }>) => {
+      if (event.detail?.tmdbButtonBehavior) {
+        setTmdbButtonBehavior(event.detail.tmdbButtonBehavior)
+      }
+    }
+
+    window.addEventListener('general-settings-updated', handleSettingsUpdate as EventListener)
+    return () => window.removeEventListener('general-settings-updated', handleSettingsUpdate as EventListener)
+  }, [])
 
   const posterUrl = item.posterUrl || `${TMDB_IMAGE_BASE_URL}/${TMDB_POSTER_SIZE}/placeholder.jpg`
 
@@ -236,7 +266,12 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
                 variant="secondary"
                 onClick={(e) => {
                   e.stopPropagation()
-                  window.open(item.tmdbUrl, "_blank")
+                  if (tmdbButtonBehavior === 'search' && item.title) {
+                    const searchUrl = `https://www.themoviedb.org/search?query=${encodeURIComponent(item.title)}`
+                    window.open(searchUrl, "_blank")
+                  } else {
+                    window.open(item.tmdbUrl, "_blank")
+                  }
                 }}
                 className="bg-blue-500/90 hover:bg-blue-600 text-white text-xs px-2 py-1 h-6 backdrop-blur-sm border-0 shadow-md"
                 title={t("visitTmdbPage", { ns: "media" })}
