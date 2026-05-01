@@ -15,18 +15,13 @@ export function useAppInitialization(): void {
     StorageCleaner.autoCleanup()
 
     ConfigMigration.autoMigrate().catch(function handleMigrationError(error) {
-      // Error is intentionally ignored - migration failures should not block app startup
     })
 
-    // 延迟 3 秒检查更新，避免影响首屏加载
-    // 只执行一次，避免重复检查
     if (!hasCheckedUpdate.current) {
       hasCheckedUpdate.current = true
       const timer = setTimeout(() => {
-        // 仅在非开发环境下自动检查更新
         if (process.env.NODE_ENV === 'production') {
-          checkForUpdates({ showToast: true }).catch(() => {
-            // 检查失败时静默处理，不阻塞用户使用
+          checkForUpdates().catch(() => {
           })
         }
       }, 3000)

@@ -162,7 +162,32 @@
     "feature7": "Web、Electron、Dockerデプロイメントをサポート",
     "copyright": "全著作権所有",
     "basedOnTmdb": "TMDB APIに基づいて構築",
-    "specialThanks": "特別感謝"
+    "specialThanks": "特別感謝",
+    "appSlogan": "強力な TMDB メディア管理アシスタント",
+    "versionCheck": "バージョンチェック",
+    "checkNow": "今すぐ確認",
+    "currentVersion": "現在のバージョン",
+    "latestVersion": "最新バージョン",
+    "hasUpdate": "更新あり",
+    "cachedData": "キャッシュデータ",
+    "downloadNewVersion": "新バージョンをダウンロード",
+    "viewAllVersions": "全バージョンを表示"
+  },
+  "updateDialog": {
+    "title": "新バージョン {{version}} が利用可能",
+    "description": "現在 {{current}}、最新 {{latest}}",
+    "newVersion": "新バージョン",
+    "noReleaseNotes": "リリースノートはありません",
+    "skipVersion": "バージョン {{version}} の更新通知をスキップ",
+    "later": "後で通知",
+    "viewAllReleases": "全リリース",
+    "download": "新バージョンをダウンロード"
+  },
+  "updateCheck": {
+    "justNow": "たった今",
+    "minutesAgo": "{{count}} 分前",
+    "hoursAgo": "{{count}} 時間前",
+    "daysAgo": "{{count}} 日前"
   },
   "modelServicePanel": {
     "title": "モデルサービス",

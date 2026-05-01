@@ -162,7 +162,32 @@
     "feature7": "Support Web, Electron and Docker deployment",
     "copyright": "All rights reserved.",
     "basedOnTmdb": "Built on TMDB API",
-    "specialThanks": "Special thanks to"
+    "specialThanks": "Special thanks to",
+    "appSlogan": "Powerful TMDB Media Maintenance Assistant",
+    "versionCheck": "Version Check",
+    "checkNow": "Check Now",
+    "currentVersion": "Current Version",
+    "latestVersion": "Latest Version",
+    "hasUpdate": "Update Available",
+    "cachedData": "Cached Data",
+    "downloadNewVersion": "Download New Version",
+    "viewAllVersions": "View All Versions"
+  },
+  "updateDialog": {
+    "title": "New Version {{version}} Available",
+    "description": "Current version {{current}}, latest version {{latest}}",
+    "newVersion": "New Version",
+    "noReleaseNotes": "No release notes available",
+    "skipVersion": "Skip update reminders for version {{version}}",
+    "later": "Remind Later",
+    "viewAllReleases": "All Releases",
+    "download": "Download New Version"
+  },
+  "updateCheck": {
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago"
   },
   "modelServicePanel": {
     "title": "Model Service",

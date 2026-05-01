@@ -10,6 +10,7 @@ import { Toaster } from "@/shared/components/ui/toaster"
 import { ModelServiceProvider } from "@/lib/contexts/ModelServiceContext"
 import { useAppInitialization } from "@/shared/hooks/use-app-initialization"
 import { useThemePersistence } from "@/shared/hooks/use-theme-persistence"
+import { UpdateNotificationDialog } from "@/features/system/components/UpdateNotificationDialog"
 import "@/lib/i18n"
 
 function ThemeSync() {
@@ -84,6 +85,7 @@ export default function MidLayout({
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <ThemeSync />
+      <UpdateNotificationDialog />
       <AuthProvider>
         <AuthContent isLoginPage={isLoginPage}>
           {children}

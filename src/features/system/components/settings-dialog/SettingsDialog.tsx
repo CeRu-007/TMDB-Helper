@@ -28,7 +28,7 @@ import SecuritySettingsPanel from "./SecuritySettingsPanel"
 import HelpSettingsPanel from "./HelpSettingsPanel"
 import { CheckCircle2, AlertCircle } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useUpdateCheck } from "@/lib/hooks/use-update-check"
+
 import type {
   SettingsDialogProps,
   TMDBConfig,
@@ -74,7 +74,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const { toast } = useToast()
   const { changePassword } = useAuth()
   const { updateScenario } = useModelService()
-  const { hasUpdate } = useUpdateCheck()
 
   const validSections = useMemo(() => [
     'model-service',
@@ -173,8 +172,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   // 工具设置状态
   const [toolsTab, setToolsTab] = useState<'management' | 'config' | 'dependencies'>('management')
 
-  // 帮助与支持状态
-  const [helpTab, setHelpTab] = useState<'about' | 'updates' | 'help' | 'feedback'>('about')
   const [appInfo] = useState<AppInfo>({
       name: 'TMDB Helper',
       version: packageJson.version,
@@ -938,8 +935,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
       case "help":
         return (
           <HelpSettingsPanel
-            helpTab={helpTab}
-            setHelpTab={setHelpTab}
             appInfo={appInfo}
           />
         )
@@ -964,7 +959,6 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           <SettingsMenu
             activeSection={activeSection}
             onSectionChange={setActiveSection}
-            hasUpdate={hasUpdate}
           />
 
           <div className="flex-1 flex flex-col">

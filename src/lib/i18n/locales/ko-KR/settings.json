@@ -162,7 +162,32 @@
     "feature7": "Web, Electron, Docker 배포 지원",
     "copyright": "모든 권리 보유",
     "basedOnTmdb": "TMDB API를 기반으로 구축됨",
-    "specialThanks": "특별 감사"
+    "specialThanks": "특별 감사",
+    "appSlogan": "강력한 TMDB 미디어 관리 도우미",
+    "versionCheck": "버전 확인",
+    "checkNow": "지금 확인",
+    "currentVersion": "현재 버전",
+    "latestVersion": "최신 버전",
+    "hasUpdate": "업데이트 가능",
+    "cachedData": "캐시 데이터",
+    "downloadNewVersion": "새 버전 다운로드",
+    "viewAllVersions": "모든 버전 보기"
+  },
+  "updateDialog": {
+    "title": "새 버전 {{version}} 사용 가능",
+    "description": "현재 버전 {{current}}, 최신 버전 {{latest}}",
+    "newVersion": "새 버전",
+    "noReleaseNotes": "릴리즈 노트 없음",
+    "skipVersion": "버전 {{version}} 업데이트 알림 건너뛰기",
+    "later": "나중에 알림",
+    "viewAllReleases": "모든 릴리즈",
+    "download": "새 버전 다운로드"
+  },
+  "updateCheck": {
+    "justNow": "방금",
+    "minutesAgo": "{{count}}분 전",
+    "hoursAgo": "{{count}}시간 전",
+    "daysAgo": "{{count}}일 전"
   },
   "modelServicePanel": {
     "title": "모델 서비스",

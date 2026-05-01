@@ -5,7 +5,7 @@ import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell } from "
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import { useTranslation } from "react-i18next"
-import { useUpdateCheck } from "@/lib/hooks/use-update-check"
+
 import { useUIStore } from "@/stores/ui-store"
 import { realtimeSyncManager } from "@/lib/data/realtime-sync-manager"
 
@@ -30,7 +30,6 @@ export function AppHeader({
 }: AppHeaderProps) {
   const { theme, setTheme } = useTheme()
   const { t } = useTranslation("settings")
-  const { hasUpdate } = useUpdateCheck()
   const journalUnreadCount = useUIStore((s) => s.journalUnreadCount)
   const setJournalUnreadCount = useUIStore((s) => s.setJournalUnreadCount)
 
@@ -109,15 +108,9 @@ export function AppHeader({
                   </span>
                 )}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center space-x-2 relative">
+              <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center space-x-2">
                 <Settings className="h-4 w-4" />
                 <span>{t("settings.settings")}</span>
-                {hasUpdate && (
-                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                  </span>
-                )}
               </Button>
               <Button
                 variant="outline"

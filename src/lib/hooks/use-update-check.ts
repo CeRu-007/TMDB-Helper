@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { toast } from 'sonner';
 import { UpdateCheckResult, UpdateCheckOptions } from '@/types/updates';
 
 interface UpdateCheckState extends UpdateCheckResult {
@@ -8,73 +7,89 @@ interface UpdateCheckState extends UpdateCheckResult {
 }
 
 const CACHE_KEY = 'update_check_result';
-const CACHE_DURATION = 60 * 60 * 1000; // 1小时缓存
-const POLLING_INTERVAL = 30 * 60 * 1000; // 30分钟轮询一次
-const INITIAL_DELAY = 5 * 1000; // 首次加载延迟5秒检查
+const NOTIFIED_VERSIONS_KEY = 'update_notified_versions';
+const DISMISSED_VERSIONS_KEY = 'update_dismissed_versions';
+const CACHE_DURATION = 4 * 60 * 60 * 1000;
+const POLLING_INTERVAL = 4 * 60 * 60 * 1000;
+const INITIAL_DELAY = 5 * 1000;
 
-// 全局状态，避免多个组件重复请求
 let globalState: UpdateCheckState | null = null;
 let globalListeners: Set<(state: UpdateCheckState) => void> = new Set();
 let pollingTimer: NodeJS.Timeout | null = null;
 let hasInitialized = false;
 
-// 通知所有监听器
 function notifyListeners(state: UpdateCheckState) {
   globalState = state;
   globalListeners.forEach(listener => listener(state));
 }
 
-// 获取缓存数据
+function getNotifiedVersions(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const stored = localStorage.getItem(NOTIFIED_VERSIONS_KEY);
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveNotifiedVersion(version: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const versions = getNotifiedVersions();
+    versions.add(version);
+    localStorage.setItem(NOTIFIED_VERSIONS_KEY, JSON.stringify([...versions]));
+  } catch {}
+}
+
+function getDismissedVersions(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const stored = localStorage.getItem(DISMISSED_VERSIONS_KEY);
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveDismissedVersion(version: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const versions = getDismissedVersions();
+    versions.add(version);
+    localStorage.setItem(DISMISSED_VERSIONS_KEY, JSON.stringify([...versions]));
+  } catch {}
+}
+
+export function isVersionDismissed(version: string): boolean {
+  return getDismissedVersions().has(version);
+}
+
 function getCachedState(): UpdateCheckState | null {
   if (typeof window === 'undefined') return null;
-
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
-
     const { data, timestamp } = JSON.parse(cached);
-    const now = Date.now();
-
-    if (now - timestamp > CACHE_DURATION) {
+    if (Date.now() - timestamp > CACHE_DURATION) {
       localStorage.removeItem(CACHE_KEY);
       return null;
     }
-
-    return {
-      ...data,
-      isLoading: false,
-      error: null,
-    };
+    return { ...data, isLoading: false, error: null };
   } catch {
     return null;
   }
 }
 
-// 保存缓存
 function saveCache(data: UpdateCheckResult) {
   if (typeof window === 'undefined') return;
-
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      data,
-      timestamp: Date.now(),
-    }));
-  } catch (error) {
-    // 隐私模式或存储已满时，静默失败
-    if (error instanceof DOMException && (
-      error.name === 'QuotaExceededError' ||
-      error.name === 'SecurityError'
-    )) {
-      console.warn('无法保存更新缓存（隐私模式或存储已满）:', error);
-    } else {
-      console.error('Failed to save update cache:', error);
-    }
-  }
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch {}
 }
 
-// 执行检查
 async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateCheckState | null> {
-  const { force = false, silent = false, showToast = false } = options;
+  const { force = false, silent = false } = options;
 
   if (!force) {
     const cached = getCachedState();
@@ -84,7 +99,6 @@ async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateChe
     }
   }
 
-  // 设置加载状态
   const loadingState: UpdateCheckState = {
     hasUpdate: globalState?.hasUpdate || false,
     currentVersion: globalState?.currentVersion || '',
@@ -108,7 +122,6 @@ async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateChe
     const data: UpdateCheckResult = result.data;
     const newState: UpdateCheckState = {
       ...data,
-      // 强制检查时，明确设置为非缓存状态
       isCached: force ? false : data.isCached,
       isLoading: false,
       error: null,
@@ -117,25 +130,19 @@ async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateChe
     saveCache(data);
     notifyListeners(newState);
 
-    // 只在非静默模式下显示提示
-    if (!silent && data.hasUpdate) {
-      if (showToast) {
-        toast.success(`发现新版本 ${data.latestVersion}，快去看看吧！`, {
-          description: '点击「版本更新」查看详情',
-          duration: 5000,
-        });
-      } else {
-        // 自动检查时，显示温和提示
-        toast.info(`发现新版本 ${data.latestVersion}`, {
-          description: '前往「设置 → 帮助与支持 → 版本更新」查看详情',
-          duration: 8000,
-          action: {
-            label: '查看',
-            onClick: () => {
-              window.dispatchEvent(new CustomEvent('open-settings-dialog', { detail: { section: 'help' } }));
-            },
+    if (!silent && data.hasUpdate && data.latestVersion) {
+      const notified = getNotifiedVersions();
+      const dismissed = getDismissedVersions();
+
+      if (!notified.has(data.latestVersion) && !dismissed.has(data.latestVersion)) {
+        saveNotifiedVersion(data.latestVersion);
+        window.dispatchEvent(new CustomEvent('version-update-available', {
+          detail: {
+            currentVersion: data.currentVersion,
+            latestVersion: data.latestVersion,
+            releaseInfo: data.releaseInfo,
           },
-        });
+        }));
       }
     }
 
@@ -152,27 +159,18 @@ async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateChe
       isLoading: false,
       error: errorMessage,
     };
-
     notifyListeners(errorState);
-
-    if (showToast && !silent) {
-      toast.error(errorMessage);
-    }
-
     return null;
   }
 }
 
-// 启动全局轮询
 function startGlobalPolling() {
-  if (pollingTimer) return; // 已经在轮询
-
+  if (pollingTimer) return;
   pollingTimer = setInterval(() => {
     performCheck({ silent: true });
   }, POLLING_INTERVAL);
 }
 
-// 停止全局轮询
 function stopGlobalPolling() {
   if (pollingTimer) {
     clearInterval(pollingTimer);
@@ -180,26 +178,21 @@ function stopGlobalPolling() {
   }
 }
 
-// 初始化全局检查
 function initializeGlobalCheck() {
   if (hasInitialized) return;
   hasInitialized = true;
 
-  // 从缓存读取
   const cached = getCachedState();
   if (cached) {
     notifyListeners(cached);
   }
 
-  // 延迟首次检查
   setTimeout(() => {
     performCheck({ silent: true });
   }, INITIAL_DELAY);
 
-  // 启动轮询
   startGlobalPolling();
 
-  // 监听页面可见性
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
       const cached = getCachedState();
@@ -230,16 +223,13 @@ export function useUpdateCheck() {
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    // 订阅全局状态变化
     globalListeners.add(setState);
 
-    // 首次渲染时初始化
     if (isFirstRender.current) {
       isFirstRender.current = false;
       initializeGlobalCheck();
     }
 
-    // 清理时取消订阅
     return () => {
       globalListeners.delete(setState);
     };
@@ -249,26 +239,8 @@ export function useUpdateCheck() {
     return performCheck(options);
   }, []);
 
-  const clearCache = useCallback(() => {
-    if (typeof window === 'undefined') return;
-
-    localStorage.removeItem(CACHE_KEY);
-    const emptyState: UpdateCheckState = {
-      hasUpdate: false,
-      currentVersion: '',
-      latestVersion: '',
-      releaseInfo: null,
-      lastChecked: '',
-      isCached: false,
-      isLoading: false,
-      error: null,
-    };
-    notifyListeners(emptyState);
-  }, []);
-
   return {
     ...state,
     checkForUpdates,
-    clearCache,
   };
 }

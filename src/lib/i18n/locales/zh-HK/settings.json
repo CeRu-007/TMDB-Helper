@@ -162,7 +162,32 @@
     "feature7": "支持 Web、Electron 和 Docker 部署",
     "copyright": "保留所有權利",
     "basedOnTmdb": "基於 TMDB API 構建",
-    "specialThanks": "特別感謝"
+    "specialThanks": "特別感謝",
+    "appSlogan": "功能強大的 TMDB 媒體維護助手",
+    "versionCheck": "版本檢查",
+    "checkNow": "立即檢查",
+    "currentVersion": "當前版本",
+    "latestVersion": "最新版本",
+    "hasUpdate": "有更新",
+    "cachedData": "快取資料",
+    "downloadNewVersion": "下載新版本",
+    "viewAllVersions": "查看所有版本"
+  },
+  "updateDialog": {
+    "title": "發現新版本 {{version}}",
+    "description": "當前版本 {{current}}，最新版本 {{latest}}",
+    "newVersion": "新版本",
+    "noReleaseNotes": "暫無發布說明",
+    "skipVersion": "忽略 {{version}} 版本的更新提醒",
+    "later": "稍後提醒",
+    "viewAllReleases": "所有版本",
+    "download": "下載新版本"
+  },
+  "updateCheck": {
+    "justNow": "剛剛",
+    "minutesAgo": "{{count}} 分鐘前",
+    "hoursAgo": "{{count}} 小時前",
+    "daysAgo": "{{count}} 天前"
   },
   "modelServicePanel": {
     "title": "模型服務",
