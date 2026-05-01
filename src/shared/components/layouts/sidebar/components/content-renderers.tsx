@@ -20,7 +20,7 @@ import { IndependentMaintenance } from "@/features/media-maintenance/components/
 import { AiChat } from "@/features/ai/components/ai-chat"
 import { ImageRecognition } from "@/features/image-processing/components/image-recognition"
 import { ItemDetailDialog } from "@/features/media-maintenance/components/item-detail-dialog"
-import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
+import { TMDBGuide } from "@/features/tmdb-import/guide"
 import StreamingPlatformNav from "@/features/streaming-nav/components/streaming-platform-nav"
 import { SidebarRegionNavigation } from "./sidebar-region-navigation"
 import { ScheduleView } from "@/features/schedule/components/schedule-view"

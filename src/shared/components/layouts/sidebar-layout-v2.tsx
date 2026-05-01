@@ -293,7 +293,7 @@ export function SidebarLayout({
 }
 
 // 内部导入组件
-import { TMDBGuide } from "@/features/tmdb-import/components/tmdb-guide"
+import { TMDBGuide } from "@/features/tmdb-import/guide"
 import VideoScreenshot from "@/features/image-processing/components/video-screenshot"
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"
 import { TaskJournalDialog } from "@/features/system/components/task-journal-dialog"

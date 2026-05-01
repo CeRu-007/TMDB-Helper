@@ -62,7 +62,6 @@ const nextConfig = {
       }
     }
     
-    // 开发环境优化：减少不必要的编译
     if (dev) {
       config.optimization = {
         ...config.optimization,
