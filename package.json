@@ -1,6 +1,6 @@
 {
   "name": "tmdb-helper",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "一个TMDB数据维护工具",
   "author": {
     "name": "TMDB Helper Team",
@@ -258,7 +258,7 @@
     },
     "extraMetadata": {
       "main": "electron/main.js",
-      "version": "0.6.6"
+      "version": "0.6.7"
     }
   },
   "electronMain": "electron/main.js",
