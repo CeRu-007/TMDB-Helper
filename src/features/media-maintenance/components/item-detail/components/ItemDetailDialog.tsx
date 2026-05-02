@@ -1168,7 +1168,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   ) : (
                     <div className="w-full rounded-lg backdrop-blur-md bg-background/30 p-3 flex-1 overflow-hidden transition-all duration-300 hover:shadow-lg">
                       <ScrollArea className="h-full">
-                        <div className="space-y-1 pr-2">
+                        <div className="flex flex-col min-h-full pr-2">
                           <MediaInfoCard item={localItem} />
                         </div>
                       </ScrollArea>

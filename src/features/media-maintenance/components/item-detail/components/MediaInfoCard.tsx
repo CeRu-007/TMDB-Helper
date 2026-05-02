@@ -20,7 +20,7 @@ export function MediaInfoCard({
   const { t } = useTranslation('media')
 
   return (
-    <>
+    <div className="flex flex-col flex-1 min-h-0">
       {/* 播出平台区域 - 优先使用TMDB网络logo */}
       <div className="pb-0.5 mb-0.5">
         <h3 className="text-sm font-medium flex items-center">
@@ -89,7 +89,7 @@ export function MediaInfoCard({
           {t('mediaInfo.synopsis')}
         </h3>
       </div>
-      <div className="bg-background/20 rounded-lg overflow-hidden h-[110px] mb-2 shadow-sm transition-all duration-300 hover:shadow-md">
+      <div className="bg-background/20 rounded-lg overflow-hidden flex-1 min-h-[110px] mb-2 shadow-sm transition-all duration-300 hover:shadow-md">
         <ScrollArea className="h-full">
           <div className="p-3 text-sm">
             {item.overview ? (
@@ -100,6 +100,6 @@ export function MediaInfoCard({
           </div>
         </ScrollArea>
       </div>
-    </>
+    </div>
   )
 }
