@@ -1850,7 +1850,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         {/* 编辑标签内容 */}
         <TabsContent
           value="edit"
-          className="h-full p-0 m-0 bg-transparent w-full"
+          className="h-full min-h-0 p-0 m-0 bg-transparent w-full"
         >
             <div className="h-full flex flex-col w-full overflow-hidden">
             {/* 编辑工具栏 */}
@@ -1880,7 +1880,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
             </div>
 
               {/* 编辑区域 */}
-            <div className="flex-1 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
+            <div className="flex-1 min-h-0 overflow-hidden" style={{ maxWidth: '100%', width: '100%' }}>
               {editorMode === "table" && csvData ? (
                       <NewTMDBTable
                         data={csvData}
