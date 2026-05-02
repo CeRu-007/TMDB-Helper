@@ -79,10 +79,10 @@ export function WeekdayNavigation({
   return (
     <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10">
       <div className="mx-auto px-6">
-        <div className="flex justify-between items-center py-3 gap-4">
-          <ScrollAreaPrimitive.Root className="flex-1 whitespace-nowrap overflow-hidden">
+        <div className="flex justify-between items-center pt-3 pb-0 gap-4">
+          <ScrollAreaPrimitive.Root className="flex-1 whitespace-nowrap overflow-hidden self-stretch">
             <ScrollAreaPrimitive.Viewport className="h-full w-full">
-              <div className="flex space-x-1">
+              <div className="flex space-x-1 pb-3">
                 <button
                   onClick={() => onDayFilterChange("recent")}
                   className={getDayButtonClasses(selectedDayFilter === "recent", false)}
@@ -125,7 +125,7 @@ export function WeekdayNavigation({
             </ScrollAreaPrimitive.ScrollAreaScrollbar>
           </ScrollAreaPrimitive.Root>
 
-          <div className="flex items-center space-x-4 ml-4 flex-shrink-0">
+          <div className="flex items-center space-x-4 ml-4 flex-shrink-0 pb-3">
             {onCategoryChange && (
               <FilterDropdown items={allItems} categories={categories} />
             )}
@@ -157,7 +157,7 @@ export function WeekdayNavigation({
           </div>
 
           {(!activeTab || !onActiveTabChange) && (
-            <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 pb-3">
               <span>
                 {selectedCategory === "all"
                   ? t("all", { ns: "common" })
