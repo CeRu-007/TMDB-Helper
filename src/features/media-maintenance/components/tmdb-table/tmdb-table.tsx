@@ -226,7 +226,6 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
   useEffect(() => {
     if (isEditing && editInputRef.current) {
       editInputRef.current.focus()
-      editInputRef.current.select()
     }
   }, [isEditing])
 
@@ -475,7 +474,6 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
                     showRowNumbers={showRowNumbers}
                     showRowOperations={showRowOperations}
                     rowHeight={rowHeight}
-                    onCellClick={adaptMouseHandler(handleCellMouseDown)}
                     onCellDoubleClick={adaptMouseHandler(handleCellDoubleClick)}
                     onCellContextMenu={handleContextMenu}
                     onCellMouseMove={adaptMouseHandler(handleCellMouseMove)}

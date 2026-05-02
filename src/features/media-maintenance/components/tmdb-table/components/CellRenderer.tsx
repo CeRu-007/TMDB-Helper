@@ -20,7 +20,6 @@ interface CellRendererProps {
   isDragging: boolean
   canStartDragging: boolean
   editValue: string
-  onClick: (event: React.MouseEvent) => void
   onDoubleClick: (event: React.MouseEvent) => void
   onContextMenu: () => void
   onMouseMove: (event: React.MouseEvent) => void
@@ -42,7 +41,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   isDragging,
   canStartDragging,
   editValue,
-  onClick,
   onDoubleClick,
   onContextMenu,
   onMouseMove,
@@ -63,8 +61,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     if ((e.ctrlKey || e.metaKey) && shouldShowUrlFeatures) {
       e.stopPropagation()
       window.open(value, "_blank", "noopener,noreferrer")
-    } else {
-      onClick(e)
     }
   }
 
@@ -130,8 +126,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   return (
     <TableCell
       className={cn(
-        isSelected && "bg-primary/20",
-        isActive && "ring-2 ring-primary",
+        isSelected && !isEditing && "bg-primary/20",
+        isActive && !isEditing && "ring-2 ring-primary",
         isDragging && canStartDragging && "cursor-crosshair",
         isEditing
           ? "relative whitespace-nowrap overflow-hidden"
@@ -139,7 +135,10 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         isOverview && "overview-cell"
       )}
       onClick={handleUrlClick}
-      onDoubleClick={onDoubleClick}
+      onDoubleClick={(e) => {
+        e.preventDefault()
+        onDoubleClick(e)
+      }}
       onContextMenu={onContextMenu}
       onMouseMove={onMouseMove}
       onMouseDown={onMouseDown}

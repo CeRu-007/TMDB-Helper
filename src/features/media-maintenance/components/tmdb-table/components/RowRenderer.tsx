@@ -33,7 +33,6 @@ interface RowRendererProps {
   showRowNumbers: boolean
   showRowOperations: boolean
   rowHeight?: number
-  onCellClick: (row: number, col: number, event: React.MouseEvent) => void
   onCellDoubleClick: (row: number, col: number, event: React.MouseEvent) => void
   onCellContextMenu: (row: number, col: number) => void
   onCellMouseMove: (row: number, col: number, event: React.MouseEvent) => void
@@ -62,7 +61,6 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
   showRowNumbers,
   showRowOperations,
   rowHeight,
-  onCellClick,
   onCellDoubleClick,
   onCellContextMenu,
   onCellMouseMove,
@@ -176,7 +174,6 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
           isDragging={isDragging}
           canStartDragging={canStartDragging}
           editValue={editingCell?.value || ""}
-          onClick={(e) => onCellClick(rowIndex, colIndex, e)}
           onDoubleClick={(e) => onCellDoubleClick(rowIndex, colIndex, e)}
           onContextMenu={() => onCellContextMenu(rowIndex, colIndex)}
           onMouseMove={(e) => onCellMouseMove(rowIndex, colIndex, e)}
