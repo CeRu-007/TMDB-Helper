@@ -82,8 +82,7 @@ export function cleanCSV(
   content: string,
   fieldCleanup: FieldCleanup,
   currentEpisodeCount: number = 0,
-  incremental: boolean = true,
-  effectiveEpisodeCount?: number
+  incremental: boolean = true
 ): string {
   if (!content || content.trim() === '') {
     return content;
@@ -127,8 +126,7 @@ export function cleanCSV(
 
     const episodeIdx = headers.indexOf('episode_number');
     const episodeNum = episodeIdx !== -1 ? parseInt(row[headers[episodeIdx]], 10) : NaN;
-    const incrementalThreshold = effectiveEpisodeCount !== undefined ? effectiveEpisodeCount : currentEpisodeCount;
-    const isExistingEpisode = !isNaN(episodeNum) && episodeNum <= incrementalThreshold;
+    const isExistingEpisode = !isNaN(episodeNum) && episodeNum <= currentEpisodeCount;
 
     if (incremental && isExistingEpisode) {
       continue;

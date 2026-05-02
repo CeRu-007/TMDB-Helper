@@ -100,7 +100,11 @@ export async function executeScheduleTask(
       addLog('info', `元数据完整性检查: 原始${metadataAnalysis.rawEpisodeCount}集, 有效${metadataAnalysis.effectiveEpisodeCount}集${metadataAnalysis.incompleteEpisodes.length > 0 ? `, 第${metadataAnalysis.incompleteEpisodes.join(',')}集元数据不完整` : ''}`)
     }
 
-    const cleanedCSV = cleanCSV(csvContent, task.fieldCleanup, currentMaxEpisode, task.incremental, effectiveEpisodeCount)
+    const incrementalThreshold = task.checkMetadataCompleteness && effectiveEpisodeCount !== undefined
+      ? Math.min(currentMaxEpisode, effectiveEpisodeCount)
+      : currentMaxEpisode
+
+    const cleanedCSV = cleanCSV(csvContent, task.fieldCleanup, incrementalThreshold, task.incremental)
     const episodeCount = task.checkMetadataCompleteness ? metadataAnalysis.effectiveEpisodeCount : extractEpisodeCount(cleanedCSV)
 
     if (task.incremental) {
@@ -410,6 +414,9 @@ export async function processScheduleTaskResult(
       updatedItem.status = 'completed'
       updatedItem.completed = true
       logger.info(`[Schedule Executor] 词条已完结: ${item.id}, episodeCount=${episodeCount}, totalEpisodes=${totalEpisodes}`)
+    } else if (hasIncompleteEpisodes) {
+      updatedItem.status = 'watching'
+      updatedItem.completed = false
     }
 
     updatedItem.updatedAt = new Date().toISOString()
