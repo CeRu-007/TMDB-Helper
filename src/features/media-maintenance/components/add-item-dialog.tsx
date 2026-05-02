@@ -426,29 +426,39 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
         }
       }
 
-      // 构建季数据
       let seasons: Season[] = []
       let episodes: Episode[] = []
       let totalEpisodes = formData.totalEpisodes
       
       if (tmdbData.seasons && tmdbData.seasons.length > 0) {
-        // 多季电视剧 - 使用 currentEpisode 字段
         seasons = tmdbData.seasons.map((seasonData) => ({
           seasonNumber: seasonData.seasonNumber,
           name: seasonData.name,
           totalEpisodes: seasonData.totalEpisodes,
-          currentEpisode: 0,  // 初始为0，表示未开始维护
+          currentEpisode: 0,
           posterUrl: seasonData.posterUrl,
         }))
         
-        totalEpisodes = tmdbData.totalEpisodes || seasons.reduce((sum, s) => sum + s.totalEpisodes, 0)
+        const tmdbTotalEpisodes = tmdbData.totalEpisodes || seasons.reduce((sum, s) => sum + s.totalEpisodes, 0)
+
+        if (isManualTotalEpisodes && formData.totalEpisodes !== tmdbTotalEpisodes) {
+          totalEpisodes = formData.totalEpisodes
+          if (seasons.length === 1) {
+            seasons[0].totalEpisodes = totalEpisodes
+          } else if (seasons.length > 1) {
+            const otherSeasonsTotal = seasons.slice(0, -1).reduce((sum, s) => sum + s.totalEpisodes, 0)
+            const lastSeasonEpisodes = Math.max(1, totalEpisodes - otherSeasonsTotal)
+            seasons[seasons.length - 1].totalEpisodes = lastSeasonEpisodes
+          }
+        } else {
+          totalEpisodes = tmdbTotalEpisodes
+        }
       } else if (selectedResult.media_type === "tv") {
-        // 单季电视剧 - 使用 currentEpisode 字段
         const episodeCount = tmdbData.totalEpisodes || formData.totalEpisodes
-        totalEpisodes = episodeCount
+        totalEpisodes = isManualTotalEpisodes ? formData.totalEpisodes : episodeCount
         seasons = [{
           seasonNumber: 1,
-          totalEpisodes: episodeCount,
+          totalEpisodes: totalEpisodes,
           currentEpisode: 0,
         }]
       }

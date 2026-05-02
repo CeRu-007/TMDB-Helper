@@ -136,6 +136,15 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   const currentSeason = localItem.seasons?.find(s => s.seasonNumber === selectedSeason) || null
 
+  function getNextSeasonNumber(seasons: Season[]): number {
+    if (!seasons || seasons.length === 0) return 1
+    const existingNumbers = seasons.map(s => s.seasonNumber)
+    for (let i = 1; i <= existingNumbers.length + 1; i++) {
+      if (!existingNumbers.includes(i)) return i
+    }
+    return Math.max(...existingNumbers) + 1
+  }
+
   function getInlineContainer(): HTMLElement | null {
     if (typeof document === 'undefined') return null
     return document.body
@@ -214,7 +223,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     if (seasons.length > 0) {
       const maxSeasonNumber = Math.max(...seasons.map(s => s.seasonNumber || 1))
       setSelectedSeason(maxSeasonNumber)
-      setCustomSeasonNumber(maxSeasonNumber)
+      setCustomSeasonNumber(getNextSeasonNumber(seasons))
     } else if (localItem.mediaType === "tv") {
       setSelectedSeason(1)
       setCustomSeasonNumber(1)
@@ -223,7 +232,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   function handleSeasonClick(seasonNumber: number): void {
     setSelectedSeason(seasonNumber)
-    setCustomSeasonNumber(seasonNumber)
+    setCustomSeasonNumber(getNextSeasonNumber(localItem.seasons || []))
     showFeedback(t("switchedToSeason", { season: seasonNumber }), 1000)
   }
 
@@ -237,11 +246,19 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     if (!seasonToDelete || !localItem.seasons) return
 
     const updatedSeasons = localItem.seasons.filter(s => s.seasonNumber !== seasonToDelete)
-    const updatedTotalEpisodes = updatedSeasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0)
+    const updatedTotalEpisodes = updatedSeasons.reduce((sum, season) => sum + season.totalEpisodes, 0)
+
+    const updatedEpisodes = updatedSeasons.flatMap(season =>
+      season.episodes?.map(ep => ({
+        ...ep,
+        seasonNumber: season.seasonNumber,
+      })) || []
+    )
 
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
+      episodes: updatedEpisodes,
       totalEpisodes: updatedTotalEpisodes,
       updatedAt: new Date().toISOString()
     }
@@ -256,7 +273,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       if (updatedSeasons.length > 0) {
         const maxSeason = Math.max(...updatedSeasons.map(s => s.seasonNumber))
         setSelectedSeason(maxSeason)
-        setCustomSeasonNumber(maxSeason)
+        setCustomSeasonNumber(getNextSeasonNumber(updatedSeasons))
       } else {
         setSelectedSeason(undefined)
       }
@@ -352,7 +369,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       ...localItem,
       seasons: updatedSeasons,
       episodes: updatedEpisodes,
-      totalEpisodes: updatedEpisodes.length,
+      totalEpisodes: updatedSeasons.reduce((sum, s) => sum + s.totalEpisodes, 0),
       updatedAt: new Date().toISOString(),
     }
 
@@ -401,11 +418,13 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       })),
     ]
 
+    const newTotalEpisodes = updatedSeasons.reduce((sum, s) => sum + s.totalEpisodes, 0)
+
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
       episodes: updatedEpisodes,
-      totalEpisodes: (localItem.totalEpisodes || 0) + episodeCount,
+      totalEpisodes: newTotalEpisodes,
       updatedAt: new Date().toISOString()
     }
 
@@ -413,17 +432,8 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     if (success) {
       updateLocalItem(updatedItem, false)
 
-      if (editing) {
-        setEditData({
-          ...editData,
-          seasons: updatedSeasons,
-          episodes: updatedEpisodes,
-          totalEpisodes: updatedItem.totalEpisodes
-        })
-      }
-
       setSelectedSeason(seasonNumber)
-      setCustomSeasonNumber(seasonNumber)
+      setCustomSeasonNumber(getNextSeasonNumber(updatedSeasons))
       showFeedback(t("seasonAdded", { season: seasonNumber, count: episodeCount }), DELAY_2S)
     } else {
       showFeedback(t("addSeasonFailed"))
@@ -1211,6 +1221,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       onTotalEpisodesChange={handleTotalEpisodesChange}
                       onCustomSeasonNumberChange={setCustomSeasonNumber}
                       onClearRefreshError={onClearRefreshError}
+                      onSetCustomSeasonNumber={setCustomSeasonNumber}
                     />
                   </TabsContent>
 

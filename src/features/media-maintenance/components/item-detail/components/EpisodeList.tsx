@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
-import { PlayCircle, Tv, PlusCircle, Clock, Zap, Calendar, ChevronUp, ChevronDown } from "lucide-react"
-import type { Season, Episode, TMDBItem } from "@/lib/data/storage"
+import { PlayCircle, Tv, Clock, Zap, Calendar, ChevronUp, ChevronDown } from "lucide-react"
+import type { Season, TMDBItem } from "@/lib/data/storage"
 import { useTranslation } from "react-i18next"
 
 interface EpisodeListProps {
@@ -13,12 +12,8 @@ interface EpisodeListProps {
   selectedSeason: number | undefined
   currentSeason: Season | undefined
   editing: boolean
-  customSeasonNumber: number
   item: TMDBItem
   onEpisodeProgressUpdate: (currentEpisode: number, seasonNumber: number) => void
-  onTotalEpisodesChange: (count: number) => void
-  onAddSeason: (seasonNumber: number, episodeCount: number) => void
-  onCustomSeasonNumberChange: (value: number) => void
 }
 
 export function EpisodeList({
@@ -26,16 +21,11 @@ export function EpisodeList({
   selectedSeason,
   currentSeason,
   editing,
-  customSeasonNumber,
   item,
-  onEpisodeProgressUpdate,
-  onTotalEpisodesChange,
-  onAddSeason,
-  onCustomSeasonNumberChange
+  onEpisodeProgressUpdate
 }: EpisodeListProps) {
   const { t } = useTranslation('media')
   const [inputValue, setInputValue] = useState<string>("")
-  const episodeInputRef = useRef<HTMLInputElement>(null)
 
   // 当前维护到的集数
   const currentEpisode = currentSeason?.currentEpisode || 0
@@ -290,19 +280,6 @@ export function EpisodeList({
             {t('episodeList.maintenanceProgress')}
             {!selectedSeason && <span className="text-xs text-muted-foreground ml-2">{t('episodeList.selectOrAddSeason')}</span>}
           </div>
-          {/* 编辑模式下显示总集数编辑 */}
-          {editing && currentSeason && (
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-muted-foreground">{t('episodeList.totalEpisodes')}:</span>
-              <Input
-                type="number"
-                min="1"
-                className="h-6 w-16 text-xs px-2"
-                value={currentSeason?.totalEpisodes || 0}
-                onChange={(e) => onTotalEpisodesChange(parseInt(e.target.value, 10) || 0)}
-              />
-            </div>
-          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -413,48 +390,10 @@ export function EpisodeList({
             )}
           </div>
         ) : (
-          /* 未选择季时的提示 */
           <div className="text-center py-8 text-muted-foreground">
             <Tv className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p className="text-base font-medium mb-1">{t('episodeList.selectOrAddSeasonPrompt')}</p>
             <p className="text-sm max-w-md mx-auto">{t('episodeList.selectOrAddSeasonHint')}</p>
-            {editing && (
-              <div className="flex flex-col items-center space-y-3 mt-4">
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center">
-                    <span className="text-xs text-muted-foreground mr-1">{t('episodeList.seasonNumber')}:</span>
-                    <Input
-                      type="number"
-                      min="1"
-                      className="h-7 w-16 text-xs px-2"
-                      value={customSeasonNumber}
-                      onChange={(e) => onCustomSeasonNumberChange(parseInt(e.target.value, 10) || 1)}
-                    />
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-xs text-muted-foreground mr-1">{t('episodeList.episodeCount')}:</span>
-                    <Input
-                      type="number"
-                      min="1"
-                      className="h-7 w-16 text-xs px-2"
-                      defaultValue="20"
-                      ref={episodeInputRef}
-                    />
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const episodeCount = parseInt(episodeInputRef.current?.value || "20", 10) || 20;
-                    onAddSeason(customSeasonNumber, episodeCount);
-                  }}
-                >
-                  <PlusCircle className="h-4 w-4 mr-1" />
-                  {t('episodeList.addSeason')}
-                </Button>
-              </div>
-            )}
           </div>
         )}
       </CardContent>

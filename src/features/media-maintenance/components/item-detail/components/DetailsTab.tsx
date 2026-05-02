@@ -25,6 +25,7 @@ interface DetailsTabProps {
   onTotalEpisodesChange: (count: number) => void
   onCustomSeasonNumberChange: (value: number) => void
   onClearRefreshError: () => void
+  onSetCustomSeasonNumber: (value: number) => void
 }
 
 export function DetailsTab({
@@ -43,7 +44,8 @@ export function DetailsTab({
   onEpisodeProgressUpdate,
   onTotalEpisodesChange,
   onCustomSeasonNumberChange,
-  onClearRefreshError
+  onClearRefreshError,
+  onSetCustomSeasonNumber
 }: DetailsTabProps) {
   return (
     <div className="flex-1 min-h-0">
@@ -61,14 +63,16 @@ export function DetailsTab({
 
           {/* 季数操作 */}
           <EpisodeBatchActions
-            currentSeason={currentSeason}
+            currentSeason={currentSeason || undefined}
             selectedSeason={selectedSeason}
             editing={editing}
             customSeasonNumber={customSeasonNumber}
+            seasons={item.seasons || []}
             onResetSeason={onResetSeason}
             onDeleteSeason={onDeleteSeason}
             onAddSeason={onAddSeason}
             onCustomSeasonNumberChange={onCustomSeasonNumberChange}
+            onTotalEpisodesChange={onTotalEpisodesChange}
           />
 
           {/* 显示刷新错误 */}
@@ -91,14 +95,10 @@ export function DetailsTab({
           <EpisodeList
             mediaType={item.mediaType}
             selectedSeason={selectedSeason}
-            currentSeason={currentSeason}
+            currentSeason={currentSeason || undefined}
             editing={editing}
-            customSeasonNumber={customSeasonNumber}
             item={item}
             onEpisodeProgressUpdate={onEpisodeProgressUpdate}
-            onTotalEpisodesChange={onTotalEpisodesChange}
-            onAddSeason={onAddSeason}
-            onCustomSeasonNumberChange={onCustomSeasonNumberChange}
           />
         </div>
       </ScrollArea>
