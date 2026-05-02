@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useEffect, useCallback } from "react"
+import React, { useRef, useEffect, useCallback, useState } from "react"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { useTranslation } from "react-i18next"
@@ -12,7 +12,9 @@ import { useTMDBTableMouse } from "./hooks/useTMDBTableMouse"
 import { useTMDBTableClipboard } from "./hooks/useTMDBTableClipboard"
 import HeaderRenderer from "./components/HeaderRenderer"
 import RowRenderer from "./components/RowRenderer"
-import type { TMDBTableProps, CellPosition } from "./types"
+import TableContextMenu from "../../../../shared/components/ui/table-context-menu"
+import BatchEditDialog from "../batch-edit-dialog"
+import type { TMDBTableProps, CellPosition, BatchEditData } from "./types"
 import {
   insertRow,
   deleteRow,
@@ -44,8 +46,9 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
 }) => {
   const { t } = useTranslation("ui")
   const editInputRef = useRef<HTMLInputElement>(null)
+  const [batchEditData, setBatchEditData] = useState<BatchEditData | null>(null)
+  const [showBatchEditDialog, setShowBatchEditDialog] = useState(false)
 
-  // 忽略未使用的 props
   void enableColumnResizing
   void enableColumnReordering
 
@@ -186,9 +189,13 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
     onCellDoubleClick: (cell, event) => {
       const columnName = localData.headers[cell.col]
       if (isOverviewColumn(columnName || "")) {
-        // 打开批量编辑对话框 - 这里可以触发事件或回调
-        // 暂时使用普通编辑模式
-        startEditing(cell.row, cell.col)
+        setBatchEditData({
+          row: cell.row,
+          col: cell.col,
+          value: localData.rows[cell.row]![cell.col]!,
+          columnName: columnName || "",
+        })
+        setShowBatchEditDialog(true)
       } else {
         startEditing(cell.row, cell.col)
       }
@@ -342,81 +349,171 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
     [localData, saveToHistory, syncExternalData, onDataChange]
   )
 
+  const handleContextMenu = useCallback(
+    (row: number, col: number) => {
+      const newSelection: CellPosition[] = [{ row, col }]
+      selectCell({ row, col })
+      onSelectionChange?.(newSelection)
+    },
+    [selectCell, onSelectionChange]
+  )
+
+  const handleCellsUpdate = useCallback(
+    (cells: { row: number; col: number; value: string }[]) => {
+      if (cells.length === 0) return
+      saveToHistory(localData)
+      cells.forEach(({ row, col, value }) => {
+        updateCellData(row, col, value)
+      })
+    },
+    [saveToHistory, localData, updateCellData]
+  )
+
+  const handleBatchEditSave = useCallback(
+    (value: string) => {
+      if (!batchEditData) return
+      saveToHistory(localData)
+      updateCellData(batchEditData.row, batchEditData.col, value)
+      setShowBatchEditDialog(false)
+      setBatchEditData(null)
+    },
+    [batchEditData, saveToHistory, localData, updateCellData]
+  )
+
+  const adaptMouseHandler = useCallback(
+    (handler: (cell: CellPosition, event: React.MouseEvent) => void) =>
+      (row: number, col: number, event: React.MouseEvent) =>
+        handler({ row, col }, event),
+    []
+  )
+
   return (
-    <div className={className}>
-      <ScrollArea className="h-full">
-        <div className="tmdb-table">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {showRowNumbers && (
-                  <TableHead className="w-16 text-center bg-muted/50 sticky left-0 z-10 border-r">
-                    <div className="flex items-center justify-center space-x-1">
-                      <input
-                        type="checkbox"
-                        checked={isAllRowsSelected}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            selectAll(localData.rows.length)
-                          } else {
-                            setSelectedRows(new Set())
-                            setIsAllRowsSelected(false)
-                          }
-                        }}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-xs text-muted-foreground">#</span>
-                    </div>
-                  </TableHead>
-                )}
-                <HeaderRenderer
-                  headers={localData.headers}
-                  showColumnOperations={showColumnOperations}
-                  onInsertColumn={handleInsertColumn}
-                  onDeleteColumn={handleDeleteColumn}
-                  onDuplicateColumn={handleDuplicateColumn}
-                  onMoveColumn={handleMoveColumn}
-                  t={t}
-                />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {localData.rows.map((row, rowIndex) => (
-                <RowRenderer
-                  key={rowIndex}
-                  rowIndex={rowIndex}
-                  rowData={row}
-                  headers={localData.headers}
-                  isSelected={selectedRows.has(rowIndex)}
-                  selectedCells={selectedCells}
-                  activeCell={activeCell}
-                  editingCell={editCell}
-                  isDragging={isDragging}
-                  canStartDragging={false}
-                  showRowNumbers={showRowNumbers}
-                  showRowOperations={showRowOperations}
-                  rowHeight={rowHeight}
-                  onCellClick={handleCellMouseDown}
-                  onCellDoubleClick={handleCellDoubleClick}
-                  onCellContextMenu={() => {}}
-                  onCellMouseMove={handleCellMouseMove}
-                  onCellMouseDown={handleCellMouseDown}
-                  onEditInputChange={updateEditValue}
-                  onEditFinish={finishEditing}
-                  onEditCancel={cancelEditing}
-                  onRowSelect={selectRow}
-                  onInsertRow={handleInsertRow}
-                  onDeleteRow={handleDeleteRow}
-                  onDuplicateRow={handleDuplicateRow}
-                  onMoveRow={handleMoveRow}
-                  editInputRef={editInputRef}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </ScrollArea>
-    </div>
+    <TableContextMenu
+      selectedCells={selectedCells}
+      data={localData}
+      onCellsUpdate={handleCellsUpdate}
+      onCopy={copy}
+      onCut={cut}
+      onPaste={paste}
+      onDelete={() => {
+        saveToHistory(localData)
+        selectedCells.forEach(({ row, col }) => {
+          updateCellData(row, col, "")
+        })
+      }}
+      onInsertRow={handleInsertRow}
+      onDeleteRow={handleDeleteRow}
+      onInsertColumn={handleInsertColumn}
+      onDeleteColumn={handleDeleteColumn}
+      onDuplicateRow={handleDuplicateRow}
+      onDuplicateColumn={handleDuplicateColumn}
+      onBatchInsertRow={(index, position, count) => handleBatchInsertRows(index, count, position)}
+      onOpenOverviewEdit={(row, col) => {
+        const columnName = localData.headers[col]!
+        setBatchEditData({
+          row,
+          col,
+          value: localData.rows[row]![col]!,
+          columnName,
+        })
+        setShowBatchEditDialog(true)
+      }}
+    >
+      <div className={className}>
+        <ScrollArea className="h-full">
+          <div className="tmdb-table"
+            onMouseUp={handleCellMouseUp}
+            onMouseLeave={handleCellMouseUp}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {showRowNumbers && (
+                    <TableHead className="w-16 text-center bg-muted/50 sticky left-0 z-10 border-r">
+                      <div className="flex items-center justify-center space-x-1">
+                        <input
+                          type="checkbox"
+                          checked={isAllRowsSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              selectAll(localData.rows.length)
+                            } else {
+                              setSelectedRows(new Set())
+                              setIsAllRowsSelected(false)
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-xs text-muted-foreground">#</span>
+                      </div>
+                    </TableHead>
+                  )}
+                  <HeaderRenderer
+                    headers={localData.headers}
+                    showColumnOperations={showColumnOperations}
+                    onInsertColumn={handleInsertColumn}
+                    onDeleteColumn={handleDeleteColumn}
+                    onDuplicateColumn={handleDuplicateColumn}
+                    onMoveColumn={handleMoveColumn}
+                    t={t}
+                  />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {localData.rows.map((row, rowIndex) => (
+                  <RowRenderer
+                    key={rowIndex}
+                    rowIndex={rowIndex}
+                    rowData={row}
+                    headers={localData.headers}
+                    isSelected={selectedRows.has(rowIndex)}
+                    selectedCells={selectedCells}
+                    activeCell={activeCell}
+                    editingCell={editCell}
+                    isDragging={isDragging}
+                    canStartDragging={false}
+                    showRowNumbers={showRowNumbers}
+                    showRowOperations={showRowOperations}
+                    rowHeight={rowHeight}
+                    onCellClick={adaptMouseHandler(handleCellMouseDown)}
+                    onCellDoubleClick={adaptMouseHandler(handleCellDoubleClick)}
+                    onCellContextMenu={handleContextMenu}
+                    onCellMouseMove={adaptMouseHandler(handleCellMouseMove)}
+                    onCellMouseDown={adaptMouseHandler(handleCellMouseDown)}
+                    onEditInputChange={updateEditValue}
+                    onEditFinish={finishEditing}
+                    onEditCancel={cancelEditing}
+                    onRowSelect={selectRow}
+                    onInsertRow={handleInsertRow}
+                    onDeleteRow={handleDeleteRow}
+                    onDuplicateRow={handleDuplicateRow}
+                    onMoveRow={handleMoveRow}
+                    editInputRef={editInputRef}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </ScrollArea>
+      </div>
+
+      <BatchEditDialog
+        open={showBatchEditDialog}
+        onOpenChange={setShowBatchEditDialog}
+        value={batchEditData?.value || ""}
+        onSave={handleBatchEditSave}
+        allColumnData={
+          batchEditData
+            ? localData.rows.map((row, index) => ({
+                rowIndex: index,
+                value: row[batchEditData.col] || "",
+              }))
+            : []
+        }
+        {...(batchEditData ? { currentRowIndex: batchEditData.row } : {})}
+        columnName={batchEditData?.columnName || ""}
+      />
+    </TableContextMenu>
   )
 }
 

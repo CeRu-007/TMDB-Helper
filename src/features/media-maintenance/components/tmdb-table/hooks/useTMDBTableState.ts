@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import type {
   CSVData,
   UseTMDBTableStateOptions,
@@ -18,14 +18,14 @@ export function useTMDBTableState({
     value: string
   } | null>(null)
 
-  // 使用 useRef 存储最新状态，避免闭包问题
   const stateRef = useRef({
     localData,
     isEditing,
     editCell,
   })
 
-  // 更新状态引用
+  const isInternalUpdateRef = useRef(false)
+
   const updateStateRef = useCallback(() => {
     stateRef.current = {
       localData,
@@ -34,9 +34,9 @@ export function useTMDBTableState({
     }
   }, [localData, isEditing, editCell])
 
-  // 更新单元格数据
   const updateCellData = useCallback(
     (row: number, col: number, value: string) => {
+      isInternalUpdateRef.current = true
       setLocalData((prevData) => {
         const newData = { ...prevData }
         newData.rows = [...newData.rows]
@@ -46,14 +46,19 @@ export function useTMDBTableState({
           newData.rows[row]![col] = value
         }
 
-        onCellChange?.(row, col, value)
-        onDataChange?.(newData)
-
         return newData
       })
+      onCellChange?.(row, col, value)
     },
-    [onDataChange, onCellChange]
+    [onCellChange]
   )
+
+  useEffect(() => {
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false
+      onDataChange?.(localData)
+    }
+  }, [localData, onDataChange])
 
   // 开始编辑
   const startEditing = useCallback(
