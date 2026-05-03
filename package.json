@@ -161,11 +161,7 @@
     "directories": {
       "output": "dist"
     },
-    "publish": {
-      "provider": "github",
-      "releaseType": "release",
-      "vPrefixedTagName": false
-    },
+    "publish": null,
     "files": [
       "electron/**/*",
       ".next/**/*",
