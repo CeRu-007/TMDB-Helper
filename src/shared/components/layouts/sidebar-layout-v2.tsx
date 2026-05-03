@@ -199,7 +199,8 @@ export function SidebarLayout({
       const previousKey = activeSubmenu ? `${activeMenu}-${activeSubmenu}` : activeMenu
       setContentKey(previousKey || 'maintenance-list')
     }
-  }, [selectedItem, activeMenu, activeSubmenu, contentKey])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItem, activeMenu, activeSubmenu])
 
   // 向后兼容的回调包装
   const handleShowAddDialog = useCallback(() => openAddDialog(), [openAddDialog])

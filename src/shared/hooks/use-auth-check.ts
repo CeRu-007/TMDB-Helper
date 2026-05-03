@@ -20,6 +20,8 @@ export function useAuthCheck(): {
     let cancelled = false
 
     const checkAuth = async () => {
+      let hasAdmin: boolean | null = null
+
       try {
         const adminResponse = await fetch('/api/auth/check-admin', {
           method: 'GET',
@@ -28,22 +30,31 @@ export function useAuthCheck(): {
 
         if (cancelled) return
 
-        if (adminResponse.ok) {
+        try {
           const adminData = await adminResponse.json()
-          if (adminData.success && !adminData.hasAdmin) {
-            setState({ user: null, isLoading: false, isAuthenticated: false, isInitialSetup: true })
-            return
+          if (typeof adminData.hasAdmin === 'boolean') {
+            hasAdmin = adminData.hasAdmin
           }
-        } else {
-          const adminData = await adminResponse.json().catch(() => ({}))
-          if (adminData.hasAdmin === false) {
-            setState({ user: null, isLoading: false, isAuthenticated: false, isInitialSetup: true })
-            return
-          }
+        } catch {
+          hasAdmin = null
         }
+      } catch {
+        hasAdmin = null
+      }
 
-        if (cancelled) return
+      if (cancelled) return
 
+      if (hasAdmin === false) {
+        setState({ user: null, isLoading: false, isAuthenticated: false, isInitialSetup: true })
+        return
+      }
+
+      if (hasAdmin === null) {
+        setState({ user: null, isLoading: false, isAuthenticated: false, isInitialSetup: true })
+        return
+      }
+
+      try {
         const response = await fetch('/api/auth/verify', {
           method: 'GET',
           credentials: 'include'

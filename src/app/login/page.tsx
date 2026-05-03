@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import Image from 'next/image'
 import { useAuth } from '@/shared/components/auth-provider'
 import { ClientConfigManager } from '@/lib/utils/client-config-manager'
@@ -37,6 +37,11 @@ export default function LoginPage() {
   const [isRestoring, setIsRestoring] = useState(true)
 
   const { login, register, isInitialSetup } = useAuth()
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => { isMountedRef.current = false }
+  }, [])
 
   useEffect(() => {
     if (isInitialSetup) {
@@ -45,28 +50,25 @@ export default function LoginPage() {
       return
     }
 
-    let cancelled = false
     ;(async () => {
       try {
         const r = await loadRemember()
-        if (cancelled) return
+        if (!isMountedRef.current) return
         if (r.username) setUsername(r.username)
         if (r.remember && r.password) setPassword(r.password)
         if (r.remember) setRememberMe(true)
 
         const savedUser = await ClientConfigManager.getItem('last_login_username')
-        if (cancelled) return
+        if (!isMountedRef.current) return
         if (savedUser && !r.username) setUsername(savedUser)
 
         const remember = await ClientConfigManager.getItem('last_login_remember_me')
-        if (cancelled) return
+        if (!isMountedRef.current) return
         if (remember === '1' && !r.remember) setRememberMe(true)
       } catch {} finally {
-        if (!cancelled) setIsRestoring(false)
+        if (isMountedRef.current) setIsRestoring(false)
       }
     })()
-
-    return () => { cancelled = true }
   }, [isInitialSetup])
 
   const passwordStrength = useMemo(() => validatePassword(password), [password])
