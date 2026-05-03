@@ -392,13 +392,14 @@ jobs:
           body: ${{ needs.prepare.outputs.release_notes }}
           files: |
             dist/**/*.tar
-            dist/**/*.exe
+            dist/**/*-Setup-*.exe
             dist/**/*.dmg
             dist/**/*.dmg.blockmap
             dist/**/*.AppImage
             dist/**/*.deb
-            dist/**/latest*.yml
-            dist/**/latest*.json
+            dist/**/latest.yml
+            dist/**/latest-linux.yml
+            dist/**/latest-mac.yml
           draft: false
           overwrite: true
         env:
