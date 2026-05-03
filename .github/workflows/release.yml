@@ -347,21 +347,35 @@ jobs:
 
     steps:
       - name: Download Docker artifact
-        if: ${{ github.event_name == 'push' || inputs.skip_docker != true }}
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_docker != true }}
         uses: actions/download-artifact@v4
         with:
           name: docker-image
           path: dist/
-          merge-multiple: true
         continue-on-error: true
 
-      - name: Download Electron artifacts
+      - name: Download Windows artifact
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
         uses: actions/download-artifact@v4
         with:
+          name: windows-exe
           path: dist/
-          pattern: 'windows-*,mac-*,linux-*'
-          merge-multiple: true
+        continue-on-error: true
+
+      - name: Download macOS artifact
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-dmg
+          path: dist/
+        continue-on-error: true
+
+      - name: Download Linux artifact
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-packages
+          path: dist/
         continue-on-error: true
 
       - name: Display all artifacts
@@ -370,31 +384,14 @@ jobs:
           echo "=== 所有产物 ==="
           ls -laR dist/
 
-      - name: Collect files for release
-        id: collect_files
-        shell: bash
+      - name: Prepare release files
+        id: prepare_files
         run: |
-          FILES=""
-          # Docker tar
-          while IFS= read -r f; do
-            FILES="$FILES $f"
-          done < <(find dist -name "tmdb-helper-*.tar" -type f 2>/dev/null)
-          # Windows exe
-          while IFS= read -r f; do
-            FILES="$FILES $f"
-          done < <(find dist -name "*.exe" -type f 2>/dev/null)
-          # macOS dmg
-          while IFS= read -r f; do
-            FILES="$FILES $f"
-          done < <(find dist -name "*.dmg" -type f 2>/dev/null)
-          # Linux packages
-          while IFS= read -r f; do
-            FILES="$FILES $f"
-          done < <(find dist \( -name "*.AppImage" -o -name "*.deb" \) -type f 2>/dev/null)
-
+          cd dist
+          echo "=== 待发布文件 ==="
+          FILES=$(find . -type f \( -name "*.tar" -o -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" \) 2>/dev/null | tr '\n' ' ')
           echo "files=$FILES" >> $GITHUB_OUTPUT
-          echo "=== 待上传文件 ==="
-          echo "$FILES"
+          echo "files: $FILES"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -402,7 +399,7 @@ jobs:
           tag_name: ${{ needs.prepare.outputs.tag }}
           name: ${{ needs.prepare.outputs.tag }}
           body: ${{ needs.prepare.outputs.release_notes }}
-          files: ${{ needs.collect_files.outputs.files }}
+          files: ${{ steps.prepare_files.outputs.files }}
           draft: false
           overwrite: true
         env:
