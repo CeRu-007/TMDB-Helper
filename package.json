@@ -35,10 +35,10 @@
     "docker:shell": "docker exec -it tmdb-helper bash",
     "electron": "cross-env NODE_ENV=development electron .",
     "electron:dev": "node scripts/electron-dev.js",
-    "electron:build": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --win",
-    "electron:build:mac": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --mac",
-    "electron:build:linux": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --linux",
-    "electron:build:all": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --win --mac --linux",
+    "electron:build": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --win --publish never",
+    "electron:build:mac": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --mac --publish never",
+    "electron:build:linux": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --linux --publish never",
+    "electron:build:all": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --win --mac --linux --publish never",
     "electron:pack": "cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --dir",
     "analyze-size": "node scripts/analyze-size.js"
   },
@@ -161,7 +161,11 @@
     "directories": {
       "output": "dist"
     },
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "releaseType": "release",
+      "vPrefixedTagName": false
+    },
     "files": [
       "electron/**/*",
       ".next/**/*",
