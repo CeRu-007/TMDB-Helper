@@ -25,14 +25,11 @@ const AppWithToaster = ({ children }: { children: ReactNode }) => (
   </>
 )
 
-function AuthContent({ children, isLoginPage }: { children: ReactNode; isLoginPage: boolean }) {
-  const { isAuthenticated, isLoading, isInitialSetup } = useAuth()
+function AuthContent({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth()
+  const pathname = usePathname() ?? ''
+  const isLoginPage = pathname.startsWith('/login')
 
-  if (isLoading) {
-    return null
-  }
-
-  // 登录页面直接渲染，不检查认证状态
   if (isLoginPage) {
     return (
       <UserIdentityProvider>
@@ -45,19 +42,12 @@ function AuthContent({ children, isLoginPage }: { children: ReactNode; isLoginPa
     )
   }
 
-  // 首次设置时重定向到登录页（注册模式）
-  if (isInitialSetup) {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login'
-    }
+  if (isLoading) {
     return null
   }
 
-  // 未认证用户重定向到登录页
   if (!isAuthenticated) {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login'
-    }
+    window.location.href = '/login'
     return null
   }
 
@@ -77,9 +67,6 @@ export default function MidLayout({
 }: {
   children: ReactNode
 }): JSX.Element {
-  const pathname = usePathname()
-  const isLoginPage = pathname === '/login' || pathname === '/login/'
-
   useAppInitialization()
 
   return (
@@ -87,7 +74,7 @@ export default function MidLayout({
       <ThemeSync />
       <UpdateNotificationDialog />
       <AuthProvider>
-        <AuthContent isLoginPage={isLoginPage}>
+        <AuthContent>
           {children}
         </AuthContent>
       </AuthProvider>

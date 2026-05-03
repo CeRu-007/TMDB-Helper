@@ -17,7 +17,6 @@ export interface AuthContextType extends AuthState {
   register: (username: string, password: string) => Promise<{ success: boolean; error?: string | undefined }>
   logout: () => Promise<void>
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>
-  isInitialSetup: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -25,7 +24,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const checkState = useAuthCheck()
   const [overrideState, setOverrideState] = useState<AuthState | null>(null)
-  const [overrideInitialSetup, setOverrideInitialSetup] = useState<boolean | null>(null)
 
   const { login: loginAction, logout: logoutAction, changePassword, register: registerAction } = useAuthActions()
   const router = useRouter()
@@ -35,7 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     isLoading: checkState.isLoading,
     isAuthenticated: checkState.isAuthenticated
   }
-  const isInitialSetup = overrideInitialSetup ?? checkState.isInitialSetup
 
   const handleLogin = useCallback(async (
     username: string,
@@ -49,7 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
         isLoading: false,
         isAuthenticated: true
       })
-      setOverrideInitialSetup(false)
       router.replace('/')
       return { success: true }
     }
@@ -64,7 +60,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
         isLoading: false,
         isAuthenticated: true
       })
-      setOverrideInitialSetup(false)
       router.replace('/')
       return { success: true }
     }
@@ -81,8 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     login: handleLogin,
     register: handleRegister,
     logout: handleLogout,
-    changePassword,
-    isInitialSetup
+    changePassword
   }
 
   return (
@@ -98,25 +92,4 @@ export function useAuth(): AuthContextType {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
-}
-
-export function AuthGuard({ children }: { children: React.ReactNode }): React.ReactNode {
-  const { isAuthenticated, isLoading, isInitialSetup } = useAuth()
-
-  if (isLoading) {
-    return null
-  }
-
-  if (isInitialSetup) {
-    return <>{children}</>
-  }
-
-  if (!isAuthenticated) {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login'
-    }
-    return null
-  }
-
-  return <>{children}</>
 }

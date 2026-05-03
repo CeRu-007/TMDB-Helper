@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/shared/components/auth-provider'
 import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import { saveRemember, loadRemember, clearRemember } from '@/lib/auth/secure-remember'
@@ -34,42 +35,43 @@ export default function LoginPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isRestoring, setIsRestoring] = useState(true)
 
-  const { login, register, isInitialSetup } = useAuth()
-  const isMountedRef = useRef(true)
-
-  useEffect(() => {
-    return () => { isMountedRef.current = false }
-  }, [])
+  const { login, register, isAuthenticated, isLoading: authLoading } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
-    if (isInitialSetup) {
-      setMode('register')
-      setIsRestoring(false)
-      return
+    if (!authLoading && isAuthenticated) {
+      router.replace('/')
     }
+  }, [isAuthenticated, authLoading, router])
 
+  useEffect(() => {
     ;(async () => {
-      try {
-        const r = await loadRemember()
-        if (!isMountedRef.current) return
-        if (r.username) setUsername(r.username)
-        if (r.remember && r.password) setPassword(r.password)
-        if (r.remember) setRememberMe(true)
-
-        const savedUser = await ClientConfigManager.getItem('last_login_username')
-        if (!isMountedRef.current) return
-        if (savedUser && !r.username) setUsername(savedUser)
-
-        const remember = await ClientConfigManager.getItem('last_login_remember_me')
-        if (!isMountedRef.current) return
-        if (remember === '1' && !r.remember) setRememberMe(true)
-      } catch {} finally {
-        if (isMountedRef.current) setIsRestoring(false)
+      const res = await fetch('/api/auth/check-admin', {
+        method: 'GET',
+        credentials: 'include'
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.hasAdmin === false) {
+          setMode('register')
+        }
       }
     })()
-  }, [isInitialSetup])
+
+    ;(async () => {
+      const r = await loadRemember()
+      if (r.username) setUsername(r.username)
+      if (r.remember && r.password) setPassword(r.password)
+      if (r.remember) setRememberMe(true)
+
+      const savedUser = await ClientConfigManager.getItem('last_login_username')
+      if (savedUser && !username) setUsername(savedUser)
+
+      const remember = await ClientConfigManager.getItem('last_login_remember_me')
+      if (remember === '1') setRememberMe(true)
+    })()
+  }, [])
 
   const passwordStrength = useMemo(() => validatePassword(password), [password])
 
@@ -175,12 +177,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {isRestoring ? (
-            <div className="glass-card rounded-2xl p-8 shadow-xl flex items-center justify-center min-h-[200px]">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-slate-100"></div>
-            </div>
-          ) : (
-            <div className="glass-card rounded-2xl p-8 shadow-xl">
+          <div className="glass-card rounded-2xl p-8 shadow-xl">
               <div className="mb-6">
                 <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-1">
                   {mode === 'login' ? '欢迎回来' : '创建账户'}
@@ -188,9 +185,7 @@ export default function LoginPage() {
                 <p className="text-slate-600 dark:text-slate-400 text-sm">
                   {mode === 'login'
                     ? '输入您的凭据以访问您的账户'
-                    : isInitialSetup
-                      ? '首次使用，请创建管理员账户'
-                      : '创建一个新的账户'}
+                    : '创建一个新的管理员账户'}
                 </p>
               </div>
 
@@ -375,22 +370,20 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              {isInitialSetup && mode === 'register' && (
-                <div className="mt-4 text-center">
-                  <button
+              <div className="mt-4 text-center">
+                <button
                     type="button"
                     onClick={() => {
-                      setMode('login')
+                      setMode(mode === 'login' ? 'register' : 'login')
                       setError('')
                       setConfirmPassword('')
                     }}
                     className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                     disabled={isLoading}
                   >
-                    已有账户？点击登录
+                    {mode === 'login' ? '没有账户？点击注册' : '已有账户？点击登录'}
                   </button>
                 </div>
-              )}
 
               <div className="mt-6 text-center">
                 <p className="text-slate-500 dark:text-slate-400 text-xs flex items-center justify-center gap-1">
@@ -399,7 +392,6 @@ export default function LoginPage() {
                 </p>
               </div>
             </div>
-          )}
 
           <p className="text-center text-slate-500 dark:text-slate-400 text-xs mt-6">
             © 2024 TMDB Helper. All rights reserved.
