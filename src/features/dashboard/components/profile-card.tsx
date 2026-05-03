@@ -139,7 +139,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-sm mb-1 ${hasPosters ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile.yourType')}</p>
+            <div className="h-5" />
             <h2 className={`text-xl font-bold mb-2 drop-shadow-sm ${hasPosters ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
               {t(`profile.types.${profile.type}.name`)}
             </h2>
@@ -149,7 +149,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
           </div>
         </div>
 
-        <div className={`mt-6 grid grid-cols-2 sm:grid-cols-5 gap-4 ${hasPosters ? 'pt-4 border-t border-white/15' : ''}`}>
+        <div className={`mt-6 grid grid-cols-2 sm:grid-cols-5 gap-4`}>
           <div className="text-center">
             <p className={`text-2xl font-bold drop-shadow-sm ${hasPosters ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{profile.totalItems}</p>
             <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile.totalItems')}</p>
@@ -177,7 +177,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
         </div>
 
         {profile.firstItemTitle && (
-          <div className={`mt-4 pt-4 ${hasPosters ? 'border-t border-white/15' : 'border-t border-gray-100 dark:border-gray-700'}`}>
+          <div className={`mt-4`}>
             <p className={`text-xs ${hasPosters ? 'text-white/60' : 'text-gray-400'}`}>
               {t('profile.firstItem', { title: profile.firstItemTitle, date: profile.firstItemDate ? new Date(profile.firstItemDate).toLocaleDateString() : '' })}
             </p>

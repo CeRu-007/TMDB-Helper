@@ -95,8 +95,9 @@ export function AppHeader({
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
-                size="icon"
+                size="sm"
                 onClick={onShowDashboard}
+                className="flex items-center"
                 title={t("dashboard:title")}
               >
                 <BarChart3 className="h-4 w-4" />
