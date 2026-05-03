@@ -1,7 +1,7 @@
 import React, { useEffect } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { UserAvatar } from "@/shared/components/user-identity-provider"
-import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell } from "lucide-react"
+import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell, BarChart3 } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import { useTranslation } from "react-i18next"
@@ -17,6 +17,7 @@ interface AppHeaderProps {
   onShowExportDialog: () => void
   onShowAddDialog: () => void
   onShowJournalDialog: () => void
+  onShowDashboard: () => void
 }
 
 export function AppHeader({
@@ -26,10 +27,11 @@ export function AppHeader({
   onShowImportDialog,
   onShowExportDialog,
   onShowAddDialog,
-  onShowJournalDialog
+  onShowJournalDialog,
+  onShowDashboard
 }: AppHeaderProps) {
   const { theme, setTheme } = useTheme()
-  const { t } = useTranslation("settings")
+  const { t } = useTranslation(["settings", "dashboard"])
   const journalUnreadCount = useUIStore((s) => s.journalUnreadCount)
   const setJournalUnreadCount = useUIStore((s) => s.setJournalUnreadCount)
 
@@ -91,6 +93,14 @@ export function AppHeader({
         <div className={`absolute inset-y-0 right-0 ${sidebarCollapsed ? 'left-16' : 'left-64'} pointer-events-none`}>
           <div className="h-full max-w-7xl w-full mx-auto px-8 pr-9 flex items-center justify-end pointer-events-auto">
             <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onShowDashboard}
+                title={t("dashboard:title")}
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

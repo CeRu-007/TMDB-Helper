@@ -207,6 +207,11 @@ export function SidebarLayout({
   const handleShowImportDialog = useCallback(() => openImportDialog(), [openImportDialog])
   const handleShowExportDialog = useCallback(() => openExportDialog(), [openExportDialog])
   const handleShowJournalDialog = useCallback(() => openJournalDialog(), [openJournalDialog])
+  const handleShowDashboard = useCallback(() => {
+    setActiveMenu('dashboard')
+    setActiveSubmenu('')
+    setContentKey('dashboard')
+  }, [])
 
   // 处理快速添加词条（从即将上线/近期开播页面）
   // 打开添加对话框并预填数据
@@ -233,6 +238,7 @@ export function SidebarLayout({
         onShowExportDialog={handleShowExportDialog}
         onShowAddDialog={handleShowAddDialog}
         onShowJournalDialog={handleShowJournalDialog}
+        onShowDashboard={handleShowDashboard}
       />
 
       {/* 主体内容 */}

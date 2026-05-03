@@ -24,6 +24,7 @@ import { TMDBGuide } from "@/features/tmdb-import/guide"
 import StreamingPlatformNav from "@/features/streaming-nav/components/streaming-platform-nav"
 import { SidebarRegionNavigation } from "./sidebar-region-navigation"
 import { ScheduleView } from "@/features/schedule/components/schedule-view"
+import { DashboardPage } from "@/features/dashboard"
 import { toast } from "@/lib/hooks/use-toast"
 
 interface MediaNewsItem {
@@ -276,6 +277,11 @@ export function ContentRenderers({
   // Tools - tmdb guide
   if (contentKey === 'tools-tmdb-guide') {
     return <TMDBGuide activeSection="general" />
+  }
+
+  // Dashboard
+  if (contentKey === 'dashboard') {
+    return <DashboardPage />
   }
 
   // Default - no content selected
