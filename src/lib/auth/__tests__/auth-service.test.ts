@@ -6,6 +6,7 @@ vi.mock('@/lib/database/repositories/auth.repository', () => ({
   userRepository: {
     hasAdmin: vi.fn(),
     getAdmin: vi.fn(),
+    getAdminAsync: vi.fn(),
     createUser: vi.fn(),
     updatePassword: vi.fn(),
     updateLastLogin: vi.fn(),
@@ -338,7 +339,7 @@ describe('AuthService', () => {
   describe('getUserIdFromRequest', () => {
     it('returns userId from valid request', async () => {
       const token = AuthService.generateToken(mockUser)
-      vi.mocked(userRepository.getAdmin).mockReturnValue(mockUser)
+      vi.mocked(userRepository.getAdminAsync).mockResolvedValue(mockUser)
 
       const mockRequest = {
         cookies: {
@@ -377,7 +378,7 @@ describe('AuthService', () => {
 
     it('returns null when user does not exist', async () => {
       const token = AuthService.generateToken(mockUser)
-      vi.mocked(userRepository.getAdmin).mockReturnValue(null)
+      vi.mocked(userRepository.getAdminAsync).mockResolvedValue(null)
 
       const mockRequest = {
         cookies: {
@@ -388,6 +389,281 @@ describe('AuthService', () => {
       const userId = await AuthService.getUserIdFromRequest(mockRequest)
 
       expect(userId).toBeNull()
+    })
+  })
+
+  describe('JWT密钥管理', () => {
+    it('开发环境无JWT_SECRET时使用默认密钥', () => {
+      vi.stubEnv('NODE_ENV', 'development')
+      AuthService['_jwtSecret'] = null
+      delete process.env.JWT_SECRET
+
+      const token = AuthService.generateToken(mockUser)
+      expect(token).toBeDefined()
+      expect(typeof token).toBe('string')
+    })
+
+    it('生产环境无JWT_SECRET时抛出错误', () => {
+      vi.stubEnv('NODE_ENV', 'production')
+      delete process.env.ELECTRON_BUILD
+      AuthService['_jwtSecret'] = null
+      delete process.env.JWT_SECRET
+
+      expect(() => AuthService.generateToken(mockUser)).toThrow('JWT_SECRET environment variable is required')
+    })
+
+    it('Electron构建环境无JWT_SECRET时不抛出错误', () => {
+      vi.stubEnv('NODE_ENV', 'production')
+      vi.stubEnv('ELECTRON_BUILD', 'true')
+      AuthService['_jwtSecret'] = null
+      delete process.env.JWT_SECRET
+
+      const token = AuthService.generateToken(mockUser)
+      expect(token).toBeDefined()
+    })
+
+    it('密钥缓存后不重新读取环境变量', () => {
+      process.env.JWT_SECRET = 'cached-secret'
+      AuthService['_jwtSecret'] = null
+
+      const token1 = AuthService.generateToken(mockUser)
+
+      process.env.JWT_SECRET = 'new-secret'
+
+      const decoded = AuthService.verifyToken(token1)
+      expect(decoded).not.toBeNull()
+    })
+  })
+
+  describe('Token安全测试', () => {
+    it('篡改Token签名后验证失败', () => {
+      const token = AuthService.generateToken(mockUser)
+      const parts = token.split('.')
+      const tamperedToken = parts[0] + '.' + parts[1] + '.tamoredsignature'
+
+      const decoded = AuthService.verifyToken(tamperedToken)
+      expect(decoded).toBeNull()
+    })
+
+    it('篡改Token载荷后验证失败', () => {
+      const token = AuthService.generateToken(mockUser)
+      const parts = token.split('.')
+      const payload = JSON.parse(Buffer.from(parts[1]!, 'base64').toString())
+      payload.userId = 'hacked-user-id'
+      const tamperedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url')
+      const tamperedToken = parts[0] + '.' + tamperedPayload + '.' + parts[2]
+
+      const decoded = AuthService.verifyToken(tamperedToken)
+      expect(decoded).toBeNull()
+    })
+
+    it('Token不包含敏感信息', () => {
+      const token = AuthService.generateToken(mockUser)
+      const parts = token.split('.')
+      const payload = JSON.parse(Buffer.from(parts[1]!, 'base64').toString())
+
+      expect(payload.passwordHash).toBeUndefined()
+      expect(payload.userId).toBe(mockUser.id)
+      expect(payload.username).toBe(mockUser.username)
+    })
+
+    it('Token包含iat和exp', () => {
+      const token = AuthService.generateToken(mockUser)
+      const decoded = AuthService.verifyToken(token)
+
+      expect(decoded!.iat).toBeDefined()
+      expect(decoded!.exp).toBeDefined()
+      expect(decoded!.exp).toBeGreaterThan(decoded!.iat)
+    })
+  })
+
+  describe('validateLogin边界条件', () => {
+    it('用户名大小写敏感', async () => {
+      const hash = await import('bcryptjs').then(b => b.hash('Password1', 4))
+      const userWithHash = { ...mockUser, username: 'Admin', passwordHash: hash }
+      vi.mocked(userRepository.getAdmin).mockReturnValue(userWithHash)
+      vi.mocked(userRepository.updateLastLogin).mockReturnValue({ success: true })
+
+      const result = await AuthService.validateLogin('admin', 'Password1')
+      expect(result).toBeNull()
+    })
+
+    it('用户名前后空格不自动trim', async () => {
+      const hash = await import('bcryptjs').then(b => b.hash('Password1', 4))
+      const userWithHash = { ...mockUser, passwordHash: hash }
+      vi.mocked(userRepository.getAdmin).mockReturnValue(userWithHash)
+
+      const result = await AuthService.validateLogin(' admin ', 'Password1')
+      expect(result).toBeNull()
+    })
+
+    it('密码包含特殊字符时正确验证', async () => {
+      const specialPassword = 'P@$$w0rd!<>"\'&'
+      const hash = await import('bcryptjs').then(b => b.hash(specialPassword, 4))
+      const userWithHash = { ...mockUser, passwordHash: hash }
+      vi.mocked(userRepository.getAdmin).mockReturnValue(userWithHash)
+      vi.mocked(userRepository.updateLastLogin).mockReturnValue({ success: true })
+
+      const result = await AuthService.validateLogin('admin', specialPassword)
+      expect(result).not.toBeNull()
+    })
+
+    it('bcrypt比较异常时返回null', async () => {
+      vi.mocked(userRepository.getAdmin).mockReturnValue({
+        ...mockUser,
+        passwordHash: 'invalid-hash-format',
+      })
+
+      const result = await AuthService.validateLogin('admin', 'Password1')
+      expect(result).toBeNull()
+    })
+
+    it('登录成功后更新lastLoginAt', async () => {
+      const hash = await import('bcryptjs').then(b => b.hash('Password1', 4))
+      const userWithHash = { ...mockUser, passwordHash: hash }
+      vi.mocked(userRepository.getAdmin).mockReturnValue(userWithHash)
+      vi.mocked(userRepository.updateLastLogin).mockReturnValue({ success: true })
+
+      const result = await AuthService.validateLogin('admin', 'Password1')
+
+      expect(userRepository.updateLastLogin).toHaveBeenCalledWith(
+        userWithHash.id,
+        expect.any(String)
+      )
+      const lastLoginAt = result!.lastLoginAt
+      expect(lastLoginAt).toBeDefined()
+      expect(new Date(lastLoginAt!).getTime()).not.toBeNaN()
+    })
+  })
+
+  describe('register边界条件', () => {
+    it('用户名恰好3个字符时注册成功', async () => {
+      vi.mocked(userRepository.hasAdmin).mockReturnValue(false)
+      vi.mocked(userRepository.createUser).mockReturnValue({ success: true, data: mockUser })
+
+      const result = await AuthService.register('abc', 'StrongP@ss1')
+      expect(result.success).toBe(true)
+    })
+
+    it('用户名恰好20个字符时注册成功', async () => {
+      vi.mocked(userRepository.hasAdmin).mockReturnValue(false)
+      vi.mocked(userRepository.createUser).mockReturnValue({ success: true, data: mockUser })
+
+      const result = await AuthService.register('a'.repeat(20), 'StrongP@ss1')
+      expect(result.success).toBe(true)
+    })
+
+    it('密码恰好6个字符时注册成功', async () => {
+      vi.mocked(userRepository.hasAdmin).mockReturnValue(false)
+      vi.mocked(userRepository.createUser).mockReturnValue({ success: true, data: mockUser })
+
+      const result = await AuthService.register('admin', 'abcdef')
+      expect(result.success).toBe(true)
+    })
+
+    it('用户名包含下划线时注册成功', async () => {
+      vi.mocked(userRepository.hasAdmin).mockReturnValue(false)
+      vi.mocked(userRepository.createUser).mockReturnValue({ success: true, data: mockUser })
+
+      const result = await AuthService.register('admin_user', 'StrongP@ss1')
+      expect(result.success).toBe(true)
+    })
+
+    it('用户名包含数字时注册成功', async () => {
+      vi.mocked(userRepository.hasAdmin).mockReturnValue(false)
+      vi.mocked(userRepository.createUser).mockReturnValue({ success: true, data: mockUser })
+
+      const result = await AuthService.register('admin123', 'StrongP@ss1')
+      expect(result.success).toBe(true)
+    })
+
+    it('注册返回的用户不包含passwordHash', async () => {
+      vi.mocked(userRepository.hasAdmin).mockReturnValue(false)
+      vi.mocked(userRepository.createUser).mockReturnValue({ success: true, data: mockUser })
+
+      const result = await AuthService.register('admin', 'StrongP@ss1')
+      expect((result.user as any)?.passwordHash).toBeUndefined()
+    })
+
+    it('createUser返回无error时使用默认错误消息', async () => {
+      vi.mocked(userRepository.hasAdmin).mockReturnValue(false)
+      vi.mocked(userRepository.createUser).mockReturnValue({ success: false })
+
+      const result = await AuthService.register('admin', 'StrongP@ss1')
+      expect(result.error).toBe('注册失败')
+    })
+  })
+
+  describe('changePassword边界条件', () => {
+    it('updatePassword返回失败时返回false', async () => {
+      const hash = await import('bcryptjs').then(b => b.hash('OldPass1', 4))
+      const userWithHash = { ...mockUser, passwordHash: hash }
+      vi.mocked(userRepository.getAdmin).mockReturnValue(userWithHash)
+      vi.mocked(userRepository.updatePassword).mockReturnValue({ success: false })
+
+      const result = await AuthService.changePassword('OldPass1', 'NewPass1!')
+      expect(result).toBe(false)
+    })
+
+    it('新密码与旧密码相同时仍允许修改', async () => {
+      const hash = await import('bcryptjs').then(b => b.hash('SamePass1', 4))
+      const userWithHash = { ...mockUser, passwordHash: hash }
+      vi.mocked(userRepository.getAdmin).mockReturnValue(userWithHash)
+      vi.mocked(userRepository.updatePassword).mockReturnValue({ success: true })
+
+      const result = await AuthService.changePassword('SamePass1', 'SamePass1')
+      expect(result).toBe(true)
+    })
+  })
+
+  describe('generateToken边界条件', () => {
+    it('rememberMe=true时Token过期时间是rememberMe=false的两倍', () => {
+      const normalToken = AuthService.generateToken(mockUser, false)
+      const rememberToken = AuthService.generateToken(mockUser, true)
+
+      const normalDecoded = AuthService.verifyToken(normalToken)!
+      const rememberDecoded = AuthService.verifyToken(rememberToken)!
+
+      const normalDuration = normalDecoded.exp - normalDecoded.iat
+      const rememberDuration = rememberDecoded.exp - rememberDecoded.iat
+
+      expect(rememberDuration).toBe(normalDuration * 2)
+    })
+
+    it('自定义sessionExpiryDays的Token过期时间正确', () => {
+      const customUser = { ...mockUser, sessionExpiryDays: 30 }
+      const token = AuthService.generateToken(customUser, false)
+      const decoded = AuthService.verifyToken(token)!
+
+      const durationSeconds = decoded.exp - decoded.iat
+      expect(durationSeconds).toBe(30 * 24 * 60 * 60)
+    })
+  })
+
+  describe('verifyToken边界条件', () => {
+    it('null token返回null', () => {
+      const decoded = AuthService.verifyToken(null as any)
+      expect(decoded).toBeNull()
+    })
+
+    it('undefined token返回null', () => {
+      const decoded = AuthService.verifyToken(undefined as any)
+      expect(decoded).toBeNull()
+    })
+
+    it('纯数字token返回null', () => {
+      const decoded = AuthService.verifyToken('12345')
+      expect(decoded).toBeNull()
+    })
+
+    it('仅两个部分的token返回null', () => {
+      const decoded = AuthService.verifyToken('part1.part2')
+      expect(decoded).toBeNull()
+    })
+
+    it('包含四个部分的token返回null', () => {
+      const decoded = AuthService.verifyToken('a.b.c.d')
+      expect(decoded).toBeNull()
     })
   })
 })

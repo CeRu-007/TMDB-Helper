@@ -12,7 +12,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await initializeSchema();
 
     const body = await request.json();
-    const { username, password, rememberMe = false } = body;
+    const { username, password } = body;
+    const rememberMe = Boolean(body.rememberMe);
 
     if (!username?.trim() || !password?.trim()) {
       return NextResponse.json(
