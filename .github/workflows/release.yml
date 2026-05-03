@@ -356,11 +356,11 @@ jobs:
         continue-on-error: true
 
       - name: Download Electron artifacts
-        if: ${{ github.event_name == 'push' || inputs.skip_electron != true }}
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
         uses: actions/download-artifact@v4
         with:
           path: dist/
-          pattern: '*-exe|*-dmg|linux-packages'
+          pattern: 'windows-*,mac-*,linux-*'
           merge-multiple: true
         continue-on-error: true
 
