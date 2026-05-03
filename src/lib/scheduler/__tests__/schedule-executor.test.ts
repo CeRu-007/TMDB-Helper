@@ -363,6 +363,30 @@ describe('processScheduleTaskResult', () => {
     })
   })
 
+  describe('用户反馈场景：currentEpisode=19，22集完结，第20集完整，21-22不完整', () => {
+    it('currentEpisode 更新为20（effectiveEpisodeCount），不标记完结', async () => {
+      const item = makeItem({
+        seasons: [{ seasonNumber: 1, totalEpisodes: 22, currentEpisode: 19, episodes: [] }],
+      })
+      const task = makeTask({ checkMetadataCompleteness: true })
+      const result: ExecuteResult = {
+        success: true,
+        message: '有效更新至第20集',
+        episodeCount: 20,
+        rawEpisodeCount: 22,
+        incompleteEpisodes: [21, 22],
+      }
+
+      await processScheduleTaskResult(item, task, result)
+
+      const updatedItem = await getUpdatedItem()
+      const season = updatedItem?.seasons?.find(s => s.seasonNumber === 1)
+      expect(season?.currentEpisode).toBe(20)
+      expect(updatedItem?.status).toBe('watching')
+      expect(updatedItem?.completed).toBe(false)
+    })
+  })
+
   describe('之前误更新场景：currentEpisode > effectiveEpisodeCount', () => {
     it('currentEpisode=20 > effectiveEpisodeCount=16，回退到16，status 重置为 watching', async () => {
       const item = makeItem({

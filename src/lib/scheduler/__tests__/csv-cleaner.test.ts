@@ -671,6 +671,69 @@ describe('端到端集成流程：analyzeCSVMetadata → 阈值计算 → cleanC
     expect(cleanedCSV).toContain('19')
     expect(cleanedCSV).toContain('20')
   })
+
+  it('场景6（用户反馈）：currentEpisode=19，22集完结，第20集完整，21-22不完整', async () => {
+    const csv = makeCSV([
+      ...Array.from({ length: 19 }, (_, i) => ({
+        episode_number: i + 1,
+        name: `第${i + 1}集`,
+        air_date: '2024-01-01',
+        runtime: '45',
+        overview: `第${i + 1}集简介`,
+        backdrop: '',
+      })),
+      { episode_number: 20, name: '第20集', air_date: '2024-02-01', runtime: '45', overview: '第20集简介', backdrop: '' },
+      { episode_number: 21, name: '', air_date: '2024-02-02', runtime: '43', overview: '', backdrop: 'https://img.com/21.jpg' },
+      { episode_number: 22, name: '', air_date: '2024-02-03', runtime: '44', overview: '', backdrop: 'https://img.com/22.jpg' },
+    ])
+
+    const analysis = analyzeCSVMetadata(csv)
+    expect(analysis.rawEpisodeCount).toBe(22)
+    expect(analysis.effectiveEpisodeCount).toBe(20)
+    expect(analysis.incompleteEpisodes).toEqual([21, 22])
+
+    const currentEpisode = 19
+    const threshold = Math.min(currentEpisode, analysis.effectiveEpisodeCount)
+    expect(threshold).toBe(19)
+
+    const cleanedCSV = cleanCSV(csv, defaultFieldCleanup, threshold, true)
+
+    expect(cleanedCSV).toContain('20')
+    expect(cleanedCSV).toContain('第20集')
+    expect(cleanedCSV).toContain('第20集简介')
+    expect(cleanedCSV).toContain('21')
+    expect(cleanedCSV).toContain('22')
+    expect(cleanedCSV).not.toContain('第19集')
+
+    const lines = cleanedCSV.trim().split('\n')
+    expect(lines.length).toBe(4)
+  })
+
+  it('场景6对比：如果用 effectiveEpisodeCount=20 直接作为阈值（修复前的错误行为），第20集会被错误跳过', async () => {
+    const csv = makeCSV([
+      ...Array.from({ length: 19 }, (_, i) => ({
+        episode_number: i + 1,
+        name: `第${i + 1}集`,
+        air_date: '2024-01-01',
+        runtime: '45',
+        overview: `第${i + 1}集简介`,
+        backdrop: '',
+      })),
+      { episode_number: 20, name: '第20集', air_date: '2024-02-01', runtime: '45', overview: '第20集简介', backdrop: '' },
+      { episode_number: 21, name: '', air_date: '2024-02-02', runtime: '43', overview: '', backdrop: 'https://img.com/21.jpg' },
+      { episode_number: 22, name: '', air_date: '2024-02-03', runtime: '44', overview: '', backdrop: 'https://img.com/22.jpg' },
+    ])
+
+    const effectiveEpisodeCount = 20
+    const wrongThreshold = effectiveEpisodeCount
+    const wrongResult = cleanCSV(csv, defaultFieldCleanup, wrongThreshold, true)
+
+    expect(wrongResult).not.toContain('第20集')
+    expect(wrongResult).not.toContain('第20集简介')
+
+    const lines = wrongResult.trim().split('\n')
+    expect(lines.length).toBe(3)
+  })
 })
 
 describe('extractEpisodeCount', () => {
