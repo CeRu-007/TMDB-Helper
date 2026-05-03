@@ -88,7 +88,9 @@ export function TaskJournalDialog({ open, onOpenChange }: TaskJournalDialogProps
       if (statusFilter !== "all") params.set("status", statusFilter)
       params.set("limit", "100")
 
-      const response = await fetch(`/api/journal?${params.toString()}`)
+      const response = await fetch(`/api/journal?${params.toString()}`, {
+        cache: 'no-store'
+      })
       const data = await response.json()
 
       if (data.success) {
@@ -152,7 +154,9 @@ export function TaskJournalDialog({ open, onOpenChange }: TaskJournalDialogProps
         next.delete(itemId)
         return next
       })
-      const response = await fetch('/api/journal?unreadCount=true')
+      const response = await fetch('/api/journal?unreadCount=true', {
+        cache: 'no-store'
+      })
       const data = await response.json()
       if (data.success && data.data) {
         setUnreadCount(data.data.unreadCount)

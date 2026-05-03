@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useCallback } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { UserAvatar } from "@/shared/components/user-identity-provider"
 import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell, BarChart3 } from "lucide-react"
@@ -35,15 +35,21 @@ export function AppHeader({
   const journalUnreadCount = useUIStore((s) => s.journalUnreadCount)
   const setJournalUnreadCount = useUIStore((s) => s.setJournalUnreadCount)
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
-      const response = await fetch('/api/journal?unreadCount=true')
-      const data = await response.json()
-      if (data.success && data.data) {
-        setJournalUnreadCount(data.data.unreadCount)
+      const response = await fetch('/api/journal?unreadCount=true', {
+        cache: 'no-store'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && typeof data.data?.unreadCount === 'number') {
+          setJournalUnreadCount(data.data.unreadCount)
+        }
       }
-    } catch {}
-  }
+    } catch (error) {
+      console.error('[AppHeader] 获取未读数失败:', error)
+    }
+  }, [])
 
   useEffect(() => {
     fetchUnreadCount()
