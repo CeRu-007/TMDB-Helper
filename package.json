@@ -205,7 +205,7 @@
       ],
       "icon": "public/images/tmdb-helper-logo-new.png",
       "compression": "maximum",
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "${productName}-${version}-Windows-Setup.${ext}"
     },
     "mac": {
       "target": [
@@ -220,7 +220,7 @@
       "icon": "public/images/tmdb-helper-logo-new.png",
       "compression": "maximum",
       "category": "public.app-category.productivity",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-macOS-${arch}.${ext}"
     },
     "linux": {
       "target": [
@@ -240,7 +240,7 @@
       "icon": "public/images/tmdb-helper-logo-new.png",
       "compression": "maximum",
       "category": "Office",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-Linux-${arch}.${ext}"
     },
     "deb": {
       "compression": "xz"
