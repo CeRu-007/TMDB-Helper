@@ -29,7 +29,7 @@ function makeItem(overrides: Partial<TMDBItem> = {}): TMDBItem {
     id: 'item-1',
     title: '测试剧集',
     type: 'tv',
-    status: 'watching',
+    status: 'ongoing',
     completed: false,
     seasons: [
       {
@@ -179,7 +179,7 @@ describe('processScheduleTaskResult', () => {
       expect(season?.currentEpisode).toBe(16)
     })
 
-    it('20集完结但有17-20集不完整时，不标记完结，status 保持 watching', async () => {
+    it('20集完结但有17-20集不完整时，不标记完结，status 保持 ongoing', async () => {
       const item = makeItem({
         seasons: [{ seasonNumber: 1, totalEpisodes: 20, currentEpisode: 10, episodes: [] }],
       })
@@ -195,7 +195,7 @@ describe('processScheduleTaskResult', () => {
       await processScheduleTaskResult(item, task, result)
 
       const updatedItem = await getUpdatedItem()
-      expect(updatedItem?.status).toBe('watching')
+      expect(updatedItem?.status).toBe('ongoing')
       expect(updatedItem?.completed).toBe(false)
     })
 
@@ -316,7 +316,7 @@ describe('processScheduleTaskResult', () => {
       const updatedItem = await getUpdatedItem()
       const season = updatedItem?.seasons?.find(s => s.seasonNumber === 1)
       expect(season?.currentEpisode).toBe(19)
-      expect(updatedItem?.status).toBe('watching')
+      expect(updatedItem?.status).toBe('ongoing')
       expect(updatedItem?.completed).toBe(false)
     })
 
@@ -359,7 +359,7 @@ describe('processScheduleTaskResult', () => {
       const updatedItem = await getUpdatedItem()
       const season = updatedItem?.seasons?.find(s => s.seasonNumber === 1)
       expect(season?.currentEpisode).toBe(20)
-      expect(updatedItem?.status).toBe('watching')
+      expect(updatedItem?.status).toBe('ongoing')
     })
   })
 
@@ -382,13 +382,13 @@ describe('processScheduleTaskResult', () => {
       const updatedItem = await getUpdatedItem()
       const season = updatedItem?.seasons?.find(s => s.seasonNumber === 1)
       expect(season?.currentEpisode).toBe(20)
-      expect(updatedItem?.status).toBe('watching')
+      expect(updatedItem?.status).toBe('ongoing')
       expect(updatedItem?.completed).toBe(false)
     })
   })
 
   describe('之前误更新场景：currentEpisode > effectiveEpisodeCount', () => {
-    it('currentEpisode=20 > effectiveEpisodeCount=16，回退到16，status 重置为 watching', async () => {
+    it('currentEpisode=20 > effectiveEpisodeCount=16，回退到16，status 重置为 ongoing', async () => {
       const item = makeItem({
         seasons: [{ seasonNumber: 1, totalEpisodes: 20, currentEpisode: 20, episodes: [] }],
         status: 'completed',
@@ -408,7 +408,7 @@ describe('processScheduleTaskResult', () => {
       const updatedItem = await getUpdatedItem()
       const season = updatedItem?.seasons?.find(s => s.seasonNumber === 1)
       expect(season?.currentEpisode).toBe(16)
-      expect(updatedItem?.status).toBe('watching')
+      expect(updatedItem?.status).toBe('ongoing')
       expect(updatedItem?.completed).toBe(false)
     })
 
@@ -430,7 +430,7 @@ describe('processScheduleTaskResult', () => {
       const updatedItem = await getUpdatedItem()
       const season = updatedItem?.seasons?.find(s => s.seasonNumber === 1)
       expect(season?.currentEpisode).toBe(16)
-      expect(updatedItem?.status).toBe('watching')
+      expect(updatedItem?.status).toBe('ongoing')
     })
   })
 
@@ -462,7 +462,7 @@ describe('processScheduleTaskResult', () => {
       const { scheduleRepository } = await import('@/lib/data/schedule-repository')
 
       const notCompletedItem = makeItem({
-        status: 'watching',
+        status: 'ongoing',
         completed: false,
         seasons: [{ seasonNumber: 1, totalEpisodes: 20, currentEpisode: 16, episodes: [] }],
       })
