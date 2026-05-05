@@ -13,8 +13,6 @@
   "loginCount": "ログイン回数",
   "usageTime": "使用時間",
   "lastActive": "最終アクティブ",
-  "featuresUsed": "使用された機能",
-  "andMore": "他に{{count}}件",
   "createdAt": "作成日時",
   "avatar": "アバター",
   "customAvatar": "カスタムアバター",

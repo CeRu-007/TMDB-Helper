@@ -17,6 +17,8 @@ export interface User {
   lastLoginAt?: string | undefined;
   sessionExpiryDays: number;
   avatarUrl?: string | undefined;
+  loginCount: number;
+  totalUsageTime: number;
 }
 
 function mapRowToUser(row: UserRow): User {
@@ -29,6 +31,8 @@ function mapRowToUser(row: UserRow): User {
     lastLoginAt: row.lastLoginAt ?? undefined,
     sessionExpiryDays: row.sessionExpiryDays,
     avatarUrl: row.avatarUrl ?? undefined,
+    loginCount: row.loginCount ?? 0,
+    totalUsageTime: row.totalUsageTime ?? 0,
   };
 }
 
@@ -63,8 +67,8 @@ export class UserRepository extends BaseRepository<User, UserRow> {
     try {
       const now = new Date().toISOString();
       db.prepare(`
-        INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, deletedAt)
-        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @avatarUrl, @deletedAt)
+        INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, loginCount, totalUsageTime, deletedAt)
+        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @avatarUrl, @loginCount, @totalUsageTime, @deletedAt)
       `).run({
         id: user.id,
         username: user.username,
@@ -74,6 +78,8 @@ export class UserRepository extends BaseRepository<User, UserRow> {
         lastLoginAt: user.lastLoginAt ?? null,
         sessionExpiryDays: user.sessionExpiryDays,
         avatarUrl: user.avatarUrl ?? null,
+        loginCount: user.loginCount ?? 1,
+        totalUsageTime: user.totalUsageTime ?? 0,
         deletedAt: null,
       });
 
@@ -93,7 +99,7 @@ export class UserRepository extends BaseRepository<User, UserRow> {
     const db = getDatabase();
 
     try {
-      db.prepare('UPDATE users SET lastLoginAt = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(lastLoginAt, lastLoginAt, id);
+      db.prepare('UPDATE users SET lastLoginAt = ?, loginCount = loginCount + 1, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(lastLoginAt, lastLoginAt, id);
       return { success: true };
     } catch (error) {
       return {
@@ -126,6 +132,21 @@ export class UserRepository extends BaseRepository<User, UserRow> {
       return { success: true };
     } catch (error) {
       logger.error('[UserRepository] 更新头像失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '更新失败',
+      };
+    }
+  }
+
+  updateUsageTime(id: string, additionalMinutes: number): DatabaseResult {
+    const db = getDatabase();
+
+    try {
+      db.prepare('UPDATE users SET totalUsageTime = totalUsageTime + ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(additionalMinutes, new Date().toISOString(), id);
+      return { success: true };
+    } catch (error) {
+      logger.error('[UserRepository] 更新使用时长失败:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : '更新失败',
@@ -172,8 +193,8 @@ export class UserRepository extends BaseRepository<User, UserRow> {
     try {
       const now = new Date().toISOString();
       db.prepare(`
-        INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, deletedAt)
-        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @avatarUrl, @deletedAt)
+        INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, loginCount, totalUsageTime, deletedAt)
+        VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @avatarUrl, @loginCount, @totalUsageTime, @deletedAt)
         ON CONFLICT(id) DO UPDATE SET
           username = @username,
           passwordHash = @passwordHash,
@@ -190,6 +211,8 @@ export class UserRepository extends BaseRepository<User, UserRow> {
         lastLoginAt: user.lastLoginAt ?? null,
         sessionExpiryDays: user.sessionExpiryDays,
         avatarUrl: user.avatarUrl ?? null,
+        loginCount: user.loginCount ?? 1,
+        totalUsageTime: user.totalUsageTime ?? 0,
         deletedAt: null,
       });
 

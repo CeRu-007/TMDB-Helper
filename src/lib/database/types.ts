@@ -104,6 +104,8 @@ export interface UserRow {
   lastLoginAt: string | null;
   sessionExpiryDays: number;
   avatarUrl: string | null;
+  loginCount: number;
+  totalUsageTime: number;
   deletedAt: string | null;
 }
 

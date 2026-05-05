@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/auth/auth-service', () => ({
@@ -47,6 +47,8 @@ const mockUser = {
   updatedAt: '2024-01-01T00:00:00.000Z',
   lastLoginAt: '2024-01-02T00:00:00.000Z',
   sessionExpiryDays: 15,
+  loginCount: 1,
+  totalUsageTime: 0,
 }
 
 function createLoginRequest(body: Record<string, unknown>): NextRequest {

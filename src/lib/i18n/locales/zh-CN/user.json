@@ -13,8 +13,6 @@
   "loginCount": "登录次数",
   "usageTime": "使用时长",
   "lastActive": "最后活跃",
-  "featuresUsed": "已使用功能",
-  "andMore": "等{{count}}项",
   "createdAt": "创建于",
   "avatar": "头像",
   "customAvatar": "自定义头像",

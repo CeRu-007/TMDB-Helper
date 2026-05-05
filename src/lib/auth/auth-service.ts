@@ -18,6 +18,9 @@ export interface User {
   updatedAt: string;
   lastLoginAt?: string | undefined;
   sessionExpiryDays: number;
+  avatarUrl?: string | undefined;
+  loginCount: number;
+  totalUsageTime: number;
 }
 
 export interface AuthToken {
@@ -110,6 +113,8 @@ export class AuthService {
       createdAt: now,
       updatedAt: now,
       sessionExpiryDays: this.getSessionExpiryDays(),
+      loginCount: 1,
+      totalUsageTime: 0,
     };
 
     const result = userRepository.createUser(user as import('@/lib/database/repositories/auth.repository').User);
@@ -192,6 +197,10 @@ export class AuthService {
 
   static getSystemUserId(): string {
     return 'user_admin_system';
+  }
+
+  static updateUsageTime(userId: string, additionalMinutes: number): boolean {
+    return userRepository.updateUsageTime(userId, additionalMinutes).success;
   }
 
   static async getUserIdFromRequest(request: import('next/server').NextRequest): Promise<string | null> {

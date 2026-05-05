@@ -7,7 +7,7 @@ import { getDatabaseAsync } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 /**
  * 初始化数据库 Schema
@@ -61,6 +61,9 @@ export async function initializeSchema(): Promise<void> {
     }
     if (currentVersion < 13) {
       migrateToV13(db);
+    }
+    if (currentVersion < 14) {
+      migrateToV14(db);
     }
 
     setUserVersion(db, SCHEMA_VERSION);
@@ -191,6 +194,8 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       lastLoginAt TEXT,
       sessionExpiryDays INTEGER DEFAULT 15,
       avatarUrl TEXT,
+      loginCount INTEGER DEFAULT 0,
+      totalUsageTime INTEGER DEFAULT 0,
       deletedAt TEXT
     )
   `);
@@ -506,6 +511,28 @@ function migrateToV13(db: ReturnType<typeof getDatabase>): void {
     logger.info('[Database] V13 迁移完成');
   } catch (error) {
     logger.error('[Database] V13 迁移失败:', error);
+  }
+}
+
+function migrateToV14(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V14 迁移: 为 users 表添加 loginCount 和 totalUsageTime 字段');
+
+  try {
+    db.exec(`
+      ALTER TABLE users ADD COLUMN loginCount INTEGER DEFAULT 0
+    `);
+    db.exec(`
+      ALTER TABLE users ADD COLUMN totalUsageTime INTEGER DEFAULT 0
+    `);
+
+    const existingCount = safeCount(db, 'users', 'deletedAt IS NULL');
+    if (existingCount > 0) {
+      db.exec(`UPDATE users SET loginCount = 1 WHERE loginCount = 0 AND deletedAt IS NULL`);
+    }
+
+    logger.info('[Database] V14 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V14 迁移失败:', error);
   }
 }
 

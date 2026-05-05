@@ -13,8 +13,6 @@
   "loginCount": "로그인 횟수",
   "usageTime": "사용 시간",
   "lastActive": "마지막 활동",
-  "featuresUsed": "사용된 기능",
-  "andMore": "외 {{count}}개",
   "createdAt": "생성됨",
   "avatar": "아바타",
   "customAvatar": "사용자 정의 아바타",

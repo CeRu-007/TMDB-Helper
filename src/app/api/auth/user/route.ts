@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthMiddleware } from '@/lib/auth/auth-middleware';
-import { AuthService } from '@/lib/auth/auth-service';
+import { AuthService, type User } from '@/lib/auth/auth-service';
 import { ErrorHandler } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 import { userRepository } from '@/lib/database/repositories/auth.repository';
 
-function buildUserInfo(user: { id: string; username: string; createdAt: string; lastLoginAt?: string; avatarUrl?: string } | null) {
+function buildUserInfo(user: Omit<User, 'passwordHash'> | null) {
   if (!user) {
     return {
       userId: 'anonymous',
       displayName: '匿名用户',
       createdAt: new Date().toISOString(),
       lastActiveAt: new Date().toISOString(),
+      loginCount: 0,
+      totalUsageTime: 0,
     };
   }
   return {
@@ -20,6 +22,8 @@ function buildUserInfo(user: { id: string; username: string; createdAt: string; 
     avatarUrl: user.avatarUrl,
     createdAt: user.createdAt,
     lastActiveAt: user.lastLoginAt || new Date().toISOString(),
+    loginCount: user.loginCount ?? 0,
+    totalUsageTime: user.totalUsageTime ?? 0,
   };
 }
 
@@ -68,17 +72,22 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
       );
     }
 
-    logger.info(`在服务器端接收到用户信息更新请求: displayName=${displayName}, avatarUrl=${avatarUrl}`);
+    logger.info(`在服务器端接收到用户信息更新请求: displayName=${displayName}, avatarUrl=${avatarUrl}, usageTime=${body.usageTime}`);
 
     if (typeof avatarUrl === 'string') {
       userRepository.updateAvatar(userId, avatarUrl);
     }
 
+    if (typeof body.usageTime === 'number' && body.usageTime > 0) {
+      AuthService.updateUsageTime(userId, body.usageTime);
+    }
+
     const user = AuthService.getUser();
+    const updatedUser = user ? { ...user, username: displayName || user.username } : null;
     return NextResponse.json({
       success: true,
       message: '用户信息更新成功',
-      user: buildUserInfo(user ? { ...user, username: displayName || user.username } : null)
+      user: buildUserInfo(updatedUser)
     });
 
   } catch (error) {

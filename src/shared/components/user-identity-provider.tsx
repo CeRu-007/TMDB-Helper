@@ -40,6 +40,8 @@ interface UserInfo {
   avatarUrl?: string;
   createdAt: string;
   lastActiveAt: string;
+  loginCount: number;
+  totalUsageTime: number;
 }
 
 interface UserContextType {
@@ -70,30 +72,16 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
   const isClient = useIsClient()
 
   useEffect(() => {
-    if (isClient && authUser) {
-      setUserInfo(prev => {
-        if (prev && prev.userId === authUser.id && prev.displayName === authUser.username) {
-          return prev
-        }
-        return {
-          userId: authUser.id,
-          displayName: authUser.username,
-          avatarUrl: prev?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
-          createdAt: prev?.createdAt || new Date().toISOString(),
-          lastActiveAt: new Date().toISOString(),
-        }
-      })
-    }
-  }, [isClient, authUser])
-
-  useEffect(() => {
     if (!isClient) return
 
     const init = async () => {
       setIsLoading(true)
       try {
         let avatarUrl = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka'
-        let createdAt = new Date().toISOString()
+        let createdAt = ''
+        let lastActiveAt = ''
+        let loginCount = 0
+        let totalUsageTime = 0
 
         try {
           const res = await fetch('/api/auth/user', {
@@ -108,6 +96,15 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
             if (data.user.createdAt) {
               createdAt = data.user.createdAt
             }
+            if (data.user.lastActiveAt) {
+              lastActiveAt = data.user.lastActiveAt
+            }
+            if (typeof data.user.loginCount === 'number') {
+              loginCount = data.user.loginCount
+            }
+            if (typeof data.user.totalUsageTime === 'number') {
+              totalUsageTime = data.user.totalUsageTime
+            }
           }
         } catch {}
 
@@ -116,8 +113,10 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
             userId: authUser.id,
             displayName: authUser.username,
             avatarUrl,
-            createdAt,
-            lastActiveAt: new Date().toISOString(),
+            createdAt: createdAt || new Date().toISOString(),
+            lastActiveAt: lastActiveAt || new Date().toISOString(),
+            loginCount,
+            totalUsageTime,
           })
         }
       } catch {
@@ -197,27 +196,73 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
       fetch('/api/auth/user', {
         method: 'DELETE',
         credentials: 'include',
-      }).catch(error => {
-
-      })
+      }).catch(() => {})
 
       setTimeout(() => {
-        initializeUser()
+        refreshUserInfo()
       }, 100)
     } catch (error) {
 
     }
   }
 
-  const refreshUserInfo = () => {
+  const refreshUserInfo = async () => {
     if (!isClient) return
 
     try {
-      initializeUser()
+      const res = await fetch('/api/auth/user', {
+        method: 'GET',
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (data.success && data.user && authUser) {
+        setUserInfo({
+          userId: authUser.id,
+          displayName: authUser.username,
+          avatarUrl: data.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
+          createdAt: data.user.createdAt || new Date().toISOString(),
+          lastActiveAt: data.user.lastActiveAt || new Date().toISOString(),
+          loginCount: data.user.loginCount ?? 0,
+          totalUsageTime: data.user.totalUsageTime ?? 0,
+        })
+      }
     } catch (error) {
 
     }
   }
+
+  useEffect(() => {
+    if (!isClient || !userInfo) return
+
+    const USAGE_REPORT_INTERVAL = 5 * 60 * 1000
+    let sessionStart = Date.now()
+
+    const reportUsageTime = () => {
+      const elapsedMinutes = Math.floor((Date.now() - sessionStart) / (1000 * 60))
+      if (elapsedMinutes > 0) {
+        fetch('/api/auth/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ usageTime: elapsedMinutes }),
+        }).catch(() => {})
+        sessionStart = Date.now()
+      }
+    }
+
+    const intervalId = setInterval(reportUsageTime, USAGE_REPORT_INTERVAL)
+
+    const handleBeforeUnload = () => {
+      reportUsageTime()
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      clearInterval(intervalId)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      reportUsageTime()
+    }
+  }, [isClient, userInfo])
 
   const contextValue: UserContextType = {
     userInfo,
@@ -938,6 +983,13 @@ function DataStatsSection({
     (new Date().getTime() - new Date(userInfo.createdAt).getTime()) / (1000 * 60 * 60 * 24)
   )
 
+  const formatUsageTime = (minutes: number) => {
+    if (minutes < 60) return `${minutes}${t("minutes", { ns: "user" })}`
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+    return `${hours}${t("hours", { ns: "user" })}${remainingMinutes > 0 ? remainingMinutes + t("minutes", { ns: "user" }) : ''}`
+  }
+
   return (
     <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-l-2 border-green-500 mx-4 mb-2 rounded">
       <div className="grid grid-cols-2 gap-3 text-xs">
@@ -953,6 +1005,20 @@ function DataStatsSection({
           <div>
             <div className="font-medium text-gray-900 dark:text-gray-100">{daysSinceCreation}</div>
             <div className="text-gray-500 dark:text-gray-400">{t("usageDays", { ns: "user" })}</div>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <User className="w-3 h-3 text-purple-500" />
+          <div>
+            <div className="font-medium text-gray-900 dark:text-gray-100">{userInfo.loginCount}</div>
+            <div className="text-gray-500 dark:text-gray-400">{t("loginCount", { ns: "user" })}</div>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <BarChart3 className="w-3 h-3 text-orange-500" />
+          <div>
+            <div className="font-medium text-gray-900 dark:text-gray-100">{formatUsageTime(userInfo.totalUsageTime)}</div>
+            <div className="text-gray-500 dark:text-gray-400">{t("usageTime", { ns: "user" })}</div>
           </div>
         </div>
       </div>

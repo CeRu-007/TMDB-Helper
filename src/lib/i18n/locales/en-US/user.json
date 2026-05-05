@@ -13,8 +13,6 @@
   "loginCount": "Login Count",
   "usageTime": "Usage Time",
   "lastActive": "Last Active",
-  "featuresUsed": "Features Used",
-  "andMore": "and {{count}} more",
   "createdAt": "Created",
   "avatar": "Avatar",
   "customAvatar": "Custom Avatar",

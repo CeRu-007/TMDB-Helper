@@ -30,6 +30,8 @@ const mockUser: User = {
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
   sessionExpiryDays: 15,
+  loginCount: 1,
+  totalUsageTime: 0,
 }
 
 describe('AuthService', () => {
