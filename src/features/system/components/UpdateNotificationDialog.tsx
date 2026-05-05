@@ -1,13 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Download, ExternalLink, X, Sparkles, ArrowRight } from "lucide-react"
+import { Download, ExternalLink, Sparkles, ArrowRight } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/shared/components/ui/dialog"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Markdown } from "@/shared/components/ui/markdown"
-import { saveDismissedVersion, isVersionDismissed } from "@/lib/hooks/use-update-check"
+import { saveDismissedVersion, isVersionDismissed, useUpdateCheck } from "@/lib/hooks/use-update-check"
 import type { GitHubRelease } from "@/types/updates"
 import { useTranslation } from "react-i18next"
 
@@ -19,6 +19,7 @@ interface UpdateNotification {
 
 export function UpdateNotificationDialog() {
   const { t } = useTranslation("settings")
+  useUpdateCheck()
   const [open, setOpen] = useState(false)
   const [updateInfo, setUpdateInfo] = useState<UpdateNotification | null>(null)
   const [skipThisVersion, setSkipThisVersion] = useState(false)

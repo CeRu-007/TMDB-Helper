@@ -29,5 +29,4 @@ export interface UpdateCache {
 
 export interface UpdateCheckOptions {
   force?: boolean;
-  silent?: boolean;
 }

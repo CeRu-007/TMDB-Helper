@@ -88,13 +88,32 @@ function saveCache(data: UpdateCheckResult) {
   } catch {}
 }
 
+function dispatchUpdateEvent(data: UpdateCheckResult) {
+  if (!data.hasUpdate || !data.latestVersion) return
+
+  const notified = getNotifiedVersions()
+  const dismissed = getDismissedVersions()
+
+  if (!notified.has(data.latestVersion) && !dismissed.has(data.latestVersion)) {
+    saveNotifiedVersion(data.latestVersion)
+    window.dispatchEvent(new CustomEvent('version-update-available', {
+      detail: {
+        currentVersion: data.currentVersion,
+        latestVersion: data.latestVersion,
+        releaseInfo: data.releaseInfo,
+      },
+    }))
+  }
+}
+
 async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateCheckState | null> {
-  const { force = false, silent = false } = options;
+  const { force = false } = options;
 
   if (!force) {
     const cached = getCachedState();
     if (cached) {
       notifyListeners(cached);
+      dispatchUpdateEvent(cached);
       return cached;
     }
   }
@@ -112,7 +131,7 @@ async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateChe
   notifyListeners(loadingState);
 
   try {
-    const response = await fetch(`/api/updates/check?force=${force}`);
+    const response = await fetch(`/api/updates/check?force=${force}`, { cache: 'no-store' });
     const result = await response.json();
 
     if (!result.success) {
@@ -129,22 +148,7 @@ async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateChe
 
     saveCache(data);
     notifyListeners(newState);
-
-    if (!silent && data.hasUpdate && data.latestVersion) {
-      const notified = getNotifiedVersions();
-      const dismissed = getDismissedVersions();
-
-      if (!notified.has(data.latestVersion) && !dismissed.has(data.latestVersion)) {
-        saveNotifiedVersion(data.latestVersion);
-        window.dispatchEvent(new CustomEvent('version-update-available', {
-          detail: {
-            currentVersion: data.currentVersion,
-            latestVersion: data.latestVersion,
-            releaseInfo: data.releaseInfo,
-          },
-        }));
-      }
-    }
+    dispatchUpdateEvent(data);
 
     return newState;
   } catch (error) {
@@ -167,7 +171,7 @@ async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateChe
 function startGlobalPolling() {
   if (pollingTimer) return;
   pollingTimer = setInterval(() => {
-    performCheck({ silent: true });
+    performCheck();
   }, POLLING_INTERVAL);
 }
 
@@ -185,10 +189,11 @@ function initializeGlobalCheck() {
   const cached = getCachedState();
   if (cached) {
     notifyListeners(cached);
+    dispatchUpdateEvent(cached);
   }
 
   setTimeout(() => {
-    performCheck({ silent: true });
+    performCheck();
   }, INITIAL_DELAY);
 
   startGlobalPolling();
@@ -197,7 +202,7 @@ function initializeGlobalCheck() {
     if (document.visibilityState === 'visible') {
       const cached = getCachedState();
       if (!cached) {
-        performCheck({ silent: true });
+        performCheck();
       }
       startGlobalPolling();
     } else {

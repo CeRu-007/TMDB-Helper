@@ -173,9 +173,11 @@ export class UpdateManager {
       }
 
       const cacheData: UpdateCache = JSON.parse(fs.readFileSync(cacheFilePath, 'utf-8'));
+      const latestVersion = this.normalizeVersion(cacheData.latestVersion);
+      const hasUpdate = this.compareVersions(currentVersion, latestVersion);
 
       return {
-        hasUpdate: false,
+        hasUpdate,
         currentVersion,
         latestVersion: cacheData.latestVersion,
         releaseInfo: cacheData.releaseInfo,
