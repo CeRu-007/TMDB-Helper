@@ -1,6 +1,6 @@
 {
   "name": "tmdb-helper",
-  "version": "0.6.8",
+  "version": "0.6.9",
   "description": "一个TMDB数据维护工具",
   "author": {
     "name": "TMDB Helper Team",
