@@ -31,7 +31,7 @@ export function AppHeader({
   onShowDashboard
 }: AppHeaderProps) {
   const { theme, setTheme } = useTheme()
-  const { t } = useTranslation(["settings", "dashboard"])
+  const { t } = useTranslation(["settings", "dashboard", "journal"])
   const journalUnreadCount = useUIStore((s) => s.journalUnreadCount)
   const setJournalUnreadCount = useUIStore((s) => s.setJournalUnreadCount)
 
@@ -104,7 +104,7 @@ export function AppHeader({
                 size="sm"
                 onClick={onShowDashboard}
                 className="flex items-center"
-                title={t("dashboard:title")}
+                title={t("title", { ns: "dashboard" })}
               >
                 <BarChart3 className="h-4 w-4" />
               </Button>
@@ -113,7 +113,7 @@ export function AppHeader({
                 size="sm"
                 onClick={onShowJournalDialog}
                 className="flex items-center relative"
-                title={t("journal.title", { ns: "journal" })}
+                title={t("title", { ns: "journal" })}
               >
                 <Bell className="h-4 w-4" />
                 {journalUnreadCount > 0 && (
