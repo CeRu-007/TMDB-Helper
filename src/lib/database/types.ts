@@ -245,7 +245,7 @@ export function rowToTMDBItem(
     networkId: row.networkId ?? undefined,
     networkName: row.networkName ?? undefined,
     networkLogoUrl: row.networkLogoUrl ?? undefined,
-    status: row.status ?? undefined,
+    status: (row.status && row.status !== 'ongoing' && row.status !== 'completed') ? 'ongoing' : (row.status ?? undefined),
     completed: row.completed === 1,
     platformUrl: row.platformUrl ?? undefined,
     totalEpisodes: row.totalEpisodes ?? undefined,

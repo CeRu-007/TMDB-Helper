@@ -158,6 +158,11 @@ export class DataValidator {
       cleaned.secondWeekday = parseInt(cleaned.secondWeekday, 10)
     }
 
+    if (cleaned.status && cleaned.status !== 'ongoing' && cleaned.status !== 'completed') {
+      cleaned.status = 'ongoing'
+      cleaned.completed = false
+    }
+
     return cleaned
   }
 }

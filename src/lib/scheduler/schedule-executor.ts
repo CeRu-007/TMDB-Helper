@@ -414,9 +414,14 @@ export async function processScheduleTaskResult(
       updatedItem.status = 'completed'
       updatedItem.completed = true
       logger.info(`[Schedule Executor] 词条已完结: ${item.id}, episodeCount=${episodeCount}, totalEpisodes=${totalEpisodes}`)
-    } else if (hasIncompleteEpisodes) {
-      updatedItem.status = 'watching'
+    } else {
+      updatedItem.status = 'ongoing'
       updatedItem.completed = false
+      if (hasIncompleteEpisodes) {
+        logger.info(`[Schedule Executor] 词条有未完整元数据集数，保持连载中: ${item.id}, episodeCount=${episodeCount}, totalEpisodes=${totalEpisodes}, incompleteEpisodes=[${executeResult.incompleteEpisodes?.join(',')}]`)
+      } else {
+        logger.info(`[Schedule Executor] 词条未完结，保持连载中: ${item.id}, episodeCount=${episodeCount}, totalEpisodes=${totalEpisodes}`)
+      }
     }
 
     updatedItem.updatedAt = new Date().toISOString()
