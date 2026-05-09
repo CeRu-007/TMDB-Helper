@@ -14,6 +14,7 @@ import { Badge } from "@/shared/components/ui/badge"
 import { Checkbox } from "@/shared/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { LanguageSelector } from "@/shared/components/ui/language-selector"
+import { SeasonPicker } from "@/shared/components/ui/season-picker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 
 interface ScheduleTabProps {
@@ -370,17 +371,10 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   {autoImport && (
                     <div className="space-y-2 pl-4 border-l-2 border-muted">
                       <div className="flex flex-row items-center gap-4">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs">{t("season")}</span>
-                          <Input
-                            type="number"
-                            min="1"
-                            max="20"
-                            value={tmdbSeason}
-                            onChange={(e) => setTmdbSeason(parseInt(e.target.value) || 1)}
-                            className="w-12 h-7 text-xs"
-                          />
-                        </div>
+                        <SeasonPicker
+                          value={tmdbSeason}
+                          onChange={setTmdbSeason}
+                        />
                         <div className="flex items-center space-x-2">
                           <Label className="text-xs">{t("language")}</Label>
                           <LanguageSelector

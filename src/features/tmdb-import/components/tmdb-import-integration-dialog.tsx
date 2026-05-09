@@ -24,6 +24,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Badge } from "@/shared/components/ui/badge"
+import { SeasonPicker } from "@/shared/components/ui/season-picker"
 import { useToast } from "@/shared/components/ui/use-toast"
 import {
   CheckCircle2,
@@ -1624,19 +1625,13 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     <div className="flex items-center gap-3">
                       <div>
                         <Label className="text-xs">{t('tmdbIntegration.tmdbSeason')}</Label>
-                    <div className="flex items-center space-x-2 mt-1">
-                          <span className="text-xs">第</span>
-                                <Input
-                        type="number"
-                        min="1"
-                        max="20"
-                        value={selectedSeason}
-                        onChange={(e) => handleSeasonChange(e.target.value)}
-                            className="w-12 h-7 text-xs"
-                      />
-                      <span className="text-xs">季</span>
-                    </div>
-                  </div>
+                        <div className="mt-1">
+                          <SeasonPicker
+                            value={selectedSeason}
+                            onChange={(season) => handleSeasonChange(season)}
+                          />
+                        </div>
+                      </div>
                   <div>
                         <Label className="text-xs">{t('tmdbIntegration.language')}</Label>
                     <div className="flex items-center mt-1">
@@ -2113,8 +2108,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   
   
   // 处理季数变化
-  const handleSeasonChange = (newSeasonValue: string | number) => {
-    const season = Number.parseInt(String(newSeasonValue)) || 1
+  const handleSeasonChange = (season: number) => {
     setSelectedSeason(season)
 
     // 保存选择的季数到服务端配置

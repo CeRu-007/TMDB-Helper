@@ -12,6 +12,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Badge } from "@/shared/components/ui/badge"
+import { SeasonPicker } from "@/shared/components/ui/season-picker"
 import { useToast } from "@/lib/hooks/use-toast"
 import { ClientConfigManager } from "@/lib/utils/client-config-manager"
 import { DELAY_1S } from "@/lib/constants/constants"
@@ -160,13 +161,12 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   }, [detectPlatform, appendTerminalOutput])
 
   // 处理季数变化
-  const handleSeasonChange = useCallback((newSeasonValue: string | number) => {
-    const season = typeof newSeasonValue === "string" ? parseInt(newSeasonValue, 10) : newSeasonValue
-    if (!Number.isNaN(season) && season > 0) {
+  const handleSeasonChange = useCallback((season: number) => {
+    if (season > 0) {
       setSelectedSeason(season)
       appendTerminalOutput(`${t("independentPage.tmdbSeason")} ${t("independentPage.processing")}...`, "info")
     }
-  }, [appendTerminalOutput])
+  }, [appendTerminalOutput, t])
 
   // 处理语言变化
   const handleLanguageChange = useCallback((languageCode: string) => {
@@ -758,21 +758,14 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     />
                   </div>
                   <div>
-                    <Label htmlFor="season-select" className="text-xs font-medium">
+                    <Label className="text-xs font-medium">
                       {t("independentPage.tmdbSeason")}
                     </Label>
-                    <div className="flex items-center space-x-1 mt-1">
-                      <span className="text-xs">{t("independentPage.seasonNumber")}</span>
-                      <Input
-                        id="season-select"
-                        type="number"
-                        min="1"
-                        max="20"
+                    <div className="mt-1">
+                      <SeasonPicker
                         value={selectedSeason}
-                        onChange={(e) => handleSeasonChange(e.target.value)}
-                        className="w-12 h-8 text-xs"
+                        onChange={handleSeasonChange}
                       />
-                      <span className="text-xs">{t("independentPage.season")}</span>
                     </div>
                   </div>
                   <div>
