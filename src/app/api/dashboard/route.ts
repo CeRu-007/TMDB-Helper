@@ -80,19 +80,19 @@ function getProfile(db: any) {
   const isNightOwl = peakHour !== null && (peakHour >= 22 || peakHour <= 4)
 
   let type = 'explorer'
-  if (topCategoryRate >= 60) {
+  if (totalItems >= 10 && topCategoryRate >= 60) {
     type = topCategory === 'anime' ? 'anime_guardian' :
            topCategory === 'tv' ? 'drama_hunter' :
            topCategory === 'kids' ? 'kids_protector' :
            topCategory === 'variety' ? 'variety_master' :
            topCategory === 'short' ? 'short_runner' : 'specialist'
-  } else if (isPerfectionist) {
+  } else if (totalItems >= 10 && isPerfectionist) {
     type = 'perfectionist'
-  } else if (isAutomator) {
+  } else if (totalItems >= 10 && isAutomator) {
     type = 'automator'
-  } else if (isNightOwl) {
+  } else if (totalItems >= 10 && isNightOwl) {
     type = 'night_owl'
-  } else if (isVeteran) {
+  } else if (totalItems >= 10 && isVeteran) {
     type = 'veteran'
   }
 
