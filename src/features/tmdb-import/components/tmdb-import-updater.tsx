@@ -15,7 +15,8 @@ import {
   Calendar,
   Loader2,
   Settings,
-  Info
+  Info,
+  ExternalLink
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
@@ -257,26 +258,41 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
               </p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              clearCache()
-              try {
-                await Promise.all([checkVersion(true), getInstallStatus(true)])
-              } catch (error) {
-                // 刷新失败，错误会在 checkVersion/getInstallStatus 中处理
-              }
-            }}
-            disabled={loading || updating}
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            {t("tmdbImportUpdater.refresh")}
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                clearCache()
+                try {
+                  await Promise.all([checkVersion(true), getInstallStatus(true)])
+                } catch (error) {
+                  // 刷新失败，错误会在 checkVersion/getInstallStatus 中处理
+                }
+              }}
+              disabled={loading || updating}
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {t("tmdbImportUpdater.refresh")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <a
+                href="https://github.com/fzlins/TMDB-Import"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
