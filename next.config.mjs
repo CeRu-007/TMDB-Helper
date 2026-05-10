@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: process.env.STATIC_EXPORT === 'true' ? 'export' :
+output: process.env.STATIC_EXPORT === 'true' ? 'export' :
           process.env.OUTPUT_STANDALONE === 'true' ? 'standalone' : undefined,
-  trailingSlash: process.env.STATIC_EXPORT === 'true' || process.env.ELECTRON_BUILD === 'true',
-  
+
   compress: true,
   
   // 将 ELECTRON_BUILD 暴露给客户端

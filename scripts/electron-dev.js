@@ -4,7 +4,7 @@ const path = require('path');
 const os = require('os');
 const { logger } = require('./logger');
 
-const port = 3000;
+const port = 4949;
 let nextProcess = null;
 let electronProcess = null;
 
@@ -67,10 +67,10 @@ async function startElectronDev() {
   // 检查端口
   const isPortAvailable = await checkPort(port);
   if (!isPortAvailable) {
-    logger.error('❌ 端口 3000 已被占用，请先关闭占用该端口的进程');
+    logger.error('❌ 端口 4949 已被占用，请先关闭占用该端口的进程');
     process.exit(1);
   } else {
-    logger.info('✅ 端口 3000 可用');
+    logger.info('✅ 端口 4949 可用');
     logger.info(`📁 数据目录: ${appDataDir}`);
 
     // 启动 Next.js 开发服务器

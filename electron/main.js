@@ -5,7 +5,7 @@ const os = require('os');
 
 // 开发环境检测
 const isDev = process.env.NODE_ENV === 'development' || process.defaultApp || /[\\/]electron/.test(process.execPath);
-const port = 3000; // 统一使用3000端口，与Next.js开发服务器保持一致
+const port = 4949;
 
 // 简单的日志辅助函数（Electron 主进程无法使用 Logger class）
 function electronLog(message, type = 'info') {

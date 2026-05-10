@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
-const port = parseInt(process.env.PORT, 10) || 3000;
+const port = parseInt(process.env.PORT, 10) || 4949;
 
 const appDataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data');
 

@@ -257,7 +257,7 @@ export class SubtitleOCR {
    * 获取模型服务配置
    */
   private async getModelConfig() {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4949'
     const response = await fetch(
       `${baseUrl}/api/model-service/scenario?scenario=${this.config.scenarioType}`
     )

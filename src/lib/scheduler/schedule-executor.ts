@@ -165,7 +165,7 @@ export async function executeScheduleTask(
 }
 
 function getBaseUrl(): string {
-  const port = process.env.PORT || '3000';
+  const port = process.env.PORT || '4949';
   return `http://localhost:${port}`;
 }
 

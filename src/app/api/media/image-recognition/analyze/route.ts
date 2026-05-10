@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 从模型服务系统获取图像分析场景配置
-    const modelServiceResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/model-service/scenario?scenario=image_analysis`)
+    const modelServiceResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:4949'}/api/model-service/scenario?scenario=image_analysis`)
     if (!modelServiceResponse.ok) {
       return NextResponse.json<ApiResponse<null>>(
         {
