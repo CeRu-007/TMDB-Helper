@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { useToast } from "@/lib/hooks/use-toast"
@@ -16,6 +16,8 @@ import {
   File,
   AlertCircle,
   Loader2,
+  ArrowDown,
+  ArrowUp,
 } from "lucide-react"
 
 interface LogFile {
@@ -100,8 +102,11 @@ export function LogsViewer() {
   const [liveLines, setLiveLines] = useState<string[]>([])
   const [error, setError] = useState("")
   const contentEndRef = useRef<HTMLDivElement>(null)
+  const logContainerRef = useRef<HTMLDivElement>(null)
   const sseRef = useRef<EventSource | null>(null)
   const initialLoadRef = useRef(true)
+  const userScrollingRef = useRef(false)
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const disconnectSSE = useCallback(() => {
     if (sseRef.current) {
@@ -197,12 +202,57 @@ export function LogsViewer() {
     }
   }, [autoRefresh, selectedFile, disconnectSSE])
 
-  useEffect(() => {
-    if (contentEndRef.current && !loadingContent && initialLoadRef.current) {
-      initialLoadRef.current = false
-      contentEndRef.current.scrollIntoView()
+useEffect(() => {
+    if (!loadingContent && (logContent || liveLines.length > 0)) {
+      if (!userScrollingRef.current) {
+        setTimeout(() => {
+          if (contentEndRef.current) {
+            contentEndRef.current.scrollIntoView({ behavior: "auto" })
+          }
+        }, 100)
+      }
     }
-  }, [logContent, loadingContent])
+  }, [logContent, liveLines, loadingContent])
+
+  useEffect(() => {
+    if (autoRefresh && liveLines.length > 0 && !userScrollingRef.current) {
+      setTimeout(() => {
+        if (contentEndRef.current) {
+          contentEndRef.current.scrollIntoView({ behavior: "auto" })
+        }
+      }, 100)
+    }
+  }, [liveLines, autoRefresh])
+
+  useEffect(() => {
+    const container = logContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
+      
+      if (!isAtBottom) {
+        userScrollingRef.current = true
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current)
+        }
+        scrollTimeoutRef.current = setTimeout(() => {
+          userScrollingRef.current = false
+        }, 2000)
+      } else {
+        userScrollingRef.current = false
+      }
+    }
+
+    container.addEventListener("scroll", handleScroll)
+    return () => {
+      container.removeEventListener("scroll", handleScroll)
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleClearLogs = async () => {
     if (!confirm("确定要清除所有日志文件吗？")) return
@@ -241,7 +291,7 @@ export function LogsViewer() {
     }
   }
 
-  const displayedLines = useCallback(() => {
+  const displayedLines = useMemo(() => {
     const baseLines = logContent?.content ? logContent.content.split('\n') : []
     const allLines = liveLines.length > 0
       ? [...baseLines, ...liveLines]
@@ -253,6 +303,21 @@ export function LogsViewer() {
       return true
     })
   }, [logContent, liveLines, levelFilter, searchQuery])
+
+  const scrollToBottom = useCallback(() => {
+    userScrollingRef.current = false
+    setTimeout(() => {
+      if (contentEndRef.current) {
+        contentEndRef.current.scrollIntoView({ behavior: "auto" })
+      }
+    }, 50)
+  }, [])
+
+  const scrollToTop = useCallback(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = 0
+    }
+  }, [])
 
   if (loading) {
     return (
@@ -414,7 +479,7 @@ export function LogsViewer() {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div ref={logContainerRef} className="flex-1 overflow-x-hidden scrollbar-show">
           {!selectedFile ? (
             <div className="flex items-center justify-center h-full text-gray-400">
               <div className="text-center">
@@ -429,17 +494,32 @@ export function LogsViewer() {
           ) : (
             <>
               <div className="p-4 font-mono text-xs whitespace-pre-wrap break-all">
-                {(() => {
-                  const lines = displayedLines()
-                  return lines.length > 0
-                    ? lines.map(renderLogLine)
-                    : <span className="text-gray-400">日志内容为空</span>
-                })()}
+                {displayedLines.length > 0
+                    ? displayedLines.map(renderLogLine)
+                    : <span className="text-gray-400">日志内容为空</span>}
               </div>
               <div ref={contentEndRef} />
-              <div className="sticky bottom-0 px-4 py-1.5 border-t dark:border-gray-800 bg-white dark:bg-gray-950 text-xs text-gray-400 flex items-center gap-3">
-                <span>{selectedFile}</span>
-                {autoRefresh && <span className="text-green-500">● 实时</span>}
+              <div className="sticky bottom-0 px-4 py-1.5 border-t dark:border-gray-800 bg-white dark:bg-gray-950 text-xs text-gray-400 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span>{selectedFile}</span>
+                  {autoRefresh && <span className="text-green-500">● 实时</span>}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={scrollToTop}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                    title="滚动到顶部"
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={scrollToBottom}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                    title="滚动到底部"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             </>
           )}
