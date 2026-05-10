@@ -264,6 +264,14 @@
     }
   },
   "electronMain": "electron/main.js",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "electron",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
   "lint-staged": {
     "src/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
