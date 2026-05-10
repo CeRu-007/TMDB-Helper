@@ -44,9 +44,8 @@ WORKDIR /app
 # 复制包管理文件
 COPY package.json pnpm-lock.yaml ./
 
-# 安装 Node.js 依赖（启用脚本构建）
-RUN pnpm config set enable-scripts true && \
-    pnpm install --frozen-lockfile
+# 安装 Node.js 依赖
+RUN pnpm install --frozen-lockfile
 
 # 构建应用阶段
 FROM base AS builder
