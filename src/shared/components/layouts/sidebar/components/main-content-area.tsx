@@ -6,7 +6,7 @@ interface MainContentAreaProps {
 }
 
 export function MainContentArea({ children, contentKey }: MainContentAreaProps) {
-  const isOverflowHidden = contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'item-detail'
+  const isOverflowHidden = contentKey === 'thumbnails-extract' || contentKey === 'thumbnails-crop' || contentKey === 'item-detail' || contentKey === 'tools-logs'
 
   return (
     <main className="flex-1 overflow-hidden">

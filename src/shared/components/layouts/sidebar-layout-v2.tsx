@@ -191,6 +191,20 @@ export function SidebarLayout({
     }
   }, [])
 
+  // 监听从用户头像下拉菜单跳转到日志管理页面
+  useEffect(() => {
+    const handleNavigateToLogs = () => {
+      setActiveMenu('tools')
+      setActiveSubmenu('logs')
+      setContentKey('tools-logs')
+    }
+
+    window.addEventListener('navigate-to-logs', handleNavigateToLogs)
+    return () => {
+      window.removeEventListener('navigate-to-logs', handleNavigateToLogs)
+    }
+  }, [])
+
   // 监听 selectedItem 变化，自动设置 contentKey
   useEffect(() => {
     if (selectedItem) {

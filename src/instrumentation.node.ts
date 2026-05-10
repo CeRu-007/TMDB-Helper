@@ -1,4 +1,19 @@
 import path from 'path';
+import { LogLevel } from '@/lib/utils/logger';
+import { FileTransport } from '@/lib/utils/file-transport';
+import { setFileTransport, logger as rootLogger } from '@/lib/utils/logger';
+
+function initFileTransport(dataDir: string): void {
+  const logDir = path.join(dataDir, 'logs');
+  const transport = new FileTransport({
+    logDir,
+    maxSize: 10 * 1024 * 1024,
+    maxFiles: 5,
+    level: LogLevel.DEBUG,
+  });
+  setFileTransport(transport);
+  rootLogger.info('FileTransport', `文件日志已初始化: ${logDir}`);
+}
 
 export async function initializeDev() {
   const isElectron = process.env.ELECTRON_BUILD === 'true';
@@ -10,6 +25,7 @@ export async function initializeDev() {
     const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data');
     const dbPath = path.join(dataDir, 'tmdb-helper.db');
     console.log('[Instrumentation] 数据库路径:', dbPath);
+    initFileTransport(dataDir);
 
     const { getDatabaseAsync } = await import('./lib/database/connection');
     await getDatabaseAsync();

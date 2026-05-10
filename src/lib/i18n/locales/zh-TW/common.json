@@ -85,5 +85,6 @@
   "checkTmdbPath": "請檢查TMDB-Import路徑是否正確",
   "adult": "成人",
   "unknown": "未知",
-  "none": "無"
+  "none": "無",
+  "logsManagement": "日誌管理"
 }

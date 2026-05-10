@@ -25,6 +25,7 @@ import StreamingPlatformNav from "@/features/streaming-nav/components/streaming-
 import { SidebarRegionNavigation } from "./sidebar-region-navigation"
 import { ScheduleView } from "@/features/schedule/components/schedule-view"
 import { DashboardPage } from "@/features/dashboard"
+import { LogsViewer } from "@/features/system/components/logs-viewer"
 import { toast } from "@/lib/hooks/use-toast"
 
 interface MediaNewsItem {
@@ -277,6 +278,11 @@ export function ContentRenderers({
   // Tools - tmdb guide
   if (contentKey === 'tools-tmdb-guide') {
     return <TMDBGuide activeSection="general" />
+  }
+
+  // Tools - logs
+  if (contentKey === 'tools-logs') {
+    return <LogsViewer />
   }
 
   // Dashboard

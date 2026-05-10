@@ -85,5 +85,6 @@
   "checkTmdbPath": "TMDB-Import 경로가 정확한지 확인하세요",
   "adult": "성인",
   "unknown": "알 수 없음",
-  "none": "없음"
+  "none": "없음",
+  "logsManagement": "로그 관리"
 }

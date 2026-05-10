@@ -19,7 +19,8 @@ import {
   Edit3,
   Calendar,
   Database,
-  ChevronDown
+  ChevronDown,
+  ScrollText,
 } from "lucide-react"
 
 import { useToast } from "@/lib/hooks/use-toast"
@@ -647,6 +648,20 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
             </div>
           )}
 
+        </div>
+
+        <div className="border-t dark:border-gray-700 py-1">
+          {/* 日志管理 */}
+          <button
+            onClick={() => {
+              onClose()
+              window.dispatchEvent(new CustomEvent('navigate-to-logs'))
+            }}
+            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <ScrollText className="w-4 h-4 mr-3" />
+            {t("logsManagement", { ns: "common" })}
+          </button>
         </div>
 
         <div className="border-t dark:border-gray-700 py-1">

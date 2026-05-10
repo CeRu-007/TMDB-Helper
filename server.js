@@ -14,6 +14,11 @@ if (!fs.existsSync(appDataDir)) {
   fs.mkdirSync(appDataDir, { recursive: true });
 }
 
+const logDir = path.join(appDataDir, 'logs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
+
 process.env.TMDB_DATA_DIR = appDataDir;
 
 const app = next({ dev, hostname, port });

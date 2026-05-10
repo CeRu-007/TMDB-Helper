@@ -35,6 +35,12 @@ function initDataDir() {
   process.env.ELECTRON_BUILD = 'true';
   process.env.COOKIE_SECURE = 'false';
 
+  // 创建日志目录
+  const logDir = path.join(appDataDir, 'logs');
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+
   if (!process.env.JWT_SECRET) {
     const crypto = require('crypto');
     const machineId = crypto.createHash('sha256').update(app.getPath('exe')).digest('hex');

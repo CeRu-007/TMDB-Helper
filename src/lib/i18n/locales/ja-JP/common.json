@@ -85,5 +85,6 @@
   "checkTmdbPath": "TMDB-Importパスが正しいか確認してください",
   "adult": "成人",
   "unknown": "不明",
-  "none": "なし"
+  "none": "なし",
+  "logsManagement": "ログ管理"
 }
