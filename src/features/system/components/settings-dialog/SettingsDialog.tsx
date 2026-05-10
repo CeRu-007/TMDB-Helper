@@ -6,7 +6,7 @@
 
 "use client"
 
-import React, { useState, useEffect, useCallback, useMemo } from "react"
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import packageJson from "../../../../../package.json"
 import { logger } from '@/lib/utils/logger'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
@@ -209,11 +209,12 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   }, [])
 
   // 初始化设置
+  const initRef = useRef(false)
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (typeof window === "undefined" || initRef.current) return
+    initRef.current = true
 
     const initializeSettings = async () => {
-      logger.info('初始化设置...')
       try {
         // 清除缓存
         ClientConfigManager.clearCache()

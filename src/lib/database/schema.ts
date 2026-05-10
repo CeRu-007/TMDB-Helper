@@ -9,17 +9,32 @@ import { logger } from '@/lib/utils/logger';
 // 当前 Schema 版本
 export const SCHEMA_VERSION = 14;
 
+// 防止重复初始化的标志
+let schemaInitStarted = false;
+
+/**
+ * 重置 Schema 初始化状态（仅用于测试）
+ */
+export function resetSchemaInitState(): void {
+  schemaInitStarted = false;
+}
+
 /**
  * 初始化数据库 Schema
  */
 export async function initializeSchema(): Promise<void> {
+  // 防止重复初始化
+  if (schemaInitStarted) {
+    return;
+  }
+  schemaInitStarted = true;
+
   const db = await getDatabaseAsync();
 
   // 获取当前版本
   const currentVersion = getUserVersion(db);
 
   if (currentVersion === SCHEMA_VERSION) {
-    logger.debug('[Database] Schema 已是最新版本，跳过初始化');
     return;
   }
 

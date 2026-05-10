@@ -46,7 +46,6 @@ export class ClientConfigManager {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(key, value);
-        logger.info(`💾 [ClientConfigManager] 已保存配置到localStorage: ${key}`);
       }
     } catch (error) {
       logger.warn('保存配置到localStorage失败:', error);
