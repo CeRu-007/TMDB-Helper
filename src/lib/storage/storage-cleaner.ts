@@ -4,6 +4,7 @@
  */
 
 import { storageService } from './storage-service'
+import { logger } from '@/lib/utils/logger'
 
 const CLEANUP_FLAG = 'storage_cleaned_v2'
 const STRING_KEYS = [
@@ -164,9 +165,9 @@ export class StorageCleaner {
     if (this.needsCleanup()) {
       const result = this.cleanup()
       if (result.success) {
-        console.log(`[StorageCleaner] Cleaned ${result.cleanedKeys.length} corrupted localStorage keys`)
+        logger.info(`[StorageCleaner] Cleaned ${result.cleanedKeys.length} corrupted localStorage keys`)
       } else {
-        console.error('[StorageCleaner] Cleanup failed:', result.errors)
+        logger.error('[StorageCleaner] Cleanup failed:', result.errors)
       }
     }
   }

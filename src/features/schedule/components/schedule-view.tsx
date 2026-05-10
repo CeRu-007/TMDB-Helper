@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import { logger } from '@/lib/utils/logger'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import {
@@ -153,7 +154,7 @@ export function ScheduleView({ className }: ScheduleViewProps) {
         setScheduleData(merged.result.list)
       }
     } catch (error) {
-      console.error('Failed to fetch schedule:', error)
+      logger.error('Failed to fetch schedule:', error)
     } finally {
       setLoading(false)
     }

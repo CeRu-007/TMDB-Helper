@@ -4,6 +4,7 @@
  */
 
 import { IPlugin, PluginType, PluginStatus, PluginInfo, PluginRegistrationOptions } from './types'
+import { logger } from '@/lib/utils/logger'
 
 /**
  * 插件注册表
@@ -22,7 +23,7 @@ export class PluginRegistry {
 
     // 检查插件ID是否已存在
     if (this.plugins.has(plugin.id) && !overwrite) {
-      console.warn(`插件 ${plugin.id} 已存在，跳过注册`)
+      logger.warn(`[PluginRegistry] 插件 ${plugin.id} 已存在，跳过注册`)
       return false
     }
 
@@ -80,7 +81,7 @@ export class PluginRegistry {
         try {
           plugin.destroy()
         } catch (error) {
-          console.error(`销毁插件 ${pluginId} 失败:`, error)
+          logger.error(`[PluginRegistry] 销毁插件 ${pluginId} 失败:`, error)
         }
       }
     }
@@ -119,16 +120,6 @@ export class PluginRegistry {
    */
   public getAll(): IPlugin[] {
     return Array.from(this.plugins.values()).map(info => info.plugin)
-  }
-
-  /**
-   * 按类型获取插件
-   */
-  public getByType(type: PluginType): IPlugin[] {
-    const pluginMap = type === PluginType.TitleStyle ? this.titleStylePlugins : this.summaryStylePlugins
-    return Array.from(pluginMap.values())
-      .map(id => this.plugins.get(id)?.plugin)
-      .filter((plugin): plugin is IPlugin => plugin !== undefined)
   }
 
   /**
@@ -217,9 +208,10 @@ export class PluginRegistry {
         .filter((plugin): plugin is IPlugin => plugin !== undefined)
     }
   
-    /**
-     * 清空注册表
-     */  public clear(): void {
+  /**
+   * 清空注册表
+   */
+  public clear(): void {
     // 销毁所有已初始化的插件
     for (const [pluginId, pluginInfo] of this.plugins.entries()) {
       if (pluginInfo.status === PluginStatus.Initialized) {
@@ -228,7 +220,7 @@ export class PluginRegistry {
           try {
             plugin.destroy()
           } catch (error) {
-            console.error(`销毁插件 ${pluginId} 失败:`, error)
+            logger.error(`[PluginRegistry] 销毁插件 ${pluginId} 失败:`, error)
           }
         }
       }

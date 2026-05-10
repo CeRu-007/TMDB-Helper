@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ServerConfigManager } from '@/lib/data/server-config-manager'
-import { ApiResponse } from '@/types/common'
+import { ServerConfigManager } from '@/lib/utils/server-config-manager'
+import { ApiResponse } from '@/types/api'
 import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants'
+import { logger } from '@/lib/utils/logger'
 
 // 请求接口
 interface ImageSearchRequest {
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
         const tvResults = await searchTMDB('tv', query, apiKey)
         allResults.push(...tvResults)
       } catch (error) {
-        console.error(`Search error for query "${query}":`, error)
+        logger.error(`Search error for query "${query}":`, error)
         // 继续处理其他查询
       }
     }
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: unknown) {
-    console.error('Search error:', error)
+    logger.error('Search error:', error)
     const errorMessage = error instanceof Error ? error.message : '未知错误'
     return NextResponse.json<ApiResponse<null>>(
       {

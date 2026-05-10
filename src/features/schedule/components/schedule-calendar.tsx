@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import { logger } from '@/lib/utils/logger'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
@@ -46,7 +47,7 @@ export function ScheduleCalendar({ className }: ScheduleCalendarProps) {
 
       setScheduleData(merged.result?.list || [])
     } catch (error) {
-      console.error('Failed to fetch schedule:', error)
+      logger.error('Failed to fetch schedule:', error)
     } finally {
       setLoading(false)
     }

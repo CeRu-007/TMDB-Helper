@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-
+import { logger } from '@/lib/utils/logger'
+ 
 // 使用你提供的有效参数直接调用B站API
 const BILIBILI_API_URL = 'https://api.bilibili.com/pgc/app/timeline'
 
@@ -27,7 +28,7 @@ export async function GET() {
     return NextResponse.json(data)
 
   } catch (error) {
-    console.error('Bilibili API Error:', error)
+    logger.error('Bilibili API Error:', error)
     return NextResponse.json({
       code: -1,
       message: error instanceof Error ? error.message : 'Unknown error',

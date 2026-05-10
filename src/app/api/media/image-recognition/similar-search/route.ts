@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DELAY_2000MS } from '@/lib/constants/constants'
+import { logger } from '@/lib/utils/logger'
 
 // 图像相似搜索API接口
 export async function POST(request: NextRequest) {
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('相似图片搜索失败:', error)
+    logger.error('相似图片搜索失败:', error)
     return NextResponse.json(
       {
         error: '相似图片搜索失败',

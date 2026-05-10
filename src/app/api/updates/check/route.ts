@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUpdateManager } from '@/lib/updates/update-manager';
+import { logger } from '@/lib/utils/logger';
 import packageJson from '../../../../../package.json';
 
 export async function GET(request: NextRequest) {
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
       data: result,
     });
   } catch (error) {
-    console.error('Update check error:', error);
+    logger.error('Update check error:', error);
 
     try {
       const updateManager = getUpdateManager();

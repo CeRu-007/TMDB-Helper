@@ -375,7 +375,7 @@ export class VideoProcessor {
             return audioBuffer
           }
         } catch (e) {
-          console.warn('fetch blob URL failed:', e)
+          logger.warn('fetch blob URL failed:', e)
         }
       }
       
@@ -416,7 +416,7 @@ export class VideoProcessor {
             return audioBuffer
           }
         } catch (e) {
-          console.warn('captureStream failed:', e)
+          logger.warn('captureStream failed:', e)
         }
       }
       

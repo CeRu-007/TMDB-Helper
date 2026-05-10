@@ -3,6 +3,8 @@
  * 提供视频下载、音频提取、语音识别等功能
  */
 
+import { mediaLogger } from '@/lib/utils/logger'
+
 export interface VideoAnalysisOptions {
   apiKey: string;
   maxDuration?: number; // 最大视频时长（秒）
@@ -88,7 +90,7 @@ export class VideoAnalyzer {
 
       return result.data;
     } catch (error) {
-      
+      mediaLogger.error(`[VideoAnalyzer] 视频分析失败: ${videoUrl}`, error instanceof Error ? error : String(error));
       throw error;
     }
   }

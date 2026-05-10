@@ -3,9 +3,10 @@
  * 负责插件的注册、初始化、销毁和调用
  */
 
-import { IPlugin, PluginType, PluginContext, PluginRegistrationOptions } from './types'
+import { IPlugin, PluginType, PluginStatus, PluginContext, PluginRegistrationOptions } from './types'
 import { PluginRegistry } from './plugin-registry'
 import { PluginContext as PluginContextImpl } from './plugin-context'
+import { logger } from '@/lib/utils/logger'
 
 export class PluginManager {
   private registry: PluginRegistry
@@ -25,7 +26,7 @@ export class PluginManager {
   public register(plugin: IPlugin, options?: PluginRegistrationOptions): boolean {
     const result = this.registry.register(plugin, options)
     if (result) {
-      console.log(`[PluginManager] 注册插件: ${plugin.name} (${plugin.id})`)
+      logger.info(`[PluginManager] 注册插件: ${plugin.name} (${plugin.id})`)
     }
     return result
   }
@@ -35,7 +36,7 @@ export class PluginManager {
    */
   public registerBatch(plugins: IPlugin[], options?: PluginRegistrationOptions): number {
     const count = this.registry.registerBatch(plugins, options)
-    console.log(`[PluginManager] 批量注册插件: ${count} 个`)
+    logger.info(`[PluginManager] 批量注册插件: ${count} 个`)
     return count
   }
 
@@ -45,7 +46,7 @@ export class PluginManager {
   public unregister(pluginId: string): boolean {
     const result = this.registry.unregister(pluginId)
     if (result) {
-      console.log(`[PluginManager] 注销插件: ${pluginId}`)
+      logger.info(`[PluginManager] 注销插件: ${pluginId}`)
     }
     return result
   }
@@ -97,19 +98,19 @@ export class PluginManager {
    */
   public async initializeAll(): Promise<void> {
     if (this.initialized) {
-      console.warn('[PluginManager] 插件已初始化，跳过')
+      logger.warn('[PluginManager] 插件已初始化，跳过')
       return
     }
 
     const plugins = this.registry.getAll()
-    console.log(`[PluginManager] 开始初始化 ${plugins.length} 个插件...`)
+    logger.info(`[PluginManager] 开始初始化 ${plugins.length} 个插件...`)
 
     for (const plugin of plugins) {
       await this.initializePlugin(plugin)
     }
 
     this.initialized = true
-    console.log('[PluginManager] 所有插件初始化完成')
+    logger.info('[PluginManager] 所有插件初始化完成')
   }
 
   /**
@@ -118,12 +119,12 @@ export class PluginManager {
   public async initializePlugin(plugin: IPlugin): Promise<void> {
     const pluginInfo = this.registry.getInfo(plugin.id)
     if (!pluginInfo) {
-      console.error(`[PluginManager] 插件 ${plugin.id} 未注册`)
+      logger.error(`[PluginManager] 插件 ${plugin.id} 未注册`)
       return
     }
 
-    if (pluginInfo.status === 'initialized') {
-      console.warn(`[PluginManager] 插件 ${plugin.id} 已初始化`)
+    if (pluginInfo.status === PluginStatus.Initialized) {
+      logger.warn(`[PluginManager] 插件 ${plugin.id} 已初始化`)
       return
     }
 
@@ -131,12 +132,12 @@ export class PluginManager {
       if (plugin.initialize) {
         await plugin.initialize(this.context)
       }
-      this.registry.updateStatus(plugin.id, 'initialized')
-      console.log(`[PluginManager] 插件 ${plugin.name} 初始化成功`)
+      this.registry.updateStatus(plugin.id, PluginStatus.Initialized)
+      logger.info(`[PluginManager] 插件 ${plugin.name} 初始化成功`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      this.registry.updateStatus(plugin.id, 'error', errorMessage)
-      console.error(`[PluginManager] 插件 ${plugin.name} 初始化失败:`, errorMessage)
+      this.registry.updateStatus(plugin.id, PluginStatus.Error, errorMessage)
+      logger.error(`[PluginManager] 插件 ${plugin.name} 初始化失败:`, errorMessage)
     }
   }
 
@@ -144,11 +145,11 @@ export class PluginManager {
    * 销毁所有插件
    */
   public async destroyAll(): Promise<void> {
-    console.log('[PluginManager] 开始销毁所有插件...')
+    logger.info('[PluginManager] 开始销毁所有插件...')
     this.registry.clear()
     this.context.destroy()
     this.initialized = false
-    console.log('[PluginManager] 所有插件已销毁')
+    logger.info('[PluginManager] 所有插件已销毁')
   }
 
   /**

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { HardSubtitleExtractTask, TaskStatus } from './types'
 import { DELAY_1S, DELAY_1500MS, DELAY_3000MS } from '@/lib/constants/constants'
+import { logger } from '@/lib/utils/logger'
 
 // 任务存储（内存中，生产环境应使用数据库）
 const tasks = new Map<string, HardSubtitleExtractTask>()
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       taskId
     })
   } catch (error) {
-    console.error('启动任务失败:', error)
+    logger.error('启动任务失败:', error)
     return NextResponse.json(
       {
         error: '启动任务失败',
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
       error: task.error
     })
   } catch (error) {
-    console.error('查询任务状态失败:', error)
+    logger.error('查询任务状态失败:', error)
     return NextResponse.json(
       {
         error: '查询任务状态失败',

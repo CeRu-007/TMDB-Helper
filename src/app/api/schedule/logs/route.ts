@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { scheduleLogRepository } from '@/lib/data/schedule-log-repository'
 import { initializeDatabase } from '@/lib/database'
+import { logger } from '@/lib/utils/logger'
 
 async function ensureDatabaseInitialized(): Promise<void> {
   try {
     await initializeDatabase()
   } catch (error) {
-    console.error('[Schedule Logs API] 数据库初始化失败:', error)
+    logger.error('[Schedule Logs API] 数据库初始化失败:', error)
     throw error
   }
 }
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: logs })
   } catch (error) {
-    console.error('[Schedule Logs API] GET 错误:', error)
+    logger.error('[Schedule Logs API] GET 错误:', error)
     return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 })
   }
 }

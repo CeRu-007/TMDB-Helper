@@ -4,7 +4,8 @@ import path from 'path'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { ServerConfigManager } from '@/lib/data/server-config-manager'
-
+import { logger } from '@/lib/utils/logger'
+ 
 const execAsync = promisify(exec)
 
 // GitHub API配置
@@ -384,7 +385,7 @@ async function downloadLatest(): Promise<NextResponse> {
         
       }
     } catch (error) {
-      console.log(`[TMDB-Import Updater] 直接下载异常: ${error instanceof Error ? error.message : String(error)}`)
+      logger.warn(`[TMDB-Import Updater] 直接下载异常: ${error instanceof Error ? error.message : String(error)}`)
     }
     
     // 方式2: 如果直接下载失败，使用GitHub API下载
@@ -561,7 +562,7 @@ async function installUpdate(): Promise<NextResponse> {
     try {
       await ServerConfigManager.setConfigItem('tmdbImportPath', TMDB_IMPORT_DIR)
     } catch (error) {
-      console.log(`[TMDB-Import Updater] 保存路径到配置失败: ${error instanceof Error ? error.message : String(error)}`)
+      logger.warn(`[TMDB-Import Updater] 保存路径到配置失败: ${error instanceof Error ? error.message : String(error)}`)
     }
 
     // 构建完成消息

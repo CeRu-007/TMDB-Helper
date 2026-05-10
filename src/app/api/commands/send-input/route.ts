@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         }
         });
 
-        console.log(`成功向进程 ${processId} 发送输入: "${input}"${sendDirectly ? ' (带回车)' : ''}`);
+        logger.info(`成功向进程 ${processId} 发送输入: "${input}"${sendDirectly ? ' (带回车)' : ''}`);
         
         return new Response(
           JSON.stringify({

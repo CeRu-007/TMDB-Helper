@@ -2,6 +2,8 @@
  * Simplified error handling utilities
  */
 
+import { logger } from '@/lib/utils/logger'
+
 export interface AppError {
   message: string
   userMessage: string
@@ -150,7 +152,7 @@ export function handleError(error: unknown, context: Record<string, any> = {}): 
 
   // Log error for debugging (in development)
   if (process.env.NODE_ENV === 'development') {
-    console.error('[Error]', appError)
+    logger.error('[Error]', appError)
   }
 
   return appError

@@ -7,6 +7,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
+import { mediaLogger } from '@/lib/utils/logger';
 
 const execAsync = promisify(exec);
 
@@ -72,9 +73,10 @@ export class SubtitleExtractor {
         });
       }
       
+      mediaLogger.info(`[SubtitleExtractor] 检测到 ${subtitleTracks.length} 个字幕轨道: ${videoPath}`);
       return subtitleTracks;
     } catch (error) {
-      
+      mediaLogger.warn(`[SubtitleExtractor] 检测字幕轨道失败: ${videoPath}`, error instanceof Error ? error : String(error));
       return [];
     }
   }
@@ -94,9 +96,10 @@ export class SubtitleExtractor {
       
       // 读取提取的字幕文件
       const subtitleContent = await fs.readFile(outputPath, 'utf-8');
+      mediaLogger.info(`[SubtitleExtractor] 内嵌字幕提取成功: 轨道 ${trackIndex ?? 0}, ${subtitleContent.length} 字符`);
       return subtitleContent;
     } catch (error) {
-      
+      mediaLogger.warn(`[SubtitleExtractor] 内嵌字幕提取失败: 轨道 ${trackIndex ?? 0}`, error instanceof Error ? error : String(error));
       return null;
     }
   }
@@ -137,7 +140,7 @@ export class SubtitleExtractor {
       
       return externalTracks;
     } catch (error) {
-      
+      mediaLogger.warn(`[SubtitleExtractor] 查找外挂字幕失败: ${videoPath}`, error instanceof Error ? error : String(error));
       return [];
     }
   }
@@ -353,7 +356,7 @@ export class SubtitleExtractor {
       }
 
     } catch (error) {
-      
+      mediaLogger.error(`[SubtitleExtractor] 字幕提取流程异常: ${videoPath}`, error instanceof Error ? error : String(error));
       result.confidence = 0;
     }
 
@@ -491,8 +494,9 @@ export class SubtitleExtractor {
       for (const file of subtitleFiles) {
         await fs.unlink(path.join(this.sessionDir, file));
       }
+      mediaLogger.info(`[SubtitleExtractor] 已清理 ${subtitleFiles.length} 个临时字幕文件`);
     } catch (error) {
-      
+      mediaLogger.warn('[SubtitleExtractor] 清理临时文件失败', error instanceof Error ? error : String(error));
     }
   }
 }

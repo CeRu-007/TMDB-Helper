@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     logger.error('[API] 添加项目错误:', error);
-    console.error('[API] 添加项目详细错误:', error);
+    logger.error('[API] 添加项目详细错误:', error);
 
     return NextResponse.json({
       error: ErrorHandler.toUserMessage(error),

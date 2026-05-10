@@ -323,6 +323,9 @@ export interface PluginContext {
     on: (event: string, handler: (data?: any) => void) => void
     off: (event: string, handler: (data?: any) => void) => void
   }
+
+  /** 清理资源 */
+  destroy(): void
 }
 
 /**

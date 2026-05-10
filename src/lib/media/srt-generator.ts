@@ -3,6 +3,8 @@
  * 将OCR识别结果转换为标准SRT格式
  */
 
+import { mediaLogger } from '@/lib/utils/logger'
+
 export interface OCRResultItem {
   text: string
   confidence: number
@@ -67,13 +69,18 @@ export class SRTGenerator {
    * 从OCR结果生成SRT条目
    */
   generate(ocrResults: OCRResultItem[]): SRTEntry[] {
-    if (ocrResults.length === 0) return []
+    if (ocrResults.length === 0) {
+      mediaLogger.warn('[SRTGenerator] OCR结果为空，无法生成字幕');
+      return [];
+    }
 
     // 按时间排序
     const sorted = [...ocrResults].sort((a, b) => a.timestamp - b.timestamp)
 
     // 合并相邻结果
     const merged = this.mergeAdjacentResults(sorted)
+
+    mediaLogger.info(`[SRTGenerator] OCR结果: ${ocrResults.length}条 → 合并后: ${merged.length}条`);
 
     // 生成SRT条目
     const entries: SRTEntry[] = merged.map((result, index) => {

@@ -2,6 +2,7 @@ import { GitHubRelease, UpdateCheckResult, UpdateCache } from '@/types/updates';
 import * as semver from 'semver';
 import * as fs from 'fs';
 import * as path from 'path';
+import { logger } from '@/lib/utils/logger';
 
 const GITHUB_REPO = 'CeRu-007/TMDB-Helper';
 const GITHUB_API_BASE = 'https://api.github.com';
@@ -120,7 +121,7 @@ export class UpdateManager {
       const release: GitHubRelease = await response.json();
       return release;
     } catch (error) {
-      console.error('Failed to fetch latest release:', error);
+      logger.error('Failed to fetch latest release:', error);
       throw error;
     }
   }
@@ -161,7 +162,7 @@ export class UpdateManager {
 
       fs.writeFileSync(getCacheFilePath(), JSON.stringify(cacheData, null, 2), 'utf-8');
     } catch (error) {
-      console.error('Failed to save cache:', error);
+      logger.error('Failed to save cache:', error);
     }
   }
 
@@ -185,7 +186,7 @@ export class UpdateManager {
         isCached: true,
       };
     } catch (error) {
-      console.error('Failed to read cache:', error);
+      logger.error('Failed to read cache:', error);
       return null;
     }
   }

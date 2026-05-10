@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { logger } from "@/lib/utils/logger"
 import { useIsClient } from "@/lib/hooks/use-is-client"
 import { StorageManager, TMDBItem } from "@/lib/data/storage"
 import { realtimeSyncManager } from "@/lib/data/realtime-sync-manager"
@@ -30,6 +31,7 @@ export function useDataOperations(
         data: item
       })
     } catch (err) {
+      logger.error('[useDataOperations] 添加项目失败', err)
       setError("添加项目失败")
       throw err
     }
@@ -56,6 +58,7 @@ export function useDataOperations(
         data: item
       })
     } catch (err) {
+      logger.error('[useDataOperations] 更新项目失败', err)
       setError("更新项目失败")
       setItems(items)
     }
@@ -83,6 +86,7 @@ export function useDataOperations(
         data: { id, item: originalItem }
       })
     } catch (err) {
+      logger.error('[useDataOperations] 删除项目失败', err)
       setError("删除项目失败")
       setItems(items)
     }
@@ -102,6 +106,7 @@ export function useDataOperations(
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
+      logger.error('[useDataOperations] 导出数据失败', err)
       setError("导出数据失败")
     } finally {
       setLoading(false)
@@ -123,6 +128,7 @@ export function useDataOperations(
 
       return result.stats
     } catch (err) {
+      logger.error('[useDataOperations] 导入数据失败', err)
       setError(`导入数据失败：${err instanceof Error ? err.message : '请检查文件格式'}`)
       throw err
     } finally {

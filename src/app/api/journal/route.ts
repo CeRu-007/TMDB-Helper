@@ -5,6 +5,7 @@ import { scheduleRepository } from '@/lib/data/schedule-repository'
 import { initializeDatabase } from '@/lib/database'
 import { notifyDataChangeFromServer } from '@/lib/data/sse-broadcaster'
 import type { TaskJournal } from '@/types/task-journal'
+import { logger } from '@/lib/utils/logger'
 
 function enrichEntriesWithTmdbUrl(entries: TaskJournal[]): TaskJournal[] {
   const itemCache = new Map<string, { tmdbId?: string; season?: number; language?: string } | null>()
@@ -44,7 +45,7 @@ async function ensureDatabaseInitialized(): Promise<void> {
   try {
     await initializeDatabase()
   } catch (error) {
-    console.error('[Journal API] 数据库初始化失败:', error)
+    logger.error('[Journal API] 数据库初始化失败:', error)
     throw error
   }
 }
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
       meta: { totalCount, unreadCount: unread },
     })
   } catch (error) {
-    console.error('[Journal API] GET 错误:', error)
+    logger.error('[Journal API] GET 错误:', error)
     return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 })
   }
 }
@@ -115,7 +116,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ error: '无效的操作' }, { status: 400 })
   } catch (error) {
-    console.error('[Journal API] PUT 错误:', error)
+    logger.error('[Journal API] PUT 错误:', error)
     return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 })
   }
 }
@@ -146,7 +147,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ error: '缺少参数' }, { status: 400 })
   } catch (error) {
-    console.error('[Journal API] DELETE 错误:', error)
+    logger.error('[Journal API] DELETE 错误:', error)
     return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 })
   }
 }

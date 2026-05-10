@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ApiResponse } from '@/types/common'
 import { ModelProvider, ModelConfig } from '@/shared/types/model-service'
-
+import { logger } from '@/lib/utils/logger'
+ 
 // 请求接口
 interface ImageAnalysisRequest {
   image: string
@@ -202,7 +203,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: unknown) {
-    console.error('Image analysis error:', error)
+    logger.error('Image analysis error:', error)
     const errorMessage = error instanceof Error ? error.message : '未知错误'
     return NextResponse.json<ApiResponse<null>>(
       {

@@ -7,6 +7,29 @@ const os = require('os');
 const isDev = process.env.NODE_ENV === 'development' || process.defaultApp || /[\\/]electron/.test(process.execPath);
 const port = 3000; // 统一使用3000端口，与Next.js开发服务器保持一致
 
+// 简单的日志辅助函数（Electron 主进程无法使用 Logger class）
+function electronLog(message, type = 'info') {
+  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const prefix = type === 'error' ? '[ERROR]' : '[INFO]';
+  const line = `[${timestamp}] ${prefix} ${message}`;
+  if (type === 'error') {
+    console.error(line);
+  } else {
+    console.log(line);
+  }
+  if (appDataDir) {
+    try {
+      const logDir = path.join(appDataDir, 'logs');
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+      fs.appendFileSync(path.join(logDir, 'electron.log'), line + '\n');
+    } catch (e) {
+      // 忽略日志写入错误
+    }
+  }
+}
+
 // 数据目录（在 app.whenReady 后重新计算）
 let appDataDir = null;
 
@@ -47,9 +70,9 @@ function initDataDir() {
     process.env.JWT_SECRET = 'tmdb-helper-electron-' + machineId.substring(0, 32);
   }
 
-  console.log('[Electron] 数据目录:', appDataDir);
-  console.log('[Electron] exe 路径:', app.getPath('exe'));
-  console.log('[Electron] app 路径:', app.getAppPath());
+  electronLog(`数据目录: ${appDataDir}`);
+  electronLog(`exe 路径: ${app.getPath('exe')}`);
+  electronLog(`app 路径: ${app.getAppPath()}`);
   
   // 初始化数据库
   initDatabase();
@@ -62,18 +85,18 @@ function initDataDir() {
 function initDatabase() {
   try {
     const dbPath = path.join(appDataDir, 'tmdb-helper.db');
-    console.log('[Electron] 初始化数据库:', dbPath);
+    electronLog(`初始化数据库: ${dbPath}`);
     
     // 检查数据库是否已存在
     if (fs.existsSync(dbPath)) {
-      console.log('[Electron] 数据库已存在，跳过初始化');
+      electronLog('数据库已存在，跳过初始化');
       return;
     }
     
     // 使用 better-sqlite3 初始化数据库（Electron 33 使用 Node.js 20，不支持 node:sqlite）
-    console.log('[Electron] 尝试加载 better-sqlite3...');
+    electronLog('尝试加载 better-sqlite3...');
     const Database = require('better-sqlite3');
-    console.log('[Electron] better-sqlite3 加载成功');
+    electronLog('better-sqlite3 加载成功');
     const db = new Database(dbPath);
     db.exec('PRAGMA journal_mode = WAL');
     db.exec('PRAGMA foreign_keys = ON');
@@ -178,10 +201,10 @@ function initDatabase() {
     db.exec(`PRAGMA user_version = 10`);
     
     db.close();
-    console.log('[Electron] 数据库初始化完成');
+    electronLog('数据库初始化完成');
   } catch (error) {
-    console.error('[Electron] 数据库初始化失败:', error);
-    console.error('[Electron] 错误详情:', error instanceof Error ? error.stack : String(error));
+    electronLog(`数据库初始化失败: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    electronLog(`错误详情: ${error instanceof Error ? error.stack : String(error)}`, 'error');
     // 在 Electron 中显示错误对话框
     try {
       const { dialog } = require('electron');
@@ -246,13 +269,13 @@ function createWindow() {
 
   // 添加全屏状态变化监听
   mainWindow.on('enter-full-screen', () => {
-    
+    electronLog('窗口进入全屏');
     // 发送全屏状态变化事件到渲染进程
     mainWindow.webContents.send('fullscreen-change', true);
   });
 
   mainWindow.on('leave-full-screen', () => {
-    
+    electronLog('窗口退出全屏');
     // 发送全屏状态变化事件到渲染进程
     mainWindow.webContents.send('fullscreen-change', false);
   });
@@ -285,7 +308,7 @@ function createWindow() {
 
   // 添加页面加载事件监听
   mainWindow.webContents.on('did-finish-load', () => {
-
+    electronLog('页面加载完成');
   });
 
   // 添加内容安全策略（CSP）
@@ -306,11 +329,11 @@ function createWindow() {
   });
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-    
+    electronLog(`页面加载失败: ${errorDescription} (${errorCode}) URL: ${validatedURL}`, 'error');
   });
 
   mainWindow.webContents.on('dom-ready', () => {
-    
+    electronLog('DOM 准备就绪');
   });
 
   // 加载应用
@@ -328,7 +351,7 @@ function createWindow() {
           
           await mainWindow.loadURL(startUrl);
         } catch (serverError) {
-          
+          electronLog(`本地服务器加载失败，尝试静态文件: ${serverError.message}`, 'error');
           // 查找静态HTML文件
           const appPath = app.getAppPath();
           const possiblePaths = [
@@ -354,7 +377,7 @@ function createWindow() {
           }
 
           if (htmlPath) {
-            
+            electronLog(`加载静态文件: ${htmlPath}`);
             await mainWindow.loadFile(htmlPath);
           } else {
             throw new Error('无法找到应用文件');
@@ -363,7 +386,7 @@ function createWindow() {
       }
       
     } catch (error) {
-      
+      electronLog(`应用加载失败: ${error.message}`, 'error');
       // 显示错误页面
       const errorHtml = `
         <html>
@@ -440,7 +463,7 @@ function startNextServer() {
     }
 
     // 生产环境下直接在当前进程中启动 Next.js
-    
+    electronLog('启动 Next.js 服务器...');
     try {
       // 设置 NODE_ENV（TMDB_DATA_DIR 和 ELECTRON_BUILD 已在 initDataDir 中设置）
       process.env.NODE_ENV = 'production';
@@ -460,7 +483,7 @@ function startNextServer() {
 
       let nextDir = null;
       for (const dir of possibleNextDirs) {
-        console.log('[Electron] 检查 .next 目录:', dir, '存在:', fs.existsSync(dir));
+        electronLog(`检查 .next 目录: ${dir} 存在: ${fs.existsSync(dir)}`);
         if (fs.existsSync(dir)) {
           nextDir = dir;
           break;
@@ -468,12 +491,12 @@ function startNextServer() {
       }
 
       if (!nextDir) {
-        console.error('[Electron] 未找到 .next 目录');
+        electronLog('未找到 .next 目录', 'error');
         reject(new Error('Next.js 构建目录不存在'));
         return;
       }
 
-      console.log('[Electron] 使用 .next 目录:', nextDir);
+      electronLog(`使用 .next 目录: ${nextDir}`);
 
       // 直接 require server.js 的逻辑
       const { createServer } = require('http');
@@ -482,7 +505,7 @@ function startNextServer() {
 
       // 确定应用根目录（.next 的父目录）
       const appRoot = path.dirname(nextDir);
-      console.log('[Electron] 应用根目录:', appRoot);
+      electronLog(`应用根目录: ${appRoot}`);
 
       const nextApp = next({
         dev: false,
@@ -495,15 +518,14 @@ function startNextServer() {
       const handle = nextApp.getRequestHandler();
 
       nextApp.prepare().then(async () => {
-        console.log('[Electron] Next.js 准备完成');
+        electronLog('Next.js 准备完成');
 
         const server = createServer(async (req, res) => {
           try {
-            
             const parsedUrl = parse(req.url, true);
             await handle(req, res, parsedUrl);
           } catch (err) {
-            
+            electronLog(`请求处理失败: ${err.message}`, 'error');
             res.statusCode = 500;
             res.end('Internal Server Error');
           }
@@ -511,26 +533,26 @@ function startNextServer() {
 
         server.listen(port, (err) => {
           if (err) {
-            
+            electronLog(`服务器启动失败: ${err.message}`, 'error');
             reject(err);
           } else {
-
+            electronLog(`Next.js 服务器已启动 (端口 ${port})`);
             resolve();
           }
         });
 
         server.on('error', (error) => {
-          
+          electronLog(`服务器错误: ${error.message}`, 'error');
           reject(error);
         });
 
       }).catch((error) => {
-        console.error('[Electron] Next.js prepare 失败:', error);
+        electronLog(`Next.js prepare 失败: ${error.message}`, 'error');
         reject(error);
       });
 
     } catch (error) {
-      
+      electronLog(`启动 Next.js 服务器异常: ${error.message}`, 'error');
       reject(error);
     }
   });
@@ -773,26 +795,23 @@ app.whenReady().then(async () => {
       app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
     }
 
-    console.log('📁 应用路径:', app.getAppPath());
-    console.log('📁 用户数据路径:', app.getPath('userData'));
+    electronLog(`应用路径: ${app.getAppPath()}`);
+    electronLog(`用户数据路径: ${app.getPath('userData')}`);
 
     // 启动 Next.js 服务器
-    
     await startNextServer();
     
     // 创建窗口和菜单
-    
     createWindow();
 
     // 始终创建菜单（包含开发菜单）
-
     createMenu();
 
     // 创建系统托盘
     createTray();
 
   } catch (error) {
-
+    electronLog(`启动失败: ${error.message}`, 'error');
     // 显示更详细的错误信息
     const errorMessage = `启动失败: ${error.message}\n\n详细信息:\n${error.stack}`;
     dialog.showErrorBox('启动错误', errorMessage);

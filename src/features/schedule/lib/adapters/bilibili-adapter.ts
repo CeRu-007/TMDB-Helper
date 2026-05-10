@@ -1,4 +1,5 @@
 import { PlatformScheduleAdapter, ScheduleResponse, ScheduleEpisode, ScheduleDay } from '../types/schedule'
+import { logger } from '@/lib/utils/logger'
 
 class BilibiliScheduleAdapter implements PlatformScheduleAdapter {
   name = '哔哩哔哩'
@@ -25,7 +26,7 @@ class BilibiliScheduleAdapter implements PlatformScheduleAdapter {
       const data = await response.json()
       return this.transformResponse(data)
     } catch (error) {
-      console.error('Bilibili API Error:', error)
+      logger.error('Bilibili API Error:', error)
       return this.createErrorResponse(error)
     }
   }

@@ -1,5 +1,6 @@
 import type { PlatformScheduleAdapter, ScheduleResponse, ScheduleDay, ScheduleEpisode } from '../../types/schedule'
 import type { IqiyiTabResponse, IqiyiContentResponse } from '../../api/iqiyi-types'
+import { logger } from '@/lib/utils/logger'
 
 interface IqiyiDateTab {
   date: string
@@ -74,7 +75,7 @@ class IqiyiScheduleAdapter implements PlatformScheduleAdapter {
         result: { list: days }
       }
     } catch (error) {
-      console.error('[Iqiyi] FetchSchedule error:', error)
+      logger.error('[Iqiyi] FetchSchedule error:', error)
       return this.createErrorResponse(-1, error instanceof Error ? error.message : 'Unknown error')
     }
   }
@@ -135,7 +136,7 @@ class IqiyiScheduleAdapter implements PlatformScheduleAdapter {
   private async fetchAllContent(dateTabs: IqiyiDateTab[], year: number): Promise<(IqiyiContentResponse | null)[]> {
     const contentPromises = dateTabs.map(tab =>
       this.fetchContentByDate(tab.date, year).catch(error => {
-        console.error(`[Iqiyi] Failed to fetch content for ${tab.date}:`, error)
+        logger.error(`[Iqiyi] Failed to fetch content for ${tab.date}:`, error)
         return null
       })
     )

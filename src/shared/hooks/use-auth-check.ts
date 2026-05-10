@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { AuthUser } from '@/shared/types/auth.types'
+import { logger } from '@/lib/utils/logger'
 
 export function useAuthCheck(): {
   user: AuthUser | null
@@ -35,10 +36,10 @@ export function useAuthCheck(): {
             return
           }
         } else {
-          console.warn('[AuthCheck] verify failed:', response.status, response.statusText)
+          logger.warn('[AuthCheck] verify failed:', response.status, response.statusText)
         }
       } catch (err) {
-        console.error('[AuthCheck] fetch error:', err)
+        logger.error('[AuthCheck] fetch error:', err)
       }
 
       if (!cancelled) {

@@ -1,6 +1,7 @@
 import { PlatformScheduleAdapter, ScheduleResponse, ScheduleDay, ScheduleEpisode } from '../types/schedule'
 import { bilibiliAdapter } from './adapters/bilibili-adapter'
 import { iqiyiAdapter } from './adapters/iqiyi-adapter'
+import { logger } from '@/lib/utils/logger'
 
 const CACHE_DURATION_MS = 5 * 60 * 1000
 
@@ -54,7 +55,7 @@ class SchedulePlatformManager {
 
     for (const platformId of platformIds) {
       if (!results.has(platformId)) {
-        console.error(`Failed to fetch schedule for ${platformId}`)
+        logger.error(`Failed to fetch schedule for ${platformId}`)
         results.set(platformId, this.createErrorResponse('Failed to fetch schedule'))
       }
     }

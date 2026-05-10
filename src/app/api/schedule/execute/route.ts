@@ -13,7 +13,7 @@ async function ensureDatabaseInitialized(): Promise<void> {
   try {
     await initializeDatabase()
   } catch (error) {
-    console.error('[Schedule Execute API] 数据库初始化失败:', error)
+    logger.error('[Schedule Execute API] 数据库初始化失败:', error)
     throw error
   }
 }
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: errorMessage, logs }, { status: 500 })
     }
   } catch (error) {
-    console.error('[Schedule Execute API] POST 错误:', error)
+    logger.error('[Schedule Execute API] POST 错误:', error)
     return NextResponse.json({ success: false, error: '服务器内部错误', logs }, { status: 500 })
   }
 }

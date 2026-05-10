@@ -1,5 +1,6 @@
 import type { CellPosition } from "../types"
-
+import { logger } from "@/lib/utils/logger"
+ 
 /**
  * 将数据复制到剪贴板
  */
@@ -9,7 +10,7 @@ export async function copyToClipboard(data: string[][]): Promise<boolean> {
     await navigator.clipboard.writeText(text)
     return true
   } catch (error) {
-    console.error("复制到剪贴板失败:", error)
+    logger.error("复制到剪贴板失败:", error)
     return false
   }
 }
@@ -22,7 +23,7 @@ export async function pasteFromClipboard(): Promise<string[][] | null> {
     const text = await navigator.clipboard.readText()
     return text.split("\n").map((line) => line.split("\t"))
   } catch (error) {
-    console.error("从剪贴板粘贴失败:", error)
+    logger.error("从剪贴板粘贴失败:", error)
     return null
   }
 }

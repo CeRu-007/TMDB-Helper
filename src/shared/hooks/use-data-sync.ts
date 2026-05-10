@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { logger } from "@/lib/utils/logger"
 import { useIsClient } from "@/lib/hooks/use-is-client"
 import { StorageManager, TMDBItem } from "@/lib/data/storage"
 import { realtimeSyncManager, DataChangeEvent } from "@/lib/data/realtime-sync-manager"
@@ -24,6 +25,7 @@ export function useDataSync() {
       setItems(data)
       setInitialized(true)
     } catch (err) {
+      logger.error('[useDataSync] 加载数据失败', err)
       setError("加载数据失败，请刷新页面重试")
     }
   }, [isClient])
@@ -60,6 +62,7 @@ export function useDataSync() {
         return () => clearInterval(checkConnection)
       } catch (error) {
         if (!mounted) return
+        logger.error('[useDataSync] SSE 初始化失败', error)
         setIsConnected(false)
       }
     }

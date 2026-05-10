@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/utils/logger'
 
 const ALLOWED_HOSTS = [
   'i0.hdslb.com',
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Image proxy error:', error)
+    logger.error('Image proxy error:', error)
     return new NextResponse('Internal Server Error', { status: 500 })
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Bell, CheckCircle2, XCircle, Clock, Trash2, ChevronDown, ChevronRight, Search, Trash, ExternalLink } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { logger } from "@/lib/utils/logger"
 import type { TFunction } from "i18next"
 import type { TaskJournal } from "@/types/task-journal"
 import {
@@ -105,7 +106,7 @@ export function TaskJournalDialog({ open, onOpenChange }: TaskJournalDialogProps
         }
       }
     } catch (error) {
-      console.error("[TaskJournalDialog] Failed to load entries:", error)
+      logger.error("[TaskJournalDialog] Failed to load entries:", error)
     } finally {
       setLoading(false)
     }
@@ -141,7 +142,7 @@ export function TaskJournalDialog({ open, onOpenChange }: TaskJournalDialogProps
       setUnreadCount(0)
       setJournalUnreadCount(0)
     } catch (error) {
-      console.error("[TaskJournalDialog] Failed to mark all as read:", error)
+      logger.error("[TaskJournalDialog] Failed to mark all as read:", error)
     }
   }
 
@@ -163,7 +164,7 @@ export function TaskJournalDialog({ open, onOpenChange }: TaskJournalDialogProps
         setJournalUnreadCount(data.data.unreadCount)
       }
     } catch (error) {
-      console.error("[TaskJournalDialog] Failed to delete group:", error)
+      logger.error("[TaskJournalDialog] Failed to delete group:", error)
     }
   }
 
@@ -175,7 +176,7 @@ export function TaskJournalDialog({ open, onOpenChange }: TaskJournalDialogProps
       setUnreadCount(0)
       setJournalUnreadCount(0)
     } catch (error) {
-      console.error("[TaskJournalDialog] Failed to clear all:", error)
+      logger.error("[TaskJournalDialog] Failed to clear all:", error)
     }
   }
 

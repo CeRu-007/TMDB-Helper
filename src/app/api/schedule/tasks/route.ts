@@ -3,12 +3,13 @@ import { scheduleRepository } from '@/lib/data/schedule-repository'
 import { scheduler } from '@/lib/scheduler/scheduler'
 import { initializeDatabase } from '@/lib/database'
 import type { CreateScheduleTaskInput, UpdateScheduleTaskInput } from '@/types/schedule'
+import { logger } from '@/lib/utils/logger'
 
 async function ensureDatabaseInitialized(): Promise<void> {
   try {
     await initializeDatabase()
   } catch (error) {
-    console.error('[Schedule Tasks API] 数据库初始化失败:', error)
+    logger.error('[Schedule Tasks API] 数据库初始化失败:', error)
     throw error
   }
 }
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: task || null })
   } catch (error) {
-    console.error('[Schedule Tasks API] GET 错误:', error)
+    logger.error('[Schedule Tasks API] GET 错误:', error)
     return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 })
   }
 }
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result.data })
   } catch (error) {
-    console.error('[Schedule Tasks API] POST 错误:', error)
+    logger.error('[Schedule Tasks API] POST 错误:', error)
     return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 })
   }
 }
@@ -88,7 +89,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result.data })
   } catch (error) {
-    console.error('[Schedule Tasks API] PUT 错误:', error)
+    logger.error('[Schedule Tasks API] PUT 错误:', error)
     return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 })
   }
 }
@@ -118,7 +119,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Schedule Tasks API] DELETE 错误:', error)
+    logger.error('[Schedule Tasks API] DELETE 错误:', error)
     return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 })
   }
 }

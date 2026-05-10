@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { toPng } from 'html-to-image'
+import { logger } from '@/lib/utils/logger'
 
 async function convertExternalImageToDataUrl(src: string): Promise<string | null> {
   try {
@@ -85,7 +86,7 @@ export function useShareImage() {
       return dataUrl
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      console.error('[ShareImage] 生成图片失败:', message)
+      logger.error('[ShareImage] 生成图片失败:', message)
       setError(message || '生成图片失败')
       return null
     } finally {

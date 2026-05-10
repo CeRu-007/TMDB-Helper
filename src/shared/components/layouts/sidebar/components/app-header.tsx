@@ -5,6 +5,7 @@ import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell, BarChar
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import { useTranslation } from "react-i18next"
+import { logger } from "@/lib/utils/logger"
 
 import { useUIStore } from "@/stores/ui-store"
 import { realtimeSyncManager } from "@/lib/data/realtime-sync-manager"
@@ -47,7 +48,7 @@ export function AppHeader({
         }
       }
     } catch (error) {
-      console.error('[AppHeader] 获取未读数失败:', error)
+      logger.error('[AppHeader] 获取未读数失败:', error)
     }
   }, [])
 

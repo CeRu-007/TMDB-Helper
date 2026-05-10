@@ -6,6 +6,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { ApiResponse } from '@/types/common';
 import { TIMEOUT_5S } from '@/lib/constants/constants';
+import { logger } from '@/lib/utils/logger';
 // 移除字幕提取器导入，现在只专注于音频分析
 
 const execAsync = promisify(exec);
@@ -151,7 +152,7 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
     const duration = parseFloat(audioInfo.format.duration) || 0;
     const title = audioInfo.format.tags?.title || '未知标题';
 
-    console.log(`音频提取成功 - 时长: ${duration.toFixed(2)}秒 (${Math.floor(duration/60)}分${Math.floor(duration%60)}秒)`);
+    logger.info(`音频提取成功 - 时长: ${duration.toFixed(2)}秒 (${Math.floor(duration/60)}分${Math.floor(duration%60)}秒)`);
 
     return {
       audioPath,
@@ -204,11 +205,11 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
     const audioBuffer = await fs.readFile(audioPath);
     const fileSizeMB = audioBuffer.length / (1024 * 1024);
 
-    console.log(`音频文件大小: ${fileSizeMB.toFixed(2)}MB, 时长: ${audioDuration.toFixed(2)}秒`);
+    logger.info(`音频文件大小: ${fileSizeMB.toFixed(2)}MB, 时长: ${audioDuration.toFixed(2)}秒`);
 
     // 检查文件大小限制（硅基流动API通常有25MB限制）
     if (fileSizeMB > 25) {
-      console.warn(`音频文件过大 (${fileSizeMB.toFixed(2)}MB)，可能需要分段处理`);
+      logger.warn(`音频文件过大 (${fileSizeMB.toFixed(2)}MB)，可能需要分段处理`);
     }
 
     // 创建FormData
@@ -223,7 +224,7 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
       formData.append('timestamp_granularities[]', 'segment'); // 获取分段时间戳
     }
 
-    console.log(`使用语音识别模型: ${model}，文件大小: ${fileSizeMB.toFixed(2)}MB`);
+    logger.info(`使用语音识别模型: ${model}，文件大小: ${fileSizeMB.toFixed(2)}MB`);
 
     // 调用硅基流动语音识别API，增加超时时间
     const response = await fetch('https://api.siliconflow.cn/v1/audio/transcriptions', {
@@ -243,7 +244,7 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
     const result = await response.json();
     const transcriptText = result.text || '';
 
-    console.log('API响应结构:', Object.keys(result));
+    logger.debug('API响应结构:', Object.keys(result));
 
     // 处理不同模型的响应格式
     let segments: Array<{start: number; end: number; text: string; confidence?: number}> = [];

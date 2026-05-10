@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import CryptoJS from 'crypto-js'
+import { logger } from '@/lib/utils/logger'
 
 const BILIBILI_API_URL = 'https://api.bilibili.com/pgc/app/timeline'
 const APP_KEY = '1d8b6e7d45233436'
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
   try {
     return await fetchBilibiliSchedule()
   } catch (error) {
-    console.error('Error fetching Bilibili schedule:', error)
+    logger.error('Error fetching Bilibili schedule:', error)
     return NextResponse.json(
       { code: -1, message: 'Failed to fetch schedule data', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

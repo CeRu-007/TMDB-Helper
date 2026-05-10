@@ -1,5 +1,6 @@
 import { PlatformScheduleAdapter, ScheduleResponse } from '../types/schedule'
-
+import { logger } from '@/lib/utils/logger'
+ 
 /**
  * 腾讯视频追剧日历适配器示例
  * 这是一个扩展适配器，展示如何添加新平台支持
@@ -24,7 +25,7 @@ class TencentScheduleAdapter implements PlatformScheduleAdapter {
         result: { list: [] }
       }
     } catch (error) {
-      console.error('Tencent Video API Error:', error)
+      logger.error('Tencent Video API Error:', error)
       return {
         code: -1,
         message: error instanceof Error ? error.message : 'Unknown error',

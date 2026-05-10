@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Clock, Play, Loader2, Info, Terminal, Activity, Ban } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { logger } from "@/lib/utils/logger"
 import type { TMDBItem } from "@/types/tmdb-item"
 import type { ScheduleTask, ScheduleLog, FieldCleanup } from "@/types/schedule"
 import { getCronDescription, getNextRunTime, validateCronExpression, getRecommendations } from "@/lib/utils/cron-utils"
@@ -98,7 +99,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         setNextRunTime(getNextRunTime("0 2 * * *"))
       }
     } catch (error) {
-      console.error("[ScheduleTab] Failed to load task:", error)
+      logger.error("[ScheduleTab] Failed to load task:", error)
     } finally {
       setLoading(false)
     }
@@ -181,7 +182,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         addLog("error", `${t("saveFailed")}: ${data.error}`)
       }
     } catch (error) {
-      console.error("[ScheduleTab] Failed to save:", error)
+      logger.error("[ScheduleTab] Failed to save:", error)
       addLog("error", t("saveFailed"))
     } finally {
       setSaving(false)
@@ -215,7 +216,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
 
       await loadTask()
     } catch (error) {
-      console.error("[ScheduleTab] Execution failed:", error)
+      logger.error("[ScheduleTab] Execution failed:", error)
       addLog("error", t("executionFailed"))
     } finally {
       setExecuting(false)

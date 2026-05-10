@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, type RefObject } from "react"
 import { createPortal } from "react-dom"
 import { useTranslation } from "react-i18next"
+import { logger } from "@/lib/utils/logger"
 import { Clock, Play, CheckCircle, XCircle, Loader2, X } from "lucide-react"
 import type { TMDBItem } from "@/types/tmdb-item"
 import type { ScheduleTask, ScheduleLog } from "@/types/schedule"
@@ -89,7 +90,7 @@ export function CardDrawer({ item, open, onOpenChange, cardRef }: CardDrawerProp
         setTask(null)
       }
     } catch (error) {
-      console.error("[CardDrawer] Load task failed:", error)
+      logger.error("[CardDrawer] Load task failed:", error)
     } finally {
       setLoading(false)
     }
@@ -157,7 +158,7 @@ export function CardDrawer({ item, open, onOpenChange, cardRef }: CardDrawerProp
         setTask(data.data)
       }
     } catch (error) {
-      console.error("[CardDrawer] Update task failed:", error)
+      logger.error("[CardDrawer] Update task failed:", error)
     }
   }
 
@@ -174,7 +175,7 @@ export function CardDrawer({ item, open, onOpenChange, cardRef }: CardDrawerProp
 
       await loadTask()
     } catch (error) {
-      console.error("[CardDrawer] Execute failed:", error)
+      logger.error("[CardDrawer] Execute failed:", error)
     } finally {
       setExecuting(false)
     }

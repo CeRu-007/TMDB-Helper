@@ -541,7 +541,7 @@ export function useContentGeneration(
         })
       }
     } catch (error) {
-      console.error(`${getOperationName(operation)}失败:`, error)
+      logger.error(`${getOperationName(operation)}失败:`, error)
       if (isInsufficientBalanceError(error)) {
         setShowInsufficientBalanceDialog(true)
       } else {
