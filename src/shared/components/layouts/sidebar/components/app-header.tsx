@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { UserAvatar } from "@/shared/components/user-identity-provider"
-import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell, BarChart3 } from "lucide-react"
+import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import { useTranslation } from "react-i18next"
@@ -103,15 +103,6 @@ export function AppHeader({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onShowDashboard}
-                className="flex items-center"
-                title={t("title", { ns: "dashboard" })}
-              >
-                <BarChart3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={onShowJournalDialog}
                 className="flex items-center relative"
                 title={t("title", { ns: "journal" })}
@@ -145,6 +136,7 @@ export function AppHeader({
               <UserAvatar
                 onShowImportDialog={onShowImportDialog}
                 onShowExportDialog={onShowExportDialog}
+                onShowDashboard={onShowDashboard}
               />
 
               <Button

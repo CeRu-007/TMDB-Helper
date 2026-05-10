@@ -21,6 +21,7 @@ import {
   Database,
   ChevronDown,
   ScrollText,
+  TrendingUp,
 } from "lucide-react"
 
 import { useToast } from "@/lib/hooks/use-toast"
@@ -287,10 +288,12 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
  */
 export function UserAvatar({
   onShowImportDialog,
-  onShowExportDialog
+  onShowExportDialog,
+  onShowDashboard
 }: {
   onShowImportDialog?: () => void
   onShowExportDialog?: () => void
+  onShowDashboard?: () => void
 } = {}) {
   const { userInfo, isLoading } = useUser()
   const [showDropdown, setShowDropdown] = useState(false)
@@ -366,6 +369,7 @@ export function UserAvatar({
           triggerElement={buttonRef.current || undefined}
           onShowImportDialog={onShowImportDialog}
           onShowExportDialog={onShowExportDialog}
+          onShowDashboard={onShowDashboard}
         />
       )}
     </div>
@@ -380,8 +384,9 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
   triggerElement?: HTMLElement;
   onShowImportDialog?: () => void;
   onShowExportDialog?: () => void;
+  onShowDashboard?: () => void;
 }>(
-  ({ onClose, triggerElement, onShowImportDialog, onShowExportDialog }, ref) => {
+  ({ onClose, triggerElement, onShowImportDialog, onShowExportDialog, onShowDashboard }, ref) => {
     const { t } = useTranslation()
     const { toast } = useToast()
     const { userInfo, updateDisplayName, resetUser } = useUser()
@@ -584,6 +589,17 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
               userInfo={userInfo}
               items={items || []}
             />
+          )}
+
+          {/* 我的维护回顾 */}
+          {onShowDashboard && (
+            <button
+              onClick={onShowDashboard}
+              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <TrendingUp className="w-4 h-4 mr-3" />
+              {t("title", { ns: "dashboard" })}
+            </button>
           )}
         </div>
 
