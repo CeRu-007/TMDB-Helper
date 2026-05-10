@@ -44,6 +44,10 @@ WORKDIR /app
 # 复制包管理文件
 COPY package.json pnpm-lock.yaml ./
 
+# 允许需要构建脚本的依赖包
+RUN pnpm config set enable-scripts true && \
+    pnpm approve-builds better-sqlite3 electron sharp unrs-resolver
+
 # 安装 Node.js 依赖
 RUN pnpm install --frozen-lockfile
 
