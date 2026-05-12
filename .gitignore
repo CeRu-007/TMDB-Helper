@@ -51,6 +51,7 @@ TMDB-Import-master/
 .augment/
 .kiro/
 .codebuddy/
+.playwright-mcp/
 
 # Local data files (only root directory)
 /data/
