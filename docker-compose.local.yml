@@ -7,8 +7,10 @@ services:
     ports:
       - "4949:4949"
     environment:
-      # 本地开发：JWT_SECRET 有默认值
-      # 如需自动创建管理员，添加 ADMIN_USERNAME=admin ADMIN_PASSWORD=yourpass
+      # JWT_SECRET 本地开发有默认值
+      # ADMIN_USERNAME / ADMIN_PASSWORD 可选：设置后自动创建管理员（直接登录）
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET:-tmdb-helper-local-dev-secret}
       - SESSION_EXPIRY_DAYS=15
       - NODE_ENV=production

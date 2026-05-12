@@ -86,8 +86,8 @@ services:
       # ADMIN_USERNAME / ADMIN_PASSWORD 可选
       # 设置后自动创建管理员，首次访问直接登录
       # 不设置则首次访问进入注册流程
-      # - ADMIN_USERNAME=admin
-      # - ADMIN_PASSWORD=your_secure_password
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     volumes:
       - tmdb_data:/app/data
     restart: unless-stopped
