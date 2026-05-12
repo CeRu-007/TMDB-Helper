@@ -64,8 +64,10 @@ jspm_packages/
 # dotenv environment variables file
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
+.env.production
 .env.production.local
 
 # parcel-bundler cache
