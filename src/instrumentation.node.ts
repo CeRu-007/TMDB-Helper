@@ -67,7 +67,8 @@ export async function initializeDev() {
           });
 
           if (result.success) {
-            rootLogger.info(`[Instrumentation] 管理员账户已从环境变量创建: ${process.env.ADMIN_USERNAME}`);
+            rootLogger.info(`[Instrumentation] 管理员账户已从环境变量自动创建: ${process.env.ADMIN_USERNAME}`);
+            rootLogger.info('[Instrumentation] 请使用 ADMIN_USERNAME/ADMIN_PASSWORD 环境变量配置的凭据直接登录');
           } else {
             rootLogger.error('[Instrumentation] 从环境变量创建管理员失败:', result.error);
           }
