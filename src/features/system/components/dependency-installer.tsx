@@ -282,24 +282,15 @@ export default function DependencyInstaller() {
           })
           // 重新检查状态
           await checkDependencies()
+        } else {
+          // 部分安装失败，但仍显示详细的每个包的结果
+          const failedCount = data.data.summary.failed
+          toast({
+            title: t("dependencyInstaller.installPartialFailed"),
+            description: t("dependencyInstaller.failedInstallCount", { count: failedCount }),
+            variant: "destructive"
+          })
         }
-      } else {
-        // API 返回失败状态
-        const errorType = data.errorType as ErrorType || 'unknown'
-        const errorConfig = ERROR_CONFIG[errorType] || ERROR_CONFIG.unknown
-        setInstallProgress([{
-          step: '安装失败',
-          status: 'error',
-          output: data.error || errorConfig.description,
-          errorType: errorType,
-          errorSuggestion: errorConfig.suggestion,
-          isRetryable: errorConfig.isRetryable
-        }])
-        toast({
-          title: errorConfig.title,
-          description: errorConfig.suggestion,
-          variant: "destructive"
-        })
       }
     } catch (error) {
       // 网络请求失败

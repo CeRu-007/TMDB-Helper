@@ -34,6 +34,41 @@ export async function initializeSchema(): Promise<void> {
   // 获取当前版本
   const currentVersion = getUserVersion(db);
 
+  // 修复：确保 users 表包含 loginCount 和 totalUsageTime 列
+  // 这个修复对已损坏的数据库（由旧版 docker-startup.js 创建，缺少 V14 列）至关重要
+  // 必须在早期 return 之前执行，确保即使 version 已匹配也运行修复
+  const usersTableExists = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
+  ).get();
+  if (usersTableExists) {
+    let needsUserRepair = false;
+    try {
+      db.exec(`SELECT loginCount FROM users LIMIT 0`);
+    } catch {
+      needsUserRepair = true;
+    }
+    if (needsUserRepair) {
+      try {
+        db.exec(`ALTER TABLE users ADD COLUMN loginCount INTEGER DEFAULT 0`);
+        logger.info('[Database] 修复: 为 users 表添加 loginCount 列');
+      } catch (e) {
+        logger.error('[Database] 修复 loginCount 失败:', e);
+      }
+      try {
+        db.exec(`ALTER TABLE users ADD COLUMN totalUsageTime INTEGER DEFAULT 0`);
+        logger.info('[Database] 修复: 为 users 表添加 totalUsageTime 列');
+      } catch (e) {
+        logger.error('[Database] 修复 totalUsageTime 失败:', e);
+      }
+      try {
+        db.exec(`UPDATE users SET loginCount = 1 WHERE loginCount = 0 AND deletedAt IS NULL`);
+        logger.info('[Database] 修复: 更新已有用户的 loginCount');
+      } catch (e) {
+        logger.error('[Database] 修复更新 loginCount 失败:', e);
+      }
+    }
+  }
+
   if (currentVersion === SCHEMA_VERSION) {
     return;
   }

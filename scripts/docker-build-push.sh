@@ -41,19 +41,25 @@ show_help() {
     echo "TMDB Helper Docker 构建和推送脚本"
     echo ""
     echo "用法:"
-    echo "  $0 [版本标签]"
+    echo "  $0 [版本标签] [选项]"
     echo ""
     echo "参数:"
     echo "  版本标签    Docker 镜像的版本标签 (默认: latest)"
     echo ""
+    echo "选项:"
+    echo "  --platform  构建目标平台 (默认: linux/amd64)"
+    echo "              示例: --platform linux/amd64,linux/arm64"
+    echo "              需要启用 docker buildx"
+    echo ""
     echo "示例:"
-    echo "  $0                # 构建并推送 latest 版本"
-    echo "  $0 v1.0.0        # 构建并推送 v1.0.0 版本"
-    echo "  $0 dev           # 构建并推送 dev 版本"
+    echo "  $0                                # 构建并推送 latest (linux/amd64)"
+    echo "  $0 v1.0.0                        # 构建并推送 v1.0.0"
+    echo "  $0 latest --platform linux/amd64,linux/arm64   # 多架构构建"
     echo ""
     echo "环境要求:"
     echo "  - Docker 已安装并运行"
     echo "  - 已登录 Docker Hub (docker login)"
+    echo "  - 多架构构建需要: docker buildx create --use"
     echo ""
 }
 
@@ -97,9 +103,13 @@ check_docker_login() {
 # 构建 Docker 镜像
 build_image() {
     local tag=$1
+    local platform=$2
     local image_tag="${FULL_IMAGE_NAME}:${tag}"
     
     print_info "开始构建 Docker 镜像: ${image_tag}"
+    if [ -n "$platform" ]; then
+        print_info "目标平台: ${platform}"
+    fi
     
     # 检查 Dockerfile 是否存在
     if [ ! -f "Dockerfile" ]; then
@@ -108,7 +118,12 @@ build_image() {
     fi
     
     # 构建镜像
-    if docker build -t "${image_tag}" .; then
+    local build_cmd="docker build"
+    if [ -n "$platform" ]; then
+        build_cmd="docker buildx build --platform ${platform}"
+    fi
+    
+    if $build_cmd -t "${image_tag}" .; then
         print_success "镜像构建成功: ${image_tag}"
         
         # 如果不是 latest 标签，同时打上 latest 标签
@@ -177,10 +192,28 @@ main() {
     
     # 获取版本标签，默认为 latest
     TAG=${1:-latest}
+    PLATFORM=""
+    
+    # 解析选项
+    shift 2>/dev/null || true
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --platform)
+                PLATFORM="$2"
+                shift 2
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
     
     print_info "开始 TMDB Helper Docker 构建和推送流程"
     print_info "版本标签: ${TAG}"
     print_info "完整镜像名: ${FULL_IMAGE_NAME}:${TAG}"
+    if [ -n "$PLATFORM" ]; then
+        print_info "目标平台: ${PLATFORM}"
+    fi
     echo ""
     
     # 确认操作
@@ -194,7 +227,7 @@ main() {
     # 执行检查和构建流程
     check_docker
     check_docker_login
-    build_image "${TAG}"
+    build_image "${TAG}" "${PLATFORM}"
     push_image "${TAG}"
     show_image_info "${TAG}"
     

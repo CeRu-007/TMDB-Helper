@@ -403,6 +403,8 @@
     "pythonNotInstall": "Python Not Installed",
     "pleaseInstallPython": "Please install Python environment first",
     "successInstallCount": "Successfully installed {{count}} packages",
+    "installPartialFailed": "Partial Installation Failed",
+    "failedInstallCount": "{{count}} packages failed to install, see details below",
     "networkError": "Network error or server exception",
     "playwrightBrowser": "Playwright Browser Environment",
     "browserInstallComplete": "Browser Installation Complete",

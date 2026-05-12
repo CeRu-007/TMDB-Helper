@@ -404,6 +404,8 @@
     "pythonNotInstall": "Python未安装",
     "pleaseInstallPython": "请先安装Python环境",
     "successInstallCount": "成功安装 {{count}} 个包",
+    "installPartialFailed": "部分安装失败",
+    "failedInstallCount": "{{count}} 个包安装失败，请查看下方详情",
     "networkError": "网络错误或服务器异常",
     "playwrightBrowser": "Playwright浏览器环境",
     "browserInstallComplete": "浏览器安装完成",

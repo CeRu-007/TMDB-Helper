@@ -369,23 +369,23 @@ async function checkPackageInstalled(packageName: string, pythonCmd: string): Pr
 
 // 获取pip安装参数（根据环境）
 function getPipInstallArgs(env: EnvironmentInfo, packageName: string): string[] {
-  const args = ['-m', 'pip', 'install']
-
-  // Docker环境使用系统级安装
-  if (env.type === 'docker') {
-    args.push('--break-system-packages')  // Python 3.11+ 需要
-  }
-  // 其他环境使用用户级安装
-  else {
-    args.push('--user')
-  }
+  // Python 3.11+ (PEP 668) 强制要求 --break-system-packages 标志
+  // --user 确保安装到用户目录，避免权限问题
+  const commonArgs: string[] = [
+    '-m', 'pip', 'install',
+    '--user',
+    '--break-system-packages',
+  ]
 
   // 添加国内镜像源（针对中国用户优化）
-  args.push('-i', 'https://pypi.tuna.tsinghua.edu.cn/simple')
-  args.push('--trusted-host', 'pypi.tuna.tsinghua.edu.cn')
+  const pipArgs = [
+    ...commonArgs,
+    '-i', 'https://pypi.tuna.tsinghua.edu.cn/simple',
+    '--trusted-host', 'pypi.tuna.tsinghua.edu.cn',
+    packageName,
+  ]
 
-  args.push(packageName)
-  return args
+  return pipArgs
 }
 
 // 检查系统 Chromium（非 Playwright 安装的）
@@ -682,7 +682,6 @@ export async function POST(request: NextRequest) {
       results = await installPlaywrightBrowsers(pythonCmd, env)
     }
 
-    const allSuccess = results.every(r => r.status === 'success')
     const summary = {
       total: results.length,
       success: results.filter(r => r.status === 'success').length,
@@ -691,8 +690,9 @@ export async function POST(request: NextRequest) {
 
     logger.info(`[依赖安装] 安装完成:`, summary)
 
+    // 始终返回 success: true（API 调用本身成功），由前端根据 data.results 判断单个包状态
     return NextResponse.json({
-      success: allSuccess,
+      success: true,
       data: {
         results,
         summary,

@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     git \
     ca-certificates \
-    dnsutils \
     # Chromium 运行需要的依赖库
     libnss3 \
     libnspr4 \
@@ -75,8 +74,9 @@ ENV HOSTNAME="0.0.0.0"
 ENV DOCKER_CONTAINER=true
 ENV TMDB_DATA_DIR=/app/data
 ENV NODE_OPTIONS="--max-old-space-size=1024"
-ENV COOKIE_SECURE=false
-ENV JWT_SECRET=your_jwt_secret_key_here_change_in_production
+# 安全默认值: 生产环境请通过环境变量覆盖
+# JWT_SECRET 必须在生产环境中设置一个强随机值
+ENV COOKIE_SECURE=true
 ENV SESSION_EXPIRY_DAYS=15
 
 # Playwright 环境变量 - 浏览器由用户运行时手动安装
@@ -102,9 +102,6 @@ RUN mkdir -p /app/data /app/scripts /app/logs && \
 # 复制脚本文件
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
-# 为启动脚本安装 bcryptjs
-RUN cd /app/scripts && npm init -y && npm install bcryptjs@3.0.2
-
 # 确保 nextjs 用户可以访问必要的命令和目录
 RUN chown -R nextjs:nodejs /app && \
     chmod 755 /usr/bin/unzip /usr/bin/cp /usr/bin/mv /usr/bin/rm /usr/bin/git 2>/dev/null || true
@@ -126,4 +123,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:4949/api/auth/init || exit 1
 
 # 启动应用
-CMD ["sh", "-c", "node scripts/docker-startup.js && node server.js"]
+# --experimental-sqlite 标志确保 node:sqlite 在所有 Node.js 22 版本中可用
+CMD ["sh", "-c", "node --experimental-sqlite scripts/docker-startup.js && node --experimental-sqlite server.js"]

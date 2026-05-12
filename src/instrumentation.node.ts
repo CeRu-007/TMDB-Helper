@@ -1,4 +1,5 @@
 import path from 'path';
+import crypto from 'crypto';
 import { LogLevel } from '@/lib/utils/logger';
 import { FileTransport } from '@/lib/utils/file-transport';
 import { setFileTransport, logger as rootLogger } from '@/lib/utils/logger';
@@ -42,6 +43,38 @@ export async function initializeDev() {
     const { AuthService } = await import('./lib/auth/auth-service');
     if (!AuthService.hasAdmin()) {
       rootLogger.info('[Instrumentation] 认证系统未初始化，等待用户注册');
+
+      // Docker 环境：从环境变量创建管理员（在 schema 初始化之后执行，确保表结构完整）
+      if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
+        try {
+          const bcrypt = await import('bcryptjs');
+          const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 12);
+          const now = new Date().toISOString();
+          const id = crypto.randomUUID();
+
+          const { userRepository } = await import('./lib/database/repositories/auth.repository');
+          const result = userRepository.createUser({
+            id,
+            username: process.env.ADMIN_USERNAME,
+            passwordHash,
+            createdAt: now,
+            updatedAt: now,
+            lastLoginAt: undefined,
+            sessionExpiryDays: 15,
+            avatarUrl: undefined,
+            loginCount: 1,
+            totalUsageTime: 0,
+          });
+
+          if (result.success) {
+            rootLogger.info(`[Instrumentation] 管理员账户已从环境变量创建: ${process.env.ADMIN_USERNAME}`);
+          } else {
+            rootLogger.error('[Instrumentation] 从环境变量创建管理员失败:', result.error);
+          }
+        } catch (err) {
+          rootLogger.error('[Instrumentation] 管理员创建过程异常:', err);
+        }
+      }
     } else {
       rootLogger.info('[Instrumentation] 认证系统已初始化');
     }

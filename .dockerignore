@@ -175,6 +175,15 @@ Dockerfile*
 docker-compose*.yml
 .dockerignore
 
+# External tools (large, unnecessary in Docker build)
+TMDB-Import-master/
+
+# Desktop app source (unnecessary in Docker build)
+electron/
+
+# Scripts runtime modules (redundant, main node_modules handles this)
+scripts/node_modules/
+
 # Documentation
 README.md
 docs/

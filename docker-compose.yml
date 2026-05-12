@@ -7,13 +7,14 @@ services:
     ports:
       - "4949:4949"
     environment:
+      # 安全: ADMIN_PASSWORD 和 JWT_SECRET 没有默认值，用户必须显式设置
       - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=change_this_password
-      - JWT_SECRET=your_jwt_secret_key_here_change_in_production
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?必须设置 ADMIN_PASSWORD 环境变量}
+      - JWT_SECRET=${JWT_SECRET:?必须设置 JWT_SECRET 环境变量}
       - SESSION_EXPIRY_DAYS=15
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      - COOKIE_SECURE=false
+      - COOKIE_SECURE=true
       - DOCKER_CONTAINER=true
       - TMDB_DATA_DIR=/app/data
       - NODE_OPTIONS=--max-old-space-size=1024
@@ -22,7 +23,6 @@ services:
     volumes:
       - ${TMDB_DATA_PATH:-.}/data:/app/data
       - ${TMDB_DATA_PATH:-.}/logs:/app/logs
-    user: "0:0"
     restart: unless-stopped
     deploy:
       resources:

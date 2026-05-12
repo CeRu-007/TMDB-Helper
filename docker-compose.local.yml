@@ -8,8 +8,8 @@ services:
       - "4949:4949"
     environment:
       - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=change_this_password
-      - JWT_SECRET=your_jwt_secret_key_here_change_in_production
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - JWT_SECRET=${JWT_SECRET:-tmdb-helper-local-dev-secret}
       - SESSION_EXPIRY_DAYS=15
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
@@ -22,7 +22,6 @@ services:
     volumes:
       - ${TMDB_DATA_PATH:-.}/data:/app/data
       - ${TMDB_DATA_PATH:-.}/logs:/app/logs
-    user: "0:0"
     restart: unless-stopped
     deploy:
       resources:
