@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -50,10 +51,17 @@ export class AuthService {
 
     if (!secret) {
       if (isProduction && !isElectron) {
-        throw new Error(
-          'JWT_SECRET environment variable is required in production. ' +
-          'Please set a strong, random secret key.'
+        // 生产环境未设置 JWT_SECRET 时自动生成随机密钥
+        // 这确保 Docker 镜像开箱即用，同时避免硬编码默认值的安全风险
+        // 注意：重启容器后此密钥会变，已签发的 token 会失效
+        // 建议通过环境变量设置固定 JWT_SECRET 以保持持久会话
+        const randomSecret = crypto.randomBytes(32).toString('hex');
+        logger.warn(
+          'WARNING: JWT_SECRET not set, generated a random secret for this session. ' +
+          'Tokens will be invalidated on restart. Set JWT_SECRET for persistent sessions.'
         );
+        this._jwtSecret = randomSecret;
+        return this._jwtSecret;
       }
       logger.warn(
         'WARNING: Using default JWT_SECRET for %s only. ' +
