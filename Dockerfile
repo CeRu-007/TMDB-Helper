@@ -73,6 +73,8 @@ ENV PORT=4949
 ENV HOSTNAME="0.0.0.0"
 ENV DOCKER_CONTAINER=true
 ENV TMDB_DATA_DIR=/app/data
+ENV TMDB_LOG_DIR=/app/logs
+ENV LOG_LEVEL=INFO
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 # 安全默认值: 生产环境请通过环境变量覆盖
 # JWT_SECRET 必须在生产环境中设置一个强随机值

@@ -5,7 +5,8 @@ import { FileTransport } from '@/lib/utils/file-transport';
 import { setFileTransport, logger as rootLogger } from '@/lib/utils/logger';
 
 function initFileTransport(dataDir: string): void {
-  const logDir = path.join(dataDir, 'logs');
+  // 优先使用 TMDB_LOG_DIR 环境变量，否则使用 data/logs
+  const logDir = process.env.TMDB_LOG_DIR || path.join(dataDir, 'logs');
   const transport = new FileTransport({
     logDir,
     maxSize: 10 * 1024 * 1024,
