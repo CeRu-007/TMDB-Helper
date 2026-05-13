@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import path from 'path'
 import fs from 'fs'
 import { AuthenticatedAPIRoute } from '@/lib/api/authenticated-api-route'
+import { getLogDir } from '@/lib/utils/logger'
 
-const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data')
-const LOG_DIR = path.join(dataDir, 'logs')
+const LOG_DIR = getLogDir()
 
 interface LogFileEntry {
   name: string

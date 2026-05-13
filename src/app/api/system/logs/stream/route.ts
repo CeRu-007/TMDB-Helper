@@ -2,9 +2,9 @@ import { NextRequest } from 'next/server'
 import path from 'path'
 import fs from 'fs'
 import { logBus } from '@/lib/utils/file-transport'
+import { getLogDir } from '@/lib/utils/logger'
 
-const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data')
-const LOG_DIR = path.join(dataDir, 'logs')
+const LOG_DIR = getLogDir()
 
 function readTail(filename: string, lines: number = 50): string[] {
   const resolvedPath = path.resolve(LOG_DIR, filename)

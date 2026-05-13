@@ -1,3 +1,4 @@
+import path from 'path'
 import type { FileTransport } from './file-transport'
 
 const GLOBAL_TRANSPORT_KEY = '__TMDB_LOG_TRANSPORT__'
@@ -24,6 +25,12 @@ export function setFileTransport(transport?: FileTransport): void {
 
 export function getFileTransport(): FileTransport | undefined {
   return getGlobalTransport()
+}
+
+export function getLogDir(): string {
+  if (process.env.TMDB_LOG_DIR) return process.env.TMDB_LOG_DIR
+  const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data')
+  return path.join(dataDir, 'logs')
 }
 
 export function formatLocalTimestamp(date?: Date): string {

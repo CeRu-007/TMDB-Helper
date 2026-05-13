@@ -1,12 +1,11 @@
 import path from 'path';
 import crypto from 'crypto';
-import { LogLevel } from '@/lib/utils/logger';
+import { LogLevel, getLogDir } from '@/lib/utils/logger';
 import { FileTransport } from '@/lib/utils/file-transport';
 import { setFileTransport, logger as rootLogger } from '@/lib/utils/logger';
 
-function initFileTransport(dataDir: string): void {
-  // 优先使用 TMDB_LOG_DIR 环境变量，否则使用 data/logs
-  const logDir = process.env.TMDB_LOG_DIR || path.join(dataDir, 'logs');
+function initFileTransport(): void {
+  const logDir = getLogDir();
   const transport = new FileTransport({
     logDir,
     maxSize: 10 * 1024 * 1024,
@@ -27,7 +26,7 @@ export async function initializeDev() {
     const dataDir = process.env.TMDB_DATA_DIR || path.join(process.cwd(), 'data');
     const dbPath = path.join(dataDir, 'tmdb-helper.db');
     rootLogger.info('[Instrumentation] 数据库路径:', dbPath);
-    initFileTransport(dataDir);
+    initFileTransport();
 
     const { getDatabaseAsync } = await import('./lib/database/connection');
     await getDatabaseAsync();
