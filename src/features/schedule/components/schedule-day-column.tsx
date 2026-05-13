@@ -52,32 +52,32 @@ export function ScheduleDayColumn({
       onMouseLeave={onLeave}
     >
       <div className={cn(
-        "px-3 py-3 border-b transition-colors cursor-pointer",
+        "px-3 max-sm:px-1.5 py-3 max-sm:py-2 border-b transition-colors cursor-pointer",
         day.isToday
           ? "bg-blue-500 text-white border-blue-500"
           : isSelected
             ? "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-800"
             : "bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 hover:bg-white dark:hover:bg-gray-800"
       )}>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{weekday}</span>
+        <div className="flex items-center justify-between max-sm:flex-col max-sm:gap-0.5">
+          <span className="text-sm max-sm:text-[11px] font-medium">{weekday}</span>
           <span className={cn(
-            "text-xs font-medium",
+            "text-xs max-sm:text-[10px] font-medium",
             day.isToday ? "text-blue-100" : "text-gray-500"
           )}>{date}日</span>
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          <Badge variant={day.isToday ? "secondary" : "outline"} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0 font-medium">
+        <div className="flex items-center gap-2 max-sm:gap-1 mt-1 justify-center">
+          <Badge variant={day.isToday ? "secondary" : "outline"} className="text-xs max-sm:text-[10px] max-sm:px-1.5 max-sm:py-0 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0 font-medium">
             {day.episodes.length} 部
           </Badge>
           {day.isToday && (
-            <span className="text-xs font-medium text-blue-100">今天</span>
+            <span className="text-xs max-sm:text-[10px] font-medium text-blue-100">今天</span>
           )}
         </div>
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-2">
+        <div className="p-2 max-sm:p-1 space-y-2 max-sm:space-y-1">
           {day.episodes.map((episode) => (
             <ScheduleEpisodeCard
               key={episode.id}

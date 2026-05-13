@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { UserAvatar } from "@/shared/components/user-identity-provider"
-import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell } from "lucide-react"
+import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell, Menu } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import { useTranslation } from "react-i18next"
@@ -70,84 +70,144 @@ export function AppHeader({
 
   return (
     <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm border-b dark:border-gray-700 sticky top-0 z-40">
-      <div className="relative h-16">
-        <div className="flex items-center h-full pl-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSidebarToggle}
-            className="mr-3"
-          >
-            {sidebarCollapsed ? (
-              <PanelLeftOpen className="h-5 w-5" />
-            ) : (
-              <PanelLeftClose className="h-5 w-5" />
-            )}
-          </Button>
+      <div className="relative h-16 max-md:h-14">
+        {/* ===== 桌面端：原始布局（完全不变） ===== */}
+        <div className="max-md:hidden">
+          <div className="flex items-center h-full pl-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSidebarToggle}
+              className="mr-3"
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="h-5 w-5" />
+              ) : (
+                <PanelLeftClose className="h-5 w-5" />
+              )}
+            </Button>
 
-          <div className="group">
-            <Image
-              src="/tmdb-helper-logo.png"
-              alt="TMDB维护助手"
-              width={160}
-              height={60}
-              className="h-14 w-auto object-contain transform group-hover:scale-105 transition duration-300"
-              priority
-            />
+            <div className="group">
+              <Image
+                src="/tmdb-helper-logo.png"
+                alt="TMDB维护助手"
+                width={160}
+                height={60}
+                className="h-14 w-auto object-contain transform group-hover:scale-105 transition duration-300"
+                priority
+              />
+            </div>
+          </div>
+
+          <div className={`absolute inset-y-0 right-0 ${sidebarCollapsed ? 'left-16' : 'left-64'} pointer-events-none`}>
+            <div className="h-full max-w-7xl w-full mx-auto px-8 pr-9 flex items-center justify-end pointer-events-auto">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onShowJournalDialog}
+                  className="flex items-center relative"
+                  title={t("title", { ns: "journal" })}
+                >
+                  <Bell className="h-4 w-4" />
+                  {journalUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-0.5 items-center justify-center">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-4 min-w-4 bg-blue-500 text-white text-[9px] font-bold leading-none items-center justify-center">
+                        {journalUnreadCount > 99 ? '99+' : journalUnreadCount}
+                      </span>
+                    </span>
+                  )}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center space-x-2">
+                  <Settings className="h-4 w-4" />
+                  <span>{t("settings.settings")}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="flex items-center"
+                  title={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
+                >
+                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <UserAvatar
+                  onShowImportDialog={onShowImportDialog}
+                  onShowExportDialog={onShowExportDialog}
+                  onShowDashboard={onShowDashboard}
+                />
+
+                <Button
+                  onClick={onShowAddDialog}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  size="default"
+                >
+                  <Plus className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">{t("addItem", { ns: "nav.maintenance" })}</span>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className={`absolute inset-y-0 right-0 ${sidebarCollapsed ? 'left-16' : 'left-64'} pointer-events-none`}>
-          <div className="h-full max-w-7xl w-full mx-auto px-8 pr-9 flex items-center justify-end pointer-events-auto">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onShowJournalDialog}
-                className="flex items-center relative"
-                title={t("title", { ns: "journal" })}
-              >
-                <Bell className="h-4 w-4" />
-                {journalUnreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-0.5 items-center justify-center">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-4 min-w-4 bg-blue-500 text-white text-[9px] font-bold leading-none items-center justify-center">
-                      {journalUnreadCount > 99 ? '99+' : journalUnreadCount}
-                    </span>
-                  </span>
-                )}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center space-x-2">
-                <Settings className="h-4 w-4" />
-                <span>{t("settings.settings")}</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="flex items-center"
-                title={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
-              >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <UserAvatar
-                onShowImportDialog={onShowImportDialog}
-                onShowExportDialog={onShowExportDialog}
-                onShowDashboard={onShowDashboard}
+        {/* ===== 移动端：简洁 flex 布局 ===== */}
+        <div className="hidden max-md:flex items-center justify-between h-full px-3">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSidebarToggle}
+              className="mr-2 min-w-[44px] min-h-[44px]"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <div className="group">
+              <Image
+                src="/tmdb-helper-logo.png"
+                alt="TMDB维护助手"
+                width={120}
+                height={45}
+                className="h-9 w-auto object-contain"
+                priority
               />
-
-              <Button
-                onClick={onShowAddDialog}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                size="default"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                <span>{t("addItem", { ns: "nav.maintenance" })}</span>
-              </Button>
             </div>
+          </div>
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onShowSettingsDialog()}
+              className="min-w-[44px] min-h-[44px] p-0"
+              aria-label={t("settings.settings")}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="min-w-[44px] min-h-[44px] p-0"
+              aria-label={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <UserAvatar
+              hideNameOnMobile
+              onShowImportDialog={onShowImportDialog}
+              onShowExportDialog={onShowExportDialog}
+              onShowDashboard={onShowDashboard}
+            />
+            <Button
+              onClick={onShowAddDialog}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 min-w-[44px] min-h-[44px]"
+              size="icon"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>

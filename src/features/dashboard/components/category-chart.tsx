@@ -36,8 +36,8 @@ export function CategoryChart({ data }: CategoryChartProps) {
       {chartData.length === 0 ? (
         <div className="flex items-center justify-center h-[240px] text-gray-400 text-sm">{t('noData')}</div>
       ) : (
-        <div className="flex items-center gap-4">
-          <div className="w-1/2 h-[240px]">
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="w-full md:w-1/2 h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -61,7 +61,7 @@ export function CategoryChart({ data }: CategoryChartProps) {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="w-1/2 space-y-2">
+          <div className="w-full md:w-1/2 space-y-2">
             {chartData.map((item) => (
               <div key={item.category} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">

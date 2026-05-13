@@ -192,50 +192,50 @@ export function ScheduleView({ className }: ScheduleViewProps) {
   return (
     <div className={cn("flex h-full bg-gray-50/30 dark:bg-gray-900/30", className)}>
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center justify-between px-6 py-3.5 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4.5 w-4.5 text-gray-400" />
-              <span className="text-base font-medium text-gray-900 dark:text-gray-100">{t('thisWeekAnime')}</span>
+        <div className="flex items-center justify-between max-sm:flex-wrap max-sm:gap-2 px-6 max-sm:px-3 py-3.5 max-sm:py-2.5 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-3 max-sm:gap-1.5">
+            <div className="flex items-center gap-2 max-sm:gap-1.5">
+              <Calendar className="h-4.5 w-4.5 max-sm:h-4 max-sm:w-4 text-gray-400" />
+              <span className="text-base max-sm:text-sm font-medium text-gray-900 dark:text-gray-100">{t('thisWeekAnime')}</span>
             </div>
-            <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
-            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white dark:hover:bg-gray-600">
-                <ChevronLeft className="h-4 w-4" />
+            <div className="h-4 w-px bg-gray-200 dark:bg-gray-700 max-sm:hidden" />
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 max-sm:p-0.5">
+              <Button variant="ghost" size="icon" className="h-7 w-7 max-sm:h-6 max-sm:w-6 hover:bg-white dark:hover:bg-gray-600">
+                <ChevronLeft className="h-4 w-4 max-sm:h-3.5 max-sm:w-3.5" />
               </Button>
-              <span className="px-2 text-sm text-gray-900 dark:text-gray-100 min-w-[80px] text-center font-medium">{t('monthYear', { year: dateInfo.year, month: dateInfo.month })}</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white dark:hover:bg-gray-600">
-                <ChevronRight className="h-4 w-4" />
+              <span className="px-2 max-sm:px-1 text-sm max-sm:text-xs text-gray-900 dark:text-gray-100 min-w-[80px] max-sm:min-w-[60px] text-center font-medium">{t('monthYear', { year: dateInfo.year, month: dateInfo.month })}</span>
+              <Button variant="ghost" size="icon" className="h-7 w-7 max-sm:h-6 max-sm:w-6 hover:bg-white dark:hover:bg-gray-600">
+                <ChevronRight className="h-4 w-4 max-sm:h-3.5 max-sm:w-3.5" />
               </Button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <div className="flex items-center gap-2.5 max-sm:gap-1.5 max-sm:w-full max-sm:overflow-x-auto max-sm:flex-nowrap max-sm:scrollbar-hide">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1 max-sm:p-0.5 max-sm:flex-shrink-0">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
                   className={cn(
-                    "px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-1.5",
+                    "flex-shrink-0 whitespace-nowrap max-sm:px-2 max-sm:py-1 max-sm:text-xs px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-1.5",
                     selectedCategory === cat.id
                       ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                   )}
                 >
-                  <span className={cn("w-2 h-2 rounded-full", cat.color)} />
+                  <span className={cn("w-2 h-2 rounded-full max-sm:w-1.5 max-sm:h-1.5", cat.color)} />
                   {cat.label}
                 </button>
               ))}
             </div>
 
-            <Separator orientation="vertical" className="h-6 bg-gray-100 dark:bg-gray-700" />
+            <Separator orientation="vertical" className="h-6 bg-gray-100 dark:bg-gray-700 max-sm:hidden" />
 
-            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1 max-sm:p-0.5 max-sm:flex-shrink-0">
               <button
                 onClick={() => setViewMode('week')}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
+                  "max-sm:px-2 max-sm:py-1 max-sm:text-xs px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
                   viewMode === 'week'
                     ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
                     : "text-gray-600 dark:text-gray-400"
@@ -246,7 +246,7 @@ export function ScheduleView({ className }: ScheduleViewProps) {
               <button
                 onClick={() => setViewMode('day')}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
+                  "max-sm:px-2 max-sm:py-1 max-sm:text-xs px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
                   viewMode === 'day'
                     ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
                     : "text-gray-600 dark:text-gray-400"
@@ -256,8 +256,8 @@ export function ScheduleView({ className }: ScheduleViewProps) {
               </button>
             </div>
 
-            <Button variant="outline" size="sm" onClick={fetchSchedule} disabled={loading} className="border-gray-200 dark:border-gray-700 text-sm font-medium">
-              <RefreshCw className={cn("h-4 w-4 mr-1.5", loading && "animate-spin")} />
+            <Button variant="outline" size="sm" onClick={fetchSchedule} disabled={loading} className="border-gray-200 dark:border-gray-700 text-sm max-sm:text-xs font-medium max-sm:h-8">
+              <RefreshCw className={cn("h-4 w-4 mr-1.5 max-sm:mr-1 max-sm:h-3.5 max-sm:w-3.5", loading && "animate-spin")} />
               {t('refresh')}
             </Button>
           </div>

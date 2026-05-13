@@ -161,15 +161,35 @@ export function VisualCropEditor({
     []
   )
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent, handle?: string) => {
+      const touch = e.touches[0]
+      if (!touch) return
+
+      const rect = imageRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      setDragStart({ x: touch.clientX - rect.left, y: touch.clientY - rect.top })
+
+      if (handle) {
+        setIsResizing(true)
+        setResizeHandle(handle)
+      } else {
+        setIsDragging(true)
+      }
+    },
+    []
+  )
+
+  const handlePointerMove = useCallback(
+    (clientX: number, clientY: number) => {
       if (!isDragging && !isResizing) return
 
       const rect = imageRef.current?.getBoundingClientRect()
       if (!rect) return
 
-      const currentX = e.clientX - rect.left
-      const currentY = e.clientY - rect.top
+      const currentX = clientX - rect.left
+      const currentY = clientY - rect.top
       const deltaX = currentX - dragStart.x
       const deltaY = currentY - dragStart.y
 
@@ -218,6 +238,11 @@ export function VisualCropEditor({
     [isDragging, isResizing, dragStart, cropArea, resizeHandle, aspectRatio, displayScale, updateCropArea]
   )
 
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => handlePointerMove(e.clientX, e.clientY),
+    [handlePointerMove]
+  )
+
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
     setIsResizing(false)
@@ -226,13 +251,26 @@ export function VisualCropEditor({
 
   useEffect(() => {
     if (!isDragging && !isResizing) return
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault()
+      const touch = e.touches[0]
+      if (!touch) return
+      handlePointerMove(touch.clientX, touch.clientY)
+    }
+
     document.addEventListener("mousemove", handleMouseMove)
     document.addEventListener("mouseup", handleMouseUp)
+    document.addEventListener("touchmove", handleTouchMove, { passive: false })
+    document.addEventListener("touchend", handleMouseUp)
+
     return () => {
       document.removeEventListener("mousemove", handleMouseMove)
       document.removeEventListener("mouseup", handleMouseUp)
+      document.removeEventListener("touchmove", handleTouchMove)
+      document.removeEventListener("touchend", handleMouseUp)
     }
-  }, [isDragging, isResizing, handleMouseMove, handleMouseUp])
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp, handlePointerMove])
 
   const handleReset = useCallback(() => {
     const centerX = Math.round((imageWidth - imageHeight * aspectRatio) / 2)
@@ -297,6 +335,7 @@ export function VisualCropEditor({
                 height: displayCrop.height
               }}
               onMouseDown={(e) => handleMouseDown(e)}
+              onTouchStart={(e) => handleTouchStart(e)}
             >
               {["top-left", "top-right", "bottom-left", "bottom-right"].map((handle) => (
                 <div
@@ -313,6 +352,7 @@ export function VisualCropEditor({
                           : "translate-x-1/2 translate-y-1/2"
                   }`}
                   onMouseDown={(e) => handleMouseDown(e, handle)}
+                  onTouchStart={(e) => handleTouchStart(e, handle)}
                 />
               ))}
             </div>

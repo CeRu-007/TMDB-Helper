@@ -971,7 +971,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
   // 渲染预览对话框
   const renderPreviewDialog = () => (
     <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-[95vw] md:max-w-4xl">
         <DialogHeader>
           <DialogTitle>{t("videoScreenshot.previewDialog.title")}</DialogTitle>
         </DialogHeader>
@@ -1018,7 +1018,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
   // 渲染帮助对话框
   const renderHelpDialog = () => (
     <Dialog open={showHelpDialog} onOpenChange={setShowHelpDialog}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[95vw] md:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("videoScreenshot.helpDialog.title")}</DialogTitle>
         </DialogHeader>
@@ -1070,14 +1070,14 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
     return (
       <Card className="w-full overflow-hidden" key={video.id}>
-        <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-base font-medium truncate max-w-[300px] flex items-center">
-                <FileVideo className="mr-2 h-4 w-4 text-primary" />
-                {video.name}
+        <CardHeader className="pb-2 px-3 md:px-6 pt-3 md:pt-6 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1 min-w-0">
+              <CardTitle className="text-sm md:text-base font-medium truncate flex items-center">
+                <FileVideo className="mr-1.5 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                <span className="truncate">{video.name}</span>
               </CardTitle>
-              <div className="flex items-center text-xs text-muted-foreground space-x-3">
+              <div className="flex items-center text-xs text-muted-foreground gap-2 md:gap-3 flex-wrap">
                 <div className="flex items-center">
                   <Clock className="mr-1 h-3 w-3" />
                   <span>{formatDuration(video.duration)}</span>
@@ -1095,7 +1095,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
               </div>
             </div>
 
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               {video.status === "pending" && (
                 <Badge className="bg-yellow-50 text-yellow-600 hover:bg-yellow-50 border border-yellow-200">
                   {t("videoScreenshot.videoCard.pending")}
@@ -1129,7 +1129,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="h-7 w-7 p-0">
+                  <Button className="h-7 w-7 p-0 md:h-7 md:w-7 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0">
                     <ArrowUpDown className="h-4 w-4" />
                     <span className="sr-only">{t("videoScreenshot.videoCard.operationMenu")}</span>
                   </Button>
@@ -1163,7 +1163,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
           </div>
         </CardHeader>
 
-        <CardContent className="pt-3 pb-4">
+        <CardContent className="pt-3 pb-4 px-3 md:px-6">
           {/* 处理进度 */}
           {video.status === "processing" && (
             <div className="mb-3 space-y-1">
@@ -1182,11 +1182,11 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
               <div className="space-y-2">
                 {/* 标题和提示 */}
                 <div className="flex justify-between items-center border-b pb-1 mb-1">
-                  <h4 className="text-sm font-medium flex items-center">
-                    <Star className="h-4 w-4 mr-1 text-yellow-500" />
+                  <h4 className="text-xs md:text-sm font-medium flex items-center">
+                    <Star className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1 text-yellow-500" />
                     {t("videoScreenshot.videoCard.screenshots")}
                   </h4>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-[10px] md:text-xs text-muted-foreground">
                     {t("videoScreenshot.videoCard.clickToSetMain")}
                   </span>
                 </div>
@@ -1195,9 +1195,9 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 <div className="grid grid-cols-1 gap-3">
                   {/* 主图区域 */}
                   {hasMainThumbnail && (
-                    <div className="mb-2">
-                      <div className="text-xs font-medium mb-1 text-muted-foreground flex items-center">
-                        <Star className="h-3.5 w-3.5 mr-1 text-yellow-500" />
+                    <div className="mb-1 md:mb-2">
+                      <div className="text-[10px] md:text-xs font-medium mb-1 text-muted-foreground flex items-center">
+                        <Star className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1 text-yellow-500" />
                         {t("videoScreenshot.videoCard.mainImage")}（{t("videoScreenshot.videoCard.time")}：{formatDuration(mainThumbnail!.timestamp)}）
                       </div>
                       <div className="relative aspect-video rounded-md overflow-hidden border-2 border-yellow-400 shadow-md hover:shadow-lg transition-shadow">
@@ -1250,8 +1250,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                     </div>
                   )}
 
-                  {/* 候选帧区域 - 3x3或3x2网格，根据是否有主图调整 */}
-                  <div className="grid grid-cols-3 gap-2">
+                  {/* 候选帧区域 - 自适应网格 */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {candidateThumbnails.map((thumbnail, idx) => (
                       <div
                         key={thumbnail.id}
@@ -1368,31 +1368,31 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
   // 渲染空状态
   const renderEmptyState = () => (
-    <div className="flex flex-col items-center justify-center h-[400px] text-center p-8 bg-gray-50/50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-800">
-      <div className="rounded-full bg-primary/10 p-4 mb-4">
-        <FileVideo className="h-8 w-8 text-primary" />
+    <div className="flex flex-col items-center justify-center min-h-[200px] md:min-h-[400px] text-center p-6 md:p-8 bg-gray-50/50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-800">
+      <div className="rounded-full bg-primary/10 p-3 md:p-4 mb-3 md:mb-4">
+        <FileVideo className="h-6 w-6 md:h-8 md:w-8 text-primary" />
       </div>
-      <h3 className="text-lg font-medium mb-2">{t("videoScreenshot.noVideo")}</h3>
-      <p className="text-sm text-muted-foreground mb-4 max-w-md">
+      <h3 className="text-base md:text-lg font-medium mb-2">{t("videoScreenshot.noVideo")}</h3>
+      <p className="text-xs md:text-sm text-muted-foreground mb-4 max-w-md">
         {t("videoScreenshot.uploadHint")}
       </p>
-      <div className="flex flex-row gap-2">
+      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
         <Button
-          className="flex items-center"
+          className="flex items-center w-full sm:w-auto"
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="mr-2 h-4 w-4" />
           {t("videoScreenshot.uploadVideo")}
         </Button>
         <Button
-          className="flex items-center"
+          className="flex items-center w-full sm:w-auto"
           onClick={() => setShowHelpDialog(true)}
         >
           <HelpCircle className="mr-2 h-4 w-4" />
           {t("videoScreenshot.usageHelp")}
         </Button>
         <Button
-          className="flex items-center"
+          className="flex items-center w-full sm:w-auto"
           onClick={() => onOpenGlobalSettings?.('video-thumbnail')}
         >
           <Settings className="mr-2 h-4 w-4" />
@@ -1406,16 +1406,16 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     <div className="h-full flex flex-col">
       {/* 固定顶部区域 */}
       <div className="flex-shrink-0 bg-background border-b border-border">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col space-y-6">
+        <div className="container mx-auto px-3 md:px-4 py-4 md:py-6">
+          <div className="flex flex-col space-y-4 md:space-y-6">
             {/* 标题区域 */}
             <div className="flex flex-row justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight flex items-center">
-                  <Film className="mr-2 h-6 w-6 text-primary" />
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center">
+                  <Film className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />
                   {t("videoScreenshot.title")}
                 </h1>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   {t("videoScreenshot.subtitle")}
                 </p>
               </div>
@@ -1433,47 +1433,49 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
             {/* 批量操作工具栏 */}
             {videos.length > 0 && (
-              <div className="flex flex-row justify-between items-center bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-0 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border">
+                <div className="flex items-center space-x-2 w-full md:w-auto">
+                  <span className="text-sm font-medium whitespace-nowrap">
                     {t("videoScreenshot.videosCount", { count: videos.length })}
                   </span>
-                  {videos.filter(v => v.status === "completed").length > 0 && (
-                    <Badge className="bg-green-50 text-green-600 hover:bg-green-50 border border-green-200">
-                      {videos.filter(v => v.status === "completed").length} {t("videoScreenshot.completed")}
-                    </Badge>
-                  )}
-                  {videos.filter(v => v.status === "pending" || v.status === "processing").length > 0 && (
-                    <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200">
-                      {videos.filter(v => v.status === "pending" || v.status === "processing").length} {t("videoScreenshot.processing")}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1 overflow-x-auto">
+                    {videos.filter(v => v.status === "completed").length > 0 && (
+                      <Badge className="bg-green-50 text-green-600 hover:bg-green-50 border border-green-200 whitespace-nowrap">
+                        {videos.filter(v => v.status === "completed").length} {t("videoScreenshot.completed")}
+                      </Badge>
+                    )}
+                    {videos.filter(v => v.status === "pending" || v.status === "processing").length > 0 && (
+                      <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 whitespace-nowrap">
+                        {videos.filter(v => v.status === "pending" || v.status === "processing").length} {t("videoScreenshot.processing")}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2 w-full md:w-auto">
                   <Button
-                    className="flex-1"
+                    className="flex-1 md:flex-none text-xs md:text-sm h-9 md:h-10"
                     onClick={handleBatchExtraction}
                     disabled={isProcessing || videos.filter(v => v.status === "pending").length === 0}
                   >
-                    <Play className="mr-2 h-4 w-4" />
+                    <Play className="mr-1 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                     {t("videoScreenshot.batchProcess")}
                   </Button>
 
                   <Button
-                    className="flex-1"
+                    className="flex-1 md:flex-none text-xs md:text-sm h-9 md:h-10"
                     onClick={downloadAllThumbnails}
                     disabled={videos.filter(v => v.status === "completed" && v.thumbnails.length > 0).length === 0}
                   >
-                    <Download className="mr-2 h-4 w-4" />
+                    <Download className="mr-1 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                     {t("videoScreenshot.downloadAll")}
                   </Button>
 
                   <Button
-                    className="flex-1"
+                    className="flex-1 md:flex-none text-xs md:text-sm h-9 md:h-10"
                     onClick={removeAllVideos}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="mr-1 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                     {t("videoScreenshot.clearList")}
                   </Button>
                 </div>
@@ -1486,10 +1488,10 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       {/* 可滚动内容区域 */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto">
-          <div className="container mx-auto px-4 py-6">
+          <div className="container mx-auto px-3 md:px-4 py-4 md:py-6">
             {/* 视频列表 - 修改为网格布局 */}
             {videos.length > 0 ? (
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {getFilteredVideos().map(renderVideoCard)}
               </div>
             ) : (

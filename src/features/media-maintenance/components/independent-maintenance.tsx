@@ -527,9 +527,9 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
   return (
     <div className="h-full independent-maintenance">
-      <div className="h-full flex flex-row">
+      <div className="h-full flex flex-col md:flex-row">
         {/* 左侧区域 - 根据标签页显示不同内容 */}
-        <div className="flex-1 bg-gray-900 dark:bg-gray-950 overflow-hidden min-w-0">
+        <div className="flex-1 bg-gray-900 dark:bg-gray-950 overflow-hidden min-w-0 h-1/2 md:h-auto">
           <div className="h-full flex flex-col">
             {/* 左侧头部 */}
             <div className="bg-gray-800 dark:bg-gray-900 px-4 py-2 border-b border-gray-700">
@@ -625,10 +625,10 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         </div>
 
         {/* 右侧操作面板 */}
-        <div className="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
+        <div className="w-full md:w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
         {/* 操作面板头部 */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
             {t("independentPage.title")}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -950,7 +950,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         </div>
 
         {/* 底部状态信息 */}
-        <div className="mt-auto p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="mt-auto p-3 md:p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-xs text-gray-500 dark:text-gray-400">
             <p>{t("independentPage.status")}: {isProcessing ? t("independentPage.processing") : t("independentPage.ready")}</p>
             <p>{t("independentPage.mode")}: {t("independentPage.independentMode")}</p>

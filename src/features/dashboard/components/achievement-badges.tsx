@@ -47,14 +47,14 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
   const unlockedCount = achievements.filter(a => a.unlocked).length
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4 md:p-5">
+      <div className="flex items-center justify-between mb-3 md:mb-4">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('achievements.title')}</h3>
         <span className="text-xs text-gray-400">
           {unlockedCount}/{achievements.length} {t('achievements.unlocked')}
         </span>
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 md:gap-3">
         {achievements.map((achievement) => {
           const colorClass = ACHIEVEMENT_COLORS[achievement.id] || 'text-gray-500'
           return (

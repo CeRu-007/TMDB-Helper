@@ -60,8 +60,8 @@ export function ChatMessageItem({
 
   if (isUser) {
     return (
-      <div key={message.id} className="flex gap-3 py-4 justify-end group">
-        <div className="max-w-[70%] md:max-w-[60%] space-y-2 items-end">
+      <div key={message.id} className="flex gap-3 py-3 md:py-4 justify-end group">
+        <div className="max-w-[85%] md:max-w-[70%] space-y-2 items-end">
           {isEditing ? (
             <MessageEditor
               content={editingContent}
@@ -98,7 +98,7 @@ export function ChatMessageItem({
           <UserAvatarImage
             src={userInfo?.avatarUrl}
             displayName={userInfo?.displayName || t('user')}
-            className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+            className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
           />
         </div>
       </div>
@@ -108,7 +108,7 @@ export function ChatMessageItem({
   return (
     <div key={message.id} className={`group ${!message.isStreaming && message.role === 'assistant' && isLastMessage ? 'pb-3' : 'py-3'}`}>
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-sm">
+        <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-sm">
           <Bot className="w-4 h-4 text-white" />
         </div>
         <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiAssistant')}</div>

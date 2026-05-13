@@ -50,7 +50,7 @@ export function DetailsTab({
   return (
     <div className="flex-1 min-h-0">
       <ScrollArea className="h-full">
-        <div className="space-y-4 pr-2">
+        <div className="space-y-3 md:space-y-4 pr-1 md:pr-2">
           {/* 季数选择器 */}
           <SeasonSelector
             seasons={item.seasons || []}

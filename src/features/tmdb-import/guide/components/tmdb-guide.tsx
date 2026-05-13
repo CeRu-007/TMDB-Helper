@@ -163,9 +163,9 @@ export function TMDBGuide() {
   if (showDetailedGuide) {
     return (
       <div className="bg-gray-50 min-h-screen">
-        <div className="bg-gradient-to-r from-[#032541] to-[#01b4e4] text-white py-8">
+        <div className="bg-gradient-to-r from-[#032541] to-[#01b4e4] text-white py-6 md:py-8">
           <div className="container mx-auto px-4">
-            <div className="flex items-center space-x-4 mb-4">
+            <div className="flex items-center space-x-3 md:space-x-4 mb-3 md:mb-4">
               <Button
                 variant="ghost"
                 className="text-white hover:bg-white/10"
@@ -174,32 +174,32 @@ export function TMDBGuide() {
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 {t("back", language)}
               </Button>
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
                 {ICON_MAP[GUIDE_CATEGORIES[selectedSection].icon]}
               </div>
-              <h1 className="text-3xl font-bold">
+              <h1 className="text-xl md:text-3xl font-bold truncate">
                 {getCategoryLabel(selectedSection, language)}
                 {" "}{t("guide", language)}
               </h1>
             </div>
 
             <div className="flex items-center space-x-3">
-              <div className="flex bg-white/10 rounded-lg p-1">
+              <div className="flex bg-white/10 rounded-lg p-0.5 md:p-1">
                 {(["summary", "original"] as GuideVersion[]).map((v) => (
                   <button
                     key={v}
                     onClick={() => setVersion(v)}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    className={`px-3 md:px-4 py-1.5 rounded-md text-xs md:text-sm font-medium transition-all ${
                       version === v
                         ? "bg-white text-[#032541] shadow-sm"
                         : "text-white/80 hover:text-white hover:bg-white/10"
                     }`}
                   >
-                    <span className="flex items-center space-x-1.5">
+                    <span className="flex items-center space-x-1 md:space-x-1.5">
                       {v === "summary" ? (
-                        <Sparkles className="h-3.5 w-3.5" />
+                        <Sparkles className="h-3 w-3 md:h-3.5 md:w-3.5" />
                       ) : (
-                        <FileText className="h-3.5 w-3.5" />
+                        <FileText className="h-3 w-3 md:h-3.5 md:w-3.5" />
                       )}
                       <span>{getVersionLabel(v, language)}</span>
                     </span>
@@ -225,13 +225,13 @@ export function TMDBGuide() {
                     </div>
                   </div>
                 </div>
-                <nav className="p-2 max-h-[60vh] overflow-y-auto">
+                <nav className="p-2 flex overflow-x-auto flex-nowrap lg:flex-col lg:overflow-y-auto lg:max-h-[60vh] gap-1 scrollbar-thin">
                   {topSections.map((section) => (
                     <button
                       key={section.id}
                       onClick={() => handleSectionClick(section.id)}
-                      className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
-                        section.level === 2 ? "pl-6" : ""
+                      className={`shrink-0 lg:w-full text-left px-3 py-2 text-sm rounded transition-colors ${
+                        section.level === 2 ? "lg:pl-6" : ""
                       } ${
                         activeSectionId === section.id
                           ? "bg-[#01b4e4]/10 text-[#01b4e4] font-medium"
@@ -250,7 +250,7 @@ export function TMDBGuide() {
                 className="lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-4"
                 data-guide-content
               >
-                <div className="prose prose-slate prose-headings:text-[#032541] prose-headings:font-bold prose-h1:text-2xl prose-h1:border-b prose-h1:pb-3 prose-h1:mb-6 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-a:text-[#01b4e4] prose-a:no-underline hover:prose-a:underline prose-strong:text-[#032541] prose-li:marker:text-[#01b4e4] prose-blockquote:border-l-[#01b4e4] prose-blockquote:bg-[#01b4e4]/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none max-w-none bg-white rounded-lg shadow-sm border p-6 md:p-8">
+                <div className="prose prose-slate prose-headings:text-[#032541] prose-headings:font-bold prose-h1:text-xl md:prose-h1:text-2xl prose-h1:border-b prose-h1:pb-2 md:prose-h1:pb-3 prose-h1:mb-4 md:prose-h1:mb-6 prose-h2:text-lg md:prose-h2:text-xl prose-h2:mt-6 md:prose-h2:mt-8 prose-h2:mb-3 md:prose-h2:mb-4 prose-h3:text-base md:prose-h3:text-lg prose-h3:mt-4 md:prose-h3:mt-6 prose-h3:mb-2 md:prose-h3:mb-3 prose-a:text-[#01b4e4] prose-a:no-underline hover:prose-a:underline prose-strong:text-[#032541] prose-li:marker:text-[#01b4e4] prose-blockquote:border-l-[#01b4e4] prose-blockquote:bg-[#01b4e4]/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:overflow-x-auto prose-img:max-w-full prose-img:h-auto max-w-none bg-white rounded-lg shadow-sm border p-4 md:p-8">
                   <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={markdownComponents}>
                     {content}
                   </ReactMarkdown>
@@ -286,12 +286,12 @@ export function TMDBGuide() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-[#032541] via-[#01b4e4] to-[#90cea1] text-white py-16 relative">
+      <div className="bg-gradient-to-br from-[#032541] via-[#01b4e4] to-[#90cea1] text-white py-10 md:py-16 relative">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
+          <h1 className="text-3xl md:text-6xl font-bold mb-3 md:mb-4">
             {t("welcomeTo", language)}
           </h1>
-          <h2 className="text-3xl md:text-5xl font-bold mb-8">
+          <h2 className="text-2xl md:text-5xl font-bold mb-6 md:mb-8">
             {t("editBible", language)}
           </h2>
           <div className="max-w-2xl mx-auto">
@@ -302,15 +302,15 @@ export function TMDBGuide() {
                 placeholder={t("howCanWeHelp", language)}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 text-lg bg-white text-black border-0 rounded-lg"
+                className="w-full pl-10 pr-4 py-2.5 md:py-3 text-base md:text-lg bg-white text-black border-0 rounded-lg"
               />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-12 flex-1">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <div className="container mx-auto px-4 py-8 md:py-12 flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
           {(["general", "new-content", "image"] as GuideCategory[]).map((cat) => (
             <Card
               key={cat}
@@ -320,15 +320,15 @@ export function TMDBGuide() {
                 setShowDetailedGuide(true)
               }}
             >
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 <div className="flex items-center space-x-3 mb-3">
                   {ICON_MAP[GUIDE_CATEGORIES[cat].icon]}
-                  <h3 className="text-xl font-semibold">
+                  <h3 className="text-lg md:text-xl font-semibold">
                     {getCategoryLabel(cat, language)}
                   </h3>
                 </div>
-                <div className="h-1 w-12 bg-[#01b4e4] rounded mb-4"></div>
-                <p className="text-gray-300 text-sm">
+                <div className="h-1 w-10 md:w-12 bg-[#01b4e4] rounded mb-3 md:mb-4"></div>
+                <p className="text-gray-300 text-xs md:text-sm">
                   {cat === "general" && t("generalDesc", language)}
                   {cat === "new-content" && t("newContentDesc", language)}
                   {cat === "image" && t("imageDesc", language)}
@@ -338,7 +338,7 @@ export function TMDBGuide() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12">
           {(["movie", "tv", "people", "collection"] as GuideCategory[]).map((cat) => {
             const colorMap: Record<string, string> = {
               movie: "from-red-600 to-red-800",
@@ -357,14 +357,14 @@ export function TMDBGuide() {
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${colorMap[cat]}`}></div>
                 <div className="absolute inset-0 bg-black/40"></div>
-                <CardContent className="relative p-6 text-white h-48 flex flex-col justify-end">
-                  <div className="mb-4 opacity-80">
+                <CardContent className="relative p-4 md:p-6 text-white h-36 md:h-48 flex flex-col justify-end">
+                  <div className="mb-3 md:mb-4 opacity-80">
                     {ICON_MAP[GUIDE_CATEGORIES[cat].icon]}
                   </div>
-                  <h3 className="text-2xl font-bold mb-1">
+                  <h3 className="text-xl md:text-2xl font-bold mb-1">
                     {getCategoryLabel(cat, language)}
                   </h3>
-                  <h4 className="text-lg">
+                  <h4 className="text-base md:text-lg">
                     {t("guide", language)}
                   </h4>
                 </CardContent>
@@ -373,19 +373,19 @@ export function TMDBGuide() {
           })}
         </div>
 
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6 text-gray-900">
+        <div className="mb-8 md:mb-12">
+          <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-900">
             {t("versionInfo", language)}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <Card className="border-[#01b4e4]/20 bg-[#01b4e4]/5">
               <CardContent className="p-4 flex items-center space-x-3">
-                <Sparkles className="h-8 w-8 text-[#01b4e4]" />
+                <Sparkles className="h-6 w-6 md:h-8 md:w-8 text-[#01b4e4] shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-gray-900 text-sm md:text-base">
                     {t("summaryVersion", language)}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs md:text-sm text-gray-600">
                     {t("summaryDesc", language)}
                   </p>
                 </div>
@@ -393,12 +393,12 @@ export function TMDBGuide() {
             </Card>
             <Card className="border-[#032541]/20 bg-[#032541]/5">
               <CardContent className="p-4 flex items-center space-x-3">
-                <FileText className="h-8 w-8 text-[#032541]" />
+                <FileText className="h-6 w-6 md:h-8 md:w-8 text-[#032541] shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-gray-900 text-sm md:text-base">
                     {t("originalVersion", language)}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs md:text-sm text-gray-600">
                     {t("originalDesc", language)}
                   </p>
                 </div>
@@ -408,11 +408,11 @@ export function TMDBGuide() {
         </div>
 
         <Card className="bg-[#032541] text-white">
-          <CardContent className="p-6 text-center">
-            <h3 className="text-lg font-semibold mb-2 text-white">
+          <CardContent className="p-5 md:p-6 text-center">
+            <h3 className="text-base md:text-lg font-semibold mb-2 text-white">
               {t("needMoreHelp", language)}
             </h3>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 text-xs md:text-sm mb-4">
               {t("visitTmdbDesc", language)}
             </p>
             <div className="flex justify-center space-x-4">

@@ -117,36 +117,57 @@ export function MediaNewsSection({
   return (
     <div className="space-y-4">
       {/* 标题和控制栏 */}
-      <div className="flex flex-row items-center justify-between gap-4">
+      <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-6">
         <div className="flex items-center space-x-3">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {title}
           </h2>
           {lastUpdated && (
-            <Badge variant="outline" className="text-xs">
-              <Clock className="h-3 w-3 mr-1" />
-              {lastUpdated}
+            <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0 sm:py-0.5">
+              <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+              <span className="hidden sm:inline">{lastUpdated}</span>
+              <span className="sm:hidden">{lastUpdated}</span>
             </Badge>
           )}
         </div>
 
         <div className="flex items-center space-x-3">
-          {/* 区域选择 */}
-          <Select value={selectedRegion} onValueChange={onRegionChange}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {REGIONS.map((region) => (
-                <SelectItem key={region.id} value={region.id}>
-                  <div className="flex items-center space-x-2">
-                    <span>{region.icon}</span>
-                    <span className="text-sm">{getRegionName(region.id, t)}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Mobile: Scrollable region pills */}
+          <div className="flex sm:hidden overflow-x-auto gap-1.5 pb-1 snap-x snap-mandatory scrollbar-none max-w-[180px]">
+            {REGIONS.map((region) => (
+              <button
+                key={region.id}
+                onClick={() => onRegionChange(region.id)}
+                className={`flex-shrink-0 snap-start px-2.5 py-1.5 rounded-full text-xs whitespace-nowrap min-h-[36px] flex items-center gap-1 transition-colors ${
+                  selectedRegion === region.id
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span>{region.icon}</span>
+                <span>{getRegionName(region.id, t)}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop: Region dropdown */}
+          <div className="hidden sm:block">
+            <Select value={selectedRegion} onValueChange={onRegionChange}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {REGIONS.map((region) => (
+                  <SelectItem key={region.id} value={region.id}>
+                    <div className="flex items-center space-x-2">
+                      <span>{region.icon}</span>
+                      <span className="text-sm">{getRegionName(region.id, t)}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* 刷新按钮 */}
           <Button
@@ -161,7 +182,7 @@ export function MediaNewsSection({
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            <span>{t("mediaNewsSection.refresh")}</span>
+            <span className="hidden sm:inline">{t("mediaNewsSection.refresh")}</span>
           </Button>
         </div>
       </div>
@@ -171,14 +192,14 @@ export function MediaNewsSection({
         <Alert className="border-red-200 dark:border-red-800">
           <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
           <AlertDescription className="text-red-700 dark:text-red-300">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <span>{error}</span>
               {isMissingApiKey && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={onShowSettings}
-                  className="ml-4 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 border-red-300 dark:border-red-700"
+                  className="flex-shrink-0 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 border-red-300 dark:border-red-700 min-h-[36px]"
                 >
                   <Key className="h-3 w-3 mr-1" />
                   {t("mediaNewsSection.configureApi")}
@@ -199,13 +220,13 @@ export function MediaNewsSection({
 
       {/* 内容网格 */}
       {!loading && !error && items.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
           {items.slice(0, 12).map((item) => (
             <Card key={item.id} className="group hover:shadow-md transition-shadow">
-              <CardContent className="p-3">
+              <CardContent className="p-3 md:p-4">
                 <div className="space-y-2">
                   {/* 海报 */}
-                  <div className="aspect-[2/3] relative bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden">
+                  <div className="aspect-[2/3] relative bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden max-w-[120px] sm:max-w-full mx-auto sm:mx-0">
                     {item.posterUrl ? (
                       <Image
                         src={item.posterUrl}
@@ -277,7 +298,7 @@ export function MediaNewsSection({
       {/* 查看更多 */}
       {!loading && !error && items.length > 12 && (
         <div className="text-center pt-4">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px]">
             {t("mediaNewsSection.loadMore", { count: items.length - 12 })}
           </Button>
         </div>

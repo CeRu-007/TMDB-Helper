@@ -116,12 +116,12 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
   return (
     <div className="h-full flex flex-col">
       {/* 警告提示 */}
-      <div className="p-4 pb-2">
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-          <div className="flex items-start space-x-2">
-            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <p className="font-medium mb-1">⚠️ 重要提醒</p>
+      <div className="p-3 md:p-4 pb-1 md:pb-2">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2.5 md:p-3">
+          <div className="flex items-start space-x-1.5 md:space-x-2">
+            <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="text-xs md:text-sm text-amber-800 dark:text-amber-200">
+              <p className="font-medium mb-0.5 md:mb-1">⚠️ 重要提醒</p>
               <p className="leading-relaxed">
                 AI生成的分集简介仅作<strong>辅助作用</strong>，请务必观看对应视频内容审核修改后再使用。
                 <strong className="text-amber-900 dark:text-amber-100">禁止直接上传至TMDB</strong>等数据库平台。
@@ -131,48 +131,48 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center max-w-xl mx-auto px-5">
+      <div className="flex-1 flex items-start md:items-center justify-center overflow-auto">
+        <div className="text-center w-full max-w-xl mx-auto px-3 md:px-5 py-4 md:py-0">
           {/* 简洁的图标 */}
-          <div className="mb-6">
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full inline-flex items-center justify-center">
-              <FileText className="h-8 w-8 text-blue-500 dark:text-blue-400" />
+          <div className="mb-4 md:mb-6">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-4 rounded-full inline-flex items-center justify-center">
+              <FileText className="h-6 w-6 md:h-8 md:w-8 text-blue-500 dark:text-blue-400" />
             </div>
           </div>
 
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-base md:text-lg font-medium text-gray-900 dark:text-gray-100 mb-1 md:mb-2">
             分集简介生成
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-4 md:mb-6">
             上传字幕文件或输入视频链接，生成分集标题和剧情简介
           </p>
 
-          {/* 选项卡切换 */}
-          <div className="mb-6">
-            <div className="flex justify-center">
+          {/* 选项卡切换 - 可滚动的标签 */}
+          <div className="mb-4 md:mb-6 overflow-x-auto scrollbar-hide">
+            <div className="flex justify-center min-w-max">
               <div className="bg-blue-50 dark:bg-blue-900/20 p-1 rounded-lg inline-flex">
                 <button
                   onClick={() => setActiveTab('upload')}
                   className={cn(
-                    "px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                    "min-w-[44px] min-h-[44px] px-4 py-2 rounded-md text-sm font-medium transition-colors",
                     activeTab === 'upload'
                       ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                   )}
                 >
-                  <Upload className="h-4 w-4 inline mr-2" />
+                  <Upload className="h-4 w-4 inline mr-1 md:mr-2" />
                   上传字幕
                 </button>
                 <button
                   onClick={() => setActiveTab('video')}
                   className={cn(
-                    "px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                    "min-w-[44px] min-h-[44px] px-4 py-2 rounded-md text-sm font-medium transition-colors",
                     activeTab === 'video'
                       ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                   )}
                 >
-                  <Film className="h-4 w-4 inline mr-2" />
+                  <Film className="h-4 w-4 inline mr-1 md:mr-2" />
                   音频转写
                 </button>
               </div>
@@ -183,25 +183,25 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
           {activeTab === 'upload' && (
             <>
               {/* 字幕文件上传说明 */}
-              <div className="bg-blue-50/50 dark:bg-blue-950/30 rounded-lg p-4 mb-6 text-left">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                  <Upload className="h-4 w-4 mr-2 text-blue-500" />
+              <div className="bg-blue-50/50 dark:bg-blue-950/30 rounded-lg p-3 md:p-4 mb-4 md:mb-6 text-left">
+                <h4 className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 md:mb-3 flex items-center">
+                  <Upload className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2 text-blue-500" />
                   字幕文件上传
                 </h4>
-                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                  <div className="flex items-start space-x-2">
+                <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-start space-x-1.5 md:space-x-2">
                     <span className="text-blue-500 font-medium">1.</span>
                     <span>配置硅基流动API密钥</span>
                   </div>
-                  <div className="flex items-start space-x-2">
+                  <div className="flex items-start space-x-1.5 md:space-x-2">
                     <span className="text-blue-500 font-medium">2.</span>
                     <span>上传SRT或VTT格式的字幕文件</span>
                   </div>
-                  <div className="flex items-start space-x-2">
+                  <div className="flex items-start space-x-1.5 md:space-x-2">
                     <span className="text-blue-500 font-medium">3.</span>
                     <span>选择模型和生成风格</span>
                   </div>
-                  <div className="flex items-start space-x-2">
+                  <div className="flex items-start space-x-1.5 md:space-x-2">
                     <span className="text-blue-500 font-medium">4.</span>
                     <span>批量生成简介内容</span>
                   </div>
@@ -212,7 +212,7 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
               <div className="flex justify-center">
                 <Button
                   onClick={onUpload}
-                  className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                  className="min-h-[44px] bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   上传字幕文件
@@ -220,18 +220,18 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
               </div>
 
               {/* 支持的文件格式和拖拽提示 */}
-              <div className="mt-4 space-y-2">
-                <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              <div className="mt-3 md:mt-4 space-y-1.5 md:space-y-2">
+                <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 text-center">
                   支持格式：SRT、VTT、ASS、SSA
                 </div>
-                <div className="flex items-center justify-center space-x-4 text-xs text-gray-400 dark:text-gray-500">
+                <div className="flex items-center justify-center space-x-3 md:space-x-4 text-[10px] md:text-xs text-gray-400 dark:text-gray-500">
                   <div className="flex items-center space-x-1">
-                    <Upload className="h-3 w-3" />
+                    <Upload className="h-2.5 w-2.5 md:h-3 md:w-3" />
                     <span>点击上传</span>
                   </div>
-                  <div className="w-px h-3 bg-gray-300 dark:bg-gray-600"></div>
+                  <div className="w-px h-2.5 md:h-3 bg-gray-300 dark:bg-gray-600"></div>
                   <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 border-2 border-dashed border-gray-400 rounded"></div>
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 border-2 border-dashed border-gray-400 rounded"></div>
                     <span>拖拽上传</span>
                   </div>
                 </div>
@@ -268,12 +268,12 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
               </div>
 
               {/* 视频URL输入 */}
-              <div className="mb-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="mb-4 md:mb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 md:p-4 border border-gray-200 dark:border-gray-700">
+                  <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 md:mb-2">
                     视频链接
                   </label>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
                     <div className="flex-1 relative">
                       <input
                         type="url"
@@ -303,7 +303,7 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                     <button
                       onClick={handleVideoAnalysis}
                       disabled={isAnalyzing || !videoUrl.trim() || !VideoAnalyzer.validateVideoUrl(videoUrl)}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
+                      className="min-h-[44px] px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
                     >
                       {isAnalyzing ? (
                         <>

@@ -219,9 +219,9 @@ export function SubtitleEpisodeGenerator({
       />
 
       {/* 主要内容区域 */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* 左侧文件列表 */}
-        <div className="w-72 border-r border-blue-100/50 dark:border-blue-900/30 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
+        <div className="w-full md:w-72 max-h-48 md:max-h-full border-b md:border-b-0 md:border-r border-blue-100/50 dark:border-blue-900/30 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
           <FileList
             files={subtitleFiles}
             selectedFile={selectedFile}

@@ -183,19 +183,30 @@ export function CardDrawer({ item, open, onOpenChange, cardRef }: CardDrawerProp
 
   if (!open || !position) return null
 
+  const isMobile = window.innerWidth < 640
+
+  const drawerOverlay = isMobile && (
+    <div
+      className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm"
+      onClick={() => onOpenChange(false)}
+    />
+  )
+
   const drawer = (
     <div
       ref={containerRef}
       style={{
         position: "fixed",
-        top: position.top,
-        left: position.left,
-        width: DRAWER_WIDTH,
-        maxHeight: position.maxHeight,
         zIndex: 9999,
+        ...(isMobile
+          ? { bottom: 0, left: 0, width: "100%", maxHeight: "60vh" }
+          : { top: position.top, left: position.left, width: DRAWER_WIDTH, maxHeight: position.maxHeight }
+        ),
       }}
-      className={`bg-gray-900/95 backdrop-blur-md rounded-lg shadow-2xl flex flex-col overflow-hidden animate-in duration-300 ${
-        position.slideFrom === "right" ? "slide-in-from-right-2 fade-in-0" : "slide-in-from-left-2 fade-in-0"
+      className={`bg-gray-900/95 backdrop-blur-md shadow-2xl flex flex-col overflow-hidden animate-in duration-300 ${
+        isMobile
+          ? "rounded-t-xl"
+          : `rounded-lg ${position.slideFrom === "right" ? "slide-in-from-right-2" : "slide-in-from-left-2"} fade-in-0`
       }`}
     >
       <div className="flex items-center justify-between p-3 border-b border-gray-700">
@@ -207,7 +218,7 @@ export function CardDrawer({ item, open, onOpenChange, cardRef }: CardDrawerProp
           variant="ghost"
           size="sm"
           onClick={() => onOpenChange(false)}
-          className="h-6 w-6 p-0 text-gray-400 hover:text-gray-100 hover:bg-gray-700"
+          className="h-8 w-8 sm:h-6 sm:w-6 p-0 text-gray-400 hover:text-gray-100 hover:bg-gray-700"
         >
           <X className="h-4 w-4" />
         </Button>
@@ -314,5 +325,5 @@ export function CardDrawer({ item, open, onOpenChange, cardRef }: CardDrawerProp
     </div>
   )
 
-  return createPortal(drawer, document.body)
+  return createPortal(<>{drawerOverlay}{drawer}</>, document.body)
 }

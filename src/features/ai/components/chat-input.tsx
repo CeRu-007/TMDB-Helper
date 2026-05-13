@@ -85,7 +85,7 @@ export function ChatInput({
   const { t } = useTranslation('ai-chat')
 
   return (
-    <div className="bg-white dark:bg-gray-950 p-6 overflow-hidden">
+    <div className="bg-white dark:bg-gray-950 p-3 md:p-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-6 overflow-hidden">
       <div className="max-w-4xl mx-auto">
         <div className="relative">
           <div
@@ -194,7 +194,7 @@ export function ChatInput({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-10 w-10 p-0 flex-shrink-0 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full"
+                  className="min-w-[44px] min-h-[44px] h-10 w-10 p-0 flex-shrink-0 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
                 >
@@ -251,7 +251,7 @@ export function ChatInput({
                 size="sm"
                 variant="ghost"
                 className={cn(
-                  "h-10 w-10 p-0 flex-shrink-0 rounded-full transition-all duration-200 relative z-10",
+                  "min-w-[44px] min-h-[44px] h-10 w-10 p-0 flex-shrink-0 rounded-full transition-all duration-200 relative z-10",
                   isLoading
                     ? "hover:bg-red-50 dark:hover:bg-red-950/30 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                     : (inputValue.trim() || uploadedFileContent)

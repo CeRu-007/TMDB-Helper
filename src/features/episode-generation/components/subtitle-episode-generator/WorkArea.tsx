@@ -27,17 +27,17 @@ export function WorkArea({
   return (
     <div className="h-full flex flex-col">
       {/* 文件信息和操作栏 */}
-      <div className="flex-shrink-0 p-4 border-b border-blue-100/50 dark:border-blue-900/30 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
+      <div className="flex-shrink-0 p-3 md:p-4 border-b border-blue-100/50 dark:border-blue-900/30 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <Film className="h-5 w-5 text-blue-500 flex-shrink-0" />
+          <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+            <Film className="h-4 w-4 md:h-5 md:w-5 text-blue-500 flex-shrink-0" />
             <div className="min-w-0 flex-1">
-              <h3 className="font-medium text-gray-800 dark:text-gray-200">
+              <h3 className="font-medium text-gray-800 dark:text-gray-200 text-sm md:text-base">
                 <span className="block">
-                  {truncateFileName(file.name, 50)}
+                  {truncateFileName(file.name, 30)}
                 </span>
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
                 {file.episodes.length} 集 · 总字数 {file.episodes.reduce((sum, ep) => sum + ep.wordCount, 0).toLocaleString()}
               </p>
             </div>
@@ -46,12 +46,12 @@ export function WorkArea({
         </div>
 
         {isGenerating && (
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <div className="mt-2 md:mt-3">
+            <div className="flex items-center justify-between text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">
               <span>生成进度</span>
               <span>{Math.round(progress)}%</span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <Progress value={progress} className="h-1.5 md:h-2" />
           </div>
         )}
       </div>

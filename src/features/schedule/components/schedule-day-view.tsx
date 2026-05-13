@@ -46,33 +46,33 @@ export function ScheduleDayView({
       <ScrollArea className="flex-1">
         <div className="p-6">
           <div className="max-w-3xl mx-auto">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-4 max-sm:gap-2 mb-6">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 max-sm:h-7 max-sm:w-7"
                 onClick={handlePrevDay}
                 disabled={selectedDayIndex === 0}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 max-sm:h-3.5 max-sm:w-3.5" />
               </Button>
 
-              <h3 className="text-xl font-semibold">
+              <h3 className="text-xl max-sm:text-base font-semibold">
                 {dayData.date || t(`weekdaysList.${WEEKDAY_KEYS[dayData.dayOfWeek - 1]}`)}
               </h3>
               {dayData.isToday && (
-                <Badge className="bg-blue-500">{t('today')}</Badge>
+                <Badge className="bg-blue-500 max-sm:text-xs">{t('today')}</Badge>
               )}
-              <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">{t('episodeCount', { count: dayData.episodes.length })}</Badge>
+              <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0 max-sm:text-xs">{t('episodeCount', { count: dayData.episodes.length })}</Badge>
 
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 max-sm:h-7 max-sm:w-7"
                 onClick={handleNextDay}
                 disabled={selectedDayIndex === 6}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 max-sm:h-3.5 max-sm:w-3.5" />
               </Button>
             </div>
 
@@ -99,35 +99,35 @@ export function ScheduleDayView({
 
   return (
     <ScrollArea className="flex-1">
-      <div className="p-6">
+      <div className="p-6 max-sm:p-3">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-4 max-sm:gap-2 mb-6">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="h-8 w-8 max-sm:h-7 max-sm:w-7 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={handlePrevDay}
               disabled={selectedDayIndex === 0}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 max-sm:h-3.5 max-sm:w-3.5" />
             </Button>
 
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            <h3 className="text-xl max-sm:text-base font-semibold text-gray-900 dark:text-gray-100">
               {dayData.date || WEEKDAYS[dayData.dayOfWeek - 1]}
             </h3>
             {dayData.isToday && (
-              <Badge className="bg-blue-500">{t("today", { ns: "schedule" })}</Badge>
+              <Badge className="bg-blue-500 max-sm:text-xs">{t("today", { ns: "schedule" })}</Badge>
             )}
-            <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">{t("episodeCount", { count: dayData.episodes.length, ns: "schedule" })}</Badge>
+            <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0 max-sm:text-xs">{t("episodeCount", { count: dayData.episodes.length, ns: "schedule" })}</Badge>
 
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="h-8 w-8 max-sm:h-7 max-sm:w-7 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={handleNextDay}
               disabled={selectedDayIndex === 6}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 max-sm:h-3.5 max-sm:w-3.5" />
             </Button>
           </div>
 
@@ -170,22 +170,22 @@ function ScheduleTimelineItem({
   }
 
   return (
-    <div className="flex items-start gap-4 py-3 group">
-      <div className="flex-shrink-0 w-12 text-right pt-1">
-        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+    <div className="flex items-start gap-4 max-sm:gap-2 py-3 max-sm:py-2.5 group">
+      <div className="flex-shrink-0 w-12 max-sm:w-10 text-right pt-1">
+        <span className="text-sm max-sm:text-xs font-medium text-gray-500 dark:text-gray-400">
           {episode.pubTime.substring(0, 5)}
         </span>
       </div>
 
-      <div className="flex-shrink-0 relative z-10 pt-2">
-        <div className="w-2.5 h-2.5 rounded-full bg-blue-400 ring-4 ring-white dark:ring-gray-900" />
+      <div className="flex-shrink-0 relative z-10 pt-2 max-sm:pt-1.5">
+        <div className="w-2.5 h-2.5 max-sm:w-2 max-sm:h-2 rounded-full bg-blue-400 ring-4 ring-white dark:ring-gray-900 max-sm:ring-2" />
       </div>
 
       <div
-        className="flex-1 flex items-start gap-4 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-sm hover:border-blue-100 dark:hover:border-blue-900/50 transition-all cursor-pointer"
+        className="flex-1 flex items-start gap-4 max-sm:gap-2 p-3 max-sm:p-2 bg-white dark:bg-gray-800 rounded-xl max-sm:rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-sm hover:border-blue-100 dark:hover:border-blue-900/50 transition-all cursor-pointer"
         onClick={onClick}
       >
-        <div className="flex-shrink-0 w-16 h-22 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700/50">
+        <div className="flex-shrink-0 w-16 max-sm:w-12 h-22 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700/50">
           <ScheduleImage
             src={episode.cover}
             alt={episode.title}
@@ -195,20 +195,20 @@ function ScheduleTimelineItem({
         </div>
 
         <div className="flex-1 min-w-0 py-0.5">
-          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-1.5 line-clamp-1 text-sm">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-1.5 max-sm:mb-1 line-clamp-1 text-sm max-sm:text-xs">
             {episode.title}
           </h3>
 
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 max-sm:gap-1 mb-2 max-sm:mb-1">
             <span className={cn(
-              "text-xs font-medium",
+              "text-xs max-sm:text-[10px] font-medium",
               episode.published ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"
             )}>
               {episode.pubIndex.startsWith('更新') ? episode.pubIndex : `更新至${episode.pubIndex}`}
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 max-sm:hidden">
             {episode.types?.map(type => (
               <Badge key={type} variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">
                 {type}
@@ -217,7 +217,7 @@ function ScheduleTimelineItem({
           </div>
 
           {episode.platforms && episode.platforms.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
+            <div className="flex flex-wrap gap-1 mt-2 max-sm:mt-1 max-sm:hidden">
               {episode.platforms.map((platform, index) => (
                 <Badge
                   key={index}
@@ -231,19 +231,19 @@ function ScheduleTimelineItem({
           )}
         </div>
 
-        <div className="flex-shrink-0 flex flex-col items-center gap-0.5">
+        <div className="flex-shrink-0 flex flex-col items-center gap-0.5 max-sm:gap-0">
           <button
             onClick={handleToggleFollowing}
             className={cn(
-              "p-1.5 rounded-full transition-all duration-200",
+              "p-1.5 max-sm:p-1 rounded-full transition-all duration-200",
               isFollowing
                 ? "text-rose-500 bg-rose-50 dark:bg-rose-500/10"
                 : "text-gray-300 hover:text-rose-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             )}>
-            <Heart className={cn("h-4 w-4", isFollowing && "fill-current")} />
+            <Heart className={cn("h-4 w-4 max-sm:h-3.5 max-sm:w-3.5", isFollowing && "fill-current")} />
           </button>
           <span className={cn(
-            "text-[10px]",
+            "text-[10px] max-sm:text-[9px]",
             isFollowing ? "text-rose-500" : "text-gray-400"
           )}>
             {isFollowing ? t('categories.following') : t('follow')}

@@ -426,12 +426,12 @@ export function ResultsDisplay({
   return (
     <div className="h-full overflow-auto">
       {/* 警告提示 */}
-      <div className="p-4 pb-2">
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-          <div className="flex items-start space-x-2">
-            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <p className="font-medium mb-1">⚠️ 重要提醒</p>
+      <div className="p-3 md:p-4 pb-1 md:pb-2">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2.5 md:p-3">
+          <div className="flex items-start space-x-1.5 md:space-x-2">
+            <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="text-xs md:text-sm text-amber-800 dark:text-amber-200">
+              <p className="font-medium mb-0.5 md:mb-1">⚠️ 重要提醒</p>
               <p className="leading-relaxed">
                 AI生成的分集简介仅作<strong>辅助作用</strong>，请务必观看对应视频内容审核修改后再使用。
                 <strong className="text-amber-900 dark:text-amber-100">禁止直接上传至TMDB</strong>等数据库平台。
@@ -441,22 +441,22 @@ export function ResultsDisplay({
         </div>
       </div>
 
-      <div className="px-4 pb-4 space-y-3">
+      <div className="px-3 md:px-4 pb-3 md:pb-4 space-y-2 md:space-y-3">
         {results.map((result, index) => (
           <div
             key={`${result.fileName || 'default'}-${result.episodeNumber}-${index}`}
-            className="group border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+            className="group border border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
           >
             {/* 标题行 - 紧凑布局 */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2 flex-1 min-w-0">
-                {/* 标签组 */}
-                <div className="flex items-center space-x-1.5 flex-shrink-0">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 md:mb-3 gap-2 md:gap-0">
+              <div className="flex items-center space-x-1.5 md:space-x-2 flex-1 min-w-0">
+                {/* 标签组 - 可换行 */}
+                <div className="flex items-center flex-wrap gap-1 md:gap-1.5 min-w-0">
                   {result.fileName && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 max-w-[140px] cursor-help">
-                          <span className="truncate">📁 {truncateFileName(result.fileName, 15)}</span>
+                        <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 py-0.5 bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 max-w-[100px] md:max-w-[140px] cursor-help">
+                          <span className="truncate">📁 {truncateFileName(result.fileName, 12)}</span>
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-sm break-all">
@@ -465,19 +465,19 @@ export function ResultsDisplay({
                     </Tooltip>
                   )}
                   {result.styleName && (
-                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300">
+                    <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 py-0.5 bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300">
                       🎨 {result.styleName}
                     </Badge>
                   )}
                   {index === 0 && (
-                    <Badge className="text-xs px-1.5 py-0.5 bg-blue-600 text-white">
+                    <Badge className="text-[10px] md:text-xs px-1.5 py-0.5 bg-blue-600 text-white">
                       ⭐ 优先
                     </Badge>
                   )}
                 </div>
 
                 {/* 标题 */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 mt-1 md:mt-0 w-full">
                   {editingIndex === index ? (
                     <input
                       type="text"
@@ -487,7 +487,7 @@ export function ResultsDisplay({
                       placeholder="编辑标题..."
                     />
                   ) : (
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    <h3 className="text-xs md:text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {result.generatedTitle}
                     </h3>
                   )}
@@ -495,14 +495,14 @@ export function ResultsDisplay({
               </div>
 
               {/* 右侧信息和操作 */}
-              <div className="flex items-center space-x-2 flex-shrink-0">
+              <div className="flex items-center space-x-1.5 md:space-x-2 flex-shrink-0">
                 <Badge
                   variant={result.confidence > 0.8 ? "default" : result.confidence > 0.6 ? "secondary" : "destructive"}
-                  className="text-xs px-1.5 py-0.5"
+                  className="text-[10px] md:text-xs px-1.5 py-0.5"
                 >
                   {Math.round(result.confidence * 100)}%
                 </Badge>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                   {editingIndex === index ? editingSummary.length : result.wordCount}字
                 </span>
 
@@ -512,7 +512,7 @@ export function ResultsDisplay({
                     <Button
                       variant="default"
                       size="sm"
-                      className="h-6 px-2 text-xs bg-green-600 hover:bg-green-700"
+                      className="min-h-[30px] h-6 px-2 text-xs bg-green-600 hover:bg-green-700"
                       onClick={() => handleSaveEdit(index)}
                     >
                       <Check className="h-3 w-3 mr-1" />
@@ -521,7 +521,7 @@ export function ResultsDisplay({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-6 px-2 text-xs"
+                      className="min-h-[30px] h-6 px-2 text-xs"
                       onClick={handleCancelEdit}
                     >
                       <X className="h-3 w-3 mr-1" />
@@ -529,12 +529,12 @@ export function ResultsDisplay({
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center space-x-1 opacity-0 md:group-hover:opacity-100 transition-opacity">
                     {index > 0 && onMoveToTop && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0"
+                        className="min-w-[44px] min-h-[44px] h-6 w-6 p-0"
                         onClick={() => onMoveToTop(index)}
                         title="置顶"
                       >
@@ -544,7 +544,7 @@ export function ResultsDisplay({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0"
+                      className="min-w-[44px] min-h-[44px] h-6 w-6 p-0"
                       onClick={() => handleStartEdit(index, result)}
                       title="编辑"
                     >
@@ -553,7 +553,7 @@ export function ResultsDisplay({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0"
+                      className="min-w-[44px] min-h-[44px] h-6 w-6 p-0"
                       onClick={() => {
                         const textToCopy = `标题：${result.generatedTitle}\n\n简介：${result.generatedSummary}`
                         navigator.clipboard.writeText(textToCopy)
@@ -567,7 +567,7 @@ export function ResultsDisplay({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0"
+                          className="min-w-[44px] min-h-[44px] h-6 w-6 p-0"
                           title="更多操作"
                         >
                           <MoreHorizontal className="h-3 w-3" />
@@ -601,7 +601,7 @@ export function ResultsDisplay({
               </div>
             </div>
             {/* 简介内容 - 紧凑显示 */}
-            <div className="mb-3">
+            <div className="mb-2 md:mb-3">
               {editingIndex === index ? (
                 <textarea
                   value={editingSummary}
@@ -646,7 +646,7 @@ export function ResultsDisplay({
                     <button
                       onClick={() => handleConfirmRewrite(index)}
                       disabled={!selectedText || isRewritingText}
-                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-1"
+                      className="min-h-[44px] px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-1"
                     >
                       {isRewritingText ? (
                         <>
@@ -663,7 +663,7 @@ export function ResultsDisplay({
                     <button
                       onClick={handleCancelRewrite}
                       disabled={isRewritingText}
-                      className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-1"
+                      className="min-h-[44px] px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-1"
                     >
                       <X className="h-3 w-3" />
                       <span>取消</span>
@@ -678,21 +678,21 @@ export function ResultsDisplay({
             </div>
 
             {/* 底部信息行 */}
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-0 text-[10px] md:text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center flex-wrap gap-1.5 md:gap-3">
                 <span>🤖 {result.model.split('/').pop()}</span>
                 <span>🕒 {new Date(result.generationTime).toLocaleTimeString()}</span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  className="min-h-[30px] h-6 px-2 text-[10px] md:text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   onClick={() => {
                     const newIndex = improvementOpenIndex === index ? null : index
                     setImprovementOpenIndex(newIndex)
                   }}
                   title="与AI改进简介"
                 >
-                  <Wand2 className="h-3 w-3 mr-1" />
+                  <Wand2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
                   与AI改进
                 </Button>
               </div>

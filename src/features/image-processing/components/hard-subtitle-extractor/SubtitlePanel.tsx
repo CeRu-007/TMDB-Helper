@@ -111,9 +111,9 @@ export function SubtitlePanel({
   return (
     <div className="h-full flex flex-col">
       {/* 工具栏 */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between flex-wrap gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col space-y-0.5">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
             {subtitles.length} {t("hardSubtitle.subtitleCount_label")}
           </span>
           {totalTime !== undefined && totalTime > 0 && (
@@ -122,15 +122,15 @@ export function SubtitlePanel({
             </span>
           )}
         </div>
-        <div className="flex items-center space-x-1.5">
-          <Button variant="ghost" size="sm" onClick={onClear} className="h-8 px-2">
+        <div className="flex items-center flex-wrap gap-1.5">
+          <Button variant="ghost" size="sm" onClick={onClear} className="min-h-[44px] md:min-h-0 min-w-[44px] md:min-w-0">
             <Trash2 className="h-4 w-4" />
           </Button>
-          <Button variant="secondary" size="sm" onClick={handleGoToAIGenerator} className="h-8 px-3">
+          <Button variant="secondary" size="sm" onClick={handleGoToAIGenerator} className="min-h-[44px] md:min-h-0">
             <Sparkles className="h-4 w-4 mr-1.5" />
             <span className="text-xs">{t("hardSubtitle.generateEpisodes")}</span>
           </Button>
-          <Button size="sm" onClick={onExport} className="h-8 px-3">
+          <Button size="sm" onClick={onExport} className="min-h-[44px] md:min-h-0">
             <Download className="h-4 w-4 mr-1.5" />
             <span className="text-xs">{t("hardSubtitle.exportSrt")}</span>
           </Button>
@@ -170,18 +170,18 @@ export function SubtitlePanel({
                     <>
                       {onDelete && (
                         <button
-                          className="p-1 hover:bg-red-100 dark:hover:bg-red-900/50 rounded transition-colors"
+                          className="p-2 md:p-1 hover:bg-red-100 dark:hover:bg-red-900/50 rounded transition-colors"
                           onClick={() => onDelete(subtitle.id)}
                           title={t("hardSubtitle.deleteSubtitle")}
                         >
-                          <Trash2 className="h-3 w-3 text-gray-400 hover:text-red-600 dark:hover:text-red-400" />
+                          <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400" />
                         </button>
                       )}
                       <button
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                        className="p-2 md:p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
                         onClick={() => handleEditStart(subtitle)}
                       >
-                        <Edit3 className="h-3 w-3 text-gray-400" />
+                        <Edit3 className="h-3.5 w-3.5 text-gray-400" />
                       </button>
                     </>
                   )}
@@ -195,11 +195,12 @@ export function SubtitlePanel({
                     onChange={(e) => setEditText(e.target.value)}
                     className="min-h-[60px] text-sm"
                   />
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex justify-end flex-wrap gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleEditCancel}
+                      className="min-h-[44px] md:min-h-0"
                     >
                       <X className="h-3 w-3 mr-1" />
                       {t("hardSubtitle.cancel")}
@@ -207,6 +208,7 @@ export function SubtitlePanel({
                     <Button
                       size="sm"
                       onClick={() => handleEditSave(subtitle.id)}
+                      className="min-h-[44px] md:min-h-0"
                     >
                       <Save className="h-3 w-3 mr-1" />
                       {t("hardSubtitle.save")}

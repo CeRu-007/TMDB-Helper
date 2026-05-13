@@ -10,6 +10,7 @@ import { Message } from "@/types/ai-chat"
 import { logger } from "@/lib/utils/logger"
 import { useTranslation } from "react-i18next"
 
+import { useMobile } from "@/shared/hooks/use-mobile"
 import { useAiChatHistory } from "@/features/ai/lib/hooks/use-ai-chat-history"
 import { useAiStreamResponse } from "@/features/ai/lib/hooks/use-ai-stream-response"
 import { useAiMessageActions } from "@/features/ai/lib/hooks/use-ai-message-actions"
@@ -38,6 +39,8 @@ export function AiChat() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editingContent, setEditingContent] = useState('')
+  
+  const isMobile = useMobile()
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -221,6 +224,12 @@ export function AiChat() {
   }, [messages, scrollToBottom, scrollToLatestMessage])
 
   useEffect(() => {
+    if (isMobile) {
+      setIsSidebarCollapsed(true)
+    }
+  }, [isMobile])
+
+  useEffect(() => {
     return () => {
       if (mainAbortController && !mainAbortController.signal.aborted) {
         mainAbortController.abort('Component unmounted')
@@ -285,7 +294,7 @@ export function AiChat() {
   }
 
   return (
-    <div className="h-full flex bg-white dark:bg-gray-950 overflow-hidden relative">
+    <div className="h-full flex bg-white dark:bg-gray-950 overflow-hidden relative" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {isSidebarCollapsed && (
         <div className="absolute top-3 left-3 z-50 flex items-center gap-2">
           <Button

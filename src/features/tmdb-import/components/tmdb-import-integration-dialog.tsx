@@ -2137,14 +2137,14 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       ) : (
         <Dialog open={open} onOpenChange={onOpenChange}>
           <DialogContent
-            className={`${isFullscreen ? 'max-w-full w-full h-full max-h-full inset-0 rounded-none' : 'max-w-[90vw] max-h-[90vh]'} overflow-y-auto p-0 bg-transparent border-none`}
+            className={`${isFullscreen ? 'max-w-full w-full h-full max-h-full inset-0 rounded-none' : 'w-full sm:max-w-[90vw] max-h-full sm:max-h-[90vh] sm:rounded-lg rounded-none'} overflow-y-auto p-0 bg-transparent border-none`}
             style={{
               transform: isFullscreen ? 'none' : undefined,
               top: isFullscreen ? '0' : undefined,
               left: isFullscreen ? '0' : undefined,
             }}
           >
-            <DialogHeader className="p-6 pb-2 flex flex-row items-center justify-between bg-background/30 backdrop-blur-md border-b">
+            <DialogHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between bg-background/30 backdrop-blur-md border-b">
               <DialogTitle className="flex items-center space-x-2">
                 <Terminal className="h-5 w-5" />
                 <span>{t('tmdbIntegration.localIntegration')}</span>

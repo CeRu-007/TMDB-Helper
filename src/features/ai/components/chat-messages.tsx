@@ -54,7 +54,7 @@ export function ChatMessages({
 }: ChatMessagesProps) {
   return (
     <ScrollArea className="h-full" ref={scrollAreaRef}>
-      <div className="max-w-4xl mx-auto py-6">
+      <div className="max-w-4xl mx-auto py-3 md:py-6 px-3 md:px-4">
         {messages.map((message, index) => (
           <ChatMessageItem
             key={message.id}

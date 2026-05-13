@@ -259,8 +259,8 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
   }
 
   return (
-    <div className="flex flex-row gap-4 h-full min-h-[400px] p-1">
-      <div className="w-1/2 flex flex-col h-full overflow-hidden rounded-lg">
+    <div className="flex flex-col md:flex-row gap-4 h-full min-h-[400px] p-1">
+      <div className="w-full md:w-1/2 flex flex-col h-full overflow-hidden rounded-lg">
         <div className="flex-1 min-h-0 pr-2 pb-2 overflow-hidden rounded-lg">
           <Card variant="frosted" className="h-full overflow-hidden">
             <CardContent className="h-full overflow-y-auto p-4 space-y-4">
@@ -504,7 +504,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         </div>
       </div>
 
-      <div className="w-1/2 h-full">
+      <div className="w-full md:w-1/2 h-full">
         <Card variant="frosted" className="h-full flex flex-col">
           <CardHeader className="py-2 flex-shrink-0">
             <CardTitle className="text-sm flex items-center">

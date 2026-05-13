@@ -104,14 +104,14 @@ export function ConfigPanel({
   }
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto p-4 space-y-6">
+    <div className="h-full flex flex-col overflow-y-auto p-3 md:p-4 space-y-4 md:space-y-6">
       {/* 视频输入区域 */}
       <div className="space-y-3">
         <Label className="text-sm font-medium">{t("hardSubtitle.videoSource")}</Label>
 
         {/* URL输入 */}
-        <div className="flex items-center space-x-2">
-          <Link className="h-4 w-4 text-gray-400" />
+        <div className="flex items-center space-x-2 w-full">
+          <Link className="h-4 w-4 text-gray-400 shrink-0" />
           <Input
             placeholder={t("hardSubtitle.enterVideoUrl")}
             value={videoUrl}
@@ -129,7 +129,7 @@ export function ConfigPanel({
 
         {/* 文件上传 */}
         <div
-          className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center hover:border-blue-400 transition-colors cursor-pointer"
+          className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 text-center hover:border-blue-400 transition-colors cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
@@ -297,7 +297,7 @@ export function ConfigPanel({
             onValueChange={(value) => onConfigChange("ocrModelId", value)}
             disabled={isProcessing}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder={t("hardSubtitle.selectOcrModel")} />
             </SelectTrigger>
             <SelectContent>

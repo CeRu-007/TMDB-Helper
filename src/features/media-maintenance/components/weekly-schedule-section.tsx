@@ -158,7 +158,7 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* 周几导航 */}
       <WeekdayNavigation
         selectedDayFilter={homeState.selectedDayFilter}
@@ -170,7 +170,7 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
 
       {/* 内容网格 */}
       {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 md:gap-x-6 gap-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2 md:gap-x-6 gap-y-2 md:gap-y-4">
           {filteredItems.map((item) => (
             <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
               <MediaCard

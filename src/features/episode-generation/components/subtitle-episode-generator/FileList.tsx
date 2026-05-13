@@ -39,11 +39,11 @@ export function FileList({
 }: FileListProps) {
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-blue-100/50 dark:border-blue-900/30">
+      <div className="p-3 md:p-4 border-b border-blue-100/50 dark:border-blue-900/30">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-gray-800 dark:text-gray-200">字幕文件</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <h3 className="font-medium text-gray-800 dark:text-gray-200 text-sm md:text-base">字幕文件</h3>
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 md:mt-1">
               {files.length} 个文件
             </p>
           </div>
@@ -51,7 +51,7 @@ export function FileList({
             variant="ghost"
             size="sm"
             onClick={onOpenSettings}
-            className="h-8 w-8 p-0"
+            className="min-w-[44px] min-h-[44px] h-8 w-8 p-0"
             title="生成设置"
           >
             <Settings className="h-4 w-4" />
@@ -59,7 +59,7 @@ export function FileList({
         </div>
 
         {/* 批量操作按钮 */}
-        <div className="mt-3 space-y-2">
+        <div className="mt-2 md:mt-3 space-y-1.5 md:space-y-2">
           <Button
             onClick={onBatchGenerate}
             disabled={isGenerating || !apiConfigured || files.length === 0}
@@ -110,7 +110,7 @@ export function FileList({
 
       <ScrollArea className="flex-1">
         {files.length > 0 ? (
-          <div className="p-2 space-y-2">
+          <div className="p-1.5 md:p-2 space-y-1.5 md:space-y-2">
             {files.map(file => (
             <Card
               key={file.id}
@@ -122,30 +122,30 @@ export function FileList({
               )}
               onClick={() => onSelectFile(file)}
             >
-              <CardContent className="p-3">
+              <CardContent className="p-2 md:p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                    <div className="flex items-center space-x-1.5 md:space-x-2 mb-1.5 md:mb-2">
+                      <FileText className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <span className="font-medium text-sm block">
-                          {truncateFileName(file.name, 30)}
+                        <span className="font-medium text-xs md:text-sm block">
+                          {truncateFileName(file.name, 25)}
                         </span>
                       </div>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-0.5 md:space-y-1">
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                         <span>{file.episodes.length} 集</span>
                         <span>{(file.size / 1024).toFixed(1)} KB</span>
                       </div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500">
+                      <div className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500">
                         {file.uploadTime.toLocaleString()}
                       </div>
 
                       {/* 生成进度显示 */}
                       {file.generationStatus && (
-                        <div className="mt-2 space-y-1">
-                          <div className="flex items-center justify-between text-xs">
+                        <div className="mt-1.5 md:mt-2 space-y-0.5 md:space-y-1">
+                          <div className="flex items-center justify-between text-[10px] md:text-xs">
                             <span className={cn(
                               "flex items-center space-x-1",
                               file.generationStatus === 'completed' && "text-green-600 dark:text-green-400",
@@ -153,10 +153,10 @@ export function FileList({
                               file.generationStatus === 'failed' && "text-red-600 dark:text-red-400",
                               file.generationStatus === 'pending' && "text-gray-500 dark:text-gray-400"
                             )}>
-                              {file.generationStatus === 'completed' && <CheckCircle className="h-3 w-3" />}
-                              {file.generationStatus === 'generating' && <Loader2 className="h-3 w-3 animate-spin" />}
-                              {file.generationStatus === 'failed' && <XCircle className="h-3 w-3" />}
-                              {file.generationStatus === 'pending' && <Clock className="h-3 w-3" />}
+                              {file.generationStatus === 'completed' && <CheckCircle className="h-2.5 w-2.5 md:h-3 md:w-3" />}
+                              {file.generationStatus === 'generating' && <Loader2 className="h-2.5 w-2.5 md:h-3 md:w-3 animate-spin" />}
+                              {file.generationStatus === 'failed' && <XCircle className="h-2.5 w-2.5 md:h-3 md:w-3" />}
+                              {file.generationStatus === 'pending' && <Clock className="h-2.5 w-2.5 md:h-3 md:w-3" />}
                               <span>
                                 {file.generationStatus === 'completed' && '已完成'}
                                 {file.generationStatus === 'generating' && '生成中'}
@@ -165,7 +165,7 @@ export function FileList({
                               </span>
                             </span>
                             {file.generationStatus === 'generating' && file.generationProgress !== undefined && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-[10px] md:text-xs text-gray-500">
                                 {file.generatedCount || 0}/{file.episodes.length}
                               </span>
                             )}
@@ -193,7 +193,7 @@ export function FileList({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="min-w-[44px] min-h-[44px] h-6 w-6 p-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.stopPropagation()
                         onDeleteFile(file.id)
@@ -219,26 +219,26 @@ export function FileList({
 // 文件列表空状态组件
 function FileListEmptyState({ onUpload }: { onUpload: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+    <div className="flex flex-col items-center justify-center h-full p-3 md:p-4 text-center">
       {/* 简洁的图标 */}
-      <div className="mb-4">
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-full p-4 border border-gray-200/50 dark:border-gray-700/50">
-          <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+      <div className="mb-3 md:mb-4">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-full p-3 md:p-4 border border-gray-200/50 dark:border-gray-700/50">
+          <FileText className="h-6 w-6 md:h-8 md:w-8 text-gray-400 dark:text-gray-500" />
         </div>
       </div>
 
       {/* 简洁的文字说明 */}
-      <div className="space-y-2 mb-4">
-        <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+      <div className="space-y-1 md:space-y-2 mb-3 md:mb-4">
+        <h4 className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">
           暂无文件
         </h4>
-        <p className="text-xs text-gray-500 dark:text-gray-500 max-w-[200px] leading-relaxed">
+        <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-500 max-w-[180px] md:max-w-[200px] leading-relaxed">
           文件上传后将在此处显示
         </p>
       </div>
 
       {/* 简单的上传提示 */}
-      <div className="text-xs text-gray-400 dark:text-gray-500 space-y-1">
+      <div className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500 space-y-1">
         <div className="flex items-center justify-center space-x-1">
           <div className="w-2 h-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-sm"></div>
           <span>支持拖拽上传</span>

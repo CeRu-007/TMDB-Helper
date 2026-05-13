@@ -340,8 +340,8 @@ useEffect(() => {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex">
-      <div className="w-64 border-r bg-gray-50/50 dark:bg-gray-900/50 flex flex-col">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col md:flex-row">
+      <div className="w-full md:w-64 border-b md:border-r bg-gray-50/50 dark:bg-gray-900/50 flex flex-col max-h-40 md:max-h-none">
         <div className="p-4 border-b dark:border-gray-700">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">日志文件</h3>
@@ -409,8 +409,8 @@ useEffect(() => {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center gap-2 p-3 border-b dark:border-gray-700 bg-white dark:bg-gray-950">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1.5 p-2 md:p-3 border-b dark:border-gray-700 bg-white dark:bg-gray-950">
+          <div className="flex flex-wrap items-center gap-1">
             {LEVEL_FILTERS.map((f) => (
               <button
                 key={f.value}
@@ -434,9 +434,9 @@ useEffect(() => {
             ))}
           </div>
 
-          <div className="flex-1" />
+          <div className="hidden md:block flex-1" />
 
-          <div className="relative w-56">
+          <div className="relative flex-1 min-w-[140px] md:w-56 md:flex-none">
             <Input
               placeholder="搜索日志..."
               value={searchQuery}
@@ -479,7 +479,7 @@ useEffect(() => {
           </Button>
         </div>
 
-        <div ref={logContainerRef} className="flex-1 overflow-x-hidden scrollbar-show">
+        <div ref={logContainerRef} className="flex-1 overflow-x-auto scrollbar-show">
           {!selectedFile ? (
             <div className="flex items-center justify-center h-full text-gray-400">
               <div className="text-center">
@@ -499,9 +499,9 @@ useEffect(() => {
                     : <span className="text-gray-400">日志内容为空</span>}
               </div>
               <div ref={contentEndRef} />
-              <div className="sticky bottom-0 px-4 py-1.5 border-t dark:border-gray-800 bg-white dark:bg-gray-950 text-xs text-gray-400 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span>{selectedFile}</span>
+              <div className="sticky bottom-0 px-2 md:px-4 py-1 md:py-1.5 border-t dark:border-gray-800 bg-white dark:bg-gray-950 text-xs text-gray-400 flex items-center justify-between">
+                <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                  <span className="truncate max-w-[120px] md:max-w-none">{selectedFile}</span>
                   {autoRefresh && <span className="text-green-500">● 实时</span>}
                 </div>
                 <div className="flex items-center gap-1">

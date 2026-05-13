@@ -563,8 +563,8 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(
-        "max-w-4xl overflow-hidden flex flex-col",
-        selectedResult ? "h-[85vh]" : "h-auto max-h-[60vh]"
+        "flex flex-col overflow-hidden w-full sm:max-w-4xl max-h-full sm:max-h-[85vh] sm:rounded-lg rounded-none",
+        !selectedResult && "sm:h-auto sm:max-h-[60vh]"
       )}>
         {/* 背景图预览 */}
         {showBackdropPreview && backdropUrl && (
@@ -601,7 +601,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                     placeholder={t("independentPage.addItem.searchPlaceholder", { ns: "nav.maintenance" })}
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
-                    className="pr-10 h-9 text-sm"
+                    className="pr-10 h-9 sm:h-9 min-h-[44px] text-sm"
                   />
                   {loading && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -609,12 +609,12 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                     </div>
                   )}
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => searchTMDB(searchQuery)}
-                  className="h-9 px-4"
-                  size="sm"
-                >
+                  <Button
+                    type="button"
+                    onClick={() => searchTMDB(searchQuery)}
+                    className="h-9 sm:h-9 min-h-[44px] px-4"
+                    size="sm"
+                  >
                   <Search className="h-3 w-3 mr-1" />
                   {t("independentPage.addItem.search", { ns: "nav.maintenance" })}
                 </Button>

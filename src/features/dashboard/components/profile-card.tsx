@@ -119,8 +119,8 @@ export function ProfileCard({ profile }: ProfileCardProps) {
         <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-r ${style.gradient} opacity-10`} />
       )}
 
-      <div className="relative p-6">
-        <div className="flex items-start gap-6">
+      <div className="relative p-4 md:p-6">
+        <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
           <div className="relative flex-shrink-0">
             <div className={`absolute inset-0 ${style.bgGlow} blur-xl opacity-30 rounded-full`} />
             <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${style.gradient} flex items-center justify-center shadow-lg overflow-hidden ring-4 ring-white/30 dark:ring-gray-800/50`}>
@@ -149,7 +149,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
           </div>
         </div>
 
-        <div className={`mt-6 grid grid-cols-2 sm:grid-cols-5 gap-4`}>
+        <div className={`mt-4 md:mt-6 grid grid-cols-2 sm:grid-cols-5 gap-4`}>
           <div className="text-center">
             <p className={`text-2xl font-bold drop-shadow-sm ${hasPosters ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{profile.totalItems}</p>
             <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile.totalItems')}</p>

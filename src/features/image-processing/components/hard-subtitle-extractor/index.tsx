@@ -78,13 +78,13 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center flex-wrap gap-2">
           {isProcessing ? (
             <>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {Math.floor(progress)}% {statusMessage}
               </span>
-              <Button variant="outline" size="sm" onClick={cancelExtraction}>
+              <Button variant="outline" size="sm" onClick={cancelExtraction} className="min-h-[44px] md:min-h-0">
                 {t("hardSubtitle.cancel")}
               </Button>
             </>
@@ -95,6 +95,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                 size="sm"
                 onClick={clearResults}
                 disabled={!videoFile && !videoUrl}
+                className="min-h-[44px] md:min-h-0"
               >
                 {t("hardSubtitle.clear")}
               </Button>
@@ -102,6 +103,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                 size="sm"
                 onClick={startExtraction}
                 disabled={!videoFile && !videoUrl || subtitleRegions.length === 0}
+                className="min-h-[44px] md:min-h-0"
               >
                 <Play className="h-4 w-4 mr-1" />
                 {t("hardSubtitle.startExtracting")}
@@ -112,9 +114,9 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
       </div>
 
       {/* 主内容区 - 左右分栏 */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* 左侧区域 (70%) - 视频预览和控制区 */}
-        <div className="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* 左侧区域 - 视频预览和控制区 */}
+        <div className="flex-1 flex flex-col border-b md:border-r border-gray-200 dark:border-gray-700">
           {/* 视频预览区 */}
           <div className="flex-1 bg-black dark:bg-gray-950 relative">
             <VideoPreview
@@ -135,14 +137,15 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
 
           {/* 控制区 */}
           <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               {/* 左侧：字幕区域控制 */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center flex-wrap gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => addSubtitleRegion({ x: 10, y: 85, width: 80, height: 12 })}
                   disabled={!videoFile && !videoUrl}
+                  className="min-h-[44px] md:min-h-0"
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   添加
@@ -150,7 +153,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
 
                 {subtitleRegions.length > 0 && (
                   <>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                       {subtitleRegions.length} 个区域
                     </span>
                     <Button
@@ -160,7 +163,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                         subtitleRegions.forEach(r => removeSubtitleRegion(r.id))
                       }}
                       disabled={!videoFile && !videoUrl}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 min-h-[44px] md:min-h-0"
                     >
                       <X className="h-4 w-4 mr-1" />
                       清除
@@ -170,9 +173,9 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
               </div>
 
               {/* 右侧：视频控制 */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center flex-wrap gap-2">
                 {/* 时间显示 */}
-                <span className="text-sm text-gray-600 dark:text-gray-300 font-mono">
+                <span className="text-sm text-gray-600 dark:text-gray-300 font-mono whitespace-nowrap">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
 
@@ -182,7 +185,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                   max={duration || 100}
                   step={0.1}
                   onValueChange={([value]) => handleSeek(value)}
-                  className="w-48"
+                  className="w-24 md:w-48"
                 />
 
                 {/* 播放控制 */}
@@ -191,6 +194,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                   size="icon"
                   onClick={handlePlayPause}
                   disabled={!videoFile && !videoUrl}
+                  className="min-h-[44px] min-w-[44px]"
                 >
                   {isPlaying ? (
                     <Pause className="h-4 w-4" />
@@ -203,8 +207,8 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
           </div>
         </div>
 
-        {/* 右侧区域 (30%) - 配置和字幕面板 */}
-        <div className="w-96 flex flex-col bg-white dark:bg-gray-800">
+        {/* 右侧区域 - 配置和字幕面板 */}
+        <div className="w-full md:w-96 flex flex-col bg-white dark:bg-gray-800">
           {/* 标签页切换 */}
           <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button

@@ -60,28 +60,28 @@ export function GenerationSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-full md:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center">
-            <Settings className="h-5 w-5 mr-2" />
+          <DialogTitle className="flex items-center text-base md:text-lg">
+            <Settings className="h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" />
             分集简介生成设置
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col flex-1 min-h-0">
           {/* 模型服务状态显示 */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4 flex-shrink-0 space-y-4">
+          <div className="p-3 md:p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-3 md:mb-4 flex-shrink-0 space-y-3 md:space-y-4">
             {/* 模型服务状态 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-0 md:justify-between">
+              <div className="flex items-center flex-wrap gap-1.5 md:gap-2">
+                <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
                   模型服务状态:
                 </span>
-                <Badge variant={scenarioModels.availableModels.length > 0 ? "default" : "destructive"}>
+                <Badge variant={scenarioModels.availableModels.length > 0 ? "default" : "destructive"} className="text-[10px] md:text-xs">
                   {scenarioModels.availableModels.length > 0 ? "已配置" : "未配置"}
                 </Badge>
                 {scenarioModels.availableModels.length > 0 && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-[10px] md:text-xs text-gray-500">
                     可用模型: {scenarioModels.availableModels.length} 个
                   </span>
                 )}
@@ -89,6 +89,7 @@ export function GenerationSettingsDialog({
               <Button
                 variant="outline"
                 size="sm"
+                className="min-h-[44px] self-start md:self-auto"
                 onClick={() => {
                   if (onOpenGlobalSettings) {
                     // 设置标记，表示需要在全局设置关闭后重新打开此对话框
@@ -105,15 +106,15 @@ export function GenerationSettingsDialog({
 
             {/* 当前选中的模型信息 */}
             {scenarioModels.getCurrentModel() && (
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary" className="text-xs">
+              <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-0 md:justify-between p-2.5 md:p-3 bg-white dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center flex-wrap gap-1.5 md:gap-2">
+                  <Badge variant="secondary" className="text-[10px] md:text-xs">
                     当前模型
                   </Badge>
-                  <span className="text-sm font-medium">
+                  <span className="text-xs md:text-sm font-medium">
                     {scenarioModels.getCurrentModel()?.displayName}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-[10px] md:text-xs text-gray-500">
                     ({scenarioModels.getCurrentModel()?.modelId})
                   </span>
                 </div>
@@ -122,18 +123,18 @@ export function GenerationSettingsDialog({
 
             {/* 提示信息 */}
             {scenarioModels.availableModels.length === 0 && (
-              <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
+              <div className="text-[10px] md:text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
                 请先在"设置 - 模型服务 - 使用场景"中为"分集生成"配置模型
               </div>
             )}
           </div>
 
-          {/* 标签页导航 */}
-          <div className="border-b border-gray-200 dark:border-gray-700 mb-4 flex-shrink-0">
-            <nav className="-mb-px flex space-x-6">
+          {/* 标签页导航 - 可滚动 */}
+          <div className="border-b border-gray-200 dark:border-gray-700 mb-3 md:mb-4 flex-shrink-0 overflow-x-auto scrollbar-hide">
+            <nav className="-mb-px flex space-x-4 md:space-x-6 min-w-max px-0.5">
               <button
                 onClick={() => setActiveTab("generation")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`min-h-[44px] py-2 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm whitespace-nowrap ${
                   activeTab === "generation"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -143,33 +144,33 @@ export function GenerationSettingsDialog({
               </button>
               <button
                 onClick={() => setActiveTab("titleStyle")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`min-h-[44px] py-2 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm whitespace-nowrap ${
                   activeTab === "titleStyle"
                     ? "border-green-500 text-green-600 dark:text-green-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                 }`}
               >
-                标题风格设置
+                标题风格
               </button>
               <button
                 onClick={() => setActiveTab("summaryStyle")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`min-h-[44px] py-2 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm whitespace-nowrap ${
                   activeTab === "summaryStyle"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                 }`}
               >
-                简介风格设置
+                简介风格
               </button>
               <button
                 onClick={() => setActiveTab("videoAnalysis")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`min-h-[44px] py-2 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm whitespace-nowrap ${
                   activeTab === "videoAnalysis"
                     ? "border-purple-500 text-purple-600 dark:text-purple-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                 }`}
               >
-                音频转写设置
+                音频转写
               </button>
             </nav>
           </div>
@@ -191,9 +192,9 @@ export function GenerationSettingsDialog({
           </div>
 
           {/* 底部按钮栏 */}
-          <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 mt-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-0 pt-3 md:pt-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 mt-3 md:mt-4">
             {/* 左侧：风格提示信息 */}
-            <div className="flex-1 mr-4">
+            <div className="flex-1 md:mr-4">
               {activeTab === "titleStyle" && (
                 <div className="text-sm">
                   {config.selectedTitleStyle ? (
@@ -257,11 +258,11 @@ export function GenerationSettingsDialog({
             </div>
 
             {/* 右侧：按钮 */}
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <div className="flex space-x-2 self-end md:self-auto">
+              <Button variant="outline" className="min-h-[44px]" onClick={() => onOpenChange(false)}>
                 取消
               </Button>
-              <Button onClick={handleSave} className="bg-blue-500 hover:bg-blue-600">
+              <Button onClick={handleSave} className="min-h-[44px] bg-blue-500 hover:bg-blue-600">
                 保存设置
               </Button>
             </div>

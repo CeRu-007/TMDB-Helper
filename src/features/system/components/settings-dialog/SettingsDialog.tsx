@@ -26,8 +26,9 @@ import VideoThumbnailSettingsPanel from "./VideoThumbnailSettingsPanel"
 import GeneralSettingsPanel from "./GeneralSettingsPanel"
 import SecuritySettingsPanel from "./SecuritySettingsPanel"
 import HelpSettingsPanel from "./HelpSettingsPanel"
-import { CheckCircle2, AlertCircle } from "lucide-react"
+import { CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { useMobile } from "@/shared/hooks/use-mobile"
 
 import type {
   SettingsDialogProps,
@@ -90,6 +91,19 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   )
 
   const [activeSection, setActiveSection] = useState<string>(validInitialSection)
+  const isMobile = useMobile()
+  const [showMobileMenu, setShowMobileMenu] = useState(true)
+
+  const handleSectionChange = useCallback((section: string) => {
+    setActiveSection(section)
+    if (isMobile) {
+      setShowMobileMenu(false)
+    }
+  }, [isMobile])
+
+  const handleBackToMenu = useCallback(() => {
+    setShowMobileMenu(true)
+  }, [])
 
   useEffect(() => {
     if (validSections.includes(initialSection || '')) {
@@ -949,9 +963,14 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="w-full sm:max-w-6xl max-h-full sm:max-h-[90vh] sm:rounded-lg rounded-none flex flex-col p-0">
+        <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b">
           <DialogTitle className="flex items-center">
+            {isMobile && !showMobileMenu && (
+              <Button variant="ghost" size="icon" onClick={handleBackToMenu} className="mr-2 -ml-2 h-8 w-8" aria-label="返回">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
             {t("settings.settings")}
           </DialogTitle>
           <DialogDescription>
@@ -959,22 +978,26 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex h-[calc(90vh-120px)]">
-          <SettingsMenu
-            activeSection={activeSection}
-            onSectionChange={setActiveSection}
-          />
+        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
+          {/* 移动端：菜单视图 */}
+          <div className={`${isMobile && !showMobileMenu ? 'hidden' : ''} sm:block`}>
+            <SettingsMenu
+              activeSection={activeSection}
+              onSectionChange={handleSectionChange}
+            />
+          </div>
 
-          <div className="flex-1 flex flex-col">
+          {/* 移动端：面板视图（含底部按钮） */}
+          <div className={`${isMobile && showMobileMenu ? 'hidden' : ''} sm:block flex-1 flex flex-col`}>
             <ScrollArea className="flex-1">
-              <div className="p-6">
+              <div className="p-4 max-sm:p-3 sm:p-6">
                 {renderActivePanel()}
               </div>
             </ScrollArea>
 
             {/* 底部操作按钮 */}
-            <div className="border-t p-4 bg-gray-50/50 dark:bg-gray-900/50">
-              <div className="flex justify-end space-x-2">
+            <div className="border-t p-3 sm:p-4 bg-gray-50/50 dark:bg-gray-900/50">
+              <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={handleCancel} disabled={saveStatus === "saving"}>
                   {t("common.cancel")}
                 </Button>

@@ -32,13 +32,14 @@ export function SeasonSelector({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto scrollbar-hide">
           {seasons.map((season) => (
             <Button
               key={season.seasonNumber}
               variant={selectedSeason === season.seasonNumber ? "default" : "outline"}
               size="sm"
               onClick={() => onSeasonClick(season.seasonNumber)}
+              className="flex-shrink-0 whitespace-nowrap"
             >
               {t('seasonSelector.seasonNumber', { number: season.seasonNumber })}
               {season.currentEpisode !== undefined && (

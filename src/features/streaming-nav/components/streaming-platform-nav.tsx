@@ -76,8 +76,8 @@ function SortablePlatformCard({
       onClick={isDragMode ? undefined : () => onPlatformClick(platform)}
     >
       {isDragMode && (
-        <div className="absolute top-2 left-2 z-10">
-          <GripVertical className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+        <div className="absolute top-2 left-2 z-10 min-w-[36px] min-h-[36px] flex items-center justify-center">
+          <GripVertical className="w-5 h-5 md:w-4 md:h-4 text-blue-500 dark:text-blue-400" />
         </div>
       )}
 
@@ -88,7 +88,7 @@ function SortablePlatformCard({
             onToggleFavorite(platform.id);
           }}
           className={cn(
-            'absolute top-2 right-2 z-20 p-1.5 rounded-full transition-all duration-200',
+            'absolute top-2 right-2 z-20 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-200',
             isFavorite
               ? 'bg-red-50 dark:bg-red-900/30 text-red-500'
               : 'bg-gray-100 dark:bg-slate-700 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-slate-600'
@@ -105,8 +105,8 @@ function SortablePlatformCard({
         </div>
       )}
 
-      <div className="p-4">
-        <div className="flex items-center gap-3">
+      <div className="p-3 md:p-4">
+        <div className="flex items-center gap-2 md:gap-3">
           <div className={cn('flex-shrink-0 transition-transform duration-300', !isDragMode && 'group-hover:scale-105')}>
             {platform.logoUrl ? (
               <PlatformLogo name={platform.name} logoUrl={platform.logoUrl} size="sm" />
@@ -343,14 +343,14 @@ function StreamingPlatformNav(): JSX.Element {
             )}
           </div>
 
-          <div className="flex items-center justify-center gap-2 flex-wrap">
+          <div className="flex items-center justify-start md:justify-center gap-2 overflow-x-auto flex-nowrap md:flex-wrap scrollbar-hide">
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => handleCategoryChange(category)}
                 disabled={isDragMode}
                 className={cn(
-                  'px-4 py-2 text-sm font-medium rounded-full transition-all duration-200',
+                  'flex-shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all duration-200',
                   selectedCategory === category
                     ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800',
@@ -389,7 +389,7 @@ function StreamingPlatformNav(): JSX.Element {
           <button
             onClick={() => setIsDragMode(!isDragMode)}
             className={cn(
-              'flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-all duration-200',
+              'flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-sm rounded-lg transition-all duration-200',
               isDragMode
                 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                 : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
@@ -452,7 +452,7 @@ function StreamingPlatformNav(): JSX.Element {
         <div className="max-w-7xl mx-auto">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={filteredPlatforms.map((p) => p.id)} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-6">
                 {filteredPlatforms.map((platform) => (
                   <SortablePlatformCard
                     key={platform.id}

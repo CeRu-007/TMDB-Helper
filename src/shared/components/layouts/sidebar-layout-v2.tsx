@@ -1,7 +1,10 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from "react"
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/shared/components/ui/sheet"
+import { VisuallyHidden } from "@/shared/components/ui/visually-hidden"
 import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
+import { useMobile } from "@/shared/hooks/use-mobile"
 import {
   AppHeader,
   SidebarContainer,
@@ -98,6 +101,12 @@ export function SidebarLayout({
     }
   }, [setSelectedRegion, mediaNewsType, fetchUpcomingItems, fetchRecentItems])
 
+  // 移动端检测
+  const isMobile = useMobile()
+
+  // 移动端侧边栏打开状态
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+
   // 本地 UI 状态
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -130,8 +139,13 @@ export function SidebarLayout({
     loadPreferences()
   }, [])
 
-  // 处理侧边栏折叠切换
+  // 处理侧边栏折叠切换（桌面端）或打开/关闭移动端抽屉
   const handleSidebarToggle = async () => {
+    if (isMobile) {
+      setMobileSidebarOpen((prev) => !prev)
+      return
+    }
+
     const newCollapsed = !sidebarCollapsed
     setSidebarCollapsed(newCollapsed)
 
@@ -158,6 +172,12 @@ export function SidebarLayout({
       setMediaNewsType(submenuId)
     }
   }, [setSelectedItem, setMediaNewsType])
+
+  // 移动端菜单选择 - 选择后关闭抽屉
+  const handleMenuSelectMobile = useCallback((menuId: string, submenuId?: string) => {
+    handleMenuSelect(menuId, submenuId)
+    setMobileSidebarOpen(false)
+  }, [handleMenuSelect])
 
   // 处理返回列表
   const handleBackToList = useCallback(() => {
@@ -243,7 +263,7 @@ export function SidebarLayout({
   }, [openAddDialog])
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Header */}
       <AppHeader
         sidebarCollapsed={sidebarCollapsed}
@@ -257,14 +277,35 @@ export function SidebarLayout({
       />
 
       {/* 主体内容 */}
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-        {/* 侧边栏 */}
-        <SidebarContainer
-          collapsed={sidebarCollapsed}
-          onMenuSelect={handleMenuSelect}
-          activeMenu={activeMenu}
-          activeSubmenu={activeSubmenu}
-        />
+      <div className="flex h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
+        {/* 侧边栏 - 桌面端固定显示 */}
+        {!isMobile && (
+          <SidebarContainer
+            collapsed={sidebarCollapsed}
+            onMenuSelect={handleMenuSelect}
+            activeMenu={activeMenu}
+            activeSubmenu={activeSubmenu}
+          />
+        )}
+
+        {/* 移动端侧边栏 - Sheet 抽屉 */}
+        <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+          <SheetContent side="left" className="w-64 p-0">
+            <VisuallyHidden>
+              <SheetTitle>Navigation Menu</SheetTitle>
+              <SheetDescription>Main navigation sidebar</SheetDescription>
+            </VisuallyHidden>
+            <div className="h-full overflow-y-auto">
+              <SidebarContainer
+                collapsed={false}
+                onMenuSelect={handleMenuSelectMobile}
+                activeMenu={activeMenu}
+                activeSubmenu={activeSubmenu}
+                isMobile={true}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* 主内容区域 */}
         <MainContentArea contentKey={contentKey}>

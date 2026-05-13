@@ -48,15 +48,15 @@ export function ExportConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-full md:max-w-md">
         <DialogHeader>
-          <DialogTitle>导出到TMDB格式</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-base md:text-lg">导出到TMDB格式</DialogTitle>
+          <DialogDescription className="text-xs md:text-sm">
             配置导出选项，将生成的分集简介导出为TMDB-Import工具兼容的CSV格式
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {!exportResult && (
             <>
               <div className="space-y-3">
@@ -138,10 +138,11 @@ export function ExportConfigDialog({
         <DialogFooter>
           {!exportResult ? (
             <>
-              <Button variant="outline" onClick={handleClose}>
+              <Button variant="outline" className="min-h-[44px]" onClick={handleClose}>
                 取消
               </Button>
               <Button
+                className="min-h-[44px]"
                 onClick={handleExport}
                 disabled={isExporting || (!config.includeTitle && !config.includeOverview && !config.includeRuntime)}
               >
@@ -159,7 +160,7 @@ export function ExportConfigDialog({
               </Button>
             </>
           ) : (
-            <Button onClick={handleClose} className="w-full">
+            <Button onClick={handleClose} className="w-full min-h-[44px]">
               关闭
             </Button>
           )}

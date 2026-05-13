@@ -18,16 +18,16 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
 
   if (milestones.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-5">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{t('milestones.title')}</h3>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4 md:p-5">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 md:mb-4">{t('milestones.title')}</h3>
         <div className="flex items-center justify-center h-[120px] text-gray-400 text-sm">{t('noData')}</div>
       </div>
     )
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-5">
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{t('milestones.title')}</h3>
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4 md:p-5">
+      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 md:mb-4">{t('milestones.title')}</h3>
       <div className="relative pl-8 space-y-4 max-h-[360px] overflow-y-auto">
         <div className="absolute left-3 top-2 bottom-2 w-px bg-gray-200 dark:bg-gray-700" />
         {milestones.map((milestone, index) => (

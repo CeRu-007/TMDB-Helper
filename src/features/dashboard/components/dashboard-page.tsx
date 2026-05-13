@@ -66,7 +66,7 @@ export function DashboardPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 py-6 space-y-6">
+      <div className="px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{t('title')}</h1>
@@ -86,19 +86,19 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <div ref={contentRef} className="space-y-6">
+        <div ref={contentRef} className="space-y-4 md:space-y-6">
           <ProfileCard profile={data.profile} />
 
           <SmartSuggestions suggestions={data.smartSuggestions} />
 
           <StatsCards data={data.stats} />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <CategoryChart data={data.profile.categoryDistribution} />
             <WeekdayChart data={data.weekdayDistribution} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <CompletionProgressList items={data.completionProgress} />
             <RecentUpdatesList items={data.recentUpdatedItems} />
           </div>
@@ -107,7 +107,7 @@ export function DashboardPage() {
 
           <AchievementBadges achievements={data.achievements} />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <MilestoneTimeline milestones={data.milestones} />
             <MonthlyComparison data={data.monthlyComparison} />
           </div>

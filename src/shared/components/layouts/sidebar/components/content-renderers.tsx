@@ -130,7 +130,7 @@ export function ContentRenderers({
   // Render maintenance content (包括 maintenance-list 和原有的分类子菜单)
   if ((contentKey === 'maintenance-list' || (contentKey.startsWith('maintenance-') && contentKey !== 'maintenance-independent'))) {
     return (
-      <div className="max-w-7xl mx-auto px-8 py-4 h-full overflow-y-auto">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 py-4 h-full overflow-y-auto">
         <div
           onClick={(e) => {
             const target = e.target as HTMLElement
@@ -423,7 +423,7 @@ function renderUpcomingContent({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
             {upcomingItems
               .filter(upcomingItem =>
                 !existingItems.some(item =>
@@ -563,7 +563,7 @@ function renderRecentContent({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
             {recentItems
               .filter(recentItem =>
                 !existingItems.some(item =>

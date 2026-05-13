@@ -10,7 +10,6 @@ import {
   Shield,
   HelpCircle,
 } from "lucide-react"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { useTranslation } from "react-i18next"
 
 interface SettingsMenuProps {
@@ -68,37 +67,33 @@ export function SettingsMenu({ activeSection, onSectionChange }: SettingsMenuPro
   const { t } = useTranslation('settings')
 
   return (
-    <div className="w-64 border-r bg-gray-50/50 dark:bg-gray-900/50">
-      <ScrollArea className="h-full">
-        <div className="p-4 space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon
-            const isActive = activeSection === item.id
+    <div className="sm:w-64 border-b sm:border-r bg-gray-50/50 dark:bg-gray-900/50 max-sm:overflow-visible overflow-x-auto sm:overflow-x-visible">
+      <div className="flex flex-col p-2 sm:p-4 gap-1 sm:space-y-1 sm:w-auto">
+        {menuItems.map((item) => {
+          const Icon = item.icon
+          const isActive = activeSection === item.id
 
-            return (
-              <button
-                key={item.id}
-                onClick={() => onSectionChange(item.id)}
-                className={`
-                  w-full flex items-start space-x-3 p-3 rounded-lg text-left transition-colors
-                  ${isActive
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 ring-1 ring-transparent'
-                  }
-                `}
-              >
-                <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{t(item.labelKey)}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {t(item.descKey)}
-                  </div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </ScrollArea>
+          return (
+            <button
+              key={item.id}
+              onClick={() => onSectionChange(item.id)}
+              className={`
+                flex items-center gap-2 sm:gap-3 p-3 sm:p-3 rounded-lg text-left transition-colors w-full
+                ${isActive
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 ring-1 ring-transparent'
+                }
+              `}
+            >
+              <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`} />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">{t(item.labelKey)}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500 truncate hidden sm:block">{t(item.descKey)}</div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

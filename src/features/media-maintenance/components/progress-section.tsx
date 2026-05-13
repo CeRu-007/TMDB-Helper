@@ -94,14 +94,14 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
   return (
     <div className="space-y-6">
       {/* 统计卡片 */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <PlayCircle className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('inProgress')}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <PlayCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{t('inProgress')}</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {ongoingItems.length}
                 </p>
               </div>
@@ -110,12 +110,12 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('completed')}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{t('completed')}</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {completedItems.length}
                 </p>
               </div>
@@ -124,12 +124,12 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <Star className="h-5 w-5 text-yellow-600" />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('total')}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <Star className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{t('total')}</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {totalItems}
                 </p>
               </div>
@@ -138,10 +138,10 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="space-y-2">
+          <CardContent className="p-3 md:p-4">
+            <div className="space-y-1 md:space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('completionRate')}</p>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{t('completionRate')}</p>
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {completionRate.toFixed(1)}%
                 </p>
@@ -154,12 +154,12 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
 
       {/* 进度标签页 */}
       <Tabs defaultValue="ongoing">
-        <TabsList>
-          <TabsTrigger value="ongoing" className="flex items-center space-x-2">
+        <TabsList className="overflow-x-auto flex-nowrap scrollbar-hide w-full">
+          <TabsTrigger value="ongoing" className="flex items-center space-x-2 flex-shrink-0 whitespace-nowrap">
             <PlayCircle className="h-4 w-4" />
             <span>进行中 ({ongoingItems.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="flex items-center space-x-2">
+          <TabsTrigger value="completed" className="flex items-center space-x-2 flex-shrink-0 whitespace-nowrap">
             <CheckCircle2 className="h-4 w-4" />
             <span>已完成 ({completedItems.length})</span>
           </TabsTrigger>

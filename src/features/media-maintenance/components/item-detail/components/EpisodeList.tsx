@@ -282,9 +282,9 @@ export function EpisodeList({
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 md:p-6">
         {selectedSeason && currentSeason ? (
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             {/* 简洁的输入框 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -298,8 +298,8 @@ export function EpisodeList({
                     onChange={handleInputChange}
                     onBlur={handleInputBlur}
                     onKeyDown={handleKeyDown}
-                    placeholder={`0-${currentSeason.totalEpisodes}`}
-                    className="h-9 w-28 pr-9 focus:outline-none focus-visible:ring-0 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      placeholder={`0-${currentSeason.totalEpisodes}`}
+                    className="h-9 w-20 md:w-28 pr-9 focus:outline-none focus-visible:ring-0 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
                     <button

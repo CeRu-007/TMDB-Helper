@@ -212,7 +212,7 @@ def fixed_episode_comparison(episoideID, episoideNumber):
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-full sm:max-w-4xl max-h-full sm:max-h-[90vh] sm:rounded-lg rounded-none flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Wrench className="h-5 w-5" />

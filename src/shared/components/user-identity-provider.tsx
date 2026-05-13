@@ -289,11 +289,13 @@ export function UserIdentityProvider({ children }: { children: ReactNode }) {
 export function UserAvatar({
   onShowImportDialog,
   onShowExportDialog,
-  onShowDashboard
+  onShowDashboard,
+  hideNameOnMobile
 }: {
   onShowImportDialog?: () => void
   onShowExportDialog?: () => void
   onShowDashboard?: () => void
+  hideNameOnMobile?: boolean
 } = {}) {
   const { userInfo, isLoading } = useUser()
   const [showDropdown, setShowDropdown] = useState(false)
@@ -355,10 +357,10 @@ export function UserAvatar({
           displayName={userInfo.displayName}
           className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
         />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
+        <span className={`text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate ${hideNameOnMobile ? 'hidden md:inline' : ''}`}>
           {userInfo.displayName}
         </span>
-        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''} ${hideNameOnMobile ? 'hidden md:block' : ''}`} />
       </button>
 
       {/* 下拉菜单 */}

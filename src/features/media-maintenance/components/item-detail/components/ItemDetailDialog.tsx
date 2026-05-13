@@ -24,6 +24,7 @@ import {
   ArrowRightCircle,
   RefreshCw,
   Clock,
+  ChevronDown,
 } from "lucide-react"
 import type { TMDBItem, Episode, Season } from "@/types/tmdb-item"
 import { cn } from "@/lib/utils"
@@ -131,6 +132,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
   const [selectedSeason, setSelectedSeason] = useState<number | undefined>(undefined)
   const [customSeasonNumber, setCustomSeasonNumber] = useState(1)
+  const [mobileInfoExpanded, setMobileInfoExpanded] = useState(false)
 
   useItemImagesPreloader(item)
 
@@ -796,7 +798,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
           className={cn(
             displayMode === 'inline'
               ? "absolute rounded-none max-w-none h-[100vh] bg-transparent border-none overscroll-none touch-none"
-              : "max-w-7xl h-[85vh] overflow-hidden p-0 bg-transparent border-none"
+              : "w-screen h-screen md:max-w-7xl md:h-[85vh] overflow-hidden p-0 bg-transparent border-none"
           )}
           style={displayMode === 'inline' ? {
             left: 'var(--dialog-left, 0px)',
@@ -839,10 +841,10 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
           {/* 内容层 */}
           <div className="relative z-10 h-full flex flex-col overflow-hidden overscroll-none" ref={contentRef}>
-            <DialogHeader className="p-6 pb-2 flex flex-row items-start justify-between">
-              <div className="flex-1 pr-4">
-                <DialogTitle className="text-xl flex items-center">
-                  <Tv className="mr-2 h-5 w-5" />
+            <DialogHeader className="p-3 md:p-6 md:pb-2 flex flex-row items-start justify-between">
+                <div className="flex-1 pr-2 md:pr-4 min-w-0">
+                <DialogTitle className="text-base md:text-xl flex items-center flex-wrap">
+                  <Tv className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5" />
                   {localItem.logoUrl ? (
                     <div className="h-10 max-w-[200px] flex items-center">
                       <CachedImage
@@ -901,11 +903,11 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 pr-2">
+              <div className="flex items-center space-x-1 md:space-x-2 pr-2">
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 transition-transform hover:scale-110"
+                  className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
                   title={t("refreshTmdbData")}
                   onClick={refreshSeasonFromTMDB}
                   disabled={isRefreshingTMDBData}
@@ -920,7 +922,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 transition-transform hover:scale-110"
+                    className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
                     title={t("viewOnTmdb")}
                     onClick={() => window.open(localItem.tmdbUrl, "_blank")}
                   >
@@ -931,7 +933,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 transition-transform hover:scale-110"
+                    className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
                     title={t("edit")}
                     onClick={() => setEditing(true)}
                   >
@@ -941,7 +943,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 transition-transform hover:scale-110"
+                    className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
                     title={t("save")}
                     onClick={handleSaveEdit}
                     disabled={isSaving}
@@ -957,7 +959,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive transition-transform hover:scale-110"
+                    className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 text-destructive hover:text-destructive transition-transform hover:scale-110"
                     title={t("delete")}
                     onClick={() => setShowDeleteDialog(true)}
                   >
@@ -967,7 +969,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 transition-transform hover:scale-110"
+                  className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
                   title={displayMode === 'inline' ? t("back") : t("close")}
                   onClick={() => onOpenChange(false)}
                 >
@@ -977,13 +979,13 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
             </DialogHeader>
 
             {/* 网格布局 */}
-            <div className="p-4 pt-0 grid grid-cols-4 gap-6 flex-1 overflow-hidden min-h-0">
+            <div className="p-2 md:p-4 md:pt-0 grid grid-cols-1 md:grid-cols-4 max-md:grid-rows-[auto_minmax(0,1fr)] gap-2 md:gap-6 flex-1 overflow-hidden min-h-0">
               {/* 左侧：海报区域 */}
-              <div className="col-span-1 max-w-full overflow-hidden flex flex-col min-h-0">
+              <div className="flex col-span-1 max-w-full overflow-hidden flex-col min-h-0">
                 <div className="flex-1 flex flex-col pr-2 min-h-0">
                   {/* 海报区域 - 编辑模式下隐藏 */}
                   {!editing && (
-                    <div className="rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 flex items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
+                    <div className="hidden md:flex rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
                       {localItem.posterUrl ? (
                         <CachedImage
                           src={localItem.posterUrl}
@@ -1166,35 +1168,57 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       </ScrollArea>
                     </div>
                   ) : (
-                    <div className="w-full rounded-lg backdrop-blur-md bg-background/30 p-3 flex-1 overflow-hidden transition-all duration-300 hover:shadow-lg">
-                      <ScrollArea className="h-full">
-                        <div className="flex flex-col min-h-full pr-2">
-                          <MediaInfoCard item={localItem} />
-                        </div>
-                      </ScrollArea>
+                    <div className="w-full rounded-lg backdrop-blur-md bg-background/30 overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col flex-1 min-h-0">
+                      {/* 移动端：折叠式信息区 */}
+                      <div className="md:hidden flex flex-col flex-1 min-h-0">
+                        <button
+                          onClick={() => setMobileInfoExpanded(!mobileInfoExpanded)}
+                          className="w-full flex items-center justify-between p-2 hover:bg-background/20 transition-colors flex-shrink-0"
+                        >
+                          <span className="text-xs text-muted-foreground font-medium">
+                            {mobileInfoExpanded ? '收起信息' : '平台与简介'}
+                          </span>
+                          <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${mobileInfoExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+                        {mobileInfoExpanded && (
+                          <div className="px-3 pb-3 flex-1 overflow-hidden">
+                            <ScrollArea className="h-full">
+                              <MediaInfoCard item={localItem} />
+                            </ScrollArea>
+                          </div>
+                        )}
+                      </div>
+                      {/* 桌面端：始终展开 */}
+                      <div className="hidden md:flex flex-col flex-1 min-h-0 p-3">
+                        <ScrollArea className="h-full">
+                          <div className="flex flex-col pr-2">
+                            <MediaInfoCard item={localItem} />
+                          </div>
+                        </ScrollArea>
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* 右侧：内容区域 */}
-              <div className="col-span-3 flex flex-col min-h-0 overflow-hidden">
+              <div className="md:col-span-3 flex flex-col min-h-0 overflow-hidden">
                 {/* 操作按钮 */}
                 <div className="flex flex-wrap gap-2 mb-3 items-center">
                 </div>
 
                 {/* 标签页切换 */}
                 <Tabs value={detailTab} onValueChange={setDetailTab} className="flex-1 flex flex-col min-h-0">
-                  <TabsList className="grid w-full grid-cols-3 mb-3">
-                    <TabsTrigger value="details" className="flex items-center transition-all duration-300">
+                  <TabsList className="w-full mb-2 md:mb-3 overflow-x-auto flex-nowrap scrollbar-hide md:grid md:grid-cols-3">
+                    <TabsTrigger value="details" className="flex items-center flex-shrink-0 whitespace-nowrap transition-all duration-300">
                       <Info className="h-4 w-4 mr-2" />
                       {t("details")}
                     </TabsTrigger>
-                    <TabsTrigger value="integration" className="flex items-center transition-all duration-300">
+                    <TabsTrigger value="integration" className="flex items-center flex-shrink-0 whitespace-nowrap transition-all duration-300">
                       <Terminal className="h-4 w-4 mr-2" />
                       {t("integrationTools")}
                     </TabsTrigger>
-                    <TabsTrigger value="schedule" className="flex items-center transition-all duration-300">
+                    <TabsTrigger value="schedule" className="flex items-center flex-shrink-0 whitespace-nowrap transition-all duration-300">
                       <Clock className="h-4 w-4 mr-2" />
                       {tSchedule("scheduleManagement")}
                     </TabsTrigger>

@@ -1,10 +1,12 @@
 import React from 'react'
 import { Button } from "@/shared/components/ui/button"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { Sheet, SheetContent } from "@/shared/components/ui/sheet"
 import { MessageSquare, PanelLeft, Trash2, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ChatHistory } from "@/types/ai-chat"
 import { formatChatDate, truncateText } from "@/lib/utils/ai-chat-helpers"
+import { useMobile } from "@/shared/hooks/use-mobile"
 
 interface ChatSidebarProps {
   chatHistories: ChatHistory[]
@@ -16,20 +18,23 @@ interface ChatSidebarProps {
   onDeleteChat: (chatId: string) => void
 }
 
-export function ChatSidebar({
+function SidebarContent({
   chatHistories,
   currentChatId,
-  isSidebarCollapsed,
   onToggleSidebar,
   onCreateNewChat,
   onSwitchChat,
   onDeleteChat
-}: ChatSidebarProps) {
+}: {
+  chatHistories: ChatHistory[]
+  currentChatId: string | null
+  onToggleSidebar: () => void
+  onCreateNewChat: () => void
+  onSwitchChat: (chatId: string) => void
+  onDeleteChat: (chatId: string) => void
+}) {
   return (
-    <div className={cn(
-      "bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300",
-      isSidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-64 opacity-100"
-    )}>
+    <>
       <div className="p-3 flex items-center gap-2">
         <Button
           onClick={onToggleSidebar}
@@ -101,6 +106,53 @@ export function ChatSidebar({
           )}
         </div>
       </ScrollArea>
+    </>
+  )
+}
+
+export function ChatSidebar({
+  chatHistories,
+  currentChatId,
+  isSidebarCollapsed,
+  onToggleSidebar,
+  onCreateNewChat,
+  onSwitchChat,
+  onDeleteChat
+}: ChatSidebarProps) {
+  const isMobile = useMobile()
+
+  if (isMobile) {
+    return (
+      <Sheet open={!isSidebarCollapsed} onOpenChange={(open) => { if (!open) onToggleSidebar() }}>
+        <SheetContent side="left" className="w-72 p-0 [&>button:last-child]:hidden">
+          <div className="flex flex-col h-full">
+            <SidebarContent
+              chatHistories={chatHistories}
+              currentChatId={currentChatId}
+              onToggleSidebar={onToggleSidebar}
+              onCreateNewChat={onCreateNewChat}
+              onSwitchChat={onSwitchChat}
+              onDeleteChat={onDeleteChat}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  return (
+    <div className={cn(
+      "bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300",
+      isSidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-64 opacity-100"
+    )}>
+      <SidebarContent
+        chatHistories={chatHistories}
+        currentChatId={currentChatId}
+        onToggleSidebar={onToggleSidebar}
+        onCreateNewChat={onCreateNewChat}
+        onSwitchChat={onSwitchChat}
+        onDeleteChat={onDeleteChat}
+      />
     </div>
   )
 }

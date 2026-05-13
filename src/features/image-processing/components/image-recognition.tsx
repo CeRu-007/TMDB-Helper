@@ -309,10 +309,10 @@ export function ImageRecognition() {
   }, [analysisResult, selectedDatabase, sortBy])
 
   return (
-    <div className="h-[calc(100vh-3rem)] flex flex-col p-6">
-      <div className="flex-1 flex gap-6">
+    <div className="min-h-screen md:min-h-0 md:h-[calc(100vh-3rem)] flex flex-col p-4 md:p-6 overflow-x-hidden">
+      <div className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6">
         {/* 左侧区域 - 占用3/5宽度，分为上下两部分 */}
-        <div className="flex-1 flex flex-col gap-6" style={{ flex: '3' }}>
+        <div className="w-full flex flex-col gap-4 md:gap-6 md:flex-[3]">
           {/* 左上：上传区域 */}
           <Card className="flex-shrink-0">
             <CardHeader>
@@ -324,7 +324,7 @@ export function ImageRecognition() {
             <CardContent className="space-y-4">
               <div
                 className={cn(
-                  "border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors h-48 flex flex-col justify-center",
+                  "border-2 border-dashed rounded-lg p-6 md:p-12 text-center cursor-pointer transition-colors min-h-[200px] md:h-48 flex flex-col justify-center",
                   uploadedImage
                     ? "border-green-300 bg-green-50 dark:bg-green-900/20"
                     : "border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500"
@@ -333,11 +333,11 @@ export function ImageRecognition() {
               >
                 {uploadedImage ? (
                   <div className="space-y-2 flex flex-col items-center">
-                    <div className="relative w-24 h-24 rounded-lg overflow-hidden shadow-lg flex-shrink-0">
+                    <div className="relative w-full max-w-[160px] md:max-w-[96px] aspect-square rounded-lg overflow-hidden shadow-lg flex-shrink-0">
                       <img
                         src={uploadedImage}
                         alt="Uploaded"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover max-w-full"
                       />
                     </div>
                     <div className="space-y-1 text-center">
@@ -379,7 +379,7 @@ export function ImageRecognition() {
               <Button
                 onClick={startAnalysis}
                 disabled={!uploadedImage || isAnalyzing}
-                className="w-full h-12 text-lg"
+                className="w-full h-12 text-lg min-w-[44px]"
               >
                 {isAnalyzing ? (
                   <>
@@ -415,7 +415,7 @@ export function ImageRecognition() {
           </Card>
 
           {/* 左下：图像特征提取区域 */}
-          <Card className="h-full flex flex-col">
+          <Card className="md:h-full flex flex-col">
             <CardHeader className="pb-3 flex-shrink-0">
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -506,7 +506,7 @@ export function ImageRecognition() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 px-3 text-xs"
+                        className="max-sm:min-h-[44px] max-sm:min-w-[44px] h-7 px-3 text-xs"
                         onClick={() => {
                           // 查看全部相似图片的逻辑
                         }}
@@ -540,7 +540,7 @@ export function ImageRecognition() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowAllSimilarImages(true)}
-                          className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                          className="max-sm:min-h-[44px] max-sm:min-w-[44px] text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                         >
                           {t("imageRecognition.loadMore", { count: similarImages.length - 8 })}
                         </Button>
@@ -554,7 +554,7 @@ export function ImageRecognition() {
         </div>
 
         {/* 右侧：结果展示区域 - 占用2/5宽度 */}
-        <div className="w-80 flex-shrink-0" style={{ flex: '2' }}>
+        <div className="w-full md:w-80 flex-shrink-0">
           <Card className="h-full flex flex-col">
             <CardHeader className="flex-shrink-0">
               <div className="flex items-center justify-between">
@@ -591,7 +591,7 @@ export function ImageRecognition() {
               <div 
                 className="h-full overflow-y-auto"
                 style={{ 
-                  height: 'calc(100vh - 12rem)',
+                  maxHeight: 'calc(100vh - 12rem)',
                   scrollbarWidth: 'none', 
                   msOverflowStyle: 'none',
                   WebkitOverflowScrolling: 'touch'
@@ -743,9 +743,9 @@ export function ImageRecognition() {
                           variant="outline"
                           onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                           disabled={currentPage === 1}
-                          className="h-7 px-2"
+                          className="max-sm:min-h-[44px] max-sm:min-w-[44px] h-7 px-2"
                         >
-                          <ChevronLeft className="h-3 w-3" />
+                          <ChevronLeft className="h-3" />
                         </Button>
                         
                         <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -757,9 +757,9 @@ export function ImageRecognition() {
                           variant="outline"
                           onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                           disabled={currentPage === totalPages}
-                          className="h-7 px-2"
+                          className="max-sm:min-h-[44px] max-sm:min-w-[44px] h-7 px-2"
                         >
-                          <ChevronRight className="h-3 w-3" />
+                          <ChevronRight className="h-3" />
                         </Button>
                       </div>
                     )}

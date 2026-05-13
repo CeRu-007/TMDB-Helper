@@ -258,7 +258,7 @@ export function ImageCropper() {
       {!image ? (
         <div className="h-full flex items-center justify-center p-8">
           <div
-            className="w-full max-w-lg border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center hover:border-primary transition-colors cursor-pointer bg-white"
+            className="w-full max-w-lg border-2 border-dashed border-gray-300 rounded-2xl p-6 sm:p-12 text-center hover:border-primary transition-colors cursor-pointer bg-white"
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
             onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleUpload(e.dataTransfer.files) }}
@@ -283,9 +283,9 @@ export function ImageCropper() {
           </div>
         </div>
       ) : (
-        <div className="h-full flex min-h-0">
+        <div className="h-full flex flex-col md:flex-row min-h-0">
           {/* Left Sidebar */}
-          <aside className="w-64 shrink-0 bg-white border-r flex flex-col overflow-y-auto">
+          <aside className="w-full md:w-64 shrink-0 bg-white border-b md:border-b-0 md:border-r flex flex-col overflow-y-auto max-h-[40vh] md:max-h-none">
             <div className="p-4 space-y-5">
               {/* File info + thumbnails */}
               <div>
@@ -311,15 +311,15 @@ export function ImageCropper() {
               {/* Aspect Ratio */}
               <div>
                 <h4 className="text-xs text-gray-500 mb-2 font-medium">裁切比例</h4>
-                <div className="space-y-1">
+                <div className="flex md:flex-col gap-1 overflow-x-auto flex-nowrap scrollbar-hide pb-0.5 md:pb-0">
                   {ASPECT_RATIOS.map((r) => (
                     <button
                       key={r.key}
                       onClick={() => handleAspectRatioChange(r.key)}
-                      className={`w-full text-left text-sm px-3 py-2 rounded-md transition-colors ${
+                      className={`shrink-0 md:w-full text-sm px-3 py-1.5 md:py-2 rounded-full md:rounded-md transition-colors whitespace-nowrap ${
                         aspectRatio === r.key
                           ? "bg-blue-500 text-white font-medium"
-                          : "text-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/40"
+                          : "bg-gray-100 md:bg-transparent text-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/40"
                       }`}
                     >
                       {r.label}
@@ -363,7 +363,7 @@ export function ImageCropper() {
               {/* TMDB Presets */}
               <div>
                 <h4 className="text-xs text-gray-500 mb-2 font-medium">TMDB 推荐尺寸</h4>
-                <div className="space-y-1">
+                <div className="grid grid-cols-2 md:grid-cols-1 gap-1">
                   {TMDB_PRESETS[aspectRatio].map((p) => {
                     const isActive = outW === p.w && outH === p.h
                     return (
@@ -401,7 +401,7 @@ export function ImageCropper() {
                   className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-500"
                 />
                 <Button
-                  className="w-full h-9"
+                  className="w-full min-h-[44px] md:h-9"
                   size="default"
                   onClick={handleDownload}
                   disabled={isProcessing}
@@ -415,7 +415,7 @@ export function ImageCropper() {
                 </Button>
                 {images.length > 1 && (
                   <Button
-                    className="w-full h-9"
+                    className="w-full min-h-[44px] md:h-9"
                     variant="outline"
                     size="default"
                     onClick={handleDownloadAll}

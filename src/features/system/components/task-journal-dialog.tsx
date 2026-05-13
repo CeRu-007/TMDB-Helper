@@ -218,8 +218,8 @@ export function TaskJournalDialog({ open, onOpenChange }: TaskJournalDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-2">
+      <DialogContent className="w-full sm:max-w-2xl max-h-full sm:max-h-[85vh] sm:rounded-lg rounded-none flex flex-col p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
             {t("title")}
@@ -234,7 +234,7 @@ export function TaskJournalDialog({ open, onOpenChange }: TaskJournalDialogProps
           </DialogDescription>
         </DialogHeader>
 
-        <div className="px-6 pb-2 flex items-center gap-3">
+        <div className="px-4 sm:px-6 pb-2 flex items-center gap-2 sm:gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <Input
@@ -284,7 +284,7 @@ export function TaskJournalDialog({ open, onOpenChange }: TaskJournalDialogProps
           )}
         </div>
 
-        <Tabs value={statusFilter} onValueChange={setStatusFilter} className="flex-1 flex flex-col min-h-0 px-6">
+        <Tabs value={statusFilter} onValueChange={setStatusFilter} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           <TabsList className="w-full justify-start h-8">
             <TabsTrigger value="all" className="text-xs h-6 px-3">
               {t("all")}

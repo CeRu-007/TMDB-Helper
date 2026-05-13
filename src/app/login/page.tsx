@@ -159,8 +159,8 @@ export default function LoginPage() {
 
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl mb-4 overflow-hidden">
+          <div className="text-center mb-6 md:mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-xl mb-3 md:mb-4 overflow-hidden">
               <Image
                 src="/images/tmdb-helper-logo-new.png"
                 alt="TMDB Helper Logo"
@@ -169,7 +169,7 @@ export default function LoginPage() {
                 className="w-full h-full object-contain"
               />
             </div>
-            <h1 className="text-2xl font-light tracking-wide text-slate-800 dark:text-slate-100 mb-2">
+            <h1 className="text-xl md:text-2xl font-light tracking-wide text-slate-800 dark:text-slate-100 mb-1 md:mb-2">
               TMDB Helper
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -177,9 +177,9 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className="glass-card rounded-2xl p-8 shadow-xl">
-              <div className="mb-6">
-                <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-1">
+          <div className="glass-card rounded-2xl p-6 md:p-8 shadow-xl">
+              <div className="mb-4 md:mb-6">
+                <h2 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-1">
                   {mode === 'login' ? '欢迎回来' : '创建账户'}
                 </h2>
                 <p className="text-slate-600 dark:text-slate-400 text-sm">
@@ -189,7 +189,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-5">
+              <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-4 md:space-y-5">
                 {error && (
                   <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
                     <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -378,14 +378,14 @@ export default function LoginPage() {
                       setError('')
                       setConfirmPassword('')
                     }}
-                    className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                    className="w-full md:w-auto text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                     disabled={isLoading}
                   >
                     {mode === 'login' ? '没有账户？点击注册' : '已有账户？点击登录'}
                   </button>
                 </div>
 
-              <div className="mt-6 text-center">
+              <div className="mt-4 md:mt-6 text-center">
                 <p className="text-slate-500 dark:text-slate-400 text-xs flex items-center justify-center gap-1">
                   <Film className="h-3 w-3" />
                   Powered by TMDB API
@@ -393,7 +393,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-          <p className="text-center text-slate-500 dark:text-slate-400 text-xs mt-6">
+          <p className="text-center text-slate-500 dark:text-slate-400 text-xs mt-4 md:mt-6">
             © 2024 TMDB Helper. All rights reserved.
           </p>
         </div>

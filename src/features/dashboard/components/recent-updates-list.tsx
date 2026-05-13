@@ -42,8 +42,8 @@ export function RecentUpdatesList({ items }: RecentUpdatesListProps) {
   const { t } = useTranslation('dashboard')
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-5">
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4 md:p-5">
+      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 md:mb-4">
         {t('recentUpdates')}
       </h3>
       {items.length === 0 ? (

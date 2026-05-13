@@ -30,7 +30,13 @@ export function ScheduleDetailPanel({
   }
 
   return (
-    <div className="border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 w-80 flex flex-col overflow-hidden">
+    <>
+      {/* Mobile backdrop */}
+      <div
+        className="hidden max-sm:block fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 w-80 max-sm:w-full max-sm:fixed max-sm:inset-y-0 max-sm:right-0 max-sm:z-50 flex flex-col overflow-hidden max-sm:border-l-0 max-sm:shadow-2xl">
       <div className="relative aspect-video bg-gray-100 dark:bg-gray-700/50 flex-shrink-0">
         <ScheduleImage
           src={episode.cover}
@@ -150,5 +156,6 @@ export function ScheduleDetailPanel({
         </div>
       </ScrollArea>
     </div>
+    </>
   )
 }
