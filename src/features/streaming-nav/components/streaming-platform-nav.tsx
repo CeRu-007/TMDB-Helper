@@ -323,7 +323,7 @@ function StreamingPlatformNav(): JSX.Element {
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto mb-8">
           <div className="relative mb-6">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 z-[1] pointer-events-none">
               <Search className="w-5 h-5" />
             </div>
             <Input
