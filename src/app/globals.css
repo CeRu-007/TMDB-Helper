@@ -7,6 +7,9 @@
 @import '../styles/animations.css';
 @import '../styles/schedule-styles.css';
 
+/* Inter 字体（自托管，避免 Dev 模式访问 Google Fonts CDN 被阻塞） */
+@import '@fontsource/inter/latin.css';
+
 /* Line clamp utility */
 .line-clamp-2 {
   display: -webkit-box;
@@ -183,6 +186,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
   }
 }
 

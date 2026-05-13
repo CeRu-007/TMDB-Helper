@@ -1,16 +1,9 @@
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
 import type React from "react"
 import MidLayout from "./mid-layout"
 import Script from "next/script"
 import { ElectronClassProvider } from "./electron-class-provider"
-
-const inter = Inter({ 
-  subsets: ["latin"],
-  display: 'swap',
-  preload: false
-})
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -36,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body>
         <ElectronClassProvider>
           <MidLayout>{children}</MidLayout>
         </ElectronClassProvider>
