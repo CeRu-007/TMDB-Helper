@@ -67,23 +67,11 @@ export default function ExportDataDialog({
         return;
       }
 
-      const result = await exportData();
-
-      if (!result || result.length === 0) {
-        throw new Error('没有可导出的数据');
-      }
-
-      const filename = `tmdb-helper-backup-${new Date().toISOString().split('T')[0]}.json`;
-      const data = JSON.stringify({
-        items: result,
-        version: '2.0.0',
-        exportDate: new Date().toISOString(),
-      }, null, 2);
-      downloadFile(data, filename, 'application/json');
+      await exportData();
 
       toast({
         title: '导出成功',
-        description: `已导出 ${result.length} 个项目`,
+        description: `已导出 ${items.length} 个项目`,
         duration: 3000,
       });
 
