@@ -978,42 +978,44 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
-          {/* 移动端：菜单视图 */}
-          <div className={`${isMobile && !showMobileMenu ? 'hidden' : ''} sm:block`}>
+        <div className="flex flex-col sm:flex-row overflow-hidden max-sm:flex-1 h-[calc(90vh-120px)]">
+          {/* 设置左侧菜单 - 桌面端始终显示，移动端条件显示 */}
+          {(!isMobile || showMobileMenu) && (
             <SettingsMenu
               activeSection={activeSection}
               onSectionChange={handleSectionChange}
             />
-          </div>
+          )}
 
-          {/* 移动端：面板视图（含底部按钮） */}
-          <div className={`${isMobile && showMobileMenu ? 'hidden' : ''} sm:block flex-1 flex flex-col`}>
-            <ScrollArea className="flex-1">
-              <div className="p-4 max-sm:p-3 sm:p-6">
-                {renderActivePanel()}
-              </div>
-            </ScrollArea>
+          {/* 面板内容 - 桌面端始终显示，移动端条件显示 */}
+          {(!isMobile || !showMobileMenu) && (
+            <div className="flex-1 flex flex-col">
+              <ScrollArea className="flex-1">
+                <div className="p-6">
+                  {renderActivePanel()}
+                </div>
+              </ScrollArea>
 
-            {/* 底部操作按钮 */}
-            <div className="border-t p-3 sm:p-4 bg-gray-50/50 dark:bg-gray-900/50">
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={handleCancel} disabled={saveStatus === "saving"}>
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={saveStatus === "saving"}
-                  className={saveStatus === "success" ? "bg-green-600 hover:bg-green-700" : ""}
-                >
-                  {saveStatus === "saving" && (
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-                  )}
-                  {saveStatus === "success" ? t("common.saved") : saveStatus === "saving" ? t("common.saving") : t("common.save")}
-                </Button>
+              {/* 底部操作按钮 */}
+              <div className="border-t p-4 bg-gray-50/50 dark:bg-gray-900/50">
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={handleCancel} disabled={saveStatus === "saving"}>
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saveStatus === "saving"}
+                    className={saveStatus === "success" ? "bg-green-600 hover:bg-green-700" : ""}
+                  >
+                    {saveStatus === "saving" && (
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                    )}
+                    {saveStatus === "success" ? t("common.saved") : saveStatus === "saving" ? t("common.saving") : t("common.save")}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
