@@ -8,8 +8,8 @@ import { Input } from '@/shared/components/ui/input';
 import PlatformLogo from './platform-logo';
 import SmartTooltip from './smart-tooltip';
 import {
+  platforms as allPlatforms,
   categories,
-  getFilteredPlatforms,
   type CategoryType,
   type Platform,
 } from '@/lib/media/platform-data';
@@ -31,7 +31,6 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const CATEGORY_ALL = 'all';
 const CATEGORY_MY_FAVORITES = 'myFavorites';
 const CATEGORY_RECENTLY_USED = 'recentlyUsed';
 type ExtendedCategoryType = CategoryType | typeof CATEGORY_MY_FAVORITES | typeof CATEGORY_RECENTLY_USED;
@@ -147,37 +146,53 @@ function SortablePlatformCard({
   );
 }
 
-function loadStringArrayFromStorage(key: string): string[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-  const saved = localStorage.getItem(key);
-  if (!saved) {
-    return [];
-  }
-
+/** 从数据库加载偏好设置 */
+async function loadPreferencesFromDB(): Promise<{
+  favorites: string[];
+  recentlyUsed: string[];
+  platformOrder: Platform[];
+}> {
   try {
-    return JSON.parse(saved);
+    const res = await fetch('/api/platform/preferences');
+    if (!res.ok) throw new Error('加载失败');
+    const json = await res.json();
+    const { favorites = [], order = [], recentlyUsed = [] } = json.data ?? {};
+
+    // 按保存的顺序排序平台
+    const sorted = [...allPlatforms];
+    if (order.length > 0) {
+      sorted.sort((a, b) => {
+        const ia = order.indexOf(a.id);
+        const ib = order.indexOf(b.id);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      });
+    }
+
+    return { favorites, recentlyUsed, platformOrder: sorted };
   } catch {
-    return [];
+    // API 不可用时，降级为默认顺序
+    return { favorites: [], recentlyUsed: [], platformOrder: [...allPlatforms] };
   }
 }
 
-function loadPlatformOrder(): Platform[] {
-  if (typeof window === 'undefined') {
-    return getFilteredPlatforms('all');
-  }
-  const savedOrder = localStorage.getItem('platformOrder');
-  if (!savedOrder) {
-    return getFilteredPlatforms('all');
-  }
-
+/** 保存偏好设置到数据库（去重+限制最近使用为10条） */
+async function savePreferencesToDB(prefs: {
+  favorites: string[];
+  recentlyUsed: string[];
+  order: string[];
+}): Promise<void> {
   try {
-    const order = JSON.parse(savedOrder);
-    const allPlatforms = getFilteredPlatforms('all');
-    return allPlatforms.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    await fetch('/api/platform/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        favorites: prefs.favorites,
+        order: prefs.order,
+        recentlyUsed: prefs.recentlyUsed.slice(0, 10),
+      }),
+    });
   } catch {
-    return getFilteredPlatforms('all');
+    // 静默失败，不影响用户操作
   }
 }
 
@@ -189,13 +204,14 @@ function StreamingPlatformNav(): JSX.Element {
   const [recentlyUsed, setRecentlyUsed] = useState<string[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [isDragMode, setIsDragMode] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
 
+  // 初始化：从数据库加载偏好设置
   useEffect(() => {
-    setFavorites(loadStringArrayFromStorage('platformFavorites'));
-    setRecentlyUsed(loadStringArrayFromStorage('platformRecentlyUsed'));
-    setPlatforms(loadPlatformOrder());
-    setIsHydrated(true);
+    loadPreferencesFromDB().then((data) => {
+      setFavorites(data.favorites);
+      setRecentlyUsed(data.recentlyUsed);
+      setPlatforms(data.platformOrder);
+    });
   }, []);
 
   const tMyFavorites = 'myFavorites';
@@ -216,7 +232,11 @@ function StreamingPlatformNav(): JSX.Element {
   function toggleFavorite(platformId: string): void {
     setFavorites((prev) => {
       const newFavorites = prev.includes(platformId) ? prev.filter((id) => id !== platformId) : [...prev, platformId];
-      localStorage.setItem('platformFavorites', JSON.stringify(newFavorites));
+      savePreferencesToDB({
+        favorites: newFavorites,
+        recentlyUsed,
+        order: platforms.map((p) => p.id),
+      });
       return newFavorites;
     });
   }
@@ -224,7 +244,11 @@ function StreamingPlatformNav(): JSX.Element {
   function addToRecentlyUsed(platformId: string): void {
     setRecentlyUsed((prev) => {
       const newRecent = [platformId, ...prev.filter((id) => id !== platformId)].slice(0, 10);
-      localStorage.setItem('platformRecentlyUsed', JSON.stringify(newRecent));
+      savePreferencesToDB({
+        favorites,
+        recentlyUsed: newRecent,
+        order: platforms.map((p) => p.id),
+      });
       return newRecent;
     });
   }
@@ -271,7 +295,11 @@ function StreamingPlatformNav(): JSX.Element {
       const newItems = arrayMove(items, oldIndex, newIndex);
 
       const newOrder = newItems.map((item) => item.id);
-      localStorage.setItem('platformOrder', JSON.stringify(newOrder));
+      savePreferencesToDB({
+        favorites,
+        recentlyUsed,
+        order: newOrder,
+      });
 
       return newItems;
     });

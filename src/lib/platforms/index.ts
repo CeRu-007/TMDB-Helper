@@ -4,4 +4,3 @@ export * from './utils'
 
 // 导出常量数据
 export { platforms, categories, getFilteredPlatforms, getPopularPlatforms, getPlatformsByRegion } from '@/lib/media/platform-data'
-export { streamingPlatforms } from '@/lib/media/streaming-platforms'
