@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
@@ -11,6 +12,7 @@ import type { CategoryType } from './schedule-view'
 import { cn } from '@/lib/utils'
 
 const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const WEEKDAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
 
 interface ScheduleDayViewProps {
   dayData: ScheduleDay
@@ -161,6 +163,7 @@ function ScheduleTimelineItem({
   onToggleFollowing, 
   onClick 
 }: ScheduleTimelineItemProps): React.ReactElement {
+  const { t } = useTranslation('schedule')
   function handleToggleFollowing(e: React.MouseEvent): void {
     e.stopPropagation()
     onToggleFollowing()
