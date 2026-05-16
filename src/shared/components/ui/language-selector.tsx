@@ -19,6 +19,8 @@ export const LANGUAGES: Language[] = [
   // 简体中文
   { name: "简体中文", code: "zh-CN" },
   { name: "繁体中文（台湾）", code: "zh-TW" },
+  { name: "繁体中文（香港）", code: "zh-HK" },
+  { name: "简体中文（新加坡）", code: "zh-SG" },
   { name: "日本語", code: "ja-JP" },
   { name: "한국어", code: "ko-KR" },
   { name: "ภาษาไทย", code: "th-TH" },
