@@ -59,7 +59,7 @@ export const LANGUAGES: Language[] = [
   { name: "עברית", code: "he-IL" },
 ]
 
-const STORAGE_KEY = "tmdb_language"
+const STORAGE_KEY = "tmdb_import_language"
 
 interface LanguageSelectorProps {
   value: string

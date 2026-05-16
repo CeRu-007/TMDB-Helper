@@ -362,6 +362,11 @@ i18n
 export default i18n
 
 export function changeLanguage(language: string) {
+  // 保存语言设置到 localStorage
+  if (typeof window !== "undefined") {
+    localStorage.setItem("tmdb_language", language)
+  }
+
   if (language === "auto") {
     const systemLang = navigator.language || (navigator as any).userLanguage || "zh-CN"
     const mappedLang = mapSystemLanguageToAppLanguage(systemLang)
