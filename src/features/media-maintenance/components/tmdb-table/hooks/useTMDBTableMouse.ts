@@ -8,11 +8,13 @@ import type {
 const LONG_PRESS_DELAY = 200
 
 export function useTMDBTableMouse({
+  activeCell,
   onCellClick,
   onCellDoubleClick,
   onSelectionStart,
   onSelectionChange,
   onSelectionEnd,
+  onShiftSelect,
 }: UseTMDBTableMouseOptions): UseTMDBTableMouseReturn {
   const [isDragging, setIsDragging] = useState(false)
   const [isShiftSelecting, setIsShiftSelecting] = useState(false)
@@ -21,44 +23,65 @@ export function useTMDBTableMouse({
 
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 处理鼠标按下
+  const calculateSelectionArea = useCallback(
+    (start: CellPosition, end: CellPosition): CellPosition[] => {
+      const startRow = Math.min(start.row, end.row)
+      const endRow = Math.max(start.row, end.row)
+      const startCol = Math.min(start.col, end.col)
+      const endCol = Math.max(start.col, end.col)
+
+      const cells: CellPosition[] = []
+      for (let row = startRow; row <= endRow; row++) {
+        for (let col = startCol; col <= endCol; col++) {
+          cells.push({ row, col })
+        }
+      }
+      return cells
+    },
+    []
+  )
+
   const handleMouseDown = useCallback(
     (cell: CellPosition, event: React.MouseEvent) => {
-      // 清除之前的长按定时器
+      if (event.button !== 0) {
+        return
+      }
+
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current)
         longPressTimerRef.current = null
       }
 
-      // 重置拖拽状态
       setCanStartDragging(false)
       setIsDragging(false)
 
-      // 启动长按定时器
+      if (event.shiftKey && activeCell) {
+        event.preventDefault()
+        setIsShiftSelecting(true)
+        const cells = calculateSelectionArea(activeCell, cell)
+        onShiftSelect?.(cells)
+        return
+      }
+
       longPressTimerRef.current = setTimeout(() => {
         setCanStartDragging(true)
         setDragStart(cell)
         onSelectionStart?.(cell)
       }, LONG_PRESS_DELAY)
 
-      // 处理单击
-      if (!event.shiftKey) {
-        onCellClick?.(cell, event)
-      }
+      onCellClick?.(cell, event)
     },
-    [onCellClick, onSelectionStart]
+    [activeCell, calculateSelectionArea, onCellClick, onSelectionStart, onShiftSelect]
   )
 
-  // 处理鼠标移动
   const handleMouseMove = useCallback(
-    (cell: CellPosition, event: React.MouseEvent) => {
+    (cell: CellPosition, _event: React.MouseEvent) => {
       if (!canStartDragging || !dragStart) return
 
       if (!isDragging) {
         setIsDragging(true)
       }
 
-      // 计算选择区域
       const startRow = Math.min(dragStart.row, cell.row)
       const endRow = Math.max(dragStart.row, cell.row)
       const startCol = Math.min(dragStart.col, cell.col)

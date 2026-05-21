@@ -182,6 +182,7 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
     handleMouseUp: handleCellMouseUp,
     handleDoubleClick: handleCellDoubleClick,
   } = useTMDBTableMouse({
+    activeCell,
     onCellClick: (cell, event) => {
       selectCell(cell)
       onSelectionChange?.([cell])
@@ -209,6 +210,10 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
     },
     onSelectionEnd: () => {
       // 结束框选
+    },
+    onShiftSelect: (cells) => {
+      selectCells(cells)
+      onSelectionChange?.(cells)
     },
   })
 
@@ -350,11 +355,16 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
 
   const handleContextMenu = useCallback(
     (row: number, col: number) => {
-      const newSelection: CellPosition[] = [{ row, col }]
+      const isAlreadySelected = selectedCells.some(
+        (cell) => cell.row === row && cell.col === col
+      )
+      if (isAlreadySelected) {
+        return
+      }
       selectCell({ row, col })
-      onSelectionChange?.(newSelection)
+      onSelectionChange?.([{ row, col }])
     },
-    [selectCell, onSelectionChange]
+    [selectedCells, selectCell, onSelectionChange]
   )
 
   const handleCellsUpdate = useCallback(

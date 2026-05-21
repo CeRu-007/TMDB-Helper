@@ -103,11 +103,13 @@ export interface UseTMDBTableKeyboardOptions {
 }
 
 export interface UseTMDBTableMouseOptions {
+  activeCell: CellPosition | null
   onCellClick?: (cell: CellPosition, event: React.MouseEvent) => void
   onCellDoubleClick?: (cell: CellPosition, event: React.MouseEvent) => void
   onSelectionStart?: (cell: CellPosition) => void
   onSelectionChange?: (cells: CellPosition[]) => void
   onSelectionEnd?: () => void
+  onShiftSelect?: (cells: CellPosition[]) => void
 }
 
 export interface UseTMDBTableMouseReturn {
