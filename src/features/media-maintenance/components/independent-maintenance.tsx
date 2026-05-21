@@ -162,7 +162,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
   // 处理季数变化
   const handleSeasonChange = useCallback((season: number) => {
-    if (season > 0) {
+    if (season >= 0) {
       setSelectedSeason(season)
       appendTerminalOutput(`${t("independentPage.tmdbSeason")}: ${t("independentPage.seasonNumber")}${season}${t("independentPage.season")}`, "info")
     }

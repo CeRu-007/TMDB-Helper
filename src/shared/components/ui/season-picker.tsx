@@ -15,7 +15,7 @@ interface SeasonPickerProps {
 
 export function SeasonPicker({
   value,
-  min = 1,
+  min = 0,
   max = 999,
   onChange,
   label,

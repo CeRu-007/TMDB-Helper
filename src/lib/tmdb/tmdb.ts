@@ -282,8 +282,8 @@ export class TMDBService {
 
       // 处理多季数据
       if (tvData.seasons && tvData.seasons.length > 0) {
-        // 过滤掉第0季（通常是特别篇）和无效季
-        const validSeasons = tvData.seasons.filter((season) => season.season_number > 0 && season.episode_count > 0)
+        // 过滤掉无效季（没有剧集的季）
+        const validSeasons = tvData.seasons.filter((season) => season.episode_count > 0)
 
         seasons = validSeasons.map((season) => ({
           seasonNumber: season.season_number,
@@ -292,7 +292,7 @@ export class TMDBService {
           posterUrl: season.poster_path ? `${this.IMAGE_BASE_URL}${season.poster_path}` : undefined,
         }))
 
-        // 重新计算总集数（排除第0季）
+        // 重新计算总集数
         totalEpisodes = seasons.reduce((total, season) => total + season.totalEpisodes, 0)
       }
 

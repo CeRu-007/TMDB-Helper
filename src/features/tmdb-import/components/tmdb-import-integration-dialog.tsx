@@ -84,7 +84,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
         const savedSeason = await ClientConfigManager.getItem(key)
         if (savedSeason) {
           const parsed = parseInt(savedSeason, 10)
-          if (!Number.isNaN(parsed) && parsed > 0) setSelectedSeason(parsed)
+        if (!Number.isNaN(parsed) && parsed >= 0) setSelectedSeason(parsed)
         }
       } catch (e) {
 
