@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback } from "react"
+import React, { useCallback, useState } from "react"
 import { useUploadStore, type FileEntry } from "@/stores/upload-store"
 import { cn } from "@/lib/utils"
 import { CheckCircle2 } from "lucide-react"
@@ -17,6 +17,7 @@ export function ImageThumbnail({ file, size = "md", showInfo = false, onDragStar
   const markAsUploaded = useUploadStore((s) => s.markAsUploaded)
 
   const isUploaded = uploadedPaths.includes(file.relativePath)
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null)
 
   const widthClass = {
     sm: "w-12",
@@ -54,6 +55,10 @@ export function ImageThumbnail({ file, size = "md", showInfo = false, onDragStar
             alt={file.name}
             className="w-full h-auto object-contain max-h-48"
             draggable={false}
+            onLoad={(e) => {
+              const img = e.currentTarget
+              setDimensions({ width: img.naturalWidth, height: img.naturalHeight })
+            }}
           />
         ) : (
           <div className="text-gray-400 text-xs py-4">{file.name.split(".").pop()?.toUpperCase()}</div>
@@ -67,8 +72,13 @@ export function ImageThumbnail({ file, size = "md", showInfo = false, onDragStar
       )}
 
       {showInfo && (
-        <div className="px-1 py-0.5 text-[10px] text-gray-500 dark:text-gray-400 truncate bg-white/80 dark:bg-gray-900/80">
-          {file.name}
+        <div className="px-1 py-0.5 text-[10px] text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-gray-900/80 leading-tight">
+          <div className="truncate">{file.name}</div>
+          {dimensions && (
+            <div className="text-[9px] text-gray-400 dark:text-gray-500">
+              {dimensions.width} × {dimensions.height}
+            </div>
+          )}
         </div>
       )}
     </div>

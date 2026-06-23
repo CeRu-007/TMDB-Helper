@@ -66,7 +66,7 @@ export function DirectoryTreeView() {
           <div className={cn("p-2", colIdx === columns.length - 1 ? "grid grid-cols-2 sm:grid-cols-3 gap-2" : "")}>
             {colIdx === columns.length - 1 ? (
               col.files.length > 0 ? (
-                col.files.map((f) => <ImageThumbnail key={f.id} file={f} />)
+                col.files.map((f) => <ImageThumbnail key={f.id} file={f} showInfo />)
               ) : (
                 col.dirs.length === 0 && (
                   <div className="col-span-full text-center py-8 text-gray-400 text-sm">
