@@ -31,5 +31,10 @@ export {
   useSelectionState,
 } from './ui-store'
 
+// Upload Store
+export {
+  useUploadStore,
+} from './upload-store'
+
 // 向后兼容的 hooks
 export * from './hooks'

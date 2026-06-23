@@ -1,0 +1,21 @@
+{
+  "title": "圖片上傳視窗",
+  "openDirectory": "開啟資料夾",
+  "reopenDirectory": "重新開啟",
+  "lastDirectory": "上次目錄",
+  "noDirectory": "尚未選擇目錄",
+  "selectDirectoryHint": "點擊上方按鈕選擇圖片所在資料夾",
+  "noImages": "此目錄下沒有圖片檔案",
+  "pin": "置頂",
+  "unpin": "取消置頂",
+  "treeLayout": "多列瀏覽",
+  "listLayout": "列表瀏覽",
+  "close": "關閉",
+  "popOut": "在新視窗中開啟",
+  "uploaded": "已上傳",
+  "dragToUpload": "拖拽圖片到目標區域上傳",
+  "uploadedHint": "灰色表示已上傳",
+  "filesCount": "{{count}} 個檔案",
+  "imagesCount": "{{count}} 張圖片",
+  "selectFolder": "選擇圖片資料夾"
+}

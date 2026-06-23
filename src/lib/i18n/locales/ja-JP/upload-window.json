@@ -1,0 +1,21 @@
+{
+  "title": "画像アップロードウィンドウ",
+  "openDirectory": "フォルダを開く",
+  "reopenDirectory": "再開",
+  "lastDirectory": "前回のディレクトリ",
+  "noDirectory": "ディレクトリが選択されていません",
+  "selectDirectoryHint": "上のボタンをクリックして画像フォルダを選択",
+  "noImages": "このディレクトリに画像はありません",
+  "pin": "最前面に表示",
+  "unpin": "固定解除",
+  "treeLayout": "カラム表示",
+  "listLayout": "リスト表示",
+  "close": "閉じる",
+  "popOut": "新しいウィンドウで開く",
+  "uploaded": "アップロード済み",
+  "dragToUpload": "画像をドラッグしてアップロード",
+  "uploadedHint": "グレー表示はアップロード済み",
+  "filesCount": "{{count}} ファイル",
+  "imagesCount": "{{count}} 画像",
+  "selectFolder": "画像フォルダを選択"
+}

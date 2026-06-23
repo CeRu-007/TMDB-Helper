@@ -350,6 +350,7 @@ export function SidebarLayout({
         open={showJournalDialog}
         onOpenChange={(open) => { if (!open) closeJournalDialog() }}
       />
+      <UploadWindow />
     </div>
   )
 }
@@ -359,3 +360,4 @@ import { TMDBGuide } from "@/features/tmdb-import/guide"
 import VideoScreenshot from "@/features/image-processing/components/video-screenshot"
 import { ImageCropper } from "@/features/image-processing/components/image-cropper"
 import { TaskJournalDialog } from "@/features/system/components/task-journal-dialog"
+import { UploadWindow } from "@/features/upload-window/upload-window"

@@ -1,13 +1,14 @@
 import React, { useEffect, useCallback } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { UserAvatar } from "@/shared/components/user-identity-provider"
-import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell, Menu } from "lucide-react"
+import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell, Menu, ImageUp } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import { useTranslation } from "react-i18next"
 import { logger } from "@/lib/utils/logger"
 
 import { useUIStore } from "@/stores/ui-store"
+import { useUploadStore } from "@/stores/upload-store"
 import { realtimeSyncManager } from "@/lib/data/realtime-sync-manager"
 
 interface AppHeaderProps {
@@ -105,6 +106,15 @@ export function AppHeader({
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => useUploadStore.getState().toggleOpen()}
+                  className="flex items-center"
+                  title="图片上传窗口"
+                >
+                  <ImageUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={onShowJournalDialog}
                   className="flex items-center relative"
                   title={t("title", { ns: "journal" })}
@@ -177,6 +187,15 @@ export function AppHeader({
             </div>
           </div>
           <div className="flex items-center space-x-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => useUploadStore.getState().toggleOpen()}
+              className="min-w-[44px] min-h-[44px] p-0"
+              aria-label="图片上传窗口"
+            >
+              <ImageUp className="h-4 w-4" />
+            </Button>
             <Button
               variant="outline"
               size="sm"

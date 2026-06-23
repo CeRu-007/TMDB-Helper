@@ -28,6 +28,7 @@ import zhCN_dataManagement from "./locales/zh-CN/data-management.json"
 import zhCN_ui from "./locales/zh-CN/ui.json"
 import zhCN_journal from "./locales/zh-CN/journal.json"
 import zhCN_dashboard from "./locales/zh-CN/dashboard.json"
+import zhCN_uploadWindow from "./locales/zh-CN/upload-window.json"
 
 import enUS_common from "./locales/en-US/common.json"
 import enUS_nav_maintenance from "./locales/en-US/nav/maintenance.json"
@@ -52,6 +53,7 @@ import enUS_dataManagement from "./locales/en-US/data-management.json"
 import enUS_ui from "./locales/en-US/ui.json"
 import enUS_journal from "./locales/en-US/journal.json"
 import enUS_dashboard from "./locales/en-US/dashboard.json"
+import enUS_uploadWindow from "./locales/en-US/upload-window.json"
 
 import zhTW_common from "./locales/zh-TW/common.json"
 import zhTW_nav_maintenance from "./locales/zh-TW/nav/maintenance.json"
@@ -76,6 +78,7 @@ import zhTW_dataManagement from "./locales/zh-TW/data-management.json"
 import zhTW_ui from "./locales/zh-TW/ui.json"
 import zhTW_journal from "./locales/zh-TW/journal.json"
 import zhTW_dashboard from "./locales/zh-TW/dashboard.json"
+import zhTW_uploadWindow from "./locales/zh-TW/upload-window.json"
 
 import zhHK_common from "./locales/zh-HK/common.json"
 import zhHK_nav_maintenance from "./locales/zh-HK/nav/maintenance.json"
@@ -100,6 +103,7 @@ import zhHK_dataManagement from "./locales/zh-HK/data-management.json"
 import zhHK_ui from "./locales/zh-HK/ui.json"
 import zhHK_journal from "./locales/zh-HK/journal.json"
 import zhHK_dashboard from "./locales/zh-HK/dashboard.json"
+import zhHK_uploadWindow from "./locales/zh-HK/upload-window.json"
 
 import jaJP_common from "./locales/ja-JP/common.json"
 import jaJP_nav_maintenance from "./locales/ja-JP/nav/maintenance.json"
@@ -124,6 +128,7 @@ import jaJP_dataManagement from "./locales/ja-JP/data-management.json"
 import jaJP_ui from "./locales/ja-JP/ui.json"
 import jaJP_journal from "./locales/ja-JP/journal.json"
 import jaJP_dashboard from "./locales/ja-JP/dashboard.json"
+import jaJP_uploadWindow from "./locales/ja-JP/upload-window.json"
 
 import koKR_common from "./locales/ko-KR/common.json"
 import koKR_nav_maintenance from "./locales/ko-KR/nav/maintenance.json"
@@ -148,6 +153,7 @@ import koKR_dataManagement from "./locales/ko-KR/data-management.json"
 import koKR_ui from "./locales/ko-KR/ui.json"
 import koKR_journal from "./locales/ko-KR/journal.json"
 import koKR_dashboard from "./locales/ko-KR/dashboard.json"
+import koKR_uploadWindow from "./locales/ko-KR/upload-window.json"
 
 const resources = {
   "zh-CN": {
@@ -174,6 +180,7 @@ const resources = {
     ui: zhCN_ui,
     journal: zhCN_journal,
     dashboard: zhCN_dashboard,
+    "upload-window": zhCN_uploadWindow,
   },
   "en-US": {
     common: enUS_common,
@@ -199,6 +206,7 @@ const resources = {
     ui: enUS_ui,
     journal: enUS_journal,
     dashboard: enUS_dashboard,
+    "upload-window": enUS_uploadWindow,
   },
   "zh-TW": {
     common: zhTW_common,
@@ -224,6 +232,7 @@ const resources = {
     ui: zhTW_ui,
     journal: zhTW_journal,
     dashboard: zhTW_dashboard,
+    "upload-window": zhTW_uploadWindow,
   },
   "zh-HK": {
     common: zhHK_common,
@@ -249,6 +258,7 @@ const resources = {
     ui: zhHK_ui,
     journal: zhHK_journal,
     dashboard: zhHK_dashboard,
+    "upload-window": zhHK_uploadWindow,
   },
   "ja-JP": {
     common: jaJP_common,
@@ -274,6 +284,7 @@ const resources = {
     ui: jaJP_ui,
     journal: jaJP_journal,
     dashboard: jaJP_dashboard,
+    "upload-window": jaJP_uploadWindow,
   },
   "ko-KR": {
     common: koKR_common,
@@ -299,6 +310,7 @@ const resources = {
     ui: koKR_ui,
     journal: koKR_journal,
     dashboard: koKR_dashboard,
+    "upload-window": koKR_uploadWindow,
   },
 }
 
@@ -350,6 +362,7 @@ i18n
       "ui",
       "journal",
       "dashboard",
+      "upload-window",
     ],
     interpolation: {
       escapeValue: false,
