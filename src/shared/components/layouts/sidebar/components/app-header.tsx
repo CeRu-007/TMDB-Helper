@@ -129,9 +129,8 @@ export function AppHeader({
                     </span>
                   )}
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center space-x-2">
+                <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center" title={t("settings.settings")}>
                   <Settings className="h-4 w-4" />
-                  <span>{t("settings.settings")}</span>
                 </Button>
                 <Button
                   variant="outline"
