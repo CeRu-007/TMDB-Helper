@@ -9,6 +9,7 @@ import { safeJsonParse } from '@/lib/utils'
 
 export interface LayoutPreferences {
   sidebarCollapsed?: boolean
+  collapsedGroups?: string[]
   lastUpdated: string
 }
 
@@ -124,6 +125,10 @@ export class LayoutPreferencesManager {
    */
   static async setSidebarCollapsed(collapsed: boolean): Promise<boolean> {
     return await this.savePreferences({ sidebarCollapsed: collapsed })
+  }
+
+  static async setCollapsedGroups(groups: string[]): Promise<boolean> {
+    return await this.savePreferences({ collapsedGroups: groups })
   }
 
   /**

@@ -19,10 +19,13 @@ import {
   Type,
   CalendarDays,
   Clapperboard,
-  Settings
+  Settings,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/shared/components/ui/button"
+import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
 
 export interface SidebarNavigationProps {
   onMenuSelect: (menuId: string, submenuId?: string) => void
@@ -57,6 +60,28 @@ export function SidebarNavigation({
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null)
   const [submenuHovered, setSubmenuHovered] = useState<boolean>(false)
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(['news', 'content', 'image', 'tools']))
+
+  useEffect(() => {
+    LayoutPreferencesManager.getPreferences().then((prefs) => {
+      if (prefs.collapsedGroups) {
+        setCollapsedGroups(new Set(prefs.collapsedGroups))
+      }
+    })
+  }, [])
+
+  const toggleGroup = useCallback((groupId: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(groupId)) {
+        next.delete(groupId)
+      } else {
+        next.add(groupId)
+      }
+      LayoutPreferencesManager.setCollapsedGroups(Array.from(next))
+      return next
+    })
+  }, [])
 
   const menuGroups: MenuGroup[] = [
     {
@@ -252,36 +277,47 @@ export function SidebarNavigation({
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center space-x-2">
+                  <div
+                    className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    onClick={() => toggleGroup(group.id)}
+                  >
                     {group.icon}
-                    <span>{t(group.titleKey, { ns: group.ns })}</span>
+                    <span className="ml-2">{t(group.titleKey, { ns: group.ns })}</span>
+                    <div className="flex-1"></div>
+                    {collapsedGroups.has(group.id) ? (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    )}
                   </div>
 
-                  <div className="space-y-0.5 pl-2">
-                    {group.items.map((item) => (
-                      <Button
-                        key={item.id}
-                        variant={
-                          activeMenu === group.id && activeSubmenu === item.id
-                            ? "secondary"
-                            : "ghost"
-                        }
-                        size="sm"
-                        className={cn(
-                          "w-full justify-start h-9",
-                          activeMenu === group.id && activeSubmenu === item.id
-                            ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-r-2 border-r-blue-500"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        )}
-                        onClick={() => handleMenuClick(group.id, item.id)}
-                      >
-                        <div className="flex items-center space-x-2">
-                          {item.icon}
-                          <span className="text-sm">{t(item.labelKey, { ns: item.ns })}</span>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
+                  {!collapsedGroups.has(group.id) && (
+                    <div className="space-y-0.5 pl-2">
+                      {group.items.map((item) => (
+                        <Button
+                          key={item.id}
+                          variant={
+                            activeMenu === group.id && activeSubmenu === item.id
+                              ? "secondary"
+                              : "ghost"
+                          }
+                          size="sm"
+                          className={cn(
+                            "w-full justify-start h-9",
+                            activeMenu === group.id && activeSubmenu === item.id
+                              ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-r-2 border-r-blue-500"
+                              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          )}
+                          onClick={() => handleMenuClick(group.id, item.id)}
+                        >
+                          <div className="flex items-center space-x-2">
+                            {item.icon}
+                            <span className="text-sm">{t(item.labelKey, { ns: item.ns })}</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
