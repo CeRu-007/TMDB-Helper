@@ -204,7 +204,7 @@ export function SidebarNavigation({
   return (
     <div
       className={cn(
-        "h-full transition-all duration-300 ease-in-out relative",
+        "h-full transition-all duration-300 ease-in-out relative overflow-hidden",
         collapsed ? "w-16" : "w-64"
       )}
     >
@@ -282,7 +282,7 @@ export function SidebarNavigation({
                     onClick={() => toggleGroup(group.id)}
                   >
                     {group.icon}
-                    <span className="ml-2">{t(group.titleKey, { ns: group.ns })}</span>
+                    <span className="ml-2 truncate">{t(group.titleKey, { ns: group.ns })}</span>
                     <div className="flex-1"></div>
                     {collapsedGroups.has(group.id) ? (
                       <ChevronRight className="h-3.5 w-3.5" />
@@ -312,7 +312,7 @@ export function SidebarNavigation({
                         >
                           <div className="flex items-center space-x-2">
                             {item.icon}
-                            <span className="text-sm">{t(item.labelKey, { ns: item.ns })}</span>
+                            <span className="text-sm truncate">{t(item.labelKey, { ns: item.ns })}</span>
                           </div>
                         </Button>
                       ))}
