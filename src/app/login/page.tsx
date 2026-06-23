@@ -35,6 +35,7 @@ export default function LoginPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [hasAdmin, setHasAdmin] = useState<boolean | null>(null)
 
   const { login, register, isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
@@ -46,31 +47,58 @@ export default function LoginPage() {
   }, [isAuthenticated, authLoading, router])
 
   useEffect(() => {
-    ;(async () => {
-      const res = await fetch('/api/auth/check-admin', {
-        method: 'GET',
-        credentials: 'include'
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.hasAdmin === false) {
-          setMode('register')
+    let cancelled = false
+
+    const init = async () => {
+      let adminExists = true
+
+      try {
+        const res = await fetch('/api/auth/check-admin', {
+          method: 'GET',
+          credentials: 'include'
+        })
+        if (res.ok) {
+          const data = await res.json()
+          adminExists = data.hasAdmin === true
         }
+      } catch {
+        // 检查失败时保守回退到登录模式
+        adminExists = true
       }
-    })()
 
-    ;(async () => {
-      const r = await loadRemember()
-      if (r.username) setUsername(r.username)
-      if (r.remember && r.password) setPassword(r.password)
-      if (r.remember) setRememberMe(true)
+      if (cancelled) return
 
-      const savedUser = await ClientConfigManager.getItem('last_login_username')
-      if (savedUser && !username) setUsername(savedUser)
+      setHasAdmin(adminExists)
 
-      const remember = await ClientConfigManager.getItem('last_login_remember_me')
-      if (remember === '1') setRememberMe(true)
-    })()
+      if (!adminExists) {
+        setMode('register')
+        setPassword('')
+        setConfirmPassword('')
+        setRememberMe(false)
+      }
+
+      // 只有在已有管理员（登录模式有意义）时才回填记住的凭据
+      if (adminExists) {
+        try {
+          const r = await loadRemember()
+          if (r.username) setUsername(r.username)
+          if (r.remember && r.password) setPassword(r.password)
+          if (r.remember) setRememberMe(true)
+
+          const savedUser = await ClientConfigManager.getItem('last_login_username')
+          if (savedUser) setUsername(savedUser)
+
+          const remember = await ClientConfigManager.getItem('last_login_remember_me')
+          if (remember === '1') setRememberMe(true)
+        } catch {}
+      }
+    }
+
+    init()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const passwordStrength = useMemo(() => validatePassword(password), [password])
@@ -145,6 +173,14 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (hasAdmin === null) {
+    return (
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-slate-100"></div>
+      </div>
+    )
   }
 
   return (
@@ -370,20 +406,22 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="mt-4 text-center">
-                <button
-                    type="button"
-                    onClick={() => {
-                      setMode(mode === 'login' ? 'register' : 'login')
-                      setError('')
-                      setConfirmPassword('')
-                    }}
-                    className="w-full md:w-auto text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-                    disabled={isLoading}
-                  >
-                    {mode === 'login' ? '没有账户？点击注册' : '已有账户？点击登录'}
-                  </button>
-                </div>
+              {hasAdmin !== false && (
+                <div className="mt-4 text-center">
+                  <button
+                      type="button"
+                      onClick={() => {
+                        setMode(mode === 'login' ? 'register' : 'login')
+                        setError('')
+                        setConfirmPassword('')
+                      }}
+                      className="w-full md:w-auto text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                      disabled={isLoading}
+                    >
+                      {mode === 'login' ? '没有账户？点击注册' : '已有账户？点击登录'}
+                    </button>
+                  </div>
+              )}
 
               <div className="mt-4 md:mt-6 text-center">
                 <p className="text-slate-500 dark:text-slate-400 text-xs flex items-center justify-center gap-1">

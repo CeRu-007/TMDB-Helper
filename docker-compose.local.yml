@@ -8,9 +8,7 @@ services:
       - "4949:4949"
     environment:
       # JWT_SECRET 本地开发有默认值
-      # ADMIN_USERNAME / ADMIN_PASSWORD 可选：设置后自动创建管理员（直接登录）
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      # 项目已改为“先注册后登录”模式，不设置 ADMIN_USERNAME / ADMIN_PASSWORD。
       - JWT_SECRET=${JWT_SECRET:-tmdb-helper-local-dev-secret}
       - SESSION_EXPIRY_DAYS=15
       - NODE_ENV=production

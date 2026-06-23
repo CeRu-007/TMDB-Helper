@@ -136,13 +136,11 @@ docker-compose up -d
 # 拉取镜像
 docker pull ceru007/tmdb-helper:latest
 
-# 运行容器
+# 运行容器（项目已改为“先注册后登录”模式，首次打开登录页会自动显示注册页面）
 docker run -d \
   --name tmdb-helper \
   -p 4949:4949 \
   -v tmdb_data:/app/data \
-  -e ADMIN_USERNAME=admin \
-  -e ADMIN_PASSWORD=your_secure_password \
   -e JWT_SECRET=your_jwt_secret_key \
   ceru007/tmdb-helper:latest
 ```
@@ -151,10 +149,10 @@ docker run -d \
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `ADMIN_USERNAME` | `admin` | 管理员用户名 |
-| `ADMIN_PASSWORD` | `change_this_password` | 管理员密码（**生产环境必须修改**） |
 | `JWT_SECRET` | `your_jwt_secret_key_here_change_in_production` | JWT 密钥（**生产环境必须修改**） |
 | `SESSION_EXPIRY_DAYS` | `7` | 会话有效期（天） |
+| `ADMIN_USERNAME` | - | （已弃用）项目已改为注册后登录模式，不再通过环境变量自动创建管理员 |
+| `ADMIN_PASSWORD` | - | （已弃用）同上 |
 | `NODE_ENV` | `production` | Node.js 环境 |
 | `PORT` | `4949` | 应用端口 |
 | `HOSTNAME` | `0.0.0.0` | 绑定主机 |
@@ -171,8 +169,7 @@ services:
     ports:
       - "4949:4949"
     environment:
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=your_secure_password
+      # 项目已改为“先注册后登录”模式，首次访问登录页会自动显示注册页面
       - JWT_SECRET=your_jwt_secret_key
       - SESSION_EXPIRY_DAYS=7
       - NODE_ENV=production

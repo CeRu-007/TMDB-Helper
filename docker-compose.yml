@@ -8,10 +8,8 @@ services:
       - "4949:4949"
     environment:
       # JWT_SECRET 必须设置
-      # ADMIN_USERNAME / ADMIN_PASSWORD 可选：设置后自动创建管理员（直接登录）；
-      #   不设置则首次访问进入注册流程
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      # 项目已改为“先注册后登录”模式，不设置 ADMIN_USERNAME / ADMIN_PASSWORD，
+      # 首次访问登录页会自动显示注册页面。
       - JWT_SECRET=${JWT_SECRET:?必须设置 JWT_SECRET 环境变量}
       - SESSION_EXPIRY_DAYS=15
       - NODE_ENV=production
