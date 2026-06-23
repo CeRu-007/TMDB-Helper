@@ -70,6 +70,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (standalone) return
     if (e.target !== dragHandleRef.current && !dragHandleRef.current?.contains(e.target as Node)) return
+    if ((e.target as HTMLElement).closest?.("button, [role='button'], input, select, textarea, a")) return
     setIsDragging(true)
     dragOffset.current = {
       x: e.clientX - position.x,
