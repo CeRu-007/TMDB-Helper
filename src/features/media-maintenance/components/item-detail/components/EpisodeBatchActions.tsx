@@ -5,6 +5,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Badge } from "@/shared/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { cn } from "@/lib/utils"
 import {
   Settings,
   RotateCcw,
@@ -54,24 +55,24 @@ export function EpisodeBatchActions({
     return Math.max(...existingNumbers) + 1
   }, [seasons])
 
-  if (!editing) {
-    return null
-  }
-
   return (
-    <Card variant="frosted">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center">
-          <Settings className="h-4 w-4 mr-2" />
-          {t('episodeBatchActions.seasonOperations')}
-          {currentSeason && selectedSeason !== undefined && (
-            <Badge variant="outline" className="ml-2">
-              {t('episodeBatchActions.progress')}: {currentSeason.currentEpisode || 0}/{currentSeason.totalEpisodes}
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className={cn(
+      "transition-all duration-500 ease-in-out overflow-hidden",
+      editing ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 !mt-0"
+    )}>
+      <Card variant="frosted">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center">
+            <Settings className="h-4 w-4 mr-2" />
+            {t('episodeBatchActions.seasonOperations')}
+            {currentSeason && selectedSeason !== undefined && (
+              <Badge variant="outline" className="ml-2">
+                {t('episodeBatchActions.progress')}: {currentSeason.currentEpisode || 0}/{currentSeason.totalEpisodes}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
         {selectedSeason !== undefined && currentSeason ? (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -175,5 +176,6 @@ export function EpisodeBatchActions({
         </div>
       </CardContent>
     </Card>
+    </div>
   )
 }

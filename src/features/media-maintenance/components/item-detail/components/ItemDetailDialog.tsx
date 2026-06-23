@@ -970,8 +970,14 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   variant="outline"
                   size="icon"
                   className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
-                  title={displayMode === 'inline' ? t("back") : t("close")}
-                  onClick={() => onOpenChange(false)}
+                  title={editing ? t("cancel") : (displayMode === 'inline' ? t("back") : t("close"))}
+                  onClick={() => {
+                    if (editing) {
+                      setEditing(false)
+                    } else {
+                      onOpenChange(false)
+                    }
+                  }}
                 >
                   {displayMode === 'inline' ? <ArrowRightCircle className="h-4 w-4 rotate-180" /> : <X className="h-4 w-4" />}
                 </Button>
@@ -983,25 +989,28 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
               {/* 左侧：海报区域 */}
               <div className="flex overflow-hidden flex-col min-h-0">
                 <div className="flex-1 flex flex-col pr-2 min-h-0">
-                  {/* 海报区域 - 编辑模式下隐藏 */}
-                  {!editing && (
-                    <div className="hidden md:flex rounded-lg overflow-hidden aspect-[2/3] backdrop-blur-md bg-background/30 items-center justify-center w-full flex-shrink-0 mb-2 transition-all duration-300 hover:shadow-lg">
-                      {localItem.posterUrl ? (
-                        <CachedImage
-                          src={localItem.posterUrl}
-                          alt={localItem.title}
-                          className="w-full h-full object-cover"
-                          loading="eager"
-                          decoding="async"
-                        />
-                      ) : (
-                        <div className="text-center p-4">
-                          <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                          <p className="text-sm text-muted-foreground">{t("poster")}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* 海报区域 - 编辑模式下过渡隐藏 */}
+                  <div className={cn(
+                    "hidden md:flex rounded-lg overflow-hidden backdrop-blur-md bg-background/30 items-center justify-center w-full transition-all duration-500 ease-in-out hover:shadow-lg",
+                    editing
+                      ? "max-h-0 min-h-0 mb-0 opacity-0"
+                      : "aspect-[2/3] flex-shrink-0 mb-2"
+                  )}>
+                    {localItem.posterUrl ? (
+                      <CachedImage
+                        src={localItem.posterUrl}
+                        alt={localItem.title}
+                        className="w-full h-full object-cover"
+                        loading="eager"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="text-center p-4">
+                        <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">{t("poster")}</p>
+                      </div>
+                    )}
+                  </div>
 
                   {/* 条目信息区域 */}
                   {editing ? (
