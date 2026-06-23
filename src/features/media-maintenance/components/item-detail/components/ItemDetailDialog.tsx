@@ -979,9 +979,9 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
             </DialogHeader>
 
             {/* 网格布局 */}
-            <div className="p-2 md:p-4 md:pt-0 grid grid-cols-1 md:grid-cols-4 max-md:grid-rows-[auto_minmax(0,1fr)] gap-2 md:gap-6 flex-1 overflow-hidden min-h-0">
+            <div className="p-2 md:p-4 md:pt-0 grid grid-cols-1 md:grid-cols-[300px_1fr_1fr_1fr] max-md:grid-rows-[auto_minmax(0,1fr)] gap-2 md:gap-6 flex-1 overflow-hidden min-h-0">
               {/* 左侧：海报区域 */}
-              <div className="flex col-span-1 max-w-full overflow-hidden flex-col min-h-0">
+              <div className="flex overflow-hidden flex-col min-h-0">
                 <div className="flex-1 flex flex-col pr-2 min-h-0">
                   {/* 海报区域 - 编辑模式下隐藏 */}
                   {!editing && (
