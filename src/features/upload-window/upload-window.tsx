@@ -61,6 +61,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const dragHandleRef = useRef<HTMLDivElement>(null)
+  const pipWindowRef = useRef<Window | null>(null)
 
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -151,17 +152,83 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
     }
   }, [files])
 
+  useEffect(() => {
+    if (!standalone || !isPinned) return
+    const handleBlur = () => {
+      setTimeout(() => window.focus(), 50)
+    }
+    window.addEventListener("blur", handleBlur)
+    return () => window.removeEventListener("blur", handleBlur)
+  }, [standalone, isPinned])
+
   const handleClose = useCallback(() => {
     if (standalone) {
-      window.close()
+      if (window.parent !== window) {
+        window.parent.postMessage("pip-close", "*")
+      } else {
+        window.close()
+      }
     } else {
       setOpen(false)
     }
   }, [standalone, setOpen])
 
-  const handlePopOut = useCallback(() => {
-    const url = new URL(window.location.origin + '/upload')
-    window.open(url.toString(), 'tmdb-upload-panel', 'width=900,height=640,menubar=no,toolbar=no,location=no,status=no')
+  const handlePopOut = useCallback(async () => {
+    if ("documentPictureInPicture" in window) {
+      try {
+        const pipWindow = await (window as any).documentPictureInPicture.requestWindow({
+          width: 900,
+          height: 640,
+        })
+
+        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+          .map((el) => el.outerHTML)
+          .join("\n")
+
+        const theme = document.documentElement.classList.contains("dark") ? "dark" : "light"
+
+        pipWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TMDB Upload</title>
+  ${styles}
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    iframe { display: block; width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+  <iframe src="${window.location.origin}/upload?theme=${theme}"></iframe>
+</body>
+</html>`)
+        pipWindow.document.close()
+
+        pipWindowRef.current = pipWindow
+
+        const onMessage = (e: MessageEvent) => {
+          if (e.data === "pip-close") {
+            pipWindow.close()
+            pipWindowRef.current = null
+          }
+        }
+        window.addEventListener("message", onMessage)
+
+        pipWindow.addEventListener("pagehide", () => {
+          pipWindowRef.current = null
+          window.removeEventListener("message", onMessage)
+        })
+
+        return
+      } catch (_) {
+        // PiP not supported or rejected, fall through
+      }
+    }
+
+    const url = new URL(window.location.origin + "/upload")
+    window.open(url.toString(), "tmdb-upload-panel", "width=900,height=640,menubar=no,toolbar=no,location=no,status=no")
   }, [])
 
   if (!standalone && !isOpen) return null
@@ -185,6 +252,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
             ? "fixed inset-0 z-[9999] bg-white dark:bg-gray-950 flex flex-col overflow-hidden"
             : "fixed z-[9999] bg-white dark:bg-gray-950 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden transition-shadow",
           isPinned && !standalone ? "shadow-blue-500/10 border-blue-200 dark:border-blue-800" : "",
+          isPinned && standalone ? "ring-2 ring-blue-500/40" : "",
           isDragging && !standalone ? "shadow-2xl scale-[1.01]" : "",
         )}
         style={standalone ? undefined : {
