@@ -9,9 +9,9 @@
   "close": "Close",
   "edit": "Edit",
   "add": "Add",
-  "confirmDelete": "Are you sure you want to delete?",
-  "operationSuccess": "Operation successful",
-  "operationFailed": "Operation failed",
+  "confirmDelete": "Delete?",
+  "operationSuccess": "Success",
+  "operationFailed": "Failed",
   "loading": "Loading...",
   "noData": "No data"
 }

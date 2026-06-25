@@ -1,6 +1,6 @@
 {
-  "saveSuccess": "Saved Successfully",
+  "saveSuccess": "Saved",
   "saveFailed": "Save Failed",
   "executeFailed": "Execution Failed",
-  "configSaved": "Configuration Saved"
+  "configSaved": "Config Saved"
 }
