@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from "react"
 import { HelpCircle } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -16,6 +17,7 @@ export function HelpInfoButton({
   className,
   side = "bottom",
 }: HelpInfoButtonProps) {
+  const { t } = useTranslation("ui")
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -102,7 +104,7 @@ export function HelpInfoButton({
           onPointerDown={(e) => e.stopPropagation()}
         >
           <div className="px-4 pt-3 pb-2 border-b border-gray-200 dark:border-gray-700">
-            <p className="text-sm font-medium">说明</p>
+            <p className="text-sm font-medium">{t("ui.helpInfo.title")}</p>
           </div>
           <div className="px-4 pb-3 pt-2">
             <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">{content}</p>

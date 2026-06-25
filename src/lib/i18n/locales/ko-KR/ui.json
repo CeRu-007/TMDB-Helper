@@ -29,6 +29,9 @@
       "retry": "재시도",
       "somethingWrong": "문제가 발생했습니다"
     },
+    "helpInfo": {
+      "title": "도움말"
+    },
     "language": {
       "auto": "자동",
       "zh-CN": "중국어 간체",

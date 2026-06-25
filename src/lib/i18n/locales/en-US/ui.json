@@ -29,6 +29,9 @@
       "retry": "Retry",
       "somethingWrong": "Something went wrong"
     },
+    "helpInfo": {
+      "title": "Help"
+    },
     "language": {
       "auto": "Auto",
       "zh-CN": "Simplified Chinese",

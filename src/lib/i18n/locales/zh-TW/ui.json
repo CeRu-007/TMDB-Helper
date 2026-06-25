@@ -29,6 +29,9 @@
       "retry": "重試",
       "somethingWrong": "發生了點問題"
     },
+    "helpInfo": {
+      "title": "說明"
+    },
     "language": {
       "auto": "自動",
       "zh-CN": "簡體中文",
