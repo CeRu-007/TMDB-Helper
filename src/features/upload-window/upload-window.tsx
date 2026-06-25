@@ -38,16 +38,17 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
   const lastDirectoryName = useUploadStore((s) => s.lastDirectoryName)
   const files = useUploadStore((s) => s.files)
   const columnPaths = useUploadStore((s) => s.columnPaths)
-  const goToLevel = useUploadStore((s) => s.goToLevel)
+  const setColumnPath = useUploadStore((s) => s.setColumnPath)
   const resetColumns = useUploadStore((s) => s.resetColumns)
 
   const breadcrumbs = useMemo(() => {
     const items: { label: string; level: number }[] = [{ label: lastDirectoryName || "root", level: -1 }]
-    for (let i = 0; i < columnPaths.length; i++) {
-      const p = columnPaths[i]
-      if (p === null || p === undefined) continue
-      const segments = p.split("/")
-      items.push({ label: segments[segments.length - 1]!, level: i })
+    const currentPath = columnPaths[columnPaths.length - 1]
+    if (currentPath) {
+      const segments = currentPath.split("/")
+      for (let i = 0; i < segments.length; i++) {
+        items.push({ label: segments[i]!, level: i })
+      }
     }
     return items
   }, [columnPaths, lastDirectoryName])
@@ -63,6 +64,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const dragHandleRef = useRef<HTMLDivElement>(null)
   const pipWindowRef = useRef<Window | null>(null)
+  const isElectron = typeof window !== "undefined" && !!(window as any).electronAPI
 
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -156,6 +158,10 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
 
   useEffect(() => {
     if (!standalone || !isPinned) return
+    if ((window as any).electronAPI?.setAlwaysOnTop) {
+      (window as any).electronAPI.setAlwaysOnTop(true)
+      return () => { (window as any).electronAPI?.setAlwaysOnTop(false) }
+    }
     const handleBlur = () => {
       setTimeout(() => window.focus(), 50)
     }
@@ -223,6 +229,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           window.removeEventListener("message", onMessage)
         })
 
+        if (!standalone) setOpen(false)
         return
       } catch (_) {
         // PiP not supported or rejected, fall through
@@ -231,7 +238,8 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
 
     const url = new URL(window.location.origin + "/upload")
     window.open(url.toString(), "tmdb-upload-panel", "width=900,height=640,menubar=no,toolbar=no,location=no,status=no")
-  }, [])
+    if (!standalone) setOpen(false)
+  }, [setOpen])
 
   if (!standalone && !isOpen) return null
 
@@ -270,6 +278,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           className={cn(
             "flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-800 select-none",
             isDragging ? "cursor-grabbing" : "cursor-grab",
+            standalone && isElectron && "electron-drag-region",
           )}
         >
           <div className="flex items-center gap-2">
@@ -294,7 +303,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="w-7 h-7"
+              className={cn("w-7 h-7", standalone && isElectron && "electron-no-drag")}
               onClick={togglePin}
               title={isPinned ? t("unpin") : t("pin")}
             >
@@ -304,7 +313,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="w-7 h-7"
+              className={cn("w-7 h-7", standalone && isElectron && "electron-no-drag")}
               onClick={() => setLayout(layout === "tree" ? "list" : "tree")}
               title={t("switchLayout")}
             >
@@ -314,7 +323,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="w-7 h-7 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"
+              className={cn("w-7 h-7 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500", standalone && isElectron && "electron-no-drag")}
               onClick={handleClose}
               title={t("close")}
             >
@@ -373,7 +382,18 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
               <React.Fragment key={crumb.level}>
                 {idx > 0 && <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />}
                 <button
-                  onClick={() => crumb.level === -1 ? resetColumns() : goToLevel(crumb.level)}
+                  onClick={() => {
+                    if (crumb.level === -1) {
+                      resetColumns()
+                      return
+                    }
+                    const currentPath = columnPaths[columnPaths.length - 1]
+                    const segments = currentPath?.split("/") ?? []
+                    const targetPath = segments.slice(0, crumb.level + 1).join("/")
+                    if (targetPath && targetPath !== currentPath) {
+                      setColumnPath(0, targetPath)
+                    }
+                  }}
                   className={cn(
                     "px-1.5 py-0.5 rounded whitespace-nowrap transition-colors",
                     idx === breadcrumbs.length - 1

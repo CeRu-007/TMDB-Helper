@@ -248,7 +248,7 @@ function createWindow() {
       enableWebSQL: false, // 禁用WebSQL
       experimentalFeatures: false, // 禁用实验性功能
       v8CacheOptions: 'code', // 启用V8代码缓存
-      sandbox: true // 启用进程沙盒提升安全性
+      sandbox: false // 开发环境禁用沙盒，避免渲染进程崩溃
     },
     icon: path.join(__dirname, '../public/images/tmdb-helper-logo-new.png'),
     show: false,
@@ -415,8 +415,44 @@ function createWindow() {
     }
   });
 
-  // 处理外部链接
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  // 处理外部链接和内部弹出窗口
+  mainWindow.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
+    const parsedUrl = new URL(url);
+    const internalOrigin = `http://localhost:${port}`;
+
+    if (parsedUrl.origin === internalOrigin) {
+      const featureMap = {};
+      if (features) {
+        features.split(',').forEach(f => {
+          const [key, value] = f.trim().split('=');
+          if (key && value) featureMap[key.trim()] = value.trim();
+        });
+      }
+      const width = parseInt(featureMap.width) || 900;
+      const height = parseInt(featureMap.height) || 640;
+
+      const childWindow = new BrowserWindow({
+        width,
+        height,
+        frame: false,
+        autoHideMenuBar: true,
+        icon: path.join(__dirname, '../public/images/tmdb-helper-logo-new.png'),
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          enableRemoteModule: false,
+          preload: path.join(__dirname, 'preload.js'),
+          sandbox: true
+        },
+        show: false
+      });
+
+      childWindow.loadURL(url);
+      childWindow.once('ready-to-show', () => childWindow.show());
+
+      return { action: 'deny' };
+    }
+
     shell.openExternal(url);
     return { action: 'deny' };
   });
@@ -923,6 +959,14 @@ ipcMain.on('show-window', () => {
 ipcMain.on('hide-window', () => {
   if (mainWindow) {
     mainWindow.hide();
+  }
+});
+
+// 设置窗口置顶（用于上传面板的置顶功能）
+ipcMain.on('set-window-always-on-top', (event, enabled) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    win.setAlwaysOnTop(enabled);
   }
 });
 

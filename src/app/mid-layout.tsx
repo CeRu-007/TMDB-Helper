@@ -1,7 +1,7 @@
 "use client"
 
 import { ReactNode } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { ThemeProvider } from "next-themes"
 import { DataProvider } from "@/shared/components/client-data-provider"
 import { UserIdentityProvider } from "@/shared/components/user-identity-provider"
@@ -28,6 +28,7 @@ const AppWithToaster = ({ children }: { children: ReactNode }) => (
 function AuthContent({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
   const pathname = usePathname() ?? ''
+  const router = useRouter()
   const isLoginPage = pathname.startsWith('/login')
 
   if (isLoginPage) {
@@ -47,7 +48,7 @@ function AuthContent({ children }: { children: ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    window.location.href = '/login'
+    router.push('/login')
     return null
   }
 

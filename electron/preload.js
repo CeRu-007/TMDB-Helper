@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners(channel);
   },
 
+  // 设置窗口置顶
+  setAlwaysOnTop: (enabled) => ipcRenderer.send('set-window-always-on-top', enabled),
+
   // 平台信息
   platform: process.platform,
 

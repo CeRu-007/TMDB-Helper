@@ -10,6 +10,14 @@
 /* Inter 字体（自托管，避免 Dev 模式访问 Google Fonts CDN 被阻塞） */
 @import '@fontsource/inter/latin.css';
 
+/* Electron frameless window drag region */
+.electron-drag-region {
+  -webkit-app-region: drag;
+}
+.electron-no-drag {
+  -webkit-app-region: no-drag;
+}
+
 /* Line clamp utility */
 .line-clamp-2 {
   display: -webkit-box;

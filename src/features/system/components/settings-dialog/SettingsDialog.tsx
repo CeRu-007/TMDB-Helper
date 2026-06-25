@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import packageJson from "../../../../../package.json"
 import { logger } from '@/lib/utils/logger'
+import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Button } from "@/shared/components/ui/button"
@@ -75,6 +76,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
   const { toast } = useToast()
   const { changePassword } = useAuth()
   const { updateScenario } = useModelService()
+  const router = useRouter()
 
   const validSections = useMemo(() => [
     'model-service',
@@ -806,7 +808,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         confirmPassword: ""
       })
       setTimeout(() => {
-        window.location.href = '/login'
+        router.push('/login')
       }, 1500)
     } catch (error) {
       toast({
