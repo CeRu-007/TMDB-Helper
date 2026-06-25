@@ -15,6 +15,10 @@ export interface ElectronAPI {
   closeWindow: () => void
   isMaximized: () => Promise<boolean>
 
+  // 目录操作
+  selectDirectory: () => Promise<string | null>
+  openDirectory: (dirPath: string) => Promise<boolean>
+
   // 菜单事件监听
   onMenuImportData: (callback: () => void) => void
   onMenuExportData: (callback: () => void) => void

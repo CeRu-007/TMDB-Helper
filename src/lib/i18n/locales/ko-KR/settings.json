@@ -328,6 +328,8 @@
     "filterWords": "필터링 단어 (쉼표로 구분)",
     "toolPathNotConfigured": "도구 경로가 구성되지 않았습니다",
     "enterToolPath": "TMDB-Import 도구 경로를 입력하세요",
+    "selectDirectory": "디렉토리 선택",
+    "openDirectory": "디렉토리 열기",
     "pathValid": "경로가 유효하며 TMDB-Import 도구가 감지되었습니다",
     "pathInvalid": "경로가 유효하지 않으며 TMDB-Import 도구가 감지되지 않았습니다",
     "pathCheckError": "경로 검증에 실패했습니다. 네트워크 또는 서버 상태를 확인하세요"

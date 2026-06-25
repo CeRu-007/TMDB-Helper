@@ -328,6 +328,8 @@
     "filterWords": "过滤词 (用逗号分隔)",
     "toolPathNotConfigured": "未配置工具路径",
     "enterToolPath": "请输入TMDB-Import工具路径",
+    "selectDirectory": "选择目录",
+    "openDirectory": "打开目录",
     "pathValid": "路径有效，检测到 TMDB-Import 工具",
     "pathInvalid": "路径无效，未检测到 TMDB-Import 工具",
     "pathCheckError": "路径验证失败，请检查网络或服务器状态"

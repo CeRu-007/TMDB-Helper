@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.send('window-close'),
   isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
 
+  // 目录操作
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  openDirectory: (dirPath) => ipcRenderer.invoke('open-directory', dirPath),
+
   // 监听菜单事件
   onMenuImportData: (callback) => {
     ipcRenderer.on('menu-import-data', callback);

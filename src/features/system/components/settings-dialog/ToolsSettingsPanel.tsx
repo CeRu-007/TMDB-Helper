@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/shared/components/ui/textarea"
 import { Separator } from "@/shared/components/ui/separator"
 import { Badge } from "@/shared/components/ui/badge"
-import { Terminal, FolderOpen, FileText, RefreshCw, Save, Info, Eye, EyeOff, AlertCircle } from "lucide-react"
+import { Terminal, FolderOpen, FileText, RefreshCw, Save, Info, Eye, EyeOff, AlertCircle, ExternalLink } from "lucide-react"
 import TMDBImportUpdater from "@/features/tmdb-import/components/tmdb-import-updater"
 import DependencyInstaller from "@/features/system/components/dependency-installer"
 import { ClientConfigManager } from '@/lib/utils/client-config-manager'
@@ -76,12 +76,38 @@ export default function ToolsSettingsPanel({
 
   // 处理路径选择按钮点击
   const handlePathSelect = useCallback(async () => {
-    const path = prompt(t("tools.enterToolPath"), tmdbImportPath)
-    if (path) {
-      setTmdbImportPath(path)
-      await saveTmdbImportPath(path)
+    if (window.electronAPI?.selectDirectory) {
+      const selectedPath = await window.electronAPI.selectDirectory()
+      if (selectedPath) {
+        setTmdbImportPath(selectedPath)
+        await saveTmdbImportPath(selectedPath)
+      }
+    } else if ('showDirectoryPicker' in window) {
+      try {
+        const dirHandle = await (window as any).showDirectoryPicker()
+        const dirName = dirHandle.name
+        setTmdbImportPath(dirName)
+        await saveTmdbImportPath(dirName)
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') {
+          logger.error('选择目录失败:', e)
+        }
+      }
+    } else {
+      const path = prompt(t("tools.enterToolPath"), tmdbImportPath)
+      if (path) {
+        setTmdbImportPath(path)
+        await saveTmdbImportPath(path)
+      }
     }
   }, [tmdbImportPath, setTmdbImportPath, saveTmdbImportPath, t])
+
+  // 处理打开目录按钮点击（仅Electron环境）
+  const handleOpenDirectory = useCallback(async () => {
+    if (tmdbImportPath && window.electronAPI?.openDirectory) {
+      await window.electronAPI.openDirectory(tmdbImportPath)
+    }
+  }, [tmdbImportPath])
   return (
     <div className="space-y-6">
       <div>
@@ -161,9 +187,20 @@ export default function ToolsSettingsPanel({
                                       variant="outline"
                                       size="sm"
                                       onClick={handlePathSelect}
+                                      title={t("tools.selectDirectory")}
                                     >
                                       <FolderOpen className="h-4 w-4" />
                                     </Button>
+                                    {tmdbImportPath && window.electronAPI?.openDirectory && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleOpenDirectory}
+                                        title={t("tools.openDirectory")}
+                                      >
+                                        <ExternalLink className="h-4 w-4" />
+                                      </Button>
+                                    )}
                                   </div>
                 {tmdbImportPath && (
                   <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">

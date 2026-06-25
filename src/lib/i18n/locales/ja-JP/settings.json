@@ -328,6 +328,8 @@
     "filterWords": "フィルタリング単語（カンマ区切り）",
     "toolPathNotConfigured": "ツールパスが設定されていません",
     "enterToolPath": "TMDB-Importツールパスを入力してください",
+    "selectDirectory": "ディレクトリを選択",
+    "openDirectory": "ディレクトリを開く",
     "pathValid": "パスが有効で、TMDB-Importツールが検出されました",
     "pathInvalid": "パスが無効で、TMDB-Importツールが検出されませんでした",
     "pathCheckError": "パスの検証に失敗しました。ネットワークまたはサーバーの状態を確認してください"

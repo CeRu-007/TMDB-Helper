@@ -884,6 +884,27 @@ ipcMain.handle('window-is-maximized', () => {
   return false;
 });
 
+// 目录选择对话框
+ipcMain.handle('select-directory', async () => {
+  if (!mainWindow) return null;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory']
+  });
+  if (result.canceled) return null;
+  return result.filePaths[0];
+});
+
+// 在系统文件管理器中打开目录
+ipcMain.handle('open-directory', async (_event, dirPath) => {
+  try {
+    await shell.openPath(dirPath);
+    return true;
+  } catch (error) {
+    electronLog(`打开目录失败: ${error.message}`, 'error');
+    return false;
+  }
+});
+
 // 托盘相关 IPC 接口
 ipcMain.handle('get-tray-status', () => {
   return {

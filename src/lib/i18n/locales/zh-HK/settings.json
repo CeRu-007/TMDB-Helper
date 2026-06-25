@@ -327,6 +327,8 @@
     "otherSettings": "其他設置",
     "filterWords": "過濾詞 (用逗號分隔)",
     "enterToolPath": "請輸入TMDB-Import工具路徑",
+    "selectDirectory": "選擇目錄",
+    "openDirectory": "打開目錄",
     "pathValid": "路徑有效，檢測到 TMDB-Import 工具",
     "pathInvalid": "路徑無效，未檢測到 TMDB-Import 工具",
     "pathCheckError": "路徑驗證失敗，請檢查網絡或伺服器狀態"

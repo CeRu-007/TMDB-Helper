@@ -327,6 +327,8 @@
     "otherSettings": "Other Settings",
     "filterWords": "Filter Words (comma separated)",
     "enterToolPath": "Please enter TMDB-Import tool path",
+    "selectDirectory": "Select Directory",
+    "openDirectory": "Open Directory",
     "pathValid": "Path valid, TMDB-Import tool detected",
     "pathInvalid": "Path invalid, TMDB-Import tool not detected",
     "pathCheckError": "Path validation failed, please check network or server status"
