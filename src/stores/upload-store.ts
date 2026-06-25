@@ -143,7 +143,24 @@ export const useUploadStore = create<UploadState & UploadActions>()(
           size: state.size,
           lastDirectoryName: state.lastDirectoryName,
           uploadedPaths: state.uploadedPaths,
+          cachedFiles: state.files.length > 0
+            ? state.files.map((f) => ({
+                id: f.id, name: f.name, relativePath: f.relativePath,
+                size: f.size, type: f.type, isDirectory: f.isDirectory,
+              }))
+            : undefined,
         }),
+        merge: (persisted, current) => {
+          const p = persisted as Record<string, unknown>
+          const merged = { ...current, ...persisted }
+          if (p.cachedFiles && Array.isArray(p.cachedFiles) && p.cachedFiles.length > 0) {
+            const restored = p.cachedFiles as FileEntry[]
+            merged.files = restored
+            merged.tree = buildTree(restored)
+            merged.columnPaths = [null]
+          }
+          return merged
+        },
       }
     ),
     { name: 'UploadStore' }
