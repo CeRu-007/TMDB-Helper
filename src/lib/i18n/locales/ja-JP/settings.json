@@ -52,19 +52,23 @@
   },
   "menu": {
     "modelService": "モデルサービス",
-    "modelServiceDesc": "モデルプロバイダーと設定の管理",
+    "modelServiceDesc": "モデルプロバイダーと構成管理",
     "tools": "ツール設定",
     "toolsDesc": "TMDB-Importツール設定",
     "videoThumbnail": "サムネイル設定",
-    "videoThumbnailDesc": "動画サムネイル抽出設定",
+    "videoThumbnailDesc": "ビデオサムネイル抽出設定",
     "general": "一般設定",
-    "generalDesc": "アプリケーションの一般設定",
+    "generalDesc": "アプリケーションの一般構成",
     "appearance": "外観設定",
     "appearanceDesc": "テーマとインターフェース設定",
     "security": "アカウントセキュリティ",
     "securityDesc": "パスワード変更とセキュリティ設定",
     "help": "ヘルプとサポート",
-    "helpDesc": "ヘルプドキュメントとアプリ情報"
+    "helpDesc": "ヘルプドキュメントとアプリケーション情報"
+  },
+  "sidebar": {
+    "expand": "サイドバーを展開",
+    "collapse": "サイドバーを折りたたむ"
   },
   "generalSettings": "一般設定",
   "generalSettingsDesc": "ネットワークプロキシとアイテム詳細表示を設定",
@@ -330,6 +334,8 @@
     "enterToolPath": "TMDB-Importツールパスを入力してください",
     "selectDirectory": "ディレクトリを選択",
     "openDirectory": "ディレクトリを開く",
+    "showPassword": "パスワードを表示",
+    "hidePassword": "パスワードを非表示",
     "pathValid": "パスが有効で、TMDB-Importツールが検出されました",
     "pathInvalid": "パスが無効で、TMDB-Importツールが検出されませんでした",
     "pathCheckError": "パスの検証に失敗しました。ネットワークまたはサーバーの状態を確認してください"
@@ -352,6 +358,7 @@
     "title": "TMDB-Import ツール管理",
     "description": "TMDB-Importツールのダウンロード、インストール、更新を自動的に管理",
     "refresh": "更新",
+    "openGitHub": "GitHubリポジトリを開く",
     "loading": "ツール情報を読み込み中...",
     "installStatus": "インストール状態",
     "toolStatus": "ツール状態",

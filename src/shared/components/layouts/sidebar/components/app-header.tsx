@@ -33,7 +33,7 @@ export function AppHeader({
   onShowDashboard
 }: AppHeaderProps) {
   const { theme, setTheme } = useTheme()
-  const { t } = useTranslation(["settings", "dashboard", "journal"])
+  const { t } = useTranslation(["settings", "dashboard", "journal", "common"])
   const journalUnreadCount = useUIStore((s) => s.journalUnreadCount)
   const setJournalUnreadCount = useUIStore((s) => s.setJournalUnreadCount)
 
@@ -80,6 +80,7 @@ export function AppHeader({
               size="icon"
               onClick={onSidebarToggle}
               className="mr-3"
+              title={sidebarCollapsed ? t("sidebar.expand", { ns: "settings" }) : t("sidebar.collapse", { ns: "settings" })}
             >
               {sidebarCollapsed ? (
                 <PanelLeftOpen className="h-5 w-5" />

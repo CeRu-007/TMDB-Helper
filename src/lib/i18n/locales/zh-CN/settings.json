@@ -66,6 +66,10 @@
     "help": "帮助与支持",
     "helpDesc": "帮助文档和应用信息"
   },
+  "sidebar": {
+    "expand": "展开侧边栏",
+    "collapse": "收起侧边栏"
+  },
   "generalSettings": "通用设置",
   "generalSettingsDesc": "配置网络代理和词条详情显示",
   "network": "网络代理",
@@ -330,6 +334,8 @@
     "enterToolPath": "请输入TMDB-Import工具路径",
     "selectDirectory": "选择目录",
     "openDirectory": "打开目录",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
     "pathValid": "路径有效，检测到 TMDB-Import 工具",
     "pathInvalid": "路径无效，未检测到 TMDB-Import 工具",
     "pathCheckError": "路径验证失败，请检查网络或服务器状态"
@@ -352,6 +358,7 @@
     "title": "TMDB-Import 工具管理",
     "description": "自动管理 TMDB-Import 工具的下载、安装和更新",
     "refresh": "刷新",
+    "openGitHub": "打开 GitHub 仓库",
     "loading": "正在加载工具信息...",
     "installStatus": "安装状态",
     "toolStatus": "工具状态",

@@ -85,6 +85,7 @@ export default function SecuritySettingsPanel({
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 disabled={passwordChangeLoading}
+                title={showCurrentPassword ? t("tools.hidePassword") : t("tools.showPassword")}
               >
                 {showCurrentPassword ? (
                   <EyeOff className="h-4 w-4" />
@@ -114,6 +115,7 @@ export default function SecuritySettingsPanel({
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowNewPassword(!showNewPassword)}
                 disabled={passwordChangeLoading}
+                title={showNewPassword ? t("tools.hidePassword") : t("tools.showPassword")}
               >
                 {showNewPassword ? (
                   <EyeOff className="h-4 w-4" />
@@ -175,6 +177,7 @@ export default function SecuritySettingsPanel({
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 disabled={passwordChangeLoading}
+                title={showConfirmPassword ? t("tools.hidePassword") : t("tools.showPassword")}
               >
                 {showConfirmPassword ? (
                   <EyeOff className="h-4 w-4" />

@@ -643,6 +643,7 @@ export default function ModelServiceSettingsPanel({
                         variant="outline"
                         size="icon"
                         onClick={() => setShowSiliconFlowApiKey(!showSiliconFlowApiKey)}
+                        title={showSiliconFlowApiKey ? t("tools.hidePassword") : t("tools.showPassword")}
                       >
                         {showSiliconFlowApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
@@ -702,6 +703,7 @@ export default function ModelServiceSettingsPanel({
                         variant="outline"
                         size="icon"
                         onClick={() => setShowModelScopeApiKey(!showModelScopeApiKey)}
+                        title={showModelScopeApiKey ? t("tools.hidePassword") : t("tools.showPassword")}
                       >
                         {showModelScopeApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
@@ -761,6 +763,7 @@ export default function ModelServiceSettingsPanel({
                         variant="outline"
                         size="icon"
                         onClick={() => setShowZhipuApiKey(!showZhipuApiKey)}
+                        title={showZhipuApiKey ? t("tools.hidePassword") : t("tools.showPassword")}
                       >
                         {showZhipuApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
@@ -797,6 +800,7 @@ export default function ModelServiceSettingsPanel({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditProvider(provider)}
+                            title={t("modelServicePanel.editProvider")}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -804,6 +808,7 @@ export default function ModelServiceSettingsPanel({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteProvider(provider.id)}
+                            title={t("common.delete")}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -961,6 +966,7 @@ export default function ModelServiceSettingsPanel({
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteModel(model.id)}
+                              title={t("common.delete")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1162,6 +1168,7 @@ export default function ModelServiceSettingsPanel({
                           variant="ghost"
                           size="sm"
                           onClick={() => setExpandedScenario(isExpanded ? null : scenario.type)}
+                          title={isExpanded ? t("common.close") : t("common.open")}
                         >
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>

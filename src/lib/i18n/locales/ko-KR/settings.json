@@ -52,19 +52,23 @@
   },
   "menu": {
     "modelService": "모델 서비스",
-    "modelServiceDesc": "모델 공급자 및 구성 관리",
+    "modelServiceDesc": "모델 제공업체 및 구성 관리",
     "tools": "도구 구성",
     "toolsDesc": "TMDB-Import 도구 설정",
     "videoThumbnail": "썸네일 설정",
-    "videoThumbnailDesc": "동영상 썸네일 추출 설정",
+    "videoThumbnailDesc": "비디오 썸네일 추출 설정",
     "general": "일반 설정",
-    "generalDesc": "앱 일반 구성",
+    "generalDesc": "응용 프로그램 일반 구성",
     "appearance": "외관 설정",
     "appearanceDesc": "테마 및 인터페이스 설정",
     "security": "계정 보안",
     "securityDesc": "비밀번호 변경 및 보안 설정",
     "help": "도움말 및 지원",
-    "helpDesc": "도움말 문서 및 앱 정보"
+    "helpDesc": "도움말 문서 및 애플리케이션 정보"
+  },
+  "sidebar": {
+    "expand": "사이드바 펼치기",
+    "collapse": "사이드바 접기"
   },
   "generalSettings": "일반 설정",
   "generalSettingsDesc": "네트워크 프록시 및 항목 상세 표시 구성",
@@ -330,6 +334,8 @@
     "enterToolPath": "TMDB-Import 도구 경로를 입력하세요",
     "selectDirectory": "디렉토리 선택",
     "openDirectory": "디렉토리 열기",
+    "showPassword": "비밀번호 표시",
+    "hidePassword": "비밀번호 숨기기",
     "pathValid": "경로가 유효하며 TMDB-Import 도구가 감지되었습니다",
     "pathInvalid": "경로가 유효하지 않으며 TMDB-Import 도구가 감지되지 않았습니다",
     "pathCheckError": "경로 검증에 실패했습니다. 네트워크 또는 서버 상태를 확인하세요"
@@ -352,6 +358,7 @@
     "title": "TMDB-Import 도구 관리",
     "description": "TMDB-Import 도구의 다운로드, 설치, 업데이트 자동 관리",
     "refresh": "새로고침",
+    "openGitHub": "GitHub 저장소 열기",
     "loading": "도구 정보 로딩 중...",
     "installStatus": "설치 상태",
     "toolStatus": "도구 상태",

@@ -271,18 +271,19 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                 }
               }}
               disabled={loading || updating}
+              title={t("tmdbImportUpdater.refresh")}
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              {t("tmdbImportUpdater.refresh")}
             </Button>
             <Button
               variant="outline"
               size="sm"
               asChild
+              title={t("tmdbImportUpdater.openGitHub")}
             >
               <a
                 href="https://github.com/fzlins/TMDB-Import"

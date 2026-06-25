@@ -53,7 +53,7 @@
   "menu": {
     "modelService": "Model Service",
     "modelServiceDesc": "Model provider and configuration management",
-    "tools": "Tools Configuration",
+    "tools": "Tool Configuration",
     "toolsDesc": "TMDB-Import tool settings",
     "videoThumbnail": "Thumbnail Settings",
     "videoThumbnailDesc": "Video thumbnail extraction settings",
@@ -62,9 +62,13 @@
     "appearance": "Appearance Settings",
     "appearanceDesc": "Theme and interface settings",
     "security": "Account Security",
-    "securityDesc": "Password modification and security settings",
+    "securityDesc": "Password change and security settings",
     "help": "Help & Support",
-    "helpDesc": "Help documentation and app information"
+    "helpDesc": "Help documentation and application information"
+  },
+  "sidebar": {
+    "expand": "Expand Sidebar",
+    "collapse": "Collapse Sidebar"
   },
   "generalSettings": "General Settings",
   "generalSettingsDesc": "Configure network proxy and item detail display",
@@ -329,6 +333,8 @@
     "enterToolPath": "Please enter TMDB-Import tool path",
     "selectDirectory": "Select Directory",
     "openDirectory": "Open Directory",
+    "showPassword": "Show Password",
+    "hidePassword": "Hide Password",
     "pathValid": "Path valid, TMDB-Import tool detected",
     "pathInvalid": "Path invalid, TMDB-Import tool not detected",
     "pathCheckError": "Path validation failed, please check network or server status"
@@ -351,6 +357,7 @@
     "title": "TMDB-Import Tool Management",
     "description": "Automatically manage TMDB-Import tool download, installation and updates",
     "refresh": "Refresh",
+    "openGitHub": "Open GitHub Repository",
     "loading": "Loading tool information...",
     "installStatus": "Install Status",
     "toolStatus": "Tool Status",
