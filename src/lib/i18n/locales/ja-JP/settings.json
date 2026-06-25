@@ -48,7 +48,11 @@
     "passwordMismatch": "新しいパスワードと確認パスワードが一致しません",
     "passwordTooShort": "新しいパスワードは6文字以上にしてください",
     "passwordChangeSuccess": "パスワードが正常に変更されました",
-    "passwordChangeFailed": "パスワードの変更に失敗しました"
+    "passwordChangeFailed": "パスワードの変更に失敗しました",
+    "saveFailedRetry": "保存に失敗しました。もう一度お試しください",
+    "serviceUnavailable": "サービスが利用できません",
+    "saveFailed": "保存に失敗しました",
+    "back": "戻る"
   },
   "menu": {
     "modelService": "モデルサービス",
@@ -175,7 +179,16 @@
     "hasUpdate": "更新あり",
     "cachedData": "キャッシュデータ",
     "downloadNewVersion": "新バージョンをダウンロード",
-    "viewAllVersions": "全バージョンを表示"
+    "viewAllVersions": "全バージョンを表示",
+    "checkUpdateDesc": "最新バージョン情報を確認",
+    "releaseNotes": "リリースノート",
+    "noReleaseNotes": "リリースノートなし",
+    "viewHistoryVersions": "履歴バージョンを表示",
+    "cachedDataTime": "キャッシュデータ · {{time}}",
+    "justNow": "たった今",
+    "minutesAgo": "{{n}} 分前",
+    "hoursAgo": "{{n}} 時間前",
+    "daysAgo": "{{n}} 日前"
   },
   "updateDialog": {
     "title": "新バージョン {{version}} が利用可能",

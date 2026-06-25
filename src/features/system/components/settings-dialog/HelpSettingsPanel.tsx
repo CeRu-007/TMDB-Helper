@@ -81,7 +81,7 @@ export default function HelpSettingsPanel({
                     {appInfo.name}
                   </h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                    功能强大的 TMDB 媒体维护助手
+                    {t("helpPanel.appSlogan")}
                   </p>
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-400">v{appInfo.version}</span>
                 </div>

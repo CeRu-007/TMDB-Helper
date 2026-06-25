@@ -9,6 +9,7 @@ import { Progress } from "@/shared/components/ui/progress"
 import { WorkAreaProps } from './types'
 import { truncateFileName } from './utils'
 import { ResultsDisplay } from './ResultsDisplay'
+import { useTranslation } from "react-i18next"
 
 export function WorkArea({
   file,
@@ -24,6 +25,8 @@ export function WorkArea({
   onAIImprovement,
   aiImprovingIndex
 }: WorkAreaProps): JSX.Element {
+  const { t } = useTranslation("episode-generation")
+
   return (
     <div className="h-full flex flex-col">
       {/* 文件信息和操作栏 */}
@@ -38,7 +41,7 @@ export function WorkArea({
                 </span>
               </h3>
               <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                {file.episodes.length} 集 · 总字数 {file.episodes.reduce((sum, ep) => sum + ep.wordCount, 0).toLocaleString()}
+                {t("workArea.episodeCount", { count: file.episodes.length })} · {t("workArea.totalWords", { count: file.episodes.reduce((sum, ep) => sum + ep.wordCount, 0).toLocaleString() })}
               </p>
             </div>
           </div>
@@ -48,7 +51,7 @@ export function WorkArea({
         {isGenerating && (
           <div className="mt-2 md:mt-3">
             <div className="flex items-center justify-between text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">
-              <span>生成进度</span>
+              <span>{t("workArea.generationProgress")}</span>
               <span>{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="h-1.5 md:h-2" />
@@ -72,10 +75,10 @@ export function WorkArea({
             <div className="text-center">
               <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">
-                请先配置API密钥
+                {t("workArea.configureApiFirst")}
               </h3>
               <p className="text-gray-500 dark:text-gray-500 mb-4">
-                需要配置硅基流动API密钥才能使用AI生成功能
+                {t("workArea.configureApiDesc")}
               </p>
               <Button
                 onClick={() => {
@@ -86,7 +89,7 @@ export function WorkArea({
                 className="bg-blue-500 hover:bg-blue-600"
               >
                 <Settings className="h-4 w-4 mr-2" />
-                配置API
+                {t("workArea.configureApi")}
               </Button>
             </div>
           </div>
@@ -95,10 +98,10 @@ export function WorkArea({
             <div className="text-center">
               <Sparkles className="h-12 w-12 text-blue-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">
-                准备就绪
+                {t("workArea.ready")}
               </h3>
               <p className="text-gray-500 dark:text-gray-500">
-                点击左侧"批量生成简介"按钮，AI将为您生成精彩的分集简介
+                {t("workArea.readyHint")}
               </p>
             </div>
           </div>

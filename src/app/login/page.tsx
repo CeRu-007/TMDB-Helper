@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/shared/components/auth-provider'
 import { ClientConfigManager } from '@/lib/utils/client-config-manager'
 import { saveRemember, loadRemember, clearRemember } from '@/lib/auth/secure-remember'
@@ -26,6 +27,8 @@ import {
 } from 'lucide-react'
 
 export default function LoginPage() {
+  const { t } = useTranslation('user')
+  const { t: tc } = useTranslation('common')
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -62,7 +65,6 @@ export default function LoginPage() {
           adminExists = data.hasAdmin === true
         }
       } catch {
-        // 检查失败时保守回退到登录模式
         adminExists = true
       }
 
@@ -77,7 +79,6 @@ export default function LoginPage() {
         setRememberMe(false)
       }
 
-      // 只有在已有管理员（登录模式有意义）时才回填记住的凭据
       if (adminExists) {
         try {
           const r = await loadRemember()
@@ -115,10 +116,10 @@ export default function LoginPage() {
     strong: 'w-full',
   }
 
-  const strengthLabel = {
-    weak: '弱',
-    medium: '中等',
-    strong: '强',
+  const strengthLabel: Record<string, string> = {
+    weak: tc('weak', { defaultValue: '弱' }),
+    medium: tc('medium', { defaultValue: '中等' }),
+    strong: tc('strong', { defaultValue: '强' }),
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -130,7 +131,7 @@ export default function LoginPage() {
       const result = await login(username, password, rememberMe)
 
       if (!result.success) {
-        setError(result.error || '用户名或密码错误')
+        setError(result.error || t('invalidCredentials'))
       } else {
         try {
           if (rememberMe) {
@@ -141,7 +142,7 @@ export default function LoginPage() {
         } catch {}
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : '登录失败,请稍后重试')
+      setError(error instanceof Error ? error.message : t('loginFailed'))
     } finally {
       setIsLoading(false)
     }
@@ -152,12 +153,12 @@ export default function LoginPage() {
     setError('')
 
     if (password !== confirmPassword) {
-      setError('两次输入的密码不一致')
+      setError(t('passwordMismatch'))
       return
     }
 
     if (!passwordStrength.valid) {
-      setError('密码不满足要求')
+      setError(t('passwordNotMet'))
       return
     }
 
@@ -166,10 +167,10 @@ export default function LoginPage() {
     try {
       const result = await register(username, password)
       if (!result.success) {
-        setError(result.error || '注册失败,请稍后重试')
+        setError(result.error || t('registerFailed'))
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : '注册失败,请稍后重试')
+      setError(error instanceof Error ? error.message : t('registerFailed'))
     } finally {
       setIsLoading(false)
     }
@@ -199,7 +200,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-xl mb-3 md:mb-4 overflow-hidden">
               <Image
                 src="/images/tmdb-helper-logo-new.png"
-                alt="TMDB Helper Logo"
+                alt={tc('appLogoAlt')}
                 width={64}
                 height={64}
                 className="w-full h-full object-contain"
@@ -209,19 +210,17 @@ export default function LoginPage() {
               TMDB Helper
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              影视数据维护助手
+              {tc('appSubtitle')}
             </p>
           </div>
 
           <div className="glass-card rounded-2xl p-6 md:p-8 shadow-xl">
               <div className="mb-4 md:mb-6">
                 <h2 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-1">
-                  {mode === 'login' ? '欢迎回来' : '创建账户'}
+                  {mode === 'login' ? t('welcomeBack') : t('createAccount')}
                 </h2>
                 <p className="text-slate-600 dark:text-slate-400 text-sm">
-                  {mode === 'login'
-                    ? '输入您的凭据以访问您的账户'
-                    : '创建一个新的管理员账户'}
+                  {mode === 'login' ? t('loginSubtitle') : t('registerSubtitle')}
                 </p>
               </div>
 
@@ -235,7 +234,7 @@ export default function LoginPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 text-sm font-medium">
-                    用户名
+                    {t('username')}
                   </Label>
                   <div className="relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10 pointer-events-none">
@@ -244,7 +243,7 @@ export default function LoginPage() {
                     <Input
                       id="username"
                       type="text"
-                      placeholder="请输入用户名"
+                      placeholder={t('usernamePlaceholder')}
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       className="pl-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
@@ -256,7 +255,7 @@ export default function LoginPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 text-sm font-medium">
-                    密码
+                    {t('password')}
                   </Label>
                   <div className="relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10 pointer-events-none">
@@ -265,7 +264,7 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder={mode === 'register' ? '请设置密码' : '请输入密码'}
+                      placeholder={mode === 'register' ? t('registerPasswordPlaceholder') : t('passwordPlaceholder')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10 pr-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
@@ -300,7 +299,7 @@ export default function LoginPage() {
                       </div>
                       <div className="space-y-1">
                         {[
-                          { key: 'minLength' as const, label: '至少6个字符' },
+                          { key: 'minLength' as const, label: t('minLength') },
                         ].map(({ key, label }) => (
                           <div key={key} className="flex items-center gap-1.5">
                             {passwordStrength.checks[key] ? (
@@ -325,7 +324,7 @@ export default function LoginPage() {
                 {mode === 'register' && (
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-slate-300 text-sm font-medium">
-                      确认密码
+                      {t('confirmPassword')}
                     </Label>
                     <div className="relative">
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10 pointer-events-none">
@@ -334,7 +333,7 @@ export default function LoginPage() {
                       <Input
                         id="confirmPassword"
                         type={showConfirmPassword ? "text" : "password"}
-                        placeholder="请再次输入密码"
+                        placeholder={t('confirmPasswordPlaceholder')}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="pl-10 pr-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
@@ -351,7 +350,7 @@ export default function LoginPage() {
                       </button>
                     </div>
                     {confirmPassword && password !== confirmPassword && (
-                      <p className="text-xs text-red-500">两次输入的密码不一致</p>
+                      <p className="text-xs text-red-500">{t('passwordMismatch')}</p>
                     )}
                   </div>
                 )}
@@ -373,7 +372,7 @@ export default function LoginPage() {
                       className="border-slate-300 dark:border-slate-600 data-[state=checked]:bg-slate-900 dark:data-[state=checked]:bg-slate-100 data-[state=checked]:border-slate-900 dark:data-[state=checked]:border-slate-100 focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                     <Label htmlFor="rememberMe" className="text-slate-600 dark:text-slate-400 text-sm cursor-pointer">
-                      记住登录状态
+                      {t('rememberMe')}
                     </Label>
                   </div>
                 )}
@@ -386,19 +385,19 @@ export default function LoginPage() {
                   {isLoading ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white dark:border-slate-900/30 dark:border-t-slate-900 mr-2"></div>
-                      {mode === 'login' ? '正在登录...' : '正在注册...'}
+                      {mode === 'login' ? t('loggingIn') : t('registering')}
                     </>
                   ) : (
                     <>
                       {mode === 'login' ? (
                         <>
                           <LogIn className="h-5 w-5 mr-2" />
-                          登录
+                          {t('loginButton')}
                         </>
                       ) : (
                         <>
                           <UserPlus className="h-5 w-5 mr-2" />
-                          注册
+                          {t('registerButton')}
                         </>
                       )}
                     </>
@@ -418,7 +417,7 @@ export default function LoginPage() {
                       className="w-full md:w-auto text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                       disabled={isLoading}
                     >
-                      {mode === 'login' ? '没有账户？点击注册' : '已有账户？点击登录'}
+                      {mode === 'login' ? t('noAccountRegister') : t('hasAccountLogin')}
                     </button>
                   </div>
               )}

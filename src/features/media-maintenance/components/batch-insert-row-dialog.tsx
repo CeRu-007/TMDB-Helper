@@ -13,6 +13,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group"
+import { useTranslation } from "react-i18next"
 
 export interface BatchInsertRowDialogProps {
   open: boolean
@@ -25,6 +26,8 @@ export default function BatchInsertRowDialog({
   onOpenChange,
   onApply
 }: BatchInsertRowDialogProps) {
+  const { t } = useTranslation("media")
+  const { t: tc } = useTranslation("common")
   const [count, setCount] = useState<number>(1)
   const [position, setPosition] = useState<'before' | 'after'>('after')
 
@@ -32,7 +35,7 @@ export default function BatchInsertRowDialog({
     if (count <= 0) {
       return
     }
-    
+
     onApply(count, position)
     onOpenChange(false)
   }
@@ -43,11 +46,9 @@ export default function BatchInsertRowDialog({
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      // 重置为默认值
       setCount(1)
       setPosition('after')
     }
-    // 调用外部的 onOpenChange
     if (onOpenChange) {
       onOpenChange(open)
     }
@@ -57,16 +58,16 @@ export default function BatchInsertRowDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>批量插入行</DialogTitle>
+          <DialogTitle>{t("batchInsert.title")}</DialogTitle>
           <DialogDescription>
-            设置要插入的行数和插入位置，episode_number 列将自动递增
+            {t("batchInsert.description")}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="insertCount" className="text-right">
-              插入行数
+              {t("batchInsert.count")}
             </Label>
             <Input
               id="insertCount"
@@ -78,10 +79,10 @@ export default function BatchInsertRowDialog({
               className="col-span-3"
             />
           </div>
-          
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">
-              插入位置
+              {t("batchInsert.position")}
             </Label>
             <RadioGroup
               value={position}
@@ -91,32 +92,32 @@ export default function BatchInsertRowDialog({
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="before" id="before" />
                 <Label htmlFor="before" className="cursor-pointer">
-                  在上方插入
+                  {t("batchInsert.above")}
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="after" id="after" />
                 <Label htmlFor="after" className="cursor-pointer">
-                  在下方插入
+                  {t("batchInsert.below")}
                 </Label>
               </div>
             </RadioGroup>
           </div>
-          
+
           <div className="text-sm text-muted-foreground text-center">
-            将插入 {count} 行新数据
+            {t("batchInsert.preview", { count })}
           </div>
         </div>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel}>
-            取消
+            {tc("cancel")}
           </Button>
-          <Button 
+          <Button
             onClick={handleApply}
             disabled={count <= 0}
           >
-            应用
+            {tc("apply")}
           </Button>
         </DialogFooter>
       </DialogContent>

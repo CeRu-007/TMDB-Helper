@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { logger } from '@/lib/utils/logger'
 import { cn } from '@/lib/utils'
+import { useTranslation } from "react-i18next"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { Textarea } from "@/shared/components/ui/textarea"
@@ -43,6 +44,7 @@ export function ResultsDisplay({
   onAIImprovement,
   aiImprovingIndex
 }: ResultsDisplayProps): JSX.Element {
+  const { t } = useTranslation("episode-generation")
   // Editing state
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
@@ -431,11 +433,8 @@ export function ResultsDisplay({
           <div className="flex items-start space-x-1.5 md:space-x-2">
             <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="text-xs md:text-sm text-amber-800 dark:text-amber-200">
-              <p className="font-medium mb-0.5 md:mb-1">⚠️ 重要提醒</p>
-              <p className="leading-relaxed">
-                AI生成的分集简介仅作<strong>辅助作用</strong>，请务必观看对应视频内容审核修改后再使用。
-                <strong className="text-amber-900 dark:text-amber-100">禁止直接上传至TMDB</strong>等数据库平台。
-              </p>
+              <p className="font-medium mb-0.5 md:mb-1">{t("results.importantReminder")}</p>
+              <p className="leading-relaxed" dangerouslySetInnerHTML={{ __html: t("results.aiGeneratedHint") + " " + t("results.forbiddenUpload") }} />
             </div>
           </div>
         </div>
@@ -460,7 +459,7 @@ export function ResultsDisplay({
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-sm break-all">
-                        <p>文件：{result.fileName}</p>
+                        <p>{t("results.fileLabel", { name: result.fileName })}</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -471,7 +470,7 @@ export function ResultsDisplay({
                   )}
                   {index === 0 && (
                     <Badge className="text-[10px] md:text-xs px-1.5 py-0.5 bg-blue-600 text-white">
-                      ⭐ 优先
+                      {t("results.priority")}
                     </Badge>
                   )}
                 </div>
@@ -484,7 +483,7 @@ export function ResultsDisplay({
                       value={editingTitle}
                       onChange={(e) => setEditingTitle(e.target.value)}
                       className="w-full px-2 py-1 text-sm font-medium border border-blue-300 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
-                      placeholder="编辑标题..."
+                      placeholder={t("results.editTitlePlaceholder")}
                     />
                   ) : (
                     <h3 className="text-xs md:text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -503,7 +502,7 @@ export function ResultsDisplay({
                   {Math.round(result.confidence * 100)}%
                 </Badge>
                 <span className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                  {editingIndex === index ? editingSummary.length : result.wordCount}字
+                  {t("results.wordCount", { count: editingIndex === index ? editingSummary.length : result.wordCount })}
                 </span>
 
                 {/* 操作按钮 */}
@@ -516,7 +515,7 @@ export function ResultsDisplay({
                       onClick={() => handleSaveEdit(index)}
                     >
                       <Check className="h-3 w-3 mr-1" />
-                      保存
+                      {t("results.save")}
                     </Button>
                     <Button
                       variant="outline"
@@ -525,7 +524,7 @@ export function ResultsDisplay({
                       onClick={handleCancelEdit}
                     >
                       <X className="h-3 w-3 mr-1" />
-                      取消
+                      {t("results.cancel")}
                     </Button>
                   </div>
                 ) : (
@@ -536,7 +535,7 @@ export function ResultsDisplay({
                         size="sm"
                         className="min-w-[44px] min-h-[44px] h-6 w-6 p-0"
                         onClick={() => onMoveToTop(index)}
-                        title="置顶"
+                        title={t("results.pin")}
                       >
                         <ArrowUp className="h-3 w-3" />
                       </Button>
@@ -546,7 +545,7 @@ export function ResultsDisplay({
                       size="sm"
                       className="min-w-[44px] min-h-[44px] h-6 w-6 p-0"
                       onClick={() => handleStartEdit(index, result)}
-                      title="编辑"
+                      title={t("results.edit")}
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
@@ -555,10 +554,10 @@ export function ResultsDisplay({
                       size="sm"
                       className="min-w-[44px] min-h-[44px] h-6 w-6 p-0"
                       onClick={() => {
-                        const textToCopy = `标题：${result.generatedTitle}\n\n简介：${result.generatedSummary}`
+                        const textToCopy = `Title: ${result.generatedTitle}\n\nSynopsis: ${result.generatedSummary}`
                         navigator.clipboard.writeText(textToCopy)
                       }}
-                      title="复制"
+                      title={t("results.copy")}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -568,7 +567,7 @@ export function ResultsDisplay({
                           variant="ghost"
                           size="sm"
                           className="min-w-[44px] min-h-[44px] h-6 w-6 p-0"
-                          title="更多操作"
+                          title={t("results.moreActions")}
                         >
                           <MoreHorizontal className="h-3 w-3" />
                         </Button>
@@ -576,23 +575,23 @@ export function ResultsDisplay({
                       <DropdownMenuContent align="end" className="w-32">
                         <DropdownMenuItem onClick={() => handleEnhance(index, 'polish')}>
                           <Sparkles className="h-3 w-3 mr-2" />
-                          润色
+                          {t("results.polish")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEnhance(index, 'shorten')}>
                           <Minus className="h-3 w-3 mr-2" />
-                          缩写
+                          {t("results.shorten")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEnhance(index, 'expand')}>
                           <Plus className="h-3 w-3 mr-2" />
-                          扩写
+                          {t("results.expand")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEnhance(index, 'proofread')}>
                           <CheckCircle className="h-3 w-3 mr-2" />
-                          纠错
+                          {t("results.proofread", "纠错")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleStartRewrite(index)}>
                           <Edit className="h-3 w-3 mr-2" />
-                          改写
+                          {t("results.rewrite", "改写")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -608,12 +607,12 @@ export function ResultsDisplay({
                   onChange={(e) => setEditingSummary(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-blue-300 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:border-blue-500"
                   rows={4}
-                  placeholder="编辑简介内容..."
+                  placeholder={t("resultsPanel.editSummaryPlaceholder")}
                 />
               ) : rewritingIndex === index ? (
                 <div className="relative rewrite-mode-container">
                   <div className="mb-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
-                    💡 请拖拽选择文字或点击单词来选择需要改写的内容 (按ESC键取消)
+                    {t("resultsPanel.dragToRewrite")}
                   </div>
                   <div
                     ref={textContainerRef}
@@ -638,7 +637,7 @@ export function ResultsDisplay({
                   </div>
                   {selectedText && (
                     <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-xs">
-                      <div className="text-yellow-800 dark:text-yellow-200 font-medium mb-1">已选择文字：</div>
+                      <div className="text-yellow-800 dark:text-yellow-200 font-medium mb-1">{t("resultsPanel.selectedText")}</div>
                       <div className="text-yellow-700 dark:text-yellow-300 italic">"{selectedText}"</div>
                     </div>
                   )}
@@ -651,12 +650,12 @@ export function ResultsDisplay({
                       {isRewritingText ? (
                         <>
                           <Loader2 className="h-3 w-3 animate-spin" />
-                          <span>改写中...</span>
+                          <span>{t("resultsPanel.rewriting")}</span>
                         </>
                       ) : (
                         <>
                           <Check className="h-3 w-3" />
-                          <span>确认改写</span>
+                          <span>{t("resultsPanel.confirmRewrite")}</span>
                         </>
                       )}
                     </button>
@@ -666,7 +665,7 @@ export function ResultsDisplay({
                       className="min-h-[44px] px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-1"
                     >
                       <X className="h-3 w-3" />
-                      <span>取消</span>
+                        <span>{t("resultsPanel.cancelRewrite")}</span>
                     </button>
                   </div>
                 </div>
@@ -690,33 +689,33 @@ export function ResultsDisplay({
                     const newIndex = improvementOpenIndex === index ? null : index
                     setImprovementOpenIndex(newIndex)
                   }}
-                  title="与AI改进简介"
+                    title={t("resultsPanel.withAIImprove")}
                 >
                   <Wand2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
-                  与AI改进
+                  {t("resultsPanel.withAIImprove")}
                 </Button>
               </div>
               {enhancingIndex === index && (
                 <div className="flex items-center space-x-1">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   <span className="text-xs">
-                    {enhancingOperation === 'polish' && '润色中...'}
-                    {enhancingOperation === 'shorten' && '缩写中...'}
-                    {enhancingOperation === 'expand' && '扩写中...'}
-                    {enhancingOperation === 'proofread' && '纠错中...'}
+                    {enhancingOperation === 'polish' && t("resultsPanel.polishInProgress")}
+                    {enhancingOperation === 'shorten' && t("resultsPanel.shortenInProgress")}
+                    {enhancingOperation === 'expand' && t("resultsPanel.expandInProgress")}
+                    {enhancingOperation === 'proofread' && t("resultsPanel.proofreadInProgress")}
                   </span>
                 </div>
               )}
               {aiImprovingIndex && aiImprovingIndex.resultIndex === index && (
                 <div className="flex items-center space-x-1">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  <span className="text-xs text-blue-600 dark:text-blue-400">AI改进中...</span>
+                  <span className="text-xs text-blue-600 dark:text-blue-400">{t("resultsPanel.aiImproving")}</span>
                 </div>
               )}
               {rewritingIndex === index && !isRewritingText && (
                 <div className="flex items-center space-x-1">
                   <Edit className="h-3 w-3 text-blue-500" />
-                  <span className="text-xs text-blue-600 dark:text-blue-400">改写模式</span>
+                  <span className="text-xs text-blue-600 dark:text-blue-400">{t("resultsPanel.rewriteMode")}</span>
                 </div>
               )}
             </div>

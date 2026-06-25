@@ -148,13 +148,13 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                   className="min-h-[44px] md:min-h-0"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  添加
+                  {t("hardSubtitle.add")}
                 </Button>
 
                 {subtitleRegions.length > 0 && (
                   <>
                     <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                      {subtitleRegions.length} 个区域
+                      {t("hardSubtitle.subtitleRegionsCount", { count: subtitleRegions.length })}
                     </span>
                     <Button
                       variant="ghost"
@@ -166,7 +166,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                       className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 min-h-[44px] md:min-h-0"
                     >
                       <X className="h-4 w-4 mr-1" />
-                      清除
+                      {t("hardSubtitle.clear")}
                     </Button>
                   </>
                 )}
@@ -221,7 +221,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
               onClick={() => setActiveTab("config")}
             >
               <Settings className="h-4 w-4 inline mr-1" />
-              配置
+              {t("hardSubtitle.config")}
             </button>
             <button
               className={cn(
@@ -233,7 +233,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
               onClick={() => setActiveTab("subtitles")}
             >
               <Type className="h-4 w-4 inline mr-1" />
-              字幕 ({subtitles.length})
+              {t("hardSubtitle.subtitleTab")} ({subtitles.length})
             </button>
           </div>
 

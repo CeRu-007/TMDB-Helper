@@ -17,5 +17,17 @@
   "uploadedHint": "灰色表示已上傳",
   "filesCount": "{{count}} 個檔案",
   "imagesCount": "{{count}} 張圖片",
-  "selectFolder": "選擇圖片資料夾"
+  "selectFolder": "選擇圖片資料夾",
+  "type": "類型",
+  "selectFolderHint": "選擇資料夾以檢視圖片",
+  "noImagesInDir": "此目錄沒有圖片",
+  "defaultFolderName": "圖片",
+  "switchLayout": "切換佈局",
+  "supportedFormats": "支援的格式: JPG, PNG, WebP",
+  "retry": "重試",
+  "fileSize": "檔案大小",
+  "dimensions": "尺寸",
+  "name": "檔案名稱",
+  "status": "狀態",
+  "loading": "載入中..."
 }

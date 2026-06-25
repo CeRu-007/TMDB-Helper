@@ -490,7 +490,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
 
     const getDisplayLanguage = () => {
       if (currentLanguage === "auto") {
-        return "自动"
+        return t('autoLanguage', { ns: 'user' })
       }
       const lang = getLanguageByCode(currentLanguage)
       return lang?.nativeName || currentLanguage
@@ -843,11 +843,11 @@ function ProfileEditSection({
                     onKeyPress={(e) => e.key === 'Enter' && handleAvatarSave()}
                   />
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    支持 jpg、png、gif 等格式，建议尺寸 200x200 像素
+                    {t('avatarUrlHelp', { ns: 'user' })}
                   </div>
                   {/* 预设头像选择 */}
                   <div className="flex flex-wrap gap-1 mt-2">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 w-full mb-1">快速选择：</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 w-full mb-1">{t('quickSelect', { ns: 'user' })}：</div>
                     {[
                       'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
                       'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
@@ -863,7 +863,7 @@ function ProfileEditSection({
                       >
                         <img
                           src={presetUrl}
-                          alt={`预设头像 ${index + 1}`}
+                          alt={t('presetAvatarN', { ns: 'user', count: index + 1 })}
                           className="w-full h-full object-cover"
                         />
                       </button>
@@ -876,7 +876,7 @@ function ProfileEditSection({
                     disabled={!newAvatarUrl || newAvatarUrl === userInfo.avatarUrl}
                     className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
-                    保存
+                    {t('save', { ns: 'user' })}
                   </button>
                   <button
                     onClick={() => {
@@ -887,7 +887,7 @@ function ProfileEditSection({
                     }}
                     className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
                   >
-                    取消
+                    {t('cancel', { ns: 'user' })}
                   </button>
                   {userInfo.avatarUrl && (
                     <button
@@ -918,7 +918,7 @@ function ProfileEditSection({
                 {avatarSaveSuccess && (
                   <div className="text-xs text-green-500 mt-1 flex items-center space-x-1">
                     <span>✅</span>
-                    <span>头像更新成功！</span>
+                    <span>{t('avatarUpdateSuccess', { ns: 'user' })}</span>
                   </div>
                 )}
               </div>

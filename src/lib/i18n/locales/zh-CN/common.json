@@ -87,5 +87,18 @@
   "unknown": "未知",
   "none": "无",
   "tvSeries": "剧集",
-  "logsManagement": "日志管理"
+  "logsManagement": "日志管理",
+  "appSubtitle": "影视数据维护助手",
+  "appLogoAlt": "TMDB维护助手",
+  "switchToLightTheme": "切换到浅色主题",
+  "switchToDarkTheme": "切换到深色主题",
+  "errorTitle": "出错了",
+  "pageErrorTitle": "哎呀，页面出现了问题",
+  "unknownError": "发生了未知错误",
+  "viewErrorDetails": "查看错误详情",
+  "refreshPage": "刷新页面",
+  "apply": "应用",
+  "reload": "重新加载",
+  "loadSuccess": "加载成功",
+  "loadFailed": "加载失败"
 }

@@ -1,6 +1,6 @@
 {
   "ongoing": "連載中",
-  "completed": "已完結",
+  "completed": "已完成",
   "all": "全部類別",
   "unknownCategory": "未知類別",
   "recentlyUpdated": "最近更新",
@@ -89,7 +89,6 @@
   "itemMissingId": "項目缺少ID",
   "progressCompleted": "{{percent}}% 已完成",
   "inProgress": "進行中",
-  "completed": "已完成",
   "total": "總計",
   "completionRate": "完成率",
   "airTime": "播出時間",
@@ -197,7 +196,9 @@
     "willBeDeleted": "將被刪除/替換",
     "cancel": "取消",
     "batchModify": "批量修改 ({{count}})",
-    "save": "儲存"
+    "save": "儲存",
+    "columnContent": "內容",
+    "rowLabel": "列 {{row}}"
   },
   "episodeList": {
     "maintenanceProgress": "維護進度",
@@ -386,8 +387,6 @@
     "csvFormatted": "CSV內容已格式化",
     "formatFailed": "格式化失敗",
     "csvFormatIncorrect": "CSV內容格式不正確，無法格式化",
-    "processMode": "處理模式",
-    "editMode": "編輯模式",
     "localIntegration": "TMDB-Import 本地集成",
     "fullscreen": "全屏",
     "exitFullscreen": "退出全屏",
@@ -395,5 +394,68 @@
     "copied": "已複製",
     "platformCommandCopied": "播出平臺命令已複製",
     "tmdbCommandCopied": "TMDB命令已複製"
+  },
+  "error": {
+    "defaultLoadFailed": "無法載入資料，請重新整理頁面重試",
+    "loadFailed": "載入失敗",
+    "networkProblem": "網路連線問題",
+    "networkTip": "請檢查您的網路連線，或者TMDB伺服器可能暫時無法使用",
+    "apiKeyProblem": "API金鑰問題",
+    "apiKeyTip": "請檢查您的TMDB API金鑰是否有效",
+    "serverError": "伺服器錯誤",
+    "serverTip": "TMDB伺服器可能暫時無法使用，請稍後再試",
+    "hint": "提示",
+    "configureApiKey": "設定API金鑰"
+  },
+  "progress": {
+    "ongoing": "進行中 ({{count}})",
+    "completed": "已完成 ({{count}})",
+    "noOngoing": "暫無進行中的詞條",
+    "noCompleted": "暫無已完成的詞條"
+  },
+  "addItemDialog": {
+    "searchNetworkError": "搜尋失敗，請檢查網路連線",
+    "searchFailed": "搜尋失敗",
+    "failed": "新增失敗",
+    "backdropPreview": "背景圖預覽"
+  },
+  "itemDetail": {
+    "collapseInfo": "收起資訊",
+    "platformOverview": "平臺與簡介"
+  },
+  "batchInsert": {
+    "title": "批次插入列",
+    "description": "設定要插入的列數和插入位置，episode_number 欄將自動遞增",
+    "count": "插入列數",
+    "position": "插入位置",
+    "above": "在上方插入",
+    "below": "在下方插入",
+    "preview": "將插入 {{count}} 列新資料"
+  },
+  "independent": {
+    "languageUpdated": "語言已更新為 {{code}}",
+    "loadingCsv": "正在載入CSV檔案...",
+    "configurePathFirst": "請先在設定中配置TMDB-Import工具路徑",
+    "csvReadFailed": "讀取CSV檔案失敗",
+    "csvReadSuccess": "CSV檔案讀取成功",
+    "csvLoadedCount": "CSV檔案已載入，共{{count}}列資料",
+    "csvNotFound": "未找到CSV檔案。請先運行播出平台抓取命令生成CSV檔案。",
+    "tipSwitchTab": "提示：切換到「處理」標籤頁，使用播出平台抓取和TMDB匯入命令。",
+    "tipStep1": "1. 首先運行播出平台命令獲取基本資訊",
+    "tipStep2": "2. 然後運行TMDB命令獲取詳細元資料",
+    "tipStep3": "3. 命令執行成功後會自動生成import.csv檔案",
+    "fileNotExist": "檔案不存在",
+    "tipUseImport": "提示：使用播出平台抓取和TMDB匯入功能生成CSV檔案。",
+    "csvReadErrorDetail": "讀取CSV檔案失敗: {{error}}",
+    "emptyCommand": "命令為空，請檢查配置",
+    "startExec": "開始執行: {{description}}",
+    "workDir": "工作目錄: {{dir}}",
+    "command": "命令: {{cmd}}",
+    "noResponseStream": "無法取得回應流",
+    "processStarted": "進程已啟動 (PID: {{pid}})",
+    "warningNoPid": "警告: 未收到進程ID，互動功能可能無法使用",
+    "execSuccess": "{{description}}執行成功",
+    "execCancelled": "命令執行已取消",
+    "userCancelled": "使用者取消"
   }
 }

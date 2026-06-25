@@ -86,5 +86,18 @@
   "adult": "成人",
   "unknown": "未知",
   "none": "無",
-  "logsManagement": "日誌管理"
+  "logsManagement": "日誌管理",
+  "appSubtitle": "影視資料維護助手",
+  "appLogoAlt": "TMDB維護助手",
+  "switchToLightTheme": "切換到淺色主題",
+  "switchToDarkTheme": "切換到深色主題",
+  "errorTitle": "出錯了",
+  "pageErrorTitle": "哎呀，頁面出現了問題",
+  "unknownError": "發生了未知錯誤",
+  "viewErrorDetails": "檢視錯誤詳情",
+  "refreshPage": "重新整理頁面",
+  "apply": "套用",
+  "reload": "重新載入",
+  "loadSuccess": "載入成功",
+  "loadFailed": "載入失敗"
 }

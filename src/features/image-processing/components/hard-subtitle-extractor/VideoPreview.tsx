@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useRef, useEffect, useState, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 
 interface BoundingBox {
   id: string
@@ -39,6 +40,7 @@ export function VideoPreview({
   onPlayPause,
   onVideoRef
 }: VideoPreviewProps) {
+  const { t } = useTranslation("image-processing")
   const videoRef = useRef<HTMLVideoElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -220,9 +222,9 @@ export function VideoPreview({
         className="w-full h-full flex items-center justify-center bg-gray-900"
       >
         <div className="text-center">
-          <p className="text-gray-400 mb-2">请上传视频或输入视频链接</p>
+          <p className="text-gray-400 mb-2">{t("hardSubtitle.uploadVideoOrUrl")}</p>
           <p className="text-gray-500 text-sm">
-            点击视频画面并拖动来框选字幕区域
+            {t("hardSubtitle.dragToSelectRegion")}
           </p>
         </div>
       </div>

@@ -17,5 +17,17 @@
   "uploadedHint": "グレー表示はアップロード済み",
   "filesCount": "{{count}} ファイル",
   "imagesCount": "{{count}} 画像",
-  "selectFolder": "画像フォルダを選択"
+  "selectFolder": "画像フォルダを選択",
+  "type": "タイプ",
+  "selectFolderHint": "フォルダを選択して画像を表示",
+  "noImagesInDir": "このフォルダに画像はありません",
+  "defaultFolderName": "画像",
+  "switchLayout": "レイアウト切替",
+  "supportedFormats": "対応フォーマット: JPG, PNG, WebP",
+  "retry": "再試行",
+  "fileSize": "サイズ",
+  "dimensions": "寸法",
+  "name": "名前",
+  "status": "ステータス",
+  "loading": "読み込み中..."
 }

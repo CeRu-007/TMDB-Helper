@@ -5,6 +5,7 @@ import { AlertTriangle } from 'lucide-react'
 import { Button } from './ui/button'
 import { Alert, AlertDescription } from './ui/alert'
 import { logger } from '@/lib/utils/logger'
+import i18n from '@/lib/i18n'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -43,12 +44,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       errorInfo
     })
 
-    // 调用错误回调
     if (this.props.onError) {
       this.props.onError(error, errorInfo)
     }
 
-    // 在开发环境下打印错误
     if (process.env.NODE_ENV === 'development') {
       logger.error('ErrorBoundary caught an error:', error, errorInfo)
     }
@@ -64,12 +63,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render() {
     if (this.state.hasError) {
-      // 如果提供了自定义 fallback，使用它
       if (this.props.fallback) {
         return this.props.fallback
       }
 
-      // 默认的错误 UI
+      const { t } = i18n
+
       return (
         <div className="min-h-[200px] flex items-center justify-center p-4">
           <div className="max-w-md w-full">
@@ -78,16 +77,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               <AlertDescription className="mt-2">
                 <div className="space-y-2">
                   <p className="font-medium">
-                    哎呀，页面出现了问题
+                    {t('pageErrorTitle', { ns: 'common' })}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {this.state.error?.message || '发生了未知错误'}
+                    {this.state.error?.message || t('unknownError', { ns: 'common' })}
                   </p>
 
                   {(this.props.showErrorDetails || process.env.NODE_ENV === 'development') && (
                     <details className="mt-2">
                       <summary className="cursor-pointer text-sm font-medium">
-                        查看错误详情
+                        {t('viewErrorDetails', { ns: 'common' })}
                       </summary>
                       <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto max-h-32">
                         {this.state.error?.stack}
@@ -101,14 +100,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                       size="sm"
                       onClick={this.handleReset}
                     >
-                      重试
+                      {t('retry', { ns: 'common' })}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => window.location.reload()}
                     >
-                      刷新页面
+                      {t('refreshPage', { ns: 'common' })}
                     </Button>
                   </div>
                 </div>
@@ -123,9 +122,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 }
 
-/**
- * 用于异步操作的错误边界 Hook
- */
 export function AsyncErrorBoundary({
   children,
   fallback
@@ -135,12 +131,10 @@ export function AsyncErrorBoundary({
 }) {
   const [error, setError] = React.useState<Error | null>(null)
 
-  // 重置错误状态
   const resetError = React.useCallback(() => {
     setError(null)
   }, [])
 
-  // 错误处理函数
   const handleError = React.useCallback((error: Error) => {
     setError(error)
   }, [])
@@ -159,9 +153,6 @@ export function AsyncErrorBoundary({
   return <>{children}</>
 }
 
-/**
- * 高阶组件：为组件添加错误边界
- */
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>

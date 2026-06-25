@@ -1,6 +1,7 @@
 import React from 'react'
 import { Markdown } from "@/shared/components/ui/markdown"
 import { Loader2, Paperclip } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface MessageContentProps {
   content: string
@@ -19,6 +20,7 @@ export function MessageContent({
   isEdited,
   role
 }: MessageContentProps) {
+  const { t } = useTranslation("ai-chat")
   if (role === 'user') {
     if (type === 'file') {
       return (
@@ -35,7 +37,7 @@ export function MessageContent({
     return (
       <div className="whitespace-pre-wrap break-words">
         {content}
-        {isEdited && <span className="text-xs text-blue-200 ml-2">(已编辑)</span>}
+        {isEdited && <span className="text-xs text-blue-200 ml-2">{t("edited")}</span>}
       </div>
     )
   }
@@ -53,10 +55,10 @@ export function MessageContent({
           {isStreaming && (
             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>正在生成回复...</span>
+              <span>{t("generatingReply")}</span>
             </div>
           )}
-          {!isStreaming && isEdited && <span className="text-xs text-gray-400 ml-2">(已编辑)</span>}
+          {!isStreaming && isEdited && <span className="text-xs text-gray-400 ml-2">{t("edited")}</span>}
         </div>
       </div>
     )
@@ -68,10 +70,10 @@ export function MessageContent({
       {isStreaming && (
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
           <Loader2 className="w-4 h-4 animate-spin" />
-          <span>正在生成回复...</span>
+          <span>{t("generatingReply")}</span>
         </div>
       )}
-      {!isStreaming && isEdited && <span className="text-xs text-gray-400 ml-2">(已编辑)</span>}
+      {!isStreaming && isEdited && <span className="text-xs text-gray-400 ml-2">{t("edited")}</span>}
     </div>
   )
 }

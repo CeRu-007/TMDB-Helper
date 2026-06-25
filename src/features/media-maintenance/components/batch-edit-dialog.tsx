@@ -112,9 +112,10 @@ export default function BatchEditDialog({
   onBatchSave,
   allColumnData = [],
   currentRowIndex = -1,
-  columnName = "内容"
+  columnName
 }: BatchEditDialogProps) {
   const { t } = useTranslation('media')
+  const effectiveColumnName = columnName || t("batchEdit.columnContent")
   const [editValue, setEditValue] = useState(value)
   const [viewMode, setViewMode] = useState<ViewMode>('edit')
   const [selectedPattern, setSelectedPattern] = useState<DuplicatePattern | null>(null)
@@ -309,9 +310,9 @@ export default function BatchEditDialog({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden p-0">
         {/* 头部 */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="text-lg">{t('batchEdit.editTitle', { name: columnName })}</DialogTitle>
+          <DialogTitle className="text-lg">{t('batchEdit.editTitle', { name: effectiveColumnName })}</DialogTitle>
           <DialogDescription className="text-sm">
-            {isBatchMode ? t('batchEdit.batchDescription', { name: columnName }) : t('batchEdit.editDescription', { name: columnName })}
+            {isBatchMode ? t('batchEdit.batchDescription', { name: effectiveColumnName }) : t('batchEdit.editDescription', { name: effectiveColumnName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -365,13 +366,13 @@ export default function BatchEditDialog({
           {viewMode === 'edit' && (
             <div className="space-y-3">
               <Label htmlFor="contentTextarea" className="text-sm font-medium">
-                {t('batchEdit.contentLabel', { name: columnName })}
+                {t('batchEdit.contentLabel', { name: effectiveColumnName })}
               </Label>
               <Textarea
                 id="contentTextarea"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                placeholder={t('batchEdit.contentPlaceholder', { name: columnName })}
+                placeholder={t('batchEdit.contentPlaceholder', { name: effectiveColumnName })}
                 className="min-h-[250px] resize-none text-sm"
                 rows={12}
               />
@@ -559,7 +560,7 @@ export default function BatchEditDialog({
                 <div className="p-3 space-y-3">
                   {previewData.map(({ rowIndex, value: text }) => (
                     <div key={rowIndex} className="text-sm">
-                      <div className="text-xs text-muted-foreground mb-1">行 {rowIndex + 1}</div>
+                      <div className="text-xs text-muted-foreground mb-1">{t("batchEdit.rowLabel", { row: rowIndex + 1 })}</div>
                       <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
                         {viewMode === 'batch-auto' && selectedPattern
                           ? (() => {

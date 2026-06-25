@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import { Button } from "@/shared/components/ui/button"
 import { AutoResizeTextarea } from "../auto-resize-textarea"
+import { useTranslation } from "react-i18next"
 
 interface MessageEditorProps {
   content: string
@@ -50,7 +51,8 @@ export function MessageEditor({
     ? { minHeight: '80px', maxHeight: '400px' }
     : { minHeight: '120px', maxHeight: 'calc(100vh - 300px)' }
 
-  const saveButtonText = role === 'user' ? '保存并重新生成' : '保存'
+  const { t } = useTranslation("ai-chat")
+  const saveButtonText = role === 'user' ? t("saveAndRegenerate") : t("saveAction")
 
   return (
     <div className="w-full space-y-2 animate-in fade-in-50 duration-200">
@@ -71,7 +73,7 @@ export function MessageEditor({
               onClick={onCancel}
               className="h-7 px-2 text-xs"
             >
-              取消
+              {t("cancel", { ns: "common" })}
             </Button>
             <Button
               size="sm"

@@ -11,16 +11,16 @@ import {
 } from "lucide-react"
 import { logger } from '@/lib/utils/logger'
 import { Button } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
 import { cn } from "@/lib/utils"
 import { VideoAnalyzer } from "@/lib/media/video-analyzer"
 import { VideoAnalysisStep, createDefaultAnalysisSteps, updateStepStatus } from "@/features/episode-generation/components/video-analysis-feedback"
 import { VideoAnalysisFeedback } from "@/features/episode-generation/components/video-analysis-feedback"
 import { EmptyStateProps } from './types'
 import { DELAY_500MS, DELAY_1S } from "@/lib/constants/constants"
+import { useTranslation } from "react-i18next"
 
 export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
+  const { t } = useTranslation("episode-generation")
   const [videoUrl, setVideoUrl] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [activeTab, setActiveTab] = useState<'upload' | 'video'>('upload')
@@ -29,12 +29,12 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
 
   const handleVideoAnalysis = async () => {
     if (!videoUrl.trim()) {
-      setAnalysisError('请输入视频URL')
+      setAnalysisError(t('emptyState.enterVideoUrl'))
       return
     }
 
     if (!VideoAnalyzer.validateVideoUrl(videoUrl)) {
-      setAnalysisError('不支持的视频URL格式，请使用YouTube、Bilibili等支持的平台')
+      setAnalysisError(t('emptyState.unsupportedUrlFormat'))
       return
     }
 
@@ -43,52 +43,43 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
     setAnalysisSteps(createDefaultAnalysisSteps())
 
     try {
-      // 模拟分析步骤进度
       const steps = createDefaultAnalysisSteps()
 
-      // 开始下载
-      setAnalysisSteps(updateStepStatus(steps, 'download', 'running', '正在下载视频...'))
+      setAnalysisSteps(updateStepStatus(steps, 'download', 'running', t('emptyState.downloadVideo')))
       await new Promise(resolve => setTimeout(resolve, DELAY_1S))
 
-      // 下载完成，开始提取
       setAnalysisSteps(prev => updateStepStatus(
-        updateStepStatus(prev, 'download', 'completed', '音频提取完成'),
-        'extract', 'running', '正在进行语音识别...'
+        updateStepStatus(prev, 'download', 'completed', t('emptyState.audioExtracted')),
+        'extract', 'running', t('emptyState.recognizing')
       ))
       await new Promise(resolve => setTimeout(resolve, DELAY_1S))
 
-      // 提取完成，开始字幕提取
       setAnalysisSteps(prev => updateStepStatus(
-        updateStepStatus(prev, 'extract', 'completed', '内容提取完成'),
-        'subtitle', 'running', '正在检测和提取字幕内容...'
+        updateStepStatus(prev, 'extract', 'completed', t('emptyState.contentExtracted')),
+        'subtitle', 'running', t('emptyState.detectingSubtitle')
       ))
       await new Promise(resolve => setTimeout(resolve, DELAY_1S))
 
-      // 字幕提取完成，开始AI分析
       setAnalysisSteps(prev => updateStepStatus(
-        updateStepStatus(prev, 'subtitle', 'completed', '字幕提取完成'),
-        'analyze', 'running', '正在使用AI分析视频内容...'
+        updateStepStatus(prev, 'subtitle', 'completed', t('emptyState.subtitleExtracted')),
+        'analyze', 'running', t('emptyState.analyzingVideo')
       ))
 
-      // 调用实际的视频分析
       await onVideoAnalysis?.(videoUrl.trim())
 
-      // 分析完成，开始生成简介
       setAnalysisSteps(prev => updateStepStatus(
-        updateStepStatus(prev, 'analyze', 'completed', 'AI分析完成'),
-        'generate', 'running', '正在生成分集简介...'
+        updateStepStatus(prev, 'analyze', 'completed', t('emptyState.aiAnalysisComplete')),
+        'generate', 'running', t('emptyState.generatingSynopsis')
       ))
       await new Promise(resolve => setTimeout(resolve, DELAY_500MS))
 
-      // 全部完成
-      setAnalysisSteps(prev => updateStepStatus(prev, 'generate', 'completed', '简介生成完成'))
+      setAnalysisSteps(prev => updateStepStatus(prev, 'generate', 'completed', t('emptyState.synopsisGenerationComplete')))
 
     } catch (error) {
-      logger.error('音频转写失败:', error)
-      const errorMessage = error instanceof Error ? error.message : '未知错误'
-      setAnalysisError(`音频转写失败: ${errorMessage}`)
+      logger.error('Audio transcription failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setAnalysisError(t('emptyState.audioTranscribeFailed', { error: errorMessage }))
 
-      // 标记当前步骤为失败
       setAnalysisSteps(prev => {
         const runningStep = prev.find(step => step.status === 'running')
         if (runningStep) {
@@ -115,17 +106,13 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* 警告提示 */}
       <div className="p-3 md:p-4 pb-1 md:pb-2">
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2.5 md:p-3">
           <div className="flex items-start space-x-1.5 md:space-x-2">
             <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="text-xs md:text-sm text-amber-800 dark:text-amber-200">
-              <p className="font-medium mb-0.5 md:mb-1">⚠️ 重要提醒</p>
-              <p className="leading-relaxed">
-                AI生成的分集简介仅作<strong>辅助作用</strong>，请务必观看对应视频内容审核修改后再使用。
-                <strong className="text-amber-900 dark:text-amber-100">禁止直接上传至TMDB</strong>等数据库平台。
-              </p>
+              <p className="font-medium mb-0.5 md:mb-1">⚠️ {t("results.importantReminder")}</p>
+              <p className="leading-relaxed" dangerouslySetInnerHTML={{ __html: t("results.aiGeneratedHint") + " " + t("results.forbiddenUpload") }} />
             </div>
           </div>
         </div>
@@ -133,7 +120,6 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
 
       <div className="flex-1 flex items-start md:items-center justify-center overflow-auto">
         <div className="text-center w-full max-w-xl mx-auto px-3 md:px-5 py-4 md:py-0">
-          {/* 简洁的图标 */}
           <div className="mb-4 md:mb-6">
             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-4 rounded-full inline-flex items-center justify-center">
               <FileText className="h-6 w-6 md:h-8 md:w-8 text-blue-500 dark:text-blue-400" />
@@ -141,13 +127,12 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
           </div>
 
           <h3 className="text-base md:text-lg font-medium text-gray-900 dark:text-gray-100 mb-1 md:mb-2">
-            分集简介生成
+            {t("emptyState.synopsisGeneration")}
           </h3>
           <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-4 md:mb-6">
-            上传字幕文件或输入视频链接，生成分集标题和剧情简介
+            {t("emptyState.uploadOrVideoHint")}
           </p>
 
-          {/* 选项卡切换 - 可滚动的标签 */}
           <div className="mb-4 md:mb-6 overflow-x-auto scrollbar-hide">
             <div className="flex justify-center min-w-max">
               <div className="bg-blue-50 dark:bg-blue-900/20 p-1 rounded-lg inline-flex">
@@ -161,7 +146,7 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                   )}
                 >
                   <Upload className="h-4 w-4 inline mr-1 md:mr-2" />
-                  上传字幕
+                  {t("emptyState.uploadSubtitle")}
                 </button>
                 <button
                   onClick={() => setActiveTab('video')}
@@ -173,66 +158,62 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                   )}
                 >
                   <Film className="h-4 w-4 inline mr-1 md:mr-2" />
-                  音频转写
+                  {t("emptyState.audioTranscribe")}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* 选项卡内容 */}
           {activeTab === 'upload' && (
             <>
-              {/* 字幕文件上传说明 */}
               <div className="bg-blue-50/50 dark:bg-blue-950/30 rounded-lg p-3 md:p-4 mb-4 md:mb-6 text-left">
                 <h4 className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 md:mb-3 flex items-center">
                   <Upload className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2 text-blue-500" />
-                  字幕文件上传
+                  {t("emptyState.subtitleUploadGuide")}
                 </h4>
                 <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-start space-x-1.5 md:space-x-2">
                     <span className="text-blue-500 font-medium">1.</span>
-                    <span>配置硅基流动API密钥</span>
+                    <span>{t("emptyState.step1ApiConfig")}</span>
                   </div>
                   <div className="flex items-start space-x-1.5 md:space-x-2">
                     <span className="text-blue-500 font-medium">2.</span>
-                    <span>上传SRT或VTT格式的字幕文件</span>
+                    <span>{t("emptyState.step2UploadSrt")}</span>
                   </div>
                   <div className="flex items-start space-x-1.5 md:space-x-2">
                     <span className="text-blue-500 font-medium">3.</span>
-                    <span>选择模型和生成风格</span>
+                    <span>{t("emptyState.step3SelectStyle")}</span>
                   </div>
                   <div className="flex items-start space-x-1.5 md:space-x-2">
                     <span className="text-blue-500 font-medium">4.</span>
-                    <span>批量生成简介内容</span>
+                    <span>{t("emptyState.step4BatchGenerate")}</span>
                   </div>
                 </div>
               </div>
 
-              {/* 主要操作按钮 */}
               <div className="flex justify-center">
                 <Button
                   onClick={onUpload}
                   className="min-h-[44px] bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  上传字幕文件
+                  {t("emptyState.uploadSubtitleFile")}
                 </Button>
               </div>
 
-              {/* 支持的文件格式和拖拽提示 */}
               <div className="mt-3 md:mt-4 space-y-1.5 md:space-y-2">
                 <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 text-center">
-                  支持格式：SRT、VTT、ASS、SSA
+                  {t("emptyState.supportedFormats")}
                 </div>
                 <div className="flex items-center justify-center space-x-3 md:space-x-4 text-[10px] md:text-xs text-gray-400 dark:text-gray-500">
                   <div className="flex items-center space-x-1">
                     <Upload className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                    <span>点击上传</span>
+                    <span>{t("emptyState.clickToUpload")}</span>
                   </div>
                   <div className="w-px h-2.5 md:h-3 bg-gray-300 dark:bg-gray-600"></div>
                   <div className="flex items-center space-x-1">
                     <div className="w-2.5 h-2.5 md:w-3 md:h-3 border-2 border-dashed border-gray-400 rounded"></div>
-                    <span>拖拽上传</span>
+                    <span>{t("emptyState.dragToUpload")}</span>
                   </div>
                 </div>
               </div>
@@ -241,37 +222,35 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
 
           {activeTab === 'video' && (
             <>
-              {/* 音频转写说明 */}
               <div className="bg-purple-50/50 dark:bg-purple-950/30 rounded-lg p-4 mb-6 text-left">
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
                   <Film className="h-4 w-4 mr-2 text-purple-500" />
-                  音频转写
+                  {t("emptyState.audioTranscribeGuide")}
                 </h4>
                 <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-start space-x-2">
                     <span className="text-purple-500 font-medium">1.</span>
-                    <span>输入视频链接</span>
+                    <span>{t("emptyState.step1VideoUrl")}</span>
                   </div>
                   <div className="flex items-start space-x-2">
                     <span className="text-purple-500 font-medium">2.</span>
-                    <span>提取音频进行语音识别</span>
+                    <span>{t("emptyState.step2AudioExtract")}</span>
                   </div>
                   <div className="flex items-start space-x-2">
                     <span className="text-purple-500 font-medium">3.</span>
-                    <span>基于内容生成简介</span>
+                    <span>{t("emptyState.step3GenerateSynopsis")}</span>
                   </div>
                   <div className="flex items-start space-x-2">
                     <span className="text-purple-500 font-medium">4.</span>
-                    <span>建议视频时长30分钟以内</span>
+                    <span>{t("emptyState.step4DurationTip")}</span>
                   </div>
                 </div>
               </div>
 
-              {/* 视频URL输入 */}
               <div className="mb-4 md:mb-6">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-3 md:p-4 border border-gray-200 dark:border-gray-700">
                   <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 md:mb-2">
-                    视频链接
+                    {t("emptyState.videoUrlLabel")}
                   </label>
                   <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
                     <div className="flex-1 relative">
@@ -279,7 +258,7 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                         type="url"
                         value={videoUrl}
                         onChange={(e) => setVideoUrl(e.target.value)}
-                        placeholder="请输入视频URL..."
+                        placeholder={t("emptyState.videoUrlPlaceholder")}
                         className={cn(
                           "w-full px-3 py-2 border rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-colors",
                           videoUrl.trim() && VideoAnalyzer.validateVideoUrl(videoUrl)
@@ -308,12 +287,12 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                       {isAnalyzing ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>分析中...</span>
+                          <span>{t("emptyState.analyzing")}</span>
                         </>
                       ) : (
                         <>
                           <Wand2 className="h-4 w-4" />
-                          <span>开始分析</span>
+                          <span>{t("emptyState.startAnalysis")}</span>
                         </>
                       )}
                     </button>
@@ -322,12 +301,12 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                   {videoUrl.trim() && !VideoAnalyzer.validateVideoUrl(videoUrl) && (
                     <div className="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center space-x-1">
                       <XCircle className="h-3 w-3" />
-                      <span>不支持的URL格式</span>
+                      <span>{t("emptyState.unsupportedUrl")}</span>
                     </div>
                   )}
 
                   <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                    <p className="mb-2">支持的视频平台：</p>
+                    <p className="mb-2">{t("emptyState.supportedPlatforms")}</p>
                     <div className="flex flex-wrap gap-2">
                       {VideoAnalyzer.getSupportedPlatforms().map((platform, index) => (
                         <span key={index} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">
@@ -339,7 +318,6 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                 </div>
               </div>
 
-              {/* 音频转写反馈 */}
               <VideoAnalysisFeedback
                 isAnalyzing={isAnalyzing}
                 steps={analysisSteps}

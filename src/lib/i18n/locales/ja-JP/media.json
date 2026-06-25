@@ -1,6 +1,6 @@
 {
   "ongoing": "放送中",
-  "completed": "完結",
+  "completed": "完了",
   "all": "全カテゴリー",
   "unknownCategory": "不明なカテゴリー",
   "recentlyUpdated": "最近更新",
@@ -84,7 +84,6 @@
   "itemMissingId": "項目にIDがありません",
   "progressCompleted": "{{percent}}%完了",
   "inProgress": "進行中",
-  "completed": "完了",
   "total": "合計",
   "completionRate": "完了率",
   "airTime": "放送時間",
@@ -192,7 +191,9 @@
     "willBeDeleted": "削除/置換されます",
     "cancel": "キャンセル",
     "batchModify": "一括編集 ({{count}})",
-    "save": "保存"
+    "save": "保存",
+    "columnContent": "コンテンツ",
+    "rowLabel": "行 {{row}}"
   },
   "episodeList": {
     "maintenanceProgress": "メンテナンス進捗",
@@ -381,8 +382,6 @@
     "csvFormatted": "CSVコンテンツがフォーマットされました",
     "formatFailed": "フォーマットに失敗しました",
     "csvFormatIncorrect": "CSVコンテンツの形式が正しくありません。フォーマットできません",
-    "processMode": "処理モード",
-    "editMode": "編集モード",
     "localIntegration": "TMDB-Import ローカル統合",
     "fullscreen": "全画面",
     "exitFullscreen": "全画面を終了",
@@ -390,5 +389,68 @@
     "copied": "コピーしました",
     "platformCommandCopied": "プラットフォームコマンドがコピーされました",
     "tmdbCommandCopied": "TMDBコマンドがコピーされました"
+  },
+  "error": {
+    "defaultLoadFailed": "データを読み込めません。ページを更新してもう一度お試しください",
+    "loadFailed": "読み込み失敗",
+    "networkProblem": "ネットワーク接続の問題",
+    "networkTip": "ネットワーク接続を確認するか、TMDBサーバーが一時的に利用できない可能性があります",
+    "apiKeyProblem": "APIキーの問題",
+    "apiKeyTip": "TMDB APIキーが有効か確認してください",
+    "serverError": "サーバーエラー",
+    "serverTip": "TMDBサーバーが一時的に利用できない可能性があります。しばらくしてからもう一度お試しください",
+    "hint": "ヒント",
+    "configureApiKey": "APIキーを設定"
+  },
+  "progress": {
+    "ongoing": "進行中 ({{count}})",
+    "completed": "完了 ({{count}})",
+    "noOngoing": "進行中のアイテムはありません",
+    "noCompleted": "完了したアイテムはありません"
+  },
+  "addItemDialog": {
+    "searchNetworkError": "検索に失敗しました。ネットワーク接続を確認してください",
+    "searchFailed": "検索に失敗しました",
+    "failed": "追加に失敗しました",
+    "backdropPreview": "バックドロッププレビュー"
+  },
+  "itemDetail": {
+    "collapseInfo": "情報を折りたたむ",
+    "platformOverview": "プラットフォーム＆あらすじ"
+  },
+  "batchInsert": {
+    "title": "行を一括挿入",
+    "description": "挿入する行数と位置を設定し、episode_number列は自動的にインクリメントされます",
+    "count": "挿入行数",
+    "position": "挿入位置",
+    "above": "上に挿入",
+    "below": "下に挿入",
+    "preview": "{{count}}行の新規データが挿入されます"
+  },
+  "independent": {
+    "languageUpdated": "言語が{{code}}に更新されました",
+    "loadingCsv": "CSVファイルを読み込み中...",
+    "configurePathFirst": "まず設定でTMDB-Importツールパスを設定してください",
+    "csvReadFailed": "CSVファイルの読み込みに失敗しました",
+    "csvReadSuccess": "CSVファイルの読み込みに成功しました",
+    "csvLoadedCount": "CSVファイルが読み込まれました。{{count}}行のデータ",
+    "csvNotFound": "CSVファイルが見つかりません。プラットフォームメタデータクロールコマンドを実行してCSVファイルを生成してください。",
+    "tipSwitchTab": "ヒント：「処理」タブに切り替えて、プラットフォームクロールとTMDBインポートコマンドを使用してください。",
+    "tipStep1": "1. まずプラットフォームコマンドを実行して基本情報を取得",
+    "tipStep2": "2. 次にTMDBコマンドを実行して詳細メタデータを取得",
+    "tipStep3": "3. コマンド成功後、import.csvファイルが自動生成されます",
+    "fileNotExist": "ファイルが存在しません",
+    "tipUseImport": "ヒント：プラットフォームクロールとTMDBインポート機能を使用してCSVファイルを生成してください。",
+    "csvReadErrorDetail": "CSVファイルの読み込みに失敗しました: {{error}}",
+    "emptyCommand": "コマンドが空です。設定を確認してください",
+    "startExec": "実行を開始: {{description}}",
+    "workDir": "作業ディレクトリ: {{dir}}",
+    "command": "コマンド: {{cmd}}",
+    "noResponseStream": "レスポンスストリームを取得できません",
+    "processStarted": "プロセスが開始されました (PID: {{pid}})",
+    "warningNoPid": "警告: プロセスIDが受信されませんでした。インタラクティブ機能が利用できない場合があります",
+    "execSuccess": "{{description}}が正常に実行されました",
+    "execCancelled": "コマンド実行がキャンセルされました",
+    "userCancelled": "ユーザーがキャンセルしました"
   }
 }

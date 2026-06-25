@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthCheck } from '@/shared/hooks/use-auth-check'
 import { useAuthActions } from '@/shared/hooks/use-auth-actions'
 import type { AuthUser } from '@/shared/types/auth.types'
+import i18n from '@/lib/i18n'
 
 export interface AuthState {
   user: AuthUser | null
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       router.replace('/')
       return { success: true }
     }
-    return { success: false, error: result.error || '用户名或密码错误' }
+    return { success: false, error: result.error || i18n.t('invalidCredentials', { ns: 'user' }) }
   }, [loginAction, router])
 
   const handleRegister = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string | undefined }> => {

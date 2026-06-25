@@ -592,7 +592,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     } catch (error) {
       logger.error('保存设置失败:', error)
       setSaveStatus("error")
-      setValidationMessage("保存失败，请重试")
+      setValidationMessage(t("settings.saveFailedRetry"))
     }
   }
 
@@ -696,13 +696,13 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
           description: t("settings.tmdbConfigSaveSuccess"),
         })
       } else {
-        throw new Error(data.error || '保存失败')
+        throw new Error(data.error || t("settings.saveFailed"))
       }
     } catch (error) {
       logger.error('保存TMDB配置失败，可能是服务不可用:', error)
       toast({
         title: t("common.error"),
-        description: t("settings.tmdbConfigSaveFailed", { error: error instanceof Error ? error.message : '服务不可用' }),
+        description: t("settings.tmdbConfigSaveFailed", { error: error instanceof Error ? error.message : t("settings.serviceUnavailable") }),
         variant: "destructive",
       })
     } finally {
@@ -841,7 +841,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
 
     const data = await response.json()
     if (!data.success) {
-      throw new Error(data.error || '保存失败')
+      throw new Error(data.error || t("settings.saveFailed"))
     }
   }, [])
 
@@ -967,7 +967,7 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b">
           <DialogTitle className="flex items-center">
             {isMobile && !showMobileMenu && (
-              <Button variant="ghost" size="icon" onClick={handleBackToMenu} className="mr-2 -ml-2 h-8 w-8" aria-label="返回">
+              <Button variant="ghost" size="icon" onClick={handleBackToMenu} className="mr-2 -ml-2 h-8 w-8" aria-label={t("settings.back")}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             )}

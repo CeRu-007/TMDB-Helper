@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useMemo, useState, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { useUploadStore } from "@/stores/upload-store"
 import { ImageThumbnail } from "./image-thumbnail"
 import { cn } from "@/lib/utils"
@@ -10,6 +11,7 @@ type SortKey = "name" | "size" | "type"
 type SortDir = "asc" | "desc"
 
 export function SinglePageView() {
+  const { t } = useTranslation("upload-window")
   const files = useUploadStore((s) => s.files)
   const tree = useUploadStore((s) => s.tree)
   const columnPaths = useUploadStore((s) => s.columnPaths)
@@ -85,10 +87,10 @@ export function SinglePageView() {
       <div className="flex-1 overflow-y-auto">
         <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-800 text-xs font-medium text-gray-500 dark:text-gray-400 sticky top-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm z-10">
           <div className="col-span-1" />
-          <div className="col-span-4"><SortHeader label="文件名" sortKey="name" /></div>
-          <div className="col-span-2"><SortHeader label="文件大小" sortKey="size" /></div>
-          <div className="col-span-2"><SortHeader label="类型" sortKey="type" /></div>
-          <div className="col-span-2">状态</div>
+          <div className="col-span-4"><SortHeader label={t("name")} sortKey="name" /></div>
+          <div className="col-span-2"><SortHeader label={t("fileSize")} sortKey="size" /></div>
+          <div className="col-span-2"><SortHeader label={t("type")} sortKey="type" /></div>
+          <div className="col-span-2">{t("status")}</div>
         </div>
 
         {allImages.map((f) => (
@@ -109,7 +111,7 @@ export function SinglePageView() {
             <div className="col-span-2 text-xs text-gray-400">{f.type.split("/").pop()?.toUpperCase()}</div>
             <div className="col-span-2">
               {uploadedPaths.includes(f.relativePath) && (
-                <span className="text-xs text-green-500 font-medium">已上传</span>
+                <span className="text-xs text-green-500 font-medium">{t("uploaded")}</span>
               )}
             </div>
           </div>

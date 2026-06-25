@@ -6,6 +6,7 @@ import { VisualCropEditor, type CropArea } from "./visual-crop-editor"
 import { Upload, Download, FileImage, Loader2, Lock, Unlock } from "lucide-react"
 import { useToast } from "@/lib/hooks/use-toast"
 import { logger } from "@/lib/utils/logger"
+import { useTranslation } from "react-i18next"
 
 interface ImageInfo {
   url: string
@@ -16,9 +17,9 @@ interface ImageInfo {
 }
 
 const ASPECT_RATIOS = [
-  { key: "2:3" as const, value: 2 / 3, label: "2:3 标准海报" },
-  { key: "3:4" as const, value: 3 / 4, label: "3:4 竖版海报" },
-  { key: "16:9" as const, value: 16 / 9, label: "16:9 背景幕布" }
+  { key: "2:3" as const, value: 2 / 3 },
+  { key: "3:4" as const, value: 3 / 4 },
+  { key: "16:9" as const, value: 16 / 9 }
 ]
 
 type RatioKey = "2:3" | "3:4" | "16:9"
@@ -64,6 +65,7 @@ function triggerDownload(dataUrl: string, fileName: string, suffix: string) {
 }
 
 export function ImageCropper() {
+  const { t } = useTranslation("image-processing")
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -85,7 +87,7 @@ export function ImageCropper() {
     (files: FileList | File[]) => {
       const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"))
       if (imageFiles.length === 0) {
-        toast({ title: "请选择图片文件", variant: "destructive" })
+        toast({ title: t("selectImageFile"), variant: "destructive" })
         return
       }
 
@@ -104,7 +106,7 @@ export function ImageCropper() {
               const allImages = [...images, ...newImages]
               setImages(allImages)
               setSelectedIndex(images.length)
-              const firstNew = newImages[0]
+              const firstNew = newImages[0]!
               const crop = getDefaultCrop(firstNew.width, firstNew.height, 2 / 3)
               setCropArea(crop)
               setOutW(crop.width)
@@ -117,7 +119,7 @@ export function ImageCropper() {
         reader.readAsDataURL(file)
       })
     },
-    [images, toast]
+    [images, toast, t]
   )
 
   const handleSelectImage = useCallback(
@@ -188,14 +190,14 @@ export function ImageCropper() {
     try {
       const resultUrl = await processOneImage(image, cropArea)
       triggerDownload(resultUrl, image.name, aspectRatio.replace(":", "x"))
-      toast({ title: "裁切完成" })
+      toast({ title: t("cropSuccess") })
     } catch (error) {
       logger.error("Crop failed:", error)
-      toast({ title: "裁切失败", description: "请重试", variant: "destructive" })
+      toast({ title: t("cropFailed"), description: t("retry"), variant: "destructive" })
     } finally {
       setIsProcessing(false)
     }
-  }, [image, cropArea, processOneImage, aspectRatio, toast])
+  }, [image, cropArea, processOneImage, aspectRatio, toast, t])
 
   const handleDownloadAll = useCallback(async () => {
     if (images.length === 0 || !cropArea) return
@@ -203,7 +205,7 @@ export function ImageCropper() {
     let success = 0
     for (let i = 0; i < images.length; i++) {
       try {
-        const img = images[i]
+        const img = images[i]!
         const crop = getDefaultCrop(img.width, img.height, currentRatio.value)
         const resultUrl = await processOneImage(img, crop)
         triggerDownload(resultUrl, img.name, aspectRatio.replace(":", "x"))
@@ -212,9 +214,9 @@ export function ImageCropper() {
         logger.error(`Batch crop failed for ${images[i]?.name}:`, e)
       }
     }
-    toast({ title: `裁切完成 (${success}/${images.length})` })
+    toast({ title: t("cropSuccessCount", { success, total: images.length }) })
     setIsBatchProcessing(false)
-  }, [images, cropArea, aspectRatio, currentRatio, processOneImage, toast])
+  }, [images, cropArea, aspectRatio, currentRatio, processOneImage, toast, t])
 
   const handleToggleLock = useCallback(() => {
     setAspectLocked((prev) => {
@@ -253,6 +255,12 @@ export function ImageCropper() {
     setOutH(preset.h)
   }, [])
 
+  const ratioLabels: Record<string, string> = {
+    "2:3": t("ratioStandardPoster"),
+    "3:4": t("ratioPortraitPoster"),
+    "16:9": t("ratioBackdrop")
+  }
+
   return (
     <div className="h-full w-full bg-gray-50">
       {!image ? (
@@ -274,20 +282,18 @@ export function ImageCropper() {
                 }}
               />
               <FileImage className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-base font-medium mb-1">拖拽图片到此处或点击上传</h3>
-              <p className="text-sm text-muted-foreground mb-6">支持 JPG、PNG、WebP 格式，可批量上传</p>
+              <h3 className="text-base font-medium mb-1">{t("dragDropHint")}</h3>
+              <p className="text-sm text-muted-foreground mb-6">{t("supportedFormats")}</p>
             <Button variant="default" size="sm">
               <Upload className="h-4 w-4 mr-2" />
-              选择文件
+              {t("selectFile")}
             </Button>
           </div>
         </div>
       ) : (
         <div className="h-full flex flex-col md:flex-row min-h-0">
-          {/* Left Sidebar */}
           <aside className="w-full md:w-64 shrink-0 bg-white border-b md:border-b-0 md:border-r flex flex-col overflow-y-auto max-h-[40vh] md:max-h-none">
             <div className="p-4 space-y-5">
-              {/* File info + thumbnails */}
               <div>
                 <p className="text-sm font-medium truncate text-gray-700" title={image.name}>{image.name}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{image.width} × {image.height}</p>
@@ -308,9 +314,8 @@ export function ImageCropper() {
                 )}
               </div>
 
-              {/* Aspect Ratio */}
               <div>
-                <h4 className="text-xs text-gray-500 mb-2 font-medium">裁切比例</h4>
+                <h4 className="text-xs text-gray-500 mb-2 font-medium">{t("cropRatio")}</h4>
                 <div className="flex md:flex-col gap-1 overflow-x-auto flex-nowrap scrollbar-hide pb-0.5 md:pb-0">
                   {ASPECT_RATIOS.map((r) => (
                     <button
@@ -322,15 +327,14 @@ export function ImageCropper() {
                           : "bg-gray-100 md:bg-transparent text-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/40"
                       }`}
                     >
-                      {r.label}
+                      {ratioLabels[r.key]}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Output Size */}
               <div>
-                <h4 className="text-xs text-gray-500 mb-2 font-medium">输出尺寸</h4>
+                <h4 className="text-xs text-gray-500 mb-2 font-medium">{t("outputSize")}</h4>
                 <div className="flex items-center gap-1 min-w-0">
                   <input
                     type="number"
@@ -360,9 +364,8 @@ export function ImageCropper() {
                 </div>
               </div>
 
-              {/* TMDB Presets */}
               <div>
-                <h4 className="text-xs text-gray-500 mb-2 font-medium">TMDB 推荐尺寸</h4>
+                <h4 className="text-xs text-gray-500 mb-2 font-medium">{t("tmdbRecommendedSize")}</h4>
                 <div className="grid grid-cols-2 md:grid-cols-1 gap-1">
                   {TMDB_PRESETS[aspectRatio].map((p) => {
                     const isActive = outW === p.w && outH === p.h
@@ -383,13 +386,11 @@ export function ImageCropper() {
                 </div>
               </div>
 
-              {/* Divider */}
               <hr className="border-gray-200" />
 
-              {/* Quality + Download */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">输出质量</span>
+                  <span className="text-sm text-gray-500">{t("outputQuality")}</span>
                   <span className="text-sm font-medium text-gray-700">{quality}%</span>
                 </div>
                 <input
@@ -411,7 +412,7 @@ export function ImageCropper() {
                   ) : (
                     <Download className="h-4 w-4 mr-2" />
                   )}
-                  {isProcessing ? "处理中..." : "下载裁切结果"}
+                  {isProcessing ? t("processing") : t("downloadCropResult")}
                 </Button>
                 {images.length > 1 && (
                   <Button
@@ -426,14 +427,13 @@ export function ImageCropper() {
                     ) : (
                       <Download className="h-4 w-4 mr-2" />
                     )}
-                    {isBatchProcessing ? "处理中..." : `下载全部 (${images.length}张)`}
+                    {isBatchProcessing ? t("processing") : t("downloadAllCount", { count: images.length })}
                   </Button>
                 )}
               </div>
             </div>
           </aside>
 
-          {/* Right: Image Preview */}
           <div className="flex-1 min-h-0 p-4">
             <div className="bg-white rounded-xl shadow-sm h-full overflow-hidden">
               <VisualCropEditor

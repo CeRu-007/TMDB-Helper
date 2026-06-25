@@ -92,7 +92,7 @@ export function AppHeader({
             <div className="group">
               <Image
                 src="/tmdb-helper-logo.png"
-                alt="TMDB维护助手"
+                alt={t("appLogoAlt", { ns: "common" })}
                 width={160}
                 height={60}
                 className="h-14 w-auto object-contain transform group-hover:scale-105 transition duration-300"
@@ -109,7 +109,7 @@ export function AppHeader({
                   size="sm"
                   onClick={() => useUploadStore.getState().toggleOpen()}
                   className="flex items-center"
-                  title="图片上传窗口"
+                  title={t("title", { ns: "upload-window" })}
                 >
                   <ImageUp className="h-4 w-4" />
                 </Button>
@@ -138,7 +138,7 @@ export function AppHeader({
                   size="sm"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                   className="flex items-center"
-                  title={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
+                  title={theme === "dark" ? t("switchToLightTheme", { ns: "common" }) : t("switchToDarkTheme", { ns: "common" })}
                 >
                   {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
@@ -178,7 +178,7 @@ export function AppHeader({
             <div className="group">
               <Image
                 src="/tmdb-helper-logo.png"
-                alt="TMDB维护助手"
+                alt={t("appLogoAlt", { ns: "common" })}
                 width={120}
                 height={45}
                 className="h-9 w-auto object-contain"
@@ -192,7 +192,7 @@ export function AppHeader({
               size="sm"
               onClick={() => useUploadStore.getState().toggleOpen()}
               className="min-w-[44px] min-h-[44px] p-0"
-              aria-label="图片上传窗口"
+              aria-label={t("title", { ns: "upload-window" })}
             >
               <ImageUp className="h-4 w-4" />
             </Button>
@@ -210,7 +210,7 @@ export function AppHeader({
               size="sm"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="min-w-[44px] min-h-[44px] p-0"
-              aria-label={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
+              aria-label={theme === "dark" ? t("switchToLightTheme", { ns: "common" }) : t("switchToDarkTheme", { ns: "common" })}
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>

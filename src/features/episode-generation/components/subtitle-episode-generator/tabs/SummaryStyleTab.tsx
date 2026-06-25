@@ -3,6 +3,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { GenerationConfig } from '../types'
 import { getAllSummaryStyles } from '@/features/episode-generation/plugins/plugin-service'
 import { logger } from '@/lib/utils/logger'
+import { useTranslation } from "react-i18next"
 
 interface SummaryStyleTabProps {
   config: GenerationConfig
@@ -14,9 +15,9 @@ export function SummaryStyleTab({
   onConfigChange
 }: SummaryStyleTabProps) {
   const { toast } = useToast()
-  
+  const { t } = useTranslation("episode-generation")
+
   const handleStyleToggle = (styleId: string) => {
-    // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
       logger.error('onConfigChange is not a function')
       return
@@ -33,11 +34,11 @@ export function SummaryStyleTab({
       } else {
         // 选择模仿风格，清空其他所有风格
         newStyles = ['imitate']
-        
+
         // 显示配置提示
         toast({
-          title: "模仿风格已选择",
-          description: '请前往"生成设置"标签页配置模仿样本内容和生成数量',
+          title: t("summaryStyle.imitateSelected"),
+          description: t("summaryStyle.imitateSelectedDesc"),
           duration: 5000,
         })
       }
@@ -68,12 +69,12 @@ export function SummaryStyleTab({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium mb-3">选择简介生成风格</h3>
+        <h3 className="text-sm font-medium mb-3">{t("summaryStyle.selectSummaryStyle")}</h3>
         <div className="space-y-2 mb-4">
           <p className="text-xs text-gray-500">
-            {isImitateSelected 
-              ? "模仿模式：AI将根据您提供的样本内容模仿其风格生成简介" 
-              : "可以选择多种风格组合使用，AI会为每种风格单独生成分集简介"
+            {isImitateSelected
+              ? t("summaryStyle.imitateMode")
+              : t("summaryStyle.multiStyleMode")
             }
           </p>
         </div>
@@ -82,7 +83,7 @@ export function SummaryStyleTab({
           {getAllSummaryStyles().map((style) => {
             const isSelected = config.selectedStyles.includes(style.id)
             const isDisabled = isOtherStyleDisabled && style.id !== 'imitate'
-            
+
             return (
               <div
                 key={style.id}

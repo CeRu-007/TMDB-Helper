@@ -48,7 +48,11 @@
     "passwordMismatch": "新密碼和確認密碼不匹配",
     "passwordTooShort": "新密碼長度至少為6位",
     "passwordChangeSuccess": "密碼修改成功",
-    "passwordChangeFailed": "密碼修改失敗"
+    "passwordChangeFailed": "密碼修改失敗",
+    "saveFailedRetry": "儲存失敗，請重試",
+    "serviceUnavailable": "服務不可用",
+    "saveFailed": "儲存失敗",
+    "back": "返回"
   },
   "menu": {
     "modelService": "模型服務",
@@ -175,7 +179,16 @@
     "hasUpdate": "有更新",
     "cachedData": "快取資料",
     "downloadNewVersion": "下載新版本",
-    "viewAllVersions": "查看所有版本"
+    "viewAllVersions": "查看所有版本",
+    "checkUpdateDesc": "檢查並查看最新版本資訊",
+    "releaseNotes": "發佈說明",
+    "noReleaseNotes": "暫無發佈說明",
+    "viewHistoryVersions": "查看歷史版本",
+    "cachedDataTime": "快取資料 · {{time}}",
+    "justNow": "剛剛",
+    "minutesAgo": "{{n}} 分鐘前",
+    "hoursAgo": "{{n}} 小時前",
+    "daysAgo": "{{n}} 天前"
   },
   "updateDialog": {
     "title": "發現新版本 {{version}}",

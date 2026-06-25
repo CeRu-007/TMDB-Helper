@@ -1,5 +1,6 @@
 import React from 'react'
 import { SuggestionChip } from '../atoms/suggestion-chip'
+import { useTranslation } from "react-i18next"
 
 interface SuggestionListProps {
   suggestions?: string[]
@@ -7,14 +8,15 @@ interface SuggestionListProps {
 }
 
 export function SuggestionList({ suggestions, onSuggestionClick }: SuggestionListProps) {
+  const { t } = useTranslation("ai-chat")
   const defaultSuggestions = [
-    '一句话概括剧情',
-    '深入探讨剧情细节',
-    '了解世界观设定'
+    t("plotSummary"),
+    t("plotDetails"),
+    t("worldBuilding")
   ]
 
   const displaySuggestions = suggestions && suggestions.length > 0
-    ? ['一句话概括剧情', ...suggestions]
+    ? [t("plotSummary"), ...suggestions]
     : defaultSuggestions
 
   return (

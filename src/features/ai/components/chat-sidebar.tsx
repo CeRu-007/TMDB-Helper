@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { ChatHistory } from "@/types/ai-chat"
 import { formatChatDate, truncateText } from "@/lib/utils/ai-chat-helpers"
 import { useMobile } from "@/shared/hooks/use-mobile"
+import { useTranslation } from "react-i18next"
 
 interface ChatSidebarProps {
   chatHistories: ChatHistory[]
@@ -33,6 +34,7 @@ function SidebarContent({
   onSwitchChat: (chatId: string) => void
   onDeleteChat: (chatId: string) => void
 }) {
+  const { t } = useTranslation("ai-chat")
   return (
     <>
       <div className="p-3 flex items-center gap-2">
@@ -49,7 +51,7 @@ function SidebarContent({
           variant="outline"
         >
           <MessageSquare className="w-4 h-4 mr-2" />
-          新对话
+          {t("newConversation")}
         </Button>
       </div>
       
@@ -97,10 +99,10 @@ function SidebarContent({
             <div className="p-4 text-center">
               <MessageSquare className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                暂无对话历史
+                {t("noConversationHistory")}
               </p>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                开始新对话来生成分集简介
+                {t("startNewConversation")}
               </p>
             </div>
           )}

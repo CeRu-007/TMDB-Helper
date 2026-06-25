@@ -25,5 +25,9 @@
   "fileSize": "文件大小",
   "dimensions": "尺寸",
   "name": "文件名",
-  "status": "状态"
+  "status": "状态",
+  "type": "类型",
+  "selectFolderHint": "选择文件夹以查看图片",
+  "noImagesInDir": "此目录没有图片",
+  "defaultFolderName": "图片"
 }

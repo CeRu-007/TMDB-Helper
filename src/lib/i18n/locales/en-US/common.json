@@ -85,5 +85,19 @@
   "checkTmdbPath": "Please check if TMDB-Import path is correct",
   "adult": "Adult",
   "unknown": "Unknown",
-  "none": "None"
+  "none": "None",
+  "logsManagement": "Log Management",
+  "appSubtitle": "Media Data Maintenance Assistant",
+  "appLogoAlt": "TMDB Maintenance Helper",
+  "switchToLightTheme": "Switch to light theme",
+  "switchToDarkTheme": "Switch to dark theme",
+  "errorTitle": "Something went wrong",
+  "pageErrorTitle": "Oops, something went wrong",
+  "unknownError": "An unknown error occurred",
+  "viewErrorDetails": "View error details",
+  "refreshPage": "Refresh page",
+  "apply": "Apply",
+  "reload": "Reload",
+  "loadSuccess": "Load successful",
+  "loadFailed": "Load failed"
 }

@@ -25,5 +25,9 @@
   "fileSize": "Size",
   "dimensions": "Dimensions",
   "name": "Name",
-  "status": "Status"
+  "status": "Status",
+  "type": "Type",
+  "selectFolderHint": "Select a folder to view images",
+  "noImagesInDir": "No images in this directory",
+  "defaultFolderName": "Images"
 }

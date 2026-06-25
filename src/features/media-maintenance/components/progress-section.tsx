@@ -157,11 +157,11 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
         <TabsList className="overflow-x-auto flex-nowrap scrollbar-hide w-full">
           <TabsTrigger value="ongoing" className="flex items-center space-x-2 flex-shrink-0 whitespace-nowrap">
             <PlayCircle className="h-4 w-4" />
-            <span>进行中 ({ongoingItems.length})</span>
+            <span>{t("progress.ongoing", { count: ongoingItems.length })}</span>
           </TabsTrigger>
           <TabsTrigger value="completed" className="flex items-center space-x-2 flex-shrink-0 whitespace-nowrap">
             <CheckCircle2 className="h-4 w-4" />
-            <span>已完成 ({completedItems.length})</span>
+            <span>{t("progress.completed", { count: completedItems.length })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -182,7 +182,7 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
             <div className="text-center py-8">
               <PlayCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 dark:text-gray-400">
-                暂无进行中的词条
+                {t("progress.noOngoing")}
               </p>
             </div>
           )}
@@ -205,7 +205,7 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
             <div className="text-center py-8">
               <CheckCircle2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 dark:text-gray-400">
-                暂无已完成的词条
+                {t("progress.noCompleted")}
               </p>
             </div>
           )}

@@ -86,5 +86,18 @@
   "adult": "成人",
   "unknown": "不明",
   "none": "なし",
-  "logsManagement": "ログ管理"
+  "logsManagement": "ログ管理",
+  "appSubtitle": "メディアデータメンテナンスアシスタント",
+  "appLogoAlt": "TMDBメンテナンスヘルパー",
+  "switchToLightTheme": "ライトテーマに切替",
+  "switchToDarkTheme": "ダークテーマに切替",
+  "errorTitle": "問題が発生しました",
+  "pageErrorTitle": "申し訳ありません。ページに問題が発生しました",
+  "unknownError": "不明なエラーが発生しました",
+  "viewErrorDetails": "エラー詳細を表示",
+  "refreshPage": "ページを更新",
+  "apply": "適用",
+  "reload": "再読み込み",
+  "loadSuccess": "読み込み成功",
+  "loadFailed": "読み込み失敗"
 }

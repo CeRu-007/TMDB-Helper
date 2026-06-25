@@ -48,7 +48,11 @@
     "passwordMismatch": "新密码和确认密码不匹配",
     "passwordTooShort": "新密码长度至少为6位",
     "passwordChangeSuccess": "密码修改成功",
-    "passwordChangeFailed": "密码修改失败"
+    "passwordChangeFailed": "密码修改失败",
+    "saveFailedRetry": "保存失败，请重试",
+    "serviceUnavailable": "服务不可用",
+    "saveFailed": "保存失败",
+    "back": "返回"
   },
   "menu": {
     "modelService": "模型服务",
@@ -175,7 +179,16 @@
     "hasUpdate": "有更新",
     "cachedData": "缓存数据",
     "downloadNewVersion": "下载新版本",
-    "viewAllVersions": "查看所有版本"
+    "viewAllVersions": "查看所有版本",
+    "checkUpdateDesc": "检查并查看最新版本信息",
+    "releaseNotes": "发布说明",
+    "noReleaseNotes": "暂无发布说明",
+    "viewHistoryVersions": "查看历史版本",
+    "cachedDataTime": "缓存数据 · {{time}}",
+    "justNow": "刚刚",
+    "minutesAgo": "{{n}} 分钟前",
+    "hoursAgo": "{{n}} 小时前",
+    "daysAgo": "{{n}} 天前"
   },
   "updateDialog": {
     "title": "发现新版本 {{version}}",

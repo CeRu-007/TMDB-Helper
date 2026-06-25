@@ -48,7 +48,11 @@
     "passwordMismatch": "새 비밀번호와 확인 비밀번호가 일치하지 않습니다",
     "passwordTooShort": "새 비밀번호는 6자 이상이어야 합니다",
     "passwordChangeSuccess": "비밀번호가 성공적으로 변경되었습니다",
-    "passwordChangeFailed": "비밀번호 변경에 실패했습니다"
+    "passwordChangeFailed": "비밀번호 변경에 실패했습니다",
+    "saveFailedRetry": "저장 실패, 다시 시도하세요",
+    "serviceUnavailable": "서비스를 사용할 수 없습니다",
+    "saveFailed": "저장 실패",
+    "back": "뒤로"
   },
   "menu": {
     "modelService": "모델 서비스",
@@ -175,7 +179,16 @@
     "hasUpdate": "업데이트 가능",
     "cachedData": "캐시 데이터",
     "downloadNewVersion": "새 버전 다운로드",
-    "viewAllVersions": "모든 버전 보기"
+    "viewAllVersions": "모든 버전 보기",
+    "checkUpdateDesc": "최신 버전 정보 확인 및 보기",
+    "releaseNotes": "릴리스 노트",
+    "noReleaseNotes": "릴리스 노트 없음",
+    "viewHistoryVersions": "이전 버전 보기",
+    "cachedDataTime": "캐시 데이터 · {{time}}",
+    "justNow": "방금",
+    "minutesAgo": "{{n}} 분 전",
+    "hoursAgo": "{{n}} 시간 전",
+    "daysAgo": "{{n}} 일 전"
   },
   "updateDialog": {
     "title": "새 버전 {{version}} 사용 가능",

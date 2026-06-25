@@ -2,6 +2,7 @@ import React from "react"
 import { GenerationConfig } from '../types'
 import { TITLE_STYLES } from '../constants'
 import { logger } from '@/lib/utils/logger'
+import { useTranslation } from "react-i18next"
 
 interface TitleStyleTabProps {
   config: GenerationConfig
@@ -12,14 +13,14 @@ export function TitleStyleTab({
   config,
   onConfigChange
 }: TitleStyleTabProps) {
+  const { t } = useTranslation("episode-generation")
+
   const handleTitleStyleToggle = (styleId: string) => {
-    // 检查 onConfigChange 是否为函数
     if (typeof onConfigChange !== 'function') {
       logger.error('onConfigChange is not a function')
       return
     }
 
-    // 单选模式：如果点击的是当前选中的风格，则取消选择；否则选择新风格
     const newStyle = config.selectedTitleStyle === styleId ? "" : styleId
 
     onConfigChange({
@@ -31,10 +32,10 @@ export function TitleStyleTab({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium mb-3">选择标题生成风格</h3>
+        <h3 className="text-sm font-medium mb-3">{t("titleStyle.selectTitleStyle")}</h3>
         <div className="space-y-2 mb-4">
           <p className="text-xs text-gray-500">
-            选择标题生成风格，单选模式，将应用到所有简介风格
+            {t("titleStyle.selectTitleStyleDesc")}
           </p>
         </div>
 

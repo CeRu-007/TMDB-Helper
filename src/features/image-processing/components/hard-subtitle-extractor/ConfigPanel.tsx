@@ -315,7 +315,7 @@ export function ConfigPanel({
       {isProcessing && (
         <div className="space-y-2">
           <div className="flex justify-between text-xs">
-            <Label>处理进度</Label>
+            <Label>{t("hardSubtitle.extractingProgress")}</Label>
             <span className="text-gray-400">{Math.floor(progress)}%</span>
           </div>
           <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

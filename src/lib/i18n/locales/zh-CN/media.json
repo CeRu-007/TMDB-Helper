@@ -192,7 +192,9 @@
     "willBeDeleted": "将被删除/替换",
     "cancel": "取消",
     "batchModify": "批量修改 ({{count}})",
-    "save": "保存"
+    "save": "保存",
+    "columnContent": "内容",
+    "rowLabel": "行 {{row}}"
   },
   "episodeList": {
     "maintenanceProgress": "维护进度",
@@ -390,5 +392,68 @@
     "copied": "已复制",
     "platformCommandCopied": "播出平台命令已复制",
     "tmdbCommandCopied": "TMDB命令已复制"
+  },
+  "error": {
+    "defaultLoadFailed": "无法加载数据，请刷新页面重试",
+    "loadFailed": "加载失败",
+    "networkProblem": "网络连接问题",
+    "networkTip": "请检查您的网络连接，或者TMDB服务器可能暂时不可用",
+    "apiKeyProblem": "API密钥问题",
+    "apiKeyTip": "请检查您的TMDB API密钥是否有效",
+    "serverError": "服务器错误",
+    "serverTip": "TMDB服务器可能暂时不可用，请稍后再试",
+    "hint": "提示",
+    "configureApiKey": "配置API密钥"
+  },
+  "progress": {
+    "ongoing": "进行中 ({{count}})",
+    "completed": "已完成 ({{count}})",
+    "noOngoing": "暂无进行中的词条",
+    "noCompleted": "暂无已完成的词条"
+  },
+  "addItemDialog": {
+    "searchNetworkError": "搜索失败，请检查网络连接",
+    "searchFailed": "搜索失败",
+    "failed": "添加失败",
+    "backdropPreview": "背景图预览"
+  },
+  "itemDetail": {
+    "collapseInfo": "收起信息",
+    "platformOverview": "平台与简介"
+  },
+  "batchInsert": {
+    "title": "批量插入行",
+    "description": "设置要插入的行数和插入位置，episode_number 列将自动递增",
+    "count": "插入行数",
+    "position": "插入位置",
+    "above": "在上方插入",
+    "below": "在下方插入",
+    "preview": "将插入 {{count}} 行新数据"
+  },
+  "independent": {
+    "languageUpdated": "语言已更新为 {{code}}",
+    "loadingCsv": "正在加载CSV文件...",
+    "configurePathFirst": "请先在设置中配置TMDB-Import工具路径",
+    "csvReadFailed": "读取CSV文件失败",
+    "csvReadSuccess": "CSV文件读取成功",
+    "csvLoadedCount": "CSV文件已加载，共{{count}}行数据",
+    "csvNotFound": "未找到CSV文件。请先运行播出平台抓取命令生成CSV文件。",
+    "tipSwitchTab": "提示：切换到\"处理\"标签页，使用播出平台抓取和TMDB导入命令。",
+    "tipStep1": "1. 首先运行播出平台命令获取基本信息",
+    "tipStep2": "2. 然后运行TMDB命令获取详细元数据",
+    "tipStep3": "3. 命令执行成功后会自动生成import.csv文件",
+    "fileNotExist": "文件不存在",
+    "tipUseImport": "提示：使用播出平台抓取和TMDB导入功能生成CSV文件。",
+    "csvReadErrorDetail": "读取CSV文件失败: {{error}}",
+    "emptyCommand": "命令为空，请检查配置",
+    "startExec": "开始执行: {{description}}",
+    "workDir": "工作目录: {{dir}}",
+    "command": "命令: {{cmd}}",
+    "noResponseStream": "无法获取响应流",
+    "processStarted": "✅ 进程已启动 (PID: {{pid}})",
+    "warningNoPid": "⚠️ 警告: 未收到进程ID，交互功能可能不可用",
+    "execSuccess": "{{description}}执行成功",
+    "execCancelled": "命令执行已取消",
+    "userCancelled": "用户取消"
   }
 }

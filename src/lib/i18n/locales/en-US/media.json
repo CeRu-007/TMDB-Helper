@@ -192,7 +192,9 @@
     "willBeDeleted": "Will be deleted/replaced",
     "cancel": "Cancel",
     "batchModify": "Batch Modify ({{count}})",
-    "save": "Save"
+    "save": "Save",
+    "columnContent": "Content",
+    "rowLabel": "Row {{row}}"
   },
   "episodeList": {
     "maintenanceProgress": "Maintenance Progress",
@@ -390,5 +392,68 @@
     "copied": "Copied",
     "platformCommandCopied": "Platform command copied",
     "tmdbCommandCopied": "TMDB command copied"
+  },
+  "error": {
+    "defaultLoadFailed": "Cannot load data, please refresh the page and try again",
+    "loadFailed": "Load failed",
+    "networkProblem": "Network connection problem",
+    "networkTip": "Please check your network connection, or the TMDB server may be temporarily unavailable",
+    "apiKeyProblem": "API key problem",
+    "apiKeyTip": "Please check if your TMDB API key is valid",
+    "serverError": "Server error",
+    "serverTip": "TMDB server may be temporarily unavailable, please try again later",
+    "hint": "Hint",
+    "configureApiKey": "Configure API Key"
+  },
+  "progress": {
+    "ongoing": "In Progress ({{count}})",
+    "completed": "Completed ({{count}})",
+    "noOngoing": "No items in progress",
+    "noCompleted": "No completed items"
+  },
+  "addItemDialog": {
+    "searchNetworkError": "Search failed, please check network connection",
+    "searchFailed": "Search failed",
+    "failed": "Add failed",
+    "backdropPreview": "Backdrop preview"
+  },
+  "itemDetail": {
+    "collapseInfo": "Collapse info",
+    "platformOverview": "Platform & Synopsis"
+  },
+  "batchInsert": {
+    "title": "Batch Insert Rows",
+    "description": "Set the number of rows to insert and the position, episode_number column will auto-increment",
+    "count": "Rows to insert",
+    "position": "Insert position",
+    "above": "Insert above",
+    "below": "Insert below",
+    "preview": "{{count}} rows of new data will be inserted"
+  },
+  "independent": {
+    "languageUpdated": "Language updated to {{code}}",
+    "loadingCsv": "Loading CSV file...",
+    "configurePathFirst": "Please configure TMDB-Import tool path in settings first",
+    "csvReadFailed": "Failed to read CSV file",
+    "csvReadSuccess": "CSV file read successfully",
+    "csvLoadedCount": "CSV file loaded, {{count}} rows of data",
+    "csvNotFound": "CSV file not found. Please run platform metadata crawl command to generate CSV file first.",
+    "tipSwitchTab": "Tip: Switch to Process tab, use platform crawl and TMDB import commands.",
+    "tipStep1": "1. First run platform command to get basic info",
+    "tipStep2": "2. Then run TMDB command to get detailed metadata",
+    "tipStep3": "3. import.csv file will be generated automatically after command succeeds",
+    "fileNotExist": "File does not exist",
+    "tipUseImport": "Tip: Use platform crawl and TMDB import features to generate CSV file.",
+    "csvReadErrorDetail": "Failed to read CSV file: {{error}}",
+    "emptyCommand": "Command is empty, please check configuration",
+    "startExec": "Starting execution: {{description}}",
+    "workDir": "Working directory: {{dir}}",
+    "command": "Command: {{cmd}}",
+    "noResponseStream": "Cannot get response stream",
+    "processStarted": "Process started (PID: {{pid}})",
+    "warningNoPid": "Warning: Process ID not received, interaction may not be available",
+    "execSuccess": "{{description}} executed successfully",
+    "execCancelled": "Command execution cancelled",
+    "userCancelled": "User cancelled"
   }
 }

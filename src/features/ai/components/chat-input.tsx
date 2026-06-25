@@ -204,12 +204,12 @@ export function ChatInput({
                 {scenarioModels.isLoading ? (
                   <div className="h-10 px-3 py-2 flex items-center text-sm text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    加载中...
+                    {t("loading")}
                   </div>
                 ) : scenarioModels.error ? (
                   <div className="h-10 px-3 py-2 flex items-center text-sm text-red-500">
                     <AlertCircle className="w-4 h-4 mr-2" />
-                    加载失败
+                    {t("loadFailed")}
                   </div>
                 ) : (
                   <Select
@@ -219,13 +219,13 @@ export function ChatInput({
                   >
                     <SelectTrigger className="h-10 px-3 py-2 border-none bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full data-[placeholder]:text-gray-500 focus:ring-0 focus:ring-offset-0 [&>svg]:w-4 [&>svg]:h-4 flex items-center gap-1 text-sm [&>svg]:text-gray-500">
                       <span className="font-medium truncate max-w-[120px]">
-                        {scenarioModels.availableModels.find(m => m.id === selectedModel)?.displayName || '选择模型'}
+                        {scenarioModels.availableModels.find(m => m.id === selectedModel)?.displayName || t("selectModel")}
                       </span>
                     </SelectTrigger>
                     <SelectContent className="min-w-[200px]">
                       {scenarioModels.availableModels.length === 0 ? (
                         <div className="p-2 text-sm text-gray-500">
-                          暂无可用模型
+                          {t("noAvailableModels")}
                         </div>
                       ) : (
                         scenarioModels.getSelectedModels().map((model) => (

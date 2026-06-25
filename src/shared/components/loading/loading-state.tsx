@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface LoadingStateProps {
   message?: string;
@@ -12,14 +13,15 @@ const SIZE_CLASSES = {
 } as const;
 
 export function LoadingState({
-  message = '加载中，请稍候...',
+  message,
   size = 'md'
 }: LoadingStateProps): JSX.Element {
+  const { t } = useTranslation('common');
   return (
     <div className="flex justify-center items-center h-48">
       <div className="flex flex-col items-center">
         <Loader2 className={`${SIZE_CLASSES[size]} animate-spin text-blue-500 mb-3`} />
-        <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{message || t('loading')}</p>
       </div>
     </div>
   );

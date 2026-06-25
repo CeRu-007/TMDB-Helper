@@ -17,5 +17,17 @@
   "uploadedHint": "회색 표시는 업로드 완료",
   "filesCount": "{{count}}개 파일",
   "imagesCount": "{{count}}개 이미지",
-  "selectFolder": "이미지 폴더 선택"
+  "selectFolder": "이미지 폴더 선택",
+  "type": "유형",
+  "selectFolderHint": "폴더를 선택하여 이미지 보기",
+  "noImagesInDir": "이 폴더에 이미지가 없습니다",
+  "defaultFolderName": "이미지",
+  "switchLayout": "레이아웃 전환",
+  "supportedFormats": "지원 형식: JPG, PNG, WebP",
+  "retry": "재시도",
+  "fileSize": "크기",
+  "dimensions": "크기",
+  "name": "이름",
+  "status": "상태",
+  "loading": "로딩 중..."
 }

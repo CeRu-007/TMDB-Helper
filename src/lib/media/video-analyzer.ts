@@ -4,6 +4,7 @@
  */
 
 import { mediaLogger } from '@/lib/utils/logger'
+import i18n from '@/lib/i18n'
 
 export interface VideoAnalysisOptions {
   apiKey: string;
@@ -205,6 +206,7 @@ export class VideoAnalyzer {
    * 获取支持的视频平台列表
    */
   static getSupportedPlatforms(): Array<{name: string, domains: string[], example: string}> {
+    const t = i18n.t.bind(i18n)
     return [
       {
         name: 'YouTube',
@@ -222,22 +224,22 @@ export class VideoAnalyzer {
         example: 'https://vimeo.com/123456789'
       },
       {
-        name: 'Emby服务器',
+        name: t('videoAnalysisTab.platformEmby', { ns: 'episode-generation' }),
         domains: ['任意域名:8096', '任意域名:9096'],
         example: 'http://server:8096/emby/videos/123/stream.mkv?api_key=xxx'
       },
       {
-        name: 'Jellyfin服务器',
+        name: t('videoAnalysisTab.platformJellyfin', { ns: 'episode-generation' }),
         domains: ['任意域名:8096', '任意域名:8920'],
         example: 'http://server:8096/jellyfin/videos/123/stream.mp4?api_key=xxx'
       },
       {
-        name: 'Plex服务器',
+        name: t('videoAnalysisTab.platformPlex', { ns: 'episode-generation' }),
         domains: ['任意域名:32400'],
         example: 'http://server:32400/library/parts/123/file.mp4?X-Plex-Token=xxx'
       },
       {
-        name: '直链视频',
+        name: t('videoAnalysisTab.platformDirectLink', { ns: 'episode-generation' }),
         domains: ['任意域名'],
         example: 'https://example.com/video.mp4'
       }

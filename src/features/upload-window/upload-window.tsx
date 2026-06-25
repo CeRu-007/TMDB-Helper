@@ -138,7 +138,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
       }
 
       const firstDir = [...dirNames][0]
-      const dirName = firstDir ?? "图片"
+      const dirName = firstDir ?? t("defaultFolderName")
       loadFiles(entries, dirName)
     } finally {
       setIsLoading(false)

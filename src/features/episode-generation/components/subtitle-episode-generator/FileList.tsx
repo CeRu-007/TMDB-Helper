@@ -1,6 +1,5 @@
 import React from "react"
 import {
-  Upload,
   FileText,
   Settings,
   Download,
@@ -15,11 +14,10 @@ import {
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Badge } from "@/shared/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { FileListProps } from './types'
 import { truncateFileName } from './utils'
+import { useTranslation } from "react-i18next"
 
 export function FileList({
   files,
@@ -37,14 +35,15 @@ export function FileList({
   videoAnalysisResult,
   onShowAnalysisResult
 }: FileListProps) {
+  const { t } = useTranslation("episode-generation")
   return (
     <div className="h-full flex flex-col">
       <div className="p-3 md:p-4 border-b border-blue-100/50 dark:border-blue-900/30">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-gray-800 dark:text-gray-200 text-sm md:text-base">字幕文件</h3>
+            <h3 className="font-medium text-gray-800 dark:text-gray-200 text-sm md:text-base">{t("fileList.subtitleFiles")}</h3>
             <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 md:mt-1">
-              {files.length} 个文件
+              {t("fileList.filesCount", { count: files.length })}
             </p>
           </div>
           <Button
@@ -52,7 +51,7 @@ export function FileList({
             size="sm"
             onClick={onOpenSettings}
             className="min-w-[44px] min-h-[44px] h-8 w-8 p-0"
-            title="生成设置"
+            title={t("fileList.generationSettings")}
           >
             <Settings className="h-4 w-4" />
           </Button>
@@ -69,12 +68,12 @@ export function FileList({
             {isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                批量生成中...
+                {t("fileList.batchGenerating")}
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4 mr-2" />
-                批量生成简介
+                {t("fileList.batchGenerate")}
               </>
             )}
           </Button>
@@ -89,7 +88,7 @@ export function FileList({
               size="sm"
             >
               <Film className="h-4 w-4 mr-2" />
-              查看音频转写结果
+              {t("fileList.viewAudioResult")}
             </Button>
           )}
 
@@ -102,7 +101,7 @@ export function FileList({
               size="sm"
             >
               <Download className="h-4 w-4 mr-2" />
-              导出到TMDB
+              {t("fileList.exportToTmdb")}
             </Button>
           )}
         </div>
@@ -135,7 +134,7 @@ export function FileList({
                     </div>
                     <div className="space-y-0.5 md:space-y-1">
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <span>{file.episodes.length} 集</span>
+                        <span>{t("fileList.episodes", { count: file.episodes.length })}</span>
                         <span>{(file.size / 1024).toFixed(1)} KB</span>
                       </div>
                       <div className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500">
@@ -158,10 +157,10 @@ export function FileList({
                               {file.generationStatus === 'failed' && <XCircle className="h-2.5 w-2.5 md:h-3 md:w-3" />}
                               {file.generationStatus === 'pending' && <Clock className="h-2.5 w-2.5 md:h-3 md:w-3" />}
                               <span>
-                                {file.generationStatus === 'completed' && '已完成'}
-                                {file.generationStatus === 'generating' && '生成中'}
-                                {file.generationStatus === 'failed' && '生成失败'}
-                                {file.generationStatus === 'pending' && '等待中'}
+                                {file.generationStatus === 'completed' && t("fileList.statusCompleted")}
+                                {file.generationStatus === 'generating' && t("fileList.statusGenerating")}
+                                {file.generationStatus === 'failed' && t("fileList.statusFailed")}
+                                {file.generationStatus === 'pending' && t("fileList.statusPending")}
                               </span>
                             </span>
                             {file.generationStatus === 'generating' && file.generationProgress !== undefined && (
@@ -198,7 +197,7 @@ export function FileList({
                         e.stopPropagation()
                         onDeleteFile(file.id)
                       }}
-                      title="删除文件"
+                      title={t("fileList.deleteFile")}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -218,30 +217,26 @@ export function FileList({
 
 // 文件列表空状态组件
 function FileListEmptyState({ onUpload }: { onUpload: () => void }) {
+  const { t } = useTranslation("episode-generation")
   return (
     <div className="flex flex-col items-center justify-center h-full p-3 md:p-4 text-center">
-      {/* 简洁的图标 */}
       <div className="mb-3 md:mb-4">
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-full p-3 md:p-4 border border-gray-200/50 dark:border-gray-700/50">
           <FileText className="h-6 w-6 md:h-8 md:w-8 text-gray-400 dark:text-gray-500" />
         </div>
       </div>
-
-      {/* 简洁的文字说明 */}
       <div className="space-y-1 md:space-y-2 mb-3 md:mb-4">
         <h4 className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">
-          暂无文件
+          {t("fileList.noFiles")}
         </h4>
         <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-500 max-w-[180px] md:max-w-[200px] leading-relaxed">
-          文件上传后将在此处显示
+          {t("fileList.noFilesHint")}
         </p>
       </div>
-
-      {/* 简单的上传提示 */}
       <div className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500 space-y-1">
         <div className="flex items-center justify-center space-x-1">
           <div className="w-2 h-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-sm"></div>
-          <span>支持拖拽上传</span>
+          <span>{t("fileList.dragUploadHint")}</span>
         </div>
         <div className="text-gray-300 dark:text-gray-600">
           SRT • VTT • ASS • SSA

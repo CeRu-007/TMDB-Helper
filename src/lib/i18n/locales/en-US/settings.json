@@ -48,7 +48,11 @@
     "passwordMismatch": "New password and confirmation password do not match",
     "passwordTooShort": "New password must be at least 6 characters",
     "passwordChangeSuccess": "Password changed successfully",
-    "passwordChangeFailed": "Failed to change password"
+    "passwordChangeFailed": "Failed to change password",
+    "saveFailedRetry": "Save failed, please retry",
+    "serviceUnavailable": "Service unavailable",
+    "saveFailed": "Save failed",
+    "back": "Back"
   },
   "menu": {
     "modelService": "Model Service",
@@ -175,7 +179,16 @@
     "hasUpdate": "Update Available",
     "cachedData": "Cached Data",
     "downloadNewVersion": "Download New Version",
-    "viewAllVersions": "View All Versions"
+    "viewAllVersions": "View All Versions",
+    "checkUpdateDesc": "Check and view latest version info",
+    "releaseNotes": "Release Notes",
+    "noReleaseNotes": "No release notes available",
+    "viewHistoryVersions": "View History Versions",
+    "cachedDataTime": "Cached data · {{time}}",
+    "justNow": "Just now",
+    "minutesAgo": "{{n}} minutes ago",
+    "hoursAgo": "{{n}} hours ago",
+    "daysAgo": "{{n}} days ago"
   },
   "updateDialog": {
     "title": "New Version {{version}} Available",

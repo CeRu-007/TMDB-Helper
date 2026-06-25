@@ -826,7 +826,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
             return (
               <BackgroundImage
                 src={backgroundImageUrl}
-                alt={localItem.title + (isUsingPoster ? " 海报背景" : " 背景图")}
+                alt={localItem.title + (isUsingPoster ? ` ${t("posterBg")}` : ` ${t("backdropBg")}`)}
                 className={cn(
                   "absolute inset-0 z-0",
                   displayMode === 'inline' ? "w-screen h-screen" : "w-full h-full"
@@ -1185,7 +1185,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                           className="w-full flex items-center justify-between p-2 hover:bg-background/20 transition-colors flex-shrink-0"
                         >
                           <span className="text-xs text-muted-foreground font-medium">
-                            {mobileInfoExpanded ? '收起信息' : '平台与简介'}
+                            {mobileInfoExpanded ? t("itemDetail.collapseInfo") : t("itemDetail.platformOverview")}
                           </span>
                           <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${mobileInfoExpanded ? 'rotate-180' : ''}`} />
                         </button>

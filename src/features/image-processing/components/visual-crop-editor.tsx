@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import { RotateCcw } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 export interface CropArea {
   x: number
@@ -79,6 +80,7 @@ export function VisualCropEditor({
   onCropChange,
   onReset
 }: VisualCropEditorProps) {
+  const { t } = useTranslation("image-processing")
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -374,7 +376,7 @@ export function VisualCropEditor({
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <RotateCcw className="h-3 w-3" />
-          重置裁切
+          {t("resetCrop")}
         </button>
       </div>
     </div>

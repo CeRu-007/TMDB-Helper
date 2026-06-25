@@ -1,12 +1,14 @@
 "use client"
 
 import React, { useMemo, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { useUploadStore } from "@/stores/upload-store"
 import { ImageThumbnail } from "./image-thumbnail"
 import { cn } from "@/lib/utils"
 import { ChevronRight, FolderOpen, Folder } from "lucide-react"
 
 export function DirectoryTreeView() {
+  const { t } = useTranslation("upload-window")
   const files = useUploadStore((s) => s.files)
   const tree = useUploadStore((s) => s.tree)
   const columnPaths = useUploadStore((s) => s.columnPaths)
@@ -70,7 +72,7 @@ export function DirectoryTreeView() {
               ) : (
                 col.dirs.length === 0 && (
                   <div className="col-span-full text-center py-8 text-gray-400 text-sm">
-                    {col.path === null ? "选择文件夹以查看图片" : "此目录没有图片"}
+                    {col.path === null ? t("selectFolderHint") : t("noImagesInDir")}
                   </div>
                 )
               )
