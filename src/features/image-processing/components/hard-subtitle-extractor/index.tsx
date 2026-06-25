@@ -7,6 +7,7 @@ import { SubtitlePanel } from "./SubtitlePanel"
 import { Button } from "@/shared/components/ui/button"
 import { Slider } from "@/shared/components/ui/slider"
 import { Play, Pause, Plus, Trash2, Download, Settings, Type, X } from "lucide-react"
+import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
 import { useHardSubtitle } from "./useHardSubtitle"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
@@ -71,6 +72,10 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
           <div>
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
               {t("hardSubtitle.title")}
+              <HelpInfoButton
+                content={t("hardSubtitle.helpDescription")}
+                side="right"
+              />
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {t("hardSubtitle.subtitle")}

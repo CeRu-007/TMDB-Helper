@@ -29,5 +29,6 @@
   "type": "Type",
   "selectFolderHint": "Select a folder to view images",
   "noImagesInDir": "No images in this directory",
-  "defaultFolderName": "Images"
+  "defaultFolderName": "Images",
+  "helpDescription": "Conveniently upload images to TMDB manually. Open the directory containing downloaded images, pin the window on top, and drag images from the TMDB page to upload — eliminating the hassle of switching between browser download menus and local folders."
 }

@@ -47,11 +47,13 @@
     "defaultStyle": "預設樣式",
     "operationMenu": "操作選單",
     "uploadHint": "拖放影片到此处，或点击上传",
-    "videoFormat": "支持 MP4, MKV, AVI 等格式"
+    "videoFormat": "支持 MP4, MKV, AVI 等格式",
+    "helpDescription": "主要用來對本地影片檔案提取出縮圖，上傳到對應詞條的TMDB分集圖片，以應對騰訊視訊等平台抓取到的分集圖片存在字幕等品質差的問題。"
   },
   "imageRecognition": {
     "title": "影視識別",
     "upload": "上傳",
+    "helpDescription": "最初的設想是，透過上傳海報、背景圖、分集圖片等，來識別並找出TMDB中是否已存在對應詞條，避免使用者建立重複的詞條，違反TMDB規則。想法總歸是好的，但難以實現，目前擱置了，後續可能會移除。",
     "uploadImage": "上傳圖片",
     "uploadHint": "支持海報、劇照、影視截圖等類型",
     "imageUploaded": "圖片已上傳",
@@ -98,6 +100,7 @@
   "hardSubtitle": {
     "title": "硬字幕提取",
     "subtitle": "通過VAD檢測和OCR識別從影片中提取硬字幕",
+    "helpDescription": "快速提取影片中的內嵌字幕用來生成分集簡介，目前屬於尚未精細打磨的階段，有待觀察，後續會考慮移除該功能。",
     "selectFile": "選擇檔案",
     "startExtracting": "開始提取",
     "cancel": "取消",

@@ -10,6 +10,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Upload, Monitor, Search, Star, ExternalLink, Loader2, Image as ImageIcon, AlertCircle, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
+import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
 import { Switch } from '@/shared/components/ui/switch'
 import { toast } from '@/lib/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -319,6 +320,10 @@ export function ImageRecognition() {
               <CardTitle className="flex items-center space-x-2">
                 <Upload className="h-5 w-5" />
                 <span>{t("imageRecognition.upload")}</span>
+                <HelpInfoButton
+                  content={t("imageRecognition.helpDescription")}
+                  side="right"
+                />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

@@ -23,6 +23,7 @@ import {
   Layers,
   Loader2
 } from "lucide-react"
+import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Progress } from "@/shared/components/ui/progress"
@@ -1414,6 +1415,10 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center">
                   <Film className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />
                   {t("videoScreenshot.title")}
+                  <HelpInfoButton
+                    content={t("videoScreenshot.helpDescription")}
+                    side="right"
+                  />
                 </h1>
                 <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   {t("videoScreenshot.subtitle")}

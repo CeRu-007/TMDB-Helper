@@ -29,5 +29,6 @@
   "type": "类型",
   "selectFolderHint": "选择文件夹以查看图片",
   "noImagesInDir": "此目录没有图片",
-  "defaultFolderName": "图片"
+  "defaultFolderName": "图片",
+  "helpDescription": "用来方便手动上传图片到TMDB，打开下载好的图片所在目录，置顶窗口，在TMDB页面，将图片拖出上传，以解决浏览器下载菜单、本地目录等，需要频繁点击打开与切换窗口的问题。"
 }

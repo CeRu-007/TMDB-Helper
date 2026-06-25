@@ -21,6 +21,7 @@
     "uploadHint": "Upload video files to extract screenshots, supports MP4, WebM, AVI, MOV and other common video formats",
     "uploadVideo": "Upload Video",
     "usageHelp": "Usage Help",
+    "helpDescription": "Extracts thumbnails from local video files and uploads them as TMDB episode images, addressing quality issues like subtitles embedded in images captured from platforms such as Tencent Video.",
     "screenshotSettings": "Screenshot Settings",
     "batchProcess": "Batch Process",
     "downloadAll": "Download All",
@@ -90,6 +91,7 @@
   "hardSubtitle": {
     "title": "Hard Subtitle Extraction",
     "subtitle": "Extract hard subtitles from video through VAD detection and OCR recognition",
+    "helpDescription": "Quickly extract embedded subtitles from videos to generate episode summaries. Currently in an unrefined stage, under observation, and may be removed in the future.",
     "selectFile": "Select File",
     "startExtracting": "Start Extracting",
     "cancel": "Cancel",
@@ -295,6 +297,7 @@
   "imageRecognition": {
     "title": "Media Recognition",
     "upload": "Upload",
+    "helpDescription": "Originally designed to identify whether TMDB entries already exist by uploading posters, backdrop images, and episode stills — preventing duplicate entries that violate TMDB rules. A promising idea, but difficult to implement. Currently shelved and may be removed later.",
     "uploadImage": "Upload Image",
     "uploadHint": "Supports posters, stills, movie screenshots and other types",
     "imageUploaded": "Image uploaded",

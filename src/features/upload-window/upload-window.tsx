@@ -20,6 +20,7 @@ import {
   Home,
   ExternalLink,
 } from "lucide-react"
+import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".avif"]
 
@@ -274,6 +275,9 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           <div className="flex items-center gap-2">
             <ImageIcon className="w-4 h-4 text-blue-500" />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("title")}</span>
+            <HelpInfoButton
+              content={t("helpDescription")}
+            />
             {lastDirectoryName && (
               <span className="text-xs text-gray-400 dark:text-gray-500 ml-1 truncate max-w-[150px]">
                 — {lastDirectoryName}

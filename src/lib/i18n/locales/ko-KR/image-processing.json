@@ -21,6 +21,7 @@
     "uploadHint": "동영상 파일을 업로드하여 스크린샷을 추출하세요. MP4, WebM, AVI, MOV 등 일반적인 동영상 형식 지원",
     "uploadVideo": "동영상 업로드",
     "usageHelp": "사용 도움말",
+    "helpDescription": "로컬 비디오 파일에서 썸네일을 추출하여 TMDB 에피소드 이미지로 업로드하는 도구입니다. Tencent Video와 같은 플랫폼에서 캡처한 에피소드 이미지에 자막이 포함되는 등의 품질 문제를 해결합니다.",
     "screenshotSettings": "스크린샷 설정",
     "batchProcess": "일괄 처리",
     "downloadAll": "전체 다운로드",
@@ -90,6 +91,7 @@
   "hardSubtitle": {
     "title": "하드 자막 추출",
     "subtitle": "VAD 감지 및 OCR 인식을 통해 동영상에서 하드 자막 추출",
+    "helpDescription": "동영상의 내장 자막을 빠르게 추출하여 에피소드 요약을 생성합니다. 현재 아직 정교하지 않은 단계이며, 관찰 중이고 향후 제거될 수 있습니다.",
     "selectFile": "파일 선택",
     "startExtracting": "추출 시작",
     "cancel": "취소",
@@ -295,6 +297,7 @@
   "imageRecognition": {
     "title": "미디어 인식",
     "upload": "업로드",
+    "helpDescription": "원래 포스터, 배경 이미지, 에피소드 이미지를 업로드하여 TMDB에 해당 항목이 이미 존재하는지 식별하고, 사용자가 중복 항목을 만들어 TMDB 규칙을 위반하는 것을 방지하려는 아이디어였습니다. 좋은 아이디어였지만 구현이 어려워 현재 보류 중이며, 향후 제거될 수 있습니다.",
     "uploadImage": "이미지 업로드",
     "uploadHint": "포스터, 스틸컷, 영화 스크린샷 등의 유형 지원",
     "imageUploaded": "이미지가 업로드되었습니다",

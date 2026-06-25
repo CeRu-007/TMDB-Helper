@@ -21,6 +21,7 @@
     "uploadHint": "上传视频文件以截取视频截图，支持 MP4、WebM、AVI、MOV 等常见视频格式",
     "uploadVideo": "上传视频",
     "usageHelp": "使用帮助",
+    "helpDescription": "主要用来对本地视频文件提取出缩略图，上传到对应词条的TMDB分集图片，以应对腾讯视频等平台抓取到的分集图片存在字幕等质量差的问题。",
     "screenshotSettings": "截图设置",
     "batchProcess": "批量处理",
     "downloadAll": "下载全部",
@@ -90,6 +91,7 @@
   "hardSubtitle": {
     "title": "硬字幕提取",
     "subtitle": "通过VAD检测和OCR识别从视频中提取硬字幕",
+    "helpDescription": "快速提取视频中的内嵌字幕用来生成分集简介，目前属于尚未精细打磨的阶段，有待观察，后续会考虑移除该功能。",
     "selectFile": "选择文件",
     "startExtracting": "开始提取",
     "cancel": "取消",
@@ -295,6 +297,7 @@
   "imageRecognition": {
     "title": "影视识别",
     "upload": "上传",
+    "helpDescription": "最初的设想是，通过上传海报、背景图、分集图片等，来识别并找出TMDB中是否已存在对应词条，避免用户创建重复的词条，违反TMDB规则。想法总归是好的，但难以实现，目前搁置了，后续可能会移除。",
     "uploadImage": "上传图片",
     "uploadHint": "支持海报、剧照、影视截图等类型",
     "imageUploaded": "图片已上传",

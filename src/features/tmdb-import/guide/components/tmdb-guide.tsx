@@ -22,6 +22,7 @@ import {
   Sparkles,
   Languages,
 } from "lucide-react"
+import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
 
 import { useGuideContent, useGuideSections, ReactMarkdown, remarkGfm, remarkBreaks } from "../hooks/use-guide-content"
 import { GUIDE_CATEGORIES, type GuideCategory, type GuideVersion } from "../types"
@@ -86,6 +87,7 @@ const UI_LABELS: Record<string, Record<string, string>> = {
   originalDesc: { "zh-CN": "完整原文，包含所有详细说明和示例", "en-US": "Full original text with all details and examples", "ja-JP": "完全な原文、すべての詳細説明と例を含む", "ko-KR": "전체 원문, 모든 상세 설명과 예시 포함", "zh-TW": "完整原文，包含所有詳細說明和示例", "zh-HK": "完整原文，包含所有詳細說明和示例" },
   needMoreHelp: { "zh-CN": "需要更多帮助？", "en-US": "Need more help?", "ja-JP": "もっとヘルプが必要？", "ko-KR": "더 많은 도움이 필요하신가요?", "zh-TW": "需要更多幫助？", "zh-HK": "需要更多幫助？" },
   visitTmdbDesc: { "zh-CN": "访问TMDB官方网站获取最新的编辑指南和社区支持", "en-US": "Visit TMDB official site for the latest guidelines and community support", "ja-JP": "TMDB公式サイトで最新のガイドラインとコミュニティサポートを入手", "ko-KR": "TMDB 공식 사이트에서 최신 가이드라인과 커뮤니티 지원 확인", "zh-TW": "訪問TMDB官方網站獲取最新的編輯指南和社群支持", "zh-HK": "訪問TMDB官方網站獲取最新的編輯指南和社群支持" },
+  helpDescription: { "zh-CN": "最初只是为了将TMDB的指南翻译为中文，并提供提炼版内容快速了解，现在荒废了，目前是预留，后续可能会考虑移除该功能。", "en-US": "Originally created to translate TMDB guidelines into Chinese with a condensed summary for quick reference. Now deprecated and kept as a placeholder — may be removed in the future.", "ja-JP": "当初はTMDBガイドラインを中国語に翻訳し、要約版で素早く理解できるようにするために作成されました。現在は廃止され、プレースホルダーとして残されています。将来的に削除される可能性があります。", "ko-KR": "원래 TMDB 가이드라인을 중국어로 번역하고 요약 버전으로 빠르게 이해할 수 있도록 만들었습니다. 현재는 더 이상 사용되지 않으며 플레이스홀더로 유지되고 있습니다. 향후 제거될 수 있습니다.", "zh-TW": "最初只是為了將TMDB的指南翻譯為中文，並提供提煉版內容快速了解，現在荒廢了，目前是預留，後續可能會考慮移除該功能。", "zh-HK": "最初只是為了將TMDB的指南翻譯為中文，並提供提煉版內容快速了解，現在荒廢了，目前是預留，後續可能會考慮移除該功能。" },
 }
 
 function t(key: string, language: string): string {
@@ -274,6 +276,10 @@ export function TMDBGuide() {
             <span className="font-bold text-lg">
               {t("editBible", language)}
             </span>
+            <HelpInfoButton
+              content={t("helpDescription", language)}
+              side="bottom"
+            />
           </div>
           <Button
             variant="ghost"
