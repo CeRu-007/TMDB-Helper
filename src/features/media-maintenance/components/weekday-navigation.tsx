@@ -1,13 +1,13 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 import { cn } from "@/lib/utils"
 import { TMDBItem } from '@/lib/data/storage'
 import { Calendar, Clock, CheckCircle2 } from 'lucide-react'
 import { FilterDropdown } from './filter-dropdown'
+import i18n from '@/lib/i18n'
 
 interface WeekdayNavigationProps {
   selectedDayFilter: "recent" | number
@@ -52,7 +52,7 @@ export function WeekdayNavigation({
   const [mounted, setMounted] = useState(false)
   const [localCurrentDay, setLocalCurrentDay] = useState(currentDay)
 
-  const WEEKDAYS = [
+  const WEEKDAYS = useMemo(() => [
     t('weekdaysList.monday'),
     t('weekdaysList.tuesday'),
     t('weekdaysList.wednesday'),
@@ -60,7 +60,7 @@ export function WeekdayNavigation({
     t('weekdaysList.friday'),
     t('weekdaysList.saturday'),
     t('weekdaysList.sunday'),
-  ]
+  ], [i18n.language])
 
   useEffect(() => {
     setMounted(true)
@@ -98,7 +98,7 @@ export function WeekdayNavigation({
 
                   return (
                     <button
-                      key={day}
+                      key={index}
                       onClick={() => onDayFilterChange(jsWeekday)}
                       className={getDayButtonClasses(isSelected, isToday)}
                       suppressHydrationWarning
@@ -133,25 +133,33 @@ export function WeekdayNavigation({
             {activeTab && onActiveTabChange && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("status", { ns: "common" })}:</span>
-                <Select value={activeTab} onValueChange={onActiveTabChange}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="z-[60]">
-                    <SelectItem value="ongoing">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{t("ongoing", { ns: "common" })}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="completed">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>{t("completed", { ns: "common" })}</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex rounded-lg border border-input overflow-hidden bg-background/40 backdrop-blur-sm" key={i18n.language}>
+                  <button
+                    onClick={() => onActiveTabChange("ongoing")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors",
+                      activeTab === "ongoing"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    )}
+                  >
+                    <Clock className="h-4 w-4" />
+                    <span>{t("ongoing", { ns: "common" })}</span>
+                  </button>
+                  <div className="w-px bg-border" />
+                  <button
+                    onClick={() => onActiveTabChange("completed")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors",
+                      activeTab === "completed"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    )}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>{t("completed", { ns: "common" })}</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

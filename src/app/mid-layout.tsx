@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode } from "react"
+import { ReactNode, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { ThemeProvider } from "next-themes"
 import { DataProvider } from "@/shared/components/client-data-provider"
@@ -31,6 +31,16 @@ function AuthContent({ children }: { children: ReactNode }) {
   const router = useRouter()
   const isLoginPage = pathname.startsWith('/login')
 
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && !isLoginPage) {
+      router.push('/login')
+    }
+  }, [isAuthenticated, isLoading, isLoginPage, router])
+
+  if (isLoading) {
+    return null
+  }
+
   if (isLoginPage) {
     return (
       <UserIdentityProvider>
@@ -43,12 +53,7 @@ function AuthContent({ children }: { children: ReactNode }) {
     )
   }
 
-  if (isLoading) {
-    return null
-  }
-
   if (!isAuthenticated) {
-    router.push('/login')
     return null
   }
 
