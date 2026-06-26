@@ -985,10 +985,10 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
             </DialogHeader>
 
             {/* 网格布局 */}
-            <div className="p-2 md:p-4 md:pt-0 grid grid-cols-1 md:grid-cols-[300px_1fr_1fr_1fr] max-md:grid-rows-[auto_minmax(0,1fr)] gap-2 md:gap-6 flex-1 overflow-hidden min-h-0">
+            <div className="p-2 md:p-4 md:pt-0 grid grid-cols-1 md:grid-cols-[min(280px,max(270px,31vh))_1fr_1fr_1fr] max-md:grid-rows-[auto_minmax(0,1fr)] gap-2 md:gap-6 flex-1 overflow-hidden min-h-0">
               {/* 左侧：海报区域 */}
               <div className="flex overflow-hidden flex-col min-h-0">
-                <div className="flex-1 flex flex-col pr-2 min-h-0">
+                <div className="flex-1 flex flex-col pr-2 min-h-0 justify-center">
                   {/* 海报区域 - 编辑模式下过渡隐藏 */}
                   <div className={cn(
                     "hidden md:flex rounded-lg overflow-hidden backdrop-blur-md bg-background/30 items-center justify-center w-full transition-all duration-500 ease-in-out hover:shadow-lg",
@@ -1177,7 +1177,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       </ScrollArea>
                     </div>
                   ) : (
-                    <div className="w-full rounded-lg backdrop-blur-md bg-background/30 overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col flex-1 min-h-0">
+                    <div className="w-full rounded-lg backdrop-blur-md bg-background/30 overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col min-h-0">
                       {/* 移动端：折叠式信息区 */}
                       <div className="md:hidden flex flex-col flex-1 min-h-0">
                         <button
@@ -1198,7 +1198,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                         )}
                       </div>
                       {/* 桌面端：始终展开 */}
-                      <div className="hidden md:flex flex-col flex-1 min-h-0 p-3">
+                      <div className="hidden md:flex flex-col min-h-0 p-3">
                         <ScrollArea className="h-full">
                           <div className="flex flex-col pr-2">
                             <MediaInfoCard item={localItem} />
