@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { logger } from '@/lib/utils/logger'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
 import { Button } from "@/shared/components/ui/button"
@@ -111,9 +111,6 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
   })
   // 添加标记来跟踪用户是否手动修改了总集数
   const [isManualTotalEpisodes, setIsManualTotalEpisodes] = useState(false)
-  // Node.js和浏览器环境中setTimeout返回类型不同，使用any类型避免类型错误
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  
   // 获取显示标题
   const getDisplayTitle = (result: TMDBSearchResult): string => {
     return result.name || result.title
@@ -260,13 +257,9 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
     }
   }
 
-  // 处理搜索输入
+  // 处理搜索输入 - 仅更新输入值，不自动搜索
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
-    clearSearchState()
-
-    // 防抖搜索
-    debounceSearch(value)
   }
 
   // 清除搜索相关状态
@@ -276,25 +269,11 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
     setShowPreviewCard(false)
   }
 
-  // 防抖搜索
-  const debounceSearch = (query: string) => {
-    if (searchTimeoutRef.current) {
-      window.clearTimeout(searchTimeoutRef.current)
-    }
-
-    searchTimeoutRef.current = window.setTimeout(() => {
-      searchTMDB(query)
-    }, 500) as unknown as number
+  // 执行搜索
+  const handleSearch = () => {
+    clearSearchState()
+    searchTMDB(searchQuery)
   }
-
-  // 清理定时器
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        window.clearTimeout(searchTimeoutRef.current)
-      }
-    }
-  }, [])
 
   // 处理自定义背景图URL变更
   const handleCustomBackdropChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -603,6 +582,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                     placeholder={t("independentPage.addItem.searchPlaceholder", { ns: "nav.maintenance" })}
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSearch() }}
                     className="pr-10 h-9 sm:h-9 min-h-[44px] text-sm"
                   />
                   {loading && (
@@ -613,7 +593,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                 </div>
                   <Button
                     type="button"
-                    onClick={() => searchTMDB(searchQuery)}
+                    onClick={handleSearch}
                     className="h-9 sm:h-9 min-h-[44px] px-4"
                     size="sm"
                   >
