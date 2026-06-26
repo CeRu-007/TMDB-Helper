@@ -4,6 +4,7 @@
   "reopenDirectory": "重新打开",
   "lastDirectory": "上次目录",
   "noDirectory": "尚未选择目录",
+  "dragDropFolderHint": "拖拽图片或文件夹到此处",
   "selectDirectoryHint": "点击上方按钮选择图片所在文件夹",
   "loading": "加载中...",
   "noImages": "该目录下没有图片文件",

@@ -4,6 +4,7 @@
   "reopenDirectory": "다시 열기",
   "lastDirectory": "이전 디렉토리",
   "noDirectory": "선택된 디렉토리 없음",
+  "dragDropFolderHint": "이미지나 폴더를 여기로 드래그",
   "selectDirectoryHint": "위 버튼을 클릭하여 이미지 폴더 선택",
   "noImages": "이 디렉토리에 이미지가 없습니다",
   "pin": "항상 위에",

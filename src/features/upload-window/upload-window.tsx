@@ -24,6 +24,49 @@ import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".avif"]
 let fileIdCounter = 0
 
+function readFileEntry(fileEntry: FileSystemFileEntry): Promise<File> {
+  return new Promise((resolve, reject) => {
+    fileEntry.file(resolve, reject)
+  })
+}
+
+function readAllDirectoryEntries(reader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> {
+  const entries: FileSystemEntry[] = []
+  return new Promise((resolve, reject) => {
+    function readBatch() {
+      reader.readEntries((batch) => {
+        if (batch.length === 0) {
+          resolve(entries)
+        } else {
+          entries.push(...batch)
+          readBatch()
+        }
+      }, reject)
+    }
+    readBatch()
+  })
+}
+
+async function traverseDirectory(entry: FileSystemDirectoryEntry, path: string): Promise<{ name: string; relativePath: string; file: File }[]> {
+  const results: { name: string; relativePath: string; file: File }[] = []
+  const reader = entry.createReader()
+  const entries = await readAllDirectoryEntries(reader)
+  for (const child of entries) {
+    if (child.isDirectory) {
+      const sub = await traverseDirectory(child as FileSystemDirectoryEntry, path ? `${path}/${child.name}` : child.name)
+      results.push(...sub)
+    } else if (child.isFile) {
+      const fileEntry = child as FileSystemFileEntry
+      const file = await readFileEntry(fileEntry)
+      const ext = "." + (file.name.split(".").pop()?.toLowerCase() ?? "")
+      if (IMAGE_EXTENSIONS.includes(ext)) {
+        results.push({ name: file.name, relativePath: path ? `${path}/${file.name}` : file.name, file })
+      }
+    }
+  }
+  return results
+}
+
 interface UploadWindowProps {
   standalone?: boolean
 }
@@ -69,7 +112,9 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
 
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isDragOver, setIsDragOver] = useState(false)
   const dragOffset = useRef({ x: 0, y: 0 })
+  const dragCounter = useRef(0)
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (standalone) return
@@ -164,6 +209,127 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
       setIsLoading(false)
     }
   }, [loadFiles])
+
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current++
+    if (dragCounter.current === 1) {
+      setIsDragOver(true)
+    }
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current--
+    if (dragCounter.current === 0) {
+      setIsDragOver(false)
+    }
+  }, [])
+
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+    dragCounter.current = 0
+
+    if (isLoading) return
+
+    const items = e.dataTransfer.items
+    if (!items || items.length === 0) {
+      if (e.dataTransfer.files?.length) {
+        const plainFiles = Array.from(e.dataTransfer.files)
+        const filtered = plainFiles.filter((f) => {
+          const ext = "." + (f.name.split(".").pop()?.toLowerCase() ?? "")
+          return IMAGE_EXTENSIONS.includes(ext)
+        })
+        if (filtered.length === 0) return
+        setIsLoading(true)
+        try {
+          const entries: FileEntry[] = []
+          for (const file of filtered) {
+            fileIdCounter++
+            entries.push({
+              id: `file_${Date.now()}_${fileIdCounter}`,
+              name: file.name,
+              relativePath: file.name,
+              size: file.size,
+              type: file.type,
+              isDirectory: false,
+              thumbnailUrl: URL.createObjectURL(file),
+              fileObj: file,
+            })
+          }
+          loadFiles(entries, t("defaultFolderName"))
+        } finally {
+          setIsLoading(false)
+        }
+      }
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const allResults: { name: string; relativePath: string; file: File }[] = []
+      const topDirNames = new Set<string>()
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i]
+        if (!item) continue
+        const entry = item.webkitGetAsEntry()
+        if (!entry) {
+          const file = item.getAsFile()
+          if (file) {
+            const ext = "." + (file.name.split(".").pop()?.toLowerCase() ?? "")
+            if (IMAGE_EXTENSIONS.includes(ext)) {
+              allResults.push({ name: file.name, relativePath: file.name, file })
+            }
+          }
+          continue
+        }
+        if (entry.isDirectory) {
+          const results = await traverseDirectory(entry as FileSystemDirectoryEntry, entry.name)
+          allResults.push(...results)
+          if (results.length > 0) topDirNames.add(entry.name)
+        } else if (entry.isFile) {
+          const fileEntry = entry as FileSystemFileEntry
+          const file = await readFileEntry(fileEntry)
+          const ext = "." + (file.name.split(".").pop()?.toLowerCase() ?? "")
+          if (IMAGE_EXTENSIONS.includes(ext)) {
+            allResults.push({ name: file.name, relativePath: file.name, file })
+          }
+        }
+      }
+
+      if (allResults.length === 0) return
+
+      const entries: FileEntry[] = []
+      for (const r of allResults) {
+        fileIdCounter++
+        entries.push({
+          id: `file_${Date.now()}_${fileIdCounter}`,
+          name: r.name,
+          relativePath: r.relativePath,
+          size: r.file.size,
+          type: r.file.type,
+          isDirectory: false,
+          thumbnailUrl: URL.createObjectURL(r.file),
+          fileObj: r.file,
+        })
+      }
+
+      const dirName = [...topDirNames][0] ?? t("defaultFolderName")
+      loadFiles(entries, dirName)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [loadFiles, isLoading])
 
   useEffect(() => {
     return () => {
@@ -355,7 +521,12 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           isPinned && !standalone ? "shadow-blue-500/10 border-blue-200 dark:border-blue-800" : "",
           isPinned && standalone ? "ring-2 ring-blue-500/40" : "",
           isDragging && !standalone ? "shadow-2xl scale-[1.01]" : "",
+          isDragOver ? "ring-2 ring-blue-500 border-blue-500" : "",
         )}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         style={standalone ? undefined : {
           left: position.x,
           top: position.y,
@@ -499,7 +670,13 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           </div>
         )}
 
-        <div className="flex-1 overflow-hidden bg-gray-50/30 dark:bg-gray-900/30">
+        <div className="flex-1 overflow-hidden bg-gray-50/30 dark:bg-gray-900/30 relative">
+          {isDragOver && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-blue-50/90 dark:bg-blue-950/90 backdrop-blur-sm">
+              <ImageIcon className="w-12 h-12 text-blue-400" />
+              <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{t("dragDropFolderHint")}</p>
+            </div>
+          )}
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-2">

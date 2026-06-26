@@ -4,6 +4,7 @@
   "reopenDirectory": "Re-open",
   "lastDirectory": "Last directory",
   "noDirectory": "No directory selected",
+  "dragDropFolderHint": "Drag images or folders here",
   "selectDirectoryHint": "Click the button above to select an image folder",
   "loading": "Loading...",
   "noImages": "No images found in this directory",
