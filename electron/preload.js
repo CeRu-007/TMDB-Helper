@@ -52,6 +52,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 通过 Electron webUtils 获取 File 对象的真实路径（比 File.path 更可靠）
   getFilePath: (file) => webUtils.getPathForFile(file),
 
+  // 打开图片目录：原生对话框 + 扫描 + 读取缩略图（用于图片上传窗口）
+  openImageDirectory: (existingPath) => ipcRenderer.invoke('open-image-directory', existingPath),
+
   // 平台信息
   platform: process.platform,
 

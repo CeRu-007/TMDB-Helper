@@ -26,6 +26,7 @@ interface UploadState {
   position: { x: number; y: number }
   size: { width: number; height: number }
   lastDirectoryName: string | null
+  lastDirectoryPath: string | null
   files: FileEntry[]
   tree: ColumnNode[]
   columnPaths: (string | null)[]
@@ -40,7 +41,7 @@ interface UploadActions {
   setLayout: (layout: 'tree' | 'list') => void
   setPosition: (pos: { x: number; y: number }) => void
   setSize: (size: { width: number; height: number }) => void
-  loadFiles: (files: FileEntry[], dirName: string) => void
+  loadFiles: (files: FileEntry[], dirName: string, dirPath?: string) => void
   clearFiles: () => void
   markAsUploaded: (path: string) => void
   setPendingUpload: (fileId: string | null) => void
@@ -57,6 +58,7 @@ const initialState: UploadState = {
   position: { x: 100, y: 80 },
   size: { width: 720, height: 520 },
   lastDirectoryName: null,
+  lastDirectoryPath: null,
   files: [],
   tree: [],
   columnPaths: [null],
@@ -77,12 +79,13 @@ export const useUploadStore = create<UploadState & UploadActions>()(
         setPosition: (position) => set({ position }, false, 'uploadSetPosition'),
         setSize: (size) => set({ size }, false, 'uploadSetSize'),
 
-        loadFiles: (files, dirName) => {
+        loadFiles: (files, dirName, dirPath?) => {
           const tree = buildTree(files)
           set({
             files,
             tree,
             lastDirectoryName: dirName,
+            lastDirectoryPath: dirPath ?? null,
             columnPaths: [null],
             uploadedPaths: [],
           }, false, 'uploadLoadFiles')
@@ -93,6 +96,8 @@ export const useUploadStore = create<UploadState & UploadActions>()(
           tree: [],
           columnPaths: [null],
           uploadedPaths: [],
+          lastDirectoryName: null,
+          lastDirectoryPath: null,
         }, false, 'uploadClearFiles'),
 
         markAsUploaded: (path) => set((s) => ({
@@ -142,25 +147,9 @@ export const useUploadStore = create<UploadState & UploadActions>()(
           position: state.position,
           size: state.size,
           lastDirectoryName: state.lastDirectoryName,
+          lastDirectoryPath: state.lastDirectoryPath,
           uploadedPaths: state.uploadedPaths,
-          cachedFiles: state.files.length > 0
-            ? state.files.map((f) => ({
-                id: f.id, name: f.name, relativePath: f.relativePath,
-                size: f.size, type: f.type, isDirectory: f.isDirectory,
-              }))
-            : undefined,
         }),
-        merge: (persisted, current) => {
-          const p = persisted as Record<string, unknown>
-          const merged = { ...current, ...persisted }
-          if (p.cachedFiles && Array.isArray(p.cachedFiles) && p.cachedFiles.length > 0) {
-            const restored = p.cachedFiles as FileEntry[]
-            merged.files = restored
-            merged.tree = buildTree(restored)
-            merged.columnPaths = [null]
-          }
-          return merged
-        },
       }
     ),
     { name: 'UploadStore' }

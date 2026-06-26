@@ -415,7 +415,8 @@ function createWindow() {
     }
   });
 
-  // 处理外部链接和内部弹出窗口
+  // 处理内部弹出窗口（使用 allow + overrideBrowserWindowOptions 确保同进程创建，
+  // 这样 window.opener 正常工作，子窗口无需重新加载整个应用，也无需重新从磁盘读取数据）
   mainWindow.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
     const parsedUrl = new URL(url);
     const internalOrigin = `http://localhost:${port}`;
@@ -431,32 +432,35 @@ function createWindow() {
       const width = parseInt(featureMap.width) || 900;
       const height = parseInt(featureMap.height) || 640;
 
-      const childWindow = new BrowserWindow({
-        width,
-        height,
-        frame: false,
-        autoHideMenuBar: true,
-        icon: path.join(__dirname, '../public/images/tmdb-helper-logo-new.png'),
-        webPreferences: {
-          nodeIntegration: false,
-          contextIsolation: true,
-          enableRemoteModule: false,
-          preload: path.join(__dirname, 'preload.js'),
-          sandbox: true
-        },
-        show: false
-      });
-
-      childWindow.loadURL(url);
-      childWindow.once('ready-to-show', () => childWindow.show());
-
-      return { action: 'deny' };
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width,
+          height,
+          frame: false,
+          autoHideMenuBar: true,
+          icon: path.join(__dirname, '../public/images/tmdb-helper-logo-new.png'),
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            enableRemoteModule: false,
+            preload: path.join(__dirname, 'preload.js'),
+            sandbox: true
+          },
+          show: false,
+        }
+      };
     }
 
     shell.openExternal(url).catch((error) => {
       electronLog(`打开外部链接失败: ${error.message}`, 'error');
     });
     return { action: 'deny' };
+  });
+
+  // 子窗口准备完成后显示（allow 模式下无法直接拿到子窗口引用，通过事件监听）
+  mainWindow.webContents.on('did-create-window', (childWindow) => {
+    childWindow.once('ready-to-show', () => childWindow.show());
   });
 
   // 窗口关闭事件 - 修改为最小化到托盘
@@ -987,6 +991,87 @@ ipcMain.on('ondragstart', (event, filePaths) => {
   } catch (error) {
     electronLog(`startDrag 失败: ${error instanceof Error ? error.message : String(error)}`, 'error');
   }
+});
+
+const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.avif']);
+const MIME_MAP = {
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+  '.webp': 'image/webp', '.gif': 'image/gif', '.bmp': 'image/bmp',
+  '.avif': 'image/avif',
+};
+const MAX_THUMBNAIL_ENTRIES = 1000;
+let fileIdCounter = 0;
+
+// 打开图片目录（原生目录选择对话框 + 扫描 + 读取缩略图）
+// 接收可选的 existingPath 参数；无参数时弹出目录选择对话框
+// 返回 { dirPath, dirName, entries }，其中 entries 含 metadata + base64 data URL
+ipcMain.handle('open-image-directory', async (_event, existingPath) => {
+  let dirPath = existingPath;
+  if (!dirPath) {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory']
+    });
+    if (result.canceled) return null;
+    dirPath = result.filePaths[0];
+  }
+
+  const visitedRealPaths = new Set();
+
+  function walkDir(dir, baseRel = '') {
+    const entries = [];
+    try {
+      const items = fs.readdirSync(dir);
+      for (const item of items) {
+        if (entries.length >= MAX_THUMBNAIL_ENTRIES) break;
+        const fullPath = path.join(dir, item);
+        const rel = baseRel ? `${baseRel}/${item}` : item;
+        try {
+          const lstat = fs.lstatSync(fullPath);
+          // 跳过符号链接以避免循环引用和意外外部目录
+          if (lstat.isSymbolicLink()) continue;
+          if (lstat.isDirectory()) {
+            // 使用 realpath 检测循环
+            const real = fs.realpathSync(fullPath);
+            if (visitedRealPaths.has(real)) continue;
+            visitedRealPaths.add(real);
+            entries.push(...walkDir(fullPath, rel));
+          } else if (lstat.isFile()) {
+            const ext = path.extname(item).toLowerCase();
+            if (!IMAGE_EXTS.has(ext)) continue;
+            entries.push({ fullPath, rel, ext });
+          }
+        } catch (_) { /* skip inaccessible */ }
+      }
+    } catch (_) { /* skip inaccessible */ }
+    return entries;
+  }
+
+  const found = walkDir(dirPath);
+  const dirName = path.basename(dirPath);
+
+  const entries = [];
+  for (const f of found) {
+    fileIdCounter++;
+    const mime = MIME_MAP[f.ext] || 'image/jpeg';
+    try {
+      const buffer = fs.readFileSync(f.fullPath);
+      const b64 = buffer.toString('base64');
+      const id = `file_${Date.now()}_${fileIdCounter}`;
+      entries.push({
+        id,
+        name: path.basename(f.fullPath),
+        relativePath: f.rel,
+        size: buffer.length,
+        type: mime,
+        isDirectory: false,
+        thumbnailUrl: `data:${mime};base64,${b64}`,
+      });
+    } catch (error) {
+      electronLog(`读取文件失败: ${f.fullPath} - ${error instanceof Error ? error.message : String(error)}`, 'error');
+    }
+  }
+
+  return { dirPath, dirName, entries };
 });
 
 

@@ -17,12 +17,12 @@ import {
   ImageIcon,
   Loader2,
   ChevronRight,
-  Home,
   ExternalLink,
 } from "lucide-react"
 import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".avif"]
+let fileIdCounter = 0
 
 interface UploadWindowProps {
   standalone?: boolean
@@ -36,6 +36,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
   const position = useUploadStore((s) => s.position)
   const size = useUploadStore((s) => s.size)
   const lastDirectoryName = useUploadStore((s) => s.lastDirectoryName)
+  const lastDirectoryPath = useUploadStore((s) => s.lastDirectoryPath)
   const files = useUploadStore((s) => s.files)
   const columnPaths = useUploadStore((s) => s.columnPaths)
   const setColumnPath = useUploadStore((s) => s.setColumnPath)
@@ -99,11 +100,26 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
   }, [isDragging, setPosition])
 
   const handleOpenDirectory = useCallback(async () => {
+    if (isElectron) {
+      setIsLoading(true)
+      try {
+        const electronAPI = (window as any).electronAPI
+        const result = await electronAPI?.openImageDirectory()
+        if (result?.entries?.length > 0) {
+          loadFiles(result.entries, result.dirName, result.dirPath)
+        } else {
+          clearFiles()
+        }
+      } finally {
+        setIsLoading(false)
+      }
+      return
+    }
     if (inputRef.current) {
       inputRef.current.value = ""
       inputRef.current.click()
     }
-  }, [])
+  }, [loadFiles, clearFiles])
 
   const handleFilesSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files
@@ -125,7 +141,8 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
         const topDir = parts[0]
         if (parts.length > 1 && topDir) dirNames.add(topDir)
 
-        const id = `file_${Date.now()}_${fileIdx}`
+        fileIdCounter++
+        const id = `file_${Date.now()}_${fileIdCounter}`
         const thumbnailUrl = URL.createObjectURL(file)
 
         entries.push({
@@ -156,6 +173,47 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
     }
   }, [files])
 
+  const restoredRef = useRef(false)
+
+  // 弹窗传输数据恢复 (opener/PiP — 浏览器或 Electron 均可)
+  useEffect(() => {
+    const data = (window as any).opener?.__uploadTransferData || (window as any).parent?.__uploadTransferData
+    if (!data?.files?.length) return
+    restoredRef.current = true
+    const entries = data.files.map((f: any) => ({
+      id: f.id, name: f.name, relativePath: f.relativePath,
+      size: f.size, type: f.type, isDirectory: f.isDirectory ?? false,
+      thumbnailUrl: f.fileObj ? URL.createObjectURL(f.fileObj) : f.thumbnailUrl,
+      fileObj: f.fileObj,
+    }))
+    if (entries.length > 0) {
+      loadFiles(entries, data.dirName, useUploadStore.getState().lastDirectoryPath || undefined)
+    }
+    try { delete (window as any).opener?.__uploadTransferData } catch (_) {}
+    try { delete (window as any).parent?.__uploadTransferData } catch (_) {}
+  }, [loadFiles])
+
+  // Electron 挂载时从磁盘恢复（仅当未被传输数据覆盖时执行一次）
+  useEffect(() => {
+    if (!isElectron || !lastDirectoryPath || restoredRef.current) return
+    restoredRef.current = true
+
+    setIsLoading(true)
+    const restore = async () => {
+      try {
+        const electronAPI = (window as any).electronAPI
+        const result = await electronAPI?.openImageDirectory(lastDirectoryPath)
+        if (result?.entries?.length > 0) {
+          loadFiles(result.entries, result.dirName, result.dirPath)
+        }
+      } catch (_) { /* restore failed */ } finally {
+        setIsLoading(false)
+      }
+    }
+
+    restore()
+  }, [lastDirectoryPath, loadFiles])
+
   useEffect(() => {
     if (!standalone || !isPinned) return
     if ((window as any).electronAPI?.setAlwaysOnTop) {
@@ -182,11 +240,43 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
   }, [standalone, setOpen])
 
   const handlePopOut = useCallback(async () => {
-    if ("documentPictureInPicture" in window) {
+    const state = useUploadStore.getState()
+
+    const isElectron = typeof window !== "undefined" && !!(window as any).electronAPI
+
+    if (isElectron) {
+      // Electron: 传递 base64 thumbnailUrl（可序列化）
+      const transferFiles = state.files.map((f) => ({
+        id: f.id, name: f.name, relativePath: f.relativePath,
+        size: f.size, type: f.type, isDirectory: f.isDirectory,
+        thumbnailUrl: f.thumbnailUrl,
+      }))
+      ;(window as any).__uploadTransferData = { files: transferFiles, dirName: state.lastDirectoryName }
+    } else {
+      // 浏览器: 传递 File 对象（不可序列化，用全局变量引用）
+      const transferFiles = state.files.filter((f) => f.fileObj).map((f) => ({
+        id: f.id, name: f.name, relativePath: f.relativePath,
+        size: f.size, type: f.type, fileObj: f.fileObj,
+      }))
+      ;(window as any).__uploadTransferData = { files: transferFiles, dirName: state.lastDirectoryName }
+    }
+    setTimeout(() => { delete (window as any).__uploadTransferData }, 30000)
+
+    if (!isElectron && "documentPictureInPicture" in window) {
       try {
         const pipWindow = await (window as any).documentPictureInPicture.requestWindow({
           width: 900,
           height: 640,
+        })
+
+        const state2 = useUploadStore.getState()
+        const pipTransferFiles = state2.files.filter((f) => f.fileObj).map((f) => ({
+          id: f.id, name: f.name, relativePath: f.relativePath,
+          size: f.size, type: f.type, fileObj: f.fileObj,
+        }))
+        ;(pipWindow as any).__uploadTransferData = { files: pipTransferFiles, dirName: state2.lastDirectoryName }
+        pipWindow.addEventListener("pagehide", () => {
+          delete (pipWindow as any).__uploadTransferData
         })
 
         const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
@@ -230,6 +320,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
         })
 
         if (!standalone) setOpen(false)
+        delete (window as any).__uploadTransferData
         return
       } catch (_) {
         // PiP not supported or rejected, fall through
@@ -239,7 +330,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
     const url = new URL(window.location.origin + "/upload")
     window.open(url.toString(), "tmdb-upload-panel", "width=900,height=640,menubar=no,toolbar=no,location=no,status=no")
     if (!standalone) setOpen(false)
-  }, [setOpen])
+  }, [standalone, setOpen])
 
   if (!standalone && !isOpen) return null
 
