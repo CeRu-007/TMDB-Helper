@@ -35,6 +35,7 @@ import MinutesDialog from "@/shared/components/ui/minutes-dialog"
 import NumberRangeDialog from "@/shared/components/ui/number-range-dialog"
 import { isDateColumn, isTimeColumn, isNumericColumn, isValidDateString, generateNumberSequence } from "@/lib/utils/date-utils"
 import type { CSVData } from "@/types/csv-editor"
+import { useTranslation } from "react-i18next"
 
 export interface TableContextMenuProps {
   children: React.ReactNode
@@ -73,6 +74,7 @@ export default function TableContextMenu({
   onBatchInsertRow,
   onOpenOverviewEdit
 }: TableContextMenuProps) {
+  const { t } = useTranslation('media')
   // 日期间隔对话框状态
   const [dateDialogOpen, setDateDialogOpen] = useState(false)
   // 分钟设置对话框状态
@@ -244,19 +246,19 @@ export default function TableContextMenu({
           {/* 基本操作 */}
           <ContextMenuItem onClick={onCopy} disabled={selectedCells.length === 0}>
             <Copy className="mr-2 h-4 w-4" />
-            <span>复制</span>
+            <span>{t('csvEditor.copy')}</span>
           </ContextMenuItem>
           <ContextMenuItem onClick={onCut} disabled={selectedCells.length === 0}>
             <Scissors className="mr-2 h-4 w-4" />
-            <span>剪切</span>
+            <span>{t('csvEditor.cut')}</span>
           </ContextMenuItem>
           <ContextMenuItem onClick={onPaste}>
             <ClipboardPaste className="mr-2 h-4 w-4" />
-            <span>粘贴</span>
+            <span>{t('csvEditor.paste')}</span>
           </ContextMenuItem>
           <ContextMenuItem onClick={onDelete} disabled={selectedCells.length === 0}>
             <Trash className="mr-2 h-4 w-4" />
-            <span>删除</span>
+            <span>{t('csvEditor.delete')}</span>
           </ContextMenuItem>
           
           <ContextMenuSeparator />
@@ -265,7 +267,7 @@ export default function TableContextMenu({
           <ContextMenuSub>
             <ContextMenuSubTrigger disabled={selectedCells.length === 0}>
               <Rows className="mr-2 h-4 w-4" />
-              <span>行操作</span>
+              <span>{t('csvEditor.rowOperations')}</span>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="w-48">
               <ContextMenuItem
@@ -273,14 +275,14 @@ export default function TableContextMenu({
                 disabled={selectedCells.length === 0}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                在上方插入行
+                {t('csvEditor.insertRowAbove')}
               </ContextMenuItem>
               <ContextMenuItem
                 onClick={() => onInsertRow?.(getSelectedRow(), 'after')}
                 disabled={selectedCells.length === 0}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                在下方插入行
+                {t('csvEditor.insertRowBelow')}
               </ContextMenuItem>
               <ContextMenuItem
                 onClick={() => {
@@ -292,14 +294,14 @@ export default function TableContextMenu({
                 disabled={selectedCells.length === 0 || !onBatchInsertRow}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                批量插入行...
+                {t('csvEditor.batchInsertRows')}
               </ContextMenuItem>
               <ContextMenuItem
                 onClick={() => onDuplicateRow?.(getSelectedRow())}
                 disabled={!isSameRow()}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                复制行
+                {t('csvEditor.copyRow')}
               </ContextMenuItem>
               <ContextMenuSeparator />
               <ContextMenuItem
@@ -308,7 +310,7 @@ export default function TableContextMenu({
                 className="text-destructive"
               >
                 <Trash className="mr-2 h-4 w-4" />
-                删除行
+                {t('csvEditor.deleteRow')}
               </ContextMenuItem>
             </ContextMenuSubContent>
           </ContextMenuSub>
@@ -317,7 +319,7 @@ export default function TableContextMenu({
           <ContextMenuSub>
             <ContextMenuSubTrigger disabled={selectedCells.length === 0}>
               <Columns className="mr-2 h-4 w-4" />
-              <span>列操作</span>
+              <span>{t('csvEditor.columnOperations')}</span>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="w-48">
               <ContextMenuItem
@@ -325,21 +327,21 @@ export default function TableContextMenu({
                 disabled={selectedCells.length === 0}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                在左侧插入列
+                {t('csvEditor.insertColumnLeft')}
               </ContextMenuItem>
               <ContextMenuItem
                 onClick={() => onInsertColumn?.(getSelectedColumn(), 'after')}
                 disabled={selectedCells.length === 0}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                在右侧插入列
+                {t('csvEditor.insertColumnRight')}
               </ContextMenuItem>
               <ContextMenuItem
                 onClick={() => onDuplicateColumn?.(getSelectedColumn())}
                 disabled={!isSameColumn()}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                复制列
+                {t('csvEditor.copyColumn')}
               </ContextMenuItem>
               <ContextMenuSeparator />
               <ContextMenuItem
@@ -348,7 +350,7 @@ export default function TableContextMenu({
                 className="text-destructive"
               >
                 <Trash className="mr-2 h-4 w-4" />
-                删除列
+                {t('csvEditor.deleteColumn')}
               </ContextMenuItem>
             </ContextMenuSubContent>
           </ContextMenuSub>
@@ -367,7 +369,7 @@ export default function TableContextMenu({
             disabled={!isSelectedBatchEditColumn() || selectedCells.length === 0}
           >
             <FileText className="mr-2 h-4 w-4" />
-            <span>批量编辑...</span>
+            <span>{t('csvEditor.batchEdit')}</span>
           </ContextMenuItem>
           
           <ContextMenuSeparator />
@@ -378,7 +380,7 @@ export default function TableContextMenu({
             disabled={!isSelectedDateColumn() || selectedCells.length <= 1}
           >
             <CalendarDays className="mr-2 h-4 w-4" />
-            <span>日期递进...</span>
+            <span>{t('csvEditor.dateIncrement')}</span>
           </ContextMenuItem>
           
           {/* 数字范围填充 */}
@@ -387,7 +389,7 @@ export default function TableContextMenu({
             disabled={!isSelectedNumericColumn() || selectedCells.length <= 1}
           >
             <ArrowDownUp className="mr-2 h-4 w-4" />
-            <span>数字范围填充...</span>
+            <span>{t('csvEditor.numberRangeFill')}</span>
           </ContextMenuItem>
           
           {/* 分钟操作 */}
@@ -396,7 +398,7 @@ export default function TableContextMenu({
             disabled={!isSelectedTimeColumn() || selectedCells.length === 0}
           >
             <Timer className="mr-2 h-4 w-4" />
-            <span>统一设置分钟...</span>
+            <span>{t('csvEditor.setMinutes')}</span>
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>

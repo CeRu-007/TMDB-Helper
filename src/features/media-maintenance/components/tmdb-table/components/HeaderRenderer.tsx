@@ -1,4 +1,5 @@
 import React from "react"
+import { useTranslation } from "react-i18next"
 import { TableHead } from "@/shared/components/ui/table"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -25,7 +26,6 @@ interface HeaderRendererProps {
   onDeleteColumn: (index: number) => void
   onDuplicateColumn: (index: number) => void
   onMoveColumn: (index: number, direction: "left" | "right") => void
-  t: (key: string) => string
 }
 
 export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
@@ -35,8 +35,10 @@ export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
   onDeleteColumn,
   onDuplicateColumn,
   onMoveColumn,
-  t,
 }) => {
+  const { t: tMedia } = useTranslation('media')
+  const m = (key: string) => tMedia(`csvEditor.${key}`)
+
   return (
     <>
       {headers.map((header, index) => (
@@ -59,17 +61,17 @@ export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
                     onClick={() => onInsertColumn(index, "before")}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    在左侧插入列
+                    {m('insertColumnLeft')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onInsertColumn(index, "after")}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    在右侧插入列
+                    {m('insertColumnRight')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onDuplicateColumn(index)}>
                     <Copy className="mr-2 h-4 w-4" />
-                    复制列
+                    {m('copyColumn')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -77,14 +79,14 @@ export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
                     disabled={index === 0}
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    左移
+                    {m('moveLeft')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onMoveColumn(index, "right")}
                     disabled={index === headers.length - 1}
                   >
                     <ArrowRight className="mr-2 h-4 w-4" />
-                    右移
+                    {m('moveRight')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -93,7 +95,7 @@ export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
                     className="text-destructive"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    删除列
+                    {m('deleteColumn')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

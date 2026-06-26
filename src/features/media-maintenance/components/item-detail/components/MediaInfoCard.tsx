@@ -34,7 +34,7 @@ export function MediaInfoCard({
               <PopoverTrigger asChild>
                 <button
                   className="ml-1 h-4 w-4 flex items-center justify-center rounded hover:bg-accent focus:outline-none"
-                  aria-label="查看播出平台"
+                  aria-label={t('mediaInfo.viewPlatforms')}
                 >
                   <ChevronDown className="h-3 w-3" />
                 </button>

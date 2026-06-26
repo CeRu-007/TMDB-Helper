@@ -464,7 +464,6 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
                     onDeleteColumn={handleDeleteColumn}
                     onDuplicateColumn={handleDuplicateColumn}
                     onMoveColumn={handleMoveColumn}
-                    t={t}
                   />
                 </TableRow>
               </TableHeader>

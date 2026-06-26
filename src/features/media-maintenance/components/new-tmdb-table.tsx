@@ -169,10 +169,10 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
               size="sm"
               onClick={props.onCleanNewlines}
               className="h-7 px-2 text-xs"
-              title="清理overview字段中的换行符"
+              title={t('csvEditor.cleanNewlinesTitle')}
             >
               <Eraser className="h-3.5 w-3.5 mr-1" />
-              {'清理换行符'}
+              {t('csvEditor.cleanNewlines')}
             </Button>
           )}
 

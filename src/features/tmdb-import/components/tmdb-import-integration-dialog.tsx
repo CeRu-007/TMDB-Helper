@@ -1589,7 +1589,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                             variant="ghost"
                             size="sm"
                             className="h-6"
-                            title="复制"
+                            title={t('tmdbIntegration.copy')}
                             onClick={() => copyToClipboard(cmd, t('tmdbIntegration.platformCommandCopied'))}
                           >
                             <Copy className="h-3 w-3" />
@@ -1608,7 +1608,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       </div>
                     ))
                   ) : (
-                    <div className="text-xs text-green-400/50 mb-2">暂无播出平台命令</div>
+                    <div className="text-xs text-green-400/50 mb-2">{t('tmdbIntegration.noPlatformCommand')}</div>
                   )}
                   {/* TMDB命令 */}
                   <div className="flex items-center justify-between">
@@ -1622,7 +1622,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                       variant="ghost"
                       size="sm"
                       className="h-6"
-                      title="复制"
+                      title={t('tmdbIntegration.copy')}
                       onClick={() => copyToClipboard(generateTMDBCommand(selectedSeason), t('tmdbIntegration.tmdbCommandCopied'))}
                     >
                       <Copy className="h-3 w-3" />

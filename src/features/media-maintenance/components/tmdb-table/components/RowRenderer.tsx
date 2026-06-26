@@ -17,6 +17,7 @@ import {
   Copy,
   Trash2,
 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import CellRenderer from "./CellRenderer"
 import type { CellPosition } from "../types"
 
@@ -75,6 +76,8 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
   onMoveRow,
   editInputRef,
 }) => {
+  const { t: tMedia } = useTranslation('media')
+  const m = (key: string) => tMedia(`csvEditor.${key}`)
   const isCellSelected = (row: number, col: number) => {
     return selectedCells.some((cell) => cell.row === row && cell.col === col)
   }
@@ -118,17 +121,17 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
                     onClick={() => onInsertRow(rowIndex, "before")}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    在上方插入行
+                    {m('insertRowAbove')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onInsertRow(rowIndex, "after")}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    在下方插入行
+                    {m('insertRowBelow')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onDuplicateRow(rowIndex)}>
                     <Copy className="mr-2 h-4 w-4" />
-                    复制行
+                    {m('copyRow')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -136,14 +139,14 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
                     disabled={rowIndex === 0}
                   >
                     <ArrowUp className="mr-2 h-4 w-4" />
-                    上移
+                    {m('moveUp')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onMoveRow(rowIndex, "down")}
                     disabled={rowIndex === rowData.length - 1}
                   >
                     <ArrowDown className="mr-2 h-4 w-4" />
-                    下移
+                    {m('moveDown')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -152,7 +155,7 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
                     className="text-destructive"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    删除行
+                    {m('deleteRow')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

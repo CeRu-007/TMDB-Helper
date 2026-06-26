@@ -1182,7 +1182,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                                         type="button"
                                         onClick={() => setEditData({...editData, defaultPlatformUrl: isDefault ? undefined : url})}
                                         className={`h-8 w-6 flex-shrink-0 flex items-center justify-center ${isDefault ? 'text-amber-500' : 'text-muted-foreground/40 hover:text-muted-foreground/70'}`}
-                                        title={isDefault ? '默认播出平台' : '设为默认'}
+                                        title={isDefault ? t('defaultPlatformUrl') : t('setAsDefault')}
                                       >
                                         <Star className="h-3.5 w-3.5" fill={isDefault ? 'currentColor' : 'none'} />
                                       </button>

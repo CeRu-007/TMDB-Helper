@@ -1,6 +1,7 @@
 import React from "react"
 import { TableCell } from "@/shared/components/ui/table"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "react-i18next"
 import type { CellPosition } from "../types"
 import {
   isValidUrl,
@@ -50,6 +51,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onEditCancel,
   editInputRef,
 }) => {
+  const { t: tMedia } = useTranslation('media')
+  const m = (key: string) => tMedia(`csvEditor.${key}`)
   const isBackdrop = isBackdropColumn(columnName)
   const isUrl = isValidUrl(value)
   const isOverview = isOverviewColumn(columnName)
@@ -102,7 +105,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return (
       <div
         className={cn(baseClass, "truncate", hoverClass)}
-        title={shouldShowUrlFeatures ? "按住Ctrl点击查看图片" : undefined}
+        title={shouldShowUrlFeatures ? m('holdCtrlToViewImage') : undefined}
       >
         {value}
       </div>

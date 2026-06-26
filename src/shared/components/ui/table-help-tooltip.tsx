@@ -9,8 +9,10 @@ import {
 } from "@/shared/components/ui/tooltip"
 import { Button } from "@/shared/components/ui/button"
 import { HelpCircle } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 export function TableHelpTooltip() {
+  const { t } = useTranslation('media')
   return (
     <TooltipProvider>
       <Tooltip>
@@ -21,23 +23,23 @@ export function TableHelpTooltip() {
         </TooltipTrigger>
         <TooltipContent side="left" className="max-w-xs">
           <div className="space-y-2 text-xs">
-            <div className="font-semibold">快捷键</div>
+            <div className="font-semibold">{t('csvEditor.help.shortcuts')}</div>
             <div className="space-y-1">
-              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Enter</kbd> / <kbd className="px-1 py-0.5 bg-muted rounded text-xs">F2</kbd> 编辑单元格</div>
-              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Tab</kbd> 移动到下一个单元格</div>
-              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+C</kbd> 复制</div>
-              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+V</kbd> 粘贴</div>
-              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Z</kbd> 撤销</div>
-              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Del</kbd> 删除内容</div>
-              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Shift++</kbd> 插入行</div>
-              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Alt++</kbd> 插入列</div>
+              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Enter</kbd> / <kbd className="px-1 py-0.5 bg-muted rounded text-xs">F2</kbd> {t('csvEditor.help.editCell')}</div>
+              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Tab</kbd> {t('csvEditor.help.moveNext')}</div>
+              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+C</kbd> {t('csvEditor.help.copy')}</div>
+              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+V</kbd> {t('csvEditor.help.paste')}</div>
+              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Z</kbd> {t('csvEditor.help.undo')}</div>
+              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Del</kbd> {t('csvEditor.help.delete')}</div>
+              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Shift++</kbd> {t('csvEditor.help.insertRow')}</div>
+              <div><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Alt++</kbd> {t('csvEditor.help.insertColumn')}</div>
             </div>
-            <div className="font-semibold">鼠标操作</div>
+            <div className="font-semibold">{t('csvEditor.help.mouseOps')}</div>
             <div className="space-y-1">
-              <div>单击选择单元格</div>
-              <div>双击编辑单元格</div>
-              <div>长按拖拽选择区域</div>
-              <div>右键显示上下文菜单</div>
+              <div>{t('csvEditor.help.clickSelect')}</div>
+              <div>{t('csvEditor.help.doubleClickEdit')}</div>
+              <div>{t('csvEditor.help.dragSelect')}</div>
+              <div>{t('csvEditor.help.rightClickMenu')}</div>
             </div>
           </div>
         </TooltipContent>
