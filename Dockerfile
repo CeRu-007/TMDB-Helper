@@ -42,6 +42,7 @@ WORKDIR /app
 
 # 复制包管理文件
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 
 # 安装 Node.js 依赖（允许所有构建脚本）
 RUN pnpm install --frozen-lockfile
