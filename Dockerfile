@@ -44,7 +44,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # 安装 Node.js 依赖（允许所有构建脚本）
-RUN pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true
+RUN pnpm install --frozen-lockfile
 
 # 构建应用阶段
 FROM base AS builder
