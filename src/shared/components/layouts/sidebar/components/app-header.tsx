@@ -199,6 +199,23 @@ export function AppHeader({
             <Button
               variant="outline"
               size="sm"
+              onClick={onShowJournalDialog}
+              className="min-w-[44px] min-h-[44px] p-0 relative"
+              aria-label={t("title", { ns: "journal" })}
+            >
+              <Bell className="h-4 w-4" />
+              {journalUnreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-0.5 items-center justify-center">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 min-w-4 bg-blue-500 text-white text-[9px] font-bold leading-none items-center justify-center">
+                    {journalUnreadCount > 99 ? '99+' : journalUnreadCount}
+                  </span>
+                </span>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onShowSettingsDialog()}
               className="min-w-[44px] min-h-[44px] p-0"
               aria-label={t("settings.settings")}
