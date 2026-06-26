@@ -19,6 +19,12 @@ export interface ElectronAPI {
   selectDirectory: () => Promise<string | null>
   openDirectory: (dirPath: string) => Promise<boolean>
 
+  // 原生文件拖拽
+  startDrag: (filePaths: string[]) => void
+
+  // 通过 webUtils 获取 File 对象的真实路径
+  getFilePath: (file: File) => string | null
+
   // 菜单事件监听
   onMenuImportData: (callback: () => void) => void
   onMenuExportData: (callback: () => void) => void

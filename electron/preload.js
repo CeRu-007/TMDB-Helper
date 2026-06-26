@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 // 向渲染进程暴露安全的 API
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -45,6 +45,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 设置窗口置顶
   setAlwaysOnTop: (enabled) => ipcRenderer.send('set-window-always-on-top', enabled),
+
+  // 原生文件拖拽（用于将本地文件拖出到浏览器标签页等外部目标）
+  startDrag: (filePaths) => ipcRenderer.send('ondragstart', filePaths),
+
+  // 通过 Electron webUtils 获取 File 对象的真实路径（比 File.path 更可靠）
+  getFilePath: (file) => webUtils.getPathForFile(file),
 
   // 平台信息
   platform: process.platform,

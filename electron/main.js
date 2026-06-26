@@ -453,7 +453,9 @@ function createWindow() {
       return { action: 'deny' };
     }
 
-    shell.openExternal(url);
+    shell.openExternal(url).catch((error) => {
+      electronLog(`打开外部链接失败: ${error.message}`, 'error');
+    });
     return { action: 'deny' };
   });
 
@@ -967,6 +969,23 @@ ipcMain.on('set-window-always-on-top', (event, enabled) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) {
     win.setAlwaysOnTop(enabled);
+  }
+});
+
+// 原生文件拖拽（用于将图片从独立窗口拖出到浏览器标签页等外部目标）
+// 使用 webContents.startDrag 启动 OS 级原生文件拖拽，确保外部应用能正确识别文件路径
+ipcMain.on('ondragstart', (event, filePaths) => {
+  try {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && filePaths && filePaths.length > 0) {
+      const iconPath = path.join(__dirname, '../public/images/tmdb-helper-logo-new.png');
+      win.webContents.startDrag({
+        files: filePaths,
+        icon: iconPath,
+      });
+    }
+  } catch (error) {
+    electronLog(`startDrag 失败: ${error instanceof Error ? error.message : String(error)}`, 'error');
   }
 });
 
