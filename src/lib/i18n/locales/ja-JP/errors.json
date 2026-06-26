@@ -1,5 +1,11 @@
 {
   "required": "必須パラメータがありません",
   "serverError": "サーバー内部エラー",
-  "dataUpdateFailed": "データ更新後の保存に失敗しました"
+  "dataUpdateFailed": "データ更新後の保存に失敗しました",
+  "pageNotFound": "ページが見つかりません",
+  "pageNotFoundDescription": "お探しのページは存在しないか、削除された可能性があります。",
+  "backToHome": "ホームに戻る",
+  "serverErrorTitle": "サーバーエラー",
+  "serverErrorDescription": "申し訳ございません。サーバーでエラーが発生しました。しばらくしてからもう一度お試しください。",
+  "retry": "再試行"
 }

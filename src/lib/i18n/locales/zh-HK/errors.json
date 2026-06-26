@@ -1,5 +1,11 @@
 {
   "required": "缺少必要參數",
   "serverError": "伺服器內部錯誤",
-  "dataUpdateFailed": "資料更新儲存失敗"
+  "dataUpdateFailed": "資料更新儲存失敗",
+  "pageNotFound": "頁面未找到",
+  "pageNotFoundDescription": "抱歉，您訪問的頁面不存在或已被移除。",
+  "backToHome": "返回首頁",
+  "serverErrorTitle": "伺服器錯誤",
+  "serverErrorDescription": "抱歉，伺服器遇到了一個錯誤。請稍後再試。",
+  "retry": "重試"
 }

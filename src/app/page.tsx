@@ -6,7 +6,6 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
-  Loader2,
   AlertTriangle,
   Plus,
   PlayCircle,
@@ -28,6 +27,7 @@ import { getPlatformInfo } from '@/lib/utils'
 import { categories, type Category } from '@/lib/constants/categories'
 import { mapLanguageToRegion } from '@/lib/constants/regions'
 import i18n, { getInitialLanguage } from '@/lib/i18n'
+import { MediaCardGridSkeleton } from '@/features/media-maintenance/components/media-card-skeleton'
 import type { MediaItem } from '@/types/media'
 import type { UseMediaNewsReturn } from '@/lib/hooks/use-media-news'
 import type { TFunction } from 'i18next'
@@ -91,11 +91,8 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-48">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading", { ns: "common" })}</p>
-        </div>
+      <div className="overflow-y-auto max-h-[calc(100vh-350px)]">
+        <MediaCardGridSkeleton count={12} />
       </div>
     )
   }

@@ -24,7 +24,7 @@ export function EpisodeList({
   item,
   onEpisodeProgressUpdate
 }: EpisodeListProps) {
-  const { t } = useTranslation('media')
+  const { t, i18n } = useTranslation('media')
   const [inputValue, setInputValue] = useState<string>("")
 
   // 当前维护到的集数
@@ -203,7 +203,7 @@ export function EpisodeList({
   }
   
   const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('zh-CN', {
+    return date.toLocaleDateString(i18n.language || 'zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'

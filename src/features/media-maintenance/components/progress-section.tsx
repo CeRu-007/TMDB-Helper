@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Badge } from '@/shared/components/ui/badge'
 import { Progress } from '@/shared/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
@@ -10,6 +11,8 @@ import { WeekdayNavigation } from './weekday-navigation'
 import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
 import MediaCard from '@/features/media-maintenance/components/media-card'
+import { MediaCardGridSkeleton } from '@/features/media-maintenance/components/media-card-skeleton'
+import { useInfiniteScroll } from '@/lib/hooks/use-infinite-scroll'
 import { UseHomeStateReturn } from '@/stores/hooks'
 import { useTranslation } from 'react-i18next'
 
@@ -78,6 +81,9 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
   const ongoingItems = getItemsByStatus("ongoing")
   const completedItems = getItemsByStatus("completed")
 
+  const { visibleItems: ongoingVisible, sentinelRef: ongoingSentinel, hasMore: ongoingHasMore } = useInfiniteScroll(ongoingItems, 24)
+  const { visibleItems: completedVisible, sentinelRef: completedSentinel, hasMore: completedHasMore } = useInfiniteScroll(completedItems, 24)
+
   // 统计数据
   const totalItems = ongoingItems.length + completedItems.length
   const completedCount = completedItems.length
@@ -85,8 +91,23 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-3 md:p-4">
+                <div className="flex items-center space-x-2">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <div className="min-w-0 space-y-1.5 flex-1">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-6 w-8" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <MediaCardGridSkeleton count={12} />
       </div>
     )
   }
@@ -167,17 +188,22 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
 
         <TabsContent value="ongoing" className="space-y-4">
           {ongoingItems.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-              {ongoingItems.map((item) => (
-                <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
-                  <MediaCard
-                    item={item}
-                    itemId={item.id}
-                    onItemClick={handleCardClick}
-                  />
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                {ongoingVisible.map((item) => (
+                  <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
+                    <MediaCard
+                      item={item}
+                      itemId={item.id}
+                      onItemClick={handleCardClick}
+                    />
+                  </div>
+                ))}
+              </div>
+              {ongoingHasMore && (
+                <div ref={ongoingSentinel} className="h-4" />
+              )}
+            </>
           ) : (
             <div className="text-center py-8">
               <PlayCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -190,17 +216,22 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
 
         <TabsContent value="completed" className="space-y-4">
           {completedItems.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-              {completedItems.map((item) => (
-                <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
-                  <MediaCard
-                    item={item}
-                    itemId={item.id}
-                    onItemClick={handleCardClick}
-                  />
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                {completedVisible.map((item) => (
+                  <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
+                    <MediaCard
+                      item={item}
+                      itemId={item.id}
+                      onItemClick={handleCardClick}
+                    />
+                  </div>
+                ))}
+              </div>
+              {completedHasMore && (
+                <div ref={completedSentinel} className="h-4" />
+              )}
+            </>
           ) : (
             <div className="text-center py-8">
               <CheckCircle2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />

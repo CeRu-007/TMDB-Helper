@@ -5,7 +5,10 @@ import { WeekdayNavigation } from './weekday-navigation'
 import { useData } from '@/shared/components/client-data-provider'
 import { TMDBItem } from '@/lib/data/storage'
 import MediaCard from '@/features/media-maintenance/components/media-card'
+import { MediaCardGridSkeleton } from '@/features/media-maintenance/components/media-card-skeleton'
+import { useInfiniteScroll } from '@/lib/hooks/use-infinite-scroll'
 import { UseHomeStateReturn } from '@/stores/hooks'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTranslation } from 'react-i18next'
 
 interface WeeklyScheduleSectionProps {
@@ -149,10 +152,17 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
   const ongoingItems = items.filter((item) => item.status === "ongoing")
   const filteredItems = getFilteredItems(ongoingItems)
 
+  const { visibleItems: filteredVisible, sentinelRef, hasMore } = useInfiniteScroll(filteredItems, 24)
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-4 md:space-y-6 pt-4">
+        <div className="flex gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-20 rounded-full" />
+          ))}
+        </div>
+        <MediaCardGridSkeleton count={12} />
       </div>
     )
   }
@@ -170,17 +180,22 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
 
       {/* 内容网格 */}
       {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2 md:gap-x-6 gap-y-2 md:gap-y-4">
-          {filteredItems.map((item) => (
-            <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
-              <MediaCard
-                item={item}
-                itemId={item.id}
-                onItemClick={handleCardClick}
-              />
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2 md:gap-x-6 gap-y-2 md:gap-y-4">
+            {filteredVisible.map((item) => (
+              <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
+                <MediaCard
+                  item={item}
+                  itemId={item.id}
+                  onItemClick={handleCardClick}
+                />
+              </div>
+            ))}
+          </div>
+          {hasMore && (
+            <div ref={sentinelRef} className="h-4" />
+          )}
+        </>
       ) : (
         <div className="text-center py-8">
           <div className="text-gray-400 dark:text-gray-600 mb-4">

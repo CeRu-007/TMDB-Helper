@@ -26,7 +26,7 @@ interface ScheduleTaskInfo {
 }
 
 function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: MediaCardProps) {
-  const { t } = useTranslation('media')
+  const { t, i18n } = useTranslation('media')
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [isClicked, setIsClicked] = useState(false)
@@ -158,7 +158,7 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
 
   const getCompletionDate = (): string | null => {
     try {
-      return new Date(item.updatedAt).toLocaleDateString('zh-CN', {
+      return new Date(item.updatedAt).toLocaleDateString(i18n.language || 'zh-CN', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
