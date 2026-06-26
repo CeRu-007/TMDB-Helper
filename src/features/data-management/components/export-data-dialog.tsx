@@ -122,7 +122,7 @@ export default function ExportDataDialog({
       item.totalEpisodes || '',
       item.completed ? '是' : '否',
       item.status === 'ongoing' ? '进行中' : '已完成',
-      item.platformUrl || '',
+      item.platformUrls?.join('; ') || '',
       item.notes || '',
       item.category || '',
       item.createdAt,

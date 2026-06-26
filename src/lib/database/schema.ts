@@ -7,7 +7,7 @@ import { getDatabaseAsync } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 17;
 
 // 防止重复初始化的标志
 let schemaInitStarted = false;
@@ -115,6 +115,15 @@ export async function initializeSchema(): Promise<void> {
     if (currentVersion < 14) {
       migrateToV14(db);
     }
+    if (currentVersion < 15) {
+      migrateToV15(db);
+    }
+    if (currentVersion < 16) {
+      migrateToV16(db);
+    }
+    if (currentVersion < 17) {
+      migrateToV17(db);
+    }
 
     setUserVersion(db, SCHEMA_VERSION);
     logger.info('[Database] Schema 升级完成');
@@ -152,6 +161,9 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       status TEXT,
       completed INTEGER DEFAULT 0,
       platformUrl TEXT,
+      platformUrls TEXT,
+      defaultPlatformUrl TEXT,
+      networks TEXT,
       totalEpisodes INTEGER,
       manuallySetEpisodes INTEGER DEFAULT 0,
       weekday INTEGER,
@@ -583,6 +595,58 @@ function migrateToV14(db: ReturnType<typeof getDatabase>): void {
     logger.info('[Database] V14 迁移完成');
   } catch (error) {
     logger.error('[Database] V14 迁移失败:', error);
+  }
+}
+
+function migrateToV15(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V15 迁移: 添加 platformUrls 列并迁移旧数据');
+
+  try {
+    db.exec(`
+      ALTER TABLE items ADD COLUMN platformUrls TEXT
+    `);
+
+    db.exec(`
+      UPDATE items SET platformUrls = json_array(platformUrl) WHERE platformUrl IS NOT NULL AND platformUrl != ''
+    `);
+
+    db.exec(`
+      UPDATE items SET platformUrls = '[]' WHERE platformUrls IS NULL
+    `);
+
+    db.exec(`
+      ALTER TABLE schedule_tasks ADD COLUMN platformUrl TEXT
+    `);
+
+    logger.info('[Database] V15 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V15 迁移失败:', error);
+  }
+}
+
+function migrateToV16(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V16 迁移: 添加 defaultPlatformUrl 列');
+
+  try {
+    db.exec(`
+      ALTER TABLE items ADD COLUMN defaultPlatformUrl TEXT
+    `);
+    logger.info('[Database] V16 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V16 迁移失败:', error);
+  }
+}
+
+function migrateToV17(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V17 迁移: 添加 networks 列');
+
+  try {
+    db.exec(`
+      ALTER TABLE items ADD COLUMN networks TEXT
+    `);
+    logger.info('[Database] V17 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V17 迁移失败:', error);
   }
 }
 

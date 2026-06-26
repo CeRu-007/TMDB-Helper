@@ -4,6 +4,16 @@ import type { BaseMediaInfo, Episode, Season } from './media/base'
 export type { Episode, Season }
 
 /**
+ * TMDB 网络信息
+ */
+export interface TMDBNetwork {
+  id: number
+  name: string
+  logoPath?: string
+  logoUrl?: string
+}
+
+/**
  * TMDBItem - 用户跟踪的媒体项目
  * 继承基础媒体信息，添加业务相关字段
  */
@@ -12,7 +22,9 @@ export interface TMDBItem extends BaseMediaInfo {
   mediaType: 'tv'
   
   // 业务相关字段
-  platformUrl?: string
+  platformUrls?: string[]
+  defaultPlatformUrl?: string
+  networks?: TMDBNetwork[]
   totalEpisodes?: number
   manuallySetEpisodes?: boolean
   episodes?: Episode[]

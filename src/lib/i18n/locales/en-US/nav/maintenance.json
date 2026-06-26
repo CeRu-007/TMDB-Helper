@@ -101,6 +101,7 @@
       "secondWeekday": "Second Air Day",
       "setAsDailyUpdate": "Set as Daily Update",
       "platformUrlLabel": "Platform URL",
+      "addPlatformUrl": "Add Platform URL",
       "tmdbImportHint": "Used by TMDB Import for metadata",
       "backdropUrlLabel": "Backdrop URL",
       "preview": "Preview",

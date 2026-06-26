@@ -83,6 +83,8 @@ export interface TMDBItemData {
   networkLogoUrl?: string | undefined   // 添加网络Logo URL
   totalEpisodes?: number | undefined
   platformUrl?: string | undefined
+  platformUrls?: string[] | undefined
+  networks?: { id: number; name: string; logoPath?: string; logoUrl?: string }[] | undefined
   weekday?: number | undefined
   seasons?: TMDBSeasonData[] | undefined
   recommendedCategory?: "anime" | "tv" | "kids" | "variety" | "short" | undefined
@@ -264,6 +266,8 @@ export class TMDBService {
       const data = await response.json()
       
       let platformUrl = ""
+      let platformUrls: string[] = []
+      let networks: Array<{ id: number; name: string; logoPath?: string; logoUrl?: string }> = []
       let totalEpisodes = undefined
       let seasons: TMDBSeasonData[] = []
       let recommendedCategory: "anime" | "tv" | "kids" | "variety" | "short" | undefined = undefined
@@ -277,7 +281,23 @@ export class TMDBService {
       }
       
       const tvData = data as TMDBTVResponse
-      platformUrl = tvData.homepage || tvData.networks?.[0]?.homepage || ""
+      platformUrl = tvData.homepage || ""
+
+      // 收集所有播出平台URL（去重）
+      const urlSet = new Set<string>()
+      if (tvData.homepage) urlSet.add(tvData.homepage)
+      platformUrls = Array.from(urlSet)
+
+      // 收集所有网络信息
+      if (tvData.networks && tvData.networks.length > 0) {
+        networks = tvData.networks.map(n => ({
+          id: n.id,
+          name: n.name,
+          logoPath: n.logo_path ?? undefined,
+          logoUrl: n.logo_path ? `${this.NETWORK_LOGO_BASE_URL}${n.logo_path}` : undefined,
+        }))
+      }
+
       totalEpisodes = tvData.number_of_episodes || undefined
 
       // 处理多季数据
@@ -364,6 +384,8 @@ export class TMDBService {
         logoUrl: logoData.path ? `${this.LOGO_BASE_URL}${logoData.path}` : undefined,  // 添加标志URL
         logoPath: logoData.path || undefined,  // 添加标志路径
         platformUrl,
+        platformUrls: platformUrls.length > 0 ? platformUrls : undefined,
+        networks: networks.length > 0 ? networks : undefined,
         weekday,
         totalEpisodes,
         seasons,

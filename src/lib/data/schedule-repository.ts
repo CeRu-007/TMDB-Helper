@@ -73,6 +73,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       tmdbAutoResponse: input.tmdbAutoResponse ?? 'w',
       fieldCleanup: input.fieldCleanup ?? defaultFieldCleanup,
       checkMetadataCompleteness: input.checkMetadataCompleteness ?? false,
+      platformUrl: input.platformUrl,
       lastRunAt: null,
       nextRunAt: null,
       createdAt: now,
@@ -86,10 +87,12 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
         INSERT INTO schedule_tasks (
           id, itemId, cron, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup,
           checkMetadataCompleteness,
+          platformUrl,
           lastRunAt, nextRunAt, createdAt, updatedAt
         ) VALUES (
           @id, @itemId, @cron, @enabled, @headless, @incremental, @autoImport, @tmdbSeason, @tmdbLanguage, @tmdbAutoResponse, @fieldCleanup,
           @checkMetadataCompleteness,
+          @platformUrl,
           @lastRunAt, @nextRunAt, @createdAt, @updatedAt
         )
       `).run(row);
@@ -143,6 +146,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
           tmdbAutoResponse = @tmdbAutoResponse,
           fieldCleanup = @fieldCleanup,
           checkMetadataCompleteness = @checkMetadataCompleteness,
+          platformUrl = @platformUrl,
           updatedAt = @updatedAt
         WHERE id = @id
       `).run({
@@ -157,6 +161,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
         tmdbAutoResponse: row.tmdbAutoResponse,
         fieldCleanup: row.fieldCleanup,
         checkMetadataCompleteness: row.checkMetadataCompleteness,
+        platformUrl: row.platformUrl,
         updatedAt: row.updatedAt,
       });
 

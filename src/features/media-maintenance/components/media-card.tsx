@@ -281,21 +281,25 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
               </Button>
             )}
 
-            {item.platformUrl && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  window.open(item.platformUrl, "_blank")
-                }}
-                className="bg-green-500/90 hover:bg-green-600 text-white text-xs px-2 py-1 h-6 backdrop-blur-sm border-0 shadow-md"
-                title={t("visitStreamingPlatform", { ns: "media" })}
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                {t("streamingPlatform", { ns: "media" })}
-              </Button>
-            )}
+            {(() => {
+              const url = item.defaultPlatformUrl || item.platformUrls?.[0]
+              if (!url) return null
+              return (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    window.open(url, "_blank")
+                  }}
+                  className="bg-green-500/90 hover:bg-green-600 text-white text-xs px-2 py-1 h-6 backdrop-blur-sm border-0 shadow-md"
+                  title={t("visitStreamingPlatform", { ns: "media" })}
+                >
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  {t("streamingPlatform", { ns: "media" })}
+                </Button>
+              )
+            })()}
 
             {scheduleTask?.enabled && (
               <Button

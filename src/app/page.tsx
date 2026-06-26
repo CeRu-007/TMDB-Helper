@@ -273,11 +273,13 @@ export default function HomePage() {
     return items.filter(item => {
       if (item.networkName) {
         const platformId = item.networkName.toLowerCase().replace(/[^a-z0-9]/g, '')
-        return platformId === platform
+        if (platformId === platform) return true
       }
-      if (item.platformUrl) {
-        const info = getPlatformInfo(item.platformUrl)
-        return info && info.icon === platform
+      if (item.platformUrls) {
+        for (const url of item.platformUrls) {
+          const info = getPlatformInfo(url)
+          if (info && info.icon === platform) return true
+        }
       }
       return false
     })

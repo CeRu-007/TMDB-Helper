@@ -23,6 +23,7 @@ export interface ScheduleTask {
   tmdbAutoResponse: string;
   fieldCleanup: FieldCleanup;
   checkMetadataCompleteness: boolean;
+  platformUrl?: string;
   lastRunAt: string | null;
   nextRunAt: string | null;
   createdAt: string;
@@ -42,6 +43,7 @@ export interface ScheduleTaskRow {
   tmdbAutoResponse: string;
   fieldCleanup: string;
   checkMetadataCompleteness: number;
+  platformUrl: string | null;
   lastRunAt: string | null;
   nextRunAt: string | null;
   createdAt: string;
@@ -82,6 +84,7 @@ export function scheduleTaskRowToScheduleTask(row: ScheduleTaskRow): ScheduleTas
     tmdbAutoResponse: row.tmdbAutoResponse || 'w',
     fieldCleanup: JSON.parse(row.fieldCleanup || '{}'),
     checkMetadataCompleteness: row.checkMetadataCompleteness === 1,
+    platformUrl: row.platformUrl ?? undefined,
     lastRunAt: row.lastRunAt,
     nextRunAt: row.nextRunAt,
     createdAt: row.createdAt,
@@ -103,6 +106,7 @@ export function scheduleTaskToRow(task: ScheduleTask): ScheduleTaskRow {
     tmdbAutoResponse: task.tmdbAutoResponse || 'w',
     fieldCleanup: JSON.stringify(task.fieldCleanup),
     checkMetadataCompleteness: task.checkMetadataCompleteness ? 1 : 0,
+    platformUrl: task.platformUrl ?? null,
     lastRunAt: task.lastRunAt,
     nextRunAt: task.nextRunAt,
     createdAt: task.createdAt,
@@ -134,6 +138,7 @@ export interface CreateScheduleTaskInput {
   tmdbAutoResponse?: string;
   fieldCleanup?: FieldCleanup;
   checkMetadataCompleteness?: boolean;
+  platformUrl?: string;
 }
 
 export interface UpdateScheduleTaskInput {
@@ -148,4 +153,5 @@ export interface UpdateScheduleTaskInput {
   tmdbAutoResponse?: string;
   fieldCleanup?: FieldCleanup;
   checkMetadataCompleteness?: boolean;
+  platformUrl?: string;
 }

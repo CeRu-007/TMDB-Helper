@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { createElement } from "react"
 import { Link, Terminal } from "lucide-react"
 import type { TMDBItem } from "@/lib/data/storage"
+import { getPlatformInfo } from "@/lib/utils"
 
 export interface TMDBCommand {
   type: "platform" | "tmdb"
@@ -30,15 +31,19 @@ export function useTMDBIntegration({
   const generateTmdbImportCommands = useMemo((): TMDBCommand[] => {
     const commands: TMDBCommand[] = []
 
-    // 播出平台抓取命令
-    if (item.platformUrl) {
-      const platformCommand = `${pythonCmd} -m tmdb-import "${item.platformUrl}"`
-      commands.push({
-        type: "platform",
-        title: "播出平台抓取",
-        command: platformCommand,
-        description: "从播出平台抓取剧集元数据",
-        icon: createElement(Link, { className: "h-4 w-4" }),
+    // 播出平台抓取命令（多URL支持）
+    if (item.platformUrls && item.platformUrls.length > 0) {
+      item.platformUrls.forEach((url, idx) => {
+        const info = getPlatformInfo(url)
+        const platformName = info?.name || `平台${idx + 1}`
+        const platformCommand = `${pythonCmd} -m tmdb-import "${url}"`
+        commands.push({
+          type: "platform",
+          title: `播出平台抓取 - ${platformName}`,
+          command: platformCommand,
+          description: `从${platformName}抓取剧集元数据`,
+          icon: createElement(Link, { className: "h-4 w-4" }),
+        })
       })
     }
 

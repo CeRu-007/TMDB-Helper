@@ -31,6 +31,9 @@ export interface ItemRow {
   status: string | null;
   completed: number;
   platformUrl: string | null;
+  platformUrls: string | null;
+  defaultPlatformUrl: string | null;
+  networks: string | null;
   totalEpisodes: number | null;
   manuallySetEpisodes: number;
   weekday: number | null;
@@ -199,9 +202,12 @@ export function tmdbItemToRow(item: TMDBItem, timestamps?: { createdAt?: string;
     networkId: item.networkId ?? null,
     networkName: item.networkName ?? null,
     networkLogoUrl: item.networkLogoUrl ?? null,
+    networks: item.networks ? JSON.stringify(item.networks) : null,
     status: item.status ?? null,
     completed: item.completed ? 1 : 0,
-    platformUrl: item.platformUrl ?? null,
+    platformUrl: item.platformUrls?.[0] ?? null,
+    platformUrls: item.platformUrls ? JSON.stringify(item.platformUrls) : null,
+    defaultPlatformUrl: item.defaultPlatformUrl ?? null,
     totalEpisodes: item.totalEpisodes ?? null,
     manuallySetEpisodes: item.manuallySetEpisodes ? 1 : 0,
     weekday: item.weekday ?? null,
@@ -249,7 +255,9 @@ export function rowToTMDBItem(
     networkLogoUrl: row.networkLogoUrl ?? undefined,
     status: (row.status && row.status !== 'ongoing' && row.status !== 'completed') ? 'ongoing' : (row.status ?? undefined),
     completed: row.completed === 1,
-    platformUrl: row.platformUrl ?? undefined,
+    platformUrls: row.platformUrls ? JSON.parse(row.platformUrls) : (row.platformUrl ? [row.platformUrl] : undefined),
+    defaultPlatformUrl: row.defaultPlatformUrl ?? undefined,
+    networks: row.networks ? JSON.parse(row.networks) : undefined,
     totalEpisodes: row.totalEpisodes ?? undefined,
     manuallySetEpisodes: row.manuallySetEpisodes === 1,
     weekday: row.weekday ?? undefined,

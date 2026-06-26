@@ -101,6 +101,7 @@
       "secondWeekday": "第二播出日",
       "setAsDailyUpdate": "设为每日更新",
       "platformUrlLabel": "播出平台URL",
+      "addPlatformUrl": "添加播出平台",
       "tmdbImportHint": "用于TMDB导入工具抓取元数据",
       "backdropUrlLabel": "背景图URL",
       "preview": "预览",

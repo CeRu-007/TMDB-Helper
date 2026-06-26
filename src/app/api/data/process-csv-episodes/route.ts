@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
     const {
       csvPath,
       markedEpisodes,
-      platformUrl,
+      platformUrl: _platformUrl,
+      platformUrls,
       itemId: _itemId,
       testMode = false,
       itemTitle,
@@ -27,6 +28,8 @@ export async function POST(request: NextRequest) {
       removeRuntimeColumn = false,
       removeBackdropColumn = false,
     } = await request.json();
+
+    const platformUrl = platformUrls?.[0] ?? _platformUrl;
 
     if (!csvPath || !Array.isArray(markedEpisodes) || markedEpisodes.length === 0) {
       return NextResponse.json(

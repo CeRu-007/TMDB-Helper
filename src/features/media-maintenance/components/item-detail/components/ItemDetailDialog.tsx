@@ -25,6 +25,8 @@ import {
   RefreshCw,
   Clock,
   ChevronDown,
+  Plus,
+  Star,
 } from "lucide-react"
 import type { TMDBItem, Episode, Season } from "@/types/tmdb-item"
 import { cn } from "@/lib/utils"
@@ -495,8 +497,9 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         networkId: tmdbData.networkId,
         networkName: tmdbData.networkName,
         networkLogoUrl: tmdbData.networkLogoUrl,
+        networks: tmdbData.networks,
         overview: tmdbData.overview,
-        platformUrl: localItem.platformUrl,
+        platformUrls: localItem.platformUrls,
         seasons: tmdbData.seasons?.map(function(newSeason: Season) {
           const existingSeason = localItem.seasons?.find(function(s: Season) { return s.seasonNumber === newSeason.seasonNumber })
           return {
@@ -690,6 +693,22 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       window.addEventListener('touchstart', touchStartHandler, { passive: true, capture: true })
       window.addEventListener('touchmove', touchMoveHandler, { passive: false, capture: true })
 
+      function updateDialogPosition() {
+        const mainContent = document.getElementById('main-content-container')
+        if (mainContent) {
+          const rect = mainContent.getBoundingClientRect()
+          container.style.setProperty('--dialog-left', `${rect.left}px`)
+          container.style.setProperty('--dialog-top', `${rect.top}px`)
+          container.style.setProperty('--dialog-width', `${rect.width}px`)
+          container.style.setProperty('--dialog-height', `${rect.height}px`)
+        }
+      }
+
+      const resizeHandler = function() {
+        requestAnimationFrame(updateDialogPosition)
+      }
+      window.addEventListener('resize', resizeHandler)
+
       return function() {
         cleanupContainerStyles(container)
 
@@ -711,6 +730,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         window.removeEventListener('wheel', wheelHandler as any, true)
         window.removeEventListener('touchstart', touchStartHandler as any, true)
         window.removeEventListener('touchmove', touchMoveHandler as any, true)
+        window.removeEventListener('resize', resizeHandler)
       }
     } else {
       cleanupContainerStyles(container)
@@ -1149,16 +1169,62 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-platform-url" className="text-xs text-muted-foreground">{t("platformUrl")}</Label>
-                            <Input
-                              id="edit-platform-url"
-                              value={editData.platformUrl || ""}
-                              onChange={function handlePlatformUrlChange(e) {
-                              setEditData({...editData, platformUrl: e.target.value})
-                            }}
-                              placeholder="https://example.com/show-page"
-                              className="h-8"
-                            />
+                            <Label className="text-xs text-muted-foreground">{t("platformUrl")}</Label>
+                            <div className="space-y-1">
+                              {(editData.platformUrls?.length ? editData.platformUrls : ['']).map((url, idx) => {
+                                const isDefault = !editData.defaultPlatformUrl
+                                  ? idx === 0
+                                  : editData.defaultPlatformUrl === url
+                                return (
+                                  <div key={idx} className="flex gap-1">
+                                    {url && (editData.platformUrls?.length ?? 0) > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditData({...editData, defaultPlatformUrl: isDefault ? undefined : url})}
+                                        className={`h-8 w-6 flex-shrink-0 flex items-center justify-center ${isDefault ? 'text-amber-500' : 'text-muted-foreground/40 hover:text-muted-foreground/70'}`}
+                                        title={isDefault ? '默认播出平台' : '设为默认'}
+                                      >
+                                        <Star className="h-3.5 w-3.5" fill={isDefault ? 'currentColor' : 'none'} />
+                                      </button>
+                                    )}
+                                    <Input
+                                      value={url}
+                                      onChange={(e) => {
+                                        const urls = [...(editData.platformUrls || [''])]
+                                        urls[idx] = e.target.value
+                                        setEditData({...editData, platformUrls: urls.filter(u => u !== '').length > 0 ? urls.filter(u => u !== '') : undefined})
+                                      }}
+                                      placeholder="https://example.com/show-page"
+                                      className="h-8 flex-1"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 flex-shrink-0"
+                                      onClick={() => {
+                                        const urls = [...(editData.platformUrls || [''])]
+                                        urls.splice(idx, 1)
+                                        setEditData({...editData, platformUrls: urls.length > 0 ? urls : undefined})
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )
+                              })}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs w-full"
+                                onClick={() => {
+                                  const urls = [...(editData.platformUrls || []), '']
+                                  setEditData({...editData, platformUrls: urls})
+                                }}
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                {t("addPlatformUrl")}
+                              </Button>
+                            </div>
                           </div>
 
                           <div className="space-y-0.5">

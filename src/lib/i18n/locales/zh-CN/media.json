@@ -104,6 +104,7 @@
   "secondAirDate": "第二播出日",
   "selectWeekday": "选择星期",
   "platformUrl": "播出平台URL",
+  "addPlatformUrl": "添加播出平台",
   "backdropUrl": "背景图URL",
   "airTimePlaceholder": "例如：周一 22:00",
   "dailyUpdate": "每日更新",

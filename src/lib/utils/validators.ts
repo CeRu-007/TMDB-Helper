@@ -35,7 +35,14 @@ export const TMDBItemSchema = z.object({
   manuallySetEpisodes: z.boolean().optional(),
   completed: z.boolean(),
   status: z.enum(['ongoing', 'completed']),
-  platformUrl: z.string().url().optional().or(z.literal('')),
+  platformUrls: z.array(z.string().url()).optional(),
+  defaultPlatformUrl: z.string().url().optional(),
+  networks: z.array(z.object({
+    id: z.number(),
+    name: z.string(),
+    logoPath: z.string().optional(),
+    logoUrl: z.string().url().optional(),
+  })).optional(),
   maintenanceCode: z.string().optional(),
   notes: z.string().optional(),
   category: z.enum(['anime', 'tv', 'kids', 'variety', 'short']).optional(),
@@ -136,7 +143,7 @@ export class DataValidator {
 
   static sanitizeTMDBItem(data: unknown): TMDBItemType {
     const cleaned = data as Record<string, unknown>
-    const urlFields = ['tmdbUrl', 'posterUrl', 'backdropUrl', 'logoUrl', 'networkLogoUrl', 'platformUrl']
+    const urlFields = ['tmdbUrl', 'posterUrl', 'backdropUrl', 'logoUrl', 'networkLogoUrl', 'defaultPlatformUrl']
 
     urlFields.forEach(field => {
       if (cleaned[field] === '') {

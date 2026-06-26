@@ -26,6 +26,14 @@ export const MediaStatusSchema = z.enum(['ongoing', 'completed', 'cancelled', 'u
 // 模糊强度枚举
 export const BlurIntensitySchema = z.enum(['light', 'medium', 'heavy'])
 
+// TMDBNetwork Schema
+export const TMDBNetworkSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().min(1),
+  logoPath: z.string().optional(),
+  logoUrl: z.string().url().optional(),
+})
+
 // TMDBItem Schema - 核心业务类型
 export const TMDBItemSchema = z.object({
   // 标识
@@ -83,7 +91,9 @@ export const TMDBItemSchema = z.object({
   rating: z.number().min(0).max(10).optional(),
   
   // 业务相关
-  platformUrl: z.string().url().optional(),
+  platformUrls: z.array(z.string().url()).optional(),
+  defaultPlatformUrl: z.string().url().optional(),
+  networks: z.array(TMDBNetworkSchema).optional(),
   
   // 时间戳
   createdAt: z.string().datetime(),

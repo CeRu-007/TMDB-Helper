@@ -43,10 +43,10 @@ import {
   Activity as ActivityIcon,
   Square,
   CircleDashed,
-  Eraser
+  Eraser,
 } from "lucide-react"
 import path from "path"
-import { logger } from '@/lib/utils/logger'
+
 import { useTranslation } from "react-i18next"
 
 // 导入新版表格组件
@@ -106,7 +106,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const [terminalOutput, setTerminalOutput] = useState("")
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
-  const [platformUrl, setPlatformUrl] = useState(item.platformUrl || "")
+  const [platformUrls, setPlatformUrls] = useState<string[]>(item.platformUrls || [])
   const [isExecutingCommand, setIsExecutingCommand] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const [terminalInput, setTerminalInput] = useState("")
@@ -156,17 +156,19 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   }, [terminalOutput])
 
   
-  // 当item变化时，更新platformUrl
+  // 当item变化时，更新platformUrls
   useEffect(() => {
-    if (item && item.platformUrl) {
-      setPlatformUrl(item.platformUrl)
+    if (item && item.platformUrls) {
+      setPlatformUrls(item.platformUrls)
     }
   }, [item])
 
-  // 生成播出平台抓取命令
-  const generatePlatformCommand = () => {
-    if (!platformUrl) return ""
-    return `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${platformUrl}"`
+  // 生成播出平台抓取命令（多URL支持）
+  const generatePlatformCommands = () => {
+    if (!platformUrls || platformUrls.length === 0) return []
+    return platformUrls.filter(url => url.trim()).map(url =>
+      `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${url}"`
+    )
   }
 
   // 生成TMDB抓取命令
@@ -523,7 +525,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
   
   // 开始处理流程
-  const startProcessing = async (e?: React.MouseEvent) => {
+  const startProcessing = async (e?: React.MouseEvent, targetUrl?: string) => {
     // 防止事件冒泡
     if (e) {
       e.preventDefault();
@@ -552,7 +554,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
       return
     }
 
-    if (!platformUrl) {
+    const urlToUse = targetUrl || item.defaultPlatformUrl || platformUrls[0]
+    if (!urlToUse) {
       
       setOperationLock(null);
       
@@ -564,7 +567,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     try {
       // Step 1: Platform extraction
-      const command = generatePlatformCommand()
+      const command = `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${urlToUse}"`
 
       appendTerminalOutput(`切换到工作目录: ${savedTmdbImportPath}`, "info")
       appendTerminalOutput(`执行命令: ${command}`, "info")
@@ -1574,54 +1577,63 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
               <CardContent>
                 {/* 命令显示区域 */}
                 <div className="bg-gray-900/90 text-green-400 p-3 rounded-md text-xs overflow-hidden w-full min-w-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0 mr-2 w-0">
-                      <div className="font-mono text-xs truncate"
-                           title={generatePlatformCommand() || `python -m tmdb-import "${platformUrl || t('tmdbIntegration.pleaseInputPlatformUrl')}"`}>
-                        {generatePlatformCommand() || `python -m tmdb-import "${platformUrl || t('tmdbIntegration.pleaseInputPlatformUrl')}"`}
+                  {/* 播出平台命令（多行） */}
+                  {generatePlatformCommands().length > 0 ? (
+                    generatePlatformCommands().map((cmd, idx) => (
+                      <div key={`plat-${idx}`} className="flex items-center justify-between mb-1 last:mb-2">
+                        <div className="flex-1 min-w-0 mr-2 w-0">
+                          <div className="font-mono text-xs truncate" title={cmd}>{cmd}</div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6"
+                            title="复制"
+                            onClick={() => copyToClipboard(cmd, t('tmdbIntegration.platformCommandCopied'))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-green-400 hover:text-green-300"
+                            title={t('tmdbIntegration.platformCrawl')}
+                            onClick={(e) => startProcessing(e, platformUrls[idx])}
+                            disabled={operationLock === "platform" || !tmdbPathState}
+                          >
+                            <Zap className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6"
-                      onClick={() => copyToClipboard(generatePlatformCommand(), t('tmdbIntegration.platformCommandCopied'))}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
+                    ))
+                  ) : (
+                    <div className="text-xs text-green-400/50 mb-2">暂无播出平台命令</div>
+                  )}
+                  {/* TMDB命令 */}
+                  <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0 mr-2 w-0">
                       <div className="font-mono text-xs truncate"
                            title={generateTMDBCommand(selectedSeason) || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
                         {generateTMDBCommand(selectedSeason) || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
                       </div>
                     </div>
-                                <Button
+                    <Button
                       variant="ghost"
                       size="sm"
                       className="h-6"
+                      title="复制"
                       onClick={() => copyToClipboard(generateTMDBCommand(selectedSeason), t('tmdbIntegration.tmdbCommandCopied'))}
                     >
                       <Copy className="h-3 w-3" />
-                                </Button>
-                              </div>
+                    </Button>
+                  </div>
                 </div>
 
                 {/* 配置和按钮区域 */}
                 <div className="mt-3 grid grid-cols-3 gap-3">
                   {/* 左侧：URL和季数配置 */}
                   <div className="space-y-2">
-                  <div>
-                      <Label htmlFor="platform-url-tab" className="text-xs mb-1 block">{t('tmdbIntegration.platformUrl')}</Label>
-                      <Input
-                        id="platform-url-tab"
-                        value={platformUrl}
-                        onChange={(e) => setPlatformUrl(e.target.value)}
-                        placeholder="https://example.com/show-page"
-                        className="h-7 text-xs"
-                      />
-                    </div>
                     <div className="flex items-center gap-3">
                       <div>
                         <Label className="text-xs">{t('tmdbIntegration.tmdbSeason')}</Label>
@@ -1683,7 +1695,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                     <div className="grid grid-cols-2 gap-3">
                       <Button
                         onClick={(e) => startProcessing(e)}
-                        disabled={operationLock === "platform" || !tmdbPathState || !platformUrl}
+                        disabled={operationLock === "platform" || !tmdbPathState || platformUrls.length === 0}
                         className="bg-green-600 hover:bg-green-700 h-9 text-xs"
                       >
                         {operationLock === "platform" ? (

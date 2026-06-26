@@ -49,12 +49,15 @@ function extractPlatforms(items: TMDBItem[]): PlatformOption[] {
       iconType = platformId
     }
 
-    if (!platformId && item.platformUrl) {
-      const info = getPlatformInfo(item.platformUrl)
-      if (info) {
-        platformId = info.icon
-        platformName = info.name
-        iconType = info.icon
+    if (!platformId && item.platformUrls) {
+      for (const url of item.platformUrls) {
+        const info = getPlatformInfo(url)
+        if (info) {
+          platformId = info.icon
+          platformName = info.name
+          iconType = info.icon
+          break
+        }
       }
     }
 

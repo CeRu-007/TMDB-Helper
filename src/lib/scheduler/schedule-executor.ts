@@ -47,12 +47,13 @@ export async function executeScheduleTask(
       return { success: false, message: '请先在设置中配置TMDB-Import工具路径' }
     }
 
-    if (!item.platformUrl) {
+    const platformUrl = task.platformUrl || item.platformUrls?.[0]
+    if (!platformUrl) {
       return { success: false, message: '词条没有配置播出平台URL' }
     }
 
     const headlessFlag = task.headless ? '--headless' : ''
-    const platformCommand = `python -m tmdb-import ${headlessFlag} "${item.platformUrl}"`
+    const platformCommand = `python -m tmdb-import ${headlessFlag} "${platformUrl}"`
     logger.info(`[Schedule Execute] 执行播出平台抓取: ${platformCommand}`)
     addLog('info', `执行播出平台抓取: ${platformCommand}`)
 

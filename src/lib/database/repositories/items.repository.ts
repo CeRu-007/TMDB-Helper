@@ -83,14 +83,14 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
           id, tmdbId, imdbId, title, originalTitle, overview, year, releaseDate,
           genres, runtime, voteAverage, mediaType, posterPath, posterUrl,
           backdropPath, backdropUrl, logoPath, logoUrl, networkId, networkName,
-          networkLogoUrl, status, completed, platformUrl, totalEpisodes,
+          networkLogoUrl, status, completed, platformUrl, platformUrls, defaultPlatformUrl, networks, totalEpisodes,
           manuallySetEpisodes, weekday, secondWeekday, airTime, category,
           tmdbUrl, notes, isDailyUpdate, blurIntensity, rating, createdAt, updatedAt, deletedAt
         ) VALUES (
           @id, @tmdbId, @imdbId, @title, @originalTitle, @overview, @year, @releaseDate,
           @genres, @runtime, @voteAverage, @mediaType, @posterPath, @posterUrl,
           @backdropPath, @backdropUrl, @logoPath, @logoUrl, @networkId, @networkName,
-          @networkLogoUrl, @status, @completed, @platformUrl, @totalEpisodes,
+          @networkLogoUrl, @status, @completed, @platformUrl, @platformUrls, @defaultPlatformUrl, @networks, @totalEpisodes,
           @manuallySetEpisodes, @weekday, @secondWeekday, @airTime, @category,
           @tmdbUrl, @notes, @isDailyUpdate, @blurIntensity, @rating, @createdAt, @updatedAt, @deletedAt
         )
@@ -210,6 +210,9 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
           status = @status,
           completed = @completed,
           platformUrl = @platformUrl,
+          platformUrls = @platformUrls,
+          defaultPlatformUrl = @defaultPlatformUrl,
+          networks = @networks,
           totalEpisodes = @totalEpisodes,
           manuallySetEpisodes = @manuallySetEpisodes,
           weekday = @weekday,
@@ -251,6 +254,9 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
         status: row.status,
         completed: row.completed,
         platformUrl: row.platformUrl,
+        platformUrls: row.platformUrls,
+        defaultPlatformUrl: row.defaultPlatformUrl,
+        networks: row.networks,
         totalEpisodes: row.totalEpisodes,
         manuallySetEpisodes: row.manuallySetEpisodes,
         weekday: row.weekday,

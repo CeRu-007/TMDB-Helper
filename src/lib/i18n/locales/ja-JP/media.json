@@ -103,6 +103,7 @@
   "secondAirDate": "第二放映日",
   "selectWeekday": "曜日を選択",
   "platformUrl": "プラットフォームURL",
+  "addPlatformUrl": "プラットフォームURLを追加",
   "backdropUrl": "背景画像URL",
   "airTimePlaceholder": "例：月曜日 22:00",
   "dailyUpdate": "毎日更新",

@@ -104,6 +104,7 @@
   "secondAirDate": "Second Air Date",
   "selectWeekday": "Select Weekday",
   "platformUrl": "Platform URL",
+  "addPlatformUrl": "Add Platform URL",
   "backdropUrl": "Backdrop URL",
   "airTimePlaceholder": "e.g. Monday 22:00",
   "dailyUpdate": "Daily Update",

@@ -101,6 +101,7 @@
       "secondWeekday": "第二放映日",
       "setAsDailyUpdate": "毎日更新に設定",
       "platformUrlLabel": "ストリーミングプラットフォームURL",
+      "addPlatformUrl": "プラットフォームURLを追加",
       "tmdbImportHint": "TMDB Importツールがメタデータを取得するために使用",
       "backdropUrlLabel": "背景URL",
       "preview": "プレビュー",

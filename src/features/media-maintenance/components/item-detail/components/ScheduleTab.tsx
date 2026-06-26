@@ -56,6 +56,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
     backdrop: false,
   })
   const [checkMetadataCompleteness, setCheckMetadataCompleteness] = useState(false)
+  const [platformUrl, setPlatformUrl] = useState(item.defaultPlatformUrl || item.platformUrls?.[0] || "")
   const terminalRef = useRef<HTMLDivElement>(null)
   const isUserScrolling = useRef(false)
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -87,6 +88,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         setTmdbAutoResponse(data.data.tmdbAutoResponse || 'w')
         setFieldCleanup(data.data.fieldCleanup)
         setCheckMetadataCompleteness(data.data.checkMetadataCompleteness ?? false)
+        setPlatformUrl(data.data.platformUrl || item.defaultPlatformUrl || item.platformUrls?.[0] || "")
 
         const logsResponse = await fetch(`/api/schedule/logs?taskId=${data.data.id}&limit=10`)
         const logsData = await logsResponse.json()
@@ -165,8 +167,8 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
     try {
       const method = task ? "PUT" : "POST"
       const body = task
-        ? { id: task.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup, checkMetadataCompleteness }
-        : { itemId: item.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup, checkMetadataCompleteness }
+        ? { id: task.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup, checkMetadataCompleteness, platformUrl }
+        : { itemId: item.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup, checkMetadataCompleteness, platformUrl }
 
       const response = await fetch("/api/schedule/tasks", {
         method,
@@ -259,9 +261,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 h-full min-h-[400px] p-1">
-      <div className="w-full md:w-1/2 flex flex-col h-full overflow-hidden rounded-lg">
-        <div className="flex-1 min-h-0 pr-2 pb-2 overflow-hidden rounded-lg">
+    <div className="flex flex-col lg:flex-row gap-4 h-full min-h-[400px] p-1">
+      <div className="w-full lg:w-1/2 flex flex-col h-full min-h-0 overflow-hidden rounded-lg">
+        <div className="flex-1 min-h-0 overflow-hidden rounded-lg">
           <Card variant="frosted" className="h-full overflow-hidden">
             <CardContent className="h-full overflow-y-auto p-4 space-y-4">
               <div className="flex items-center justify-between">
@@ -362,6 +364,31 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                     </p>
                   </div>
 
+                  {/* 播出平台 URL 选择 */}
+                  {item.platformUrls && item.platformUrls.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>{t("platformUrl", { ns: "media" })}</Label>
+                      <Select
+                        value={platformUrl || item.platformUrls[0]}
+                        onValueChange={setPlatformUrl}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {item.platformUrls.map((url, idx) => (
+                            <SelectItem key={idx} value={url} className="text-xs">
+                              {url}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-muted-foreground">
+                        {t("platformUrlScheduleTip", { ns: "media" })}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Label htmlFor="autoImport">{t("autoImportTmdb")}</Label>
@@ -371,13 +398,13 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
 
                   {autoImport && (
                     <div className="space-y-2 pl-4 border-l-2 border-muted">
-                      <div className="flex flex-row items-center gap-4">
+                      <div className="flex flex-wrap items-center gap-3">
                         <SeasonPicker
                           value={tmdbSeason}
                           onChange={setTmdbSeason}
                         />
                         <div className="flex items-center space-x-2">
-                          <Label className="text-xs">{t("language")}</Label>
+                          <Label className="text-xs whitespace-nowrap">{t("language")}</Label>
                           <LanguageSelector
                             value={tmdbLanguage}
                             onChange={setTmdbLanguage}
@@ -385,7 +412,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                           />
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Label className="text-xs">{t("overview")}</Label>
+                          <Label className="text-xs whitespace-nowrap">{t("overview")}</Label>
                           <Select value={tmdbAutoResponse} onValueChange={setTmdbAutoResponse}>
                             <SelectTrigger className="w-20 h-7 text-xs">
                               <SelectValue />
@@ -504,7 +531,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         </div>
       </div>
 
-      <div className="w-full md:w-1/2 h-full">
+      <div className="w-full lg:w-1/2 h-full min-h-[300px] lg:min-h-0">
         <Card variant="frosted" className="h-full flex flex-col">
           <CardHeader className="py-2 flex-shrink-0">
             <CardTitle className="text-sm flex items-center">

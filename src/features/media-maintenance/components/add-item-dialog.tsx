@@ -25,7 +25,9 @@ import {
   LayoutGrid,
   Zap,
   FileCode,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Plus,
+  X
 } from "lucide-react"
 import type { TMDBItem, Season, Episode } from "@/types/tmdb-item"
 import { StorageManager } from "@/lib/data/storage"
@@ -103,7 +105,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
     secondWeekday: -1, // -1 表示未设置
     airTime: "18:00",
     totalEpisodes: 1,
-    platformUrl: "",
+    platformUrls: [] as string[],
     category: "" as CategoryType | "",
     isDailyUpdate: false // 添加每日更新选项
   })
@@ -152,7 +154,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
           ...prev,
           // 只有在用户没有手动设置总集数时才使用TMDB数据
           totalEpisodes: isManualTotalEpisodes ? prev.totalEpisodes : calculatedTotalEpisodes,
-          platformUrl: prev.platformUrl || tmdbData.platformUrl || "",
+          platformUrls: prev.platformUrls.length > 0 ? prev.platformUrls : (tmdbData.platformUrls || []),
           weekday: tmdbData.weekday !== undefined ? tmdbData.weekday : prev.weekday,
           // 根据标签自动设置推荐分类
           category: prev.category || tmdbData.recommendedCategory || "tv" as CategoryType
@@ -329,7 +331,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
       secondWeekday: -1,
       airTime: "18:00",
       totalEpisodes: 1,
-      platformUrl: "",
+      platformUrls: [],
       category: "",
       isDailyUpdate: false
     })
@@ -464,7 +466,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
       }
       
       // 优先使用用户手动输入的平台地址
-      const finalPlatformUrl = formData.platformUrl || tmdbData.platformUrl || ""
+      const finalPlatformUrls = formData.platformUrls.length > 0 ? formData.platformUrls : (tmdbData.platformUrls || [])
       
       // 判断是否手动设置了集数
       const isManuallySetEpisodes = selectedResult.media_type === "tv" && 
@@ -504,7 +506,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
         episodes: episodes,
         completed: false,
         status: "ongoing",
-        platformUrl: finalPlatformUrl,
+        platformUrls: finalPlatformUrls.length > 0 ? finalPlatformUrls : undefined,
         category: formData.category as CategoryType,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -890,16 +892,43 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                 {/* URL和背景图行 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
-                    <Label htmlFor="platformUrl" className="text-sm font-medium">{t("independentPage.addItem.platformUrlLabel", { ns: "nav.maintenance" })}</Label>
-                    <Input
-                      id="platformUrl"
-                      placeholder="https://example.com/show-page"
-                      value={formData.platformUrl}
-                      onChange={(e) =>
-                        setFormData({ ...formData, platformUrl: e.target.value })
-                      }
-                      className="h-10"
-                    />
+                    <Label className="text-sm font-medium">{t("independentPage.addItem.platformUrlLabel", { ns: "nav.maintenance" })}</Label>
+                    <div className="space-y-1">
+                      {(formData.platformUrls.length > 0 ? formData.platformUrls : ['']).map((url, idx) => (
+                        <div key={idx} className="flex gap-1">
+                          <Input
+                            placeholder="https://example.com/show-page"
+                            value={url}
+                            onChange={(e) => {
+                              const urls = [...formData.platformUrls]
+                              urls[idx] = e.target.value
+                              setFormData({ ...formData, platformUrls: urls.filter(u => u !== '') })
+                            }}
+                            className="h-10 flex-1"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 flex-shrink-0"
+                            onClick={() => {
+                              const urls = formData.platformUrls.filter((_, i) => i !== idx)
+                              setFormData({ ...formData, platformUrls: urls })
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs w-full"
+                        onClick={() => setFormData({ ...formData, platformUrls: [...formData.platformUrls, ''] })}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        {t("independentPage.addItem.addPlatformUrl", { ns: "nav.maintenance" })}
+                      </Button>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       💡 {t("independentPage.addItem.tmdbImportHint", { ns: "nav.maintenance" })}
                     </p>
