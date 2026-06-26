@@ -59,8 +59,6 @@ export const LANGUAGES: Language[] = [
   { name: "עברית", code: "he-IL" },
 ]
 
-const STORAGE_KEY = "tmdb_import_language"
-
 interface LanguageSelectorProps {
   value: string
   onChange: (languageCode: string) => void
@@ -74,22 +72,8 @@ export function LanguageSelector({
 }: LanguageSelectorProps) {
   const currentLanguage = LANGUAGES.find(lang => lang.code === value) || LANGUAGES[0]
 
-  React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) {
-        onChange(saved)
-      }
-    } catch (e) {
-    }
-  }, [onChange])
-
   const handleLanguageChange = (languageCode: string) => {
     onChange(languageCode)
-    try {
-      localStorage.setItem(STORAGE_KEY, languageCode)
-    } catch (e) {
-    }
   }
 
   return (

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/shared/components/ui/sheet"
 import { VisuallyHidden } from "@/shared/components/ui/visually-hidden"
 import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
@@ -25,6 +25,8 @@ import type { TMDBItem } from "@/types/tmdb-item"
 // 工具导入
 import { ItemManager } from "@/lib/data/storage/item-manager"
 import { toast } from "@/lib/hooks/use-toast"
+import i18n from "@/lib/i18n"
+import { mapLanguageToRegion } from "@/lib/constants/regions"
 
 /**
  * SidebarLayout - 简化版
@@ -100,6 +102,37 @@ export function SidebarLayout({
       fetchRecentItems(false, 0, region)
     }
   }, [setSelectedRegion, mediaNewsType, fetchUpcomingItems, fetchRecentItems])
+
+  // 响应式跟随全局语言变化同步区域
+  const selectedRegionRef = useRef(selectedRegion)
+  selectedRegionRef.current = selectedRegion
+  const mediaNewsTypeRef = useRef(mediaNewsType)
+  mediaNewsTypeRef.current = mediaNewsType
+  const fetchUpcomingRef = useRef(fetchUpcomingItems)
+  const fetchRecentRef = useRef(fetchRecentItems)
+  useEffect(() => {
+    fetchUpcomingRef.current = fetchUpcomingItems
+    fetchRecentRef.current = fetchRecentItems
+  }, [fetchUpcomingItems, fetchRecentItems])
+  useEffect(() => {
+    const handler = (lng: string) => {
+      const region = mapLanguageToRegion(lng)
+      if (region !== selectedRegionRef.current) {
+        requestAnimationFrame(() => {
+          setSelectedRegion(region)
+          if (mediaNewsTypeRef.current === 'upcoming') {
+            fetchUpcomingRef.current(false, 0, region)
+          } else {
+            fetchRecentRef.current(false, 0, region)
+          }
+        })
+      }
+    }
+    i18n.on("languageChanged", handler)
+    return () => {
+      i18n.off("languageChanged", handler)
+    }
+  }, [setSelectedRegion])
 
   // 移动端检测
   const isMobile = useMobile()

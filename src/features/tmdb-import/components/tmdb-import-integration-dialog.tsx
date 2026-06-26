@@ -53,6 +53,7 @@ import { useTranslation } from "react-i18next"
 import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-table"
 import { TMDBItem } from "@/lib/data/storage"
 import { LanguageSelector } from "@/shared/components/ui/language-selector"
+import { getInitialLanguage } from "@/lib/i18n"
 import { parseCsvContent, serializeCsvData, CSVData, cleanCsvNewlines } from "@/lib/data/csv-processor-client"
 import { saveCSV, handleSaveError } from "@/lib/data/csv-save-helper"
 import { validateCsvData, fixCsvData } from "@/lib/data/csv-validator"
@@ -75,7 +76,7 @@ interface TMDBImportIntegrationDialogProps {
 export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, onItemUpdate, inTab = false }: TMDBImportIntegrationDialogProps) {
   const { t } = useTranslation('media')
   const [selectedSeason, setSelectedSeason] = useState<number>(1)
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(getInitialLanguage())
   // 从服务端配置读取上次选择的季数
   useEffect(() => {
     (async () => {

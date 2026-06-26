@@ -15,6 +15,7 @@ import { Badge } from "@/shared/components/ui/badge"
 import { Checkbox } from "@/shared/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { LanguageSelector } from "@/shared/components/ui/language-selector"
+import { getInitialLanguage } from "@/lib/i18n"
 import { SeasonPicker } from "@/shared/components/ui/season-picker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 
@@ -46,7 +47,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
   const [incremental, setIncremental] = useState(true)
   const [autoImport, setAutoImport] = useState(false)
   const [tmdbSeason, setTmdbSeason] = useState(1)
-  const [tmdbLanguage, setTmdbLanguage] = useState("zh-CN")
+  const [tmdbLanguage, setTmdbLanguage] = useState(getInitialLanguage())
   const [tmdbAutoResponse, setTmdbAutoResponse] = useState("w")
   const [fieldCleanup, setFieldCleanup] = useState<FieldCleanup>({
     name: false,

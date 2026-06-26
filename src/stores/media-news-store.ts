@@ -6,6 +6,8 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import type { MediaItem } from '@/types/media'
+import { getInitialLanguage } from '@/lib/i18n'
+import { mapLanguageToRegion } from '@/lib/constants/regions'
 
 // MediaNews 状态接口
 interface MediaNewsState {
@@ -43,6 +45,13 @@ interface MediaNewsState {
   reset: () => void
 }
 
+function getInitialRegion(): string {
+  if (typeof window !== "undefined") {
+    return mapLanguageToRegion(getInitialLanguage())
+  }
+  return "CN"
+}
+
 // 初始状态
 const initialState = {
   upcomingItemsByRegion: {},
@@ -54,7 +63,7 @@ const initialState = {
   upcomingLastUpdated: {},
   recentLastUpdated: {},
   isMissingApiKey: false,
-  selectedRegion: 'CN',
+  selectedRegion: getInitialRegion(),
   mediaNewsType: 'upcoming' as const,
 }
 

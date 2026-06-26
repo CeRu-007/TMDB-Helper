@@ -272,7 +272,10 @@
       "electron",
       "sharp",
       "unrs-resolver"
-    ]
+    ],
+    "patchedDependencies": {
+      "@radix-ui/react-compose-refs": "patches/@radix-ui__react-compose-refs.patch"
+    }
   },
   "lint-staged": {
     "src/**/*.{ts,tsx,js,jsx}": [

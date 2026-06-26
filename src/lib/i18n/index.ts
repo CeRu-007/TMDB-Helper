@@ -417,4 +417,4 @@ export function getCurrentLanguage(): string {
   return i18n.language || DEFAULT_LANGUAGE
 }
 
-export { i18n }
+export { getInitialLanguage, i18n }

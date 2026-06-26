@@ -42,6 +42,7 @@ import { NewTMDBTable } from "@/features/media-maintenance/components/new-tmdb-t
 import { parseCsvContent, serializeCsvData, CSVData, cleanCsvNewlines } from "@/lib/data/csv-processor-client"
 import { saveCSV } from "@/lib/data/csv-save-helper"
 import { LanguageSelector } from "@/shared/components/ui/language-selector"
+import { getInitialLanguage } from "@/lib/i18n"
 
 interface IndependentMaintenanceProps {
   onShowSettingsDialog?: (section?: string) => void
@@ -67,7 +68,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   const [selectedPlatform, setSelectedPlatform] = useState("")
   const [tmdbId, setTmdbId] = useState("")
   const [selectedSeason, setSelectedSeason] = useState<number>(1)
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("zh-CN")
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(getInitialLanguage())
   const [isProcessing, setIsProcessing] = useState(false)
   const [terminalOutput, setTerminalOutput] = useState<string[]>([])
   const [csvData, setCsvData] = useState<CSVData | null>(null)

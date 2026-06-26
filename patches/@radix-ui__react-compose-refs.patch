@@ -1,0 +1,15 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 7dd9172a7228d70a25f708d0fd577cfc69ea15a8..166480f6fb7199c1454acb726497f1db8f9be7db 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -32,7 +32,9 @@ function composeRefs(...refs) {
+   };
+ }
+ function useComposedRefs(...refs) {
+-  return React.useCallback(composeRefs(...refs), refs);
++  const refsRef = React.useRef(refs);
++  refsRef.current = refs;
++  return React.useCallback((node) => composeRefs(...refsRef.current)(node), []);
+ }
+ export {
+   composeRefs,

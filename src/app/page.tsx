@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
+import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import {
   Clock,
@@ -26,6 +26,8 @@ import { useUIStore } from '@/stores/ui-store'
 import { getPlatformInfo } from '@/lib/utils'
 
 import { categories, type Category } from '@/lib/constants/categories'
+import { mapLanguageToRegion } from '@/lib/constants/regions'
+import i18n, { getInitialLanguage } from '@/lib/i18n'
 import type { MediaItem } from '@/types/media'
 import type { UseMediaNewsReturn } from '@/lib/hooks/use-media-news'
 import type { TFunction } from 'i18next'
@@ -227,7 +229,7 @@ export default function HomePage() {
   const { currentDay } = useCurrentDay()
   const searchQuery = useUIStore((s) => s.searchQuery)
   const selectedPlatform = useUIStore((s) => s.selectedPlatform)
-  const [selectedRegion, setSelectedRegion] = useState<string>("CN")
+  const [selectedRegion, setSelectedRegion] = useState<string>(() => mapLanguageToRegion(getInitialLanguage()))
   const [mediaNewsType, setMediaNewsType] = useState<'upcoming' | 'recent'>('upcoming')
   const mediaNews = useMediaNews(selectedRegion)
 
@@ -241,6 +243,22 @@ export default function HomePage() {
     updateItem: handleUpdateItem,
     deleteItem: handleDeleteItem
   } = useData()
+
+  // 响应式跟随全局语言变化同步区域
+  const selectedRegionRef = useRef(selectedRegion)
+  selectedRegionRef.current = selectedRegion
+  useEffect(() => {
+    const handler = (lng: string) => {
+      const region = mapLanguageToRegion(lng)
+      if (region !== selectedRegionRef.current) {
+        requestAnimationFrame(() => setSelectedRegion(region))
+      }
+    }
+    i18n.on("languageChanged", handler)
+    return () => {
+      i18n.off("languageChanged", handler)
+    }
+  }, [])
 
   const handleCardClick = useCallback((itemId: string) => {
     const item = items.find(i => i.id === itemId)

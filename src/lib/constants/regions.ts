@@ -31,3 +31,16 @@ export const REGION_GROUPS: RegionGroup[] = [
     regions: ["US", "GB"]
   }
 ]
+
+const LANGUAGE_TO_REGION: Record<string, string> = {
+  "zh-CN": "CN",
+  "zh-TW": "TW",
+  "zh-HK": "HK",
+  "ja-JP": "JP",
+  "ko-KR": "KR",
+  "en-US": "US",
+}
+
+export function mapLanguageToRegion(languageCode: string): string {
+  return LANGUAGE_TO_REGION[languageCode] || "CN"
+}
