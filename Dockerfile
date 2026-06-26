@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     libasound2 \
     && ln -sf /usr/bin/python3 /usr/bin/python \
-    && npm install -g pnpm \
+    && npm install -g pnpm@10 \
     && rm -rf /var/lib/apt/lists/*
 
 # 设置工作目录
