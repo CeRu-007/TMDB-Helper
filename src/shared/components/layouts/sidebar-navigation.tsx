@@ -19,7 +19,7 @@ import {
   Type,
   CalendarDays,
   Clapperboard,
-  Settings,
+  Package,
   ChevronDown,
   ChevronRight,
 } from "lucide-react"
@@ -131,7 +131,7 @@ export function SidebarNavigation({
       id: "tools",
       titleKey: "title",
       ns: "nav.tools",
-      icon: <Settings className="h-4 w-4" />,
+      icon: <Package className="h-4 w-4" />,
       items: [
         { id: "tmdb-guide", labelKey: "tmdbGuide", ns: "nav.tools", icon: <BookOpen className="h-4 w-4" />, groupId: "tools" },
         { id: "image-recognition", labelKey: "imageRecognition", ns: "nav.tools", icon: <Search className="h-4 w-4" />, groupId: "tools" },
