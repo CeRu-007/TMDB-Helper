@@ -103,6 +103,8 @@
   "secondAirDate": "제2 방영일",
   "selectWeekday": "요일 선택",
   "platformUrl": "플랫폼 URL",
+  "platformUrlHelp": "여러 플랫폼이 필요한 경우 편집 모드에서 URL을 추가하세요",
+  "platformUrlScheduleTip": "정기 스크래핑에 사용할 플랫폼 선택",
   "addPlatformUrl": "플랫폼 URL 추가",
   "defaultPlatformUrl": "기본 플랫폼",
   "setAsDefault": "기본값으로 설정",

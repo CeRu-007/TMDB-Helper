@@ -103,6 +103,8 @@
   "secondAirDate": "第二播出日",
   "selectWeekday": "选择星期",
   "platformUrl": "播出平台URL",
+  "platformUrlHelp": "如有多个平台需求，请进入编辑模式配置多个播出平台URL",
+  "platformUrlScheduleTip": "选择用于定时抓取的播出平台",
   "addPlatformUrl": "添加播出平台",
   "defaultPlatformUrl": "默认播出平台",
   "setAsDefault": "设为默认",

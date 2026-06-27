@@ -101,7 +101,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
           const initialConfigs: PlatformSourceConfig[] = (item.platformUrls || []).map((url) => ({
             url,
             enabled: true,
-            keepFields: { name: true, air_date: true, runtime: true, overview: true, backdrop: true },
+            keepFields: { name: false, air_date: false, runtime: false, overview: false, backdrop: false },
           }))
           setPlatformConfigs(initialConfigs)
           setMultiPlatformMode(false)
@@ -307,9 +307,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full min-h-[400px] p-1">
-      <div className="w-full lg:w-1/2 flex flex-col h-full min-h-0 overflow-hidden rounded-lg">
-        <div className="flex-1 min-h-0 overflow-hidden rounded-lg">
-          <Card variant="frosted" className="h-full overflow-hidden">
+      <div className="w-full lg:w-1/2 flex flex-col h-full min-h-0 rounded-lg">
+        <div className="flex-1 min-h-0 rounded-lg">
+          <Card variant="frosted" className="h-full">
             <CardContent className="h-full overflow-y-auto p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -441,7 +441,17 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                           type="button"
                           variant={multiPlatformMode ? "default" : "outline"}
                           size="sm"
-                          onClick={() => setMultiPlatformMode(true)}
+                          onClick={() => {
+                            if (!multiPlatformMode && platformConfigs.length === 0) {
+                              const initialConfigs: PlatformSourceConfig[] = (item.platformUrls || []).map((url) => ({
+                                url,
+                                enabled: true,
+                                keepFields: { name: false, air_date: false, runtime: false, overview: false, backdrop: false },
+                              }))
+                              setPlatformConfigs(initialConfigs)
+                            }
+                            setMultiPlatformMode(true)
+                          }}
                           className={`flex-1 h-7 text-xs ${multiPlatformMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
                         >
                           {t("multiPlatformMode")}
@@ -531,7 +541,21 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   {/* 播出平台 URL 选择 - 仅单平台模式 */}
                   {!multiPlatformMode && item.platformUrls && item.platformUrls.length > 0 && (
                     <div className="space-y-2">
-                      <Label>{t("platformUrl", { ns: "media" })}</Label>
+                      <div className="flex items-center space-x-2">
+                        <Label>{t("platformUrl", { ns: "media" })}</Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                <HelpCircle className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" sideOffset={5} className="max-w-xs z-[9999]">
+                              <p className="text-xs">{t("platformUrlHelp", { ns: "media" })}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <Select
                         value={platformUrl || item.platformUrls[0]}
                         onValueChange={setPlatformUrl}

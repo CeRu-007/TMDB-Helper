@@ -103,6 +103,8 @@
   "secondAirDate": "Second Air Date",
   "selectWeekday": "Select Weekday",
   "platformUrl": "Platform URL",
+  "platformUrlHelp": "For multiple platforms, go to edit mode to configure more platform URLs",
+  "platformUrlScheduleTip": "Select platform URL for scheduled scraping",
   "addPlatformUrl": "Add Platform URL",
   "defaultPlatformUrl": "Default Platform URL",
   "setAsDefault": "Set as Default",

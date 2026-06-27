@@ -103,6 +103,8 @@
   "secondAirDate": "第二放映日",
   "selectWeekday": "曜日を選択",
   "platformUrl": "プラットフォームURL",
+  "platformUrlHelp": "複数プラットフォームが必要な場合は、編集モードでURLを追加してください",
+  "platformUrlScheduleTip": "定期スクレイピングに使用するプラットフォームを選択",
   "addPlatformUrl": "プラットフォームURLを追加",
   "defaultPlatformUrl": "デフォルトのプラットフォーム",
   "setAsDefault": "デフォルトに設定",
