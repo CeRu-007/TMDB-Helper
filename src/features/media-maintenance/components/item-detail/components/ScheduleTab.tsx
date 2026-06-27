@@ -5,7 +5,7 @@ import { Clock, Play, Loader2, Info, Terminal, Activity, Ban } from "lucide-reac
 import { useTranslation } from "react-i18next"
 import { logger } from "@/lib/utils/logger"
 import type { TMDBItem } from "@/types/tmdb-item"
-import type { ScheduleTask, ScheduleLog, FieldCleanup } from "@/types/schedule"
+import type { ScheduleTask, ScheduleLog, FieldCleanup, PlatformSourceConfig } from "@/types/schedule"
 import { getCronDescription, getNextRunTime, validateCronExpression, getRecommendations } from "@/lib/utils/cron-utils"
 import { Button } from "@/shared/components/ui/button"
 import { Switch } from "@/shared/components/ui/switch"
@@ -18,6 +18,7 @@ import { LanguageSelector } from "@/shared/components/ui/language-selector"
 import { getInitialLanguage } from "@/lib/i18n"
 import { SeasonPicker } from "@/shared/components/ui/season-picker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
 
 interface ScheduleTabProps {
   item: TMDBItem
@@ -58,6 +59,8 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
   })
   const [checkMetadataCompleteness, setCheckMetadataCompleteness] = useState(false)
   const [platformUrl, setPlatformUrl] = useState(item.defaultPlatformUrl || item.platformUrls?.[0] || "")
+  const [multiPlatformMode, setMultiPlatformMode] = useState(false)
+  const [platformConfigs, setPlatformConfigs] = useState<PlatformSourceConfig[]>([])
   const terminalRef = useRef<HTMLDivElement>(null)
   const isUserScrolling = useRef(false)
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -90,6 +93,19 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         setFieldCleanup(data.data.fieldCleanup)
         setCheckMetadataCompleteness(data.data.checkMetadataCompleteness ?? false)
         setPlatformUrl(data.data.platformUrl || item.defaultPlatformUrl || item.platformUrls?.[0] || "")
+
+        if (data.data.platformConfigs && data.data.platformConfigs.length > 0) {
+          setPlatformConfigs(data.data.platformConfigs)
+          setMultiPlatformMode(true)
+        } else {
+          const initialConfigs: PlatformSourceConfig[] = (item.platformUrls || []).map((url) => ({
+            url,
+            enabled: true,
+            keepFields: { name: true, air_date: true, runtime: true, overview: true, backdrop: true },
+          }))
+          setPlatformConfigs(initialConfigs)
+          setMultiPlatformMode(false)
+        }
 
         const logsResponse = await fetch(`/api/schedule/logs?taskId=${data.data.id}&limit=10`)
         const logsData = await logsResponse.json()
@@ -168,8 +184,36 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
     try {
       const method = task ? "PUT" : "POST"
       const body = task
-        ? { id: task.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup, checkMetadataCompleteness, platformUrl }
-        : { itemId: item.id, cron: cronInput, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup, checkMetadataCompleteness, platformUrl }
+        ? {
+            id: task.id,
+            cron: cronInput,
+            enabled,
+            headless,
+            incremental,
+            autoImport,
+            tmdbSeason,
+            tmdbLanguage,
+            tmdbAutoResponse,
+            fieldCleanup,
+            checkMetadataCompleteness,
+            platformUrl: multiPlatformMode ? platformConfigs[0]?.url : platformUrl,
+            platformConfigs: multiPlatformMode ? platformConfigs : [],
+          }
+        : {
+            itemId: item.id,
+            cron: cronInput,
+            enabled,
+            headless,
+            incremental,
+            autoImport,
+            tmdbSeason,
+            tmdbLanguage,
+            tmdbAutoResponse,
+            fieldCleanup,
+            checkMetadataCompleteness,
+            platformUrl: multiPlatformMode ? platformConfigs[0]?.url : platformUrl,
+            platformConfigs: multiPlatformMode ? platformConfigs : [],
+          }
 
       const response = await fetch("/api/schedule/tasks", {
         method,
@@ -365,8 +409,111 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                     </p>
                   </div>
 
-                  {/* 播出平台 URL 选择 */}
-                  {item.platformUrls && item.platformUrls.length > 0 && (
+                  {/* 数据来源模式 */}
+                  {item.platformUrls && item.platformUrls.length > 1 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Label>{t("dataSourceMode")}</Label>
+                        <HelpInfoButton
+                          content={t("dataSourceModeHelp")}
+                          side="left"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={!multiPlatformMode ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setMultiPlatformMode(false)}
+                          className={`flex-1 h-7 text-xs ${!multiPlatformMode ? "bg-green-600 hover:bg-green-700" : ""}`}
+                        >
+                          {t("singlePlatformMode")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={multiPlatformMode ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setMultiPlatformMode(true)}
+                          className={`flex-1 h-7 text-xs ${multiPlatformMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                        >
+                          {t("multiPlatformMode")}
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        {multiPlatformMode ? t("multiPlatformModeDesc") : t("singlePlatformModeDesc")}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 多平台配置 */}
+                  {multiPlatformMode && platformConfigs.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Label>{t("platformSources")}</Label>
+                        <HelpInfoButton
+                          content={t("platformSourcesHelp")}
+                          side="left"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        {platformConfigs.map((config, idx) => (
+                          <div key={config.url} className="border rounded-md p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`platform-${idx}`}
+                                  checked={config.enabled}
+                                  onCheckedChange={(checked) => {
+                                    const newConfigs = [...platformConfigs]
+                                    newConfigs[idx] = { ...config, enabled: checked === true }
+                                    setPlatformConfigs(newConfigs)
+                                  }}
+                                />
+                                <Label htmlFor={`platform-${idx}`} className="text-xs font-mono break-all">
+                                  {config.url}
+                                </Label>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">
+                                {idx === 0 ? t("primarySource") : `${t("source")} ${idx + 1}`}
+                              </span>
+                            </div>
+
+                            {/* 保留字段配置 */}
+                            {config.enabled && (
+                              <div className="pl-6 space-y-1">
+                                <Label className="text-[10px] text-muted-foreground">{t("keepFields")}</Label>
+                                <div className="flex flex-wrap gap-2">
+                                  {(['name', 'air_date', 'runtime', 'overview', 'backdrop'] as const).map(field => (
+                                    <div key={field} className="flex items-center space-x-1">
+                                      <Checkbox
+                                        id={`field-${idx}-${field}`}
+                                        checked={config.keepFields[field]}
+                                        onCheckedChange={(checked) => {
+                                          const newConfigs = [...platformConfigs]
+                                          newConfigs[idx] = {
+                                            ...config,
+                                            keepFields: { ...config.keepFields, [field]: checked === true },
+                                          }
+                                          setPlatformConfigs(newConfigs)
+                                        }}
+                                      />
+                                      <Label htmlFor={`field-${idx}-${field}`} className="text-[10px]">
+                                        {field}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 播出平台 URL 选择 - 仅单平台模式 */}
+                  {!multiPlatformMode && item.platformUrls && item.platformUrls.length > 0 && (
                     <div className="space-y-2">
                       <Label>{t("platformUrl", { ns: "media" })}</Label>
                       <Select
