@@ -17,14 +17,15 @@ interface ImageInfo {
 }
 
 const ASPECT_RATIOS = [
+  { key: "original" as const, value: 0 },
   { key: "2:3" as const, value: 2 / 3 },
   { key: "3:4" as const, value: 3 / 4 },
   { key: "16:9" as const, value: 16 / 9 }
 ]
 
-type RatioKey = "2:3" | "3:4" | "16:9"
+type RatioKey = "original" | "2:3" | "3:4" | "16:9"
 
-const TMDB_PRESETS: Record<RatioKey, { label: string; w: number; h: number }[]> = {
+const TMDB_PRESETS: Partial<Record<RatioKey, { label: string; w: number; h: number }[]>> = {
   "2:3": [
     { label: "500×750", w: 500, h: 750 },
     { label: "1000×1500", w: 1000, h: 1500 },
@@ -46,6 +47,9 @@ const TMDB_PRESETS: Record<RatioKey, { label: string; w: number; h: number }[]> 
 }
 
 function getDefaultCrop(w: number, h: number, ratio: number): CropArea {
+  if (ratio <= 0) {
+    return { x: 0, y: 0, width: w, height: h }
+  }
   if (w / h > ratio) {
     const cropW = h * ratio
     return { x: Math.round((w - cropW) / 2), y: 0, width: Math.round(cropW), height: h }
@@ -71,7 +75,7 @@ export function ImageCropper() {
 
   const [images, setImages] = useState<ImageInfo[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [aspectRatio, setAspectRatio] = useState<"2:3" | "3:4" | "16:9">("2:3")
+  const [aspectRatio, setAspectRatio] = useState<RatioKey>("original")
   const [cropArea, setCropArea] = useState<CropArea | null>(null)
   const [quality, setQuality] = useState(90)
   const [outW, setOutW] = useState(0)
@@ -107,11 +111,10 @@ export function ImageCropper() {
               setImages(allImages)
               setSelectedIndex(images.length)
               const firstNew = newImages[0]!
-              const crop = getDefaultCrop(firstNew.width, firstNew.height, 2 / 3)
+              const crop = getDefaultCrop(firstNew.width, firstNew.height, currentRatio.value)
               setCropArea(crop)
               setOutW(crop.width)
               setOutH(crop.height)
-              setAspectRatio("2:3")
             }
           }
           img.src = dataUrl
@@ -127,20 +130,22 @@ export function ImageCropper() {
       const img = images[index]
       if (!img) return
       setSelectedIndex(index)
-      const crop = getDefaultCrop(img.width, img.height, currentRatio.value)
+      const crop = aspectRatio === "original"
+        ? getDefaultCrop(img.width, img.height, 0)
+        : getDefaultCrop(img.width, img.height, currentRatio.value)
       setCropArea(crop)
       setOutW(crop.width)
       setOutH(crop.height)
     },
-    [images, currentRatio]
+    [images, aspectRatio, currentRatio]
   )
 
   const handleAspectRatioChange = useCallback(
-    (key: "2:3" | "3:4" | "16:9") => {
+    (key: RatioKey) => {
       setAspectRatio(key)
       if (image) {
         const ratio = ASPECT_RATIOS.find((r) => r.key === key)!.value
-        const crop = getDefaultCrop(image.width, image.height, ratio)
+        const crop = getDefaultCrop(image.width, image.height, ratio || image.width / image.height)
         setCropArea(crop)
         setOutW(crop.width)
         setOutH(crop.height)
@@ -151,11 +156,16 @@ export function ImageCropper() {
 
   const handleCropChange = useCallback((crop: CropArea) => {
     setCropArea(crop)
-  }, [])
+    if (aspectRatio === "original") {
+      setOutW(crop.width)
+      setOutH(crop.height)
+    }
+  }, [aspectRatio])
 
   const handleResetCrop = useCallback(() => {
     if (image) {
-      setCropArea(getDefaultCrop(image.width, image.height, currentRatio.value))
+      const ratio = currentRatio.value || image.width / image.height
+      setCropArea(getDefaultCrop(image.width, image.height, ratio))
     }
   }, [image, currentRatio])
 
@@ -188,8 +198,9 @@ export function ImageCropper() {
     if (!image || !cropArea) return
     setIsProcessing(true)
     try {
+      const suffix = aspectRatio === "original" ? "original" : aspectRatio.replace(":", "x")
       const resultUrl = await processOneImage(image, cropArea)
-      triggerDownload(resultUrl, image.name, aspectRatio.replace(":", "x"))
+      triggerDownload(resultUrl, image.name, suffix)
       toast({ title: t("cropSuccess") })
     } catch (error) {
       logger.error("Crop failed:", error)
@@ -202,13 +213,15 @@ export function ImageCropper() {
   const handleDownloadAll = useCallback(async () => {
     if (images.length === 0 || !cropArea) return
     setIsBatchProcessing(true)
+    const suffix = aspectRatio === "original" ? "original" : aspectRatio.replace(":", "x")
     let success = 0
     for (let i = 0; i < images.length; i++) {
       try {
         const img = images[i]!
-        const crop = getDefaultCrop(img.width, img.height, currentRatio.value)
+        const ratio = currentRatio.value || img.width / img.height
+        const crop = getDefaultCrop(img.width, img.height, ratio)
         const resultUrl = await processOneImage(img, crop)
-        triggerDownload(resultUrl, img.name, aspectRatio.replace(":", "x"))
+        triggerDownload(resultUrl, img.name, suffix)
         success++
       } catch (e) {
         logger.error(`Batch crop failed for ${images[i]?.name}:`, e)
@@ -256,6 +269,7 @@ export function ImageCropper() {
   }, [])
 
   const ratioLabels: Record<string, string> = {
+    "original": t("original"),
     "2:3": t("ratioStandardPoster"),
     "3:4": t("ratioPortraitPoster"),
     "16:9": t("ratioBackdrop")
@@ -364,27 +378,29 @@ export function ImageCropper() {
                 </div>
               </div>
 
-              <div>
-                <h4 className="text-xs text-gray-500 mb-2 font-medium">{t("tmdbRecommendedSize")}</h4>
-                <div className="grid grid-cols-2 md:grid-cols-1 gap-1">
-                  {TMDB_PRESETS[aspectRatio].map((p) => {
-                    const isActive = outW === p.w && outH === p.h
-                    return (
-                      <button
-                        key={p.label}
-                        onClick={() => handlePresetClick(p)}
-                        className={`w-full text-left text-sm px-3 py-2 rounded-md transition-colors ${
-                          isActive
-                            ? "bg-blue-500 text-white font-medium"
-                            : "bg-white text-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/40 border border-gray-200"
-                        }`}
-                      >
-                        {p.label}
-                      </button>
-                    )
-                  })}
+              {aspectRatio !== "original" && (
+                <div>
+                  <h4 className="text-xs text-gray-500 mb-2 font-medium">{t("tmdbRecommendedSize")}</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-1 gap-1">
+                    {TMDB_PRESETS[aspectRatio]?.map((p) => {
+                      const isActive = outW === p.w && outH === p.h
+                      return (
+                        <button
+                          key={p.label}
+                          onClick={() => handlePresetClick(p)}
+                          className={`w-full text-left text-sm px-3 py-2 rounded-md transition-colors ${
+                            isActive
+                              ? "bg-blue-500 text-white font-medium"
+                              : "bg-white text-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/40 border border-gray-200"
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <hr className="border-gray-200" />
 

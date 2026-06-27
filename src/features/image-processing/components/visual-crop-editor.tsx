@@ -28,10 +28,12 @@ function constrainCropArea(crop: CropArea, imageWidth: number, imageHeight: numb
   width = Math.min(width, imageWidth)
   height = Math.min(height, imageHeight)
 
-  if (width / height > aspectRatio) {
-    width = height * aspectRatio
-  } else {
-    height = width / aspectRatio
+  if (aspectRatio > 0) {
+    if (width / height > aspectRatio) {
+      width = height * aspectRatio
+    } else {
+      height = width / aspectRatio
+    }
   }
 
   const maxX = Math.max(0, imageWidth - width)
@@ -46,6 +48,10 @@ function constrainCropArea(crop: CropArea, imageWidth: number, imageHeight: numb
 }
 
 function getDefaultCrop(imageWidth: number, imageHeight: number, aspectRatio: number): CropArea {
+  if (aspectRatio <= 0) {
+    return { x: 0, y: 0, width: imageWidth, height: imageHeight }
+  }
+
   let width, height, x, y
 
   if (imageWidth / imageHeight > aspectRatio) {
@@ -206,6 +212,7 @@ export function VisualCropEditor({
         setDragStart({ x: currentX, y: currentY })
       } else if (isResizing) {
         const minSize = Math.round(MIN_CROP_SIZE_ORIGINAL / displayScale)
+        const free = aspectRatio <= 0
         let newWidth = cropArea.width
         let newHeight = cropArea.height
         let newX = cropArea.x
@@ -219,18 +226,20 @@ export function VisualCropEditor({
         }
 
         if (resizeHandle.includes("bottom")) {
-          newHeight = Math.max(Math.round(minSize / aspectRatio), cropArea.height + Math.round(deltaY / displayScale))
+          newHeight = Math.max(free ? minSize : Math.round(minSize / aspectRatio), cropArea.height + Math.round(deltaY / displayScale))
         } else if (resizeHandle.includes("top")) {
-          newHeight = Math.max(Math.round(minSize / aspectRatio), cropArea.height - Math.round(deltaY / displayScale))
+          newHeight = Math.max(free ? minSize : Math.round(minSize / aspectRatio), cropArea.height - Math.round(deltaY / displayScale))
           newY = cropArea.y + cropArea.height - newHeight
         }
 
-        if (resizeHandle.includes("left") || resizeHandle.includes("right")) {
-          newHeight = newWidth / aspectRatio
-          newY = cropArea.y + (cropArea.height - newHeight) / 2
-        } else if (resizeHandle.includes("top") || resizeHandle.includes("bottom")) {
-          newWidth = newHeight * aspectRatio
-          newX = cropArea.x + (cropArea.width - newWidth) / 2
+        if (!free) {
+          if (resizeHandle.includes("left") || resizeHandle.includes("right")) {
+            newHeight = newWidth / aspectRatio
+            newY = cropArea.y + (cropArea.height - newHeight) / 2
+          } else if (resizeHandle.includes("top") || resizeHandle.includes("bottom")) {
+            newWidth = newHeight * aspectRatio
+            newX = cropArea.x + (cropArea.width - newWidth) / 2
+          }
         }
 
         updateCropArea({ x: newX, y: newY, width: newWidth, height: newHeight })
@@ -275,13 +284,14 @@ export function VisualCropEditor({
   }, [isDragging, isResizing, handleMouseMove, handleMouseUp, handlePointerMove])
 
   const handleReset = useCallback(() => {
-    const centerX = Math.round((imageWidth - imageHeight * aspectRatio) / 2)
-    const defaultCrop = {
-      x: Math.max(0, centerX),
-      y: 0,
-      width: Math.min(Math.round(imageHeight * aspectRatio), imageWidth),
-      height: imageHeight
-    }
+    const defaultCrop = aspectRatio > 0
+      ? {
+          x: Math.max(0, Math.round((imageWidth - imageHeight * aspectRatio) / 2)),
+          y: 0,
+          width: Math.min(Math.round(imageHeight * aspectRatio), imageWidth),
+          height: imageHeight
+        }
+      : { x: 0, y: 0, width: imageWidth, height: imageHeight }
     updateCropArea(defaultCrop)
     onReset()
   }, [imageWidth, imageHeight, aspectRatio, updateCropArea, onReset])
@@ -357,6 +367,27 @@ export function VisualCropEditor({
                   onTouchStart={(e) => handleTouchStart(e, handle)}
                 />
               ))}
+              {["top", "bottom", "left", "right"].map((handle) => {
+                const isHorizontal = handle === "top" || handle === "bottom"
+                return (
+                  <div
+                    key={handle}
+                    className={`absolute bg-blue-500 border border-white ${
+                      isHorizontal ? "w-4 h-1.5 cursor-n-resize" : "w-1.5 h-4 cursor-w-resize"
+                    } ${
+                      handle === "top" ? "top-0 left-1/2 -translate-x-1/2 -translate-y-1/2" : ""
+                    } ${
+                      handle === "bottom" ? "bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2" : ""
+                    } ${
+                      handle === "left" ? "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2" : ""
+                    } ${
+                      handle === "right" ? "right-0 top-1/2 translate-x-1/2 -translate-y-1/2" : ""
+                    }`}
+                    onMouseDown={(e) => handleMouseDown(e, handle)}
+                    onTouchStart={(e) => handleTouchStart(e, handle)}
+                  />
+                )
+              })}
             </div>
           </div>
         </div>
