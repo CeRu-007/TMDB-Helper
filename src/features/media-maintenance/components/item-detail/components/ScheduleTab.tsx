@@ -421,7 +421,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                                 <HelpCircle className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="left" sideOffset={5} className="max-w-xs z-[9999]">
+                            <TooltipContent side="right" sideOffset={5} className="max-w-xs z-[9999]">
                               <p className="text-xs">{t("dataSourceModeHelp")}</p>
                             </TooltipContent>
                           </Tooltip>
@@ -465,7 +465,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                                 <HelpCircle className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="left" sideOffset={5} className="max-w-xs z-[9999]">
+                            <TooltipContent side="right" sideOffset={5} className="max-w-xs z-[9999]">
                               <p className="text-xs">{t("platformSourcesHelp")}</p>
                             </TooltipContent>
                           </Tooltip>
