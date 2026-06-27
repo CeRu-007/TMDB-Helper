@@ -48,6 +48,7 @@
     "passwordMismatch": "新密碼和確認密碼不匹配",
     "passwordTooShort": "新密碼長度至少為6位",
     "passwordChangeSuccess": "密碼修改成功",
+    "passwordChangeRedirectHint": "密碼已修改，請重新登入",
     "passwordChangeFailed": "密碼修改失敗",
     "saveFailedRetry": "儲存失敗，請重試",
     "serviceUnavailable": "服務不可用",

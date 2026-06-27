@@ -798,15 +798,17 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     setPasswordChangeLoading(true)
     try {
       await changePassword(passwordForm.currentPassword, passwordForm.newPassword)
-      toast({
-        title: t("common.success"),
-        description: t("settings.passwordChangeSuccess"),
-      })
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: ""
       })
+      toast({
+        title: t("common.success"),
+        description: t("settings.passwordChangeRedirectHint"),
+        duration: Infinity,
+      })
+      onOpenChange(false)
       setTimeout(() => {
         router.push('/login')
       }, 1500)

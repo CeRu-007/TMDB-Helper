@@ -48,6 +48,7 @@
     "passwordMismatch": "New password and confirmation password do not match",
     "passwordTooShort": "New password must be at least 6 characters",
     "passwordChangeSuccess": "Password changed successfully",
+    "passwordChangeRedirectHint": "Password has been changed, please log in again",
     "passwordChangeFailed": "Failed to change password",
     "saveFailedRetry": "Save failed, please retry",
     "serviceUnavailable": "Service unavailable",

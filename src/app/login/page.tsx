@@ -140,6 +140,13 @@ export default function LoginPage() {
             clearRemember()
           }
         } catch {}
+        try {
+          const PC = (window as any).PasswordCredential
+          if (navigator.credentials && PC) {
+            const cred = new PC({ id: username, password, name: username })
+            ;(navigator.credentials as any).store(cred)
+          }
+        } catch {}
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : t('loginFailed'))
@@ -224,7 +231,12 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-4 md:space-y-5">
+              <form
+                action={mode === 'login' ? '/api/auth/login' : '/api/auth/register'}
+                method="post"
+                onSubmit={mode === 'login' ? handleLogin : handleRegister}
+                className="space-y-4 md:space-y-5"
+              >
                 {error && (
                   <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
                     <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -242,7 +254,9 @@ export default function LoginPage() {
                     </div>
                     <Input
                       id="username"
+                      name="username"
                       type="text"
+                      autoComplete="username"
                       placeholder={t('usernamePlaceholder')}
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
@@ -263,7 +277,9 @@ export default function LoginPage() {
                     </div>
                     <Input
                       id="password"
+                      name="password"
                       type={showPassword ? "text" : "password"}
+                      autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                       placeholder={mode === 'register' ? t('registerPasswordPlaceholder') : t('passwordPlaceholder')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -330,12 +346,14 @@ export default function LoginPage() {
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10 pointer-events-none">
                         <Lock className="w-5 h-5" />
                       </div>
-                      <Input
-                        id="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder={t('confirmPasswordPlaceholder')}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder={t('confirmPasswordPlaceholder')}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                         className="pl-10 pr-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
                         required
                         disabled={isLoading}

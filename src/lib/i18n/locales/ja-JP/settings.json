@@ -48,6 +48,7 @@
     "passwordMismatch": "新しいパスワードと確認パスワードが一致しません",
     "passwordTooShort": "新しいパスワードは6文字以上にしてください",
     "passwordChangeSuccess": "パスワードが正常に変更されました",
+    "passwordChangeRedirectHint": "パスワードが変更されました。再度ログインしてください",
     "passwordChangeFailed": "パスワードの変更に失敗しました",
     "saveFailedRetry": "保存に失敗しました。もう一度お試しください",
     "serviceUnavailable": "サービスが利用できません",

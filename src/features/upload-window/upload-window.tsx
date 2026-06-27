@@ -47,13 +47,17 @@ function readAllDirectoryEntries(reader: FileSystemDirectoryReader): Promise<Fil
   })
 }
 
-async function traverseDirectory(entry: FileSystemDirectoryEntry, path: string): Promise<{ name: string; relativePath: string; file: File }[]> {
+async function traverseDirectory(
+  entry: FileSystemDirectoryEntry,
+  path: string,
+  onProgress?: (found: number) => void,
+): Promise<{ name: string; relativePath: string; file: File }[]> {
   const results: { name: string; relativePath: string; file: File }[] = []
   const reader = entry.createReader()
   const entries = await readAllDirectoryEntries(reader)
   for (const child of entries) {
     if (child.isDirectory) {
-      const sub = await traverseDirectory(child as FileSystemDirectoryEntry, path ? `${path}/${child.name}` : child.name)
+      const sub = await traverseDirectory(child as FileSystemDirectoryEntry, path ? `${path}/${child.name}` : child.name, onProgress)
       results.push(...sub)
     } else if (child.isFile) {
       const fileEntry = child as FileSystemFileEntry
@@ -62,10 +66,21 @@ async function traverseDirectory(entry: FileSystemDirectoryEntry, path: string):
       if (IMAGE_EXTENSIONS.includes(ext)) {
         results.push({ name: file.name, relativePath: path ? `${path}/${file.name}` : file.name, file })
       }
+      onProgress?.(results.length)
     }
   }
   return results
 }
+
+interface LoadingProgress {
+  found: number
+  total?: number
+}
+
+type LoadingState =
+  | { loading: false }
+  | { loading: true; progress: LoadingProgress }
+
 
 interface UploadWindowProps {
   standalone?: boolean
@@ -111,7 +126,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
   const isElectron = typeof window !== "undefined" && !!(window as any).electronAPI
 
   const [isDragging, setIsDragging] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [loadingState, setLoadingState] = useState<LoadingState>({ loading: false })
   const [isDragOver, setIsDragOver] = useState(false)
   const dragOffset = useRef({ x: 0, y: 0 })
   const dragCounter = useRef(0)
@@ -146,7 +161,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
 
   const handleOpenDirectory = useCallback(async () => {
     if (isElectron) {
-      setIsLoading(true)
+      setLoadingState({ loading: true, progress: { found: 0 } })
       try {
         const electronAPI = (window as any).electronAPI
         const result = await electronAPI?.openImageDirectory()
@@ -156,7 +171,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           clearFiles()
         }
       } finally {
-        setIsLoading(false)
+        setLoadingState({ loading: false })
       }
       return
     }
@@ -170,16 +185,20 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
     const fileList = e.target.files
     if (!fileList || fileList.length === 0) return
 
-    setIsLoading(true)
+    const total = fileList.length
+    setLoadingState({ loading: true, progress: { found: 0, total } })
     try {
       const entries: FileEntry[] = []
       const dirNames = new Set<string>()
 
-      let fileIdx = 0
+      let processed = 0
       for (const file of fileList) {
-        fileIdx++
+        processed++
         const ext = "." + (file.name.split(".").pop()?.toLowerCase() ?? "")
-        if (!IMAGE_EXTENSIONS.includes(ext)) continue
+        if (!IMAGE_EXTENSIONS.includes(ext)) {
+          setLoadingState({ loading: true, progress: { found: processed, total } })
+          continue
+        }
 
         const relativePath = (file as any).webkitRelativePath || file.name
         const parts = relativePath.replace(/\\/g, "/").split("/")
@@ -200,13 +219,15 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           thumbnailUrl,
           fileObj: file,
         })
+
+        setLoadingState({ loading: true, progress: { found: processed, total } })
       }
 
       const firstDir = [...dirNames][0]
       const dirName = firstDir ?? t("defaultFolderName")
       loadFiles(entries, dirName)
     } finally {
-      setIsLoading(false)
+      setLoadingState({ loading: false })
     }
   }, [loadFiles])
 
@@ -239,7 +260,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
     setIsDragOver(false)
     dragCounter.current = 0
 
-    if (isLoading) return
+    if (loadingState.loading) return
 
     const items = e.dataTransfer.items
     if (!items || items.length === 0) {
@@ -250,10 +271,12 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           return IMAGE_EXTENSIONS.includes(ext)
         })
         if (filtered.length === 0) return
-        setIsLoading(true)
+        const total = filtered.length
+        setLoadingState({ loading: true, progress: { found: 0, total } })
         try {
           const entries: FileEntry[] = []
-          for (const file of filtered) {
+          for (let i = 0; i < filtered.length; i++) {
+            const file = filtered[i]!
             fileIdCounter++
             entries.push({
               id: `file_${Date.now()}_${fileIdCounter}`,
@@ -265,16 +288,17 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
               thumbnailUrl: URL.createObjectURL(file),
               fileObj: file,
             })
+            setLoadingState({ loading: true, progress: { found: i + 1, total } })
           }
           loadFiles(entries, t("defaultFolderName"))
         } finally {
-          setIsLoading(false)
+          setLoadingState({ loading: false })
         }
       }
       return
     }
 
-    setIsLoading(true)
+    setLoadingState({ loading: true, progress: { found: 0 } })
     try {
       const allResults: { name: string; relativePath: string; file: File }[] = []
       const topDirNames = new Set<string>()
@@ -294,7 +318,11 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           continue
         }
         if (entry.isDirectory) {
-          const results = await traverseDirectory(entry as FileSystemDirectoryEntry, entry.name)
+          const results = await traverseDirectory(
+            entry as FileSystemDirectoryEntry,
+            entry.name,
+            (found) => setLoadingState({ loading: true, progress: { found } }),
+          )
           allResults.push(...results)
           if (results.length > 0) topDirNames.add(entry.name)
         } else if (entry.isFile) {
@@ -305,6 +333,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
             allResults.push({ name: file.name, relativePath: file.name, file })
           }
         }
+        setLoadingState({ loading: true, progress: { found: allResults.length } })
       }
 
       if (allResults.length === 0) return
@@ -327,9 +356,9 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
       const dirName = [...topDirNames][0] ?? t("defaultFolderName")
       loadFiles(entries, dirName)
     } finally {
-      setIsLoading(false)
+      setLoadingState({ loading: false })
     }
-  }, [loadFiles, isLoading])
+  }, [loadFiles, loadingState.loading])
 
   useEffect(() => {
     return () => {
@@ -364,7 +393,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
     if (!isElectron || !lastDirectoryPath || restoredRef.current) return
     restoredRef.current = true
 
-    setIsLoading(true)
+    setLoadingState({ loading: true, progress: { found: 0 } })
     const restore = async () => {
       try {
         const electronAPI = (window as any).electronAPI
@@ -373,7 +402,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           loadFiles(result.entries, result.dirName, result.dirPath)
         }
       } catch (_) { /* restore failed */ } finally {
-        setIsLoading(false)
+        setLoadingState({ loading: false })
       }
     }
 
@@ -599,10 +628,10 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
             variant="outline"
             size="sm"
             onClick={handleOpenDirectory}
-            disabled={isLoading}
+            disabled={loadingState.loading}
             className="h-8 text-xs gap-1.5"
           >
-            {isLoading ? (
+            {loadingState.loading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <FolderOpen className="w-3.5 h-3.5" />
@@ -677,11 +706,32 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
               <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{t("dragDropFolderHint")}</p>
             </div>
           )}
-          {isLoading ? (
+          {loadingState.loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-3 min-w-[200px]">
                 <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-                <span className="text-sm text-gray-400">{t("loading")}</span>
+                {loadingState.progress.total ? (
+                  <>
+                    <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 rounded-full transition-all duration-200"
+                        style={{ width: `${Math.round((loadingState.progress.found / loadingState.progress.total) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-sm text-gray-400">
+                      {loadingState.progress.found} / {loadingState.progress.total}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+                    </div>
+                    <span className="text-sm text-gray-400">
+                      {t("loading")} ({loadingState.progress.found})
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           ) : files.length === 0 ? (

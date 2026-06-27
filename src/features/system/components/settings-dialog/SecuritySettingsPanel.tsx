@@ -71,7 +71,9 @@ export default function SecuritySettingsPanel({
             <div className="relative mt-1">
               <Input
                 id="currentPassword"
+                name="currentPassword"
                 type={showCurrentPassword ? "text" : "password"}
+                autoComplete="current-password"
                 value={passwordForm.currentPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                 placeholder={t("securityPanel.enterCurrentPassword")}
@@ -101,7 +103,9 @@ export default function SecuritySettingsPanel({
             <div className="relative mt-1">
               <Input
                 id="newPassword"
+                name="newPassword"
                 type={showNewPassword ? "text" : "password"}
+                autoComplete="new-password"
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                 placeholder={t("securityPanel.enterNewPassword")}
@@ -163,7 +167,9 @@ export default function SecuritySettingsPanel({
             <div className="relative mt-1">
               <Input
                 id="confirmPassword"
+                name="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
+                autoComplete="new-password"
                 value={passwordForm.confirmPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                 placeholder={t("securityPanel.enterConfirmPassword")}
