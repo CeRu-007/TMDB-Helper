@@ -74,6 +74,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       fieldCleanup: input.fieldCleanup ?? defaultFieldCleanup,
       checkMetadataCompleteness: input.checkMetadataCompleteness ?? false,
       platformUrl: input.platformUrl,
+      platformConfigs: input.platformConfigs,
       lastRunAt: null,
       nextRunAt: null,
       createdAt: now,
@@ -87,12 +88,12 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
         INSERT INTO schedule_tasks (
           id, itemId, cron, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup,
           checkMetadataCompleteness,
-          platformUrl,
+          platformUrl, platformConfigs,
           lastRunAt, nextRunAt, createdAt, updatedAt
         ) VALUES (
           @id, @itemId, @cron, @enabled, @headless, @incremental, @autoImport, @tmdbSeason, @tmdbLanguage, @tmdbAutoResponse, @fieldCleanup,
           @checkMetadataCompleteness,
-          @platformUrl,
+          @platformUrl, @platformConfigs,
           @lastRunAt, @nextRunAt, @createdAt, @updatedAt
         )
       `).run(row);
@@ -128,6 +129,8 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       tmdbAutoResponse: input.tmdbAutoResponse ?? existing.tmdbAutoResponse,
       fieldCleanup: input.fieldCleanup ?? existing.fieldCleanup,
       checkMetadataCompleteness: input.checkMetadataCompleteness ?? existing.checkMetadataCompleteness,
+      platformUrl: input.platformUrl ?? existing.platformUrl,
+      platformConfigs: input.platformConfigs ?? existing.platformConfigs,
       updatedAt: now,
     };
 
@@ -147,6 +150,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
           fieldCleanup = @fieldCleanup,
           checkMetadataCompleteness = @checkMetadataCompleteness,
           platformUrl = @platformUrl,
+          platformConfigs = @platformConfigs,
           updatedAt = @updatedAt
         WHERE id = @id
       `).run({
@@ -162,6 +166,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
         fieldCleanup: row.fieldCleanup,
         checkMetadataCompleteness: row.checkMetadataCompleteness,
         platformUrl: row.platformUrl,
+        platformConfigs: row.platformConfigs,
         updatedAt: row.updatedAt,
       });
 

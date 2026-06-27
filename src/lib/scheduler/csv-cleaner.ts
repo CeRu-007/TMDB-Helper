@@ -31,10 +31,9 @@ export function mergeMultiPlatformCSVs(results: PlatformCSVResult[]): string {
 
   const base = parsedResults[0];
   const baseHeaders = base.data.headers;
-  const baseRows = base.data.rows;
 
-  const otherPlatforms = parsedResults.slice(1);
-  const otherByEpisode = otherPlatforms.map(platform => {
+  // Build episode index for all platforms
+  const platformsByEpisode = parsedResults.map(platform => {
     const byEpisode = new Map<number, CSVRow>();
     for (const row of platform.data.rows) {
       const epNum = parseInt(row['episode_number'], 10);
@@ -45,23 +44,34 @@ export function mergeMultiPlatformCSVs(results: PlatformCSVResult[]): string {
     return { url: platform.url, keptFields: platform.keptFields, byEpisode };
   });
 
+  // Use base platform's episode list as the master list
+  const baseRows = base.data.rows;
+  const mergeFields = ['name', 'air_date', 'runtime', 'overview', 'backdrop'] as const;
+
   const mergedRows: CSVRow[] = [];
   for (const baseRow of baseRows) {
-    const mergedRow = { ...baseRow };
+    const mergedRow: CSVRow = {};
     const epNum = parseInt(baseRow['episode_number'], 10);
 
-    if (!isNaN(epNum)) {
-      for (const platform of otherPlatforms) {
-        const platformRow = otherByEpisode.find(p => p.url === platform.url)?.byEpisode.get(epNum);
-        if (!platformRow) continue;
+    // For each field, find the first platform that keeps it and has a value
+    for (const field of baseHeaders) {
+      if (!mergeFields.includes(field as typeof mergeFields[number])) {
+        // Non-mergeable fields: always use base value
+        mergedRow[field] = baseRow[field] || '';
+        continue;
+      }
 
-        const keptFields = platform.keptFields;
-        for (const field of ['name', 'air_date', 'runtime', 'overview', 'backdrop'] as const) {
-          if (keptFields[field] && (!mergedRow[field] || mergedRow[field].trim() === '')) {
-            mergedRow[field] = platformRow[field] || '';
-          }
+      let value = '';
+      for (const platform of platformsByEpisode) {
+        if (!platform.keptFields[field as typeof mergeFields[number]]) continue;
+
+        const row = isNaN(epNum) ? baseRow : platform.byEpisode.get(epNum);
+        if (row && row[field] && row[field].trim() !== '') {
+          value = row[field];
+          break;
         }
       }
+      mergedRow[field] = value;
     }
 
     mergedRows.push(mergedRow);
