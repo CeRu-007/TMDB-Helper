@@ -13,6 +13,68 @@ export interface CSVData {
   rows: CSVRow[];
 }
 
+export interface PlatformCSVResult {
+  url: string;
+  csvContent: string;
+  keptFields: FieldCleanup;
+}
+
+export function mergeMultiPlatformCSVs(results: PlatformCSVResult[]): string {
+  if (results.length === 0) return '';
+  if (results.length === 1) return results[0].csvContent;
+
+  const parsedResults = results.map(r => ({
+    url: r.url,
+    data: parseCSV(r.csvContent),
+    keptFields: r.keptFields,
+  }));
+
+  const base = parsedResults[0];
+  const baseHeaders = base.data.headers;
+  const baseRows = base.data.rows;
+
+  const otherPlatforms = parsedResults.slice(1);
+  const otherByEpisode = otherPlatforms.map(platform => {
+    const byEpisode = new Map<number, CSVRow>();
+    for (const row of platform.data.rows) {
+      const epNum = parseInt(row['episode_number'], 10);
+      if (!isNaN(epNum)) {
+        byEpisode.set(epNum, row);
+      }
+    }
+    return { url: platform.url, keptFields: platform.keptFields, byEpisode };
+  });
+
+  const mergedRows: CSVRow[] = [];
+  for (const baseRow of baseRows) {
+    const mergedRow = { ...baseRow };
+    const epNum = parseInt(baseRow['episode_number'], 10);
+
+    if (!isNaN(epNum)) {
+      for (const platform of otherPlatforms) {
+        const platformRow = otherByEpisode.find(p => p.url === platform.url)?.byEpisode.get(epNum);
+        if (!platformRow) continue;
+
+        const keptFields = platform.keptFields;
+        for (const field of ['name', 'air_date', 'runtime', 'overview', 'backdrop'] as const) {
+          if (keptFields[field] && (!mergedRow[field] || mergedRow[field].trim() === '')) {
+            mergedRow[field] = platformRow[field] || '';
+          }
+        }
+      }
+    }
+
+    mergedRows.push(mergedRow);
+  }
+
+  return [
+    baseHeaders.join(','),
+    ...mergedRows.map(row =>
+      baseHeaders.map(h => escapeCSVValue(row[h] || '')).join(',')
+    )
+  ].join('\n');
+}
+
 export function parseCSV(content: string): CSVData {
   const lines = content.trim().split(/\r?\n/);
   if (lines.length === 0) {

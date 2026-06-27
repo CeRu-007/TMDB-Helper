@@ -5,8 +5,9 @@ import { scheduleLogRepository } from '@/lib/data/schedule-log-repository'
 import { itemsRepository } from '@/lib/database/repositories/items.repository'
 import { getDatabase } from '@/lib/database/connection'
 import { logger } from '@/lib/utils/logger'
-import { cleanCSV, extractEpisodeCount, analyzeCSVMetadata } from '@/lib/scheduler/csv-cleaner'
+import { cleanCSV, extractEpisodeCount, analyzeCSVMetadata, mergeMultiPlatformCSVs } from '@/lib/scheduler/csv-cleaner'
 import { notifier } from '@/lib/scheduler/notifier'
+import type { FieldCleanup } from '@/types/schedule'
 
 export interface ExecuteResult {
   success: boolean
@@ -32,6 +33,11 @@ export async function executeScheduleTask(
   task: NonNullable<ReturnType<typeof scheduleRepository.findById>>,
   logs: LogEntry[]
 ): Promise<ExecuteResult> {
+  const enabledPlatforms = task.platformConfigs?.filter(s => s.enabled) || []
+  if (enabledPlatforms.length > 1) {
+    return executeMultiPlatformTask(item, task, logs)
+  }
+
   try {
     const addLog = (type: 'stdout' | 'stderr' | 'info', message: string) => {
       logs.push({ type, message })
@@ -168,6 +174,120 @@ export async function executeScheduleTask(
 function getBaseUrl(): string {
   const port = process.env.PORT || '4949';
   return `http://localhost:${port}`;
+}
+
+async function executeMultiPlatformTask(
+  item: NonNullable<ReturnType<typeof itemsRepository.findByIdWithRelations>>,
+  task: NonNullable<ReturnType<typeof scheduleRepository.findById>>,
+  logs: LogEntry[]
+): Promise<ExecuteResult> {
+  const addLog = (type: 'stdout' | 'stderr' | 'info', message: string) => {
+    logs.push({ type, message })
+  }
+
+  const tmdbImportPath = await getServerConfigValue('tmdb_import_path')
+  if (!tmdbImportPath) {
+    return { success: false, message: '请先在设置中配置TMDB-Import工具路径' }
+  }
+
+  const csvPath = path.join(tmdbImportPath, 'import.csv')
+  const enabledPlatforms = task.platformConfigs?.filter(s => s.enabled) || []
+
+  if (enabledPlatforms.length === 0) {
+    return { success: false, message: '没有启用的数据来源平台' }
+  }
+
+  addLog('info', `开始多平台抓取: ${enabledPlatforms.length}个平台`)
+  const headlessFlag = task.headless ? '--headless' : ''
+
+  const platformResults: Array<{ url: string; csvContent: string; keptFields: FieldCleanup }> = []
+
+  for (const source of enabledPlatforms) {
+    addLog('info', `开始抓取: ${source.url}`)
+    const command = `python -m tmdb-import ${headlessFlag} "${source.url}"`
+
+    const result = await executeExternalCommand(command, tmdbImportPath, addLog)
+
+    if (result.success && fs.existsSync(csvPath)) {
+      const csvContent = fs.readFileSync(csvPath, 'utf-8')
+      if (csvContent && csvContent.length > 10) {
+        platformResults.push({
+          url: source.url,
+          csvContent,
+          keptFields: source.keepFields,
+        })
+        addLog('info', `抓取完成: ${source.url} (${csvContent.length} bytes)`)
+      } else {
+        addLog('stderr', `抓取结果为空: ${source.url}`)
+      }
+    } else {
+      addLog('stderr', `抓取失败: ${source.url}`)
+    }
+  }
+
+  if (platformResults.length === 0) {
+    return { success: false, message: '所有平台抓取失败' }
+  }
+
+  addLog('info', `开始合并 ${platformResults.length} 个平台的CSV`)
+  const mergedCSV = mergeMultiPlatformCSVs(platformResults)
+
+  const currentMaxEpisode = item.seasons?.reduce(
+    (max, season) => Math.max(max, season.currentEpisode || 0), 0
+  ) || 0
+
+  let metadataAnalysis = analyzeCSVMetadata(mergedCSV)
+  let effectiveEpisodeCount: number | undefined
+
+  if (task.checkMetadataCompleteness) {
+    effectiveEpisodeCount = metadataAnalysis.effectiveEpisodeCount
+    addLog('info', `元数据完整性检查: 原始${metadataAnalysis.rawEpisodeCount}集, 有效${metadataAnalysis.effectiveEpisodeCount}集`)
+  }
+
+  const incrementalThreshold = task.checkMetadataCompleteness && effectiveEpisodeCount !== undefined
+    ? Math.min(currentMaxEpisode, effectiveEpisodeCount)
+    : currentMaxEpisode
+
+  const cleanedCSV = cleanCSV(mergedCSV, task.fieldCleanup, incrementalThreshold, task.incremental)
+  const episodeCount = task.checkMetadataCompleteness ? metadataAnalysis.effectiveEpisodeCount : extractEpisodeCount(cleanedCSV)
+
+  fs.writeFileSync(csvPath, cleanedCSV, 'utf-8')
+  addLog('info', `CSV已保存: ${cleanedCSV.length} bytes`)
+
+  if (task.autoImport && item.tmdbId) {
+    const tmdbSeason = task.tmdbSeason || 1
+    const tmdbLanguage = task.tmdbLanguage || 'zh-CN'
+    const tmdbAutoResponse = task.tmdbAutoResponse || 'w'
+    addLog('info', `执行TMDB导入: 第${tmdbSeason}季, 语言=${tmdbLanguage}`)
+
+    const tmdbUrl = `https://www.themoviedb.org/tv/${item.tmdbId}/season/${tmdbSeason}?language=${tmdbLanguage}`
+    const tmdbCommand = `python -m tmdb-import ${headlessFlag} "${tmdbUrl}"`
+
+    const tmdbResult = await executeInteractiveCommand(tmdbCommand, tmdbImportPath, addLog, tmdbAutoResponse)
+    if (!tmdbResult.success) {
+      addLog('stderr', `TMDB导入失败: ${tmdbResult.error}`)
+    }
+  }
+
+  const finalMessage = task.checkMetadataCompleteness && metadataAnalysis.incompleteEpisodes.length > 0
+    ? `有效更新至第${episodeCount}集（${platformResults.length}个平台合并，第${metadataAnalysis.incompleteEpisodes.join(',')}集元数据不完整）`
+    : `成功更新至第${episodeCount}集（${platformResults.length}个平台合并）`
+
+  return {
+    success: true,
+    message: finalMessage,
+    episodeCount,
+    rawEpisodeCount: task.checkMetadataCompleteness ? metadataAnalysis.rawEpisodeCount : undefined,
+    incompleteEpisodes: task.checkMetadataCompleteness ? metadataAnalysis.incompleteEpisodes : undefined,
+    details: JSON.stringify({
+      platformCount: platformResults.length,
+      platforms: platformResults.map(p => p.url),
+      mergedLength: mergedCSV.length,
+      cleanedLength: cleanedCSV.length,
+      episodeCount,
+      autoImport: task.autoImport,
+    }),
+  }
 }
 
 async function executeExternalCommand(

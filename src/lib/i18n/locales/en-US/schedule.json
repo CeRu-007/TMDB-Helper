@@ -118,5 +118,16 @@
     "kids": "Kids",
     "variety": "Variety",
     "short": "Short"
-  }
+  },
+  "dataSourceMode": "Data Source Mode",
+  "singlePlatformMode": "Single Platform",
+  "multiPlatformMode": "Multi Platform",
+  "singlePlatformModeDesc": "Scrape using a single platform URL",
+  "multiPlatformModeDesc": "Serially scrape multiple platforms and merge",
+  "platformSources": "Data Sources",
+  "keepFields": "Keep Fields",
+  "primarySource": "Primary",
+  "source": "Source",
+  "dataSourceModeHelp": "Single platform uses existing logic, multi platform serially scrapes multiple platforms and merges by field",
+  "platformSourcesHelp": "URLs inherited from item, configure which fields to keep from each platform"
 }

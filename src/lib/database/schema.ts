@@ -7,7 +7,7 @@ import { getDatabaseAsync } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 17;
+export const SCHEMA_VERSION = 18;
 
 // 防止重复初始化的标志
 let schemaInitStarted = false;
@@ -123,6 +123,9 @@ export async function initializeSchema(): Promise<void> {
     }
     if (currentVersion < 17) {
       migrateToV17(db);
+    }
+    if (currentVersion < 18) {
+      migrateToV18(db);
     }
 
     setUserVersion(db, SCHEMA_VERSION);
@@ -315,6 +318,7 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       tmdbAutoResponse TEXT DEFAULT 'w',
       fieldCleanup TEXT DEFAULT '{}',
       checkMetadataCompleteness INTEGER DEFAULT 0,
+      platformConfigs TEXT DEFAULT '[]',
       lastRunAt TEXT,
       nextRunAt TEXT,
       createdAt TEXT NOT NULL,
@@ -647,6 +651,19 @@ function migrateToV17(db: ReturnType<typeof getDatabase>): void {
     logger.info('[Database] V17 迁移完成');
   } catch (error) {
     logger.error('[Database] V17 迁移失败:', error);
+  }
+}
+
+function migrateToV18(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V18 迁移: 添加 platformConfigs 列');
+
+  try {
+    db.exec(`
+      ALTER TABLE schedule_tasks ADD COLUMN platformConfigs TEXT DEFAULT '[]'
+    `);
+    logger.info('[Database] V18 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V18 迁移失败:', error);
   }
 }
 

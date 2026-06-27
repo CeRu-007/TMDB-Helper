@@ -118,5 +118,16 @@
     "kids": "少兒",
     "variety": "綜藝",
     "short": "短劇"
-  }
+  },
+  "dataSourceMode": "資料來源模式",
+  "singlePlatformMode": "單平台模式",
+  "multiPlatformMode": "多平台模式",
+  "singlePlatformModeDesc": "使用單一平台URL抓取",
+  "multiPlatformModeDesc": "串行抓取多個平台並合併",
+  "platformSources": "資料來源平台",
+  "keepFields": "保留欄位",
+  "primarySource": "主源",
+  "source": "來源",
+  "dataSourceModeHelp": "單平台模式使用現有邏輯，多平台模式串行抓取多個平台並按欄位合併",
+  "platformSourcesHelp": "URL從詞條繼承，可配置各平台保留的欄位"
 }

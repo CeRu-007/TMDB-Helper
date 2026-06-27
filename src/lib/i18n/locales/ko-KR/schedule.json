@@ -118,5 +118,16 @@
     "kids": "어린이",
     "variety": "예능",
     "short": "단편 드라마"
-  }
+  },
+  "dataSourceMode": "데이터 소스 모드",
+  "singlePlatformMode": "단일 플랫폼",
+  "multiPlatformMode": "다중 플랫폼",
+  "singlePlatformModeDesc": "단일 플랫폼 URL로 스크래핑",
+  "multiPlatformModeDesc": "여러 플랫폼을 순차적으로 스크래핑하여 병합",
+  "platformSources": "데이터 소스",
+  "keepFields": "유지 필드",
+  "primarySource": "기본",
+  "source": "소스",
+  "dataSourceModeHelp": "단일은 기존 로직, 다중은 여러 플랫폼을 순차적으로 스크래핑하여 필드 단위로 병합",
+  "platformSourcesHelp": "URL은 아이템에서 상속, 각 플랫폼의 유지 필드를 설정 가능"
 }

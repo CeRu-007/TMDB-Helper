@@ -10,6 +10,12 @@ export interface FieldCleanup {
   backdrop: boolean;
 }
 
+export interface PlatformSourceConfig {
+  url: string;
+  enabled: boolean;
+  keepFields: FieldCleanup;
+}
+
 export interface ScheduleTask {
   id: string;
   itemId: string;
@@ -23,7 +29,8 @@ export interface ScheduleTask {
   tmdbAutoResponse: string;
   fieldCleanup: FieldCleanup;
   checkMetadataCompleteness: boolean;
-  platformUrl?: string;
+  platformUrl?: string | undefined;
+  platformConfigs?: PlatformSourceConfig[] | undefined;
   lastRunAt: string | null;
   nextRunAt: string | null;
   createdAt: string;
@@ -44,6 +51,7 @@ export interface ScheduleTaskRow {
   fieldCleanup: string;
   checkMetadataCompleteness: number;
   platformUrl: string | null;
+  platformConfigs: string | null;
   lastRunAt: string | null;
   nextRunAt: string | null;
   createdAt: string;
@@ -85,6 +93,7 @@ export function scheduleTaskRowToScheduleTask(row: ScheduleTaskRow): ScheduleTas
     fieldCleanup: JSON.parse(row.fieldCleanup || '{}'),
     checkMetadataCompleteness: row.checkMetadataCompleteness === 1,
     platformUrl: row.platformUrl ?? undefined,
+    platformConfigs: row.platformConfigs ? JSON.parse(row.platformConfigs) : undefined,
     lastRunAt: row.lastRunAt,
     nextRunAt: row.nextRunAt,
     createdAt: row.createdAt,
@@ -107,6 +116,7 @@ export function scheduleTaskToRow(task: ScheduleTask): ScheduleTaskRow {
     fieldCleanup: JSON.stringify(task.fieldCleanup),
     checkMetadataCompleteness: task.checkMetadataCompleteness ? 1 : 0,
     platformUrl: task.platformUrl ?? null,
+    platformConfigs: task.platformConfigs ? JSON.stringify(task.platformConfigs) : null,
     lastRunAt: task.lastRunAt,
     nextRunAt: task.nextRunAt,
     createdAt: task.createdAt,
@@ -139,6 +149,7 @@ export interface CreateScheduleTaskInput {
   fieldCleanup?: FieldCleanup;
   checkMetadataCompleteness?: boolean;
   platformUrl?: string;
+  platformConfigs?: PlatformSourceConfig[];
 }
 
 export interface UpdateScheduleTaskInput {
@@ -154,4 +165,5 @@ export interface UpdateScheduleTaskInput {
   fieldCleanup?: FieldCleanup;
   checkMetadataCompleteness?: boolean;
   platformUrl?: string;
+  platformConfigs?: PlatformSourceConfig[];
 }

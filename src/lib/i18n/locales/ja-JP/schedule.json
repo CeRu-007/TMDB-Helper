@@ -118,5 +118,16 @@
     "kids": "子供",
     "variety": "バラエティ",
     "short": "短編ドラマ"
-  }
+  },
+  "dataSourceMode": "データソースモード",
+  "singlePlatformMode": "シングルプラットフォーム",
+  "multiPlatformMode": "マルチプラットフォーム",
+  "singlePlatformModeDesc": "単一プラットフォームURLでスクレイピング",
+  "multiPlatformModeDesc": "複数プラットフォームをシリアルにスクレイピングして統合",
+  "platformSources": "データソース",
+  "keepFields": "保持フィールド",
+  "primarySource": "プライマリ",
+  "source": "ソース",
+  "dataSourceModeHelp": "シングルは既存のロジック、マルチは複数プラットフォームをシリアルにスクレイピングしフィールド単位で統合",
+  "platformSourcesHelp": "URLはアイテムから継承、各プラットフォームの保持フィールドを設定可能"
 }

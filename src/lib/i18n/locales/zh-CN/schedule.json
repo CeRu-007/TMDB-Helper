@@ -118,5 +118,16 @@
     "kids": "少儿",
     "variety": "综艺",
     "short": "短剧"
-  }
+  },
+  "dataSourceMode": "数据来源模式",
+  "singlePlatformMode": "单平台模式",
+  "multiPlatformMode": "多平台模式",
+  "singlePlatformModeDesc": "使用单一平台URL抓取",
+  "multiPlatformModeDesc": "串行抓取多个平台并合并",
+  "platformSources": "数据来源平台",
+  "keepFields": "保留字段",
+  "primarySource": "主源",
+  "source": "来源",
+  "dataSourceModeHelp": "单平台模式使用现有逻辑，多平台模式串行抓取多个平台并按字段合并",
+  "platformSourcesHelp": "URL从词条继承，可配置各平台保留的字段"
 }
