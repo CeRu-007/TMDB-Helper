@@ -20,7 +20,8 @@ export function MediaInfoCard({
   const { t } = useTranslation('media')
   const [platformOpen, setPlatformOpen] = useState(false)
 
-  const hasPlatforms = !!(item.networks?.length || item.networkLogoUrl || (item.platformUrls && item.platformUrls.length > 0))
+  const totalDropdownItems = (item.networks?.length ?? 0) + (item.platformUrls?.length ?? 0)
+  const showPlatformDropdown = totalDropdownItems > 1
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -29,7 +30,7 @@ export function MediaInfoCard({
         <h3 className="text-sm font-medium flex items-center">
           <Link2 className="h-3.5 w-3.5 mr-1.5" />
           {t('mediaInfo.broadcastPlatform')}
-          {hasPlatforms && (
+          {showPlatformDropdown && (
             <Popover open={platformOpen} onOpenChange={setPlatformOpen}>
               <PopoverTrigger asChild>
                 <button
