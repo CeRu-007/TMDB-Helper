@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Clock, Play, Loader2, Info, Terminal, Activity, Ban } from "lucide-react"
+import { Clock, Play, Loader2, Info, Terminal, Activity, Ban, HelpCircle } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { logger } from "@/lib/utils/logger"
 import type { TMDBItem } from "@/types/tmdb-item"
@@ -18,7 +18,7 @@ import { LanguageSelector } from "@/shared/components/ui/language-selector"
 import { getInitialLanguage } from "@/lib/i18n"
 import { SeasonPicker } from "@/shared/components/ui/season-picker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
 
 interface ScheduleTabProps {
   item: TMDBItem
@@ -414,10 +414,18 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Label>{t("dataSourceMode")}</Label>
-                        <HelpInfoButton
-                          content={t("dataSourceModeHelp")}
-                          side="left"
-                        />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                <HelpCircle className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-xs">
+                              <p className="text-xs">{t("dataSourceModeHelp")}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -450,10 +458,18 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Label>{t("platformSources")}</Label>
-                        <HelpInfoButton
-                          content={t("platformSourcesHelp")}
-                          side="left"
-                        />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                <HelpCircle className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-xs">
+                              <p className="text-xs">{t("platformSourcesHelp")}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
 
                       <div className="space-y-3">
