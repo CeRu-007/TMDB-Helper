@@ -60,6 +60,8 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
     [store.recentLastUpdated, selectedRegion]
   )
 
+  const LOADING_MIN_MS = 500
+
   const fetchItems = useCallback(
     async (
       type: "upcoming" | "recent",
@@ -70,6 +72,8 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
       const setLoading = type === "upcoming" ? s.setLoadingUpcoming : s.setLoadingRecent
       const setError = type === "upcoming" ? s.setUpcomingError : s.setRecentError
       const setItems = type === "upcoming" ? s.setUpcomingItems : s.setRecentItems
+
+      const loadingStartTime = Date.now()
 
       if (!silent) {
         setLoading(true)
@@ -152,6 +156,11 @@ export function useMediaNews(selectedRegion: string = "CN"): UseMediaNewsReturn 
         logger.debug(`[useMediaNews] 获取${type === "upcoming" ? "即将上线" : "近期开播"}内容失败`, appError)
       } finally {
         if (!silent) {
+          const elapsed = Date.now() - loadingStartTime
+          const remaining = LOADING_MIN_MS - elapsed
+          if (remaining > 0) {
+            await new Promise(resolve => setTimeout(resolve, remaining))
+          }
           setLoading(false)
         }
       }

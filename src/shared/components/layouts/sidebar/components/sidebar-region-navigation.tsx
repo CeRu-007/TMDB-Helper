@@ -217,6 +217,7 @@ export function SidebarRegionNavigation({
             variant="outline"
             size="sm"
             onClick={onRefresh}
+            disabled={isLoading}
             className="h-8 min-h-[44px] sm:min-h-8 px-3 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950 text-sm"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />

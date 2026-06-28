@@ -9,7 +9,6 @@ import {
   Calendar,
   PlayCircle,
   RefreshCw,
-  Loader2,
   AlertTriangle,
   Plus,
   ExternalLink
@@ -26,6 +25,7 @@ import { SidebarRegionNavigation } from "./sidebar-region-navigation"
 import { ScheduleView } from "@/features/schedule/components/schedule-view"
 import { DashboardPage } from "@/features/dashboard"
 import { LogsViewer } from "@/features/system/components/logs-viewer"
+import { MediaCardGridSkeleton } from "@/features/media-maintenance/components/media-card-skeleton"
 import { toast } from "@/lib/hooks/use-toast"
 
 interface MediaNewsItem {
@@ -386,12 +386,7 @@ function renderUpcomingContent({
         {isMissingApiKey && <ApiKeySetupGuide />}
 
         {loadingUpcoming ? (
-          <div className="flex justify-center items-center h-48">
-            <div className="flex flex-col items-center">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("mediaNewsSection.loading")}</p>
-            </div>
-          </div>
+          <MediaCardGridSkeleton count={12} />
         ) : upcomingError ? (
           <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
             <div className="flex flex-col items-center text-center mb-4">
@@ -526,12 +521,7 @@ function renderRecentContent({
         {isMissingApiKey && <ApiKeySetupGuide />}
 
         {loadingRecent ? (
-          <div className="flex justify-center items-center h-48">
-            <div className="flex flex-col items-center">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("mediaNewsSection.loading")}</p>
-            </div>
-          </div>
+          <MediaCardGridSkeleton count={12} />
         ) : recentError ? (
           <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
             <div className="flex flex-col items-center text-center mb-4">
