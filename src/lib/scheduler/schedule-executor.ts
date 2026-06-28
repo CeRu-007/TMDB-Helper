@@ -185,26 +185,43 @@ async function executeMultiPlatformTask(
     logs.push({ type, message })
   }
 
+  addLog('info', '=== 定时任务开始执行 ===')
+  addLog('info', '正在加载配置...')
+
   const tmdbImportPath = await getServerConfigValue('tmdb_import_path')
   if (!tmdbImportPath) {
+    addLog('stderr', '未配置TMDB-Import路径')
     return { success: false, message: '请先在设置中配置TMDB-Import工具路径' }
   }
+  addLog('info', `TMDB-Import路径: ${tmdbImportPath}`)
 
   const csvPath = path.join(tmdbImportPath, 'import.csv')
   const enabledPlatforms = task.platformConfigs?.filter(s => s.enabled) || []
 
   if (enabledPlatforms.length === 0) {
+    addLog('stderr', '没有启用的数据来源平台')
     return { success: false, message: '没有启用的数据来源平台' }
   }
 
-  addLog('info', `开始多平台抓取: ${enabledPlatforms.length}个平台`)
+  addLog('info', '=== 多平台模式 ===')
+  addLog('info', `共 ${enabledPlatforms.length} 个平台需要抓取`)
   const headlessFlag = task.headless ? '--headless' : ''
 
   const platformResults: Array<{ url: string; csvContent: string; keptFields: FieldCleanup }> = []
 
-  for (const source of enabledPlatforms) {
-    addLog('info', `开始抓取: ${source.url}`)
+  for (let i = 0; i < enabledPlatforms.length; i++) {
+    const source = enabledPlatforms[i]
+    addLog('info', '')
+    addLog('info', `平台 [${i + 1}/${enabledPlatforms.length}]`)
+    addLog('info', `正在抓取: ${source.url}`)
+
+    const keepFieldNames = Object.entries(source.keepFields)
+      .filter(([, v]) => v)
+      .map(([k]) => k)
+    addLog('info', `保留字段: ${keepFieldNames.join(', ') || '无'}`)
+
     const command = `python -m tmdb-import ${headlessFlag} "${source.url}"`
+    addLog('info', `执行命令: ${command}`)
 
     const result = await executeExternalCommand(command, tmdbImportPath, addLog)
 
@@ -216,7 +233,8 @@ async function executeMultiPlatformTask(
           csvContent,
           keptFields: source.keepFields,
         })
-        addLog('info', `抓取完成: ${source.url} (${csvContent.length} bytes)`)
+        addLog('info', `抓取完成: ${source.url}`)
+        addLog('info', `数据大小: ${csvContent.length} bytes`)
       } else {
         addLog('stderr', `抓取结果为空: ${source.url}`)
       }
@@ -226,48 +244,65 @@ async function executeMultiPlatformTask(
   }
 
   if (platformResults.length === 0) {
+    addLog('stderr', '所有平台抓取失败')
     return { success: false, message: '所有平台抓取失败' }
   }
 
-  addLog('info', `开始合并 ${platformResults.length} 个平台的CSV`)
+  addLog('info', '')
+  addLog('info', `开始合并 ${platformResults.length} 个平台的CSV...`)
   const mergedCSV = mergeMultiPlatformCSVs(platformResults)
+  const mergedLines = mergedCSV.split('\n').length - 1
+  addLog('info', `CSV合并完成: ${mergedLines} 行`)
 
   const currentMaxEpisode = item.seasons?.reduce(
     (max, season) => Math.max(max, season.currentEpisode || 0), 0
   ) || 0
+
+  addLog('info', `增量模式: 当前最大集数 ${currentMaxEpisode}`)
 
   let metadataAnalysis = analyzeCSVMetadata(mergedCSV)
   let effectiveEpisodeCount: number | undefined
 
   if (task.checkMetadataCompleteness) {
     effectiveEpisodeCount = metadataAnalysis.effectiveEpisodeCount
-    addLog('info', `元数据完整性检查: 原始${metadataAnalysis.rawEpisodeCount}集, 有效${metadataAnalysis.effectiveEpisodeCount}集`)
+    addLog('info', `元数据完整性检查: 原始 ${metadataAnalysis.rawEpisodeCount} 集, 有效 ${metadataAnalysis.effectiveEpisodeCount} 集`)
+    if (metadataAnalysis.incompleteEpisodes.length > 0) {
+      addLog('info', `不完整集数: ${metadataAnalysis.incompleteEpisodes.join(', ')}`)
+    }
   }
 
   const incrementalThreshold = task.checkMetadataCompleteness && effectiveEpisodeCount !== undefined
     ? Math.min(currentMaxEpisode, effectiveEpisodeCount)
     : currentMaxEpisode
 
+  addLog('info', '开始清理CSV...')
   const cleanedCSV = cleanCSV(mergedCSV, task.fieldCleanup, incrementalThreshold, task.incremental)
   const episodeCount = task.checkMetadataCompleteness ? metadataAnalysis.effectiveEpisodeCount : extractEpisodeCount(cleanedCSV)
 
   fs.writeFileSync(csvPath, cleanedCSV, 'utf-8')
-  addLog('info', `CSV已保存: ${cleanedCSV.length} bytes`)
+  addLog('info', `CSV清理完成: ${cleanedCSV.length} bytes`)
+  addLog('info', `最终集数: ${episodeCount || 0}`)
 
   if (task.autoImport && item.tmdbId) {
+    addLog('info', '')
+    addLog('info', '开始自动导入TMDB...')
     const tmdbSeason = task.tmdbSeason || 1
     const tmdbLanguage = task.tmdbLanguage || 'zh-CN'
     const tmdbAutoResponse = task.tmdbAutoResponse || 'w'
-    addLog('info', `执行TMDB导入: 第${tmdbSeason}季, 语言=${tmdbLanguage}`)
 
     const tmdbUrl = `https://www.themoviedb.org/tv/${item.tmdbId}/season/${tmdbSeason}?language=${tmdbLanguage}`
     const tmdbCommand = `python -m tmdb-import ${headlessFlag} "${tmdbUrl}"`
 
     const tmdbResult = await executeInteractiveCommand(tmdbCommand, tmdbImportPath, addLog, tmdbAutoResponse)
-    if (!tmdbResult.success) {
+    if (tmdbResult.success) {
+      addLog('info', 'TMDB导入完成')
+    } else {
       addLog('stderr', `TMDB导入失败: ${tmdbResult.error}`)
     }
   }
+
+  addLog('info', '')
+  addLog('info', '=== 定时任务执行结束 ===')
 
   const finalMessage = task.checkMetadataCompleteness && metadataAnalysis.incompleteEpisodes.length > 0
     ? `有效更新至第${episodeCount}集（${platformResults.length}个平台合并，第${metadataAnalysis.incompleteEpisodes.join(',')}集元数据不完整）`
