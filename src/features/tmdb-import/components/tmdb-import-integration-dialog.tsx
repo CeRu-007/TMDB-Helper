@@ -121,10 +121,18 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const prevLineCountRef = useRef<number>(0)
   // 服务端路径状态（仅用于显示/按钮启用判断）
   const [tmdbPathState, setTmdbPathState] = useState<string | null>(null)
+  const [tmdbModule, setTmdbModule] = useState<string>('tmdb_import')
   useEffect(() => {
     (async () => {
       const p = await getTmdbImportPath()
       setTmdbPathState(p)
+      if (p) {
+        try {
+          const res = await fetch(`/api/external/tmdb-module-name?path=${encodeURIComponent(p)}`)
+          const data = await res.json()
+          setTmdbModule(data.moduleName)
+        } catch {}
+      }
     })()
   }, [open])
 
@@ -168,7 +176,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const generatePlatformCommands = () => {
     if (!platformUrls || platformUrls.length === 0) return []
     return platformUrls.filter(url => url.trim()).map(url =>
-      `python -m tmdb_import ${headlessMode ? '--headless' : ''} "${url}"`
+      `python -m ${tmdbModule} ${headlessMode ? '--headless' : ''} "${url}"`
     )
   }
 
@@ -183,7 +191,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     const tmdbUrl = `https://www.themoviedb.org/tv/${item.tmdbId}/season/${season}?language=${selectedLanguage}`
 
     // 返回完整的命令字符串，根据 headlessMode 决定是否添加 --headless 标志
-    return `${python} -m tmdb-import ${headlessMode ? '--headless' : ''} "${tmdbUrl}"`
+    return `${python} -m ${tmdbModule} ${headlessMode ? '--headless' : ''} "${tmdbUrl}"`
   }
   
     
@@ -567,8 +575,10 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
     setTerminalOutput("")
 
     try {
+      const modRes = await fetch(`/api/external/tmdb-module-name?path=${encodeURIComponent(savedTmdbImportPath)}`)
+      const { moduleName } = await modRes.json()
       // Step 1: Platform extraction
-      const command = `python -m tmdb_import ${headlessMode ? '--headless' : ''} "${urlToUse}"`
+      const command = `python -m ${moduleName} ${headlessMode ? '--headless' : ''} "${urlToUse}"`
 
       appendTerminalOutput(`切换到工作目录: ${savedTmdbImportPath}`, "info")
       appendTerminalOutput(`执行命令: ${command}`, "info")
@@ -857,7 +867,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       // 构建完整的命令字符串，根据 headlessMode 决定是否添加 --headless 标志
       const headlessFlag = headlessMode ? '--headless' : '';
-      const fullCommand = `cd "${tmdbImportPath}" && python -m tmdb_import ${headlessFlag} ${tmdbUrl}`;
+      const fullCommand = `cd "${tmdbImportPath}" && python -m ${tmdbModule} ${headlessFlag} ${tmdbUrl}`;
 
       // 在页面日志中显示将要执行的命令
       appendTerminalOutput(t('tmdbIntegration.willExecuteCommand', { command: fullCommand }), "info");
@@ -1615,8 +1625,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0 mr-2 w-0">
                       <div className="font-mono text-xs truncate"
-                           title={generateTMDBCommand(selectedSeason) || `python -m tmdb_import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
-                        {generateTMDBCommand(selectedSeason) || `python -m tmdb_import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
+                           title={generateTMDBCommand(selectedSeason) || `python -m ${tmdbModule} "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
+                        {generateTMDBCommand(selectedSeason) || `python -m ${tmdbModule} "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
                       </div>
                     </div>
                     <Button

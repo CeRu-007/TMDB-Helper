@@ -96,11 +96,11 @@ export function ImageThumbnail({ file, size = "md", showInfo = false, onDragStar
       className={cn(
         "relative group rounded-lg overflow-hidden border-2 transition-all duration-200 select-none",
         isUploaded
-          ? "border-gray-200 dark:border-gray-700 opacity-50 grayscale cursor-default"
-          : "border-transparent hover:border-blue-400 dark:hover:border-blue-500 cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-blue-500/10",
+          ? "border-border opacity-50 grayscale cursor-default"
+          : "border-transparent hover:border-blue-400 cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-blue-500/10",
       )}
     >
-      <div className={cn(widthClass, "flex items-center justify-center bg-gray-100 dark:bg-gray-800")}>
+      <div className={cn(widthClass, "flex items-center justify-center bg-muted")}>
         {file.thumbnailUrl ? (
           <img
             ref={imgRef}
@@ -125,10 +125,10 @@ export function ImageThumbnail({ file, size = "md", showInfo = false, onDragStar
       )}
 
       {showInfo && (
-        <div className="px-1 py-0.5 text-[10px] text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-gray-900/80 leading-tight">
+        <div className="px-1 py-0.5 text-[10px] text-muted-foreground bg-background/80 leading-tight">
           <div className="truncate">{file.name}</div>
           {dimensions && (
-            <div className="text-[9px] text-gray-400 dark:text-gray-500">
+            <div className="text-[9px] text-muted-foreground">
               {dimensions.width} × {dimensions.height}
             </div>
           )}

@@ -79,6 +79,15 @@ data/             # Runtime data: tmdb-helper.db, logs/
 - `class-variance-authority` + `tailwind-merge` + `clsx` for component styling
 - Emotion enabled in `next.config.mjs`
 
+## Theme System
+
+- CSS Custom Properties engine with 15+ preset themes
+- Themes managed via `src/lib/themes/` directory
+- `useThemeEngine` hook for theme state management
+- Appearance settings in Settings → Appearance
+- All components use CSS variables (no more `dark:` hardcoded patterns)
+- Theme data persisted in `appearance_settings` database field
+
 ## Deployment
 
 - **Docker**: `docker-compose up -d` (image: `ceru007/tmdb-helper`), port 4949, data in `/app/data`

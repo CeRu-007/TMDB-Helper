@@ -191,17 +191,17 @@ export function SubtitleEpisodeGenerator({
       {/* 拖拽覆盖层 */}
       {isDragOver && (
         <div className="absolute inset-0 z-50 bg-blue-500/20 dark:bg-blue-600/30 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white/90 dark:bg-gray-800/90 rounded-2xl p-8 shadow-2xl border-2 border-dashed border-blue-400 dark:border-blue-500 text-center max-w-md mx-4">
+          <div className="bg-card/90 rounded-2xl p-8 shadow-2xl border-2 border-dashed border-primary text-center max-w-md mx-4">
             <div className="relative mb-4">
               <div className="absolute inset-0 bg-blue-500 blur-xl opacity-30 rounded-full"></div>
               <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-full text-white">
                 <Upload className="h-12 w-12" />
               </div>
             </div>
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+            <h3 className="text-xl font-bold text-foreground mb-2">
               {t("subtitleGenerator.dropFileHint")}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-muted-foreground">
               {t("subtitleGenerator.supportedFormats")}
             </p>
           </div>
@@ -221,7 +221,7 @@ export function SubtitleEpisodeGenerator({
       {/* 主要内容区域 */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* 左侧文件列表 */}
-        <div className="w-full md:w-72 max-h-48 md:max-h-full border-b md:border-b-0 md:border-r border-blue-100/50 dark:border-blue-900/30 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
+        <div className="w-full md:w-72 max-h-48 md:max-h-full border-b md:border-b-0 md:border-r border-border bg-muted/30 backdrop-blur-sm">
           <FileList
             files={subtitleFiles}
             selectedFile={selectedFile}
@@ -328,7 +328,7 @@ export function SubtitleEpisodeGenerator({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="text-sm text-muted-foreground">
               <p>{t("subtitleGenerator.visitToRecharge")}</p>
               <a
                 href="https://cloud.siliconflow.cn"

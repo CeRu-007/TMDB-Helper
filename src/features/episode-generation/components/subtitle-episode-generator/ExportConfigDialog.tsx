@@ -106,7 +106,7 @@ export function ExportConfigDialog({
                 </div>
               </div>
 
-              <div className="text-xs text-gray-500 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+              <div className="text-xs text-muted-foreground p-3 bg-card rounded">
                 <p>• 分钟数将根据字幕文件的最后时间戳计算（四舍五入）</p>
                 <p>• 导出将直接覆盖 TMDB-Import-master/import.csv 文件</p>
                 <p>• 集数顺序按照上传的字幕文件顺序排列</p>

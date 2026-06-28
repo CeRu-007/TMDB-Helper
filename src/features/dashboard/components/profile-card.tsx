@@ -106,7 +106,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
   const hasPosters = profile.topPosterUrls.length > 0
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-muted/50">
       {hasPosters ? (
         <>
           <PosterMosaic urls={profile.topPosterUrls} />
@@ -123,7 +123,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
         <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
           <div className="relative flex-shrink-0">
             <div className={`absolute inset-0 ${style.bgGlow} blur-xl opacity-30 rounded-full`} />
-            <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${style.gradient} flex items-center justify-center shadow-lg overflow-hidden ring-4 ring-white/30 dark:ring-gray-800/50`}>
+            <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${style.gradient} flex items-center justify-center shadow-lg overflow-hidden ring-4 ring-white/30 dark:ring-border/50`}>
               {userInfo?.avatarUrl ? (
                 <UserAvatarImage
                   src={userInfo.avatarUrl}
@@ -134,16 +134,16 @@ export function ProfileCard({ profile }: ProfileCardProps) {
                 <DynamicIcon name={style.icon} className="text-white" size={36} weight="duotone" />
               )}
             </div>
-            <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-br ${style.gradient} shadow-md flex items-center justify-center border border-white/30 dark:border-gray-700`}>
+            <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-br ${style.gradient} shadow-md flex items-center justify-center border border-white/30 dark:border-border`}>
               <DynamicIcon name={style.icon} className="text-white" size={16} weight="fill" />
             </div>
           </div>
           <div className="flex-1 min-w-0">
             <div className="h-5" />
-            <h2 className={`text-xl font-bold mb-2 drop-shadow-sm ${hasPosters ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
+            <h2 className={`text-xl font-bold mb-2 drop-shadow-sm ${hasPosters ? 'text-white' : 'text-foreground'}`}>
               {t(`profile.types.${profile.type}.name`)}
             </h2>
-            <p className={`text-sm drop-shadow-sm ${hasPosters ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
+            <p className={`text-sm drop-shadow-sm ${hasPosters ? 'text-white/90' : 'text-muted-foreground'}`}>
               {t(`profile.types.${profile.type}.desc`)}
             </p>
           </div>
@@ -151,34 +151,34 @@ export function ProfileCard({ profile }: ProfileCardProps) {
 
         <div className={`mt-4 md:mt-6 grid grid-cols-2 sm:grid-cols-5 gap-4`}>
           <div className="text-center">
-            <p className={`text-2xl font-bold drop-shadow-sm ${hasPosters ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{profile.totalItems}</p>
-            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile.totalItems')}</p>
+            <p className={`text-2xl font-bold drop-shadow-sm ${hasPosters ? 'text-white' : 'text-foreground'}`}>{profile.totalItems}</p>
+            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-muted-foreground'}`}>{t('profile.totalItems')}</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-green-400 drop-shadow-sm">{profile.completionRate}%</p>
-            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile.completionRate')}</p>
+            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-muted-foreground'}`}>{t('profile.completionRate')}</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-blue-400 drop-shadow-sm">{profile.automationRate}%</p>
-            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile.automationRate')}</p>
+            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-muted-foreground'}`}>{t('profile.automationRate')}</p>
           </div>
           <div className="text-center">
-            <p className={`text-2xl font-bold drop-shadow-sm ${hasPosters ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
+            <p className={`text-2xl font-bold drop-shadow-sm ${hasPosters ? 'text-white' : 'text-foreground'}`}>
               {profile.peakHour !== null ? `${String(profile.peakHour).padStart(2, '0')}:00` : '-'}
             </p>
-            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile.peakHour')}</p>
+            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-muted-foreground'}`}>{t('profile.peakHour')}</p>
           </div>
           <div className="text-center">
-            <p className={`text-2xl font-bold drop-shadow-sm ${hasPosters ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
+            <p className={`text-2xl font-bold drop-shadow-sm ${hasPosters ? 'text-white' : 'text-foreground'}`}>
               {profile.peakWeekday !== null ? t(`weekdays.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][profile.peakWeekday]}`) : '-'}
             </p>
-            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile.peakWeekday')}</p>
+            <p className={`text-xs ${hasPosters ? 'text-white/70' : 'text-muted-foreground'}`}>{t('profile.peakWeekday')}</p>
           </div>
         </div>
 
         {profile.firstItemTitle && (
           <div className={`mt-4`}>
-            <p className={`text-xs ${hasPosters ? 'text-white/60' : 'text-gray-400'}`}>
+            <p className={`text-xs ${hasPosters ? 'text-white/60' : 'text-muted-foreground'}`}>
               {t('profile.firstItem', { title: profile.firstItemTitle, date: profile.firstItemDate ? new Date(profile.firstItemDate).toLocaleDateString() : '' })}
             </p>
           </div>

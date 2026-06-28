@@ -30,7 +30,7 @@ export default function VideoThumbnailSettingsPanel({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">{t("videoThumbnail.title")}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           {t("videoThumbnail.extractionDesc", "简单的顺序帧提取，从指定时间开始按帧间隔提取缩略图")}
         </p>
       </div>

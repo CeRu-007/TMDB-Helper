@@ -64,7 +64,7 @@ const SmartTooltip: React.FC<SmartTooltipProps> = ({ platform, children, disable
   };
 
   const getTooltipClasses = () => {
-    const baseClasses = "absolute px-4 py-3 bg-gray-900/95 dark:bg-gray-800/95 backdrop-blur-sm text-white text-sm rounded-xl shadow-2xl transition-all duration-300 pointer-events-none w-80 whitespace-normal border border-gray-700/50 dark:border-gray-600/50 z-50";
+    const baseClasses = "absolute px-4 py-3 bg-gray-900/95 dark:bg-card/95 backdrop-blur-sm text-white text-sm rounded-xl shadow-2xl transition-all duration-300 pointer-events-none w-80 whitespace-normal border border-gray-700/50 dark:border-border/50 z-50";
     
     const positionClasses = {
       top: "bottom-full left-1/2 transform -translate-x-1/2 mb-3",
@@ -87,10 +87,10 @@ const SmartTooltip: React.FC<SmartTooltipProps> = ({ platform, children, disable
     };
 
     const arrowStyles = {
-      top: "w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-transparent border-t-gray-900/95 dark:border-t-gray-800/95",
-      bottom: "w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-transparent border-b-gray-900/95 dark:border-b-gray-800/95",
-      left: "w-0 h-0 border-t-[8px] border-b-[8px] border-l-[8px] border-transparent border-l-gray-900/95 dark:border-l-gray-800/95",
-      right: "w-0 h-0 border-t-[8px] border-b-[8px] border-r-[8px] border-transparent border-r-gray-900/95 dark:border-r-gray-800/95"
+      top: "w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-transparent border-t-gray-900/95 dark:border-t-card/95",
+      bottom: "w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-transparent border-b-gray-900/95 dark:border-b-card/95",
+      left: "w-0 h-0 border-t-[8px] border-b-[8px] border-l-[8px] border-transparent border-l-gray-900/95 dark:border-l-card/95",
+      right: "w-0 h-0 border-t-[8px] border-b-[8px] border-r-[8px] border-transparent border-r-gray-900/95 dark:border-r-card/95"
     };
 
     return cn(arrowPositions[position], arrowStyles[position]);
@@ -120,7 +120,7 @@ const SmartTooltip: React.FC<SmartTooltipProps> = ({ platform, children, disable
         </div>
         
         {/* 平台描述 */}
-        <div className="text-gray-300 dark:text-gray-400 text-xs leading-relaxed mb-3">
+        <div className="text-muted-foreground text-xs leading-relaxed mb-3">
           {platform.description}
         </div>
         

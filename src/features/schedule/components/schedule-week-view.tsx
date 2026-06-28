@@ -30,7 +30,7 @@ export function ScheduleWeekView({
 }: ScheduleWeekViewProps) {
   return (
     <div className="flex-1 overflow-hidden">
-      <div className="h-full grid grid-cols-7 divide-x divide-gray-100 dark:divide-gray-800 max-sm:min-w-0 max-sm:divide-x-0 max-sm:grid-cols-7">
+      <div className="h-full grid grid-cols-7 divide-x divide-gray-100 dark:divide-border max-sm:min-w-0 max-sm:divide-x-0 max-sm:grid-cols-7">
         {weekData.map((day, index) => (
           <ScheduleDayColumn
             key={index}

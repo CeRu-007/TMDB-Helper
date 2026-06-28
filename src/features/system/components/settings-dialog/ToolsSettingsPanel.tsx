@@ -112,19 +112,19 @@ export default function ToolsSettingsPanel({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">{t("tools.title")}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           {t("tools.description")}
         </p>
       </div>
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="border-b border-border">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setToolsTab("management")}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               toolsTab === "management"
                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-muted-foreground dark:hover:text-muted-foreground"
             }`}
           >
             {t("tools.toolManagement")}
@@ -134,7 +134,7 @@ export default function ToolsSettingsPanel({
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               toolsTab === "config"
                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-muted-foreground dark:hover:text-muted-foreground"
             }`}
           >
             {t("tools.configIni")}
@@ -144,7 +144,7 @@ export default function ToolsSettingsPanel({
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               toolsTab === "dependencies"
                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-muted-foreground dark:hover:text-muted-foreground"
             }`}
           >
             {t("tools.dependencyInstall")}
@@ -169,7 +169,7 @@ export default function ToolsSettingsPanel({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 {t("tools.manualPathDesc")}
               </p>
 
@@ -203,12 +203,12 @@ export default function ToolsSettingsPanel({
                                     )}
                                   </div>
                 {tmdbImportPath && (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="p-3 bg-card rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("tools.currentConfig")}</span>
+                      <span className="text-sm font-medium text-foreground">{t("tools.currentConfig")}</span>
                       <Badge variant="default" className="text-xs">{t("tools.configured")}</Badge>
                     </div>
-                    <code className="text-xs text-gray-600 dark:text-gray-400 break-all">
+                    <code className="text-xs text-muted-foreground break-all">
                       {tmdbImportPath}
                     </code>
                   </div>
@@ -275,7 +275,7 @@ export default function ToolsSettingsPanel({
                       <Label htmlFor="save_user_profile" className="text-sm font-medium">
                         {t("tools.saveUserProfile")}
                       </Label>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {t("tools.saveUserProfileDesc")}
                       </p>
                     </div>
@@ -289,7 +289,7 @@ export default function ToolsSettingsPanel({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm text-gray-600 dark:text-gray-400">{t("tools.username")}</Label>
+                      <Label className="text-sm text-muted-foreground">{t("tools.username")}</Label>
                       <Input
                         value={tmdbConfig.tmdb_username}
                         onChange={(e) => setTmdbConfig(prev => ({ ...prev, tmdb_username: e.target.value }))}
@@ -299,7 +299,7 @@ export default function ToolsSettingsPanel({
                     </div>
 
                     <div>
-                      <Label className="text-sm text-gray-600 dark:text-gray-400">{t("tools.password")}</Label>
+                      <Label className="text-sm text-muted-foreground">{t("tools.password")}</Label>
                       <div className="relative mt-1">
                         <Input
                           type={showTmdbPassword ? "text" : "password"}
@@ -328,8 +328,8 @@ export default function ToolsSettingsPanel({
                 </div>
 
                 <div className="space-y-4">
-                  <div className="pb-2 border-b border-gray-200 dark:border-gray-700">
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("tools.imageUploadSettings")}</Label>
+                  <div className="pb-2 border-b border-border">
+                    <Label className="text-sm font-medium text-foreground">{t("tools.imageUploadSettings")}</Label>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -342,7 +342,7 @@ export default function ToolsSettingsPanel({
                       <Label htmlFor="backdrop_forced_upload" className="text-sm font-medium">
                         {t("tools.forceUploadBackdrop")}
                       </Label>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {t("tools.forceUploadBackdropDesc")}
                       </p>
                     </div>
@@ -358,14 +358,14 @@ export default function ToolsSettingsPanel({
                       <Label htmlFor="backdrop_vote_after_upload" className="text-sm font-medium">
                         {t("tools.autoVoteAfterUpload")}
                       </Label>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {t("tools.autoVoteAfterUploadDesc")}
                       </p>
                     </div>
                   </div>
 
-                  <div className="pb-2 pt-4 border-b border-gray-200 dark:border-gray-700">
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("tools.csvImportSettings")}</Label>
+                  <div className="pb-2 pt-4 border-b border-border">
+                    <Label className="text-sm font-medium text-foreground">{t("tools.csvImportSettings")}</Label>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -378,7 +378,7 @@ export default function ToolsSettingsPanel({
                       <Label htmlFor="rename_csv_on_import" className="text-sm font-medium">
                         {t("tools.renameCsv")}
                       </Label>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {t("tools.renameCsvDesc")}
                       </p>
                     </div>
@@ -394,14 +394,14 @@ export default function ToolsSettingsPanel({
                       <Label htmlFor="delete_csv_after_import" className="text-sm font-medium">
                         {t("tools.deleteCsv")}
                       </Label>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {t("tools.deleteCsvDesc")}
                       </p>
                     </div>
                   </div>
 
-                  <div className="pb-2 pt-4 border-b border-gray-200 dark:border-gray-700">
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("tools.otherSettings")}</Label>
+                  <div className="pb-2 pt-4 border-b border-border">
+                    <Label className="text-sm font-medium text-foreground">{t("tools.otherSettings")}</Label>
                   </div>
                   <div className="pt-4">
                     <Label className="text-sm font-medium">{t("tools.filterWords")}</Label>
@@ -420,8 +420,8 @@ export default function ToolsSettingsPanel({
                 <div className="flex flex-col items-center space-y-4">
                   <AlertCircle className="h-12 w-12 text-amber-500" />
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t("tools.toolPathNotConfigured")}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    <h4 className="text-lg font-medium text-foreground">{t("tools.toolPathNotConfigured")}</h4>
+                    <p className="text-sm text-muted-foreground mt-2">
                       {t("tools.configIniHint")}
                     </p>
                   </div>

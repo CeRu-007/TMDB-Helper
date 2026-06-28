@@ -293,11 +293,11 @@ export function ContentRenderers({
   // Default - no content selected
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
-      <div className="bg-gray-50 dark:bg-gray-800/30 p-6 rounded-lg border border-gray-200 dark:border-gray-700 max-w-md text-center">
-        <h2 className="text-xl font-semibold mb-2 text-gray-700 dark:text-gray-300">
+      <div className="bg-muted/30 p-6 rounded-lg border border-border max-w-md text-center">
+        <h2 className="text-xl font-semibold mb-2 text-foreground">
           {t("selectMenu")}
         </h2>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-muted-foreground">
           {t("selectMenuDesc")}
         </p>
       </div>
@@ -349,11 +349,11 @@ function renderUpcomingContent({
         </div>
         <div>
           <div className="flex items-center">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+            <h2 className="text-xl font-semibold text-foreground">
               {t("upcoming")}
             </h2>
             {upcomingItems.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
+              <span className="ml-2 px-1.5 py-0.5 bg-primary/15 text-primary text-xs font-medium rounded-full">
                 {upcomingItems.filter(upcomingItem =>
                   !existingItems.some(item =>
                     item.tmdbId === upcomingItem.id.toString() &&
@@ -363,7 +363,7 @@ function renderUpcomingContent({
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {upcomingLastUpdated ? `${t("lastUpdate")}: ${upcomingLastUpdated}` : t("upcomingDesc")}
           </p>
         </div>
@@ -409,11 +409,11 @@ function renderUpcomingContent({
             </div>
           </div>
         ) : upcomingItems.length === 0 ? (
-          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
-            <p className="text-gray-500 dark:text-gray-400 mb-1">
+          <div className="bg-muted p-6 rounded-lg text-center border border-border">
+            <p className="text-muted-foreground mb-1">
               {t("mediaNewsSection.noContentUpcoming")}
             </p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm">
+            <p className="text-muted-foreground text-sm">
               {t("mediaNewsSection.noContentUpcoming")}
             </p>
           </div>
@@ -484,11 +484,11 @@ function renderRecentContent({
         </div>
         <div>
           <div className="flex items-center">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+            <h2 className="text-xl font-semibold text-foreground">
               {t("recent")}
             </h2>
             {recentItems.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
+              <span className="ml-2 px-1.5 py-0.5 bg-primary/15 text-primary text-xs font-medium rounded-full">
                 {recentItems.filter(recentItem =>
                   !existingItems.some(item =>
                     item.tmdbId === recentItem.id.toString() &&
@@ -498,7 +498,7 @@ function renderRecentContent({
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {recentLastUpdated ? `${t("lastUpdate")}: ${recentLastUpdated}` : t("recentDesc")}
           </p>
         </div>
@@ -544,11 +544,11 @@ function renderRecentContent({
             </div>
           </div>
         ) : recentItems.length === 0 ? (
-          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
-            <p className="text-gray-500 dark:text-gray-400 mb-1">
+          <div className="bg-muted p-6 rounded-lg text-center border border-border">
+            <p className="text-muted-foreground mb-1">
               {t("mediaNewsSection.noContentRecent")}
             </p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm">
+            <p className="text-muted-foreground text-sm">
               {t("mediaNewsSection.noContentRecent")}
             </p>
           </div>
@@ -658,10 +658,10 @@ function MediaNewsCard({ item, onQuickAdd }: { item: MediaNewsItem; onQuickAdd: 
         </div>
 
         <div className="mt-2 space-y-1 relative z-0">
-          <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
+          <h3 className="font-medium text-foreground text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
             {item.title}
           </h3>
-          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex items-center text-xs text-muted-foreground">
             <span className="flex items-center">{item.mediaType === 'movie' ? t("mediaNewsSection.movie") : t("mediaNewsSection.tv")}</span>
             <span className="mx-1">·</span>
             <span className="flex items-center">{timeText}</span>

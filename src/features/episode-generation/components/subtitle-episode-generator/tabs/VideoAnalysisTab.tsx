@@ -48,11 +48,11 @@ export function VideoAnalysisTab({
       <div className="space-y-4">
         <div>
           <Label className="text-sm font-medium">{t("videoAnalysisTab.featureControl")}</Label>
-          <p className="text-xs text-gray-500 mt-1 mb-3">
+          <p className="text-xs text-muted-foreground mt-1 mb-3">
             {t("videoAnalysisTab.featureControlDesc")}
           </p>
         </div>
-        <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="flex items-center space-x-3 p-3 border border-border rounded-lg">
           <Checkbox
             id="enableVideoAnalysis"
             checked={config.enableVideoAnalysis || false}
@@ -66,7 +66,7 @@ export function VideoAnalysisTab({
             <Label htmlFor="enableVideoAnalysis" className="text-sm font-medium cursor-pointer">
               {t("videoAnalysisTab.enableFeature")}
             </Label>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {t("videoAnalysisTab.enableFeatureDesc")}
             </p>
           </div>
@@ -77,18 +77,18 @@ export function VideoAnalysisTab({
         <div className="space-y-4">
           <div>
             <Label className="text-sm font-medium">{t("videoAnalysisTab.speechModel")}</Label>
-            <p className="text-xs text-gray-500 mt-1 mb-3">
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
               {t("videoAnalysisTab.speechModelDesc")}
             </p>
           </div>
 
           {speechModels.isLoading ? (
-            <div className="flex items-center justify-center p-4 border rounded-lg">
+            <div className="flex items-center justify-center p-4 border border-border rounded-lg">
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              <span className="text-sm text-gray-500">{t("generationTab.loadingModels")}</span>
+              <span className="text-sm text-muted-foreground">{t("generationTab.loadingModels")}</span>
             </div>
           ) : speechModels.error ? (
-            <div className="flex items-center justify-center p-4 border rounded-lg">
+            <div className="flex items-center justify-center p-4 border border-border rounded-lg">
               <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
               <span className="text-sm text-red-500">{t("generationTab.loadFailed", { error: speechModels.error })}</span>
             </div>
@@ -124,7 +124,7 @@ export function VideoAnalysisTab({
               </SelectTrigger>
               <SelectContent className="max-h-[300px] overflow-y-auto">
                 {speechModels.availableModels.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500">
+                  <div className="p-2 text-sm text-muted-foreground">
                     {t("generationTab.noModels")}
                   </div>
                 ) : (
@@ -143,28 +143,28 @@ export function VideoAnalysisTab({
             </Select>
           )}
 
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <div className="text-xs text-blue-800 dark:text-blue-200">
+          <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <div className="text-xs text-foreground">
               <p className="font-medium mb-3 flex items-center">
                 <span className="mr-2">💡</span>
                 {t("videoAnalysisTab.modelTip")}
               </p>
               <div className="grid grid-cols-1 gap-2">
-                <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded">
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="font-medium">SenseVoice-Small</span>
                   <span className="text-green-600 dark:text-green-400">{t("videoAnalysisTab.senseVoiceSmall")}</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded">
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="font-medium">SenseVoice-Large</span>
                   <span className="text-purple-600 dark:text-purple-400">{t("videoAnalysisTab.senseVoiceLarge")}</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded">
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="font-medium">CosyVoice</span>
                   <span className="text-blue-600 dark:text-blue-400">{t("videoAnalysisTab.cosyVoiceSeries")}</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded">
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="font-medium">SpeechT5</span>
-                  <span className="text-gray-600 dark:text-gray-400">{t("videoAnalysisTab.speechT5")}</span>
+                  <span className="text-muted-foreground">{t("videoAnalysisTab.speechT5")}</span>
                 </div>
               </div>
             </div>
@@ -202,7 +202,7 @@ export function VideoAnalysisTab({
                   <span>{t("videoAnalysisTab.platformPlex")}</span>
                 </div>
                 <div className="flex items-center space-x-2 col-span-2">
-                  <span className="w-2 h-2 bg-gray-500 rounded-full"></span>
+                  <span className="w-2 h-2 bg-muted-foreground rounded-full"></span>
                   <span>{t("videoAnalysisTab.platformDirectLink")}</span>
                 </div>
               </div>
@@ -224,8 +224,8 @@ export function VideoAnalysisTab({
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <div className="text-xs text-gray-700 dark:text-gray-300">
+          <div className="mt-4 p-4 bg-card/20 border border-border rounded-lg">
+            <div className="text-xs text-foreground">
               <p className="font-medium mb-3 flex items-center">
                 <span className="mr-2">📖</span>
                 {t("videoAnalysisTab.quickGuide")}
@@ -255,11 +255,11 @@ export function VideoAnalysisTab({
 
       {!config.enableVideoAnalysis && (
         <div className="text-center py-8">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Film className="h-8 w-8 text-gray-400" />
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <Film className="h-8 w-8 text-muted-foreground" />
           </div>
-          <p className="text-gray-500 dark:text-gray-400 mb-2">{t("videoAnalysisTab.featureDisabled")}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-muted-foreground mb-2">{t("videoAnalysisTab.featureDisabled")}</p>
+          <p className="text-xs text-muted-foreground">
             {t("videoAnalysisTab.featureDisabledDesc")}
           </p>
         </div>

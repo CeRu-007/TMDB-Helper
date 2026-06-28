@@ -91,7 +91,7 @@ function renderHighlightedText(
       break
   }
 
-  const highlightClass = "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-0.5 rounded"
+  const highlightClass = "bg-red-100 text-red-700 line-through decoration-red-500 decoration-2 px-0.5 rounded"
 
   return (
     <>
@@ -387,9 +387,9 @@ export default function BatchEditDialog({
             <div className="space-y-4">
               {duplicatePatterns.length > 0 ? (
                 <>
-                  <Alert className="bg-blue-50/50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
+                  <Alert className="bg-blue-50/50 border-blue-200">
                     <Info className="h-4 w-4 text-blue-600" />
-                    <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
+                    <AlertDescription className="text-sm text-blue-700">
                       {t('batchEdit.detectedPatterns', { count: duplicatePatterns.length })}
                     </AlertDescription>
                   </Alert>
@@ -432,7 +432,7 @@ export default function BatchEditDialog({
                     <div className="space-y-3 pt-2 border-t">
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground">{t('batchEdit.replaceWith')}</span>
-                        <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-2 py-0.5 rounded text-xs">
+                        <span className="bg-red-100 text-red-700 line-through decoration-red-500 decoration-2 px-2 py-0.5 rounded text-xs">
                           {selectedPattern.pattern.length > 30
                             ? selectedPattern.pattern.slice(0, 30) + '...'
                             : selectedPattern.pattern}
@@ -461,9 +461,9 @@ export default function BatchEditDialog({
           {/* 手动批量模式 */}
           {viewMode === 'batch-manual' && (
             <div className="space-y-4">
-              <Alert className="bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+              <Alert className="bg-amber-50/50 border-amber-200">
                 <MousePointer className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">
+                <AlertDescription className="text-sm text-amber-700">
                   {t('batchEdit.selectTextHint')}
                 </AlertDescription>
               </Alert>
@@ -482,7 +482,7 @@ export default function BatchEditDialog({
                   {manualSelection ? (
                     <>
                       {value.substring(0, manualSelection.start)}
-                      <mark className="bg-yellow-200 dark:bg-yellow-900/50 px-1 rounded">{value.substring(manualSelection.start, manualSelection.end)}</mark>
+                      <mark className="bg-yellow-200 px-1 rounded">{value.substring(manualSelection.start, manualSelection.end)}</mark>
                       {value.substring(manualSelection.end)}
                     </>
                   ) : (
@@ -529,7 +529,7 @@ export default function BatchEditDialog({
 
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-muted-foreground">{t('batchEdit.replaceWith')}</span>
-                    <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 line-through decoration-red-500 decoration-2 px-2 py-0.5 rounded text-xs">
+                    <span className="bg-red-100 text-red-700 line-through decoration-red-500 decoration-2 px-2 py-0.5 rounded text-xs">
                       {manualSelection.text.length > 30
                         ? manualSelection.text.slice(0, 30) + '...'
                         : manualSelection.text}
@@ -590,7 +590,7 @@ export default function BatchEditDialog({
               </ScrollArea>
               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 bg-red-100 dark:bg-red-900/40 rounded"></span>
+                  <span className="w-3 h-3 bg-red-100 rounded"></span>
                   <span>{t('batchEdit.willBeDeleted')}</span>
                 </div>
               </div>

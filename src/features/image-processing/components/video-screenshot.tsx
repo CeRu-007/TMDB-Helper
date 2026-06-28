@@ -1071,7 +1071,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
     return (
       <Card className="w-full overflow-hidden" key={video.id}>
-        <CardHeader className="pb-2 px-3 md:px-6 pt-3 md:pt-6 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900">
+        <CardHeader className="pb-2 px-3 md:px-6 pt-3 md:pt-6 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-card">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1 min-w-0">
               <CardTitle className="text-sm md:text-base font-medium truncate flex items-center">
@@ -1369,7 +1369,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
   // 渲染空状态
   const renderEmptyState = () => (
-    <div className="flex flex-col items-center justify-center min-h-[200px] md:min-h-[400px] text-center p-6 md:p-8 bg-gray-50/50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-800">
+    <div className="flex flex-col items-center justify-center min-h-[200px] md:min-h-[400px] text-center p-6 md:p-8 bg-muted/50 rounded-lg border-2 border-dashed border-border">
       <div className="rounded-full bg-primary/10 p-3 md:p-4 mb-3 md:mb-4">
         <FileVideo className="h-6 w-6 md:h-8 md:w-8 text-primary" />
       </div>
@@ -1438,7 +1438,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
             {/* 批量操作工具栏 */}
             {videos.length > 0 && (
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-0 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-0 bg-muted/50 p-3 rounded-lg border border-border">
                 <div className="flex items-center space-x-2 w-full md:w-auto">
                   <span className="text-sm font-medium whitespace-nowrap">
                     {t("videoScreenshot.videosCount", { count: videos.length })}

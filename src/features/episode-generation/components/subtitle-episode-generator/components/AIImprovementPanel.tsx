@@ -41,9 +41,9 @@ export function AIImprovementPanel({
   }
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+    <div className="mt-4 pt-4 border-t border-border">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
+        <h4 className="text-sm font-medium text-foreground flex items-center">
           <Wand2 className="h-4 w-4 mr-2 text-blue-500" />
           与AI改进简介
         </h4>
@@ -65,7 +65,7 @@ export function AIImprovementPanel({
       )}
 
       <div className="relative">
-        <div className="relative bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
+        <div className="relative bg-card border border-border rounded-lg">
           <textarea
             value={inputMessage}
             onChange={handleChange}
@@ -97,8 +97,8 @@ export function AIImprovementPanel({
             )}
           </Button>
         </div>
-        <div className="mt-1.5 text-xs text-gray-400 dark:text-gray-500 flex items-center">
-          <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-medium">Enter</kbd>
+        <div className="mt-1.5 text-xs text-muted-foreground flex items-center">
+          <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">Enter</kbd>
           <span className="ml-1">发送</span>
         </div>
       </div>

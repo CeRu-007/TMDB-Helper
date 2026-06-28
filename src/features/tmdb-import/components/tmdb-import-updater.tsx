@@ -253,7 +253,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
             <GitBranch className="h-5 w-5 text-blue-600" />
             <div>
               <CardTitle className="text-lg">{t("tmdbImportUpdater.title")}</CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {t("tmdbImportUpdater.description")}
               </p>
             </div>
@@ -304,7 +304,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
             <div className="flex items-center justify-center py-8">
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.loading")}</span>
+                <span className="text-sm text-muted-foreground">{t("tmdbImportUpdater.loading")}</span>
               </div>
             </div>
           </div>
@@ -321,7 +321,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
               </div>
               <div className="space-y-2 pl-6">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.toolStatus")}:</span>
+                  <span className="text-xs text-muted-foreground">{t("tmdbImportUpdater.toolStatus")}:</span>
                   <Badge variant={installStatus.installed ? "default" : "secondary"} className="text-xs">
                     {installStatus.installed ? t("tmdbImportUpdater.installed") : t("tmdbImportUpdater.notInstalled")}
                   </Badge>
@@ -329,12 +329,12 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
                 {installStatus.installed && (
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.mainModule")}:</span>
+                      <span className="text-xs text-muted-foreground">{t("tmdbImportUpdater.mainModule")}:</span>
                       <Badge variant={installStatus.hasMainModule ? "default" : "destructive"} className="text-xs">
                         {installStatus.hasMainModule ? t("tmdbImportUpdater.normal") : t("tmdbImportUpdater.missing")}
                       </Badge>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                    <div className="text-xs text-muted-foreground bg-card p-2 rounded">
                       {t("tmdbImportUpdater.fileCount")} {installStatus.fileCount}
                     </div>
                   </>
@@ -344,29 +344,29 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
           ) : loading && !installStatus ? (
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-4 w-4 bg-gray-200 dark:bg-muted rounded animate-pulse" />
+                <div className="h-4 w-20 bg-gray-200 dark:bg-muted rounded animate-pulse" />
               </div>
               <div className="space-y-2 pl-6">
                 <div className="flex items-center justify-between">
-                  <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                  <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-muted rounded animate-pulse" />
+                  <div className="h-5 w-12 bg-gray-200 dark:bg-muted rounded animate-pulse" />
                 </div>
-                <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-8 w-full bg-gray-200 dark:bg-muted rounded animate-pulse" />
               </div>
             </div>
           ) : loading && !installStatus ? (
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-4 w-4 bg-gray-200 dark:bg-muted rounded animate-pulse" />
+                <div className="h-4 w-20 bg-gray-200 dark:bg-muted rounded animate-pulse" />
               </div>
               <div className="space-y-2 pl-6">
                 <div className="flex items-center justify-between">
-                  <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                  <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-muted rounded animate-pulse" />
+                  <div className="h-5 w-12 bg-gray-200 dark:bg-muted rounded animate-pulse" />
                 </div>
-                <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-8 w-full bg-gray-200 dark:bg-muted rounded animate-pulse" />
               </div>
             </div>
           ) : null}
@@ -398,23 +398,23 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
               </div>
               <div className="space-y-2 pl-6">
                 <div className="text-xs">
-                  <div className="text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.latestVersion")}:</div>
+                  <div className="text-muted-foreground">{t("tmdbImportUpdater.latestVersion")}:</div>
                   <div className="flex items-center space-x-1 mt-1">
                     <Calendar className="h-3 w-3 text-gray-400" />
-                    <span className="text-gray-800 dark:text-gray-200">
+                    <span className="text-foreground">
                       {formatDate(versionInfo.remote.commitDate)}
                     </span>
                   </div>
-                  <div className="text-gray-600 dark:text-gray-400 mt-1 truncate">
+                  <div className="text-muted-foreground mt-1 truncate">
                     {versionInfo.remote.commitMessage}
                   </div>
                 </div>
                 {versionInfo.local?.exists && versionInfo.local.commitDate && (
                   <div className="text-xs">
-                    <div className="text-gray-600 dark:text-gray-400">{t("tmdbImportUpdater.localVersion")}:</div>
+                    <div className="text-muted-foreground">{t("tmdbImportUpdater.localVersion")}:</div>
                     <div className="flex items-center space-x-1 mt-1">
                       <Calendar className="h-3 w-3 text-gray-400" />
-                      <span className="text-gray-800 dark:text-gray-200">
+                      <span className="text-foreground">
                         {formatDate(versionInfo.local.commitDate)}
                       </span>
                     </div>
@@ -426,15 +426,15 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                  <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <div className="h-4 w-4 bg-gray-200 dark:bg-muted rounded animate-pulse" />
+                  <div className="h-4 w-16 bg-gray-200 dark:bg-muted rounded animate-pulse" />
                 </div>
-                <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-5 w-16 bg-gray-200 dark:bg-muted rounded animate-pulse" />
               </div>
               <div className="space-y-2 pl-6">
-                <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-3 w-24 bg-gray-200 dark:bg-muted rounded animate-pulse" />
+                <div className="h-4 w-32 bg-gray-200 dark:bg-muted rounded animate-pulse" />
+                <div className="h-3 w-full bg-gray-200 dark:bg-muted rounded animate-pulse" />
               </div>
             </div>
           ) : null}
@@ -454,7 +454,7 @@ export default function TMDBImportUpdater({ onPathUpdate }: TMDBImportUpdaterPro
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-muted-foreground">
                     {!versionInfo.isInstalled ? (
                       <span className="flex items-center">
                         <AlertCircle className="h-4 w-4 mr-1 text-orange-500" />

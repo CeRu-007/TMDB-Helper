@@ -71,7 +71,7 @@ export function SummaryStyleTab({
       <div>
         <h3 className="text-sm font-medium mb-3">{t("summaryStyle.selectSummaryStyle")}</h3>
         <div className="space-y-2 mb-4">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {isImitateSelected
               ? t("summaryStyle.imitateMode")
               : t("summaryStyle.multiStyleMode")
@@ -89,10 +89,10 @@ export function SummaryStyleTab({
                 key={style.id}
                     className={`group relative rounded-xl border transition-all duration-200 overflow-hidden ${
                       isDisabled
-                        ? "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-50 cursor-not-allowed"
+                        ? "border-border bg-muted/50 opacity-50 cursor-not-allowed"
                         : isSelected
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-lg ring-2 ring-blue-500/20 cursor-pointer"
-                        : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md hover:bg-blue-50/50 dark:hover:bg-blue-950/10 cursor-pointer"
+                        ? "border-primary bg-primary/10 shadow-lg ring-2 ring-primary/20 cursor-pointer"
+                        : "border-border bg-card hover:border-primary/50 hover:shadow-md hover:bg-primary/5 cursor-pointer"
                     }`}
                     onClick={() => !isDisabled && handleStyleToggle(style.id)}
                   >
@@ -110,20 +110,20 @@ export function SummaryStyleTab({
                       <div className="flex items-start space-x-3 mb-3">
                         <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
                           isDisabled
-                            ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
+                            ? "bg-muted text-muted-foreground"
                             : isSelected
                             ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                            : "bg-muted text-muted-foreground"
                         }`}>
                           {style.icon}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className={`font-semibold text-sm leading-tight ${
                             isDisabled
-                              ? "text-gray-400 dark:text-gray-500"
+                              ? "text-muted-foreground"
                               : isSelected
                               ? "text-blue-900 dark:text-blue-100"
-                              : "text-gray-900 dark:text-gray-100"
+                              : "text-foreground"
                           }`}>
                             {style.name}
                           </h4>
@@ -133,10 +133,10 @@ export function SummaryStyleTab({
                       {/* 描述文字 */}
                       <p className={`text-xs leading-relaxed ${
                         isDisabled
-                          ? "text-gray-400 dark:text-gray-500"
+                          ? "text-muted-foreground"
                           : isSelected
                           ? "text-blue-700 dark:text-blue-300"
-                          : "text-gray-600 dark:text-gray-400"
+                          : "text-muted-foreground"
                       }`}>
                         {style.description}
                       </p>

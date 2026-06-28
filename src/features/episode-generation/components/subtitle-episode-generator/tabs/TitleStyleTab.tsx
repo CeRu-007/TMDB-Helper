@@ -34,7 +34,7 @@ export function TitleStyleTab({
       <div>
         <h3 className="text-sm font-medium mb-3">{t("titleStyle.selectTitleStyle")}</h3>
         <div className="space-y-2 mb-4">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {t("titleStyle.selectTitleStyleDesc")}
           </p>
         </div>
@@ -48,7 +48,7 @@ export function TitleStyleTab({
                 className={`group relative rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden ${
                   isSelected
                     ? "border-green-500 bg-green-50 dark:bg-green-950/20 shadow-lg ring-2 ring-green-500/20"
-                    : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-green-300 dark:hover:border-green-600 hover:shadow-md hover:bg-green-50/50 dark:hover:bg-green-950/10"
+                    : "border-border bg-card hover:border-green-300 dark:hover:border-green-600 hover:shadow-md hover:bg-green-50/50 dark:hover:bg-green-950/10"
                 }`}
                 onClick={() => handleTitleStyleToggle(style.id)}
               >
@@ -67,7 +67,7 @@ export function TitleStyleTab({
                     <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
                       isSelected
                         ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                        : "bg-muted text-muted-foreground"
                     }`}>
                       {style.icon}
                     </div>
@@ -75,7 +75,7 @@ export function TitleStyleTab({
                       <h4 className={`font-semibold text-sm leading-tight ${
                         isSelected
                           ? "text-green-900 dark:text-green-100"
-                          : "text-gray-900 dark:text-gray-100"
+                          : "text-foreground"
                       }`}>
                         {style.name}
                       </h4>
@@ -86,7 +86,7 @@ export function TitleStyleTab({
                   <p className={`text-xs leading-relaxed ${
                     isSelected
                       ? "text-green-700 dark:text-green-300"
-                      : "text-gray-600 dark:text-gray-400"
+                      : "text-muted-foreground"
                   }`}>
                     {style.description}
                   </p>

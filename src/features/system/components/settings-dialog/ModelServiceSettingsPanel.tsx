@@ -552,18 +552,18 @@ export default function ModelServiceSettingsPanel({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">{t("modelServicePanel.title")}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           {t("modelServicePanel.description")}
         </p>
       </div>
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="border-b border-border">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setModelServiceTab("providers")}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${modelServiceTab === "providers"
               ? "border-blue-500 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-muted-foreground dark:hover:text-muted-foreground"
               }`}
           >
             {t("modelServicePanel.tabProviders")}
@@ -572,7 +572,7 @@ export default function ModelServiceSettingsPanel({
             onClick={() => setModelServiceTab("models")}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${modelServiceTab === "models"
               ? "border-blue-500 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-muted-foreground dark:hover:text-muted-foreground"
               }`}
           >
             {t("modelServicePanel.tabModels")}
@@ -581,7 +581,7 @@ export default function ModelServiceSettingsPanel({
             onClick={() => setModelServiceTab("scenarios")}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${modelServiceTab === "scenarios"
               ? "border-blue-500 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-muted-foreground dark:hover:text-muted-foreground"
               }`}
           >
             {t("modelServicePanel.tabScenarios")}
@@ -654,7 +654,7 @@ export default function ModelServiceSettingsPanel({
                     <Input
                       value="https://api.siliconflow.cn/v1"
                       disabled
-                      className="bg-gray-50 dark:bg-gray-900"
+                      className="bg-card"
                     />
                   </div>
                 </div>
@@ -714,7 +714,7 @@ export default function ModelServiceSettingsPanel({
                     <Input
                       value="https://api-inference.modelscope.cn/v1"
                       disabled
-                      className="bg-gray-50 dark:bg-gray-900"
+                      className="bg-card"
                     />
                   </div>
                 </div>
@@ -774,7 +774,7 @@ export default function ModelServiceSettingsPanel({
                     <Input
                       value="https://open.bigmodel.cn/api/paas/v4"
                       disabled
-                      className="bg-gray-50 dark:bg-gray-900"
+                      className="bg-card"
                     />
                   </div>
                 </div>
@@ -1000,8 +1000,8 @@ export default function ModelServiceSettingsPanel({
                         key={index}
                         className={`p-3 border rounded flex items-center justify-between transition-colors ${
                           isAlreadyConfigured
-                            ? 'bg-gray-50 dark:bg-gray-900 opacity-60'
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-900'
+                            ? 'bg-card opacity-60'
+                            : 'hover:bg-gray-50 dark:hover:bg-background'
                         }`}
                       >
                         <div className="flex-1">
@@ -1176,11 +1176,11 @@ export default function ModelServiceSettingsPanel({
                     </div>
                     
                     {isExpanded && (
-                      <div className="border-t p-4 bg-gray-50 dark:bg-gray-900/50 space-y-6">
+                      <div className="border-t p-4 bg-gray-50 bg-muted/50 space-y-6">
                         <div>
                           <h5 className="font-medium text-sm mb-3">{t("modelServicePanel.selectModel")}</h5>
                           {compatibleModels.length === 0 ? (
-                            <div className="p-4 text-sm text-gray-500 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                            <div className="p-4 text-sm text-gray-500 bg-muted rounded-lg">
                               {t("modelServicePanel.noCompatibleModels")}
                             </div>
                           ) : (
@@ -1196,7 +1196,7 @@ export default function ModelServiceSettingsPanel({
                                     className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
                                       isSelected
                                         ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20'
-                                        : 'border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        : 'border-gray-200 hover:bg-accent'
                                     }`}
                                     onClick={() => handleModelToggle(scenario.type, model.id, !isSelected)}
                                   >

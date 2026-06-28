@@ -53,7 +53,7 @@ export default function SecuritySettingsPanel({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">{t("menu.security")}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           {t("securityPanel.securityDesc")}
         </p>
       </div>
@@ -132,7 +132,7 @@ export default function SecuritySettingsPanel({
             {passwordForm.newPassword && (
               <div className="space-y-2 mt-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-gray-200 dark:bg-muted rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${strengthColor[passwordStrength.strength]} ${strengthWidth[passwordStrength.strength]}`}
                     />
@@ -146,12 +146,12 @@ export default function SecuritySettingsPanel({
                       {passwordStrength.checks[key] ? (
                         <Check className="h-3 w-3 text-green-500 shrink-0" />
                       ) : (
-                        <X className="h-3 w-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                        <X className="h-3 w-3 text-muted-foreground shrink-0" />
                       )}
                       <span className={`text-xs ${
                         passwordStrength.checks[key]
                           ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-400 dark:text-gray-500'
+                          : 'text-muted-foreground'
                       }`}>
                         {label}
                       </span>

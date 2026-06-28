@@ -8,13 +8,12 @@ import { formatUserDateTime } from "@/lib/utils"
 import { useAuth } from "@/shared/components/auth-provider"
 import { useIsClient } from "@/lib/hooks/use-is-client"
 import { useData } from "@/shared/components/client-data-provider"
-import { useTheme } from "next-themes"
+
 import {
   User,
   BarChart3,
   Download,
   Upload,
-  Palette,
   LogOut,
   Edit3,
   Calendar,
@@ -337,7 +336,7 @@ export function UserAvatar({
 
   if (isLoading || !userInfo) {
     return (
-      <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+      <div className="w-8 h-8 bg-gray-200 dark:bg-muted rounded-full animate-pulse"></div>
     )
   }
 
@@ -347,7 +346,7 @@ export function UserAvatar({
         ref={buttonRef}
         data-user-avatar-button="true"
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 transition-colors focus:outline-none"
+        className="flex items-center space-x-2 p-1 rounded-lg hover:bg-accent focus:bg-gray-100 dark:focus:bg-card transition-colors focus:outline-none"
         title={`${userInfo.displayName} (${userInfo.userId.substring(5, 11)})`}
         aria-expanded={showDropdown}
         aria-haspopup="true"
@@ -355,9 +354,9 @@ export function UserAvatar({
         <UserAvatarImage
           src={userInfo.avatarUrl}
           displayName={userInfo.displayName}
-          className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+          className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-border"
         />
-        <span className={`text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] truncate ${hideNameOnMobile ? 'hidden md:inline' : ''}`}>
+        <span className={`text-sm font-medium text-foreground max-w-[100px] truncate ${hideNameOnMobile ? 'hidden md:inline' : ''}`}>
           {userInfo.displayName}
         </span>
         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''} ${hideNameOnMobile ? 'hidden md:block' : ''}`} />
@@ -393,7 +392,6 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
     const { toast } = useToast()
     const { userInfo, updateDisplayName, resetUser } = useUser()
     const { items } = useData()
-    const { theme, setTheme } = useTheme()
     const { logout } = useAuth()
     const [showProfileEdit, setShowProfileEdit] = useState(false)
     const [showDataStats, setShowDataStats] = useState(false)
@@ -478,10 +476,6 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
       onClose() // 关闭用户下拉菜单
     }
 
-    const handleThemeToggle = () => {
-      setTheme(theme === 'dark' ? 'light' : 'dark')
-    }
-
     const handleLanguageChange = async (langCode: string) => {
       await changeLanguage(langCode)
       setCurrentLanguage(langCode)
@@ -517,7 +511,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
       marginTop: '8px'
     }
 
-    const containerClasses = "w-80 bg-white dark:bg-gray-900 rounded-lg shadow-xl border dark:border-gray-700 py-2 animate-in slide-in-from-top-2 duration-200"
+    const containerClasses = "w-80 bg-card rounded-lg shadow-xl border dark:border-border py-2 animate-in slide-in-from-top-2 duration-200"
 
     const menuContent = (
       <div
@@ -534,22 +528,22 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
         }}
       >
         {/* 箭头指示器 */}
-        <div className="absolute -top-2 right-4 w-4 h-4 bg-white dark:bg-gray-900 border-l border-t dark:border-gray-700 rotate-45"></div>
+        <div className="absolute -top-2 right-4 w-4 h-4 bg-card border-l border-t dark:border-border rotate-45"></div>
 
         {/* 用户信息头部 */}
-        <div className="px-4 py-3 border-b dark:border-gray-700">
+        <div className="px-4 py-3 border-b dark:border-border">
           <div className="flex items-center space-x-3">
             <UserAvatarImage
               src={userInfo.avatarUrl}
               displayName={userInfo.displayName}
-              className="w-12 h-12 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+              className="w-12 h-12 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-border"
               fallbackClassName="text-lg font-medium shadow-sm"
             />
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              <h3 className="text-sm font-medium text-foreground truncate">
                 {userInfo.displayName}
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              <p className="text-xs text-muted-foreground truncate">
                 ID: {userInfo.userId.substring(5, 11)}
               </p>
             </div>
@@ -561,7 +555,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
           {/* 个人资料 */}
           <button
             onClick={() => setShowProfileEdit(!showProfileEdit)}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
           >
             <User className="w-4 h-4 mr-3" />
             {t("profile", { ns: "user" })}
@@ -579,7 +573,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
           {/* 数据统计 */}
           <button
             onClick={() => setShowDataStats(!showDataStats)}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
           >
             <BarChart3 className="w-4 h-4 mr-3" />
             {t("dataStats", { ns: "user" })}
@@ -597,7 +591,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
           {onShowDashboard && (
             <button
               onClick={onShowDashboard}
-              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
             >
               <TrendingUp className="w-4 h-4 mr-3" />
               {t("title", { ns: "dashboard" })}
@@ -605,11 +599,11 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
           )}
         </div>
 
-        <div className="border-t dark:border-gray-700 py-1">
+        <div className="border-t dark:border-border py-1">
           {/* 导出数据 */}
           <button
             onClick={handleExportData}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
           >
             <Download className="w-4 h-4 mr-3" />
             {t("exportData", { ns: "user" })}
@@ -618,25 +612,16 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
           {/* 导入数据 */}
           <button
             onClick={handleImportData}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
           >
             <Upload className="w-4 h-4 mr-3" />
             {t("importData", { ns: "user" })}
           </button>
 
-          {/* 主题切换 */}
-          <button
-            onClick={handleThemeToggle}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Palette className="w-4 h-4 mr-3" />
-            {t("switchTheme", { ns: "user" })} ({theme === 'dark' ? t("switchThemeDark", { ns: "user" }) : t("switchThemeLight", { ns: "user" })})
-          </button>
-
           {/* 语言切换 */}
           <button
             onClick={() => setShowLanguageSelect(!showLanguageSelect)}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
           >
             <Globe className="w-4 h-4 mr-3" />
             {t("language", { ns: "settings" })}: {getDisplayLanguage()}
@@ -644,7 +629,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
           </button>
 
           {showLanguageSelect && (
-            <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-500 mx-4 mb-2 rounded">
+            <div className="px-4 py-2 bg-gray-50 bg-muted/50 border-l-2 border-blue-500 mx-4 mb-2 rounded">
               <div className="space-y-1">
                 {SUPPORTED_LANGUAGES.map((lang) => (
                   <button
@@ -653,7 +638,7 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
                     className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded transition-colors ${
                       currentLanguage === lang.code
                         ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        : "text-foreground hover:bg-accent"
                     }`}
                   >
                     <span>{lang.nativeName}</span>
@@ -668,28 +653,28 @@ const UserDropdownMenu = React.forwardRef<HTMLDivElement, {
 
         </div>
 
-        <div className="border-t dark:border-gray-700 py-1">
+        <div className="border-t dark:border-border py-1">
           {/* 日志管理 */}
           <button
             onClick={() => {
               onClose()
               window.dispatchEvent(new CustomEvent('navigate-to-logs'))
             }}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
           >
             <ScrollText className="w-4 h-4 mr-3" />
             {t("logsManagement", { ns: "common" })}
           </button>
         </div>
 
-        <div className="border-t dark:border-gray-700 py-1">
+        <div className="border-t dark:border-border py-1">
           {/* 登出 */}
           <button
             onClick={() => {
               onClose()
               logout()
             }}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
           >
             <LogOut className="w-4 h-4 mr-3" />
             {t("logout", { ns: "user" })}
@@ -801,7 +786,7 @@ function ProfileEditSection({
   }
 
   return (
-    <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-l-2 border-blue-500 mx-4 mb-2 rounded">
+    <div className="px-4 py-3 bg-gray-50 bg-muted/50 border-l-2 border-blue-500 mx-4 mb-2 rounded">
       <div className="space-y-3">
         {/* 头像设置区域 */}
         <div className="flex items-center space-x-3">
@@ -809,8 +794,8 @@ function ProfileEditSection({
             <UserAvatarImage
               src={isEditingAvatar && newAvatarUrl ? newAvatarUrl : userInfo.avatarUrl}
               displayName={userInfo.displayName}
-              className="w-10 h-10 rounded-full shadow-sm ring-2 ring-white dark:ring-gray-800"
-              fallbackClassName="text-sm font-medium shadow-sm ring-2 ring-white dark:ring-gray-800"
+              className="w-10 h-10 rounded-full shadow-sm ring-2 ring-white dark:ring-border"
+              fallbackClassName="text-sm font-medium shadow-sm ring-2 ring-white dark:ring-border"
               onError={() => {
                 if (isEditingAvatar) {
                   setAvatarSaveError(t('invalidUrl', { ns: 'user' }))
@@ -838,16 +823,16 @@ function ProfileEditSection({
                     type="url"
                     value={newAvatarUrl}
                     onChange={(e) => setNewAvatarUrl(e.target.value)}
-                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-muted dark:text-foreground"
                     placeholder={t('inputAvatarUrl', { ns: 'user' })}
                     onKeyPress={(e) => e.key === 'Enter' && handleAvatarSave()}
                   />
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-muted-foreground">
                     {t('avatarUrlHelp', { ns: 'user' })}
                   </div>
                   {/* 预设头像选择 */}
                   <div className="flex flex-wrap gap-1 mt-2">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 w-full mb-1">{t('quickSelect', { ns: 'user' })}：</div>
+                    <div className="text-xs text-muted-foreground w-full mb-1">{t('quickSelect', { ns: 'user' })}：</div>
                     {[
                       'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
                       'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
@@ -858,7 +843,7 @@ function ProfileEditSection({
                       <button
                         key={index}
                         onClick={() => setNewAvatarUrl(presetUrl)}
-                        className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600 hover:border-blue-500 transition-colors overflow-hidden"
+                        className="w-6 h-6 rounded-full border border-gray-300 dark:border-border hover:border-blue-500 transition-colors overflow-hidden"
                         title={t('clickToUseAvatar', { ns: 'user' })}
                       >
                         <img
@@ -925,8 +910,8 @@ function ProfileEditSection({
             ) : (
               <div className="flex items-center justify-between">
                 <div className="text-xs">
-                  <div className="text-gray-600 dark:text-gray-400">{t('avatar', { ns: 'user' })}</div>
-                  <div className="text-gray-500 dark:text-gray-500">
+                  <div className="text-muted-foreground">{t('avatar', { ns: 'user' })}</div>
+                  <div className="text-muted-foreground">
                     {userInfo.avatarUrl ? t('customAvatar', { ns: 'user' }) : t('defaultAvatar', { ns: 'user' })}
                   </div>
                 </div>
@@ -948,15 +933,15 @@ function ProfileEditSection({
         </div>
 
         {/* 显示名称设置区域 */}
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+        <div className="border-t border-border pt-3">
           {isEditing ? (
             <div className="space-y-2">
-              <label className="text-xs text-gray-600 dark:text-gray-400">{t('displayName', { ns: 'user' })}</label>
+              <label className="text-xs text-muted-foreground">{t('displayName', { ns: 'user' })}</label>
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-muted dark:text-foreground"
                 placeholder={t('enterDisplayName', { ns: 'user' })}
                 onKeyPress={(e) => e.key === 'Enter' && handleSave()}
                 autoFocus
@@ -982,9 +967,9 @@ function ProfileEditSection({
           ) : (
             <div className="flex items-center justify-between">
               <div className="text-xs">
-                <div className="text-gray-600 dark:text-gray-400">{t('displayName', { ns: 'user' })}</div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">{userInfo.displayName}</div>
-                <div className="text-gray-500 dark:text-gray-400">{t('createdAt', { ns: 'user' })} {formatUserDateTime(userInfo.createdAt)}</div>
+                <div className="text-muted-foreground">{t('displayName', { ns: 'user' })}</div>
+                <div className="font-medium text-foreground">{userInfo.displayName}</div>
+                <div className="text-muted-foreground">{t('createdAt', { ns: 'user' })} {formatUserDateTime(userInfo.createdAt)}</div>
               </div>
               <button
                 onClick={() => setIsEditing(true)}
@@ -1024,38 +1009,38 @@ function DataStatsSection({
   }
 
   return (
-    <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-l-2 border-green-500 mx-4 mb-2 rounded">
+    <div className="px-4 py-2 bg-gray-50 bg-muted/50 border-l-2 border-green-500 mx-4 mb-2 rounded">
       <div className="grid grid-cols-2 gap-3 text-xs">
         <div className="flex items-center space-x-2">
           <Database className="w-3 h-3 text-blue-500" />
           <div>
-            <div className="font-medium text-gray-900 dark:text-gray-100">{items.length}</div>
-            <div className="text-gray-500 dark:text-gray-400">{t("itemCount", { ns: "user" })}</div>
+            <div className="font-medium text-foreground">{items.length}</div>
+            <div className="text-muted-foreground">{t("itemCount", { ns: "user" })}</div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <Calendar className="w-3 h-3 text-green-500" />
           <div>
-            <div className="font-medium text-gray-900 dark:text-gray-100">{daysSinceCreation}</div>
-            <div className="text-gray-500 dark:text-gray-400">{t("usageDays", { ns: "user" })}</div>
+            <div className="font-medium text-foreground">{daysSinceCreation}</div>
+            <div className="text-muted-foreground">{t("usageDays", { ns: "user" })}</div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <User className="w-3 h-3 text-purple-500" />
           <div>
-            <div className="font-medium text-gray-900 dark:text-gray-100">{userInfo.loginCount}</div>
-            <div className="text-gray-500 dark:text-gray-400">{t("loginCount", { ns: "user" })}</div>
+            <div className="font-medium text-foreground">{userInfo.loginCount}</div>
+            <div className="text-muted-foreground">{t("loginCount", { ns: "user" })}</div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <BarChart3 className="w-3 h-3 text-orange-500" />
           <div>
-            <div className="font-medium text-gray-900 dark:text-gray-100">{formatUsageTime(userInfo.totalUsageTime)}</div>
-            <div className="text-gray-500 dark:text-gray-400">{t("usageTime", { ns: "user" })}</div>
+            <div className="font-medium text-foreground">{formatUsageTime(userInfo.totalUsageTime)}</div>
+            <div className="text-muted-foreground">{t("usageTime", { ns: "user" })}</div>
           </div>
         </div>
       </div>
-      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-2 text-xs text-muted-foreground">
         <div>{t("lastActive", { ns: "user" })}: {formatUserDateTime(userInfo.lastActiveAt)}</div>
       </div>
     </div>

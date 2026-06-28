@@ -119,7 +119,7 @@ export function MediaNewsSection({
       {/* 标题和控制栏 */}
       <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-6">
         <div className="flex items-center space-x-3">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="text-xl font-semibold text-foreground">
             {title}
           </h2>
           {lastUpdated && (
@@ -141,7 +141,7 @@ export function MediaNewsSection({
                 className={`flex-shrink-0 snap-start px-2.5 py-1.5 rounded-full text-xs whitespace-nowrap min-h-[36px] flex items-center gap-1 transition-colors ${
                   selectedRegion === region.id
                     ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
                 }`}
               >
                 <span>{region.icon}</span>
@@ -214,7 +214,7 @@ export function MediaNewsSection({
       {loading && !error && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          <span className="text-gray-600 dark:text-gray-400">{t("mediaNewsSection.loading")}</span>
+          <span className="text-muted-foreground">{t("mediaNewsSection.loading")}</span>
         </div>
       )}
 
@@ -226,7 +226,7 @@ export function MediaNewsSection({
               <CardContent className="p-3 md:p-4">
                 <div className="space-y-2">
                   {/* 海报 */}
-                  <div className="aspect-[2/3] relative bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden max-w-[120px] sm:max-w-full mx-auto sm:mx-0">
+                  <div className="aspect-[2/3] relative bg-muted rounded-md overflow-hidden max-w-[120px] sm:max-w-full mx-auto sm:mx-0">
                     {item.posterUrl ? (
                       <Image
                         src={item.posterUrl}
@@ -236,7 +236,7 @@ export function MediaNewsSection({
                         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                         {getMediaTypeIcon(item.mediaType)}
                       </div>
                     )}
@@ -261,18 +261,18 @@ export function MediaNewsSection({
 
                   {/* 标题 */}
                   <div className="space-y-1">
-                    <h3 className="font-medium text-sm line-clamp-2 text-gray-900 dark:text-gray-100">
+                    <h3 className="font-medium text-sm line-clamp-2 text-foreground">
                       {item.title}
                     </h3>
                     {item.originalTitle && item.originalTitle !== item.title && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                      <p className="text-xs text-muted-foreground line-clamp-1">
                         {item.originalTitle}
                       </p>
                     )}
                   </div>
 
                   
-                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{formatDate(item.releaseDate)}</span>
                     <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
@@ -286,10 +286,10 @@ export function MediaNewsSection({
       {/* 空状态 */}
       {!loading && !error && items.length === 0 && (
         <div className="text-center py-8">
-          <div className="text-gray-400 dark:text-gray-600 mb-2">
+          <div className="text-muted-foreground mb-2">
             {type === 'upcoming' ? <Calendar className="h-8 w-8 mx-auto" /> : <Film className="h-8 w-8 mx-auto" />}
           </div>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             {type === 'upcoming' ? t("mediaNewsSection.noContentUpcoming") : t("mediaNewsSection.noContentRecent")}
           </p>
         </div>

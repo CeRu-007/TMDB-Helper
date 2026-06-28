@@ -3,7 +3,7 @@ import { Skeleton } from "@/shared/components/ui/skeleton"
 export function MediaCardSkeleton() {
   return (
     <div className="group relative">
-      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-800">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted">
         <Skeleton className="absolute inset-0 h-full w-full" />
       </div>
 

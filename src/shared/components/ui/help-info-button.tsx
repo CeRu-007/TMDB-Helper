@@ -98,16 +98,16 @@ export function HelpInfoButton({
           className={cn(
             "fixed z-[10000] w-72 rounded-md border shadow-md",
             "bg-white text-gray-900 border-gray-200",
-            "dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
+            "dark:bg-card dark:text-foreground dark:border-border"
           )}
           style={{ top: pos.top, left: pos.left, transform: transform[side] }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="px-4 pt-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-4 pt-3 pb-2 border-b border-border">
             <p className="text-sm font-medium">{t("ui.helpInfo.title")}</p>
           </div>
           <div className="px-4 pb-3 pt-2">
-            <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">{content}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">{content}</p>
           </div>
         </div>
       )}

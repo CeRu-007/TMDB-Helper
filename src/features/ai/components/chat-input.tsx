@@ -85,12 +85,12 @@ export function ChatInput({
   const { t } = useTranslation('ai-chat')
 
   return (
-    <div className="bg-white dark:bg-gray-950 p-3 md:p-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-6 overflow-hidden">
+    <div className="bg-background p-3 md:p-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-6 overflow-hidden">
       <div className="max-w-4xl mx-auto">
         <div className="relative">
           <div
-            className={`bg-white dark:bg-gray-900 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm min-h-[120px] transition-all duration-200 ${
-              isDragOver ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[1.02]' : ''
+            className={`bg-card rounded-2xl border border-border shadow-sm min-h-[120px] transition-all duration-200 ${
+              isDragOver ? 'border-primary bg-primary/10 scale-[1.02]' : ''
             }`}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
@@ -99,31 +99,31 @@ export function ChatInput({
             <div className="px-6 pt-4">
               {(uploadedFileName || isUploading) && (
                 <div className="mb-3">
-                  <div className="px-4 py-2 text-left bg-[#f7f7f7] dark:bg-[#1e1e1e] border border-[#e0e0e0] dark:border-[#3a3a3a] rounded-xl inline-flex items-center self-start max-w-full">
+                  <div className="px-4 py-2 text-left bg-muted border border-border rounded-xl inline-flex items-center self-start max-w-full">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Paperclip className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                      <Paperclip className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                       {isUploading ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <span className="text-sm font-medium text-foreground">
                             {t('uploading')}: {uploadedFileName}
                           </span>
-                          <div className="w-24 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-blue-500 transition-all duration-300"
+                          <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary transition-all duration-300"
                               style={{ width: `${uploadProgress}%` }}
                             />
                           </div>
-                          <span className="text-xs text-gray-500">{uploadProgress}%</span>
+                          <span className="text-xs text-muted-foreground">{uploadProgress}%</span>
                         </div>
                       ) : (
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                        <span className="text-sm font-medium text-foreground truncate">
                           {uploadedFileName}
                         </span>
                       )}
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-700 ml-2 flex-shrink-0"
+                        className="h-6 w-6 p-0 hover:bg-accent ml-2 flex-shrink-0"
                         onClick={onCancelUpload}
                       >
                         <X className="w-3 h-3 text-gray-500" />
@@ -134,7 +134,7 @@ export function ChatInput({
                   {!isUploading && uploadedFileContent && (
                     <div className="flex flex-wrap gap-2 mt-3">
                       <button
-                        className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium"
+                        className="px-4 py-2 bg-muted hover:bg-accent border border-border rounded-xl text-sm font-medium"
                         onClick={() => {
                           if (uploadedFileContent && uploadedFileName) {
                             onSubtitleTask('generateSummary', uploadedFileContent, uploadedFileName)
@@ -145,7 +145,7 @@ export function ChatInput({
                       </button>
 
                       <button
-                        className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium"
+                        className="px-4 py-2 bg-muted hover:bg-accent border border-border rounded-xl text-sm font-medium"
                         onClick={() => {
                           if (uploadedFileContent && uploadedFileName) {
                             onSubtitleTask('analyzePlot', uploadedFileContent, uploadedFileName)
@@ -175,13 +175,13 @@ export function ChatInput({
               />
 
               {isDragOver && (
-                <div className="absolute inset-0 flex items-center justify-center bg-blue-500/10 dark:bg-blue-500/20 rounded-2xl pointer-events-none">
+                <div className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-2xl pointer-events-none">
                   <div className="text-center">
-                    <Upload className="w-12 h-12 text-blue-500 mx-auto mb-2" />
-                    <p className="text-blue-600 dark:text-blue-400 font-medium">
+                    <Upload className="w-12 h-12 text-primary mx-auto mb-2" />
+                    <p className="text-primary font-medium">
                       {t('dragSubtitleFile')}
                     </p>
-                    <p className="text-blue-500 dark:text-blue-400 text-sm mt-1">
+                    <p className="text-primary/70 text-sm mt-1">
                       {t('supportedFormats', { formats: SUPPORTED_SUBTITLE_FORMATS.join(', ') })}
                     </p>
                   </div>
@@ -194,7 +194,7 @@ export function ChatInput({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="min-w-[44px] min-h-[44px] h-10 w-10 p-0 flex-shrink-0 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full"
+                  className="min-w-[44px] min-h-[44px] h-10 w-10 p-0 flex-shrink-0 hover:bg-gray-200 dark:hover:bg-accent rounded-full"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
                 >
@@ -217,7 +217,7 @@ export function ChatInput({
                     onValueChange={onModelChange}
                     disabled={scenarioModels.availableModels.length === 0}
                   >
-                    <SelectTrigger className="h-10 px-3 py-2 border-none bg-transparent hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full data-[placeholder]:text-gray-500 focus:ring-0 focus:ring-offset-0 [&>svg]:w-4 [&>svg]:h-4 flex items-center gap-1 text-sm [&>svg]:text-gray-500">
+                    <SelectTrigger className="h-10 px-3 py-2 border-none bg-transparent hover:bg-gray-200 dark:hover:bg-accent rounded-full data-[placeholder]:text-gray-500 focus:ring-0 focus:ring-offset-0 [&>svg]:w-4 [&>svg]:h-4 flex items-center gap-1 text-sm [&>svg]:text-gray-500">
                       <span className="font-medium truncate max-w-[120px]">
                         {scenarioModels.availableModels.find(m => m.id === selectedModel)?.displayName || t("selectModel")}
                       </span>
@@ -253,10 +253,10 @@ export function ChatInput({
                 className={cn(
                   "min-w-[44px] min-h-[44px] h-10 w-10 p-0 flex-shrink-0 rounded-full transition-all duration-200 relative z-10",
                   isLoading
-                    ? "hover:bg-red-50 dark:hover:bg-red-950/30 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                    ? "hover:bg-red-50 dark:hover:bg-red-950/30 text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
                     : (inputValue.trim() || uploadedFileContent)
-                    ? "hover:bg-blue-50 dark:hover:bg-blue-950/30 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-                    : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                    ? "hover:bg-blue-50 dark:hover:bg-blue-950/30 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
+                    : "text-muted-foreground cursor-not-allowed"
                 )}
                 onClick={(e) => {
                   e.stopPropagation();

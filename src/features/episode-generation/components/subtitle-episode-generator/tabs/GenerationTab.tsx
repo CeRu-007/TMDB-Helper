@@ -79,16 +79,16 @@ export function GenerationTab({
     <div className="space-y-6">
       <div>
         <Label className="text-sm font-medium">{t("generationTab.aiModelSelect")}</Label>
-        <p className="text-xs text-gray-500 mt-1 mb-3">
+        <p className="text-xs text-muted-foreground mt-1 mb-3">
           {t("generationTab.aiModelSelectDesc")}
         </p>
         {scenarioModels.isLoading ? (
-          <div className="flex items-center justify-center p-4 border rounded-lg">
+          <div className="flex items-center justify-center p-4 border border-border rounded-lg">
             <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            <span className="text-sm text-gray-500">{t("generationTab.loadingModels")}</span>
+            <span className="text-sm text-muted-foreground">{t("generationTab.loadingModels")}</span>
           </div>
         ) : scenarioModels.error ? (
-          <div className="flex items-center justify-center p-4 border rounded-lg">
+          <div className="flex items-center justify-center p-4 border border-border rounded-lg">
             <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
             <span className="text-sm text-red-500">{t("generationTab.loadFailed", { error: scenarioModels.error })}</span>
           </div>
@@ -103,7 +103,7 @@ export function GenerationTab({
             </SelectTrigger>
             <SelectContent className="max-h-[300px] overflow-y-auto">
               {scenarioModels.availableModels.length === 0 ? (
-                <div className="p-2 text-sm text-gray-500">
+                <div className="p-2 text-sm text-muted-foreground">
                   {t("generationTab.noModels")}
                 </div>
               ) : (
@@ -125,12 +125,12 @@ export function GenerationTab({
 
       <div>
         <Label className="text-sm font-medium">{t("generationTab.summaryLength")}</Label>
-        <p className="text-xs text-gray-500 mt-1 mb-3">
+        <p className="text-xs text-muted-foreground mt-1 mb-3">
           {t("generationTab.summaryLengthDesc")}
         </p>
         <div className="space-y-3">
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400 w-12">{t("generationTab.minLength")}</span>
+            <span className="text-sm text-muted-foreground w-12">{t("generationTab.minLength")}</span>
             <Slider
               value={[config.summaryLength[0]]}
               onValueChange={(value) => {
@@ -143,7 +143,7 @@ export function GenerationTab({
             <span className="text-sm font-medium w-12">{config.summaryLength[0]}{t("generationTab.charUnit")}</span>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400 w-12">{t("generationTab.maxLength")}</span>
+            <span className="text-sm text-muted-foreground w-12">{t("generationTab.maxLength")}</span>
             <Slider
               value={[config.summaryLength[1]]}
               onValueChange={(value) => {
@@ -160,11 +160,11 @@ export function GenerationTab({
 
       <div>
         <Label className="text-sm font-medium">{t("generationTab.temperature")}</Label>
-        <p className="text-xs text-gray-500 mt-1 mb-3">
+        <p className="text-xs text-muted-foreground mt-1 mb-3">
           {t("generationTab.temperatureDesc")}
         </p>
         <div className="flex items-center space-x-4">
-          <span className="text-sm text-gray-600 dark:text-gray-400 w-12">{t("generationTab.conservative")}</span>
+          <span className="text-sm text-muted-foreground w-12">{t("generationTab.conservative")}</span>
           <Slider
             value={[config.temperature]}
             onValueChange={(value) => {
@@ -174,7 +174,7 @@ export function GenerationTab({
             }}
             max={1.0} min={0.1} step={0.1} className="flex-1"
           />
-          <span className="text-sm text-gray-600 dark:text-gray-400 w-12">{t("generationTab.creative")}</span>
+          <span className="text-sm text-muted-foreground w-12">{t("generationTab.creative")}</span>
           <span className="text-sm font-medium w-12">{config.temperature.toFixed(1)}</span>
         </div>
       </div>
@@ -200,7 +200,7 @@ export function GenerationTab({
         <Label htmlFor="customPrompt" className="text-sm font-medium">
           {t("generationTab.customPrompt")}
         </Label>
-        <p className="text-xs text-gray-500 mt-1 mb-2">
+        <p className="text-xs text-muted-foreground mt-1 mb-2">
           {t("generationTab.customPromptDesc")}
         </p>
         <Textarea
@@ -227,10 +227,10 @@ export function GenerationTab({
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="imitateGenerateCount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label htmlFor="imitateGenerateCount" className="text-sm font-medium text-foreground">
                 {t("generationTab.generateCount")}
               </Label>
-              <p className="text-xs text-gray-500 mt-1 mb-2">
+              <p className="text-xs text-muted-foreground mt-1 mb-2">
                 {t("generationTab.generateCountDesc")}
               </p>
               <Select
@@ -258,10 +258,10 @@ export function GenerationTab({
             </div>
 
             <div>
-              <Label htmlFor="imitateSampleContent" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label htmlFor="imitateSampleContent" className="text-sm font-medium text-foreground">
                 {t("generationTab.sampleContent")}
               </Label>
-              <p className="text-xs text-gray-500 mt-1 mb-2">
+              <p className="text-xs text-muted-foreground mt-1 mb-2">
                 {t("generationTab.sampleContentDesc")}
               </p>
               <Textarea
@@ -290,10 +290,10 @@ export function GenerationTab({
               />
               <div className="flex flex-col space-y-1 mt-1">
                 <div className="flex justify-between items-center">
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     {t("generationTab.imitateHint")}
                   </p>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-muted-foreground">
                     {config.imitateConfig?.sampleContent?.length || 0}/500
                   </span>
                 </div>

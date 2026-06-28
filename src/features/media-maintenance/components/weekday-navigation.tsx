@@ -26,12 +26,12 @@ function getDayButtonClasses(isSelected: boolean, isToday: boolean): string {
   const baseClasses = "flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2"
 
   if (isSelected) {
-    return `${baseClasses} bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 ${
-      isToday ? "border-yellow-400" : "border-blue-100 dark:border-blue-900"
+    return `${baseClasses} bg-blue-100 text-blue-700 ${
+      isToday ? "border-yellow-400" : "border-blue-100"
     }`
   }
 
-  return `${baseClasses} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 ${
+  return `${baseClasses} text-muted-foreground hover:text-foreground hover:bg-accent ${
     isToday ? "border-yellow-400" : "border-transparent"
   }`
 }
@@ -77,7 +77,7 @@ export function WeekdayNavigation({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-700 sticky top-0 z-10">
+    <div className="bg-background border-b border-border sticky top-0 z-10">
       <div className="mx-auto px-6">
         <div className="flex max-md:flex-col justify-between max-md:justify-start items-center max-md:items-stretch pt-3 pb-0 gap-4 max-md:gap-2">
           <ScrollAreaPrimitive.Root className="flex-1 whitespace-nowrap overflow-hidden self-stretch">
@@ -121,7 +121,7 @@ export function WeekdayNavigation({
               orientation="horizontal"
               className="max-md:hidden flex h-3 touch-none select-none flex-col border-t border-t-transparent p-[2px] transition-colors"
             >
-              <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-gray-400/70 dark:bg-gray-500/70 hover:bg-gray-500/80 dark:hover:bg-gray-400/80" />
+              <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-muted-foreground/70 hover:bg-muted-foreground/80" />
             </ScrollAreaPrimitive.ScrollAreaScrollbar>
           </ScrollAreaPrimitive.Root>
 
@@ -132,7 +132,7 @@ export function WeekdayNavigation({
 
             {activeTab && onActiveTabChange && (
               <div className="flex items-center space-x-2" key={i18n.language}>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("status", { ns: "common" })}:</span>
+                <span className="text-sm font-medium text-foreground">{t("status", { ns: "common" })}:</span>
                 <Select value={activeTab} onValueChange={onActiveTabChange}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -157,7 +157,7 @@ export function WeekdayNavigation({
           </div>
 
           {(!activeTab || !onActiveTabChange) && (
-            <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 pb-3">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground pb-3">
               <span>
                 {selectedCategory === "all"
                   ? t("all", { ns: "common" })

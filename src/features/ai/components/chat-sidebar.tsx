@@ -40,14 +40,14 @@ function SidebarContent({
       <div className="p-3 flex items-center gap-2">
         <Button
           onClick={onToggleSidebar}
-          className="h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg flex-shrink-0"
+          className="h-10 w-10 p-0 hover:bg-accent rounded-lg flex-shrink-0"
           variant="ghost"
         >
-          <PanelLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <PanelLeft className="w-5 h-5 text-muted-foreground" />
         </Button>
         <Button
           onClick={onCreateNewChat}
-          className="flex-1 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-0 rounded-lg font-medium"
+          className="flex-1 h-10 bg-muted hover:bg-accent text-foreground border-0 rounded-lg font-medium"
           variant="outline"
         >
           <MessageSquare className="w-4 h-4 mr-2" />
@@ -63,33 +63,33 @@ function SidebarContent({
               className={cn(
                 "group relative p-3 rounded-lg cursor-pointer transition-all duration-200",
                 currentChatId === chat.id
-                  ? "bg-gray-100 dark:bg-gray-800"
-                  : "hover:bg-gray-50 dark:hover:bg-gray-900"
+                  ? "bg-muted"
+                  : "hover:bg-accent"
               )}
               onClick={() => onSwitchChat(chat.id)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0 pr-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <MessageSquare className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                    <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate" title={chat.title}>
+                    <MessageSquare className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                    <h3 className="font-medium text-sm text-foreground truncate" title={chat.title}>
                       {truncateText(chat.title, 11)}
                     </h3>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {formatChatDate(chat.updatedAt)}
                   </p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-200 dark:hover:bg-gray-700"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
                   onClick={(e) => {
                     e.stopPropagation()
                     onDeleteChat(chat.id)
                   }}
                 >
-                  <Trash2 className="w-3 h-3 text-gray-500" />
+                  <Trash2 className="w-3 h-3 text-muted-foreground" />
                 </Button>
               </div>
             </div>
@@ -97,11 +97,11 @@ function SidebarContent({
           
           {chatHistories.length === 0 && (
             <div className="p-4 text-center">
-              <MessageSquare className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
                 {t("noConversationHistory")}
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {t("startNewConversation")}
               </p>
             </div>
@@ -144,7 +144,7 @@ export function ChatSidebar({
 
   return (
     <div className={cn(
-      "bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300",
+      "bg-background border-r border-border flex flex-col transition-all duration-300",
       isSidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-64 opacity-100"
     )}>
       <SidebarContent

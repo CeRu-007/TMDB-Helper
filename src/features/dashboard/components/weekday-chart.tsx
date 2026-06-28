@@ -24,12 +24,12 @@ export function WeekdayChart({ data }: WeekdayChartProps) {
   const maxCount = Math.max(...chartData.map((d) => d.count), 1)
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-5">
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+    <div className="rounded-xl border border-border bg-muted/50 p-5">
+      <h3 className="text-sm font-medium text-foreground mb-4">
         {t('weekdayDistribution')}
       </h3>
       {maxCount === 0 ? (
-        <div className="flex items-center justify-center h-[240px] text-gray-400 text-sm">{t('noData')}</div>
+        <div className="flex items-center justify-center h-[240px] text-muted-foreground text-sm">{t('noData')}</div>
       ) : (
         <div className="h-[240px]">
           <ResponsiveContainer width="100%" height="100%">

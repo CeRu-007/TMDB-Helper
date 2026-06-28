@@ -4,32 +4,39 @@
  * Uses composite pattern to organize each settings panel
  */
 
-"use client"
+'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import packageJson from "../../../../../package.json"
-import { logger } from '@/lib/utils/logger'
-import { useRouter } from 'next/navigation'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Button } from "@/shared/components/ui/button"
-import { useToast } from "@/lib/hooks/use-toast"
-import { useAuth } from "@/shared/components/auth-provider"
-import { useModelService } from "@/lib/contexts/ModelServiceContext"
-import { ClientConfigManager } from '@/lib/utils/client-config-manager'
-import { safeJsonParse } from '@/lib/utils'
-import { ModelProvider, ModelConfig } from '@/shared/types/model-service'
-import { SettingsMenu } from "./SettingsMenu"
-import ModelServiceSettingsPanel from "./ModelServiceSettingsPanel"
-import { DELAY_2S } from '@/lib/constants/constants'
-import ToolsSettingsPanel from "./ToolsSettingsPanel"
-import VideoThumbnailSettingsPanel from "./VideoThumbnailSettingsPanel"
-import GeneralSettingsPanel from "./GeneralSettingsPanel"
-import SecuritySettingsPanel from "./SecuritySettingsPanel"
-import HelpSettingsPanel from "./HelpSettingsPanel"
-import { CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react"
-import { useTranslation } from "react-i18next"
-import { useMobile } from "@/shared/hooks/use-mobile"
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import packageJson from '../../../../../package.json';
+import { logger } from '@/lib/utils/logger';
+import { useRouter } from 'next/navigation';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/shared/components/ui/dialog';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Button } from '@/shared/components/ui/button';
+import { useToast } from '@/lib/hooks/use-toast';
+import { useAuth } from '@/shared/components/auth-provider';
+import { useModelService } from '@/lib/contexts/ModelServiceContext';
+import { ClientConfigManager } from '@/lib/utils/client-config-manager';
+import { safeJsonParse } from '@/lib/utils';
+import { ModelProvider, ModelConfig } from '@/shared/types/model-service';
+import { SettingsMenu } from './SettingsMenu';
+import ModelServiceSettingsPanel from './ModelServiceSettingsPanel';
+import { DELAY_2S } from '@/lib/constants/constants';
+import ToolsSettingsPanel from './ToolsSettingsPanel';
+import VideoThumbnailSettingsPanel from './VideoThumbnailSettingsPanel';
+import GeneralSettingsPanel from './GeneralSettingsPanel';
+import SecuritySettingsPanel from './SecuritySettingsPanel';
+import HelpSettingsPanel from './HelpSettingsPanel';
+import AppearanceSettingsPanel from './AppearanceSettingsPanel';
+import { CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useMobile } from '@/shared/hooks/use-mobile';
 
 import type {
   SettingsDialogProps,
@@ -45,8 +52,8 @@ import type {
   ToolsTabState,
   HelpTabState,
   AppInfo,
-  PasswordForm
-} from "./types"
+  PasswordForm,
+} from './types';
 
 // TMDB配置默认值
 const DEFAULT_TMDB_CONFIG: TMDBConfig = {
@@ -58,8 +65,8 @@ const DEFAULT_TMDB_CONFIG: TMDBConfig = {
   backdrop_vote_after_upload: false,
   filter_words: '',
   rename_csv_on_import: false,
-  delete_csv_after_import: false
-}
+  delete_csv_after_import: false,
+};
 
 // 辅助函数：查找内置提供商
 function findBuiltinProvider(
@@ -67,58 +74,71 @@ function findBuiltinProvider(
   id: string,
   type: string
 ) {
-  return providers.find(p => p.id === id && p.isBuiltIn) ||
-         providers.find(p => p.type === type && p.isBuiltIn)
+  return (
+    providers.find((p) => p.id === id && p.isBuiltIn) ||
+    providers.find((p) => p.type === type && p.isBuiltIn)
+  );
 }
 
-export default function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
-  const { t } = useTranslation("settings")
-  const { toast } = useToast()
-  const { changePassword } = useAuth()
-  const { updateScenario } = useModelService()
-  const router = useRouter()
+export default function SettingsDialog({
+  open,
+  onOpenChange,
+  initialSection,
+}: SettingsDialogProps) {
+  const { t } = useTranslation('settings');
+  const { toast } = useToast();
+  const { changePassword } = useAuth();
+  const { updateScenario } = useModelService();
+  const router = useRouter();
 
-  const validSections = useMemo(() => [
-    'model-service',
-    'tools',
-    'video-thumbnail',
-    'general',
-    'security',
-    'help'
-  ], [])
+  const validSections = useMemo(
+    () => [
+      'model-service',
+      'tools',
+      'video-thumbnail',
+      'general',
+      'appearance',
+      'security',
+      'help',
+    ],
+    []
+  );
 
-  const validInitialSection = useMemo(() =>
-    validSections.includes(initialSection || '') ? initialSection : 'model-service',
+  const validInitialSection = useMemo(
+    () => (validSections.includes(initialSection || '') ? initialSection : 'model-service'),
     [initialSection, validSections]
-  )
+  );
 
-  const [activeSection, setActiveSection] = useState<string>(validInitialSection)
-  const isMobile = useMobile()
-  const [showMobileMenu, setShowMobileMenu] = useState(true)
+  const [activeSection, setActiveSection] = useState<string>(validInitialSection);
+  const isMobile = useMobile();
+  const [showMobileMenu, setShowMobileMenu] = useState(true);
 
-  const handleSectionChange = useCallback((section: string) => {
-    setActiveSection(section)
-    if (isMobile) {
-      setShowMobileMenu(false)
-    }
-  }, [isMobile])
+  const handleSectionChange = useCallback(
+    (section: string) => {
+      setActiveSection(section);
+      if (isMobile) {
+        setShowMobileMenu(false);
+      }
+    },
+    [isMobile]
+  );
 
   const handleBackToMenu = useCallback(() => {
-    setShowMobileMenu(true)
-  }, [])
+    setShowMobileMenu(true);
+  }, []);
 
   useEffect(() => {
     if (validSections.includes(initialSection || '')) {
-      setActiveSection(initialSection || '')
+      setActiveSection(initialSection || '');
     }
-  }, [initialSection, validSections])
+  }, [initialSection, validSections]);
 
   // TMDB配置相关状态
-  const [tmdbImportPath, setTmdbImportPath] = useState("")
-  const [tmdbConfig, setTmdbConfig] = useState<TMDBConfig>(DEFAULT_TMDB_CONFIG)
-  const [configLoading, setConfigLoading] = useState(false)
-  const [configSaving, setConfigSaving] = useState(false)
-  const [showTmdbPassword, setShowTmdbPassword] = useState(false)
+  const [tmdbImportPath, setTmdbImportPath] = useState('');
+  const [tmdbConfig, setTmdbConfig] = useState<TMDBConfig>(DEFAULT_TMDB_CONFIG);
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configSaving, setConfigSaving] = useState(false);
+  const [showTmdbPassword, setShowTmdbPassword] = useState(false);
 
   // 通用设置状态
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>({
@@ -127,551 +147,609 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
     detailBackdropBlurEnabled: true,
     detailBackdropBlurIntensity: 'medium',
     tmdbButtonBehavior: 'detail',
-  })
+  });
 
   const [videoThumbnailSettings, setVideoThumbnailSettings] = useState<VideoThumbnailSettings>({
     startTime: 0,
     threadCount: 2,
-    outputFormat: "jpg",
+    outputFormat: 'jpg',
     thumbnailCount: 9,
     frameInterval: 30,
     keepOriginalResolution: true,
-  })
+  });
 
   // API配置状态
   const [apiSettings, setApiSettings] = useState<ApiSettings>({
     siliconFlow: {
-      apiKey: "",
+      apiKey: '',
     },
     modelScope: {
-      apiKey: "",
-      episodeGenerationModel: "Qwen/Qwen3-32B"
+      apiKey: '',
+      episodeGenerationModel: 'Qwen/Qwen3-32B',
     },
     zhipu: {
-      apiKey: "",
-      chatModel: "glm-4-flash"
-    }
-  })
-  const [showSiliconFlowApiKey, setShowSiliconFlowApiKey] = useState(false)
-  const [showModelScopeApiKey, setShowModelScopeApiKey] = useState(false)
-  const [showZhipuApiKey, setShowZhipuApiKey] = useState(false)
-  const [siliconFlowSaving, setSiliconFlowSaving] = useState(false)
-  const [modelScopeSaving, setModelScopeSaving] = useState(false)
+      apiKey: '',
+      chatModel: 'glm-4-flash',
+    },
+  });
+  const [showSiliconFlowApiKey, setShowSiliconFlowApiKey] = useState(false);
+  const [showModelScopeApiKey, setShowModelScopeApiKey] = useState(false);
+  const [showZhipuApiKey, setShowZhipuApiKey] = useState(false);
+  const [siliconFlowSaving, setSiliconFlowSaving] = useState(false);
+  const [modelScopeSaving, setModelScopeSaving] = useState(false);
 
   // 模型服务状态
-  const [modelServiceTab, setModelServiceTab] = useState<'providers' | 'models' | 'scenarios'>("providers")
-  const [modelServiceConfig, setModelServiceConfig] = useState<any>(null)
-  const [selectedProviderId, setSelectedProviderId] = useState<string>("")
-  const [showProviderDialog, setShowProviderDialog] = useState(false)
-  const [editingProvider, setEditingProvider] = useState<ModelProvider | null>(null)
+  const [modelServiceTab, setModelServiceTab] = useState<'providers' | 'models' | 'scenarios'>(
+    'providers'
+  );
+  const [modelServiceConfig, setModelServiceConfig] = useState<any>(null);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>('');
+  const [showProviderDialog, setShowProviderDialog] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<ModelProvider | null>(null);
   const [providerForm, setProviderForm] = useState<ProviderForm>({
-    name: "",
-    apiKey: "",
-    apiBaseUrl: "",
-  })
-  const [customProviders, setCustomProviders] = useState<ModelProvider[]>([])
-  const [testingConnection, setTestingConnection] = useState(false)
-  const [connectionTestResult, setConnectionTestResult] = useState<ConnectionTestResult | null>(null)
-  const [configuredModels, setConfiguredModels] = useState<ModelConfig[]>([])
-  const [showModelDialog, setShowModelDialog] = useState(false)
-  const [showAvailableModelsDialog, setShowAvailableModelsDialog] = useState(false)
-  const [availableModels, setAvailableModels] = useState<any[]>([])
-  const [loadingModels, setLoadingModels] = useState(false)
+    name: '',
+    apiKey: '',
+    apiBaseUrl: '',
+  });
+  const [customProviders, setCustomProviders] = useState<ModelProvider[]>([]);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState<ConnectionTestResult | null>(
+    null
+  );
+  const [configuredModels, setConfiguredModels] = useState<ModelConfig[]>([]);
+  const [showModelDialog, setShowModelDialog] = useState(false);
+  const [showAvailableModelsDialog, setShowAvailableModelsDialog] = useState(false);
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
   const [modelForm, setModelForm] = useState<ModelForm>({
-    modelId: "",
-    displayName: "",
-    capabilities: []
-  })
-  const [scenarioSettings, setScenarioSettings] = useState<ScenarioSettings>({})
-  const [expandedScenario, setExpandedScenario] = useState<string | null>(null)
+    modelId: '',
+    displayName: '',
+    capabilities: [],
+  });
+  const [scenarioSettings, setScenarioSettings] = useState<ScenarioSettings>({});
+  const [expandedScenario, setExpandedScenario] = useState<string | null>(null);
 
   // 工具设置状态
-  const [toolsTab, setToolsTab] = useState<'management' | 'config' | 'dependencies'>('management')
+  const [toolsTab, setToolsTab] = useState<'management' | 'config' | 'dependencies'>('management');
 
-  const [helpTab, setHelpTab] = useState<'about' | 'updates' | 'help' | 'feedback'>('about')
+  const [helpTab, setHelpTab] = useState<'about' | 'updates' | 'help' | 'feedback'>('about');
   const [appInfo] = useState<AppInfo>({
-      name: 'TMDB Helper',
-      version: packageJson.version,
-      buildDate: packageJson.buildTime || new Date().toISOString().split('T')[0]
-  })
-  
-    // 保存状态
-    const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle")
-    const [validationMessage, setValidationMessage] = useState("")
-  
-    // 账户安全状态
+    name: 'TMDB Helper',
+    version: packageJson.version,
+    buildDate: packageJson.buildTime || new Date().toISOString().split('T')[0],
+  });
+
+  // 保存状态
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [validationMessage, setValidationMessage] = useState('');
+
+  // 账户安全状态
   const [passwordForm, setPasswordForm] = useState<PasswordForm>({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: ""
-  })
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false)
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
 
   // Docker环境状态
-  const [isDockerEnv, setIsDockerEnv] = useState(false)
+  const [isDockerEnv, setIsDockerEnv] = useState(false);
 
   // 辅助函数：更新API设置
-  const updateApiSetting = useCallback((providerKey: 'siliconFlow' | 'modelScope' | 'zhipu', apiKey: string, defaultModel: string) => {
-    setApiSettings(prev => ({
-      ...prev,
-      [providerKey]: {
-        ...(prev[providerKey] || {}),
-        apiKey
-      }
-    }))
-  }, [])
+  const updateApiSetting = useCallback(
+    (providerKey: 'siliconFlow' | 'modelScope' | 'zhipu', apiKey: string, defaultModel: string) => {
+      setApiSettings((prev) => ({
+        ...prev,
+        [providerKey]: {
+          ...(prev[providerKey] || {}),
+          apiKey,
+        },
+      }));
+    },
+    []
+  );
 
   // 初始化设置
-  const initRef = useRef(false)
+  const initRef = useRef(false);
   useEffect(() => {
-    if (typeof window === "undefined" || initRef.current) return
-    initRef.current = true
+    if (typeof window === 'undefined' || initRef.current) return;
+    initRef.current = true;
 
     const initializeSettings = async () => {
       try {
         // 清除缓存
-        ClientConfigManager.clearCache()
+        ClientConfigManager.clearCache();
 
         // 检查Docker环境
-        let isDockerEnv = false
-        let dockerImportPath = ''
+        let isDockerEnv = false;
+        let dockerImportPath = '';
 
         try {
-          const dockerResponse = await fetch('/api/system/docker-config')
+          const dockerResponse = await fetch('/api/system/docker-config');
           if (dockerResponse.ok) {
-            const dockerData = await dockerResponse.json()
+            const dockerData = await dockerResponse.json();
             if (dockerData.success && dockerData.config?.isDockerEnvironment) {
-              isDockerEnv = true
-              dockerImportPath = dockerData.config.tmdbImportPath || ''
-              setIsDockerEnv(true)
+              isDockerEnv = true;
+              dockerImportPath = dockerData.config.tmdbImportPath || '';
+              setIsDockerEnv(true);
             }
           }
         } catch (error) {
-          logger.warn('Docker环境检查失败:', error)
+          logger.warn('Docker环境检查失败:', error);
         }
 
         // 加载TMDB导入路径
-        let savedTmdbImportPath = await ClientConfigManager.getItem("tmdb_import_path")
+        let savedTmdbImportPath = await ClientConfigManager.getItem('tmdb_import_path');
 
         // 如果ClientConfigManager失败，尝试从localStorage fallback
-        if (!savedTmdbImportPath && typeof window !== "undefined") {
-          const localPath = localStorage.getItem("tmdb_import_path")
+        if (!savedTmdbImportPath && typeof window !== 'undefined') {
+          const localPath = localStorage.getItem('tmdb_import_path');
           if (localPath) {
-            savedTmdbImportPath = localPath
+            savedTmdbImportPath = localPath;
             // 自动迁移到ClientConfigManager
             try {
-              await ClientConfigManager.setItem("tmdb_import_path", localPath)
+              await ClientConfigManager.setItem('tmdb_import_path', localPath);
             } catch (error) {
-              logger.warn('迁移tmdb_import_path到ClientConfigManager失败:', error)
+              logger.warn('迁移tmdb_import_path到ClientConfigManager失败:', error);
             }
           }
         }
 
-        const finalImportPath = dockerImportPath || savedTmdbImportPath || ''
-        setTmdbImportPath(finalImportPath)
+        const finalImportPath = dockerImportPath || savedTmdbImportPath || '';
+        setTmdbImportPath(finalImportPath);
         if (finalImportPath) {
-          loadTmdbConfig(finalImportPath)
+          loadTmdbConfig(finalImportPath);
         }
 
         // 加载通用设置
         try {
-          const savedGeneralSettings = await ClientConfigManager.getItem("general_settings")
+          const savedGeneralSettings = await ClientConfigManager.getItem('general_settings');
           if (savedGeneralSettings) {
-            const parsed = safeJsonParse<GeneralSettings>(savedGeneralSettings)
-            if (parsed) setGeneralSettings(parsed)
+            const parsed = safeJsonParse<GeneralSettings>(savedGeneralSettings);
+            if (parsed) setGeneralSettings(parsed);
           }
         } catch (error) {
-          logger.warn('加载通用设置失败:', error)
+          logger.warn('加载通用设置失败:', error);
         }
 
         // 加载视频缩略图设置
         try {
-          const savedVideoThumbnailSettings = await ClientConfigManager.getItem("video_thumbnail_settings")
-          const settings = safeJsonParse<any>(savedVideoThumbnailSettings)
+          const savedVideoThumbnailSettings = await ClientConfigManager.getItem(
+            'video_thumbnail_settings'
+          );
+          const settings = safeJsonParse<any>(savedVideoThumbnailSettings);
           if (settings) {
-            setVideoThumbnailSettings(prev => ({
+            setVideoThumbnailSettings((prev) => ({
               ...prev,
               ...settings,
               startTime: Number(settings.startTime || prev.startTime),
               threadCount: Number(settings.threadCount || prev.threadCount),
               thumbnailCount: Number(settings.thumbnailCount || prev.thumbnailCount),
               frameInterval: Number(settings.frameInterval || prev.frameInterval),
-            }))
+            }));
           }
         } catch (error) {
-          logger.warn('加载视频缩略图设置失败:', error)
+          logger.warn('加载视频缩略图设置失败:', error);
         }
 
         // 加载模型服务配置
         try {
-          const response = await fetch('/api/model-service')
+          const response = await fetch('/api/model-service');
           if (response.ok) {
-            const data = await response.json()
+            const data = await response.json();
             if (data.success && data.config) {
-              setModelServiceConfig(data.config)
+              setModelServiceConfig(data.config);
               if (data.config.providers) {
-                const customProviders = data.config.providers.filter((p: { isBuiltIn: boolean }) => p.isBuiltIn === false)
-                setCustomProviders(customProviders)
+                const customProviders = data.config.providers.filter(
+                  (p: { isBuiltIn: boolean }) => p.isBuiltIn === false
+                );
+                setCustomProviders(customProviders);
               } else {
-                setCustomProviders([])
+                setCustomProviders([]);
               }
               if (data.config.models) {
-                setConfiguredModels(data.config.models)
+                setConfiguredModels(data.config.models);
               } else {
-                setConfiguredModels([])
+                setConfiguredModels([]);
               }
               if (data.config.scenarios) {
-                const initialScenarioSettings: ScenarioSettings = {}
-                data.config.scenarios.forEach((scenario: {
-  type: string;
-  selectedModelIds?: string[];
-  primaryModelId?: string;
-  parameters?: Record<string, unknown>
-}) => {
-                  initialScenarioSettings[scenario.type] = {
-                    selectedModelIds: scenario.selectedModelIds || [],
-                    primaryModelId: scenario.primaryModelId || '',
-                    parameters: scenario.parameters || {}
+                const initialScenarioSettings: ScenarioSettings = {};
+                data.config.scenarios.forEach(
+                  (scenario: {
+                    type: string;
+                    selectedModelIds?: string[];
+                    primaryModelId?: string;
+                    parameters?: Record<string, unknown>;
+                  }) => {
+                    initialScenarioSettings[scenario.type] = {
+                      selectedModelIds: scenario.selectedModelIds || [],
+                      primaryModelId: scenario.primaryModelId || '',
+                      parameters: scenario.parameters || {},
+                    };
                   }
-                })
-                setScenarioSettings(initialScenarioSettings)
+                );
+                setScenarioSettings(initialScenarioSettings);
               } else {
-                setScenarioSettings({})
+                setScenarioSettings({});
               }
 
               // 加载API设置
-              const providers = data.config.providers || []
-              const siliconflowProvider = findBuiltinProvider(providers, 'siliconflow-builtin', 'siliconflow')
-              const modelscopeProvider = findBuiltinProvider(providers, 'modelscope-builtin', 'modelscope')
-              const zhipuProvider = findBuiltinProvider(providers, 'zhipu-builtin', 'zhipu')
+              const providers = data.config.providers || [];
+              const siliconflowProvider = findBuiltinProvider(
+                providers,
+                'siliconflow-builtin',
+                'siliconflow'
+              );
+              const modelscopeProvider = findBuiltinProvider(
+                providers,
+                'modelscope-builtin',
+                'modelscope'
+              );
+              const zhipuProvider = findBuiltinProvider(providers, 'zhipu-builtin', 'zhipu');
 
               if (siliconflowProvider) {
-                updateApiSetting('siliconFlow', siliconflowProvider.apiKey || '', 'Qwen/Qwen2.5-VL-32B-Instruct')
+                updateApiSetting(
+                  'siliconFlow',
+                  siliconflowProvider.apiKey || '',
+                  'Qwen/Qwen2.5-VL-32B-Instruct'
+                );
               }
 
               if (modelscopeProvider) {
-                updateApiSetting('modelScope', modelscopeProvider.apiKey || '', 'Qwen/Qwen3-32B')
+                updateApiSetting('modelScope', modelscopeProvider.apiKey || '', 'Qwen/Qwen3-32B');
               }
 
               if (zhipuProvider) {
-                updateApiSetting('zhipu', zhipuProvider.apiKey || '', 'glm-4-flash')
+                updateApiSetting('zhipu', zhipuProvider.apiKey || '', 'glm-4-flash');
               }
             } else {
-              logger.warn('加载模型服务配置失败，响应数据无效:', data)
+              logger.warn('加载模型服务配置失败，响应数据无效:', data);
               // 提供默认值
-              setCustomProviders([])
-              setConfiguredModels([])
-              setScenarioSettings({})
+              setCustomProviders([]);
+              setConfiguredModels([]);
+              setScenarioSettings({});
             }
           } else {
-            logger.warn('加载模型服务配置失败，状态码:', response.status)
+            logger.warn('加载模型服务配置失败，状态码:', response.status);
             // 提供默认值
-            setCustomProviders([])
-            setConfiguredModels([])
-            setScenarioSettings({})
+            setCustomProviders([]);
+            setConfiguredModels([]);
+            setScenarioSettings({});
           }
         } catch (error) {
-          logger.warn('加载模型服务配置失败:', error)
+          logger.warn('加载模型服务配置失败:', error);
           // 提供默认值
-          setCustomProviders([])
-          setConfiguredModels([])
-          setScenarioSettings({})
+          setCustomProviders([]);
+          setConfiguredModels([]);
+          setScenarioSettings({});
           // 不抛出错误，继续初始化其他设置
         }
-
       } catch (error) {
-        logger.error('初始化设置失败:', error)
+        logger.error('初始化设置失败:', error);
       }
-    }
+    };
 
-    initializeSettings()
-  }, [])
+    initializeSettings();
+  }, []);
 
   // 对话框打开时刷新配置
   useEffect(() => {
-    if (open && typeof window !== "undefined") {
+    if (open && typeof window !== 'undefined') {
       const refreshConfig = async () => {
         try {
-          ClientConfigManager.clearCache()
+          ClientConfigManager.clearCache();
 
           // 刷新TMDB导入路径
-          const currentImportPath = await ClientConfigManager.getItem("tmdb_import_path")
+          const currentImportPath = await ClientConfigManager.getItem('tmdb_import_path');
           if (currentImportPath) {
-            setTmdbImportPath(currentImportPath)
+            setTmdbImportPath(currentImportPath);
           }
 
           // 刷新模型服务配置
-          await refreshModelServiceConfig()
+          await refreshModelServiceConfig();
         } catch (error) {
-          logger.error('刷新配置失败:', error)
+          logger.error('刷新配置失败:', error);
         }
-      }
+      };
 
-      refreshConfig()
+      refreshConfig();
     }
-  }, [open])
+  }, [open]);
 
   // 提取模型服务配置刷新逻辑
   const refreshModelServiceConfig = useCallback(async () => {
     try {
-      const response = await fetch('/api/model-service')
+      const response = await fetch('/api/model-service');
       if (!response.ok) {
-        logger.warn('获取模型服务配置失败，状态码:', response.status)
-        resetModelServiceState()
-        return
+        logger.warn('获取模型服务配置失败，状态码:', response.status);
+        resetModelServiceState();
+        return;
       }
 
-      const data = await response.json()
+      const data = await response.json();
       if (!data.success || !data.config) {
-        logger.warn('获取模型服务配置失败，响应数据无效:', data)
-        resetModelServiceState()
-        return
+        logger.warn('获取模型服务配置失败，响应数据无效:', data);
+        resetModelServiceState();
+        return;
       }
 
-      const config = data.config
-      setModelServiceConfig(config)
-      updateModelServiceState(config)
+      const config = data.config;
+      setModelServiceConfig(config);
+      updateModelServiceState(config);
     } catch (error) {
-      logger.warn('刷新模型服务配置失败:', error)
-      resetModelServiceState()
+      logger.warn('刷新模型服务配置失败:', error);
+      resetModelServiceState();
     }
-  }, [])
+  }, []);
 
   // 辅助函数：重置模型服务状态
   const resetModelServiceState = useCallback(() => {
-    setCustomProviders([])
-    setConfiguredModels([])
-    setScenarioSettings({})
-  }, [])
+    setCustomProviders([]);
+    setConfiguredModels([]);
+    setScenarioSettings({});
+  }, []);
 
   // 辅助函数：更新模型服务状态
-  const updateModelServiceState = useCallback((config: any) => {
-    const providers = config.providers || []
-    const customProviders = providers.filter((p: { isBuiltIn: boolean }) => !p.isBuiltIn)
-    const siliconflowProvider = findBuiltinProvider(providers, 'siliconflow-builtin', 'siliconflow')
-    const modelscopeProvider = findBuiltinProvider(providers, 'modelscope-builtin', 'modelscope')
+  const updateModelServiceState = useCallback(
+    (config: any) => {
+      const providers = config.providers || [];
+      const customProviders = providers.filter((p: { isBuiltIn: boolean }) => !p.isBuiltIn);
+      const siliconflowProvider = findBuiltinProvider(
+        providers,
+        'siliconflow-builtin',
+        'siliconflow'
+      );
+      const modelscopeProvider = findBuiltinProvider(providers, 'modelscope-builtin', 'modelscope');
 
-    setCustomProviders(customProviders)
-    setConfiguredModels(config.models || [])
+      setCustomProviders(customProviders);
+      setConfiguredModels(config.models || []);
 
-    if (siliconflowProvider) {
-      updateApiSetting('siliconFlow', siliconflowProvider.apiKey || '', 'Qwen/Qwen2.5-VL-32B-Instruct')
-    }
+      if (siliconflowProvider) {
+        updateApiSetting(
+          'siliconFlow',
+          siliconflowProvider.apiKey || '',
+          'Qwen/Qwen2.5-VL-32B-Instruct'
+        );
+      }
 
-    if (modelscopeProvider) {
-      updateApiSetting('modelScope', modelscopeProvider.apiKey || '', 'Qwen/Qwen3-32B')
-    }
+      if (modelscopeProvider) {
+        updateApiSetting('modelScope', modelscopeProvider.apiKey || '', 'Qwen/Qwen3-32B');
+      }
 
-    // 更新场景设置
-    const scenarioSettings: ScenarioSettings = {}
-    if (config.scenarios) {
-      config.scenarios.forEach((scenario: {
-        type: string
-        selectedModelIds?: string[]
-        primaryModelId?: string
-        parameters?: Record<string, unknown>
-      }) => {
-        scenarioSettings[scenario.type] = {
-          selectedModelIds: scenario.selectedModelIds || [],
-          primaryModelId: scenario.primaryModelId || '',
-          parameters: scenario.parameters || {}
-        }
-      })
-    }
-    setScenarioSettings(scenarioSettings)
-  }, [updateApiSetting])
+      // 更新场景设置
+      const scenarioSettings: ScenarioSettings = {};
+      if (config.scenarios) {
+        config.scenarios.forEach(
+          (scenario: {
+            type: string;
+            selectedModelIds?: string[];
+            primaryModelId?: string;
+            parameters?: Record<string, unknown>;
+          }) => {
+            scenarioSettings[scenario.type] = {
+              selectedModelIds: scenario.selectedModelIds || [],
+              primaryModelId: scenario.primaryModelId || '',
+              parameters: scenario.parameters || {},
+            };
+          }
+        );
+      }
+      setScenarioSettings(scenarioSettings);
+    },
+    [updateApiSetting]
+  );
 
   // 监听模型服务配置更新事件
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (typeof window === 'undefined') return;
 
     const handleConfigUpdate = async () => {
       try {
-        const response = await fetch('/api/model-service')
+        const response = await fetch('/api/model-service');
         if (!response.ok) {
-          logger.warn('同步模型服务配置失败，状态码:', response.status)
-          resetModelServiceState()
-          return
+          logger.warn('同步模型服务配置失败，状态码:', response.status);
+          resetModelServiceState();
+          return;
         }
 
-        const data = await response.json()
+        const data = await response.json();
         if (!data.success || !data.config) {
-          logger.warn('同步模型服务配置失败，响应数据无效:', data)
-          resetModelServiceState()
-          return
+          logger.warn('同步模型服务配置失败，响应数据无效:', data);
+          resetModelServiceState();
+          return;
         }
 
-        const config = data.config
-        setModelServiceConfig(config)
-        setConfiguredModels(config.models || [])
-        setCustomProviders(config.providers?.filter((p: { isBuiltIn: boolean }) => !p.isBuiltIn) || [])
+        const config = data.config;
+        setModelServiceConfig(config);
+        setConfiguredModels(config.models || []);
+        setCustomProviders(
+          config.providers?.filter((p: { isBuiltIn: boolean }) => !p.isBuiltIn) || []
+        );
 
         // 更新API设置
-        const providers = config.providers || []
-        const siliconflowProvider = findBuiltinProvider(providers, 'siliconflow-builtin', 'siliconflow')
-        const modelscopeProvider = findBuiltinProvider(providers, 'modelscope-builtin', 'modelscope')
+        const providers = config.providers || [];
+        const siliconflowProvider = findBuiltinProvider(
+          providers,
+          'siliconflow-builtin',
+          'siliconflow'
+        );
+        const modelscopeProvider = findBuiltinProvider(
+          providers,
+          'modelscope-builtin',
+          'modelscope'
+        );
 
         if (siliconflowProvider) {
-          setApiSettings(prev => ({
+          setApiSettings((prev) => ({
             ...prev,
-            siliconFlow: { ...prev.siliconFlow!, apiKey: siliconflowProvider.apiKey || '' }
-          }))
+            siliconFlow: { ...prev.siliconFlow!, apiKey: siliconflowProvider.apiKey || '' },
+          }));
         }
 
         if (modelscopeProvider) {
-          setApiSettings(prev => ({
+          setApiSettings((prev) => ({
             ...prev,
-            modelScope: { ...prev.modelScope!, apiKey: modelscopeProvider.apiKey || '' }
-          }))
+            modelScope: { ...prev.modelScope!, apiKey: modelscopeProvider.apiKey || '' },
+          }));
         }
 
         // 更新场景设置（过滤无效的模型ID）
-        const updatedScenarioSettings: ScenarioSettings = {}
+        const updatedScenarioSettings: ScenarioSettings = {};
         if (config.scenarios) {
-          const validModelIds = new Set(config.models.map((m: { id: string }) => m.id))
-          config.scenarios.forEach((scenario: {
-            type: string
-            selectedModelIds?: string[]
-            primaryModelId?: string
-            parameters?: Record<string, unknown>
-          }) => {
-            const filteredModelIds = (scenario.selectedModelIds || []).filter(id => validModelIds.has(id))
-            const primaryId = filteredModelIds.includes(scenario.primaryModelId || '')
-              ? scenario.primaryModelId
-              : filteredModelIds[0] || ''
+          const validModelIds = new Set(config.models.map((m: { id: string }) => m.id));
+          config.scenarios.forEach(
+            (scenario: {
+              type: string;
+              selectedModelIds?: string[];
+              primaryModelId?: string;
+              parameters?: Record<string, unknown>;
+            }) => {
+              const filteredModelIds = (scenario.selectedModelIds || []).filter((id) =>
+                validModelIds.has(id)
+              );
+              const primaryId = filteredModelIds.includes(scenario.primaryModelId || '')
+                ? scenario.primaryModelId
+                : filteredModelIds[0] || '';
 
-            updatedScenarioSettings[scenario.type] = {
-              selectedModelIds: filteredModelIds,
-              primaryModelId: primaryId,
-              parameters: scenario.parameters || {}
+              updatedScenarioSettings[scenario.type] = {
+                selectedModelIds: filteredModelIds,
+                primaryModelId: primaryId,
+                parameters: scenario.parameters || {},
+              };
             }
-          })
+          );
         }
-        setScenarioSettings(updatedScenarioSettings)
+        setScenarioSettings(updatedScenarioSettings);
       } catch (error) {
-        logger.warn('同步模型服务配置失败:', error)
-        resetModelServiceState()
+        logger.warn('同步模型服务配置失败:', error);
+        resetModelServiceState();
       }
-    }
+    };
 
-    window.addEventListener('model-service-config-updated', handleConfigUpdate)
-    return () => window.removeEventListener('model-service-config-updated', handleConfigUpdate)
-  }, [])
+    window.addEventListener('model-service-config-updated', handleConfigUpdate);
+    return () => window.removeEventListener('model-service-config-updated', handleConfigUpdate);
+  }, []);
 
-// 保存处理函数
+  // 保存处理函数
   const handleSave = async () => {
-    setSaveStatus("saving")
-    setValidationMessage("")
+    setSaveStatus('saving');
+    setValidationMessage('');
 
     try {
       // 定义各设置面板的保存行为
       const saveActions = {
-        "general": () => saveGeneralSettings(),
-        "video-thumbnail": () => saveVideoThumbnailSettings(),
-        "model-service": () => toast({ title: t("common.success"), description: t("common.modelServiceSaved") }),
-        "tools": () => saveTmdbConfig(),
-        "security": () => toast({ title: t("common.success"), description: t("common.securitySaved") })
-      }
+        general: () => saveGeneralSettings(),
+        'video-thumbnail': () => saveVideoThumbnailSettings(),
+        'model-service': () =>
+          toast({ title: t('common.success'), description: t('common.modelServiceSaved') }),
+        tools: () => saveTmdbConfig(),
+        security: () =>
+          toast({ title: t('common.success'), description: t('common.securitySaved') }),
+      };
 
-      const saveAction = saveActions[activeSection as keyof typeof saveActions]
+      const saveAction = saveActions[activeSection as keyof typeof saveActions];
       if (saveAction) {
-        saveAction()
+        saveAction();
       } else {
-        logger.warn('未知的设置面板:', activeSection)
+        logger.warn('未知的设置面板:', activeSection);
       }
 
-      setSaveStatus("success")
-      setValidationMessage(t("settings.settingsSaved"))
+      setSaveStatus('success');
+      setValidationMessage(t('settings.settingsSaved'));
 
       // 2秒后重置状态
       setTimeout(() => {
-        setSaveStatus("idle")
-        setValidationMessage("")
-      }, DELAY_2S)
+        setSaveStatus('idle');
+        setValidationMessage('');
+      }, DELAY_2S);
     } catch (error) {
-      logger.error('保存设置失败:', error)
-      setSaveStatus("error")
-      setValidationMessage(t("settings.saveFailedRetry"))
+      logger.error('保存设置失败:', error);
+      setSaveStatus('error');
+      setValidationMessage(t('settings.saveFailedRetry'));
     }
-  }
+  };
 
   const handleCancel = () => {
-    handleOpenChange(false)
-    setSaveStatus("idle")
-    setValidationMessage("")
-  }
+    handleOpenChange(false);
+    setSaveStatus('idle');
+    setValidationMessage('');
+  };
 
   const getStatusIcon = () => {
     const icons = {
-      saving: <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />,
+      saving: (
+        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
+      ),
       success: <CheckCircle2 className="h-4 w-4 text-green-600" />,
-      error: <AlertCircle className="h-4 w-4 text-red-600" />
-    }
-    return icons[saveStatus] || null
-  }
+      error: <AlertCircle className="h-4 w-4 text-red-600" />,
+    };
+    return icons[saveStatus] || null;
+  };
 
   const getStatusColor = () => {
     const colors: Record<string, string> = {
-      saving: "text-blue-600 dark:text-blue-400",
-      success: "text-green-600 dark:text-green-400",
-      error: "text-red-600 dark:text-red-400"
-    }
-    return colors[saveStatus] || "text-gray-600 dark:text-gray-400"
-  }
+      saving: 'text-blue-600 dark:text-blue-400',
+      success: 'text-green-600 dark:text-green-400',
+      error: 'text-red-600 dark:text-red-400',
+    };
+    return colors[saveStatus] || 'text-muted-foreground';
+  };
 
-  const loadTmdbConfig = useCallback(async (path: string) => {
-    if (!path) return
+  const loadTmdbConfig = useCallback(
+    async (path: string) => {
+      if (!path) return;
 
-    setConfigLoading(true)
-    try {
-      const response = await fetch(`/api/external/tmdb-config?path=${encodeURIComponent(path)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store'
-      })
+      setConfigLoading(true);
+      try {
+        const response = await fetch(`/api/external/tmdb-config?path=${encodeURIComponent(path)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store',
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        logger.error('加载TMDB配置失败:', response.status, errorText)
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+        if (!response.ok) {
+          const errorText = await response.text();
+          logger.error('加载TMDB配置失败:', response.status, errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-      const data = await response.json()
+        const data = await response.json();
 
-      if (data.success && data.config) {
-        // 使用默认值合并配置
-        setTmdbConfig({
-          ...DEFAULT_TMDB_CONFIG,
-          ...data.config
-        })
-      } else {
-        logger.warn('TMDB配置API返回失败:', data.error)
+        if (data.success && data.config) {
+          // 使用默认值合并配置
+          setTmdbConfig({
+            ...DEFAULT_TMDB_CONFIG,
+            ...data.config,
+          });
+        } else {
+          logger.warn('TMDB配置API返回失败:', data.error);
+          toast({
+            title: t('common.warning'),
+            description: data.error || t('settings.tmdbConfigWarning'),
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        logger.error('加载TMDB配置失败，可能是服务不可用:', error);
         toast({
-          title: t("common.warning"),
-          description: data.error || t("settings.tmdbConfigWarning"),
-          variant: "destructive"
-        })
+          title: t('common.error'),
+          description: t('settings.tmdbConfigLoadFailed'),
+          variant: 'destructive',
+        });
+      } finally {
+        setConfigLoading(false);
       }
-    } catch (error) {
-      logger.error('加载TMDB配置失败，可能是服务不可用:', error)
-      toast({
-        title: t("common.error"),
-        description: t("settings.tmdbConfigLoadFailed"),
-        variant: "destructive"
-      })
-    } finally {
-      setConfigLoading(false)
-    }
-  }, [toast])
+    },
+    [toast]
+  );
 
   // 保存TMDB配置
   const saveTmdbConfig = useCallback(async () => {
-    setConfigSaving(true)
+    setConfigSaving(true);
     try {
       const response = await fetch('/api/external/tmdb-config', {
         method: 'POST',
@@ -680,185 +758,196 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         },
         body: JSON.stringify({
           tmdbImportPath,
-          config: tmdbConfig
-        })
-      })
+          config: tmdbConfig,
+        }),
+      });
 
       if (!response.ok) {
-        const errorText = await response.text()
-        logger.error('保存TMDB配置失败:', response.status, errorText)
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text();
+        logger.error('保存TMDB配置失败:', response.status, errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (data.success) {
         toast({
-          title: t("common.success"),
-          description: t("settings.tmdbConfigSaveSuccess"),
-        })
+          title: t('common.success'),
+          description: t('settings.tmdbConfigSaveSuccess'),
+        });
       } else {
-        throw new Error(data.error || t("settings.saveFailed"))
+        throw new Error(data.error || t('settings.saveFailed'));
       }
     } catch (error) {
-      logger.error('保存TMDB配置失败，可能是服务不可用:', error)
+      logger.error('保存TMDB配置失败，可能是服务不可用:', error);
       toast({
-        title: t("common.error"),
-        description: t("settings.tmdbConfigSaveFailed", { error: error instanceof Error ? error.message : t("settings.serviceUnavailable") }),
-        variant: "destructive",
-      })
+        title: t('common.error'),
+        description: t('settings.tmdbConfigSaveFailed', {
+          error: error instanceof Error ? error.message : t('settings.serviceUnavailable'),
+        }),
+        variant: 'destructive',
+      });
     } finally {
-      setConfigSaving(false)
+      setConfigSaving(false);
     }
-  }, [tmdbImportPath, tmdbConfig, toast])
+  }, [tmdbImportPath, tmdbConfig, toast]);
 
   // 保存通用设置
   const saveGeneralSettings = useCallback(async () => {
     try {
-      const isDocker = await checkDockerEnvironment()
+      const isDocker = await checkDockerEnvironment();
 
       if (isDocker) {
-        await saveDockerConfig({ generalSettings })
+        await saveDockerConfig({ generalSettings });
       } else {
-        await ClientConfigManager.setItem("general_settings", JSON.stringify(generalSettings))
+        await ClientConfigManager.setItem('general_settings', JSON.stringify(generalSettings));
       }
 
       // 发送配置更新事件，通知所有监听组件
-      window.dispatchEvent(new CustomEvent('general-settings-updated', { detail: generalSettings }))
+      window.dispatchEvent(
+        new CustomEvent('general-settings-updated', { detail: generalSettings })
+      );
 
       toast({
-        title: t("common.success"),
-        description: t("settings.generalSaved"),
-      })
+        title: t('common.success'),
+        description: t('settings.generalSaved'),
+      });
     } catch (error) {
-      logger.error('保存通用设置失败:', error)
+      logger.error('保存通用设置失败:', error);
       toast({
-        title: t("common.error"),
-        description: t("settings.generalSaveFailed"),
-        variant: "destructive",
-      })
+        title: t('common.error'),
+        description: t('settings.generalSaveFailed'),
+        variant: 'destructive',
+      });
     }
-  }, [generalSettings, toast])
+  }, [generalSettings, toast]);
 
   // 保存外观设置
   // 保存视频缩略图设置
   const saveVideoThumbnailSettings = useCallback(async () => {
     try {
-      const isDocker = await checkDockerEnvironment()
+      const isDocker = await checkDockerEnvironment();
 
       if (isDocker) {
-        await saveDockerConfig({ videoThumbnailSettings })
+        await saveDockerConfig({ videoThumbnailSettings });
       } else {
-        await ClientConfigManager.setItem("video_thumbnail_settings", JSON.stringify(videoThumbnailSettings))
+        await ClientConfigManager.setItem(
+          'video_thumbnail_settings',
+          JSON.stringify(videoThumbnailSettings)
+        );
       }
 
       toast({
-        title: t("common.success"),
-        description: t("settings.videoThumbnailSaveSuccess"),
-      })
+        title: t('common.success'),
+        description: t('settings.videoThumbnailSaveSuccess'),
+      });
     } catch (error) {
-      logger.error('保存视频缩略图设置失败:', error)
+      logger.error('保存视频缩略图设置失败:', error);
       toast({
-        title: t("common.error"),
-        description: t("settings.videoThumbnailSaveFailed"),
-        variant: "destructive",
-      })
+        title: t('common.error'),
+        description: t('settings.videoThumbnailSaveFailed'),
+        variant: 'destructive',
+      });
     }
-  }, [videoThumbnailSettings, toast])
+  }, [videoThumbnailSettings, toast]);
 
   // 密码修改
   const handlePasswordChange = useCallback(async () => {
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+    if (
+      !passwordForm.currentPassword ||
+      !passwordForm.newPassword ||
+      !passwordForm.confirmPassword
+    ) {
       toast({
-        title: t("common.error"),
-        description: t("settings.fillAllPasswordFields"),
-        variant: "destructive",
-      })
-      return
+        title: t('common.error'),
+        description: t('settings.fillAllPasswordFields'),
+        variant: 'destructive',
+      });
+      return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
-        title: t("common.error"),
-        description: t("settings.passwordMismatch"),
-        variant: "destructive",
-      })
-      return
+        title: t('common.error'),
+        description: t('settings.passwordMismatch'),
+        variant: 'destructive',
+      });
+      return;
     }
 
     if (passwordForm.newPassword.length < 6) {
       toast({
-        title: t("common.error"),
-        description: t("settings.passwordTooShort"),
-        variant: "destructive",
-      })
-      return
+        title: t('common.error'),
+        description: t('settings.passwordTooShort'),
+        variant: 'destructive',
+      });
+      return;
     }
 
-    setPasswordChangeLoading(true)
+    setPasswordChangeLoading(true);
     try {
-      await changePassword(passwordForm.currentPassword, passwordForm.newPassword)
+      await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
       setPasswordForm({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: ""
-      })
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
       toast({
-        title: t("common.success"),
-        description: t("settings.passwordChangeRedirectHint"),
+        title: t('common.success'),
+        description: t('settings.passwordChangeRedirectHint'),
         duration: Infinity,
-      })
-      onOpenChange(false)
+      });
+      onOpenChange(false);
       setTimeout(() => {
-        router.push('/login')
-      }, 1500)
+        router.push('/login');
+      }, 1500);
     } catch (error) {
       toast({
-        title: t("common.error"),
-        description: error instanceof Error ? error.message : t("settings.passwordChangeFailed"),
-        variant: "destructive",
-      })
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('settings.passwordChangeFailed'),
+        variant: 'destructive',
+      });
     } finally {
-      setPasswordChangeLoading(false)
+      setPasswordChangeLoading(false);
     }
-  }, [passwordForm, changePassword, toast])
+  }, [passwordForm, changePassword, toast]);
 
   // 检查是否为Docker环境
   const checkDockerEnvironment = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch('/api/system/docker-config')
-      const data = await response.json()
-      return data.success && data.config?.isDockerEnvironment
+      const response = await fetch('/api/system/docker-config');
+      const data = await response.json();
+      return data.success && data.config?.isDockerEnvironment;
     } catch (error) {
-      logger.warn('检查Docker环境失败:', error)
-      return false
+      logger.warn('检查Docker环境失败:', error);
+      return false;
     }
-  }, [])
+  }, []);
 
   // 保存Docker配置
   const saveDockerConfig = useCallback(async (configData: Record<string, unknown>) => {
     const response = await fetch('/api/system/docker-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(configData)
-    })
+      body: JSON.stringify(configData),
+    });
 
-    const data = await response.json()
+    const data = await response.json();
     if (!data.success) {
-      throw new Error(data.error || t("settings.saveFailed"))
+      throw new Error(data.error || t('settings.saveFailed'));
     }
-  }, [])
+  }, []);
 
   const handleOpenChange = (newOpen: boolean) => {
-    onOpenChange(newOpen)
+    onOpenChange(newOpen);
     if (!newOpen) {
-      window.dispatchEvent(new CustomEvent('global-settings-closed'))
+      window.dispatchEvent(new CustomEvent('global-settings-closed'));
     }
-  }
+  };
 
   const renderActivePanel = () => {
     switch (activeSection) {
-      case "model-service":
+      case 'model-service':
         return (
           <ModelServiceSettingsPanel
             modelServiceTab={modelServiceTab}
@@ -902,8 +991,8 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             showZhipuApiKey={showZhipuApiKey}
             setShowZhipuApiKey={setShowZhipuApiKey}
           />
-        )
-      case "tools":
+        );
+      case 'tools':
         return (
           <ToolsSettingsPanel
             toolsTab={toolsTab}
@@ -920,24 +1009,26 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             saveTmdbConfig={saveTmdbConfig}
             isDockerEnv={isDockerEnv}
           />
-        )
-      case "video-thumbnail":
+        );
+      case 'video-thumbnail':
         return (
           <VideoThumbnailSettingsPanel
             videoThumbnailSettings={videoThumbnailSettings}
             setVideoThumbnailSettings={setVideoThumbnailSettings}
             saveVideoThumbnailSettings={saveVideoThumbnailSettings}
           />
-        )
-      case "general":
+        );
+      case 'appearance':
+        return <AppearanceSettingsPanel />;
+      case 'general':
         return (
           <GeneralSettingsPanel
             generalSettings={generalSettings}
             setGeneralSettings={setGeneralSettings}
             saveGeneralSettings={saveGeneralSettings}
           />
-        )
-      case "security":
+        );
+      case 'security':
         return (
           <SecuritySettingsPanel
             passwordForm={passwordForm}
@@ -951,19 +1042,13 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
             passwordChangeLoading={passwordChangeLoading}
             handlePasswordChange={handlePasswordChange}
           />
-        )
-      case "help":
-        return (
-          <HelpSettingsPanel
-            helpTab={helpTab}
-            setHelpTab={setHelpTab}
-            appInfo={appInfo}
-          />
-        )
+        );
+      case 'help':
+        return <HelpSettingsPanel helpTab={helpTab} setHelpTab={setHelpTab} appInfo={appInfo} />;
       default:
-        return <ModelServiceSettingsPanel />
+        return <ModelServiceSettingsPanel />;
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -971,50 +1056,57 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b">
           <DialogTitle className="flex items-center">
             {isMobile && !showMobileMenu && (
-              <Button variant="ghost" size="icon" onClick={handleBackToMenu} className="mr-2 -ml-2 h-8 w-8" aria-label={t("settings.back")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBackToMenu}
+                className="mr-2 -ml-2 h-8 w-8"
+                aria-label={t('settings.back')}
+              >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             )}
-            {t("settings.settings")}
+            {t('settings.settings')}
           </DialogTitle>
-          <DialogDescription>
-            {t("settings.settingsDesc")}
-          </DialogDescription>
+          <DialogDescription>{t('settings.settingsDesc')}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col sm:flex-row overflow-hidden max-sm:flex-1 h-[calc(90vh-120px)]">
           {/* 设置左侧菜单 - 桌面端始终显示，移动端条件显示 */}
           {(!isMobile || showMobileMenu) && (
-            <SettingsMenu
-              activeSection={activeSection}
-              onSectionChange={handleSectionChange}
-            />
+            <SettingsMenu activeSection={activeSection} onSectionChange={handleSectionChange} />
           )}
 
           {/* 面板内容 - 桌面端始终显示，移动端条件显示 */}
           {(!isMobile || !showMobileMenu) && (
             <div className="flex-1 flex flex-col">
               <ScrollArea className="flex-1">
-                <div className="p-6">
-                  {renderActivePanel()}
-                </div>
+                <div className="p-6">{renderActivePanel()}</div>
               </ScrollArea>
 
               {/* 底部操作按钮 */}
-              <div className="border-t p-4 bg-gray-50/50 dark:bg-gray-900/50">
+              <div className="border-t p-4 bg-muted/50">
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={handleCancel} disabled={saveStatus === "saving"}>
-                    {t("common.cancel")}
+                  <Button
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={saveStatus === 'saving'}
+                  >
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     onClick={handleSave}
-                    disabled={saveStatus === "saving"}
-                    className={saveStatus === "success" ? "bg-green-600 hover:bg-green-700" : ""}
+                    disabled={saveStatus === 'saving'}
+                    className={saveStatus === 'success' ? 'bg-green-600 hover:bg-green-700' : ''}
                   >
-                    {saveStatus === "saving" && (
+                    {saveStatus === 'saving' && (
                       <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                     )}
-                    {saveStatus === "success" ? t("common.saved") : saveStatus === "saving" ? t("common.saving") : t("common.save")}
+                    {saveStatus === 'success'
+                      ? t('common.saved')
+                      : saveStatus === 'saving'
+                        ? t('common.saving')
+                        : t('common.save')}
                   </Button>
                 </div>
               </div>
@@ -1023,5 +1115,5 @@ export default function SettingsDialog({ open, onOpenChange, initialSection }: S
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

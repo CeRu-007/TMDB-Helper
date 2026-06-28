@@ -69,13 +69,13 @@ export function StatsCards({ data }: StatsCardsProps) {
         return (
           <div
             key={card.label}
-            className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4"
+            className="relative overflow-hidden rounded-xl border border-border bg-muted/50 p-4"
           >
             <div className="flex items-start justify-between">
               <div className="space-y-1">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{card.label}</p>
+                <p className="text-xs text-muted-foreground">{card.label}</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{card.value}</p>
+                  <p className="text-2xl font-bold text-foreground">{card.value}</p>
                   {card.sub && (
                     <span className={`text-sm font-medium ${card.textColor}`}>{card.sub}</span>
                   )}

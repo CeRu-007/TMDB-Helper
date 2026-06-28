@@ -296,7 +296,7 @@ export function SidebarLayout({
   }, [openAddDialog])
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-card dark:to-card" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Header */}
       <AppHeader
         sidebarCollapsed={sidebarCollapsed}

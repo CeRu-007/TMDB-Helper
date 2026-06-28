@@ -56,8 +56,8 @@ export function ScheduleDayColumn({
         day.isToday
           ? "bg-blue-500 text-white border-blue-500"
           : isSelected
-            ? "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-800"
-            : "bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 hover:bg-white dark:hover:bg-gray-800"
+            ? "bg-card border-border"
+            : "bg-gray-50 bg-muted/50 border-border hover:bg-white dark:hover:bg-accent"
       )}>
         <div className="flex items-center justify-between max-sm:flex-col max-sm:gap-0.5">
           <span className="text-sm max-sm:text-[11px] font-medium">{weekday}</span>
@@ -67,7 +67,7 @@ export function ScheduleDayColumn({
           )}>{date}日</span>
         </div>
         <div className="flex items-center gap-2 max-sm:gap-1 mt-1 justify-center">
-          <Badge variant={day.isToday ? "secondary" : "outline"} className="text-xs max-sm:text-[10px] max-sm:px-1.5 max-sm:py-0 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0 font-medium">
+          <Badge variant={day.isToday ? "secondary" : "outline"} className="text-xs max-sm:text-[10px] max-sm:px-1.5 max-sm:py-0 bg-muted text-muted-foreground border-0 font-medium">
             {day.episodes.length} 部
           </Badge>
           {day.isToday && (

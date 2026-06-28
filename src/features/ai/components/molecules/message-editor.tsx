@@ -44,8 +44,8 @@ export function MessageEditor({
   }
 
   const containerClass = role === 'user'
-    ? "relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
-    : "relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+    ? "relative bg-card rounded-2xl shadow-sm border border-border overflow-hidden"
+    : "relative bg-card rounded-xl shadow-sm border border-border overflow-hidden"
 
   const textareaStyle = role === 'user'
     ? { minHeight: '80px', maxHeight: '400px' }
@@ -62,10 +62,10 @@ export function MessageEditor({
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full px-4 py-3 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 text-gray-900 dark:text-gray-100 resize-none leading-relaxed text-base"
+          className="w-full px-4 py-3 bg-transparent border-0 focus:ring-0 focus-visible:ring-0 text-foreground resize-none leading-relaxed text-base"
           style={textareaStyle}
         />
-        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 bg-muted/50 border-t border-border">
           <div className="flex gap-2">
             <Button
               size="sm"

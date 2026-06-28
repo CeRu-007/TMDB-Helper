@@ -47,38 +47,38 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
   const unlockedCount = achievements.filter(a => a.unlocked).length
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4 md:p-5">
+    <div className="rounded-xl border border-border bg-muted/50 p-4 md:p-5">
       <div className="flex items-center justify-between mb-3 md:mb-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('achievements.title')}</h3>
-        <span className="text-xs text-gray-400">
+        <h3 className="text-sm font-medium text-foreground">{t('achievements.title')}</h3>
+        <span className="text-xs text-muted-foreground">
           {unlockedCount}/{achievements.length} {t('achievements.unlocked')}
         </span>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 md:gap-3">
         {achievements.map((achievement) => {
-          const colorClass = ACHIEVEMENT_COLORS[achievement.id] || 'text-gray-500'
+          const colorClass = ACHIEVEMENT_COLORS[achievement.id] || 'text-muted-foreground'
           return (
             <button
               key={achievement.id}
               onClick={() => setSelected(achievement)}
               className={`flex flex-col items-center p-3 rounded-lg transition-all cursor-pointer ${
                 achievement.unlocked
-                  ? 'bg-white dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md'
-                  : 'bg-gray-50 dark:bg-gray-700/20 border border-gray-100 dark:border-gray-700 opacity-40 hover:opacity-60'
+                  ? 'bg-muted/40 border border-border shadow-sm hover:shadow-md'
+                  : 'bg-muted/20 border border-border opacity-40 hover:opacity-60'
               }`}
             >
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-1.5 ${
                 achievement.unlocked
-                  ? 'bg-gray-50 dark:bg-gray-600/30'
-                  : 'bg-gray-100 dark:bg-gray-600/30'
+                  ? 'bg-muted/30'
+                  : 'bg-muted/30'
               }`}>
                 {achievement.unlocked ? (
                   <DynamicIcon name={achievement.icon} className={colorClass} size={22} weight="duotone" />
                 ) : (
-                  <Lock className="text-gray-400 dark:text-gray-500" size={22} weight="fill" />
+                  <Lock className="text-muted-foreground" size={22} weight="fill" />
                 )}
               </div>
-              <p className="text-[10px] text-center text-gray-600 dark:text-gray-400 leading-tight">
+              <p className="text-[10px] text-center text-muted-foreground leading-tight">
                 {t(`achievements.${achievement.name}`)}
               </p>
             </button>
@@ -94,13 +94,13 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
                 <div className="flex items-center gap-3">
                   <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
                     selected.unlocked
-                      ? 'bg-gray-50 dark:bg-gray-700/50'
-                      : 'bg-gray-100 dark:bg-gray-600/30'
+                      ? 'bg-muted/50'
+                      : 'bg-muted/30'
                   }`}>
                     {selected.unlocked ? (
-                      <DynamicIcon name={selected.icon} className={ACHIEVEMENT_COLORS[selected.id] || 'text-gray-500'} size={32} weight="duotone" />
+                      <DynamicIcon name={selected.icon} className={ACHIEVEMENT_COLORS[selected.id] || 'text-muted-foreground'} size={32} weight="duotone" />
                     ) : (
-                      <Lock className="text-gray-400 dark:text-gray-500" size={32} weight="fill" />
+                      <Lock className="text-muted-foreground" size={32} weight="fill" />
                     )}
                   </div>
                   <div>
@@ -114,11 +114,11 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
                 </div>
               </DialogHeader>
               <div className="mt-4 space-y-3">
-                <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
                     {t('achievements.condition')}
                   </p>
-                  <p className="text-sm text-gray-800 dark:text-gray-200">
+                  <p className="text-sm text-foreground">
                     {t(`achievements.${selected.description}`)}
                   </p>
                 </div>

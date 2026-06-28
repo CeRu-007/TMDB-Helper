@@ -413,7 +413,7 @@ export default function DependencyInstaller() {
           <Package className="h-5 w-5 mr-2" />
           {t("dependencyInstaller.title")}
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           {t("dependencyInstaller.description")}
         </p>
       </div>

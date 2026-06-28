@@ -228,12 +228,12 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
         className={`relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-150 ${
           isClicked
             ? "scale-95 brightness-110"
-            : "group-hover:scale-[1.02] group-hover:shadow-xl dark:group-hover:shadow-blue-900/30"
+            : "group-hover:scale-[1.02] group-hover:shadow-xl"
         }`}
         onClick={handleCardClick}
       >
         {!imageLoaded && !imageError && (
-          <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
+          <div className="absolute inset-0 bg-muted animate-pulse"></div>
         )}
 
         <CachedImage
@@ -321,10 +321,10 @@ function MediaCardComponent({ item, itemId, onItemClick, showAirTime = false }: 
       </div>
 
       <div className="mt-2 space-y-1 relative z-0">
-        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
+        <h3 className="font-medium text-foreground text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
           {item.title}
         </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{getUpdateText()}</p>
+        <p className="text-xs text-muted-foreground">{getUpdateText()}</p>
       </div>
 
       <CardDrawer

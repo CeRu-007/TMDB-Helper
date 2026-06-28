@@ -186,7 +186,7 @@ export default function LoginPage() {
   if (hasAdmin === null) {
     return (
       <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-slate-100"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-muted-foreground/50 border-t-foreground"></div>
       </div>
     )
   }
@@ -213,20 +213,20 @@ export default function LoginPage() {
                 className="w-full h-full object-contain"
               />
             </div>
-            <h1 className="text-xl md:text-2xl font-light tracking-wide text-slate-800 dark:text-slate-100 mb-1 md:mb-2">
+            <h1 className="text-xl md:text-2xl font-light tracking-wide text-foreground mb-1 md:mb-2">
               TMDB Helper
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted-foreground">
               {tc('appSubtitle')}
             </p>
           </div>
 
           <div className="glass-card rounded-2xl p-6 md:p-8 shadow-xl">
               <div className="mb-4 md:mb-6">
-                <h2 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-1">
+                <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-1">
                   {mode === 'login' ? t('welcomeBack') : t('createAccount')}
                 </h2>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                <p className="text-muted-foreground text-sm">
                   {mode === 'login' ? t('loginSubtitle') : t('registerSubtitle')}
                 </p>
               </div>
@@ -238,18 +238,18 @@ export default function LoginPage() {
                 className="space-y-4 md:space-y-5"
               >
                 {error && (
-                  <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    <AlertDescription className="text-red-600 dark:text-red-400">{error}</AlertDescription>
+                    <Alert className="bg-red-50 border-red-200">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-600">{error}</AlertDescription>
                   </Alert>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 text-sm font-medium">
+                  <Label htmlFor="username" className="text-foreground text-sm font-medium">
                     {t('username')}
                   </Label>
                   <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10 pointer-events-none">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none">
                       <User className="w-5 h-5" />
                     </div>
                     <Input
@@ -260,7 +260,7 @@ export default function LoginPage() {
                       placeholder={t('usernamePlaceholder')}
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="pl-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
+                      className="pl-10 h-11 bg-card border-border text-foreground placeholder:text-muted-foreground focus:border-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
                       required
                       disabled={isLoading}
                     />
@@ -268,11 +268,11 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 text-sm font-medium">
+                  <Label htmlFor="password" className="text-foreground text-sm font-medium">
                     {t('password')}
                   </Label>
                   <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10 pointer-events-none">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none">
                       <Lock className="w-5 h-5" />
                     </div>
                     <Input
@@ -283,14 +283,14 @@ export default function LoginPage() {
                       placeholder={mode === 'register' ? t('registerPasswordPlaceholder') : t('passwordPlaceholder')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
+                      className="pl-10 pr-10 h-11 bg-card border-border text-foreground placeholder:text-muted-foreground focus:border-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
                       required
                       disabled={isLoading}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors z-10"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
                       disabled={isLoading}
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -300,7 +300,7 @@ export default function LoginPage() {
                   {mode === 'register' && password && (
                     <div className="space-y-2 pt-1">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-300 ${strengthColor[passwordStrength.strength]} ${strengthWidth[passwordStrength.strength]}`}
                           />
@@ -321,12 +321,12 @@ export default function LoginPage() {
                             {passwordStrength.checks[key] ? (
                               <Check className="h-3 w-3 text-green-500 shrink-0" />
                             ) : (
-                              <X className="h-3 w-3 text-slate-300 dark:text-slate-600 shrink-0" />
+                              <X className="h-3 w-3 text-muted-foreground shrink-0" />
                             )}
                             <span className={`text-xs ${
                               passwordStrength.checks[key]
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-slate-400 dark:text-slate-500'
+                                ? 'text-green-600'
+                                : 'text-muted-foreground'
                             }`}>
                               {label}
                             </span>
@@ -339,11 +339,11 @@ export default function LoginPage() {
 
                 {mode === 'register' && (
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-slate-300 text-sm font-medium">
+                    <Label htmlFor="confirmPassword" className="text-foreground text-sm font-medium">
                       {t('confirmPassword')}
                     </Label>
                     <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10 pointer-events-none">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none">
                         <Lock className="w-5 h-5" />
                       </div>
                     <Input
@@ -354,14 +354,14 @@ export default function LoginPage() {
                       placeholder={t('confirmPasswordPlaceholder')}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="pl-10 pr-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
+                        className="pl-10 pr-10 h-11 bg-card border-border text-foreground placeholder:text-muted-foreground focus:border-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
                         required
                         disabled={isLoading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors z-10"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
                         disabled={isLoading}
                       >
                         {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -387,9 +387,9 @@ export default function LoginPage() {
                         }
                       }}
                       disabled={isLoading}
-                      className="border-slate-300 dark:border-slate-600 data-[state=checked]:bg-slate-900 dark:data-[state=checked]:bg-slate-100 data-[state=checked]:border-slate-900 dark:data-[state=checked]:border-slate-100 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
-                    <Label htmlFor="rememberMe" className="text-slate-600 dark:text-slate-400 text-sm cursor-pointer">
+                    <Label htmlFor="rememberMe" className="text-muted-foreground text-sm cursor-pointer">
                       {t('rememberMe')}
                     </Label>
                   </div>
@@ -397,12 +397,12 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-medium transition-colors focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors focus-visible:ring-0 focus-visible:ring-offset-0"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white dark:border-slate-900/30 dark:border-t-slate-900 mr-2"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground mr-2"></div>
                       {mode === 'login' ? t('loggingIn') : t('registering')}
                     </>
                   ) : (
@@ -432,7 +432,7 @@ export default function LoginPage() {
                         setError('')
                         setConfirmPassword('')
                       }}
-                      className="w-full md:w-auto text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                      className="w-full md:w-auto text-sm text-muted-foreground hover:text-foreground transition-colors"
                       disabled={isLoading}
                     >
                       {mode === 'login' ? t('noAccountRegister') : t('hasAccountLogin')}
@@ -441,14 +441,14 @@ export default function LoginPage() {
               )}
 
               <div className="mt-4 md:mt-6 text-center">
-                <p className="text-slate-500 dark:text-slate-400 text-xs flex items-center justify-center gap-1">
+                <p className="text-muted-foreground text-xs flex items-center justify-center gap-1">
                   <Film className="h-3 w-3" />
                   Powered by TMDB API
                 </p>
               </div>
             </div>
 
-          <p className="text-center text-slate-500 dark:text-slate-400 text-xs mt-4 md:mt-6">
+          <p className="text-center text-muted-foreground text-xs mt-4 md:mt-6">
             © 2024 TMDB Helper. All rights reserved.
           </p>
         </div>

@@ -23,10 +23,10 @@ export function MonthlyComparison({ data }: MonthlyComparisonProps) {
   const hasData = chartData.length > 0
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-5">
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{t('monthlyComparison.title')}</h3>
+    <div className="rounded-xl border border-border bg-muted/50 p-5">
+      <h3 className="text-sm font-medium text-foreground mb-4">{t('monthlyComparison.title')}</h3>
       {!hasData ? (
-        <div className="flex items-center justify-center h-[240px] text-gray-400 text-sm">{t('noData')}</div>
+        <div className="flex items-center justify-center h-[240px] text-muted-foreground text-sm">{t('noData')}</div>
       ) : (
         <div className="h-[260px]">
           <ResponsiveContainer width="100%" height="100%">

@@ -98,7 +98,7 @@ export function ChatMessageItem({
           <UserAvatarImage
             src={userInfo?.avatarUrl}
             displayName={userInfo?.displayName || t('user')}
-            className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-gray-800"
+            className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-border"
           />
         </div>
       </div>
@@ -111,8 +111,8 @@ export function ChatMessageItem({
         <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-sm">
           <Bot className="w-4 h-4 text-white" />
         </div>
-        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiAssistant')}</div>
-        <div className="text-xs text-gray-400 dark:text-gray-500">{message.timestamp.toLocaleTimeString()}</div>
+        <div className="text-sm font-medium text-foreground">{t('aiAssistant')}</div>
+        <div className="text-xs text-muted-foreground">{message.timestamp.toLocaleTimeString()}</div>
       </div>
       
       <div>

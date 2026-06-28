@@ -302,7 +302,7 @@ export function VisualCropEditor({
     <div className="flex flex-col h-full">
       <div
         ref={containerRef}
-        className="relative flex-1 flex justify-center bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-hidden"
+        className="relative flex-1 flex justify-center bg-card rounded-lg p-4 overflow-hidden"
       >
         <div
           ref={imageRef}

@@ -37,21 +37,21 @@ export function DirectoryTreeView() {
         <div
           key={colIdx}
           className={cn(
-            "flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto",
+            "flex-shrink-0 border-r border-border overflow-y-auto",
             colIdx === columns.length - 1 ? "flex-1" : "w-44",
           )}
         >
           {col.dirs.length > 0 && (
-            <div className="border-b border-gray-100 dark:border-gray-800">
+            <div className="border-b border-border">
               {col.dirs.map((dir) => (
                 <button
                   key={dir.path}
                   onClick={() => handleDirClick(dir.path, colIdx)}
                   className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20",
+                    "w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-blue-50",
                     columnPaths[colIdx + 1]?.startsWith(dir.path)
-                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                      : "text-gray-700 dark:text-gray-300",
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-foreground",
                   )}
                 >
                   {columnPaths[colIdx + 1]?.startsWith(dir.path) ? (

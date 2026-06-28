@@ -127,9 +127,9 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
       : { title: t("noRecentTitle", { ns: "media" }), desc: t("noRecentDesc", { ns: "media" }) }
 
     return (
-      <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg text-center border border-gray-200 dark:border-gray-700">
-        <p className="text-gray-500 dark:text-gray-400 mb-1">{noDataMessage.title}</p>
-        <p className="text-gray-400 dark:text-gray-500 text-sm">{noDataMessage.desc}</p>
+      <div className="bg-card p-6 rounded-lg text-center border border-border">
+        <p className="text-muted-foreground mb-1">{noDataMessage.title}</p>
+        <p className="text-muted-foreground text-sm">{noDataMessage.desc}</p>
       </div>
     )
   }
@@ -183,10 +183,10 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
               />
             </div>
             <div className="mt-2">
-              <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+              <h3 className="font-medium text-foreground text-sm">
                 {item.title}
               </h3>
-              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <div className="flex items-center text-xs text-muted-foreground mt-1">
                 <span>{item.mediaType === 'movie' ? t("mediaNewsSection.movie", { ns: "nav.news" }) : t("mediaNewsSection.tv", { ns: "nav.news" })}</span>
                 <span className="mx-1">·</span>
                 <span>{getTimeText(item.releaseDate)}</span>
@@ -355,19 +355,19 @@ export default function HomePage() {
                   <div className="p-8 max-w-md mx-auto">
                     {searchQuery.trim() ? (
                       <>
-                        <Search className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
-                        <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                        <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                        <h3 className="text-lg font-medium mb-2 text-foreground">
                           {t("searchResultsFor", { query: searchQuery, ns: "common" })}
                         </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("noSearchResultsHint", { ns: "media" })}</p>
+                        <p className="text-sm text-muted-foreground mb-4">{t("noSearchResultsHint", { ns: "media" })}</p>
                       </>
                     ) : (
                       <>
-                        <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
-                        <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                        <Clock className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                        <h3 className="text-lg font-medium mb-2 text-foreground">
                           {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, false)}
                         </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("startMaintenanceHint", { ns: "media" })}</p>
+                        <p className="text-sm text-muted-foreground mb-4">{t("startMaintenanceHint", { ns: "media" })}</p>
                         <Button onClick={() => homeState.setShowAddDialog(true)} className="bg-blue-600 hover:bg-blue-700">
                           <Plus className="h-4 w-4 mr-2" />
                           {t("addNewItem", { ns: "media" })}
@@ -404,19 +404,19 @@ export default function HomePage() {
                 <div className="text-center py-16">
                   {searchQuery.trim() ? (
                     <>
-                      <Search className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
-                      <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                      <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                      <h3 className="text-lg font-medium mb-2 text-foreground">
                         {t("searchResultsFor", { query: searchQuery, ns: "common" })}
                       </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("noSearchResultsHint", { ns: "media" })}</p>
+                      <p className="text-sm text-muted-foreground mb-4">{t("noSearchResultsHint", { ns: "media" })}</p>
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500 opacity-50" />
-                      <h3 className="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                      <h3 className="text-lg font-medium mb-2 text-foreground">
                         {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, true)}
                       </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("completedItemsHint", { ns: "media" })}</p>
+                      <p className="text-sm text-muted-foreground mb-4">{t("completedItemsHint", { ns: "media" })}</p>
                     </>
                   )}
                 </div>
@@ -439,7 +439,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <div className="flex items-center">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+                    <h2 className="text-xl font-semibold text-foreground">
                       {mediaNewsType === 'upcoming' ? t("upcoming", { ns: "nav.news" }) : t("recent", { ns: "nav.news" })}
                     </h2>
                     {mediaNewsType === 'upcoming' && mediaNews.upcomingItems.length > 0 && (
@@ -463,7 +463,7 @@ export default function HomePage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     {mediaNewsType === 'upcoming' ? t("upcomingDesc", { ns: "nav.news" }) : t("recentDesc", { ns: "nav.news" })}
                   </p>
                 </div>

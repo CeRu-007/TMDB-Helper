@@ -276,11 +276,11 @@ export function ImageCropper() {
   }
 
   return (
-    <div className="h-full w-full bg-gray-50">
+    <div className="h-full w-full bg-muted/30">
       {!image ? (
         <div className="h-full flex items-center justify-center p-8">
           <div
-            className="w-full max-w-lg border-2 border-dashed border-gray-300 rounded-2xl p-6 sm:p-12 text-center hover:border-primary transition-colors cursor-pointer bg-white"
+            className="w-full max-w-lg border-2 border-dashed border-border rounded-2xl p-6 sm:p-12 text-center hover:border-primary transition-colors cursor-pointer bg-card"
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
             onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleUpload(e.dataTransfer.files) }}
@@ -295,7 +295,7 @@ export function ImageCropper() {
                   if (e.target.files?.length) { handleUpload(e.target.files); e.target.value = "" }
                 }}
               />
-              <FileImage className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <FileImage className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-base font-medium mb-1">{t("dragDropHint")}</h3>
               <p className="text-sm text-muted-foreground mb-6">{t("supportedFormats")}</p>
             <Button variant="default" size="sm">
@@ -306,11 +306,11 @@ export function ImageCropper() {
         </div>
       ) : (
         <div className="h-full flex flex-col md:flex-row min-h-0">
-          <aside className="w-full md:w-64 shrink-0 bg-white border-b md:border-b-0 md:border-r flex flex-col overflow-y-auto max-h-[40vh] md:max-h-none">
+          <aside className="w-full md:w-64 shrink-0 bg-card border-b md:border-b-0 md:border-r border-border flex flex-col overflow-y-auto max-h-[40vh] md:max-h-none">
             <div className="p-4 space-y-5">
               <div>
-                <p className="text-sm font-medium truncate text-gray-700" title={image.name}>{image.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{image.width} × {image.height}</p>
+                <p className="text-sm font-medium truncate text-foreground" title={image.name}>{image.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{image.width} × {image.height}</p>
                 {images.length > 1 && (
                   <div className="flex gap-1 mt-2 overflow-x-auto pb-1">
                     {images.map((img, i) => (
@@ -329,7 +329,7 @@ export function ImageCropper() {
               </div>
 
               <div>
-                <h4 className="text-xs text-gray-500 mb-2 font-medium">{t("cropRatio")}</h4>
+                <h4 className="text-xs text-muted-foreground mb-2 font-medium">{t("cropRatio")}</h4>
                 <div className="flex md:flex-col gap-1 overflow-x-auto flex-nowrap scrollbar-hide pb-0.5 md:pb-0">
                   {ASPECT_RATIOS.map((r) => (
                     <button
@@ -337,8 +337,8 @@ export function ImageCropper() {
                       onClick={() => handleAspectRatioChange(r.key)}
                       className={`shrink-0 md:w-full text-sm px-3 py-1.5 md:py-2 rounded-full md:rounded-md transition-colors whitespace-nowrap ${
                         aspectRatio === r.key
-                          ? "bg-blue-500 text-white font-medium"
-                          : "bg-gray-100 md:bg-transparent text-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/40"
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "bg-muted md:bg-transparent text-muted-foreground hover:bg-accent"
                       }`}
                     >
                       {ratioLabels[r.key]}
@@ -348,29 +348,29 @@ export function ImageCropper() {
               </div>
 
               <div>
-                <h4 className="text-xs text-gray-500 mb-2 font-medium">{t("outputSize")}</h4>
+                <h4 className="text-xs text-muted-foreground mb-2 font-medium">{t("outputSize")}</h4>
                 <div className="flex items-center gap-1 min-w-0">
                   <input
                     type="number"
                     min={1}
                     value={outW}
                     onChange={(e) => handleOutWChange(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    className="w-0 flex-1 h-8 px-1.5 text-sm bg-white border border-gray-200 rounded-md text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-0 flex-1 h-8 px-1.5 text-sm bg-card border border-border rounded-md text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
-                  <span className="text-gray-400 shrink-0">×</span>
+                  <span className="text-muted-foreground shrink-0">×</span>
                   <input
                     type="number"
                     min={1}
                     value={outH}
                     onChange={(e) => handleOutHChange(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    className="w-0 flex-1 h-8 px-1.5 text-sm bg-white border border-gray-200 rounded-md text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-0 flex-1 h-8 px-1.5 text-sm bg-card border border-border rounded-md text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     onClick={handleToggleLock}
                     className={`h-8 w-8 shrink-0 flex items-center justify-center rounded-md transition-colors ${
                       aspectLocked
-                        ? "bg-blue-100 text-blue-600"
-                        : "text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/40"
+                        ? "bg-primary/20 text-primary"
+                        : "text-muted-foreground hover:bg-accent"
                     }`}
                   >
                     {aspectLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
@@ -380,7 +380,7 @@ export function ImageCropper() {
 
               {aspectRatio !== "original" && (
                 <div>
-                  <h4 className="text-xs text-gray-500 mb-2 font-medium">{t("tmdbRecommendedSize")}</h4>
+                  <h4 className="text-xs text-muted-foreground mb-2 font-medium">{t("tmdbRecommendedSize")}</h4>
                   <div className="grid grid-cols-2 md:grid-cols-1 gap-1">
                     {TMDB_PRESETS[aspectRatio]?.map((p) => {
                       const isActive = outW === p.w && outH === p.h
@@ -390,8 +390,8 @@ export function ImageCropper() {
                           onClick={() => handlePresetClick(p)}
                           className={`w-full text-left text-sm px-3 py-2 rounded-md transition-colors ${
                             isActive
-                              ? "bg-blue-500 text-white font-medium"
-                              : "bg-white text-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/40 border border-gray-200"
+                              ? "bg-primary text-primary-foreground font-medium"
+                              : "bg-card text-muted-foreground hover:bg-accent border border-border"
                           }`}
                         >
                           {p.label}
@@ -402,12 +402,12 @@ export function ImageCropper() {
                 </div>
               )}
 
-              <hr className="border-gray-200" />
+              <hr className="border-border" />
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">{t("outputQuality")}</span>
-                  <span className="text-sm font-medium text-gray-700">{quality}%</span>
+                  <span className="text-sm text-muted-foreground">{t("outputQuality")}</span>
+                  <span className="text-sm font-medium text-foreground">{quality}%</span>
                 </div>
                 <input
                   type="range"
@@ -415,7 +415,7 @@ export function ImageCropper() {
                   max={100}
                   value={quality}
                   onChange={(e) => setQuality(Number(e.target.value))}
-                  className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
                 />
                 <Button
                   className="w-full min-h-[44px] md:h-9"
@@ -451,7 +451,7 @@ export function ImageCropper() {
           </aside>
 
           <div className="flex-1 min-h-0 p-4">
-            <div className="bg-white rounded-xl shadow-sm h-full overflow-hidden">
+            <div className="bg-card rounded-xl shadow-sm h-full overflow-hidden border border-border">
               <VisualCropEditor
                 key={`${image.url}-${aspectRatio}`}
                 imageUrl={image.url}

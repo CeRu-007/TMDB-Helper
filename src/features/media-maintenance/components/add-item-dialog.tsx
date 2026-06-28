@@ -655,7 +655,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                               )}
                             </div>
                             {selectedResult?.id === result.id && result.overview && (
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                                 {result.overview}
                               </p>
                             )}
@@ -747,7 +747,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                       <div className="flex items-center justify-between">
                         <Label htmlFor="totalEpisodes" className="text-sm font-medium">{t("independentPage.addItem.form.totalEpisodes", { ns: "nav.maintenance" })}</Label>
                         {tmdbSeasons && tmdbSeasons.length > 1 && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <span className="text-xs text-muted-foreground">
                             {t("independentPage.addItem.form.seasons", { ns: "nav.maintenance", count: tmdbSeasons.length })}
                           </span>
                         )}
@@ -775,7 +775,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                             <Badge
                               key={index}
                               variant="outline"
-                              className="text-[10px] h-5 px-2 py-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400"
+                              className="text-[10px] h-5 px-2 py-0 border-blue-200 text-blue-600"
                             >
                               S{season.seasonNumber} {season.totalEpisodes || 0}{t("independentPage.addItem.form.episodes", { ns: "nav.maintenance" })}
                             </Badge>
@@ -848,7 +848,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd, prefilledData
                 </div>
 
                 {/* 每日更新选项 - 移动到这里 */}
-                <div className="flex items-center space-x-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center space-x-2 p-3 bg-accent/50 rounded-md border border-border">
                   <Checkbox
                     id="isDailyUpdate"
                     checked={formData.isDailyUpdate}

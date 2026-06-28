@@ -369,13 +369,13 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   {nextRunTime && (
                     <div className="flex items-center justify-between py-3 border-t border-b border-border/50">
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t("nextRun")}</span>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">{t("nextRun")}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{nextRunTime}</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">·</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">{cronDescription}</span>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <span className="text-xs text-muted-foreground">{cronDescription}</span>
                       </div>
                     </div>
                   )}

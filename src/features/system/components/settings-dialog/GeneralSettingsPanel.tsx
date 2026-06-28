@@ -25,7 +25,7 @@ export default function GeneralSettingsPanel({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">{t("generalSettings")}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           {t("generalSettingsDesc")}
         </p>
       </div>
@@ -41,7 +41,7 @@ export default function GeneralSettingsPanel({
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-sm font-medium">{t("useProxy")}</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("useProxyDesc")}</p>
+              <p className="text-xs text-muted-foreground">{t("useProxyDesc")}</p>
             </div>
             <Switch
               checked={generalSettings.useProxy}
@@ -74,7 +74,7 @@ export default function GeneralSettingsPanel({
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-sm font-medium">{t("enableBlur")}</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("enableBlurDesc")}</p>
+              <p className="text-xs text-muted-foreground">{t("enableBlurDesc")}</p>
             </div>
             <Switch
               checked={generalSettings.detailBackdropBlurEnabled}
@@ -113,7 +113,7 @@ export default function GeneralSettingsPanel({
         <CardContent className="space-y-4">
           <div>
             <Label className="text-sm font-medium">{t("tmdbHoverButtonAction")}</Label>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("tmdbHoverButtonActionDesc")}</p>
+            <p className="text-xs text-muted-foreground mb-2">{t("tmdbHoverButtonActionDesc")}</p>
             <Select
               value={generalSettings.tmdbButtonBehavior}
               onValueChange={(value) => setGeneralSettings({ ...generalSettings, tmdbButtonBehavior: value as 'detail' | 'search' })}

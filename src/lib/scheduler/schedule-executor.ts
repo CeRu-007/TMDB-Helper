@@ -6,6 +6,7 @@ import { itemsRepository } from '@/lib/database/repositories/items.repository'
 import { getDatabase } from '@/lib/database/connection'
 import { logger } from '@/lib/utils/logger'
 import { cleanCSV, extractEpisodeCount, analyzeCSVMetadata, mergeMultiPlatformCSVs } from '@/lib/scheduler/csv-cleaner'
+import { detectTmdbModuleName } from '@/lib/utils/tmdb-module-detector'
 import { notifier } from '@/lib/scheduler/notifier'
 import type { FieldCleanup } from '@/types/schedule'
 
@@ -53,13 +54,14 @@ export async function executeScheduleTask(
       return { success: false, message: '请先在设置中配置TMDB-Import工具路径' }
     }
 
+    const tmdbModule = detectTmdbModuleName(tmdbImportPath)
     const platformUrl = task.platformUrl || item.platformUrls?.[0]
     if (!platformUrl) {
       return { success: false, message: '词条没有配置播出平台URL' }
     }
 
     const headlessFlag = task.headless ? '--headless' : ''
-    const platformCommand = `python -m tmdb_import ${headlessFlag} "${platformUrl}"`
+    const platformCommand = `python -m ${tmdbModule} ${headlessFlag} "${platformUrl}"`
     logger.info(`[Schedule Execute] 执行播出平台抓取: ${platformCommand}`)
     addLog('info', `执行播出平台抓取: ${platformCommand}`)
 
@@ -135,7 +137,7 @@ export async function executeScheduleTask(
       addLog('info', `执行TMDB导入: 第${tmdbSeason}季, 语言=${tmdbLanguage}`)
 
       const tmdbUrl = `https://www.themoviedb.org/tv/${item.tmdbId}/season/${tmdbSeason}?language=${tmdbLanguage}`
-const tmdbCommand = `python -m tmdb_import ${headlessFlag} "${tmdbUrl}"`
+const tmdbCommand = `python -m ${tmdbModule} ${headlessFlag} "${tmdbUrl}"`
       logger.info(`[Schedule Execute] TMDB命令: ${tmdbCommand}`)
 
       const tmdbResult = await executeInteractiveCommand(tmdbCommand, tmdbImportPath, addLog, tmdbAutoResponse)
@@ -194,6 +196,7 @@ async function executeMultiPlatformTask(
     return { success: false, message: '请先在设置中配置TMDB-Import工具路径' }
   }
   addLog('info', `TMDB-Import路径: ${tmdbImportPath}`)
+  const tmdbModule = detectTmdbModuleName(tmdbImportPath)
 
   const csvPath = path.join(tmdbImportPath, 'import.csv')
   const enabledPlatforms = task.platformConfigs?.filter(s => s.enabled) || []
@@ -220,7 +223,7 @@ async function executeMultiPlatformTask(
       .map(([k]) => k)
     addLog('info', `保留字段: ${keepFieldNames.join(', ') || '无'}`)
 
-    const command = `python -m tmdb_import ${headlessFlag} "${source.url}"`
+    const command = `python -m ${tmdbModule} ${headlessFlag} "${source.url}"`
     addLog('info', `执行命令: ${command}`)
 
     const result = await executeExternalCommand(command, tmdbImportPath, addLog)
@@ -291,7 +294,7 @@ async function executeMultiPlatformTask(
     const tmdbAutoResponse = task.tmdbAutoResponse || 'w'
 
     const tmdbUrl = `https://www.themoviedb.org/tv/${item.tmdbId}/season/${tmdbSeason}?language=${tmdbLanguage}`
-    const tmdbCommand = `python -m tmdb_import ${headlessFlag} "${tmdbUrl}"`
+    const tmdbCommand = `python -m ${tmdbModule} ${headlessFlag} "${tmdbUrl}"`
 
     const tmdbResult = await executeInteractiveCommand(tmdbCommand, tmdbImportPath, addLog, tmdbAutoResponse)
     if (tmdbResult.success) {

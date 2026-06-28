@@ -29,12 +29,12 @@ export function CategoryChart({ data }: CategoryChartProps) {
   const total = chartData.reduce((sum, item) => sum + item.value, 0)
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-5">
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+    <div className="rounded-xl border border-border bg-muted/50 p-5">
+      <h3 className="text-sm font-medium text-foreground mb-4">
         {t('categoryDistribution')}
       </h3>
       {chartData.length === 0 ? (
-        <div className="flex items-center justify-center h-[240px] text-gray-400 text-sm">{t('noData')}</div>
+        <div className="flex items-center justify-center h-[240px] text-muted-foreground text-sm">{t('noData')}</div>
       ) : (
         <div className="flex flex-col md:flex-row items-center gap-4">
           <div className="w-full md:w-1/2 h-[240px]">
@@ -69,11 +69,11 @@ export function CategoryChart({ data }: CategoryChartProps) {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: CATEGORY_COLORS[item.category] || '#6b7280' }}
                   />
-                  <span className="text-gray-600 dark:text-gray-400">{item.name}</span>
+                  <span className="text-muted-foreground">{item.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{item.value}</span>
-                  <span className="text-xs text-gray-400">
+                  <span className="font-medium text-foreground">{item.value}</span>
+                  <span className="text-xs text-muted-foreground">
                     {total > 0 ? `${Math.round((item.value / total) * 100)}%` : '0%'}
                   </span>
                 </div>

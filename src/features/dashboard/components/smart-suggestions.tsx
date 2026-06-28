@@ -27,9 +27,9 @@ const TYPE_CONFIG: Record<string, { icon: React.ElementType; bgClass: string; te
   },
   info: {
     icon: Info,
-    bgClass: 'bg-gray-50 dark:bg-gray-800/50',
-    textClass: 'text-gray-700 dark:text-gray-300',
-    borderClass: 'border-gray-200 dark:border-gray-700',
+    bgClass: 'bg-muted/50',
+    textClass: 'text-foreground',
+    borderClass: 'border-border',
   },
   success: {
     icon: CheckCircle,
@@ -43,12 +43,12 @@ export function SmartSuggestions({ suggestions }: SmartSuggestionsProps) {
   const { t } = useTranslation('dashboard')
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4 md:p-5">
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 md:mb-4">
+    <div className="rounded-xl border border-border bg-muted/50 p-4 md:p-5">
+      <h3 className="text-sm font-medium text-foreground mb-3 md:mb-4">
         {t('smartSuggestions')}
       </h3>
       {suggestions.length === 0 ? (
-        <div className="flex items-center justify-center h-[120px] text-gray-400 text-sm">
+        <div className="flex items-center justify-center h-[120px] text-muted-foreground text-sm">
           {t('noSuggestions')}
         </div>
       ) : (

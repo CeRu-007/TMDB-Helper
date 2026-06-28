@@ -152,8 +152,8 @@ export function VideoAnalysisFeedback({
       )}
 
       {steps.length > 0 && (
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+        <div className="bg-muted/50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-foreground mb-3">
             {t("feedback.analysisProgress")}
           </h4>
           <div className="space-y-3">
@@ -166,7 +166,7 @@ export function VideoAnalysisFeedback({
                   {!isLast && (
                     <div className={cn(
                       "absolute left-2 top-6 w-px h-6 transition-colors",
-                      step.status === 'completed' ? "bg-green-300" : "bg-gray-300 dark:bg-gray-600"
+                      step.status === 'completed' ? "bg-green-300" : "bg-border"
                     )} />
                   )}
 
@@ -176,7 +176,7 @@ export function VideoAnalysisFeedback({
                       step.status === 'completed' && "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
                       step.status === 'running' && "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
                       step.status === 'failed' && "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-                      step.status === 'pending' && "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
+                      step.status === 'pending' && "bg-muted text-muted-foreground"
                     )}>
                       {step.status === 'completed' && <CheckCircle2 className="h-3 w-3" />}
                       {step.status === 'running' && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -191,7 +191,7 @@ export function VideoAnalysisFeedback({
                           step.status === 'completed' && "text-green-700 dark:text-green-300",
                           step.status === 'running' && "text-blue-700 dark:text-blue-300",
                           step.status === 'failed' && "text-red-700 dark:text-red-300",
-                          step.status === 'pending' && "text-gray-500 dark:text-gray-400"
+                          step.status === 'pending' && "text-muted-foreground"
                         )}>
                           {stepNames[step.id] || step.name}
                         </span>
@@ -212,7 +212,7 @@ export function VideoAnalysisFeedback({
                       </div>
 
                       {step.message && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {step.message}
                         </p>
                       )}
@@ -224,7 +224,7 @@ export function VideoAnalysisFeedback({
                       )}
 
                       {step.duration && step.status === 'completed' && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {t("feedback.duration", { seconds: step.duration })}
                         </p>
                       )}
@@ -242,7 +242,7 @@ export function VideoAnalysisFeedback({
           {onCancel && isAnalyzing && (
             <button
               onClick={onCancel}
-              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+              className="px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {t("feedback.cancel")}
             </button>

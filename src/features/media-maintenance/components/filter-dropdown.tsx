@@ -115,8 +115,8 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
           className={cn(
             "flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md transition-colors border",
             hasActiveFilter
-              ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 border-transparent"
+              ? "text-blue-600 bg-blue-50 border-blue-200"
+              : "text-muted-foreground hover:text-foreground hover:bg-accent border-transparent"
           )}
         >
           <SlidersHorizontal className="h-4 w-4" />
@@ -141,7 +141,7 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -151,7 +151,7 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
 
         <div className="p-3 border-b">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               {t("category", { ns: "common" })}
             </span>
             {selectedCategory !== 'all' && (
@@ -171,8 +171,8 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
                 className={cn(
                   "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
                   selectedCategory === category.id
-                    ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
                 )}
               >
                 {CATEGORY_ICONS[category.id] || <LayoutGrid className="h-3.5 w-3.5" />}
@@ -185,7 +185,7 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
         {platforms.length > 0 && (
           <div className="p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t("platform", { ns: "common" })}
               </span>
               {selectedPlatform !== 'all' && (
@@ -203,8 +203,8 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
                 className={cn(
                   "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
                   selectedPlatform === 'all'
-                    ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-muted-foreground hover:bg-accent"
                 )}
               >
                 <Radio className="h-4 w-4 flex-shrink-0" />
@@ -217,8 +217,8 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
                   className={cn(
                     "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
                     selectedPlatform === platform.id
-                      ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-muted-foreground hover:bg-accent"
                   )}
                 >
                   <div className="h-4 w-4 flex-shrink-0 flex items-center justify-center">
@@ -233,7 +233,7 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
                     )}
                   </div>
                   <span className="truncate flex-1 text-left">{platform.name}</span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">{platform.count}</span>
+                  <span className="text-xs text-muted-foreground">{platform.count}</span>
                 </button>
               ))}
             </div>
@@ -244,7 +244,7 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
           <div className="p-3 border-t">
             <button
               onClick={clearAllFilters}
-              className="w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 py-1"
+              className="w-full text-center text-xs text-muted-foreground hover:text-foreground py-1"
             >
               {t("clearAllFilters", { ns: "common" })}
             </button>

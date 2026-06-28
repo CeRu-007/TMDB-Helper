@@ -1,8 +1,8 @@
 import React, { useEffect, useCallback } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { UserAvatar } from "@/shared/components/user-identity-provider"
-import { Settings, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen, Bell, Menu, ImageUp } from "lucide-react"
-import { useTheme } from "next-themes"
+import { Settings, Plus, PanelLeftClose, PanelLeftOpen, Bell, Menu, ImageUp } from "lucide-react"
+
 import Image from "next/image"
 import { useTranslation } from "react-i18next"
 import { logger } from "@/lib/utils/logger"
@@ -32,7 +32,6 @@ export function AppHeader({
   onShowJournalDialog,
   onShowDashboard
 }: AppHeaderProps) {
-  const { theme, setTheme } = useTheme()
   const { t } = useTranslation(["settings", "dashboard", "journal", "common"])
   const journalUnreadCount = useUIStore((s) => s.journalUnreadCount)
   const setJournalUnreadCount = useUIStore((s) => s.setJournalUnreadCount)
@@ -70,7 +69,7 @@ export function AppHeader({
   }, [])
 
   return (
-    <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm border-b dark:border-gray-700 sticky top-0 z-40">
+    <header className="bg-background/80 backdrop-blur-sm shadow-sm border-b border-border sticky top-0 z-40">
       <div className="relative h-16 max-md:h-14">
         {/* ===== 桌面端：原始布局（完全不变） ===== */}
         <div className="max-md:hidden">
@@ -132,15 +131,6 @@ export function AppHeader({
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center" title={t("settings.settings")}>
                   <Settings className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="flex items-center"
-                  title={theme === "dark" ? t("switchToLightTheme", { ns: "common" }) : t("switchToDarkTheme", { ns: "common" })}
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
               </div>
 
@@ -221,15 +211,6 @@ export function AppHeader({
               aria-label={t("settings.settings")}
             >
               <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="min-w-[44px] min-h-[44px] p-0"
-              aria-label={theme === "dark" ? t("switchToLightTheme", { ns: "common" }) : t("switchToDarkTheme", { ns: "common" })}
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <UserAvatar
               hideNameOnMobile

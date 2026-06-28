@@ -14,53 +14,35 @@
 
 /* 基础毛玻璃效果 - 移除投影 */
 .glass-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: hsl(var(--card) / 0.1);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid hsl(var(--border) / 0.2);
   transition: border-color 0.15s ease;
   will-change: border-color;
-}
-
-.dark .glass-card {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* 悬停效果 - 简化以避免闪烁 */
 .glass-card:hover {
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.dark .glass-card:hover {
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid hsl(var(--border) / 0.3);
 }
 
 /* 任务卡片专用样式 */
 .task-card-glass {
-  background: rgba(255, 255, 255, 0.08);
+  background: hsl(var(--card) / 0.08);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid hsl(var(--border) / 0.15);
   border-radius: 12px;
   transition: border-color 0.15s ease;
   position: relative;
-  overflow: visible; /* 改为 visible 以确保菜单能正确显示 */
+  overflow: visible;
   will-change: border-color;
-}
-
-.dark .task-card-glass {
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* 任务卡片悬停效果 - 移除transform避免闪烁 */
 .task-card-glass:hover {
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.dark .task-card-glass:hover {
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid hsl(var(--border) / 0.25);
 }
 
 /* 状态指示器 */
@@ -145,10 +127,6 @@
   transition: border-color 0.15s ease;
 }
 
-.task-card-compact:hover {
-  border-color: hsl(var(--muted-foreground) / 0.3) !important;
-}
-
 /* 水平布局 */
 .task-info-horizontal {
   display: flex;
@@ -180,53 +158,31 @@
 
 /* 状态徽章样式 */
 .status-badge-glass {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: hsl(var(--card) / 0.15);
+  border: 1px solid hsl(var(--border) / 0.2);
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  /* 移除backdrop-filter和transition以提升性能 */
-}
-
-.dark .status-badge-glass {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* 操作按钮样式 */
 .action-button-glass {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: hsl(var(--card) / 0.1);
+  border: 1px solid hsl(var(--border) / 0.15);
   transition: background-color 0.15s ease, border-color 0.15s ease;
   will-change: background-color, border-color;
 }
 
 .action-button-glass:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  /* 移除transform和backdrop-filter避免闪烁 */
-}
-
-.dark .action-button-glass {
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.dark .action-button-glass:hover {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: hsl(var(--card) / 0.2);
+  border: 1px solid hsl(var(--border) / 0.3);
 }
 
 /* 选中状态 */
 .task-card-selected {
   border: 2px solid hsl(var(--primary)) !important;
   background-color: hsl(var(--primary) / 0.05);
-}
-
-.dark .task-card-selected {
-  border: 2px solid hsl(var(--primary)) !important;
-  background-color: hsl(var(--primary) / 0.1);
 }
 
 /* 简化的按钮样式 - 避免与其他样式冲突 */
@@ -238,11 +194,7 @@
 }
 
 .simple-hover-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dark .simple-hover-button:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: hsl(var(--card) / 0.1);
 }
 
 /* 对话框头部按钮组样式 */
@@ -311,10 +263,13 @@
 
 /* 任务展示区域专用边框样式 */
 .task-display-area {
-  /* 覆盖默认glass-card边框，使用更明显的边框 */
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  /* 确保边框在所有状态下都稳定显示 */
+  border: 2px solid hsl(var(--border) / 0.3) !important;
   transition: border-color 0.2s ease !important;
+}
+
+/* 悬停效果 - 增强边框可见性 */
+.task-display-area:hover {
+  border: 2px solid hsl(var(--border) / 0.4) !important;
 }
 
 /* 确保toast通知始终在最顶层 */
@@ -325,27 +280,14 @@
   position: fixed !important;
 }
 
-.dark .task-display-area {
-  /* 深色主题下的边框 */
-  border: 2px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-/* 悬停效果 - 增强边框可见性 */
-.task-display-area:hover {
-  border: 2px solid rgba(255, 255, 255, 0.4) !important;
-}
-
-.dark .task-display-area:hover {
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+/* 紧凑布局悬停效果 */
+.task-card-compact:hover {
+  border-color: hsl(var(--border) / 0.3) !important;
 }
 
 /* 确保在选择模式下边框保持稳定 */
 .task-display-area.selection-mode {
-  border: 2px solid rgba(59, 130, 246, 0.4) !important;
-}
-
-.dark .task-display-area.selection-mode {
-  border: 2px solid rgba(59, 130, 246, 0.3) !important;
+  border: 2px solid hsl(var(--primary) / 0.4) !important;
 }
 
 

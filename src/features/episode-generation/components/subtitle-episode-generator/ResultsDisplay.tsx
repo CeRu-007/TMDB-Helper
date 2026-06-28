@@ -270,7 +270,7 @@ export function ResultsDisplay({
           {words.map((word, index) => (
             <span
               key={index}
-              className={word.trim() ? "hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer px-0.5 rounded" : ""}
+              className={word.trim() ? "hover:bg-accent cursor-pointer px-0.5 rounded" : ""}
               onClick={word.trim() ? (e) => handleWordClick(e, text) : undefined}
             >
               {word}
@@ -444,7 +444,7 @@ export function ResultsDisplay({
         {results.map((result, index) => (
           <div
             key={`${result.fileName || 'default'}-${result.episodeNumber}-${index}`}
-            className="group border border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+            className="group border border-border rounded-lg p-3 md:p-4 bg-card hover:bg-accent/50 transition-colors"
           >
             {/* 标题行 - 紧凑布局 */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 md:mb-3 gap-2 md:gap-0">
@@ -482,11 +482,11 @@ export function ResultsDisplay({
                       type="text"
                       value={editingTitle}
                       onChange={(e) => setEditingTitle(e.target.value)}
-                      className="w-full px-2 py-1 text-sm font-medium border border-blue-300 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+                      className="w-full px-2 py-1 text-sm font-medium border border-blue-300 rounded bg-card text-foreground focus:outline-none focus:border-blue-500"
                       placeholder={t("results.editTitlePlaceholder")}
                     />
                   ) : (
-                    <h3 className="text-xs md:text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    <h3 className="text-xs md:text-sm font-medium text-foreground truncate">
                       {result.generatedTitle}
                     </h3>
                   )}
@@ -501,7 +501,7 @@ export function ResultsDisplay({
                 >
                   {Math.round(result.confidence * 100)}%
                 </Badge>
-                <span className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
                   {t("results.wordCount", { count: editingIndex === index ? editingSummary.length : result.wordCount })}
                 </span>
 
@@ -605,7 +605,7 @@ export function ResultsDisplay({
                 <textarea
                   value={editingSummary}
                   onChange={(e) => setEditingSummary(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-blue-300 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-blue-300 rounded bg-card text-foreground resize-none focus:outline-none focus:border-blue-500"
                   rows={4}
                   placeholder={t("resultsPanel.editSummaryPlaceholder")}
                 />
@@ -616,7 +616,7 @@ export function ResultsDisplay({
                   </div>
                   <div
                     ref={textContainerRef}
-                    className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed p-2 rounded border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 cursor-text select-none"
+                    className="text-sm text-foreground leading-relaxed p-2 rounded border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 cursor-text select-none"
                     onMouseDown={(e) => handleCustomMouseDown(e, index)}
                     onContextMenu={(e) => {
                       e.preventDefault()
@@ -645,7 +645,7 @@ export function ResultsDisplay({
                     <button
                       onClick={() => handleConfirmRewrite(index)}
                       disabled={!selectedText || isRewritingText}
-                      className="min-h-[44px] px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-1"
+                      className="min-h-[44px] px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed flex items-center space-x-1"
                     >
                       {isRewritingText ? (
                         <>
@@ -662,7 +662,7 @@ export function ResultsDisplay({
                     <button
                       onClick={handleCancelRewrite}
                       disabled={isRewritingText}
-                      className="min-h-[44px] px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-1"
+                      className="min-h-[44px] px-3 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed flex items-center space-x-1"
                     >
                       <X className="h-3 w-3" />
                         <span>{t("resultsPanel.cancelRewrite")}</span>
@@ -670,14 +670,14 @@ export function ResultsDisplay({
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                <p className="text-sm text-foreground leading-relaxed">
                   {result.generatedSummary}
                 </p>
               )}
             </div>
 
             {/* 底部信息行 */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-0 text-[10px] md:text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-0 text-[10px] md:text-xs text-muted-foreground pt-2 border-t border-border">
               <div className="flex items-center flex-wrap gap-1.5 md:gap-3">
                 <span>🤖 {result.model.split('/').pop()}</span>
                 <span>🕒 {new Date(result.generationTime).toLocaleTimeString()}</span>

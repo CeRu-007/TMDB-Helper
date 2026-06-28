@@ -41,8 +41,8 @@ export function FileList({
       <div className="p-3 md:p-4 border-b border-blue-100/50 dark:border-blue-900/30">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-gray-800 dark:text-gray-200 text-sm md:text-base">{t("fileList.subtitleFiles")}</h3>
-            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 md:mt-1">
+            <h3 className="font-medium text-foreground text-sm md:text-base">{t("fileList.subtitleFiles")}</h3>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1">
               {t("fileList.filesCount", { count: files.length })}
             </p>
           </div>
@@ -62,7 +62,7 @@ export function FileList({
           <Button
             onClick={onBatchGenerate}
             disabled={isGenerating || !apiConfigured || files.length === 0}
-            className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400"
+            className="w-full bg-green-500 hover:bg-green-600 disabled:bg-muted disabled:text-muted-foreground"
             size="sm"
           >
             {isGenerating ? (
@@ -116,8 +116,8 @@ export function FileList({
               className={cn(
                 "group cursor-pointer transition-all duration-200 hover:shadow-md",
                 selectedFile?.id === file.id
-                  ? "ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-950/30"
-                  : "hover:bg-gray-50/50 dark:hover:bg-gray-800/50"
+                  ? "ring-2 ring-primary bg-primary/10"
+                  : "hover:bg-accent/50"
               )}
               onClick={() => onSelectFile(file)}
             >
@@ -133,11 +133,11 @@ export function FileList({
                       </div>
                     </div>
                     <div className="space-y-0.5 md:space-y-1">
-                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{t("fileList.episodes", { count: file.episodes.length })}</span>
                         <span>{(file.size / 1024).toFixed(1)} KB</span>
                       </div>
-                      <div className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500">
+                      <div className="text-[10px] md:text-xs text-muted-foreground">
                         {file.uploadTime.toLocaleString()}
                       </div>
 
@@ -150,7 +150,7 @@ export function FileList({
                               file.generationStatus === 'completed' && "text-green-600 dark:text-green-400",
                               file.generationStatus === 'generating' && "text-blue-600 dark:text-blue-400",
                               file.generationStatus === 'failed' && "text-red-600 dark:text-red-400",
-                              file.generationStatus === 'pending' && "text-gray-500 dark:text-gray-400"
+                              file.generationStatus === 'pending' && "text-muted-foreground"
                             )}>
                               {file.generationStatus === 'completed' && <CheckCircle className="h-2.5 w-2.5 md:h-3 md:w-3" />}
                               {file.generationStatus === 'generating' && <Loader2 className="h-2.5 w-2.5 md:h-3 md:w-3 animate-spin" />}
@@ -164,7 +164,7 @@ export function FileList({
                               </span>
                             </span>
                             {file.generationStatus === 'generating' && file.generationProgress !== undefined && (
-                              <span className="text-[10px] md:text-xs text-gray-500">
+                              <span className="text-[10px] md:text-xs text-muted-foreground">
                                 {file.generatedCount || 0}/{file.episodes.length}
                               </span>
                             )}
@@ -172,11 +172,11 @@ export function FileList({
 
                           {/* 进度条 */}
                           {(file.generationStatus === 'generating' || file.generationStatus === 'completed') && (
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+                            <div className="w-full bg-muted rounded-full h-1">
                               <div
                                 className={cn(
                                   "h-1 rounded-full transition-all duration-300",
-                                  file.generationStatus === 'completed' ? "bg-green-500" : "bg-blue-500"
+                                  file.generationStatus === 'completed' ? "bg-green-500" : "bg-primary"
                                 )}
                                 style={{
                                   width: `${file.generationProgress || 0}%`
@@ -192,7 +192,7 @@ export function FileList({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="min-w-[44px] min-h-[44px] h-6 w-6 p-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="min-w-[44px] min-h-[44px] h-6 w-6 p-0 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.stopPropagation()
                         onDeleteFile(file.id)
@@ -221,24 +221,24 @@ function FileListEmptyState({ onUpload }: { onUpload: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full p-3 md:p-4 text-center">
       <div className="mb-3 md:mb-4">
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-full p-3 md:p-4 border border-gray-200/50 dark:border-gray-700/50">
-          <FileText className="h-6 w-6 md:h-8 md:w-8 text-gray-400 dark:text-gray-500" />
+        <div className="bg-muted/50 rounded-full p-3 md:p-4 border border-border/50">
+          <FileText className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
         </div>
       </div>
       <div className="space-y-1 md:space-y-2 mb-3 md:mb-4">
-        <h4 className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">
+        <h4 className="text-xs md:text-sm font-medium text-muted-foreground">
           {t("fileList.noFiles")}
         </h4>
-        <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-500 max-w-[180px] md:max-w-[200px] leading-relaxed">
+        <p className="text-[10px] md:text-xs text-muted-foreground max-w-[180px] md:max-w-[200px] leading-relaxed">
           {t("fileList.noFilesHint")}
         </p>
       </div>
-      <div className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500 space-y-1">
+      <div className="text-[10px] md:text-xs text-muted-foreground space-y-1">
         <div className="flex items-center justify-center space-x-1">
-          <div className="w-2 h-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-sm"></div>
+          <div className="w-2 h-2 border border-dashed border-border rounded-sm"></div>
           <span>{t("fileList.dragUploadHint")}</span>
         </div>
-        <div className="text-gray-300 dark:text-gray-600">
+        <div className="text-muted-foreground">
           SRT • VTT • ASS • SSA
         </div>
       </div>

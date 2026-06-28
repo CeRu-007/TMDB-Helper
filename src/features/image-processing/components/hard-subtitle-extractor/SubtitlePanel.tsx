@@ -97,11 +97,11 @@ export function SubtitlePanel({
   if (subtitles.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-4 text-center">
-        <Type className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" />
-        <p className="text-gray-500 dark:text-gray-400 mb-2">
+        <Type className="h-12 w-12 text-muted-foreground mb-3" />
+        <p className="text-muted-foreground mb-2">
           {t("hardSubtitle.noSubtitlesYet")}
         </p>
-        <p className="text-gray-400 dark:text-gray-500 text-sm">
+        <p className="text-muted-foreground text-sm">
           {t("hardSubtitle.startExtractingHint")}
         </p>
       </div>
@@ -111,9 +111,9 @@ export function SubtitlePanel({
   return (
     <div className="h-full flex flex-col">
       {/* 工具栏 */}
-      <div className="flex items-center justify-between flex-wrap gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between flex-wrap gap-2 px-3 py-2 border-b border-border">
         <div className="flex flex-col space-y-0.5">
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
             {subtitles.length} {t("hardSubtitle.subtitleCount_label")}
           </span>
           {totalTime !== undefined && totalTime > 0 && (
@@ -143,7 +143,7 @@ export function SubtitlePanel({
           {subtitles.map((subtitle) => (
             <div
               key={subtitle.id}
-              className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
+              className="bg-gray-50 bg-muted/50 rounded-lg p-3 border border-border"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
@@ -174,14 +174,14 @@ export function SubtitlePanel({
                           onClick={() => onDelete(subtitle.id)}
                           title={t("hardSubtitle.deleteSubtitle")}
                         >
-                          <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400" />
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-red-600 dark:hover:text-red-400" />
                         </button>
                       )}
                       <button
-                        className="p-2 md:p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                        className="p-2 md:p-1 hover:bg-accent rounded transition-colors"
                         onClick={() => handleEditStart(subtitle)}
                       >
-                        <Edit3 className="h-3.5 w-3.5 text-gray-400" />
+                        <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
                       </button>
                     </>
                   )}
@@ -216,7 +216,7 @@ export function SubtitlePanel({
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-900 dark:text-white">
+                <p className="text-sm text-foreground">
                   {subtitle.text}
                 </p>
               )}
@@ -226,13 +226,13 @@ export function SubtitlePanel({
       </ScrollArea>
 
       {/* 预览SRT */}
-      <div className="border-t border-gray-200 dark:border-gray-700">
+      <div className="border-t border-border">
         <details className="group">
-          <summary className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+          <summary className="px-3 py-2 text-xs text-muted-foreground cursor-pointer hover:bg-accent">
             {t("hardSubtitle.previewSrt")}
           </summary>
-          <div className="p-3 bg-gray-100 dark:bg-gray-900 max-h-32 overflow-auto">
-            <pre className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-mono">
+          <div className="p-3 bg-muted/50 max-h-32 overflow-auto">
+            <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono">
               {generateSRTContent().slice(0, 500)}
               {generateSRTContent().length > 500 && "..."}
             </pre>

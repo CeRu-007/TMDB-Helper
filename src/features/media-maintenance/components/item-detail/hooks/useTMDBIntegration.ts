@@ -19,13 +19,15 @@ interface UseTMDBIntegrationProps {
   customSeasonNumber: number
   selectedLanguage: string
   pythonCmd: string
+  tmdbModule?: string
 }
 
 export function useTMDBIntegration({
   item,
   customSeasonNumber,
   selectedLanguage,
-  pythonCmd
+  pythonCmd,
+  tmdbModule = 'tmdb_import'
 }: UseTMDBIntegrationProps) {
   // Generate TMDB import commands
   const generateTmdbImportCommands = useMemo((): TMDBCommand[] => {
@@ -36,7 +38,7 @@ export function useTMDBIntegration({
       item.platformUrls.forEach((url, idx) => {
         const info = getPlatformInfo(url)
         const platformName = info?.name || `平台${idx + 1}`
-        const platformCommand = `${pythonCmd} -m tmdb_import "${url}"`
+        const platformCommand = `${pythonCmd} -m ${tmdbModule} "${url}"`
         commands.push({
           type: "platform",
           title: `播出平台抓取 - ${platformName}`,
@@ -50,7 +52,7 @@ export function useTMDBIntegration({
     // TMDB抓取命令
     if (item.tmdbId) {
       if (item.mediaType === "tv") {
-        const tmdbCommand = `${pythonCmd} -m tmdb_import "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${selectedLanguage}"`
+        const tmdbCommand = `${pythonCmd} -m ${tmdbModule} "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${selectedLanguage}"`
         commands.push({
           type: "tmdb",
           title: `上传至TMDB第${customSeasonNumber}季`,
@@ -62,7 +64,7 @@ export function useTMDBIntegration({
     }
 
     return commands
-  }, [item, customSeasonNumber, selectedLanguage, pythonCmd])
+  }, [item, customSeasonNumber, selectedLanguage, pythonCmd, tmdbModule])
 
   return {
     commands: generateTmdbImportCommands,

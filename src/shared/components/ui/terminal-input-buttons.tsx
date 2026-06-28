@@ -67,7 +67,7 @@ export function TerminalInputButtons({
           size="sm"
           onClick={sendEnter}
           disabled={disabled || isSending}
-          className="bg-gray-50 border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700"
+          className="bg-gray-50 border-gray-200 hover:bg-muted dark:border-border dark:hover:bg-accent"
         >
           {isSending ? (
             <span className="flex items-center">

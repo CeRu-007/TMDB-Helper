@@ -294,23 +294,23 @@ export function AiChat() {
   }
 
   return (
-    <div className="h-full flex bg-white dark:bg-gray-950 overflow-hidden relative" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div className="h-full flex bg-background overflow-hidden relative" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {isSidebarCollapsed && (
         <div className="absolute top-3 left-3 z-50 flex items-center gap-2">
           <Button
             onClick={() => setIsSidebarCollapsed(false)}
-            className="h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+            className="h-10 w-10 p-0 hover:bg-accent rounded-lg"
             variant="ghost"
           >
-            <PanelRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <PanelRight className="w-5 h-5 text-muted-foreground" />
           </Button>
           <Button
             onClick={createNewChat}
-            className="h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg relative"
+            className="h-10 w-10 p-0 hover:bg-accent rounded-lg relative"
             variant="ghost"
           >
-            <MessageSquare className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            <Plus className="w-3 h-3 text-gray-600 dark:text-gray-400 absolute bottom-1.5 right-1.5 bg-white dark:bg-gray-950 rounded-full" />
+            <MessageSquare className="w-5 h-5 text-muted-foreground" />
+            <Plus className="w-3 h-3 text-muted-foreground absolute bottom-1.5 right-1.5 bg-background rounded-full" />
           </Button>
         </div>
       )}

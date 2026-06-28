@@ -82,15 +82,8 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
   // TMDB-Import 运行模式：前台模式（GUI）或后台模式（无头）
   const [headlessMode, setHeadlessMode] = useState<boolean>(false)
 
-  // 生成播出平台抓取命令
-  const generatePlatformCommand = useCallback((): string => {
-    return `python -m tmdb_import ${headlessMode ? '--headless' : ''} "${platformUrl}"`
-  }, [headlessMode, platformUrl])
-
-  // 生成TMDB抓取命令
-  const generateTmdbCommand = useCallback((): string => {
-    return `python -m tmdb_import ${headlessMode ? '--headless' : ''} "https://www.themoviedb.org/tv/${tmdbId}/season/${selectedSeason}?language=${selectedLanguage}"`
-  }, [headlessMode, tmdbId, selectedSeason, selectedLanguage])
+  // 自动检测 TMDB-Import 模块名（兼容 v1.x tmdb-import 和 v2.0 tmdb_import）
+  const [tmdbModule, setTmdbModule] = useState<string>('tmdb_import')
 
   // 统一获取 TMDB-Import 工具路径：服务端配置为唯一来源
   const getTmdbImportPath = useCallback(async (): Promise<string | null> => {
@@ -103,6 +96,29 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
       return null;
     }
   }, []);
+
+  useEffect(() => {
+    const detect = async () => {
+      const path = await getTmdbImportPath()
+      if (!path) return
+      try {
+        const res = await fetch(`/api/external/tmdb-module-name?path=${encodeURIComponent(path)}`)
+        const data = await res.json()
+        setTmdbModule(data.moduleName)
+      } catch {}
+    }
+    detect()
+  }, [getTmdbImportPath])
+
+  // 生成播出平台抓取命令
+  const generatePlatformCommand = useCallback((): string => {
+    return `python -m ${tmdbModule} ${headlessMode ? '--headless' : ''} "${platformUrl}"`
+  }, [headlessMode, platformUrl, tmdbModule])
+
+  // 生成TMDB抓取命令
+  const generateTmdbCommand = useCallback((): string => {
+    return `python -m ${tmdbModule} ${headlessMode ? '--headless' : ''} "https://www.themoviedb.org/tv/${tmdbId}/season/${selectedSeason}?language=${selectedLanguage}"`
+  }, [headlessMode, tmdbId, selectedSeason, selectedLanguage, tmdbModule])
 
   // 自动滚动终端到底部
   const scrollToBottom = useCallback(() => {
@@ -380,7 +396,6 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
   // 执行平台抓取
   const handlePlatformExtraction = useCallback(async () => {
-    const command = generatePlatformCommand()
     if (!platformUrl) {
       toast({
         title: "错误",
@@ -401,15 +416,18 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
       return
     }
 
+    const modRes = await fetch(`/api/external/tmdb-module-name?path=${encodeURIComponent(savedTmdbImportPath)}`)
+    const { moduleName } = await modRes.json()
+    const command = `python -m ${moduleName} ${headlessMode ? '--headless' : ''} "${platformUrl}"`
+
     setIsProcessing(true)
     appendTerminalOutput(`切换到工作目录: ${savedTmdbImportPath}`, "info")
     await executeCommand(command, "播出平台抓取", savedTmdbImportPath)
     setIsProcessing(false)
-  }, [generatePlatformCommand, platformUrl, executeCommand, toast, appendTerminalOutput, getTmdbImportPath])
+  }, [platformUrl, headlessMode, executeCommand, toast, appendTerminalOutput, getTmdbImportPath])
 
   // 执行TMDB导入
   const handleTmdbImport = useCallback(async () => {
-    const command = generateTmdbCommand()
     if (!tmdbId) {
       toast({
         title: "错误",
@@ -430,11 +448,15 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
       return
     }
 
+    const modRes = await fetch(`/api/external/tmdb-module-name?path=${encodeURIComponent(savedTmdbImportPath)}`)
+    const { moduleName } = await modRes.json()
+    const command = `python -m ${moduleName} ${headlessMode ? '--headless' : ''} "https://www.themoviedb.org/tv/${tmdbId}/season/${selectedSeason}?language=${selectedLanguage}"`
+
     setIsProcessing(true)
     appendTerminalOutput(`切换到工作目录: ${savedTmdbImportPath}`, "info")
     await executeCommand(command, "TMDB导入", savedTmdbImportPath)
     setIsProcessing(false)
-  }, [generateTmdbCommand, tmdbId, executeCommand, toast, appendTerminalOutput, getTmdbImportPath])
+  }, [tmdbId, headlessMode, selectedSeason, executeCommand, toast, appendTerminalOutput, getTmdbImportPath])
 
   // 发送快速命令
   const sendQuickCommand = useCallback(async (input: string) => {
@@ -530,10 +552,10 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
     <div className="h-full independent-maintenance">
       <div className="h-full flex flex-col md:flex-row">
         {/* 左侧区域 - 根据标签页显示不同内容 */}
-        <div className="flex-1 bg-gray-900 dark:bg-gray-950 overflow-hidden min-w-0 h-1/2 md:h-auto">
+        <div className="flex-1 bg-background overflow-hidden min-w-0 h-1/2 md:h-auto">
           <div className="h-full flex flex-col">
             {/* 左侧头部 */}
-            <div className="bg-gray-800 dark:bg-gray-900 px-4 py-2 border-b border-gray-700">
+            <div className="bg-card px-4 py-2 border-b border-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="flex space-x-1">
@@ -580,7 +602,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                 </div>
               ) : (
                 // CSV编辑器模式
-                <div className="h-full bg-white dark:bg-gray-800 flex flex-col">
+                <div className="h-full bg-card flex flex-col">
                   {csvData ? (
                     editorMode === "table" ? (
                       <div className="flex-1 min-h-0 overflow-hidden">
@@ -611,7 +633,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                       </div>
                     )
                   ) : (
-                    <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
                       <div className="text-center">
                         <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>{t("independentPage.noCsvData")}</p>
@@ -626,13 +648,13 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         </div>
 
         {/* 右侧操作面板 */}
-        <div className="w-full md:w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
+        <div className="w-full md:w-80 bg-card border-l border-border flex flex-col flex-shrink-0">
         {/* 操作面板头部 */}
-        <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <div className="p-3 md:p-4 border-b border-border">
+          <h3 className="text-base md:text-lg font-semibold text-foreground">
             {t("independentPage.title")}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             {t("independentPage.subtitle")}
           </p>
         </div>
@@ -656,7 +678,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
               <div className="bg-gray-900 text-green-400 p-2 lg:p-3 rounded-md font-mono text-xs overflow-hidden">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 w-0 truncate text-xs">{generatePlatformCommand() || `python -m tmdb_import "${platformUrl || '请输入播出平台URL'}"`}</div>
+                    <div className="flex-1 w-0 truncate text-xs">{generatePlatformCommand() || `python -m ${tmdbModule} "${platformUrl || '请输入播出平台URL'}"`}</div>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -673,7 +695,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                     </Button>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 w-0 truncate text-xs">{generateTmdbCommand() || `python -m tmdb_import "https://www.themoviedb.org/tv/${tmdbId || 'TMDB_ID'}/season/${selectedSeason}?language=zh-CN"`}</div>
+                    <div className="flex-1 w-0 truncate text-xs">{generateTmdbCommand() || `python -m ${tmdbModule} "https://www.themoviedb.org/tv/${tmdbId || 'TMDB_ID'}/season/${selectedSeason}?language=zh-CN"`}</div>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -833,14 +855,14 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
               {/* 交互按钮区域 */}
               {isExecutingCommand && (
-                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="pt-3 border-t border-border">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-xs flex items-center">
                       <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      <span className="text-blue-600 dark:text-blue-400">
+                      <span className="text-blue-600">
                         {t("independentPage.executingCommand")}
                         {currentProcessId && (
-                          <span className="text-green-600 dark:text-green-400 ml-1">
+                          <span className="text-green-600 ml-1">
                             {t("independentPage.processId", { pid: currentProcessId })}
                           </span>
                         )}
@@ -886,7 +908,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
               )}
 
               {/* 终端控制 */}
-              <div className="pt-3 lg:pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="pt-3 lg:pt-4 border-t border-border">
                 <div className="flex space-x-2">
                   <Button
                     onClick={clearTerminal}
@@ -939,8 +961,8 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
 
               {/* 编辑器状态 */}
               {csvData && (
-                <div className="pt-3 lg:pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                <div className="pt-3 lg:pt-4 border-t border-border">
+                  <div className="text-xs text-muted-foreground space-y-1">
                     <p>{t("independentPage.rowCount")}: {csvData.length}</p>
                     <p>{t("independentPage.editorMode")}: {editorMode === "table" ? t("independentPage.tableEdit") : t("independentPage.textEdit")}</p>
                   </div>
@@ -951,8 +973,8 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         </div>
 
         {/* 底部状态信息 */}
-        <div className="mt-auto p-3 md:p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="mt-auto p-3 md:p-4 border-t border-border">
+          <div className="text-xs text-muted-foreground">
             <p>{t("independentPage.status")}: {isProcessing ? t("independentPage.processing") : t("independentPage.ready")}</p>
             <p>{t("independentPage.mode")}: {t("independentPage.independentMode")}</p>
           </div>

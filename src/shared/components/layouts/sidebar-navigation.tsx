@@ -221,7 +221,7 @@ export function SidebarNavigation({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="w-12 h-12 relative transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className="w-12 h-12 relative transition-all duration-200 hover:bg-accent"
                   >
                     {group.icon}
                   </Button>
@@ -237,7 +237,7 @@ export function SidebarNavigation({
                         }}
                       />
                       <div
-                        className="fixed w-40 bg-white dark:bg-gray-800 border-l-4 border-l-blue-500 border-r border-t border-b border-gray-200 dark:border-gray-600 shadow-2xl z-[100] rounded-r-lg overflow-hidden"
+                        className="fixed w-40 bg-card border-l-4 border-l-blue-500 border-r border-t border-b border-border shadow-2xl z-[100] rounded-r-lg overflow-hidden"
                         style={{
                           ...getSubmenuPosition(groupIndex),
                           transform: 'translateX(-1px)',
@@ -246,7 +246,7 @@ export function SidebarNavigation({
                         onMouseLeave={handleSubmenuMouseLeave}
                       >
                         <div className="py-2">
-                          <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                             {t(group.titleKey, { ns: group.ns })}
                           </div>
                           {group.items.map((item) => (
@@ -256,7 +256,7 @@ export function SidebarNavigation({
                                 "relative cursor-pointer transition-all duration-200 px-3 py-2",
                                 activeMenu === group.id && activeSubmenu === item.id
                                   ? "bg-blue-500 text-white"
-                                  : "hover:bg-blue-50 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300"
+                                  : "hover:bg-accent text-foreground"
                               )}
                               onClick={() => handleMenuClick(group.id, item.id)}
                             >
@@ -278,7 +278,7 @@ export function SidebarNavigation({
               ) : (
                 <div className="space-y-1">
                   <div
-                    className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center cursor-pointer select-none hover:text-foreground transition-colors"
                     onClick={() => toggleGroup(group.id)}
                   >
                     {group.icon}
@@ -305,8 +305,8 @@ export function SidebarNavigation({
                           className={cn(
                             "w-full justify-start h-9",
                             activeMenu === group.id && activeSubmenu === item.id
-                              ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-r-2 border-r-blue-500"
-                              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                              ? "bg-primary/15 text-primary border-r-2 border-r-blue-500"
+                              : "text-foreground hover:bg-accent"
                           )}
                           onClick={() => handleMenuClick(group.id, item.id)}
                         >

@@ -63,17 +63,17 @@ export function GenerationSettingsDialog({
         </DialogHeader>
 
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="p-3 md:p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-3 md:mb-4 flex-shrink-0 space-y-3 md:space-y-4">
+          <div className="p-3 md:p-4 bg-card rounded-lg mb-3 md:mb-4 flex-shrink-0 space-y-3 md:space-y-4">
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-0 md:justify-between">
               <div className="flex items-center flex-wrap gap-1.5 md:gap-2">
-                <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-xs md:text-sm text-muted-foreground">
                   {t("generationSettings.modelServiceStatus")}
                 </span>
                 <Badge variant={scenarioModels.availableModels.length > 0 ? "default" : "destructive"} className="text-[10px] md:text-xs">
                   {scenarioModels.availableModels.length > 0 ? t("generationSettings.configured") : t("generationSettings.notConfigured")}
                 </Badge>
                 {scenarioModels.availableModels.length > 0 && (
-                  <span className="text-[10px] md:text-xs text-gray-500">
+                  <span className="text-[10px] md:text-xs text-muted-foreground">
                     {t("generationSettings.availableModels", { count: scenarioModels.availableModels.length })}
                   </span>
                 )}
@@ -96,7 +96,7 @@ export function GenerationSettingsDialog({
             </div>
 
             {scenarioModels.getCurrentModel() && (
-              <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-0 md:justify-between p-2.5 md:p-3 bg-white dark:bg-gray-700 rounded-lg">
+              <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-0 md:justify-between p-2.5 md:p-3 bg-muted rounded-lg">
                 <div className="flex items-center flex-wrap gap-1.5 md:gap-2">
                   <Badge variant="secondary" className="text-[10px] md:text-xs">
                     {t("generationSettings.currentModel")}
@@ -104,7 +104,7 @@ export function GenerationSettingsDialog({
                   <span className="text-xs md:text-sm font-medium">
                     {scenarioModels.getCurrentModel()?.displayName}
                   </span>
-                  <span className="text-[10px] md:text-xs text-gray-500">
+                  <span className="text-[10px] md:text-xs text-muted-foreground">
                     ({scenarioModels.getCurrentModel()?.modelId})
                   </span>
                 </div>
@@ -118,14 +118,14 @@ export function GenerationSettingsDialog({
             )}
           </div>
 
-          <div className="border-b border-gray-200 dark:border-gray-700 mb-3 md:mb-4 flex-shrink-0 overflow-x-auto scrollbar-hide">
+          <div className="border-b border-border mb-3 md:mb-4 flex-shrink-0 overflow-x-auto scrollbar-hide">
             <nav className="-mb-px flex space-x-4 md:space-x-6 min-w-max px-0.5">
               <button
                 onClick={() => setActiveTab("generation")}
                 className={`min-h-[44px] py-2 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm whitespace-nowrap ${
                   activeTab === "generation"
-                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
               >
                 {t("generationSettings.tabGeneration")}
@@ -135,7 +135,7 @@ export function GenerationSettingsDialog({
                 className={`min-h-[44px] py-2 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm whitespace-nowrap ${
                   activeTab === "titleStyle"
                     ? "border-green-500 text-green-600 dark:text-green-400"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
               >
                 {t("generationSettings.tabTitleStyle")}
@@ -144,8 +144,8 @@ export function GenerationSettingsDialog({
                 onClick={() => setActiveTab("summaryStyle")}
                 className={`min-h-[44px] py-2 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm whitespace-nowrap ${
                   activeTab === "summaryStyle"
-                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
               >
                 {t("generationSettings.tabSummaryStyle")}
@@ -155,7 +155,7 @@ export function GenerationSettingsDialog({
                 className={`min-h-[44px] py-2 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm whitespace-nowrap ${
                   activeTab === "videoAnalysis"
                     ? "border-purple-500 text-purple-600 dark:text-purple-400"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
               >
                 {t("generationSettings.tabVideoAnalysis")}
@@ -178,7 +178,7 @@ export function GenerationSettingsDialog({
             )}
           </div>
 
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-0 pt-3 md:pt-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 mt-3 md:mt-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-0 pt-3 md:pt-4 border-t border-border flex-shrink-0 mt-3 md:mt-4">
             <div className="flex-1 md:mr-4">
               {activeTab === "titleStyle" && (
                 <div className="text-sm">
@@ -192,7 +192,7 @@ export function GenerationSettingsDialog({
                       })}
                     </span>
                   ) : (
-                    <span className="text-gray-500">{t("generationSettings.noTitleStyle")}</span>
+                    <span className="text-muted-foreground">{t("generationSettings.noTitleStyle")}</span>
                   )}
                 </div>
               )}
@@ -239,7 +239,7 @@ export function GenerationSettingsDialog({
                       })}
                     </span>
                   ) : (
-                    <span className="text-gray-500">{t("generationSettings.videoAnalysisDisabled")}</span>
+                    <span className="text-muted-foreground">{t("generationSettings.videoAnalysisDisabled")}</span>
                   )}
                 </div>
               )}

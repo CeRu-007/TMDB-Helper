@@ -75,17 +75,17 @@ function renderLogLine(line: string, index: number) {
     const beforeLevel = line.slice(0, levelMatch.index)
     const levelTag = levelMatch[0]
     const afterLevel = line.slice(levelMatch.index + levelTag.length)
-    const color = LEVEL_COLORS[levelMatch[1]!] || "text-gray-300 dark:text-gray-400"
+    const color = LEVEL_COLORS[levelMatch[1]!] || "text-muted-foreground"
     return (
       <div key={index} className="leading-relaxed">
         <span className="text-gray-400">{beforeLevel}</span>
         <span className={`font-semibold ${color}`}>{levelTag}</span>
-        <span className="text-gray-700 dark:text-gray-300">{afterLevel}</span>
+        <span className="text-foreground">{afterLevel}</span>
       </div>
     )
   }
   return (
-    <div key={index} className="leading-relaxed text-gray-700 dark:text-gray-300">{line}</div>
+    <div key={index} className="leading-relaxed text-foreground">{line}</div>
   )
 }
 
@@ -341,10 +341,10 @@ useEffect(() => {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col md:flex-row">
-      <div className="w-full md:w-64 border-b md:border-r bg-gray-50/50 dark:bg-gray-900/50 flex flex-col max-h-40 md:max-h-none">
-        <div className="p-4 border-b dark:border-gray-700">
+      <div className="w-full md:w-64 border-b md:border-r bg-muted/50 flex flex-col max-h-40 md:max-h-none">
+        <div className="p-4 border-b dark:border-border">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">日志文件</h3>
+            <h3 className="text-sm font-semibold text-foreground">日志文件</h3>
             <Button
               variant="ghost"
               size="icon"
@@ -375,7 +375,7 @@ useEffect(() => {
                   className={`w-full flex items-start gap-2 p-2.5 rounded-lg text-left transition-colors ${
                     selectedFile === f.name
                       ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                      : "hover:bg-accent text-foreground"
                   }`}
                 >
                   <FileText className={`h-4 w-4 mt-0.5 flex-shrink-0 ${selectedFile === f.name ? "text-blue-500" : "text-gray-400"}`} />
@@ -394,7 +394,7 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="p-3 border-t dark:border-gray-700">
+        <div className="p-3 border-t dark:border-border">
           <Button
             variant="outline"
             size="sm"
@@ -409,7 +409,7 @@ useEffect(() => {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex flex-wrap items-center gap-1.5 p-2 md:p-3 border-b dark:border-gray-700 bg-white dark:bg-gray-950">
+        <div className="flex flex-wrap items-center gap-1.5 p-2 md:p-3 border-b dark:border-border bg-background">
           <div className="flex flex-wrap items-center gap-1">
             {LEVEL_FILTERS.map((f) => (
               <button
@@ -418,7 +418,7 @@ useEffect(() => {
                 className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
                   levelFilter === f.value
                     ? f.label === "全部"
-                      ? "bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900"
+                      ? "bg-gray-800 dark:bg-muted text-white dark:text-foreground"
                       : f.label === "DEBUG"
                         ? "bg-cyan-500 text-white"
                         : f.label === "INFO"
@@ -426,7 +426,7 @@ useEffect(() => {
                           : f.label === "WARN"
                             ? "bg-orange-500 text-white"
                             : "bg-red-500 text-white"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    : "bg-muted text-muted-foreground hover:bg-accent"
                 }`}
               >
                 {f.label}
@@ -499,7 +499,7 @@ useEffect(() => {
                     : <span className="text-gray-400">日志内容为空</span>}
               </div>
               <div ref={contentEndRef} />
-              <div className="sticky bottom-0 px-2 md:px-4 py-1 md:py-1.5 border-t dark:border-gray-800 bg-white dark:bg-gray-950 text-xs text-gray-400 flex items-center justify-between">
+              <div className="sticky bottom-0 px-2 md:px-4 py-1 md:py-1.5 border-t dark:border-border bg-background text-xs text-gray-400 flex items-center justify-between">
                 <div className="flex items-center gap-2 md:gap-3 min-w-0">
                   <span className="truncate max-w-[120px] md:max-w-none">{selectedFile}</span>
                   {autoRefresh && <span className="text-green-500">● 实时</span>}
@@ -507,14 +507,14 @@ useEffect(() => {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={scrollToTop}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                    className="p-1 hover:bg-accent rounded transition-colors"
                     title="滚动到顶部"
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={scrollToBottom}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                    className="p-1 hover:bg-accent rounded transition-colors"
                     title="滚动到底部"
                   >
                     <ArrowDown className="h-3.5 w-3.5" />

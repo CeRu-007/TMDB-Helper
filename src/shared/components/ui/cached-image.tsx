@@ -128,7 +128,7 @@ export function CachedImage({
       {showSkeleton && imageState === 'loading' && (
         <div
           className={cn(
-            'absolute inset-0 animate-pulse bg-gray-200 dark:bg-gray-800',
+            'absolute inset-0 animate-pulse bg-muted',
             skeletonClassName
           )}
         />
@@ -136,7 +136,7 @@ export function CachedImage({
 
       {/* 错误状态 */}
       {imageState === 'error' && !fallbackElement && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+        <div className="absolute inset-0 flex items-center justify-center bg-muted">
           <div className="flex flex-col items-center gap-2 text-gray-400">
             <ImageOff className="h-8 w-8" />
             <span className="text-xs">加载失败</span>

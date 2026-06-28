@@ -122,21 +122,21 @@ export function ConfigPanel({
 
         {/* 或分隔符 */}
         <div className="flex items-center space-x-2">
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-          <span className="text-xs text-gray-400">{t("hardSubtitle.or")}</span>
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground">{t("hardSubtitle.or")}</span>
+          <div className="flex-1 h-px bg-border" />
         </div>
 
         {/* 文件上传 */}
         <div
-          className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 text-center hover:border-blue-400 transition-colors cursor-pointer"
+          className="border-2 border-dashed border-border rounded-lg p-3 md:p-4 text-center hover:border-primary transition-colors cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">
             {t("hardSubtitle.clickToUploadVideo")}
           </p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {t("hardSubtitle.supportedFormats")}
           </p>
           <input
@@ -164,7 +164,7 @@ export function ConfigPanel({
             {subtitleRegions.map((region, index) => (
               <div
                 key={region.id}
-                className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded flex justify-between items-center"
+                className="text-xs bg-muted px-2 py-1 rounded flex justify-between items-center"
               >
                 <span>{t("hardSubtitle.region")} {index + 1}</span>
                 <div className="flex items-center gap-2">
@@ -316,11 +316,11 @@ export function ConfigPanel({
         <div className="space-y-2">
           <div className="flex justify-between text-xs">
             <Label>{t("hardSubtitle.extractingProgress")}</Label>
-            <span className="text-gray-400">{Math.floor(progress)}%</span>
+            <span className="text-muted-foreground">{Math.floor(progress)}%</span>
           </div>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 transition-all duration-300"
+              className="h-full bg-primary transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>

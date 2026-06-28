@@ -43,14 +43,14 @@ export function ErrorState({ error, onRefresh, onOpenSettings }: ErrorStateProps
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
-      <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800 max-w-md">
-        <h2 className="text-xl font-semibold mb-2 text-red-700 dark:text-red-300 flex items-center">
+      <div className="bg-red-50 p-6 rounded-lg border border-red-200 max-w-md">
+        <h2 className="text-xl font-semibold mb-2 text-red-700 flex items-center">
           {errorIcon}
           {errorTitle}
         </h2>
-        <p className="text-red-600 dark:text-red-300 mb-2">{errorMessage}</p>
+        <p className="text-red-600 mb-2">{errorMessage}</p>
         {errorTip && (
-          <p className="text-sm text-red-500 dark:text-red-400 mb-4 bg-red-100 dark:bg-red-900/50 p-2 rounded">
+          <p className="text-sm text-red-500 mb-4 bg-red-100 p-2 rounded">
             {t("error.hint")}: {errorTip}
           </p>
         )}

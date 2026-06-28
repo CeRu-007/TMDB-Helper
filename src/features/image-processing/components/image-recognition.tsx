@@ -332,7 +332,7 @@ export function ImageRecognition() {
                   "border-2 border-dashed rounded-lg p-6 md:p-12 text-center cursor-pointer transition-colors min-h-[200px] md:h-48 flex flex-col justify-center",
                   uploadedImage
                     ? "border-green-300 bg-green-50 dark:bg-green-900/20"
-                    : "border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500"
+                    : "border-border hover:border-muted-foreground"
                 )}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -349,7 +349,7 @@ export function ImageRecognition() {
                       <p className="text-sm font-medium text-green-700 dark:text-green-300">
                         {t("imageRecognition.imageUploaded")}
                       </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                      <p className="text-xs text-muted-foreground">
                         {t("imageRecognition.clickToReselect")}
                       </p>
                     </div>
@@ -362,10 +362,10 @@ export function ImageRecognition() {
                       </svg>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xl font-medium text-gray-700 dark:text-gray-300">
+                      <p className="text-xl font-medium text-foreground">
                         {t("imageRecognition.uploadImage")}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-muted-foreground">
                         {t("imageRecognition.uploadHint")}
                       </p>
                     </div>
@@ -399,14 +399,14 @@ export function ImageRecognition() {
                 )}
               </Button>
               
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-card rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <Settings className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                  <Settings className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <p className="text-sm font-medium text-foreground">
                       {t("imageRecognition.advancedSearchMode")}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       {t("imageRecognition.advancedSearchModeDesc")}
                     </p>
                   </div>
@@ -499,9 +499,9 @@ export function ImageRecognition() {
 
                 {/* 相似图片展示区域 */}
                 {advancedSearchMode && similarImages.length > 0 && (
-                  <div className="space-y-4 p-4 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-900/50 dark:to-slate-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="space-y-4 p-4 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-card/50 dark:to-slate-900/50 rounded-lg border border-border">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center space-x-2">
+                      <h4 className="text-sm font-semibold text-foreground flex items-center space-x-2">
                         <ImageIcon className="h-4 w-4" />
                         <span>{t("imageRecognition.similarImages")}</span>
                         <Badge variant="secondary" className="text-xs">
@@ -523,7 +523,7 @@ export function ImageRecognition() {
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                       {similarImages.slice(0, showAllSimilarImages ? similarImages.length : 8).map((image, index) => (
                         <div key={index} className="group relative">
-                          <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-sm group-hover:shadow-md transition-shadow">
+                          <div className="aspect-square rounded-lg overflow-hidden bg-muted shadow-sm group-hover:shadow-md transition-shadow">
                             <img
                               src={image.url}
                               alt={`Similar image ${index + 1}`}
@@ -545,7 +545,7 @@ export function ImageRecognition() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowAllSimilarImages(true)}
-                          className="max-sm:min-h-[44px] max-sm:min-w-[44px] text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                          className="max-sm:min-h-[44px] max-sm:min-w-[44px] text-xs text-muted-foreground hover:text-gray-800 dark:hover:text-foreground"
                         >
                           {t("imageRecognition.loadMore", { count: similarImages.length - 8 })}
                         </Button>
@@ -609,7 +609,7 @@ export function ImageRecognition() {
                 `}</style>
                 
               {!analysisResult ? (
-                <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400 p-6">
+                <div className="h-full flex items-center justify-center text-muted-foreground p-6">
                   <div className="text-center space-y-3">
                     <AlertCircle className="h-12 w-12 mx-auto opacity-50" />
                     <p className="text-base font-medium">{t("imageRecognition.noAnalysisResult")}</p>
@@ -625,20 +625,20 @@ export function ImageRecognition() {
                       <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
                         {t("imageRecognition.aiAnalysisResult")}
                       </h4>
-                      <div className="ml-auto text-xs text-gray-500 dark:text-gray-400">
+                      <div className="ml-auto text-xs text-muted-foreground">
                         {Math.round(analysisResult.confidence * 100)}%
                       </div>
                     </div>
                     
                     <div className="space-y-3">
-                      <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-md backdrop-blur-sm">
+                      <div className="p-3 bg-white/60 dark:bg-card/60 rounded-md backdrop-blur-sm">
                         <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
                           {analysisResult.description}
                         </p>
                       </div>
                       
                       <div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">{t("imageRecognition.keywords")}</p>
+                        <p className="text-xs text-muted-foreground mb-2 font-medium">{t("imageRecognition.keywords")}</p>
                         <div className="flex flex-wrap gap-1">
                           {analysisResult.keywords.slice(0, 6).map((keyword, index) => (
                             <Badge 
@@ -652,7 +652,7 @@ export function ImageRecognition() {
                           {analysisResult.keywords.length > 6 && (
                             <Badge 
                               variant="secondary" 
-                              className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                              className="text-xs px-2 py-1 bg-muted text-muted-foreground"
                             >
                               +{analysisResult.keywords.length - 6}
                             </Badge>
@@ -667,10 +667,10 @@ export function ImageRecognition() {
                     {currentMovies.length === 0 ? (
                       <div className="text-center py-4">
                           <Search className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                          <p className="text-sm text-muted-foreground">
                             {t("imageRecognition.noMatchResults")}
                           </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {t("imageRecognition.tryDifferentImage")}
                           </p>
                         </div>
@@ -698,25 +698,25 @@ export function ImageRecognition() {
                                 
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start justify-between mb-1">
-                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                    <h4 className="text-sm font-semibold text-foreground truncate">
                                       {movie.title}
                                     </h4>
                                   </div>
                                   
                                   {movie.originalTitle && movie.originalTitle !== movie.title && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 truncate">
+                                    <p className="text-xs text-muted-foreground mb-1 truncate">
                                       {movie.originalTitle}
                                     </p>
                                   )}
                                   
                                   <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                                    <span className="text-xs text-muted-foreground">
                                       {movie.year}
                                     </span>
                                     <div className="flex items-center space-x-2">
                                       <div className="flex items-center space-x-1">
                                         <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                        <span className="text-xs font-medium text-foreground">
                                           {movie.rating.toFixed(1)}
                                         </span>
                                       </div>
@@ -729,7 +729,7 @@ export function ImageRecognition() {
                                     </div>
                                   </div>
                                   
-                                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                                     {movie.overview}
                                   </p>
                                 </div>
@@ -753,7 +753,7 @@ export function ImageRecognition() {
                           <ChevronLeft className="h-3" />
                         </Button>
                         
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-xs text-muted-foreground">
                           {currentPage} / {totalPages}
                         </span>
                         

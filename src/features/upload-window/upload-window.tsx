@@ -545,9 +545,9 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
         ref={panelRef}
         className={cn(
           standalone
-            ? "fixed inset-0 z-[9999] bg-white dark:bg-gray-950 flex flex-col overflow-hidden"
-            : "fixed z-[9999] bg-white dark:bg-gray-950 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden transition-shadow",
-          isPinned && !standalone ? "shadow-blue-500/10 border-blue-200 dark:border-blue-800" : "",
+            ? "fixed inset-0 z-[9999] bg-background flex flex-col overflow-hidden"
+            : "fixed z-[9999] bg-background rounded-xl shadow-2xl border border-border flex flex-col overflow-hidden transition-shadow",
+          isPinned && !standalone ? "shadow-blue-500/10 border-blue-200" : "",
           isPinned && standalone ? "ring-2 ring-blue-500/40" : "",
           isDragging && !standalone ? "shadow-2xl scale-[1.01]" : "",
           isDragOver ? "ring-2 ring-blue-500 border-blue-500" : "",
@@ -567,24 +567,24 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           ref={dragHandleRef}
           onMouseDown={handleMouseDown}
           className={cn(
-            "flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-800 select-none",
+            "flex items-center justify-between px-3 py-2 border-b border-border select-none",
             isDragging ? "cursor-grabbing" : "cursor-grab",
             standalone && isElectron && "electron-drag-region",
           )}
         >
           <div className="flex items-center gap-2">
             <ImageIcon className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("title")}</span>
+            <span className="text-sm font-medium text-foreground">{t("title")}</span>
             <HelpInfoButton
               content={t("helpDescription")}
             />
             {lastDirectoryName && (
-              <span className="text-xs text-gray-400 dark:text-gray-500 ml-1 truncate max-w-[150px]">
+              <span className="text-xs text-muted-foreground ml-1 truncate max-w-[150px]">
                 — {lastDirectoryName}
               </span>
             )}
             {files.length > 0 && (
-              <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">
+              <span className="text-xs text-muted-foreground ml-1">
                 ({files.length})
               </span>
             )}
@@ -614,7 +614,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
             <Button
               variant="ghost"
               size="icon"
-              className={cn("w-7 h-7 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500", standalone && isElectron && "electron-no-drag")}
+              className={cn("w-7 h-7 hover:bg-red-50 hover:text-red-500", standalone && isElectron && "electron-no-drag")}
               onClick={handleClose}
               title={t("close")}
             >
@@ -623,7 +623,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
           <Button
             variant="outline"
             size="sm"
@@ -640,7 +640,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           </Button>
 
           {lastDirectoryName && (
-            <span className="text-xs text-gray-400 dark:text-gray-500 truncate flex-1">
+            <span className="text-xs text-muted-foreground truncate flex-1">
               {t("lastDirectory")}: {lastDirectoryName}
             </span>
           )}
@@ -668,10 +668,10 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
         </div>
 
         {files.length > 0 && breadcrumbs.length > 0 && (
-          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-gray-950/50 text-xs overflow-x-auto">
+          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border bg-background/50 text-xs overflow-x-auto">
             {breadcrumbs.map((crumb, idx) => (
               <React.Fragment key={crumb.level}>
-                {idx > 0 && <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />}
+                {idx > 0 && <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />}
                 <button
                   onClick={() => {
                     if (crumb.level === -1) {
@@ -688,8 +688,8 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
                   className={cn(
                     "px-1.5 py-0.5 rounded whitespace-nowrap transition-colors",
                     idx === breadcrumbs.length - 1
-                      ? "text-blue-600 dark:text-blue-400 font-medium"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800",
+                      ? "text-blue-600 font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
                   )}
                 >
                   {crumb.label}
@@ -699,11 +699,11 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
           </div>
         )}
 
-        <div className="flex-1 overflow-hidden bg-gray-50/30 dark:bg-gray-900/30 relative">
+        <div className="flex-1 overflow-hidden bg-muted/30 relative">
           {isDragOver && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-blue-50/90 dark:bg-blue-950/90 backdrop-blur-sm">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-blue-50/90 backdrop-blur-sm">
               <ImageIcon className="w-12 h-12 text-blue-400" />
-              <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{t("dragDropFolderHint")}</p>
+              <p className="text-sm font-medium text-blue-600">{t("dragDropFolderHint")}</p>
             </div>
           )}
           {loadingState.loading ? (
@@ -712,7 +712,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
                 <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
                 {loadingState.progress.total ? (
                   <>
-                    <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-blue-500 rounded-full transition-all duration-200"
                         style={{ width: `${Math.round((loadingState.progress.found / loadingState.progress.total) * 100)}%` }}
@@ -724,7 +724,7 @@ export function UploadWindow({ standalone }: UploadWindowProps) {
                   </>
                 ) : (
                   <>
-                    <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                       <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: '60%' }} />
                     </div>
                     <span className="text-sm text-gray-400">

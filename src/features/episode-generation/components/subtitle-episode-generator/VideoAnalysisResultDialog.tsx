@@ -38,16 +38,16 @@ export function VideoAnalysisResultDialog({
 
         <div className="mt-3 md:mt-4">
           <div className="mb-2 md:mb-3">
-            <h3 className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+            <h3 className="text-xs md:text-sm font-medium text-foreground flex items-center">
               <Film className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
               {t("videoAnalysis.srtContent")}
             </h3>
-            <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1">
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">
               {t("videoAnalysis.srtContentDesc")}
             </p>
           </div>
 
-          <div className="h-[180px] md:h-[240px] border rounded-lg bg-gray-50 dark:bg-gray-900 overflow-auto">
+          <div className="h-[180px] md:h-[240px] border rounded-lg bg-card overflow-auto">
             <div className="p-3 md:p-4">
               <pre className="whitespace-pre-wrap text-xs md:text-sm font-mono">
                 {result.structuredContent.srt || t("videoAnalysis.noSrtContent")}

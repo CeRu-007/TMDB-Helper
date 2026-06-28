@@ -27,18 +27,18 @@ export default function HelpSettingsPanel({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">{t("helpPanel.title")}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           {t("menu.helpDesc")}
         </p>
       </div>
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="border-b border-border">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setHelpTab("about")}
             className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${helpTab === "about"
               ? "border-blue-500 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-muted-foreground dark:hover:text-muted-foreground"
               }`}
           >
             {t("helpPanel.aboutApp")}
@@ -47,7 +47,7 @@ export default function HelpSettingsPanel({
             onClick={() => setHelpTab("updates")}
             className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${helpTab === "updates"
               ? "border-blue-500 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-muted-foreground dark:hover:text-muted-foreground"
               }`}
           >
             {t("helpPanel.versionUpdate")}
@@ -105,7 +105,7 @@ export default function HelpSettingsPanel({
                 <ExternalLink className="h-4 w-4 mr-3 flex-shrink-0" />
                 <div className="text-left">
                   <div className="font-medium text-sm">{t("helpPanel.githubRepo")}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.viewSourceAndIssue")}</div>
+                  <div className="text-xs text-muted-foreground">{t("helpPanel.viewSourceAndIssue")}</div>
                 </div>
               </Button>
               <Button
@@ -116,7 +116,7 @@ export default function HelpSettingsPanel({
                 <ExternalLink className="h-4 w-4 mr-3 flex-shrink-0" />
                 <div className="text-left">
                   <div className="font-medium text-sm">{t("helpPanel.changelog")}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.viewVersionHistory")}</div>
+                  <div className="text-xs text-muted-foreground">{t("helpPanel.viewVersionHistory")}</div>
                 </div>
               </Button>
               <Button
@@ -127,7 +127,7 @@ export default function HelpSettingsPanel({
                 <ExternalLink className="h-4 w-4 mr-3 flex-shrink-0" />
                 <div className="text-left">
                   <div className="font-medium text-sm">{t("helpPanel.issueFeedback")}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.reportBugOrSuggest")}</div>
+                  <div className="text-xs text-muted-foreground">{t("helpPanel.reportBugOrSuggest")}</div>
                 </div>
               </Button>
               <Button
@@ -138,7 +138,7 @@ export default function HelpSettingsPanel({
                 <ExternalLink className="h-4 w-4 mr-3 flex-shrink-0" />
                 <div className="text-left">
                   <div className="font-medium text-sm">{t("helpPanel.dockerHub")}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.getDockerImage")}</div>
+                  <div className="text-xs text-muted-foreground">{t("helpPanel.getDockerImage")}</div>
                 </div>
               </Button>
             </CardContent>
@@ -154,25 +154,25 @@ export default function HelpSettingsPanel({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex justify-between items-center">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.version")}</div>
+                  <div className="text-xs text-muted-foreground">{t("helpPanel.version")}</div>
                   <div className="text-sm font-medium">{appInfo.version}</div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.buildTime")}</div>
+                  <div className="text-xs text-muted-foreground">{t("helpPanel.buildTime")}</div>
                   <div className="text-sm font-medium">{appInfo.buildDate || t("helpPanel.devVersion")}</div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.appType")}</div>
+                  <div className="text-xs text-muted-foreground">{t("helpPanel.appType")}</div>
                   <div className="text-sm font-medium">{t("helpPanel.webElectron")}</div>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("helpPanel.license")}</div>
+                  <div className="text-xs text-muted-foreground">{t("helpPanel.license")}</div>
                   <div className="text-sm font-medium">{t("helpPanel.mitLicense")}</div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("helpPanel.techStack")}</div>
+              <div className="pt-4 border-t border-border">
+                <div className="text-xs text-muted-foreground mb-2">{t("helpPanel.techStack")}</div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary" className="text-xs">Next.js 15</Badge>
                   <Badge variant="secondary" className="text-xs">React 18</Badge>
@@ -183,8 +183,8 @@ export default function HelpSettingsPanel({
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("helpPanel.coreDeps")}</div>
+              <div className="pt-4 border-t border-border">
+                <div className="text-xs text-muted-foreground mb-2">{t("helpPanel.coreDeps")}</div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className="text-xs">TMDB API</Badge>
                   <Badge variant="outline" className="text-xs">TMDB-Import</Badge>
@@ -202,12 +202,12 @@ export default function HelpSettingsPanel({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                 {t("helpPanel.appDescription")}
               </p>
               <div className="space-y-2">
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t("helpPanel.mainFeatures")}</div>
-                <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside">
+                <div className="text-xs text-muted-foreground font-medium">{t("helpPanel.mainFeatures")}</div>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                   <li>• 🎬 {t("helpPanel.feature1")}</li>
                   <li>• 📺 {t("helpPanel.feature2")}</li>
                   <li>• 🖼️ {t("helpPanel.feature3")}</li>
@@ -220,16 +220,16 @@ export default function HelpSettingsPanel({
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-50 dark:bg-gray-900/50">
+          <Card className="bg-gray-50 bg-muted/50">
             <CardContent className="py-6">
               <div className="text-center space-y-2">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   © 2024 TMDB Helper. {t("helpPanel.copyright")}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {t("helpPanel.basedOnTmdb")} • {t("helpPanel.mitLicense")}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {t("helpPanel.specialThanks")} <a href="https://github.com/fzlins/TMDB-Import" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300">fzlins/TMDB-Import</a>
                 </p>
               </div>

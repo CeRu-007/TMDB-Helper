@@ -121,8 +121,8 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
             <div className="flex items-center space-x-2">
               <PlayCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{t('inProgress')}</p>
-                <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">{t('inProgress')}</p>
+                <p className="text-xl md:text-2xl font-bold text-foreground">
                   {ongoingItems.length}
                 </p>
               </div>
@@ -135,8 +135,8 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{t('completed')}</p>
-                <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">{t('completed')}</p>
+                <p className="text-xl md:text-2xl font-bold text-foreground">
                   {completedItems.length}
                 </p>
               </div>
@@ -149,8 +149,8 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
             <div className="flex items-center space-x-2">
               <Star className="h-5 w-5 text-yellow-600 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{t('total')}</p>
-                <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">{t('total')}</p>
+                <p className="text-xl md:text-2xl font-bold text-foreground">
                   {totalItems}
                 </p>
               </div>
@@ -162,8 +162,8 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
           <CardContent className="p-3 md:p-4">
             <div className="space-y-1 md:space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{t('completionRate')}</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <p className="text-xs md:text-sm text-muted-foreground">{t('completionRate')}</p>
+                <p className="text-sm font-medium text-foreground">
                   {completionRate.toFixed(1)}%
                 </p>
               </div>
@@ -207,7 +207,7 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
           ) : (
             <div className="text-center py-8">
               <PlayCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-muted-foreground">
                 {t("progress.noOngoing")}
               </p>
             </div>
@@ -235,7 +235,7 @@ export function ProgressSection({ homeState, categories }: ProgressSectionProps)
           ) : (
             <div className="text-center py-8">
               <CheckCircle2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-muted-foreground">
                 {t("progress.noCompleted")}
               </p>
             </div>

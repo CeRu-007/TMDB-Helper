@@ -99,7 +99,7 @@ export function RegionNavigation({
 
     return isActive
       ? `${baseClasses} bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 shadow-sm`
-      : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50`
+      : `${baseClasses} text-muted-foreground hover:bg-accent/50`
   }
 
   const selectedRegionData = REGIONS.find(r => r.id === selectedRegion)
@@ -110,14 +110,14 @@ export function RegionNavigation({
         <div className="flex items-center justify-between">
           {/* 当前选中区域显示和切换按钮集成 */}
           <div className="flex items-center">
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mr-2">{t("regionLabel")}:</span>
+            <span className="text-sm font-medium text-muted-foreground mr-2">{t("regionLabel")}:</span>
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={toggleDropdown}
-                className={`flex items-center bg-white/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-md border shadow-sm transition-all text-sm select-none ${
+                className={`flex items-center bg-card/80 px-3 py-1.5 rounded-md border shadow-sm transition-all text-sm select-none ${
                   isOpen
                     ? 'border-blue-300 dark:border-blue-600 bg-blue-50/50 dark:bg-blue-900/20'
-                    : 'border-blue-100 dark:border-blue-800/30 hover:bg-white dark:hover:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700'
+                    : 'border-blue-100 dark:border-blue-800/30 hover:bg-white dark:hover:bg-accent hover:border-blue-300 dark:hover:border-blue-700'
                 }`}
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"
@@ -138,7 +138,7 @@ export function RegionNavigation({
               </button>
 
               {/* 下拉菜单 */}
-              <div className={`absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-blue-100 dark:border-blue-800/50 z-50 overflow-hidden transition-all duration-200 origin-top-left ${
+              <div className={`absolute left-0 mt-1 w-56 bg-card shadow-xl rounded-lg border border-blue-100 dark:border-blue-800/50 z-50 overflow-hidden transition-all duration-200 origin-top-left ${
                 isOpen
                   ? 'opacity-100 scale-100 translate-y-0 visible'
                   : 'opacity-0 scale-95 -translate-y-1 invisible pointer-events-none'
@@ -171,7 +171,7 @@ export function RegionNavigation({
                               className={`flex items-center justify-between w-full px-2.5 py-2 text-xs rounded-md transition-all duration-150 group/region ${
                                 isActive
                                   ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/40 dark:to-indigo-900/40 text-blue-700 dark:text-blue-300 shadow-sm"
-                                  : "hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300"
+                                  : "hover:bg-accent/50 text-foreground"
                               }`}
                               role="option"
                               aria-selected={isActive}
@@ -179,8 +179,8 @@ export function RegionNavigation({
                               <div className="flex items-center">
                                 <div className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${
                                   isActive
-                                    ? "bg-white dark:bg-gray-800 shadow-inner"
-                                    : "bg-gray-100 dark:bg-gray-700/50 group-hover/region:bg-white dark:group-hover/region:bg-gray-700"
+                                    ? "bg-card shadow-inner"
+                                    : "bg-muted/50 group-hover/region:bg-card"
                                 }`}>
                                   <span className="text-sm">{region.icon}</span>
                                 </div>
@@ -193,7 +193,7 @@ export function RegionNavigation({
                                 <span className={`px-1.5 py-0.5 text-xs rounded-full font-medium min-w-[1.25rem] text-center ${
                                   isActive
                                     ? "bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-300"
-                                    : "bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400"
+                                    : "bg-gray-200 dark:bg-muted text-muted-foreground"
                                 }`}>
                                   {validItems.length}
                                 </span>
@@ -210,7 +210,7 @@ export function RegionNavigation({
           </div>
 
           {/* 媒体资讯类型切换按钮 */}
-          <div className="inline-flex p-0.5 rounded-md shadow-sm border border-blue-100 dark:border-blue-900/50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+          <div className="inline-flex p-0.5 rounded-md shadow-sm border border-blue-100 dark:border-blue-900/50 bg-card/80 backdrop-blur-sm">
             <button
               onClick={() => setMediaNewsType('upcoming')}
               className={getMediaTypeButtonClasses('upcoming')}

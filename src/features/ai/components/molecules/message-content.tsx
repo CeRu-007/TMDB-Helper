@@ -46,14 +46,14 @@ export function MessageContent({
   if (type === 'file') {
     return (
       <div className="space-y-1">
-        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+        <div className="flex items-center gap-2 text-foreground">
           <Paperclip className="w-4 h-4" />
           <span className="font-medium">{fileName}</span>
         </div>
-        <div className="break-words text-gray-900 dark:text-gray-100 leading-relaxed">
+        <div className="break-words text-foreground leading-relaxed">
           <Markdown>{content}</Markdown>
           {isStreaming && (
-            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
+            <div className="flex items-center gap-2 text-muted-foreground mt-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>{t("generatingReply")}</span>
             </div>
@@ -65,10 +65,10 @@ export function MessageContent({
   }
 
   return (
-    <div className="break-words text-gray-900 dark:text-gray-100 leading-relaxed">
+    <div className="break-words text-foreground leading-relaxed">
       <Markdown>{content}</Markdown>
       {isStreaming && (
-        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
+        <div className="flex items-center gap-2 text-muted-foreground mt-2">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span>{t("generatingReply")}</span>
         </div>

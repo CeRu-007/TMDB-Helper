@@ -25,7 +25,7 @@ export function ScheduleDetailPanel({
 }: ScheduleDetailPanelProps) {
   if (!episode) {
     return (
-      <div className="border-l bg-white dark:bg-gray-800 w-0 overflow-hidden transition-all duration-300 ease-in-out" />
+      <div className="border-l bg-card w-0 overflow-hidden transition-all duration-300 ease-in-out" />
     )
   }
 
@@ -36,8 +36,8 @@ export function ScheduleDetailPanel({
         className="hidden max-sm:block fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 w-80 max-sm:w-full max-sm:fixed max-sm:inset-y-0 max-sm:right-0 max-sm:z-50 flex flex-col overflow-hidden max-sm:border-l-0 max-sm:shadow-2xl">
-      <div className="relative aspect-video bg-gray-100 dark:bg-gray-700/50 flex-shrink-0">
+      <div className="border-l border-border bg-card w-80 max-sm:w-full max-sm:fixed max-sm:inset-y-0 max-sm:right-0 max-sm:z-50 flex flex-col overflow-hidden max-sm:border-l-0 max-sm:shadow-2xl">
+      <div className="relative aspect-video bg-muted/50 flex-shrink-0">
         <ScheduleImage
           src={episode.cover}
           alt={episode.title}
@@ -60,7 +60,7 @@ export function ScheduleDetailPanel({
             <h3 className="text-lg font-semibold mb-1">{episode.title}</h3>
             <div className="flex items-center gap-2">
               <Badge className={cn(
-                "bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-0 shadow-sm",
+                "bg-white/90 dark:bg-background/90 backdrop-blur-sm border-0 shadow-sm",
                 episode.published
                   ? "text-green-600 dark:text-green-400"
                   : "text-amber-600 dark:text-amber-400"
@@ -73,7 +73,7 @@ export function ScheduleDetailPanel({
             </div>
           </div>
 
-          <Separator className="bg-gray-100 dark:bg-gray-800" />
+          <Separator className="bg-muted" />
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -85,7 +85,7 @@ export function ScheduleDetailPanel({
               {episode.platforms && episode.platforms.length > 0 ? (
                 <div className="flex flex-wrap gap-1 justify-end max-w-[200px]">
                   {episode.platforms.map((platform, index) => (
-                    <Badge key={index} variant="outline" className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">
+                    <Badge key={index} variant="outline" className="text-xs bg-muted text-muted-foreground border-0">
                       {platform}
                     </Badge>
                   ))}
@@ -98,7 +98,7 @@ export function ScheduleDetailPanel({
               <span className="text-sm text-gray-500">类型</span>
               <div className="flex gap-1">
                 {episode.types?.map(type => (
-                  <Badge key={type} variant="outline" className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-0">
+                  <Badge key={type} variant="outline" className="text-xs bg-muted text-muted-foreground border-0">
                     {type}
                   </Badge>
                 ))}
@@ -106,7 +106,7 @@ export function ScheduleDetailPanel({
             </div>
           </div>
 
-          <Separator className="bg-gray-100 dark:bg-gray-800" />
+          <Separator className="bg-muted" />
 
           <div className="space-y-2">
             <Button
@@ -127,7 +127,7 @@ export function ScheduleDetailPanel({
                   <Button
                     key={platform}
                     variant="outline"
-                    className="w-full border-gray-200 dark:border-gray-700"
+                    className="w-full border-border"
                     onClick={() => window.open(url, '_blank')}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
@@ -138,7 +138,7 @@ export function ScheduleDetailPanel({
             ) : episode.url && (
               <Button
                 variant="outline"
-                className="w-full border-gray-200 dark:border-gray-700"
+                className="w-full border-border"
                 onClick={() => window.open(episode.url, '_blank')}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
@@ -149,7 +149,7 @@ export function ScheduleDetailPanel({
 
           <div>
             <h4 className="text-sm font-medium mb-2">简介</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               暂无简介信息
             </p>
           </div>

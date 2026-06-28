@@ -42,7 +42,7 @@ export function DashboardPage() {
       <div className="flex items-center justify-center h-full min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
           <Spinner className="h-8 w-8 animate-spin text-blue-500" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('loading')}</p>
+          <p className="text-sm text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     )
@@ -69,8 +69,8 @@ export function DashboardPage() {
       <div className="px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{t('title')}</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t('subtitle')}</p>
+            <h1 className="text-xl font-semibold text-foreground">{t('title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={handleGenerate} disabled={generating} title={generating ? t('generating') : t('generateImage')}>
@@ -120,12 +120,12 @@ export function DashboardPage() {
             <DialogTitle>{t('previewTitle')}</DialogTitle>
             <DialogDescription>{t('previewDesc')}</DialogDescription>
           </DialogHeader>
-          <div className="mt-2 overflow-y-auto max-h-[60vh] rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3">
+          <div className="mt-2 overflow-y-auto max-h-[60vh] rounded-lg border border-border bg-card p-3">
             {shareError ? (
               <div className="flex flex-col items-center justify-center py-12 gap-3">
                 <WarningCircle className="h-10 w-10 text-amber-500" weight="duotone" />
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('generateFailed')}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 max-w-xs text-center">{shareError}</p>
+                <p className="text-sm text-muted-foreground">{t('generateFailed')}</p>
+                <p className="text-xs text-muted-foreground max-w-xs text-center">{shareError}</p>
                 <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating} className="mt-2">
                   {t('retry')}
                 </Button>

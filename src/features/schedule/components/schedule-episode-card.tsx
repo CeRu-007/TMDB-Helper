@@ -31,13 +31,13 @@ export function ScheduleEpisodeCard({
   return (
     <div 
       className={cn(
-        "group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-sm hover:border-blue-200 dark:hover:border-blue-900/50",
+        "group relative bg-card rounded-xl border border-border overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-sm hover:border-blue-200 dark:hover:border-blue-900/50",
         isCompact ? "p-2.5" : "p-3"
       )}
       onClick={onClick}
     >
       <div className={cn(
-        "relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700/50",
+        "relative rounded-lg overflow-hidden bg-muted/50",
         isCompact ? "aspect-[3/4] mb-2" : "aspect-[16/9] mb-3"
       )}>
         <ScheduleImage
@@ -50,7 +50,7 @@ export function ScheduleEpisodeCard({
         <div className="absolute top-2 left-2">
           <Badge
             className={cn(
-              "text-xs bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-0 shadow-sm",
+              "text-xs bg-white/90 dark:bg-background/90 backdrop-blur-sm border-0 shadow-sm",
               episode.published
                 ? "text-green-600 dark:text-green-400"
                 : "text-amber-600 dark:text-amber-400"
@@ -65,19 +65,19 @@ export function ScheduleEpisodeCard({
             <Button
               size="sm"
               variant="secondary"
-              className="h-8 w-8 p-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800"
+              className="h-8 w-8 p-0 bg-white/90 dark:bg-card/90 backdrop-blur-sm hover:bg-white dark:hover:bg-accent"
               onClick={(e) => {
                 e.stopPropagation()
                 window.open(episode.url, '_blank')
               }}
             >
-              <Play className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              <Play className="h-4 w-4 text-foreground" />
             </Button>
           )}
           <Button 
             size="sm" 
             variant="secondary" 
-            className={cn("h-8 w-8 p-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800", isFollowing && "text-rose-500")}
+            className={cn("h-8 w-8 p-0 bg-white/90 dark:bg-card/90 backdrop-blur-sm hover:bg-white dark:hover:bg-accent", isFollowing && "text-rose-500")}
             onClick={handleToggleFollowing}
           >
             <Heart className={cn("h-4 w-4", isFollowing && "fill-current")} />
@@ -112,7 +112,7 @@ export function ScheduleEpisodeCard({
                 key={index}
                 variant="outline"
                 className={cn(
-                  "text-[10px] px-1.5 py-0 h-auto bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700",
+                  "text-[10px] px-1.5 py-0 h-auto bg-gray-50 dark:bg-muted/50 border-border",
                   isCompact && "text-[9px] px-1 py-0"
                 )}
               >

@@ -46,7 +46,7 @@ export function ScheduleImage({ src, alt, className, fallbackClassName }: Schedu
   if (imageState === 'error' || !processedSrc) {
     return (
       <div className={cn(
-        "flex items-center justify-center bg-gray-200 dark:bg-gray-700",
+        "flex items-center justify-center bg-gray-200 dark:bg-muted",
         fallbackClassName
       )}>
         <Tv className="h-8 w-8 text-gray-400" />
@@ -58,7 +58,7 @@ export function ScheduleImage({ src, alt, className, fallbackClassName }: Schedu
     <div className="relative w-full h-full">
       {imageState === 'loading' && (
         <div className={cn(
-          "absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700 animate-pulse",
+          "absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-muted animate-pulse",
           className
         )}>
           <Tv className="h-6 w-6 text-gray-400" />

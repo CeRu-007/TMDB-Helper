@@ -126,10 +126,10 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
             </div>
           </div>
 
-          <h3 className="text-base md:text-lg font-medium text-gray-900 dark:text-gray-100 mb-1 md:mb-2">
+          <h3 className="text-base md:text-lg font-medium text-foreground mb-1 md:mb-2">
             {t("emptyState.synopsisGeneration")}
           </h3>
-          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-4 md:mb-6">
+          <p className="text-xs md:text-sm text-muted-foreground mb-4 md:mb-6">
             {t("emptyState.uploadOrVideoHint")}
           </p>
 
@@ -141,8 +141,8 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                   className={cn(
                     "min-w-[44px] min-h-[44px] px-4 py-2 rounded-md text-sm font-medium transition-colors",
                     activeTab === 'upload'
-                      ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "bg-muted text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <Upload className="h-4 w-4 inline mr-1 md:mr-2" />
@@ -153,8 +153,8 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                   className={cn(
                     "min-w-[44px] min-h-[44px] px-4 py-2 rounded-md text-sm font-medium transition-colors",
                     activeTab === 'video'
-                      ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "bg-muted text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <Film className="h-4 w-4 inline mr-1 md:mr-2" />
@@ -167,11 +167,11 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
           {activeTab === 'upload' && (
             <>
               <div className="bg-blue-50/50 dark:bg-blue-950/30 rounded-lg p-3 md:p-4 mb-4 md:mb-6 text-left">
-                <h4 className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 md:mb-3 flex items-center">
+                <h4 className="text-xs md:text-sm font-medium text-foreground mb-2 md:mb-3 flex items-center">
                   <Upload className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2 text-blue-500" />
                   {t("emptyState.subtitleUploadGuide")}
                 </h4>
-                <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground">
                   <div className="flex items-start space-x-1.5 md:space-x-2">
                     <span className="text-blue-500 font-medium">1.</span>
                     <span>{t("emptyState.step1ApiConfig")}</span>
@@ -202,17 +202,17 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
               </div>
 
               <div className="mt-3 md:mt-4 space-y-1.5 md:space-y-2">
-                <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 text-center">
+                <div className="text-[10px] md:text-xs text-muted-foreground text-center">
                   {t("emptyState.supportedFormats")}
                 </div>
-                <div className="flex items-center justify-center space-x-3 md:space-x-4 text-[10px] md:text-xs text-gray-400 dark:text-gray-500">
+                <div className="flex items-center justify-center space-x-3 md:space-x-4 text-[10px] md:text-xs text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <Upload className="h-2.5 w-2.5 md:h-3 md:w-3" />
                     <span>{t("emptyState.clickToUpload")}</span>
                   </div>
-                  <div className="w-px h-2.5 md:h-3 bg-gray-300 dark:bg-gray-600"></div>
+                  <div className="w-px h-2.5 md:h-3 bg-border"></div>
                   <div className="flex items-center space-x-1">
-                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 border-2 border-dashed border-gray-400 rounded"></div>
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 border-2 border-dashed border-muted-foreground rounded"></div>
                     <span>{t("emptyState.dragToUpload")}</span>
                   </div>
                 </div>
@@ -223,11 +223,11 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
           {activeTab === 'video' && (
             <>
               <div className="bg-purple-50/50 dark:bg-purple-950/30 rounded-lg p-4 mb-6 text-left">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                <h4 className="text-sm font-medium text-foreground mb-3 flex items-center">
                   <Film className="h-4 w-4 mr-2 text-purple-500" />
                   {t("emptyState.audioTranscribeGuide")}
                 </h4>
-                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-start space-x-2">
                     <span className="text-purple-500 font-medium">1.</span>
                     <span>{t("emptyState.step1VideoUrl")}</span>
@@ -248,8 +248,8 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
               </div>
 
               <div className="mb-4 md:mb-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 md:p-4 border border-gray-200 dark:border-gray-700">
-                  <label className="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 md:mb-2">
+                <div className="bg-card rounded-lg p-3 md:p-4 border border-border">
+                  <label className="block text-xs md:text-sm font-medium text-foreground mb-1.5 md:mb-2">
                     {t("emptyState.videoUrlLabel")}
                   </label>
                   <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
@@ -260,12 +260,12 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                         onChange={(e) => setVideoUrl(e.target.value)}
                         placeholder={t("emptyState.videoUrlPlaceholder")}
                         className={cn(
-                          "w-full px-3 py-2 border rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-colors",
+                          "w-full px-3 py-2 border rounded-md text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-colors",
                           videoUrl.trim() && VideoAnalyzer.validateVideoUrl(videoUrl)
                             ? "border-green-300 dark:border-green-600 focus:ring-green-500"
                             : videoUrl.trim()
                               ? "border-red-300 dark:border-red-600 focus:ring-red-500"
-                              : "border-gray-300 dark:border-gray-600 focus:ring-purple-500"
+                              : "border-border focus:ring-primary"
                         )}
                         disabled={isAnalyzing}
                       />
@@ -282,7 +282,7 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                     <button
                       onClick={handleVideoAnalysis}
                       disabled={isAnalyzing || !videoUrl.trim() || !VideoAnalyzer.validateVideoUrl(videoUrl)}
-                      className="min-h-[44px] px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
+                      className="min-h-[44px] px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 disabled:bg-muted disabled:text-muted-foreground text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
                     >
                       {isAnalyzing ? (
                         <>
@@ -305,11 +305,11 @@ export function EmptyState({ onUpload, onVideoAnalysis }: EmptyStateProps) {
                     </div>
                   )}
 
-                  <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="mt-3 text-xs text-muted-foreground">
                     <p className="mb-2">{t("emptyState.supportedPlatforms")}</p>
                     <div className="flex flex-wrap gap-2">
                       {VideoAnalyzer.getSupportedPlatforms().map((platform, index) => (
-                        <span key={index} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">
+                        <span key={index} className="bg-muted px-2 py-1 rounded text-xs">
                           {platform.name}
                         </span>
                       ))}

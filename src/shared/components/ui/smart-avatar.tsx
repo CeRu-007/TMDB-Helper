@@ -174,7 +174,7 @@ export function SmartAvatar({
       {/* 骨架加载层 */}
       {imageSrc && !loaded && !error && (
         <div className={cn(
-          "absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-full",
+          "absolute inset-0 bg-gray-200 dark:bg-muted animate-pulse rounded-full",
           className
         )} />
       )}
@@ -220,7 +220,7 @@ export function SmartAvatar({
 export function UserAvatarImage({
   src,
   displayName,
-  className = "w-8 h-8 rounded-full shadow-sm ring-2 ring-white dark:ring-gray-800",
+  className = "w-8 h-8 rounded-full shadow-sm ring-2 ring-white dark:ring-border",
   fallbackClassName,
   onError,
   onLoad,

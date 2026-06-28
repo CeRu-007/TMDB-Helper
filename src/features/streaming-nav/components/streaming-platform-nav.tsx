@@ -127,7 +127,7 @@ function SortablePlatformCard({
               {platform.name}
             </h3>
             <SmartTooltip platform={platform} disabled={isDragMode}>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate leading-relaxed cursor-help">
+              <p className="text-xs text-muted-foreground truncate leading-relaxed cursor-help">
                 {platform.description}
               </p>
             </SmartTooltip>
@@ -323,7 +323,7 @@ function StreamingPlatformNav(): JSX.Element {
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto mb-8">
           <div className="relative mb-6">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 z-[1] pointer-events-none">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground z-[1] pointer-events-none">
               <Search className="w-5 h-5" />
             </div>
             <Input
@@ -336,7 +336,7 @@ function StreamingPlatformNav(): JSX.Element {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-muted-foreground"
               >
                 ×
               </button>
@@ -352,8 +352,8 @@ function StreamingPlatformNav(): JSX.Element {
                 className={cn(
                   'flex-shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all duration-200',
                   selectedCategory === category
-                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800',
+                    ? 'bg-gray-900 dark:bg-white text-white dark:text-foreground'
+                    : 'text-muted-foreground hover:text-gray-900 dark:hover:text-foreground hover:bg-gray-100 dark:hover:bg-slate-800',
                   isDragMode && 'opacity-50 cursor-not-allowed'
                 )}
               >
@@ -368,7 +368,7 @@ function StreamingPlatformNav(): JSX.Element {
             {(selectedCategory === tMyFavorites || selectedCategory === tRecentlyUsed) && (
               <button
                 onClick={() => handleCategoryChange(tAll)}
-                className="flex items-center gap-1 px-2 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-muted-foreground dark:hover:text-foreground hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 {t("back")}
@@ -382,7 +382,7 @@ function StreamingPlatformNav(): JSX.Element {
                     ? t("allPlatforms")
                     : selectedCategory === 'all' ? t('all') : t(selectedCategory, { ns: 'nav.platforms' })}
               </h2>
-              <span className="text-sm text-gray-500 dark:text-gray-400">({filteredPlatforms.length})</span>
+              <span className="text-sm text-muted-foreground">({filteredPlatforms.length})</span>
             </div>
           </div>
 
@@ -392,7 +392,7 @@ function StreamingPlatformNav(): JSX.Element {
               'flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-sm rounded-lg transition-all duration-200',
               isDragMode
                 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                : 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-slate-800'
             )}
           >
             <ArrowUpDown className="w-4 h-4" />
@@ -409,7 +409,7 @@ function StreamingPlatformNav(): JSX.Element {
                   'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
                   favorites.length > 0
                     ? 'bg-red-500 text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 <Heart className={cn('w-3.5 h-3.5', favorites.length > 0 && 'fill-current')} />
@@ -424,8 +424,8 @@ function StreamingPlatformNav(): JSX.Element {
                 className={cn(
                   'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
                   recentlyUsed.length > 0
-                    ? 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                    : 'text-gray-400 dark:text-gray-500 cursor-default'
+                    ? 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
+                    : 'text-muted-foreground cursor-default'
                 )}
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -433,7 +433,7 @@ function StreamingPlatformNav(): JSX.Element {
                 </svg>
                 <span>{t("recentlyUsed")}</span>
                 {recentlyUsed.length > 0 && (
-                  <span className="ml-0.5 text-xs bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-0.5 text-xs bg-gray-200 dark:bg-slate-600 text-muted-foreground px-1.5 py-0.5 rounded-full">
                     {recentlyUsed.length}
                   </span>
                 )}
@@ -471,7 +471,7 @@ function StreamingPlatformNav(): JSX.Element {
 
         {filteredPlatforms.length === 0 && (
           <div className="max-w-7xl mx-auto text-center py-16">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">{t("noMatchingPlatforms")}</p>
+            <p className="text-muted-foreground mb-4">{t("noMatchingPlatforms")}</p>
             <button
               onClick={() => {
                 setSearchQuery('');
