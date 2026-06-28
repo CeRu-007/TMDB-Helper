@@ -85,81 +85,85 @@ jobs:
           if [[ "$TRIGGER" == "manual" && -n "$RELEASE_NOTES_INPUT" ]]; then
             NOTES="$RELEASE_NOTES_INPUT"
           else
-            # ── 找到上一个版本 tag ──
-            TAGS=$(git tag --list '[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname)
-            PREV_TAG=""
-            FOUND=0
-            while IFS= read -r t; do
-              [ -z "$t" ] && continue
-              if [ "$t" = "$TAG" ]; then
-                FOUND=1
-              elif [ "$FOUND" = "1" ]; then
-                PREV_TAG="$t"
-                break
+            # ── 方案 B: 优先读取 annotated tag message（AI 写入的双语内容） ──
+            if git rev-parse --verify "$TAG" >/dev/null 2>&1; then
+              TAG_NOTES=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || true)
+              if [ -n "$TAG_NOTES" ]; then
+                echo "Using annotated tag message"
+                NOTES="$TAG_NOTES"
               fi
-            done <<< "$TAGS"
-            if [ -z "$PREV_TAG" ]; then
-              PREV_TAG=$(echo "$TAGS" | tail -1)
             fi
-            if [ -z "$PREV_TAG" ]; then
-              PREV_TAG=$(git rev-list --max-parents=0 HEAD)
-            fi
-            echo "Previous tag: $PREV_TAG"
 
-            # ── 获取本次变更涉及的 commits ──
-            COMMITS=$(git log --oneline --no-decorate "$PREV_TAG..HEAD" 2>/dev/null || echo "")
-            COUNT=$(echo "$COMMITS" | grep -c . || echo 0)
-            echo "Found $COUNT commits"
+            # ── 方案 A fallback: 无 annotated message 时自动生成 ──
+            if [ -z "$NOTES" ]; then
+              echo "No annotated tag message, auto-generating..."
 
-            if [ "$COUNT" -eq 0 ]; then
-              NOTES="## TMDB Helper ${VERSION}\n\nNo changes since previous release."
-            else
-              # ── 按 conventional commit 类型分类 ──
-              FEATS=""; FIXES=""; REFS=""; DOCS=""; CHORES=""; PERFS=""; CIS=""; OTHERS=""
-              while IFS= read -r line; do
-                [ -z "$line" ] && continue
-                hash=$(echo "$line" | awk '{print $1}')
-                msg=$(echo "$line" | cut -d' ' -f2-)
-                entry="- ${msg} (\`${hash}\`)"
-                type="${msg%%(*}"; type="${type%%:*}"
-                case "$type" in
-                  feat|feature) FEATS="${FEATS}\n${entry}" ;;
-                  fix)          FIXES="${FIXES}\n${entry}" ;;
-                  refactor)     REFS="${REFS}\n${entry}" ;;
-                  docs)         DOCS="${DOCS}\n${entry}" ;;
-                  chore)        CHORES="${CHORES}\n${entry}" ;;
-                  perf)         PERFS="${PERFS}\n${entry}" ;;
-                  ci)           CIS="${CIS}\n${entry}" ;;
-                  *)            OTHERS="${OTHERS}\n${entry}" ;;
-                esac
-              done <<< "$COMMITS"
+              TAGS=$(git tag --list '[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname)
+              PREV_TAG=""
+              FOUND=0
+              while IFS= read -r t; do
+                [ -z "$t" ] && continue
+                if [ "$t" = "$TAG" ]; then
+                  FOUND=1
+                elif [ "$FOUND" = "1" ]; then
+                  PREV_TAG="$t"
+                  break
+                fi
+              done <<< "$TAGS"
+              [ -z "$PREV_TAG" ] && PREV_TAG=$(echo "$TAGS" | tail -1)
+              [ -z "$PREV_TAG" ] && PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+              echo "Previous tag: $PREV_TAG"
 
-              # ── 中文版 ──
-              CN="<details>\n<summary><strong>中文 / Chinese</strong></summary>\n\n## ${VERSION}\n"
-              [ -n "$FEATS" ]  && CN="${CN}\n### ✨ 新功能\n${FEATS}\n"
-              [ -n "$FIXES" ]  && CN="${CN}\n### 🐛 修复\n${FIXES}\n"
-              [ -n "$PERFS" ]  && CN="${CN}\n### ⚡ 性能\n${PERFS}\n"
-              [ -n "$REFS" ]   && CN="${CN}\n### 🔄 重构\n${REFS}\n"
-              [ -n "$DOCS" ]   && CN="${CN}\n### 📖 文档\n${DOCS}\n"
-              [ -n "$CIS" ]    && CN="${CN}\n### 🔧 CI\n${CIS}\n"
-              [ -n "$CHORES" ] && CN="${CN}\n### 🧹 杂项\n${CHORES}\n"
-              [ -n "$OTHERS" ] && CN="${CN}\n### 📦 其他\n${OTHERS}\n"
-              CN="${CN}\n</details>"
+              COMMITS=$(git log --oneline --no-decorate "$PREV_TAG..HEAD" 2>/dev/null || echo "")
+              COUNT=$(echo "$COMMITS" | grep -c . || echo 0)
+              echo "Found $COUNT commits"
 
-              # ── 英文版（相同 commits，英文类别标题） ──
-              EN="<details>\n<summary><strong>English</strong></summary>\n\n## ${VERSION}\n"
-              [ -n "$FEATS" ]  && EN="${EN}\n### ✨ Features\n${FEATS}\n"
-              [ -n "$FIXES" ]  && EN="${EN}\n### 🐛 Bug Fixes\n${FIXES}\n"
-              [ -n "$PERFS" ]  && EN="${EN}\n### ⚡ Performance\n${PERFS}\n"
-              [ -n "$REFS" ]   && EN="${EN}\n### 🔄 Refactor\n${REFS}\n"
-              [ -n "$DOCS" ]   && EN="${EN}\n### 📖 Documentation\n${DOCS}\n"
-              [ -n "$CIS" ]    && EN="${EN}\n### 🔧 CI/CD\n${CIS}\n"
-              [ -n "$CHORES" ] && EN="${EN}\n### 🧹 Chores\n${CHORES}\n"
-              [ -n "$OTHERS" ] && EN="${EN}\n### 📦 Other\n${OTHERS}\n"
-              EN="${EN}\n</details>"
+              if [ "$COUNT" -eq 0 ]; then
+                NOTES="## TMDB Helper ${VERSION}\n\nNo changes since previous release."
+              else
+                FEATS=""; FIXES=""; REFS=""; DOCS=""; CHORES=""; PERFS=""; CIS=""; OTHERS=""
+                while IFS= read -r line; do
+                  [ -z "$line" ] && continue
+                  hash=$(echo "$line" | awk '{print $1}')
+                  msg=$(echo "$line" | cut -d' ' -f2-)
+                  entry="- ${msg} (\`${hash}\`)"
+                  type="${msg%%(*}"; type="${type%%:*}"
+                  case "$type" in
+                    feat|feature) FEATS="${FEATS}\n${entry}" ;;
+                    fix)          FIXES="${FIXES}\n${entry}" ;;
+                    refactor)     REFS="${REFS}\n${entry}" ;;
+                    docs)         DOCS="${DOCS}\n${entry}" ;;
+                    chore)        CHORES="${CHORES}\n${entry}" ;;
+                    perf)         PERFS="${PERFS}\n${entry}" ;;
+                    ci)           CIS="${CIS}\n${entry}" ;;
+                    *)            OTHERS="${OTHERS}\n${entry}" ;;
+                  esac
+                done <<< "$COMMITS"
 
-              # 合并 + 下载说明
-              NOTES="${CN}\n\n${EN}\n\n---\n\n### Docker\n- 镜像: \`ceru007/tmdb-helper:${VERSION}\`\n- latest: \`ceru007/tmdb-helper:latest\`\n\n### 下载说明\n- Docker 镜像: 下载 \`.tar\` 文件后使用 \`docker load < tmdb-helper-${VERSION}.tar\` 导入\n- Windows 安装包: 下载 \`.exe\` 文件直接安装\n"
+                CN="<details>\n<summary><strong>中文 / Chinese</strong></summary>\n\n## ${VERSION}\n"
+                [ -n "$FEATS" ]  && CN="${CN}\n### ✨ 新功能\n${FEATS}\n"
+                [ -n "$FIXES" ]  && CN="${CN}\n### 🐛 修复\n${FIXES}\n"
+                [ -n "$PERFS" ]  && CN="${CN}\n### ⚡ 性能\n${PERFS}\n"
+                [ -n "$REFS" ]   && CN="${CN}\n### 🔄 重构\n${REFS}\n"
+                [ -n "$DOCS" ]   && CN="${CN}\n### 📖 文档\n${DOCS}\n"
+                [ -n "$CIS" ]    && CN="${CN}\n### 🔧 CI\n${CIS}\n"
+                [ -n "$CHORES" ] && CN="${CN}\n### 🧹 杂项\n${CHORES}\n"
+                [ -n "$OTHERS" ] && CN="${CN}\n### 📦 其他\n${OTHERS}\n"
+                CN="${CN}\n</details>"
+
+                EN="<details>\n<summary><strong>English</strong></summary>\n\n## ${VERSION}\n"
+                [ -n "$FEATS" ]  && EN="${EN}\n### ✨ Features\n${FEATS}\n"
+                [ -n "$FIXES" ]  && EN="${EN}\n### 🐛 Bug Fixes\n${FIXES}\n"
+                [ -n "$PERFS" ]  && EN="${EN}\n### ⚡ Performance\n${PERFS}\n"
+                [ -n "$REFS" ]   && EN="${EN}\n### 🔄 Refactor\n${REFS}\n"
+                [ -n "$DOCS" ]   && EN="${EN}\n### 📖 Documentation\n${DOCS}\n"
+                [ -n "$CIS" ]    && EN="${EN}\n### 🔧 CI/CD\n${CIS}\n"
+                [ -n "$CHORES" ] && EN="${EN}\n### 🧹 Chores\n${CHORES}\n"
+                [ -n "$OTHERS" ] && EN="${EN}\n### 📦 Other\n${OTHERS}\n"
+                EN="${EN}\n</details>"
+
+                NOTES="${CN}\n\n${EN}\n\n---\n\n### Docker\n- 镜像: \`ceru007/tmdb-helper:${VERSION}\`\n- latest: \`ceru007/tmdb-helper:latest\`\n\n### 下载说明\n- Docker 镜像: 下载 \`.tar\` 文件后使用 \`docker load < tmdb-helper-${VERSION}.tar\` 导入\n- Windows 安装包: 下载 \`.exe\` 文件直接安装\n"
+              fi
             fi
           fi
           {
