@@ -168,7 +168,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
   const generatePlatformCommands = () => {
     if (!platformUrls || platformUrls.length === 0) return []
     return platformUrls.filter(url => url.trim()).map(url =>
-      `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${url}"`
+      `python -m tmdb_import ${headlessMode ? '--headless' : ''} "${url}"`
     )
   }
 
@@ -568,7 +568,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
     try {
       // Step 1: Platform extraction
-      const command = `python -m tmdb-import ${headlessMode ? '--headless' : ''} "${urlToUse}"`
+      const command = `python -m tmdb_import ${headlessMode ? '--headless' : ''} "${urlToUse}"`
 
       appendTerminalOutput(`切换到工作目录: ${savedTmdbImportPath}`, "info")
       appendTerminalOutput(`执行命令: ${command}`, "info")
@@ -857,7 +857,7 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
 
       // 构建完整的命令字符串，根据 headlessMode 决定是否添加 --headless 标志
       const headlessFlag = headlessMode ? '--headless' : '';
-      const fullCommand = `cd "${tmdbImportPath}" && python -m tmdb-import ${headlessFlag} ${tmdbUrl}`;
+      const fullCommand = `cd "${tmdbImportPath}" && python -m tmdb_import ${headlessFlag} ${tmdbUrl}`;
 
       // 在页面日志中显示将要执行的命令
       appendTerminalOutput(t('tmdbIntegration.willExecuteCommand', { command: fullCommand }), "info");
@@ -1615,8 +1615,8 @@ export default function TMDBImportIntegrationDialog({ item, open, onOpenChange, 
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0 mr-2 w-0">
                       <div className="font-mono text-xs truncate"
-                           title={generateTMDBCommand(selectedSeason) || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
-                        {generateTMDBCommand(selectedSeason) || `python -m tmdb-import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
+                           title={generateTMDBCommand(selectedSeason) || `python -m tmdb_import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}>
+                        {generateTMDBCommand(selectedSeason) || `python -m tmdb_import "https://www.themoviedb.org/tv/290854/season/${selectedSeason}?language=zh-CN"`}
                       </div>
                     </div>
                     <Button

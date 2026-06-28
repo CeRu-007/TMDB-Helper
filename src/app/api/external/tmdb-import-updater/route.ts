@@ -165,7 +165,7 @@ async function getStatus(): Promise<NextResponse> {
     }
 
     const exists = fs.existsSync(checkPath)
-    const hasMainModule = exists && fs.existsSync(path.join(checkPath, 'tmdb-import'))
+    const hasMainModule = exists && (fs.existsSync(path.join(checkPath, 'tmdb_import')) || fs.existsSync(path.join(checkPath, 'tmdb-import')))
     const hasConfigFile = exists && fs.existsSync(path.join(checkPath, 'config.ini'))
 
     let fileCount = 0
@@ -301,7 +301,7 @@ function detectTmdbImportAtDir(dirPath: string): { exists: boolean; commitSha?: 
   }
 
   // 检测关键特征文件：tmdb-import 主模块或 config.ini
-  const hasMainModule = fs.existsSync(path.join(dirPath, 'tmdb-import'))
+  const hasMainModule = fs.existsSync(path.join(dirPath, 'tmdb_import')) || fs.existsSync(path.join(dirPath, 'tmdb-import'))
   const hasConfigFile = fs.existsSync(path.join(dirPath, 'config.ini'))
 
   if (!hasMainModule && !hasConfigFile) {

@@ -33,10 +33,13 @@ export async function fixTMDBImportBug(tmdbImportPath: string): Promise<{
       commonPyPath = directPath
     }
 
-    // 检查tmdb-import子目录
+    // 检查tmdb-import/tmdb_import子目录
     const subDirPath = path.join(tmdbImportPath, "tmdb-import", "common.py")
+    const subDirPathNew = path.join(tmdbImportPath, "tmdb_import", "common.py")
     if (!commonPyPath && fs.existsSync(subDirPath)) {
       commonPyPath = subDirPath
+    } else if (!commonPyPath && fs.existsSync(subDirPathNew)) {
+      commonPyPath = subDirPathNew
     }
 
     // 如果找不到文件

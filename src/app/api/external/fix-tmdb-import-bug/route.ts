@@ -19,7 +19,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     
     // 查找 TMDB-Import 目录
     const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
-    const episodeFilePath = path.join(tmdbImportDir, 'tmdb-import', 'importors', 'episode.py');
+    const moduleDir = fs.existsSync(path.join(tmdbImportDir, 'tmdb_import')) ? 'tmdb_import' : 'tmdb-import';
+    const episodeFilePath = path.join(tmdbImportDir, moduleDir, 'importors', 'episode.py');
     
     if (!fs.existsSync(episodeFilePath)) {
       return NextResponse.json({ 
@@ -202,7 +203,8 @@ ${indent}    continue  # 跳过有问题的集数`;
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
-    const episodeFilePath = path.join(tmdbImportDir, 'tmdb-import', 'importors', 'episode.py');
+    const moduleDir = fs.existsSync(path.join(tmdbImportDir, 'tmdb_import')) ? 'tmdb_import' : 'tmdb-import';
+    const episodeFilePath = path.join(tmdbImportDir, moduleDir, 'importors', 'episode.py');
     
     if (!fs.existsSync(episodeFilePath)) {
       return NextResponse.json({ 
