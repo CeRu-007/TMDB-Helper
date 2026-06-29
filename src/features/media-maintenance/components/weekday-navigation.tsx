@@ -33,8 +33,8 @@ function getDayButtonClasses(isSelected: boolean, isToday: boolean): string {
     'flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2';
 
   if (isSelected) {
-    return `${baseClasses} bg-blue-100 text-blue-700 ${
-      isToday ? 'border-yellow-400' : 'border-blue-100'
+    return `${baseClasses} bg-primary text-primary-foreground ${
+      isToday ? 'border-yellow-400' : 'border-primary/20'
     }`;
   }
 
@@ -88,7 +88,7 @@ export function WeekdayNavigation({
   };
 
   return (
-    <div className="bg-background border-b border-border sticky top-0 z-10">
+    <div className="bg-muted border-b border-border sticky top-0 z-10 shadow-sm">
       <div className="mx-auto px-6">
         <div className="flex max-md:flex-col justify-between max-md:justify-start items-center max-md:items-stretch pt-3 pb-0 gap-4 max-md:gap-2">
           <ScrollAreaPrimitive.Root className="flex-1 whitespace-nowrap overflow-hidden self-stretch">
@@ -120,7 +120,7 @@ export function WeekdayNavigation({
                           <Calendar className="h-3 w-3 text-yellow-600" suppressHydrationWarning />
                         )}
                         {dayItems.length > 0 && (
-                          <span className="bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
+                          <span className="bg-muted-foreground/20 text-muted-foreground text-xs rounded-full px-1.5 py-0.5 ml-1">
                             {dayItems.length}
                           </span>
                         )}
