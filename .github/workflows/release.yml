@@ -448,9 +448,10 @@ jobs:
 
       - name: Prepare release notes file
         run: |
-          cat > release-notes.md << 'EOF'
-          ${{ needs.prepare.outputs.release_notes }}
-          EOF
+          git fetch --depth=1 origin refs/tags/${{ needs.prepare.outputs.tag }}
+          git cat-file -p ${{ needs.prepare.outputs.tag }} | sed '1,/^$/d' > release-notes.md
+          echo "=== release-notes.md ==="
+          cat release-notes.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
