@@ -597,7 +597,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
         <div className="flex-1 bg-background overflow-hidden min-w-0 h-1/2 md:h-auto">
           <div className="h-full flex flex-col">
             {/* 左侧头部 */}
-            <div className="bg-card px-4 py-2 border-b border-border">
+            <div className="bg-gray-900 px-4 py-2 border-b border-gray-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="flex space-x-1">
@@ -635,7 +635,7 @@ export function IndependentMaintenance({ onShowSettingsDialog }: IndependentMain
                 // 终端输出模式
                 <div
                   ref={terminalRef}
-                  className="h-full p-4 overflow-y-auto text-green-400 font-mono text-sm"
+                  className="h-full p-4 overflow-y-auto bg-gray-950 text-green-400 font-mono text-sm"
                 >
                   {terminalOutput.map((line, index) => (
                     <div key={index} className="mb-1">
