@@ -120,7 +120,11 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         );
 
         if (data.data.platformConfigs && data.data.platformConfigs.length > 0) {
-          setPlatformConfigs(data.data.platformConfigs);
+          const existingByUrl = new Map<string, PlatformSourceConfig>(data.data.platformConfigs.map((c: PlatformSourceConfig) => [c.url, c]));
+          const mergedConfigs = (item.platformUrls || []).map((url): PlatformSourceConfig => {
+            return existingByUrl.get(url) ?? { url, enabled: true, keepFields: { name: false, air_date: false, runtime: false, overview: false, backdrop: false } };
+          });
+          setPlatformConfigs(mergedConfigs);
           setMultiPlatformMode(true);
         } else {
           const initialConfigs: PlatformSourceConfig[] = (item.platformUrls || []).map((url) => ({
@@ -492,21 +496,25 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                           variant={multiPlatformMode ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => {
-                            if (!multiPlatformMode && platformConfigs.length === 0) {
-                              const initialConfigs: PlatformSourceConfig[] = (
+                            if (!multiPlatformMode) {
+                              const existingByUrl = new Map(platformConfigs.map((c) => [c.url, c]));
+                              const mergedConfigs: PlatformSourceConfig[] = (
                                 item.platformUrls || []
-                              ).map((url) => ({
-                                url,
-                                enabled: true,
-                                keepFields: {
-                                  name: false,
-                                  air_date: false,
-                                  runtime: false,
-                                  overview: false,
-                                  backdrop: false,
-                                },
-                              }));
-                              setPlatformConfigs(initialConfigs);
+                              ).map((url) => {
+                                const existing = existingByUrl.get(url);
+                                return existing || {
+                                  url,
+                                  enabled: true,
+                                  keepFields: {
+                                    name: false,
+                                    air_date: false,
+                                    runtime: false,
+                                    overview: false,
+                                    backdrop: false,
+                                  },
+                                };
+                              });
+                              setPlatformConfigs(mergedConfigs);
                             }
                             setMultiPlatformMode(true);
                           }}
