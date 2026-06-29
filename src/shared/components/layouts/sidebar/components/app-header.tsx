@@ -146,7 +146,7 @@ export function AppHeader({
                 </Button>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 ml-3">
                 <UserAvatar
                   onShowImportDialog={onShowImportDialog}
                   onShowExportDialog={onShowExportDialog}
