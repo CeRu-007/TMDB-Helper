@@ -2,15 +2,32 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import { useThemeEngine } from '@/shared/hooks/use-theme-engine';
 import { ThemePreviewCard } from './ThemePreviewCard';
 import { ThemeCustomizer } from './ThemeCustomizer';
 import { useTranslation } from 'react-i18next';
+import type { ThemeConfig } from '@/lib/themes/types';
 
-export default function AppearanceSettingsPanel() {
+interface AppearanceSettingsPanelProps {
+  currentTheme: ThemeConfig;
+  baseTheme: ThemeConfig;
+  darkThemes: ThemeConfig[];
+  lightThemes: ThemeConfig[];
+  onSelectTheme: (themeId: string, shouldPersist?: boolean) => void;
+  onUpdateTheme: (partial: Partial<ThemeConfig>, shouldPersist?: boolean) => void;
+  onResetTheme: (shouldPersist?: boolean) => void;
+  isCustomized: boolean;
+}
+
+export default function AppearanceSettingsPanel({
+  currentTheme,
+  darkThemes,
+  lightThemes,
+  onSelectTheme,
+  onUpdateTheme,
+  onResetTheme,
+  isCustomized,
+}: AppearanceSettingsPanelProps) {
   const { t } = useTranslation('settings');
-  const { currentTheme, darkThemes, lightThemes, setTheme, updateTheme, isCustomized, resetTheme } =
-    useThemeEngine();
 
   const [tab, setTab] = useState<'dark' | 'light'>(
     currentTheme.appearance === 'dark' ? 'dark' : 'light'
@@ -25,7 +42,6 @@ export default function AppearanceSettingsPanel() {
         <p className="text-sm text-muted-foreground mb-6">{t('appearanceSettingsDesc')}</p>
       </div>
 
-      {/* Theme selector */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as 'dark' | 'light')}>
         <TabsList>
           <TabsTrigger value="dark">{t('darkThemes')}</TabsTrigger>
@@ -39,19 +55,18 @@ export default function AppearanceSettingsPanel() {
                 key={theme.id}
                 theme={theme}
                 isSelected={currentTheme.id === theme.id}
-                onSelect={setTheme}
+                onSelect={(id) => onSelectTheme(id, false)}
               />
             ))}
           </div>
         </TabsContent>
       </Tabs>
 
-      {/* Customizer */}
       <ThemeCustomizer
         currentTheme={currentTheme}
         isCustomized={isCustomized}
-        onUpdateTheme={updateTheme}
-        onResetTheme={resetTheme}
+        onUpdateTheme={(partial) => onUpdateTheme(partial, false)}
+        onResetTheme={() => onResetTheme(false)}
       />
     </div>
   );

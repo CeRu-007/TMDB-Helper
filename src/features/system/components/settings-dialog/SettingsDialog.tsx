@@ -34,6 +34,7 @@ import GeneralSettingsPanel from './GeneralSettingsPanel';
 import SecuritySettingsPanel from './SecuritySettingsPanel';
 import HelpSettingsPanel from './HelpSettingsPanel';
 import AppearanceSettingsPanel from './AppearanceSettingsPanel';
+import { useThemeEngine } from '@/shared/hooks/use-theme-engine';
 import { CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useMobile } from '@/shared/hooks/use-mobile';
@@ -157,6 +158,16 @@ export default function SettingsDialog({
     frameInterval: 30,
     keepOriginalResolution: true,
   });
+
+  // 外观（主题引擎）状态
+  const themeEngine = useThemeEngine();
+  const originalThemeIdRef = React.useRef<string>(themeEngine.baseTheme.id);
+  // 当对话框打开时，快照当前持久化的主题ID
+  React.useEffect(() => {
+    if (open) {
+      originalThemeIdRef.current = themeEngine.baseTheme.id;
+    }
+  }, [open, themeEngine.baseTheme.id]);
 
   // API配置状态
   const [apiSettings, setApiSettings] = useState<ApiSettings>({
@@ -657,6 +668,11 @@ export default function SettingsDialog({
         tools: () => saveTmdbConfig(),
         security: () =>
           toast({ title: t('common.success'), description: t('common.securitySaved') }),
+        appearance: () => {
+          themeEngine.setTheme(themeEngine.currentTheme.id, true);
+          originalThemeIdRef.current = themeEngine.currentTheme.id;
+          toast({ title: t('common.success'), description: t('settings.settingsSaved') });
+        },
       };
 
       const saveAction = saveActions[activeSection as keyof typeof saveActions];
@@ -957,10 +973,14 @@ export default function SettingsDialog({
   );
 
   const handleOpenChange = (newOpen: boolean) => {
-    onOpenChange(newOpen);
-    if (!newOpen) {
+    if (!newOpen && open) {
+      // 如果外观主题被预览修改但未保存，恢复原始主题
+      if (themeEngine.currentTheme.id !== originalThemeIdRef.current) {
+        themeEngine.setTheme(originalThemeIdRef.current, false);
+      }
       window.dispatchEvent(new CustomEvent('global-settings-closed'));
     }
+    onOpenChange(newOpen);
   };
 
   const renderActivePanel = () => {
@@ -1037,7 +1057,18 @@ export default function SettingsDialog({
           />
         );
       case 'appearance':
-        return <AppearanceSettingsPanel />;
+        return (
+          <AppearanceSettingsPanel
+            currentTheme={themeEngine.currentTheme}
+            baseTheme={themeEngine.baseTheme}
+            darkThemes={themeEngine.darkThemes}
+            lightThemes={themeEngine.lightThemes}
+            onSelectTheme={themeEngine.setTheme}
+            onUpdateTheme={themeEngine.updateTheme}
+            onResetTheme={themeEngine.resetTheme}
+            isCustomized={themeEngine.isCustomized}
+          />
+        );
       case 'general':
         return (
           <GeneralSettingsPanel

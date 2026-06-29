@@ -139,13 +139,25 @@ export function useThemeEngine() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('theme_engine_state', json);
       }
+      // Sync appearance mode to legacy appearance_settings to prevent desync
+      const theme = getThemeById(state.themeId);
+      if (theme) {
+        const saved = await ClientConfigManager.getItem('appearance_settings');
+        if (saved) {
+          const parsed = safeJsonParse<{ theme?: string }>(saved);
+          if (parsed && parsed.theme !== theme.appearance) {
+            parsed.theme = theme.appearance;
+            await ClientConfigManager.setItem('appearance_settings', JSON.stringify(parsed));
+          }
+        }
+      }
     } catch (error) {
       logger.warn('Failed to persist theme engine state:', error);
     }
   }, []);
 
   const setTheme = useCallback(
-    (themeId: string) => {
+    (themeId: string, shouldPersist: boolean = true) => {
       const theme = getThemeById(themeId);
       if (!theme) {
         return;
@@ -154,34 +166,43 @@ export function useThemeEngine() {
       setCurrentTheme(theme);
       setCustomizations(undefined);
 
-      isSyncing.current = true;
-      persist({ themeId }).finally(() => {
-        isSyncing.current = false;
-      });
+      if (shouldPersist) {
+        isSyncing.current = true;
+        persist({ themeId }).finally(() => {
+          isSyncing.current = false;
+        });
+      }
     },
     [persist]
   );
 
   const updateTheme = useCallback(
-    (partial: Partial<ThemeConfig>) => {
+    (partial: Partial<ThemeConfig>, shouldPersist: boolean = true) => {
       const nextCustomizations = { ...customizationsRef.current, ...partial };
       setCustomizations(nextCustomizations);
 
-      isSyncing.current = true;
-      persist({
-        themeId: currentTheme.id,
-        customizations: nextCustomizations,
-      }).finally(() => {
-        isSyncing.current = false;
-      });
+      if (shouldPersist) {
+        isSyncing.current = true;
+        persist({
+          themeId: currentTheme.id,
+          customizations: nextCustomizations,
+        }).finally(() => {
+          isSyncing.current = false;
+        });
+      }
     },
     [currentTheme.id, persist]
   );
 
-  const resetTheme = useCallback(() => {
-    setCustomizations(undefined);
-    persist({ themeId: currentTheme.id });
-  }, [currentTheme.id, persist]);
+  const resetTheme = useCallback(
+    (shouldPersist: boolean = true) => {
+      setCustomizations(undefined);
+      if (shouldPersist) {
+        persist({ themeId: currentTheme.id });
+      }
+    },
+    [currentTheme.id, persist]
+  );
 
   return {
     currentTheme: resolvedTheme,
