@@ -75,6 +75,76 @@
     "expand": "サイドバーを展開",
     "collapse": "サイドバーを折りたたむ"
   },
+  "themes": {
+    "default-dark": {
+      "name": "デフォルトダーク",
+      "description": "プロジェクトのデフォルトダークテーマ"
+    },
+    "nord": {
+      "name": "Nord",
+      "description": "北欧の寒色系、低コントラスト"
+    },
+    "dracula": {
+      "name": "Dracula",
+      "description": "紫色基调、高コントラスト"
+    },
+    "catppuccin-mocha": {
+      "name": "Catppuccin Mocha",
+      "description": "柔らかな暖色系"
+    },
+    "tokyo-night": {
+      "name": "Tokyo Night",
+      "description": "深い青紫の夜景スタイル"
+    },
+    "monokai-pro": {
+      "name": "Monokai Pro",
+      "description": "クラシックエディタースタイル、暖かい色合い"
+    },
+    "github-dark": {
+      "name": "GitHub Dark",
+      "description": "GitHub ダークテーマスタイル"
+    },
+    "material-ocean": {
+      "name": "Material Ocean",
+      "description": "Material Design 深海ブルー"
+    },
+    "rose-pine": {
+      "name": "Rose Pine",
+      "description": "柔らかなローズトーン"
+    },
+    "gruvbox-dark": {
+      "name": "Gruvbox Dark",
+      "description": "レトロな暖色系"
+    },
+    "sunset": {
+      "name": "Sunset",
+      "description": "夕日のグラデーションテーマ"
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "深海のグラデーションテーマ"
+    },
+    "forest": {
+      "name": "Forest",
+      "description": "森林の自然テーマ"
+    },
+    "default-light": {
+      "name": "デフォルトライト",
+      "description": "プロジェクトのデフォルトライトテーマ"
+    },
+    "catppuccin-latte": {
+      "name": "Catppuccin Latte",
+      "description": "柔らかな明るい色調"
+    },
+    "github-light": {
+      "name": "GitHub Light",
+      "description": "GitHub ライトテーマスタイル"
+    },
+    "tmdb": {
+      "name": "TMDB",
+      "description": "TMDBウェブページスタイル"
+    }
+  },
   "generalSettings": "一般設定",
   "generalSettingsDesc": "ネットワークプロキシとアイテム詳細表示を設定",
   "network": "ネットワークプロキシ",

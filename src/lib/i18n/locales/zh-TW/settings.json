@@ -75,6 +75,76 @@
     "expand": "展開側邊欄",
     "collapse": "收起側邊欄"
   },
+  "themes": {
+    "default-dark": {
+      "name": "默認深色",
+      "description": "項目默認深色主題"
+    },
+    "nord": {
+      "name": "北歐",
+      "description": "北歐冷色調，低對比度"
+    },
+    "dracula": {
+      "name": "Dracula",
+      "description": "紫色主調，高對比度"
+    },
+    "catppuccin-mocha": {
+      "name": "Catppuccin Mocha",
+      "description": "柔和暖色調"
+    },
+    "tokyo-night": {
+      "name": "東京之夜",
+      "description": "深藍紫夜景風格"
+    },
+    "monokai-pro": {
+      "name": "Monokai Pro",
+      "description": "經典編輯器風格，溫暖色調"
+    },
+    "github-dark": {
+      "name": "GitHub 深色",
+      "description": "GitHub 深色主題風格"
+    },
+    "material-ocean": {
+      "name": "Material Ocean",
+      "description": "Material Design 深海藍"
+    },
+    "rose-pine": {
+      "name": "Rose Pine",
+      "description": "柔和玫瑰色調"
+    },
+    "gruvbox-dark": {
+      "name": "Gruvbox 深色",
+      "description": "復古暖色調"
+    },
+    "sunset": {
+      "name": "日落",
+      "description": "日落漸變主題"
+    },
+    "ocean": {
+      "name": "海洋",
+      "description": "深海漸變主題"
+    },
+    "forest": {
+      "name": "森林",
+      "description": "森林自然主題"
+    },
+    "default-light": {
+      "name": "默認淺色",
+      "description": "項目默認淺色主題"
+    },
+    "catppuccin-latte": {
+      "name": "Catppuccin Latte",
+      "description": "柔和淺色調"
+    },
+    "github-light": {
+      "name": "GitHub 淺色",
+      "description": "GitHub 淺色主題風格"
+    },
+    "tmdb": {
+      "name": "TMDB",
+      "description": "仿TMDB網頁風格"
+    }
+  },
   "generalSettings": "通用設置",
   "generalSettingsDesc": "配置網絡代理和詞條詳情顯示",
   "network": "網絡代理",

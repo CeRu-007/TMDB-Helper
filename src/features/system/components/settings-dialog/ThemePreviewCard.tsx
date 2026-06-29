@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import type { ThemeConfig } from '@/lib/themes/types';
 
 interface ThemePreviewCardProps {
@@ -9,12 +10,18 @@ interface ThemePreviewCardProps {
 }
 
 export function ThemePreviewCard({ theme, isSelected, onSelect }: ThemePreviewCardProps) {
+  const { t } = useTranslation('settings');
+  const themeName = t(`themes.${theme.id}.name`, { defaultValue: theme.name });
+  const themeDescription = theme.description
+    ? t(`themes.${theme.id}.description`, { defaultValue: theme.description })
+    : undefined;
+
   const colorDots = [
-    theme.colors.primary,
-    theme.colors.secondary,
-    theme.colors.accent,
-    theme.colors.muted,
-    theme.colors.destructive,
+    { key: 'primary', color: theme.colors.primary },
+    { key: 'accent', color: theme.colors.accent },
+    { key: 'card', color: theme.colors.card },
+    { key: 'foreground', color: theme.colors.foreground },
+    { key: 'destructive', color: theme.colors.destructive },
   ];
 
   return (
@@ -31,19 +38,19 @@ export function ThemePreviewCard({ theme, isSelected, onSelect }: ThemePreviewCa
     >
       {/* Color preview dots */}
       <div className="flex gap-1.5 mb-2">
-        {colorDots.map((color, i) => (
+        {colorDots.map(({ color, key }) => (
           <div
-            key={i}
-            className="w-4 h-4 rounded-full"
+            key={key}
+            className="w-4 h-4 rounded-full ring-1 ring-inset ring-black/15 dark:ring-white/20"
             style={{ backgroundColor: `hsl(${color})` }}
           />
         ))}
       </div>
 
       {/* Theme info */}
-      <div className="text-sm font-medium">{theme.name}</div>
-      {theme.description && (
-        <div className="text-xs text-muted-foreground mt-0.5">{theme.description}</div>
+      <div className="text-sm font-medium">{themeName}</div>
+      {themeDescription && (
+        <div className="text-xs text-muted-foreground mt-0.5">{themeDescription}</div>
       )}
 
       {/* Selected indicator */}

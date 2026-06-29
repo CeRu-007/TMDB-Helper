@@ -75,6 +75,76 @@
     "expand": "사이드바 펼치기",
     "collapse": "사이드바 접기"
   },
+  "themes": {
+    "default-dark": {
+      "name": "기본 다크",
+      "description": "프로젝트 기본 다크 테마"
+    },
+    "nord": {
+      "name": "Nord",
+      "description": "북유럽 차가운 색조, 낮은 대비"
+    },
+    "dracula": {
+      "name": "Dracula",
+      "description": "보라색 메인 톤, 높은 대비"
+    },
+    "catppuccin-mocha": {
+      "name": "Catppuccin Mocha",
+      "description": "부드러운 따뜻한 색조"
+    },
+    "tokyo-night": {
+      "name": "Tokyo Night",
+      "description": "깊은 청자색 야경 스타일"
+    },
+    "monokai-pro": {
+      "name": "Monokai Pro",
+      "description": "클래식 에디터 스타일, 따뜻한 색상"
+    },
+    "github-dark": {
+      "name": "GitHub Dark",
+      "description": "GitHub 다크 테마 스타일"
+    },
+    "material-ocean": {
+      "name": "Material Ocean",
+      "description": "Material Design 심해 블루"
+    },
+    "rose-pine": {
+      "name": "Rose Pine",
+      "description": "부드러운 장미 색조"
+    },
+    "gruvbox-dark": {
+      "name": "Gruvbox Dark",
+      "description": "레트로 따뜻한 색조"
+    },
+    "sunset": {
+      "name": "Sunset",
+      "description": "일몰 그라데이션 테마"
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "심해 그라데이션 테마"
+    },
+    "forest": {
+      "name": "Forest",
+      "description": "숲 자연 테마"
+    },
+    "default-light": {
+      "name": "기본 라이트",
+      "description": "프로젝트 기본 라이트 테마"
+    },
+    "catppuccin-latte": {
+      "name": "Catppuccin Latte",
+      "description": "부드러운 밝은 색조"
+    },
+    "github-light": {
+      "name": "GitHub Light",
+      "description": "GitHub 라이트 테마 스타일"
+    },
+    "tmdb": {
+      "name": "TMDB",
+      "description": "TMDB 웹페이지 스타일"
+    }
+  },
   "generalSettings": "일반 설정",
   "generalSettingsDesc": "네트워크 프록시 및 항목 상세 표시 구성",
   "network": "네트워크 프록시",

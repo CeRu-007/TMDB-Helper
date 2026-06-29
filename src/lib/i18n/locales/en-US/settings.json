@@ -75,6 +75,76 @@
     "expand": "Expand Sidebar",
     "collapse": "Collapse Sidebar"
   },
+  "themes": {
+    "default-dark": {
+      "name": "Default Dark",
+      "description": "Project default dark theme"
+    },
+    "nord": {
+      "name": "Nord",
+      "description": "Nordic cool tones, low contrast"
+    },
+    "dracula": {
+      "name": "Dracula",
+      "description": "Purple tones, high contrast"
+    },
+    "catppuccin-mocha": {
+      "name": "Catppuccin Mocha",
+      "description": "Soft warm tones"
+    },
+    "tokyo-night": {
+      "name": "Tokyo Night",
+      "description": "Deep blue-purple night style"
+    },
+    "monokai-pro": {
+      "name": "Monokai Pro",
+      "description": "Classic editor style, warm colors"
+    },
+    "github-dark": {
+      "name": "GitHub Dark",
+      "description": "GitHub dark theme style"
+    },
+    "material-ocean": {
+      "name": "Material Ocean",
+      "description": "Material Design deep sea blue"
+    },
+    "rose-pine": {
+      "name": "Rose Pine",
+      "description": "Soft rose tones"
+    },
+    "gruvbox-dark": {
+      "name": "Gruvbox Dark",
+      "description": "Retro warm tones"
+    },
+    "sunset": {
+      "name": "Sunset",
+      "description": "Sunset gradient theme"
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "Deep sea gradient theme"
+    },
+    "forest": {
+      "name": "Forest",
+      "description": "Forest nature theme"
+    },
+    "default-light": {
+      "name": "Default Light",
+      "description": "Project default light theme"
+    },
+    "catppuccin-latte": {
+      "name": "Catppuccin Latte",
+      "description": "Soft light tones"
+    },
+    "github-light": {
+      "name": "GitHub Light",
+      "description": "GitHub light theme style"
+    },
+    "tmdb": {
+      "name": "TMDB",
+      "description": "TMDB website style"
+    }
+  },
   "generalSettings": "General Settings",
   "generalSettingsDesc": "Configure network proxy and item detail display",
   "network": "Network Proxy",
