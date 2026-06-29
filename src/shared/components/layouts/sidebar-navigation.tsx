@@ -313,7 +313,7 @@ export function SidebarNavigation({
                   {hoveredGroup === group.id && (
                     <>
                       <div
-                        className="fixed w-1 bg-blue-500 z-[99]"
+                        className="fixed w-1 bg-primary z-[99]"
                         style={{
                           top: `${64 + groupIndex * 56 + 8}px`,
                           left: '63px',
@@ -321,7 +321,7 @@ export function SidebarNavigation({
                         }}
                       />
                       <div
-                        className="fixed w-40 bg-card border-l-4 border-l-blue-500 border-r border-t border-b border-border shadow-2xl z-[100] rounded-r-lg overflow-hidden"
+                        className="fixed w-40 bg-card border-l-4 border-l-primary border-r border-t border-b border-border shadow-2xl z-[100] rounded-r-lg overflow-hidden"
                         style={{
                           ...getSubmenuPosition(groupIndex),
                           transform: 'translateX(-1px)',
@@ -339,7 +339,7 @@ export function SidebarNavigation({
                               className={cn(
                                 'relative cursor-pointer transition-all duration-200 px-3 py-2',
                                 activeMenu === group.id && activeSubmenu === item.id
-                                  ? 'bg-blue-500 text-white'
+                                  ? 'bg-primary text-primary-foreground'
                                   : 'hover:bg-accent text-foreground'
                               )}
                               onClick={() => handleMenuClick(group.id, item.id)}
@@ -383,14 +383,14 @@ export function SidebarNavigation({
                           key={item.id}
                           variant={
                             activeMenu === group.id && activeSubmenu === item.id
-                              ? 'secondary'
+                              ? 'default'
                               : 'ghost'
                           }
                           size="sm"
                           className={cn(
                             'w-full justify-start h-9',
                             activeMenu === group.id && activeSubmenu === item.id
-                              ? 'bg-primary/15 text-primary border-r-2 border-r-blue-500'
+                              ? 'text-primary-foreground'
                               : 'text-foreground hover:bg-accent'
                           )}
                           onClick={() => handleMenuClick(group.id, item.id)}

@@ -69,7 +69,7 @@ export function AppHeader({
   }, [fetchUnreadCount]);
 
   return (
-    <header className="bg-background/80 backdrop-blur-sm shadow-sm border-b border-border sticky top-0 z-40">
+    <header className="bg-[hsl(var(--header))] text-[hsl(var(--header-foreground))] shadow-sm border-b border-border sticky top-0 z-40">
       <div className="relative h-16 max-md:h-14">
         {/* ===== 桌面端：原始布局（完全不变） ===== */}
         <div className="max-md:hidden">
@@ -110,7 +110,7 @@ export function AppHeader({
             <div className="h-full max-w-7xl w-full mx-auto px-8 pr-9 flex items-center justify-end pointer-events-auto">
               <div className="flex items-center space-x-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => useUploadStore.getState().toggleOpen()}
                   className="flex items-center"
@@ -119,7 +119,7 @@ export function AppHeader({
                   <ImageUp className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={onShowJournalDialog}
                   className="flex items-center relative"
@@ -136,7 +136,7 @@ export function AppHeader({
                   )}
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => onShowSettingsDialog()}
                   className="flex items-center"
@@ -155,7 +155,7 @@ export function AppHeader({
 
                 <Button
                   onClick={onShowAddDialog}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="hover:opacity-90"
                   size="default"
                 >
                   <Plus className="h-4 w-4 md:mr-2" />
@@ -192,7 +192,7 @@ export function AppHeader({
           </div>
           <div className="flex items-center space-x-1">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => useUploadStore.getState().toggleOpen()}
               className="min-w-[44px] min-h-[44px] p-0"
@@ -201,7 +201,7 @@ export function AppHeader({
               <ImageUp className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={onShowJournalDialog}
               className="min-w-[44px] min-h-[44px] p-0 relative"
@@ -218,7 +218,7 @@ export function AppHeader({
               )}
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => onShowSettingsDialog()}
               className="min-w-[44px] min-h-[44px] p-0"
@@ -234,7 +234,7 @@ export function AppHeader({
             />
             <Button
               onClick={onShowAddDialog}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 min-w-[44px] min-h-[44px]"
+              className="hover:opacity-90 min-w-[44px] min-h-[44px]"
               size="icon"
             >
               <Plus className="h-4 w-4" />

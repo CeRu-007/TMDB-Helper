@@ -15,6 +15,7 @@ import { forestTheme } from './presets/dark/forest';
 import { defaultLightTheme } from './presets/light/default';
 import { catppuccinLatteTheme } from './presets/light/catppuccin-latte';
 import { githubLightTheme } from './presets/light/github-light';
+import { tmdbTheme } from './presets/light/tmdb';
 
 export const DEFAULT_THEME_ID = 'default-dark';
 
@@ -37,6 +38,7 @@ export const presetThemes: ThemeConfig[] = [
   defaultLightTheme,
   catppuccinLatteTheme,
   githubLightTheme,
+  tmdbTheme,
 ];
 
 export function getThemeById(id: string): ThemeConfig | undefined {

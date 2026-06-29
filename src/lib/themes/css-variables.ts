@@ -31,6 +31,14 @@ export function themeToCSSVariables(theme: ThemeConfig): Record<string, string> 
   vars['--font-family'] = theme.typography.fontFamily;
   vars['--font-size-base'] = FONT_SIZE_MAP[theme.typography.fontSize];
 
+  if (theme.appearance === 'light') {
+    vars['--header'] = theme.colors.foreground;
+    vars['--header-foreground'] = theme.colors.background;
+  } else {
+    vars['--header'] = theme.colors.card;
+    vars['--header-foreground'] = theme.colors.cardForeground;
+  }
+
   return vars;
 }
 
@@ -57,6 +65,19 @@ export function applyTheme(theme: ThemeConfig): void {
   Object.entries(vars).forEach(([key, value]) => {
     root.style.setProperty(key, value);
   });
+
+  const styleId = 'tmdb-accent-style';
+  let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+  if (theme.background?.type === 'gradient') {
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `[class*="bg-primary"]{background:${theme.background.value}!important}`;
+  } else if (styleEl) {
+    styleEl.remove();
+  }
 }
 
 export function clearTheme(): void {
@@ -76,4 +97,9 @@ export function clearTheme(): void {
     }
   }
   toRemove.forEach((prop) => root.style.removeProperty(prop));
+
+  const styleEl = document.getElementById('tmdb-accent-style');
+  if (styleEl) {
+    styleEl.remove();
+  }
 }

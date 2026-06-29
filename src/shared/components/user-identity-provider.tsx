@@ -348,7 +348,7 @@ export function UserAvatar({
   }, [showDropdown]);
 
   if (isLoading || !userInfo) {
-    return <div className="w-8 h-8 bg-gray-200 dark:bg-muted rounded-full animate-pulse"></div>;
+    return     <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>;
   }
 
   return (
@@ -357,7 +357,7 @@ export function UserAvatar({
         ref={buttonRef}
         data-user-avatar-button="true"
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center space-x-2 p-1 rounded-lg hover:bg-accent focus:bg-gray-100 dark:focus:bg-card transition-colors focus:outline-none"
+        className="flex items-center space-x-2 p-1 rounded-lg hover:bg-white/10 transition-colors focus:outline-none"
         title={`${userInfo.displayName} (${userInfo.userId.substring(5, 11)})`}
         aria-expanded={showDropdown}
         aria-haspopup="true"
@@ -365,15 +365,15 @@ export function UserAvatar({
         <UserAvatarImage
           src={userInfo.avatarUrl}
           displayName={userInfo.displayName}
-          className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-border"
+          className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white/20"
         />
         <span
-          className={`text-sm font-medium text-foreground max-w-[100px] truncate ${hideNameOnMobile ? 'hidden md:inline' : ''}`}
+          className={`text-sm font-medium max-w-[100px] truncate ${hideNameOnMobile ? 'hidden md:inline' : ''}`}
         >
           {userInfo.displayName}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''} ${hideNameOnMobile ? 'hidden md:block' : ''}`}
+          className={`w-4 h-4 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''} ${hideNameOnMobile ? 'hidden md:block' : ''}`}
         />
       </button>
 
@@ -558,7 +558,7 @@ const UserDropdownMenu = React.forwardRef<
           <UserAvatarImage
             src={userInfo.avatarUrl}
             displayName={userInfo.displayName}
-            className="w-12 h-12 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-border"
+            className="w-12 h-12 rounded-full object-cover shadow-sm ring-2 ring-border"
             fallbackClassName="text-lg font-medium shadow-sm"
           />
           <div className="flex-1 min-w-0">

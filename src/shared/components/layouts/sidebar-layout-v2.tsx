@@ -340,7 +340,7 @@ export function SidebarLayout({
 
   return (
     <div
-      className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-card dark:to-card"
+      className="h-screen overflow-hidden bg-gradient-to-br from-background to-muted"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* Header */}

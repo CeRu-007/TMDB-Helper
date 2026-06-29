@@ -1,0 +1,46 @@
+import type { ThemeConfig } from '../../types';
+
+export const tmdbTheme: ThemeConfig = {
+  id: 'tmdb',
+  name: 'TMDB',
+  description: '仿 TMDB 编辑指南页面风格',
+  appearance: 'light',
+  author: 'TMDB Helper',
+  colors: {
+    background: '0 0% 100%',
+    foreground: '207 91% 13%',
+    card: '0 0% 100%',
+    cardForeground: '207 91% 13%',
+    popover: '0 0% 100%',
+    popoverForeground: '207 91% 13%',
+    primary: '207 91% 13%',
+    primaryForeground: '0 0% 100%',
+    secondary: '210 40% 96%',
+    secondaryForeground: '207 60% 20%',
+    muted: '210 40% 94%',
+    mutedForeground: '207 20% 50%',
+    accent: '207 85% 95%',
+    accentForeground: '207 91% 13%',
+    destructive: '0 84% 60%',
+    destructiveForeground: '0 0% 100%',
+    border: '207 20% 88%',
+    input: '207 20% 88%',
+    ring: '207 91% 13%',
+    success: '138 50% 40%',
+    warning: '45 100% 50%',
+    info: '207 50% 40%',
+  },
+  typography: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 'medium',
+  },
+  border: {
+    radius: 'md',
+  },
+  background: {
+    type: 'gradient',
+    value: 'linear-gradient(135deg, rgb(31, 213, 170), rgb(1, 180, 227))',
+    opacity: 1,
+    blur: 0,
+  },
+};
