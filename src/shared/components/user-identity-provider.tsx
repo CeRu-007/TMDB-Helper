@@ -365,7 +365,7 @@ export function UserAvatar({
         <UserAvatarImage
           src={userInfo.avatarUrl}
           displayName={userInfo.displayName}
-          className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-border"
+          className="w-8 h-8 rounded-full object-cover shadow-sm"
         />
         <span
           className={`text-sm font-medium max-w-[100px] truncate ${hideNameOnMobile ? 'hidden md:inline' : ''}`}
