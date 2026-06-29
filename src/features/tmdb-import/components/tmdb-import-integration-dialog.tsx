@@ -1721,7 +1721,7 @@ export default function TMDBImportIntegrationDialog({
                   {/* 配置和按钮区域 */}
                   <div className="mt-3 grid grid-cols-3 gap-3">
                     {/* 左侧：URL和季数配置 */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 flex flex-col justify-center">
                       <div className="flex items-center gap-3">
                         <div>
                           <Label className="text-xs">{t('tmdbIntegration.tmdbSeason')}</Label>
@@ -1746,7 +1746,7 @@ export default function TMDBImportIntegrationDialog({
                     </div>
 
                     {/* 中间：运行模式选择 */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 flex flex-col justify-center">
                       <div>
                         <Label className="text-xs mb-1 block">{t('tmdbIntegration.runMode')}</Label>
                         <div className="flex gap-2">
@@ -1780,8 +1780,7 @@ export default function TMDBImportIntegrationDialog({
                     </div>
 
                     {/* 右侧：按钮区域 */}
-                    <div className="flex flex-col justify-end space-y-2">
-                      {/* 两个主要按钮 */}
+                    <div className="flex flex-col justify-center space-y-2">
                       <div className="grid grid-cols-2 gap-3">
                         <Button
                           onClick={(e) => startProcessing(e)}
