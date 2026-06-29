@@ -69,7 +69,7 @@ export function AppHeader({
   }, [fetchUnreadCount]);
 
   return (
-    <header className="bg-[hsl(var(--header))] text-[hsl(var(--header-foreground))] shadow-sm border-b border-border sticky top-0 z-40">
+    <header className="[background:var(--header-bg)] [backdrop-filter:var(--header-bg-filter)] text-[hsl(var(--header-foreground))] shadow-sm border-b border-border sticky top-0 z-40">
       <div className="relative h-16 max-md:h-14">
         {/* ===== 桌面端：原始布局（完全不变） ===== */}
         <div className="max-md:hidden">
@@ -155,7 +155,7 @@ export function AppHeader({
 
                 <Button
                   onClick={onShowAddDialog}
-                  className="hover:opacity-90"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   size="default"
                 >
                   <Plus className="h-4 w-4 md:mr-2" />
@@ -234,7 +234,7 @@ export function AppHeader({
             />
             <Button
               onClick={onShowAddDialog}
-              className="hover:opacity-90 min-w-[44px] min-h-[44px]"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 min-w-[44px] min-h-[44px]"
               size="icon"
             >
               <Plus className="h-4 w-4" />

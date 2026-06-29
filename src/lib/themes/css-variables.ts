@@ -31,12 +31,18 @@ export function themeToCSSVariables(theme: ThemeConfig): Record<string, string> 
   vars['--font-family'] = theme.typography.fontFamily;
   vars['--font-size-base'] = FONT_SIZE_MAP[theme.typography.fontSize];
 
-  if (theme.appearance === 'light') {
-    vars['--header'] = theme.colors.foreground;
-    vars['--header-foreground'] = theme.colors.background;
+  if (theme.colors.header && theme.colors.headerForeground) {
+    vars['--header'] = theme.colors.header;
+    vars['--header-foreground'] = theme.colors.headerForeground;
+    vars['--header-bg'] = `hsl(${theme.colors.header})`;
+    vars['--header-bg-filter'] = 'none';
+    vars['--primary-selected-text'] = theme.colors.primaryForeground;
   } else {
     vars['--header'] = theme.colors.card;
     vars['--header-foreground'] = theme.colors.cardForeground;
+    vars['--header-bg'] = `hsl(${theme.colors.card} / 0.8)`;
+    vars['--header-bg-filter'] = 'blur(8px)';
+    vars['--primary-selected-text'] = theme.colors.primary;
   }
 
   return vars;
@@ -68,7 +74,7 @@ export function applyTheme(theme: ThemeConfig): void {
 
   const styleId = 'tmdb-accent-style';
   let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
-  if (theme.background?.type === 'gradient') {
+  if (theme.background?.accentOverridesPrimary && theme.background?.type === 'gradient') {
     if (!styleEl) {
       styleEl = document.createElement('style');
       styleEl.id = styleId;

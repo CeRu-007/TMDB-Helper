@@ -339,7 +339,7 @@ export function SidebarNavigation({
                               className={cn(
                                 'relative cursor-pointer transition-all duration-200 px-3 py-2',
                                 activeMenu === group.id && activeSubmenu === item.id
-                                  ? 'bg-primary text-primary-foreground'
+                                  ? 'bg-primary/15 text-[hsl(var(--primary-selected-text))]'
                                   : 'hover:bg-accent text-foreground'
                               )}
                               onClick={() => handleMenuClick(group.id, item.id)}
@@ -383,14 +383,14 @@ export function SidebarNavigation({
                           key={item.id}
                           variant={
                             activeMenu === group.id && activeSubmenu === item.id
-                              ? 'default'
+                              ? 'secondary'
                               : 'ghost'
                           }
                           size="sm"
                           className={cn(
                             'w-full justify-start h-9',
                             activeMenu === group.id && activeSubmenu === item.id
-                              ? 'text-primary-foreground'
+                              ? 'bg-primary/15 text-[hsl(var(--primary-selected-text))] border-r-2 border-r-primary'
                               : 'text-foreground hover:bg-accent'
                           )}
                           onClick={() => handleMenuClick(group.id, item.id)}

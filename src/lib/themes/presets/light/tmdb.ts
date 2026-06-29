@@ -29,6 +29,8 @@ export const tmdbTheme: ThemeConfig = {
     success: '138 50% 40%',
     warning: '45 100% 50%',
     info: '207 50% 40%',
+    header: '207 91% 13%',
+    headerForeground: '0 0% 100%',
   },
   typography: {
     fontFamily: "'Inter', sans-serif",
@@ -42,5 +44,6 @@ export const tmdbTheme: ThemeConfig = {
     value: 'linear-gradient(135deg, rgb(31, 213, 170), rgb(1, 180, 227))',
     opacity: 1,
     blur: 0,
+    accentOverridesPrimary: true,
   },
 };

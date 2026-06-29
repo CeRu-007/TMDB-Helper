@@ -461,7 +461,7 @@ export default function HomePage() {
                         </p>
                         <Button
                           onClick={() => homeState.setShowAddDialog(true)}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           {t('addNewItem', { ns: 'media' })}

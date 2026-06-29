@@ -78,13 +78,13 @@ export function SettingsMenu({ activeSection, onSectionChange }: SettingsMenuPro
           w-full flex items-start space-x-3 p-3 rounded-lg text-left transition-colors
           ${
             isActive
-              ? 'bg-primary text-primary-foreground ring-1 ring-primary/20 shadow-sm'
+              ? 'bg-primary/10 text-[hsl(var(--primary-selected-text))] ring-1 ring-primary/20'
               : 'hover:bg-accent text-foreground ring-1 ring-transparent'
           }
         `}
       >
         <Icon
-          className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`}
+          className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isActive ? 'text-[hsl(var(--primary-selected-text))]' : 'text-muted-foreground'}`}
         />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium">{t(item.labelKey)}</div>

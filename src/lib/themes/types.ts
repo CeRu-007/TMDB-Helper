@@ -24,6 +24,8 @@ export interface ThemeColors {
   warningForeground?: string;
   info?: string;
   infoForeground?: string;
+  header?: string;
+  headerForeground?: string;
 }
 
 export interface ThemeTypography {
@@ -45,6 +47,7 @@ export interface ThemeBackground {
   opacity: number;
   blur: number;
   overlay?: string;
+  accentOverridesPrimary?: boolean;
 }
 
 export interface ThemeConfig {

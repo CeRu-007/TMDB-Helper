@@ -33,8 +33,8 @@ function getDayButtonClasses(isSelected: boolean, isToday: boolean): string {
     'flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2';
 
   if (isSelected) {
-    return `${baseClasses} bg-primary text-primary-foreground ${
-      isToday ? 'border-yellow-400' : 'border-primary/20'
+    return `${baseClasses} bg-blue-100 text-blue-700 ${
+      isToday ? 'border-yellow-400' : 'border-blue-100'
     }`;
   }
 
@@ -88,7 +88,7 @@ export function WeekdayNavigation({
   };
 
   return (
-    <div className="bg-muted border-b border-border sticky top-0 z-10 shadow-sm">
+    <div className="bg-background border-b border-border sticky top-0 z-10">
       <div className="mx-auto px-6">
         <div className="flex max-md:flex-col justify-between max-md:justify-start items-center max-md:items-stretch pt-3 pb-0 gap-4 max-md:gap-2">
           <ScrollAreaPrimitive.Root className="flex-1 whitespace-nowrap overflow-hidden self-stretch">
