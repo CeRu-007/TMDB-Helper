@@ -468,93 +468,78 @@ export function ImageRecognition() {
                 {/* 进度条网格 - 优化布局 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   {advancedSearchMode && progress.similarSearch !== undefined && (
-                    <div className="space-y-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <div className="space-y-3 p-4 bg-muted rounded-lg border border-border">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                        <span className="text-sm font-medium text-foreground">
                           {t('imageRecognition.similarImageSearch')}
                         </span>
-                        <span className="text-sm text-purple-600 dark:text-purple-400 font-mono">
+                        <span className="text-sm text-muted-foreground font-mono">
                           {progress.similarSearch}%
                         </span>
                       </div>
-                      <Progress
-                        value={progress.similarSearch}
-                        className="h-2 bg-purple-100 dark:bg-purple-900"
-                      />
-                      <div className="text-xs text-purple-600 dark:text-purple-400">
+                      <Progress value={progress.similarSearch} />
+                      <div className="text-xs text-muted-foreground">
                         {t('imageRecognition.searchingSimilarImages')}
                       </div>
                     </div>
                   )}
 
-                  <div className="space-y-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="space-y-3 p-4 bg-muted rounded-lg border border-border">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      <span className="text-sm font-medium text-foreground">
                         {t('imageRecognition.featureExtraction')}
                       </span>
-                      <span className="text-sm text-blue-600 dark:text-blue-400 font-mono">
+                      <span className="text-sm text-muted-foreground font-mono">
                         {progress.featureExtraction}%
                       </span>
                     </div>
-                    <Progress
-                      value={progress.featureExtraction}
-                      className="h-2 bg-blue-100 dark:bg-blue-900"
-                    />
-                    <div className="text-xs text-blue-600 dark:text-blue-400">
+                    <Progress value={progress.featureExtraction} />
+                    <div className="text-xs text-muted-foreground">
                       {t('imageRecognition.analyzingImageFeatures')}
                     </div>
                   </div>
 
-                  <div className="space-y-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="space-y-3 p-4 bg-muted rounded-lg border border-border">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                      <span className="text-sm font-medium text-foreground">
                         {t('imageRecognition.databaseMatching')}
                       </span>
-                      <span className="text-sm text-green-600 dark:text-green-400 font-mono">
+                      <span className="text-sm text-muted-foreground font-mono">
                         {progress.databaseMatching}%
                       </span>
                     </div>
-                    <Progress
-                      value={progress.databaseMatching}
-                      className="h-2 bg-green-100 dark:bg-green-900"
-                    />
-                    <div className="text-xs text-green-600 dark:text-green-400">
+                    <Progress value={progress.databaseMatching} />
+                    <div className="text-xs text-muted-foreground">
                       {t('imageRecognition.matchingLocalDatabase')}
                     </div>
                   </div>
 
-                  <div className="space-y-3 p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <div className="space-y-3 p-4 bg-muted rounded-lg border border-border">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                      <span className="text-sm font-medium text-foreground">
                         {t('imageRecognition.tmdbSearch')}
                       </span>
-                      <span className="text-sm text-orange-600 dark:text-orange-400 font-mono">
+                      <span className="text-sm text-muted-foreground font-mono">
                         {progress.tmdbSearch}%
                       </span>
                     </div>
-                    <Progress
-                      value={progress.tmdbSearch}
-                      className="h-2 bg-orange-100 dark:bg-orange-900"
-                    />
-                    <div className="text-xs text-orange-600 dark:text-orange-400">
+                    <Progress value={progress.tmdbSearch} />
+                    <div className="text-xs text-muted-foreground">
                       {t('imageRecognition.searchingTMDB')}
                     </div>
                   </div>
 
-                  <div className="space-y-3 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <div className="space-y-3 p-4 bg-muted rounded-lg border border-border">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                      <span className="text-sm font-medium text-foreground">
                         {t('imageRecognition.imdbSearch')}
                       </span>
-                      <span className="text-sm text-yellow-600 dark:text-yellow-400 font-mono">
+                      <span className="text-sm text-muted-foreground font-mono">
                         {progress.imdbSearch}%
                       </span>
                     </div>
-                    <Progress
-                      value={progress.imdbSearch}
-                      className="h-2 bg-yellow-100 dark:bg-yellow-900"
-                    />
-                    <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                    <Progress value={progress.imdbSearch} />
+                    <div className="text-xs text-muted-foreground">
                       {t('imageRecognition.searchingIMDB')}
                     </div>
                   </div>
@@ -562,7 +547,7 @@ export function ImageRecognition() {
 
                 {/* 相似图片展示区域 */}
                 {advancedSearchMode && similarImages.length > 0 && (
-                  <div className="space-y-4 p-4 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-card/50 dark:to-slate-900/50 rounded-lg border border-border">
+                  <div className="space-y-4 p-4 bg-muted rounded-lg border border-border">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-semibold text-foreground flex items-center space-x-2">
                         <ImageIcon className="h-4 w-4" />
@@ -627,19 +612,19 @@ export function ImageRecognition() {
         {/* 右侧：结果展示区域 - 占用2/5宽度 */}
         <div className="w-full md:w-80 flex-shrink-0">
           <Card className="h-full flex flex-col">
-            <CardHeader className="flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center space-x-2">
-                  <Search className="h-5 w-5" />
+            <CardHeader className="flex-shrink-0 p-3 md:p-4">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="flex items-center space-x-2 text-sm md:text-base">
+                  <Search className="h-4 w-4" />
                   <span>{t('imageRecognition.recognitionResults')}</span>
                 </CardTitle>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1.5 flex-shrink-0">
                   <Select
                     value={selectedDatabase}
                     onValueChange={(value: 'tmdb' | 'imdb') => setSelectedDatabase(value)}
                   >
-                    <SelectTrigger className="w-24 h-8 text-xs">
+                    <SelectTrigger className="w-16 md:w-20 h-7 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -652,7 +637,7 @@ export function ImageRecognition() {
                     value={sortBy}
                     onValueChange={(value: 'match' | 'rating') => setSortBy(value)}
                   >
-                    <SelectTrigger className="w-24 h-8 text-xs">
+                    <SelectTrigger className="w-16 md:w-20 h-7 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
