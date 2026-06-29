@@ -446,12 +446,18 @@ jobs:
           echo "=== 所有产物 ==="
           ls -laR dist/
 
+      - name: Prepare release notes file
+        run: |
+          cat > release-notes.md << 'EOF'
+          ${{ needs.prepare.outputs.release_notes }}
+          EOF
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           name: ${{ needs.prepare.outputs.tag }}
-          body: ${{ needs.prepare.outputs.release_notes }}
+          body_path: release-notes.md
           files: |
             dist/**/*.tar
           draft: false
