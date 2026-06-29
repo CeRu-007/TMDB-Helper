@@ -87,7 +87,7 @@ jobs:
           else
             # ── 方案 B: 优先读取 annotated tag message（AI 写入的双语内容） ──
             if git rev-parse --verify "$TAG" >/dev/null 2>&1; then
-              TAG_NOTES=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || true)
+              TAG_NOTES=$(git cat-file -p "$TAG" 2>/dev/null | sed '1,/^$/d' || true)
               if [ -n "$TAG_NOTES" ]; then
                 echo "Using annotated tag message"
                 NOTES="$TAG_NOTES"
